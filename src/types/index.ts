@@ -551,7 +551,7 @@ export interface WorkflowTransition {
 export interface TransitionRequirement {
   id: string;
   transition_id: string;
-  requirement_type: 'comment' | 'attachment' | 'field_value';
+  requirement_type: 'comment' | 'attachment' | 'feedback' | 'field_value';
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
@@ -671,7 +671,7 @@ export interface WorkflowTransitionUpdateRequest {
 }
 
 export interface TransitionRequirementRequest {
-  requirement_type: 'comment' | 'attachment' | 'field_value';
+  requirement_type: 'comment' | 'attachment' | 'feedback' | 'field_value';
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
@@ -723,6 +723,7 @@ export interface Incident {
 export interface IncidentDetail extends Incident {
   comments?: IncidentComment[];
   attachments?: IncidentAttachment[];
+  feedback?: IncidentFeedback[];
   transition_history?: TransitionHistory[];
 }
 
@@ -745,6 +746,21 @@ export interface IncidentAttachment {
   uploaded_by?: User;
   transition_history_id?: string;
   created_at: string;
+}
+
+export interface IncidentFeedback {
+  id: string;
+  incident_id: string;
+  rating: number;
+  comment?: string;
+  created_by?: User;
+  transition_history_id?: string;
+  created_at: string;
+}
+
+export interface IncidentFeedbackRequest {
+  rating: number;
+  comment?: string;
 }
 
 export interface TransitionHistory {
@@ -868,6 +884,9 @@ export interface IncidentTransitionRequest {
   transition_id: string;
   comment?: string;
   attachments?: string[];
+
+  // Feedback (collected during transition if required)
+  feedback?: IncidentFeedbackRequest;
 
   // Assignment overrides (used when auto-detect finds multiple matches)
   department_id?: string;

@@ -1845,6 +1845,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             >
                               <option value="comment">Comment Required</option>
                               <option value="attachment">Attachment Required</option>
+                              <option value="feedback">Feedback Required</option>
                               <option value="field_value">Field Value Required</option>
                             </select>
                             <button
