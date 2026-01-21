@@ -124,7 +124,7 @@ export const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 {/* Search (Desktop) */}
-                <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm text-gray-500 transition-colors w-64">
+                <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm text-gray-500 transition-colors w-64 focus:outline-none focus:ring-0">
                   <Search className="w-4 h-4" />
                   <span>{t('nav.searchPlaceholder')}</span>
                   <kbd className="ml-auto bg-white px-2 py-0.5 rounded text-xs text-gray-400 border border-gray-200">
@@ -136,7 +136,7 @@ export const Navbar: React.FC = () => {
                 <div className="relative" ref={langRef}>
                   <button
                     onClick={() => setIsLangOpen(!isLangOpen)}
-                    className="flex items-center gap-1.5 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+                    className="flex items-center gap-1.5 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors focus:outline-none focus:ring-0"
                     title={t('settings.language')}
                   >
                     <Languages className="w-5 h-5" />
@@ -152,7 +152,7 @@ export const Navbar: React.FC = () => {
                         <button
                           key={lang.code}
                           onClick={() => handleLanguageChange(lang.code)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-0 ${
                             currentLang === lang.code
                               ? 'bg-blue-50 text-blue-600'
                               : 'text-gray-700 hover:bg-gray-50'

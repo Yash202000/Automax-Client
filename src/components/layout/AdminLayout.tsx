@@ -22,10 +22,12 @@ import {
   FileBarChart,
   Languages,
   Database,
+  Phone,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
+import SoftPhone from '../sip/Softphone';
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -74,6 +76,7 @@ export const AdminLayout: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
+  const [showSoftphone, setShowSoftphone] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -379,8 +382,27 @@ export const AdminLayout: React.FC = () => {
               )}
             </div>
 
+            {/* Phone/Softphone */}
+            <button
+              onClick={() => setShowSoftphone(!showSoftphone)}
+              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                showSoftphone
+                  ? 'text-purple-600 bg-purple-50'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <Phone className="w-5 h-5" />
+            </button>
+
+            <SoftPhone
+              showSip={showSoftphone}
+              onClose={() => setShowSoftphone(false)}
+              settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
+              auth={{}}
+            />
+
             {/* Notifications */}
-            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:outline-none focus:ring-0">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>

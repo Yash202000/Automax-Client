@@ -21,11 +21,13 @@ import {
   UserCheck,
   PenLine,
   Languages,
+  Phone,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
 import { incidentApi } from '../../api/admin';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
+import SoftPhone from '../sip/Softphone';
 
 export const IncidentLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ export const IncidentLayout: React.FC = () => {
   const [myIncidentsOpen, setMyIncidentsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
+  const [showSoftphone, setShowSoftphone] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -449,8 +452,27 @@ export const IncidentLayout: React.FC = () => {
               )}
             </div>
 
+            {/* Phone/Softphone */}
+            <button
+              onClick={() => setShowSoftphone(!showSoftphone)}
+              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                showSoftphone
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <Phone className="w-5 h-5" />
+            </button>
+
+            <SoftPhone
+              showSip={showSoftphone}
+              onClose={() => setShowSoftphone(false)}
+              settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
+              auth={{}}
+            />
+
             {/* Notifications */}
-            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:outline-none focus:ring-0">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
@@ -462,7 +484,7 @@ export const IncidentLayout: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 p-1.5 pr-3 hover:bg-slate-50 rounded-xl transition-colors"
+                className="flex items-center gap-3 p-1.5 pr-3 hover:bg-slate-50 rounded-xl transition-colors focus:outline-none focus:ring-0"
               >
                 {user?.avatar ? (
                   <img
