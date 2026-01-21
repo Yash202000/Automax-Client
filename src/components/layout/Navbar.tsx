@@ -14,10 +14,12 @@ import {
   Zap,
   LayoutDashboard,
   Languages,
+  Phone
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
+import SoftPhone from '../sip/Softphone';
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
@@ -165,6 +167,14 @@ export const Navbar: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Sip */}
+                <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                  <Phone className="w-5 h-5" />
+                  {/* <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" /> */}
+                </button>
+
+                <SoftPhone showSip={true} settings={{"domain": "zkff.automaxsw.com","socketURL": "wss://zkff.automaxsw.com:7443"}} auth={{}}/>
 
                 {/* Notifications */}
                 <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
