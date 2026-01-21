@@ -98,7 +98,7 @@ export const LookupsPage: React.FC = () => {
   // Fetch categories
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['admin', 'lookups', 'categories'],
-    queryFn: lookupApi.listCategories,
+    queryFn: () => lookupApi.listCategories(),
   });
 
   const categories: LookupCategory[] = categoriesData?.data || [];

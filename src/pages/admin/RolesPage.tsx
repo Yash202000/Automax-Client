@@ -43,7 +43,7 @@ export const RolesPage: React.FC = () => {
 
   const { data: rolesData, isLoading } = useQuery({
     queryKey: ['admin', 'roles'],
-    queryFn: roleApi.list,
+    queryFn: () => roleApi.list(),
   });
 
   const { data: permissionsData } = useQuery({

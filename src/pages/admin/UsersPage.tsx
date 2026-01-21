@@ -95,22 +95,22 @@ export const UsersPage: React.FC = () => {
 
   const { data: departmentsTreeData } = useQuery({
     queryKey: ['admin', 'departments', 'tree'],
-    queryFn: departmentApi.getTree,
+    queryFn: () => departmentApi.getTree(),
   });
 
   const { data: locationsTreeData } = useQuery({
     queryKey: ['admin', 'locations', 'tree'],
-    queryFn: locationApi.getTree,
+    queryFn: () => locationApi.getTree(),
   });
 
   const { data: rolesData } = useQuery({
     queryKey: ['admin', 'roles'],
-    queryFn: roleApi.list,
+    queryFn: () => roleApi.list(),
   });
 
   const { data: classificationsTreeData } = useQuery({
     queryKey: ['admin', 'classifications', 'tree'],
-    queryFn: classificationApi.getTree,
+    queryFn: () => classificationApi.getTree(),
   });
 
   // Transform tree data to TreeNode format

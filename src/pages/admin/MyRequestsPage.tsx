@@ -7,9 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  Plus,
   Eye,
-  AlertTriangle,
+  FileText,
   Clock,
   CheckCircle2,
   XCircle,
@@ -24,11 +23,11 @@ import { incidentApi } from '../../api/admin';
 import type { Incident } from '../../types';
 import { cn } from '@/lib/utils';
 
-interface MyIncidentsPageProps {
+interface MyRequestsPageProps {
   type: 'assigned' | 'created';
 }
 
-export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
+export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const [page, setPage] = useState(1);
@@ -38,31 +37,31 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const isAssigned = type === 'assigned';
   const pageTitle = isAssigned ? 'Assigned to Me' : 'Created by Me';
   const pageDescription = isAssigned
-    ? 'Incidents that are currently assigned to you'
-    : 'Incidents that you have reported or created';
+    ? 'Requests that are currently assigned to you'
+    : 'Requests that you have created';
   const PageIcon = isAssigned ? UserCheck : PenLine;
 
-  const { data: incidentsData, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['incidents', type === 'assigned' ? 'my-assigned' : 'my-reported', page, limit],
+  const { data: requestsData, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ['requests', type === 'assigned' ? 'my-assigned' : 'my-created', page, limit],
     queryFn: () => type === 'assigned'
-      ? incidentApi.getMyAssigned(page, limit, 'incident')
-      : incidentApi.getMyReported(page, limit, 'incident'),
+      ? incidentApi.getMyAssigned(page, limit, 'request')
+      : incidentApi.getMyReported(page, limit, 'request'),
   });
 
-  const incidents = incidentsData?.data || [];
-  const totalPages = incidentsData?.total_pages ?? 1;
-  const totalItems = incidentsData?.total_items ?? 0;
+  const requests = requestsData?.data || [];
+  const totalPages = requestsData?.total_pages ?? 1;
+  const totalItems = requestsData?.total_items ?? 0;
 
   // Client-side search filter
-  const filteredIncidents = searchTerm
-    ? incidents.filter((incident: Incident) =>
-        incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        incident.incident_number.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRequests = searchTerm
+    ? requests.filter((request: Incident) =>
+        request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.incident_number.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : incidents;
+    : requests;
 
-  const getLookupValue = (incident: Incident, categoryCode: string) => {
-    return incident.lookup_values?.find(lv => lv.category?.code === categoryCode);
+  const getLookupValue = (request: Incident, categoryCode: string) => {
+    return request.lookup_values?.find(lv => lv.category?.code === categoryCode);
   };
 
   const getLookupLabel = (value: any) => {
@@ -86,9 +85,9 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           <div className="w-16 h-16 bg-[hsl(var(--destructive)/0.1)] rounded-2xl flex items-center justify-center mb-4">
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
-          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">Failed to Load Incidents</h3>
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">Failed to Load Requests</h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            There was an error loading your incidents. Please try again.
+            There was an error loading your requests. Please try again.
           </p>
           <Button onClick={() => refetch()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             Try Again
@@ -121,18 +120,15 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           >
             Refresh
           </Button>
-          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => navigate('/incidents/new')}>
-            Create Incident
-          </Button>
         </div>
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/10">
-              <AlertTriangle className="w-5 h-5 text-blue-500" />
+              <FileText className="w-5 h-5 text-blue-500" />
             </div>
             <div>
               <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{totalItems}</p>
@@ -147,7 +143,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
             </div>
             <div>
               <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
-                {incidents.filter((i: Incident) => i.current_state?.state_type === 'initial').length}
+                {requests.filter((r: Incident) => r.current_state?.state_type === 'initial').length}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">Open</p>
             </div>
@@ -160,22 +156,9 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
             </div>
             <div>
               <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
-                {incidents.filter((i: Incident) => i.current_state?.state_type === 'terminal').length}
+                {requests.filter((r: Incident) => r.current_state?.state_type === 'terminal').length}
               </p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Resolved</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-500/10">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
-                {incidents.filter((i: Incident) => i.sla_breached).length}
-              </p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">SLA Breached</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">Completed</p>
             </div>
           </div>
         </div>
@@ -187,7 +170,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by title or incident number..."
+            placeholder="Search by title or request number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
@@ -195,34 +178,30 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
         </div>
       </div>
 
-      {/* Incidents Table */}
+      {/* Requests Table */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--primary)/0.1)] rounded-2xl mb-4">
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-[hsl(var(--muted-foreground))]">Loading incidents...</p>
+            <p className="text-[hsl(var(--muted-foreground))]">Loading requests...</p>
           </div>
-        ) : filteredIncidents.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--muted))] rounded-2xl mb-4">
               <PageIcon className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
-            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">No Incidents Found</h3>
+            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">No Requests Found</h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {searchTerm
-                ? 'No incidents match your search'
+                ? 'No requests match your search'
                 : isAssigned
-                ? 'No incidents are currently assigned to you'
-                : 'You have not created any incidents yet'}
+                ? 'No requests are currently assigned to you'
+                : 'You have not created any requests yet'}
             </p>
-            {searchTerm ? (
+            {searchTerm && (
               <Button variant="outline" onClick={() => setSearchTerm('')}>Clear Search</Button>
-            ) : (
-              <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => navigate('/incidents/new')}>
-                Create Incident
-              </Button>
             )}
           </div>
         ) : (
@@ -233,7 +212,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                   <tr className="border-b border-[hsl(var(--border))]">
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Incident
+                        Request
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
@@ -253,12 +232,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Due Date
-                      </span>
-                    </th>
-                    <th className="px-6 py-4 text-left">
-                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        SLA
+                        Created Date
                       </span>
                     </th>
                     <th className="px-6 py-4 text-right">
@@ -269,34 +243,34 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[hsl(var(--border))]">
-                  {filteredIncidents.map((incident: Incident) => {
-                    const priority = getLookupValue(incident, 'PRIORITY');
+                  {filteredRequests.map((request: Incident) => {
+                    const priority = getLookupValue(request, 'PRIORITY');
                     return (
                     <tr
-                      key={incident.id}
+                      key={request.id}
                       className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/incidents/${incident.id}`)}
+                      onClick={() => navigate(`/requests/${request.id}`)}
                     >
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
                           <p className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5">
-                            {incident.incident_number}
+                            {request.incident_number}
                           </p>
                           <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
-                            {incident.title}
+                            {request.title}
                           </p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        {incident.current_state ? (
+                        {request.current_state ? (
                           <span
                             className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
                             style={{
-                              backgroundColor: incident.current_state.color ? `${incident.current_state.color}20` : 'hsl(var(--muted))',
-                              color: incident.current_state.color || 'hsl(var(--foreground))',
+                              backgroundColor: request.current_state.color ? `${request.current_state.color}20` : 'hsl(var(--muted))',
+                              color: request.current_state.color || 'hsl(var(--foreground))',
                             }}
                           >
-                            {incident.current_state.name}
+                            {request.current_state.name}
                           </span>
                         ) : (
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">-</span>
@@ -312,32 +286,32 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                       </td>
                       <td className="px-6 py-4">
                         {isAssigned ? (
-                          incident.department ? (
+                          request.department ? (
                             <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                               <Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                              {incident.department.name}
+                              {request.department.name}
                             </div>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">-</span>
                           )
                         ) : (
-                          incident.assignee ? (
+                          request.assignee ? (
                             <div className="flex items-center gap-2">
-                              {incident.assignee.avatar ? (
+                              {request.assignee.avatar ? (
                                 <img
-                                  src={incident.assignee.avatar}
-                                  alt={incident.assignee.username}
+                                  src={request.assignee.avatar}
+                                  alt={request.assignee.username}
                                   className="w-6 h-6 rounded-full object-cover"
                                 />
                               ) : (
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center">
                                   <span className="text-white text-xs font-semibold">
-                                    {incident.assignee.first_name?.[0] || incident.assignee.username[0]}
+                                    {request.assignee.first_name?.[0] || request.assignee.username[0]}
                                   </span>
                                 </div>
                               )}
                               <span className="text-sm text-[hsl(var(--foreground))]">
-                                {incident.assignee.first_name || incident.assignee.username}
+                                {request.assignee.first_name || request.assignee.username}
                               </span>
                             </div>
                           ) : (
@@ -351,21 +325,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                           <Calendar className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                          {formatDate(incident.due_date)}
+                          {formatDate(request.created_at)}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {incident.sla_breached ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
-                            <AlertTriangle className="w-3 h-3" />
-                            Breached
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-600">
-                            <CheckCircle2 className="w-3 h-3" />
-                            On Track
-                          </span>
-                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button
@@ -374,7 +335,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                           leftIcon={<Eye className="w-4 h-4" />}
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/incidents/${incident.id}`);
+                            navigate(`/requests/${request.id}`);
                           }}
                         >
                           View
@@ -399,7 +360,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                     {Math.min(page * limit, totalItems)}
                   </span>{' '}
                   of{' '}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">{totalItems}</span> incidents
+                  <span className="font-semibold text-[hsl(var(--foreground))]">{totalItems}</span> requests
                 </p>
 
                 <div className="flex items-center gap-2">

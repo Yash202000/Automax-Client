@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  AlertTriangle,
+  MessageSquareWarning,
   ChevronLeft,
   LogOut,
   Home,
@@ -14,31 +14,27 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
-  Plus,
   List,
   Circle,
   User,
   UserCheck,
   PenLine,
   Languages,
-  Phone,
-  FileText,
+  Link2,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
-import { incidentApi } from '../../api/admin';
+import { complaintApi } from '../../api/admin';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
-import SoftPhone from '../sip/Softphone';
 
-export const IncidentLayout: React.FC = () => {
+export const ComplaintsLayout: React.FC = () => {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [myIncidentsOpen, setMyIncidentsOpen] = useState(false);
+  const [myComplaintsOpen, setMyComplaintsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const [showSoftphone, setShowSoftphone] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -64,10 +60,18 @@ export const IncidentLayout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch incident stats to get statuses
+  // Fetch complaint stats
   const { data: statsData } = useQuery({
-    queryKey: ['incidents', 'stats'],
-    queryFn: () => incidentApi.getStats(),
+    queryKey: ['complaints', 'stats'],
+    queryFn: async () => {
+      const result = await complaintApi.list({ limit: 1 });
+      return {
+        data: {
+          total: result.total_items || 0,
+          by_state: {} as Record<string, number>,
+        }
+      };
+    },
   });
 
   const handleLogout = async () => {
@@ -94,15 +98,15 @@ export const IncidentLayout: React.FC = () => {
       <div className={`h-[70px] flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} border-b border-white/5`}>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <AlertTriangle className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+              <MessageSquareWarning className="w-5 h-5 text-white" />
             </div>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-slate-900" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">{t('sidebar.incidents')}</h1>
-              <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t('sidebar.management')}</p>
+              <h1 className="text-lg font-bold text-white tracking-tight">{t('sidebar.complaints', 'Complaints')}</h1>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t('sidebar.management', 'Management')}</p>
             </div>
           )}
         </div>
@@ -121,18 +125,18 @@ export const IncidentLayout: React.FC = () => {
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t('sidebar.actions')}
+            {t('sidebar.actions', 'Actions')}
           </p>
         )}
         <div className="space-y-1">
           <NavLink
-            to="/incidents"
+            to="/complaints"
             end
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) =>
               `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                  ? 'bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
@@ -143,105 +147,70 @@ export const IncidentLayout: React.FC = () => {
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
                 )}
                 <List size={20} className="flex-shrink-0" />
-                {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.allIncidents')}</span>}
+                {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.allComplaints', 'All Complaints')}</span>}
               </>
             )}
           </NavLink>
 
-          <NavLink
-            to="/incidents/new"
-            onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) =>
-              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                isActive
-                  ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
-                )}
-                <Plus size={20} className="flex-shrink-0" />
-                {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.newIncident')}</span>}
-              </>
-            )}
-          </NavLink>
-
-          {/* My Incidents - Collapsible */}
+          {/* My Complaints - Collapsible */}
           <div>
             <button
-              onClick={() => setMyIncidentsOpen(!myIncidentsOpen)}
+              onClick={() => setMyComplaintsOpen(!myComplaintsOpen)}
               className={`w-full group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
             >
               <User size={20} className="flex-shrink-0" />
               {!collapsed && (
                 <>
-                  <span className="ml-3 font-medium text-sm flex-1 text-left">{t('sidebar.myIncidents')}</span>
+                  <span className="ml-3 font-medium text-sm flex-1 text-left">{t('sidebar.myComplaints', 'My Complaints')}</span>
                   <ChevronRight
                     size={16}
-                    className={`transition-transform duration-200 ${myIncidentsOpen ? 'rotate-90' : ''}`}
+                    className={`transition-transform duration-200 ${myComplaintsOpen ? 'rotate-90' : ''}`}
                   />
                 </>
               )}
             </button>
-            {myIncidentsOpen && !collapsed && (
+            {myComplaintsOpen && !collapsed && (
               <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-2">
                 <NavLink
-                  to="/incidents/my-assigned"
+                  to="/complaints/my-assigned"
                   onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
                     `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                        ? 'bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white shadow-lg shadow-amber-500/20'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`
                   }
                 >
                   <UserCheck size={16} className="flex-shrink-0" />
-                  <span className="ml-2 font-medium text-sm">{t('sidebar.assignedToMe')}</span>
+                  <span className="ml-2 font-medium text-sm">{t('sidebar.assignedToMe', 'Assigned to Me')}</span>
                 </NavLink>
                 <NavLink
-                  to="/incidents/my-created"
+                  to="/complaints/my-created"
                   onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
                     `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                        ? 'bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white shadow-lg shadow-amber-500/20'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`
                   }
                 >
                   <PenLine size={16} className="flex-shrink-0" />
-                  <span className="ml-2 font-medium text-sm">{t('sidebar.createdByMe')}</span>
+                  <span className="ml-2 font-medium text-sm">{t('sidebar.createdByMe', 'Created by Me')}</span>
                 </NavLink>
               </div>
             )}
           </div>
 
-          {/* Requests */}
+          {/* Link to Incidents */}
           <NavLink
-            to="/requests"
+            to="/incidents"
             onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) =>
-              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                isActive
-                  ? 'bg-gradient-to-r from-emerald-600/90 to-teal-600/90 text-white shadow-lg shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
+            className="group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5"
           >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
-                )}
-                <FileText size={20} className="flex-shrink-0" />
-                {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.requests', 'Requests')}</span>}
-              </>
-            )}
+            <Link2 size={20} className="flex-shrink-0" />
+            {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.viewIncidents', 'View Incidents')}</span>}
           </NavLink>
         </div>
 
@@ -252,7 +221,7 @@ export const IncidentLayout: React.FC = () => {
               <>
                 <div className="my-6 border-t border-white/5" />
                 <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                  {t('sidebar.byStatus')}
+                  {t('sidebar.byStatus', 'By Status')}
                 </p>
               </>
             )}
@@ -260,7 +229,7 @@ export const IncidentLayout: React.FC = () => {
               {statusItems.map((status) => (
                 <NavLink
                   key={status.name}
-                  to={`/incidents?status=${encodeURIComponent(status.name)}`}
+                  to={`/complaints?status=${encodeURIComponent(status.name)}`}
                   onClick={() => setMobileMenuOpen(false)}
                   className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
                 >
@@ -284,24 +253,16 @@ export const IncidentLayout: React.FC = () => {
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('sidebar.overview')}
+              {t('sidebar.overview', 'Overview')}
             </p>
             <div className="px-3 space-y-3">
               <NavLink
-                to="/incidents"
+                to="/complaints"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
               >
-                <span className="text-slate-400">{t('sidebar.total')}</span>
+                <span className="text-slate-400">{t('sidebar.total', 'Total')}</span>
                 <span className="text-white font-semibold">{statsData.data.total || 0}</span>
-              </NavLink>
-              <NavLink
-                to="/incidents?sla_breached=true"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
-              >
-                <span className="text-slate-400">{t('sidebar.slaBreached')}</span>
-                <span className="text-rose-400 font-semibold">{statsData.data.sla_breached || 0}</span>
               </NavLink>
             </div>
           </>
@@ -311,7 +272,7 @@ export const IncidentLayout: React.FC = () => {
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('sidebar.quickLinks')}
+              {t('sidebar.quickLinks', 'Quick Links')}
             </p>
           </>
         )}
@@ -322,7 +283,7 @@ export const IncidentLayout: React.FC = () => {
           className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.backToHome')}</span>}
+          {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.backToHome', 'Back to Home')}</span>}
         </NavLink>
       </nav>
 
@@ -342,10 +303,10 @@ export const IncidentLayout: React.FC = () => {
                 <img
                   src={user.avatar}
                   alt={user.username}
-                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-blue-500/30"
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-amber-500/30"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center ring-2 ring-blue-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center ring-2 ring-amber-500/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
@@ -363,7 +324,7 @@ export const IncidentLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t('sidebar.signOut')}
+              {t('sidebar.signOut', 'Sign Out')}
             </button>
           </div>
         )}
@@ -419,11 +380,11 @@ export const IncidentLayout: React.FC = () => {
 
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-400">{t('sidebar.incidents')}</span>
+              <span className="text-slate-400">{t('sidebar.complaints', 'Complaints')}</span>
               <span className="text-slate-300">/</span>
-              <span className="font-semibold text-slate-700">{t('sidebar.management')}</span>
+              <span className="font-semibold text-slate-700">{t('sidebar.management', 'Management')}</span>
             </div>
-            <h1 className="text-lg font-bold text-slate-800 sm:hidden">{t('sidebar.incidents')}</h1>
+            <h1 className="text-lg font-bold text-slate-800 sm:hidden">{t('sidebar.complaints', 'Complaints')}</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -433,8 +394,8 @@ export const IncidentLayout: React.FC = () => {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={t('sidebar.searchIncidents')}
-                  className="w-64 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
+                  placeholder={t('sidebar.searchComplaints', 'Search complaints...')}
+                  className="w-64 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -444,7 +405,7 @@ export const IncidentLayout: React.FC = () => {
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-1.5 p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                title={t('settings.language')}
+                title={t('settings.language', 'Language')}
               >
                 <Languages className="w-5 h-5" />
                 <span className="text-xs font-medium uppercase">{currentLang}</span>
@@ -453,7 +414,7 @@ export const IncidentLayout: React.FC = () => {
               {isLangOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage')}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage', 'Select Language')}</p>
                   </div>
                   {supportedLanguages.map((lang) => (
                     <button
@@ -461,7 +422,7 @@ export const IncidentLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-blue-50 text-blue-600'
+                          ? 'bg-amber-50 text-amber-600'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -476,29 +437,10 @@ export const IncidentLayout: React.FC = () => {
               )}
             </div>
 
-            {/* Phone/Softphone */}
-            <button
-              onClick={() => setShowSoftphone(!showSoftphone)}
-              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                showSoftphone
-                  ? 'text-blue-600 bg-blue-50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Phone className="w-5 h-5" />
-            </button>
-
-            <SoftPhone
-              showSip={showSoftphone}
-              onClose={() => setShowSoftphone(false)}
-              settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
-              auth={{}}
-            />
-
             {/* Notifications */}
-            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:outline-none focus:ring-0">
+            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white" />
             </button>
 
             {/* Divider */}
@@ -508,7 +450,7 @@ export const IncidentLayout: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 p-1.5 pr-3 hover:bg-slate-50 rounded-xl transition-colors focus:outline-none focus:ring-0"
+                className="flex items-center gap-3 p-1.5 pr-3 hover:bg-slate-50 rounded-xl transition-colors"
               >
                 {user?.avatar ? (
                   <img
@@ -517,7 +459,7 @@ export const IncidentLayout: React.FC = () => {
                     className="w-9 h-9 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                     </span>
@@ -529,7 +471,7 @@ export const IncidentLayout: React.FC = () => {
                   </p>
                   <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
                     {user?.is_super_admin && <Sparkles className="w-3 h-3 text-amber-500" />}
-                    {user?.is_super_admin ? t('profile.superAdmin') : t('sidebar.user')}
+                    {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : t('sidebar.user', 'User')}
                   </p>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -553,7 +495,7 @@ export const IncidentLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t('sidebar.backToHome')}
+                        {t('sidebar.backToHome', 'Back to Home')}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -565,7 +507,7 @@ export const IncidentLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t('sidebar.signOut')}
+                        {t('sidebar.signOut', 'Sign Out')}
                       </button>
                     </div>
                   </div>

@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Search,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  Plus,
   Eye,
   AlertTriangle,
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Filter,
   Calendar,
   User,
   Building2,
   Settings2,
   Check,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { incidentApi, workflowApi, userApi, departmentApi, classificationApi, locationApi } from '../../api/admin';
@@ -31,13 +31,14 @@ interface ColumnConfig {
   id: string;
   label: string;
   visible: boolean;
-  required?: boolean; // Can't be hidden
+  required?: boolean;
 }
 
-const COLUMN_STORAGE_KEY = 'incident_columns_config';
+const COLUMN_STORAGE_KEY = 'request_columns_config';
 
 const defaultColumns: ColumnConfig[] = [
-  { id: 'incident', label: 'Incident', visible: true, required: true },
+  { id: 'request', label: 'Request', visible: true, required: true },
+  { id: 'source', label: 'Source Incident', visible: true },
   { id: 'state', label: 'State', visible: true },
   { id: 'priority', label: 'Priority', visible: true },
   { id: 'severity', label: 'Severity', visible: false },
@@ -54,7 +55,6 @@ const loadColumnsFromStorage = (): ColumnConfig[] => {
     const stored = localStorage.getItem(COLUMN_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as ColumnConfig[];
-      // Merge with defaults to ensure all columns exist
       return defaultColumns.map(def => {
         const stored = parsed.find(p => p.id === def.id);
         return stored ? { ...def, visible: stored.visible } : def;
@@ -66,14 +66,14 @@ const loadColumnsFromStorage = (): ColumnConfig[] => {
   return defaultColumns;
 };
 
-export const IncidentsPage: React.FC = () => {
+export const RequestsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState<IncidentFilter>({
     page: 1,
     limit: 10,
-    record_type: 'incident',
+    record_type: 'request', // Always filter for requests
   });
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -111,11 +111,21 @@ export const IncidentsPage: React.FC = () => {
 
   // Queries
   const { data: workflowsData } = useQuery({
-    queryKey: ['workflows'],
-    queryFn: () => workflowApi.list(),
+    queryKey: ['workflows', 'request'],
+    queryFn: async () => {
+      const [requestRes, bothRes] = await Promise.all([
+        workflowApi.listByRecordType('request', false),
+        workflowApi.listByRecordType('both', false),
+      ]);
+      const combined = [...(requestRes.data || []), ...(bothRes.data || [])];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+      return { success: true, data: unique };
+    },
   });
 
-  // Get all states from all workflows for filter
+  // Get all states from request workflows for filter
   const allStates = workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
   const uniqueStates = allStates.reduce((acc: WorkflowState[], state: WorkflowState) => {
     if (!acc.find(s => s.name === state.name)) {
@@ -124,16 +134,14 @@ export const IncidentsPage: React.FC = () => {
     return acc;
   }, []);
 
-  // Read status and sla_breached from URL and sync with filter
+  // Read status from URL and sync with filter
   useEffect(() => {
     const statusParam = searchParams.get('status');
     const slaBreachedParam = searchParams.get('sla_breached');
 
-    // Build new filter state based on URL params
     const newFilterUpdates: Partial<IncidentFilter> = {};
     let needsUpdate = false;
 
-    // Handle sla_breached param
     if (slaBreachedParam === 'true') {
       if (filter.sla_breached !== true) {
         newFilterUpdates.sla_breached = true;
@@ -146,11 +154,9 @@ export const IncidentsPage: React.FC = () => {
       }
     }
 
-    // Handle status param
     if (statusParam) {
       if (statusParam !== statusFilter) {
         setStatusFilter(statusParam);
-        // Find the state ID by name
         const matchingState = uniqueStates.find(
           (s: WorkflowState) => s.name.toLowerCase() === statusParam.toLowerCase()
         );
@@ -169,7 +175,6 @@ export const IncidentsPage: React.FC = () => {
       }
     }
 
-    // Apply updates if needed
     if (needsUpdate) {
       setFilter(prev => ({
         ...prev,
@@ -179,14 +184,9 @@ export const IncidentsPage: React.FC = () => {
     }
   }, [searchParams, uniqueStates]);
 
-  const { data: incidentsData, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['incidents', filter],
+  const { data: requestsData, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ['requests', filter],
     queryFn: () => incidentApi.list(filter),
-  });
-
-  const { data: statsData } = useQuery({
-    queryKey: ['incidents', 'stats'],
-    queryFn: () => incidentApi.getStats(),
   });
 
   const { data: usersData } = useQuery({
@@ -200,8 +200,18 @@ export const IncidentsPage: React.FC = () => {
   });
 
   const { data: classificationsData } = useQuery({
-    queryKey: ['admin', 'classifications', 'list'],
-    queryFn: () => classificationApi.list(),
+    queryKey: ['admin', 'classifications', 'request'],
+    queryFn: async () => {
+      const [requestRes, bothRes] = await Promise.all([
+        classificationApi.listByType('request'),
+        classificationApi.listByType('both'),
+      ]);
+      const combined = [...(requestRes.data || []), ...(bothRes.data || [])];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+      return { success: true, data: unique };
+    },
   });
 
   const { data: locationsData } = useQuery({
@@ -209,16 +219,15 @@ export const IncidentsPage: React.FC = () => {
     queryFn: () => locationApi.list(),
   });
 
-  const stats = statsData?.data;
-  const incidents = incidentsData?.data || [];
-  const totalPages = incidentsData?.total_pages ?? 1;
-  const totalItems = incidentsData?.total_items ?? 0;
+  const requests = requestsData?.data || [];
+  const totalPages = requestsData?.total_pages ?? 1;
+  const totalItems = requestsData?.total_items ?? 0;
 
   const handleFilterChange = (key: keyof IncidentFilter, value: string | number | boolean | undefined) => {
     setFilter(prev => ({
       ...prev,
       [key]: value,
-      page: 1, // Reset to first page on filter change
+      page: 1,
     }));
   };
 
@@ -226,7 +235,7 @@ export const IncidentsPage: React.FC = () => {
     setFilter({
       page: 1,
       limit: 10,
-      record_type: 'incident',
+      record_type: 'request',
     });
     setStatusFilter(null);
     setSearchParams({});
@@ -243,8 +252,8 @@ export const IncidentsPage: React.FC = () => {
     filter.sla_breached !== undefined
   );
 
-  const getLookupValue = (incident: Incident, categoryCode: string) => {
-    return incident.lookup_values?.find(lv => lv.category?.code === categoryCode);
+  const getLookupValue = (request: Incident, categoryCode: string) => {
+    return request.lookup_values?.find(lv => lv.category?.code === categoryCode);
   };
 
   const getLookupLabel = (value: any) => {
@@ -268,12 +277,12 @@ export const IncidentsPage: React.FC = () => {
           <div className="w-16 h-16 bg-[hsl(var(--destructive)/0.1)] rounded-2xl flex items-center justify-center mb-4">
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
-          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('incidents.failedToLoad')}</h3>
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('requests.failedToLoad', 'Failed to Load')}</h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            {t('incidents.errorLoading')}
+            {t('requests.errorLoading', 'There was an error loading the requests. Please try again.')}
           </p>
           <Button onClick={() => refetch()} leftIcon={<RefreshCw className="w-4 h-4" />}>
-            {t('common.tryAgain')}
+            {t('common.tryAgain', 'Try Again')}
           </Button>
         </div>
       </div>
@@ -287,18 +296,18 @@ export const IncidentsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div className={`p-2 rounded-lg ${filter.sla_breached ? 'bg-red-500/10' : 'bg-[hsl(var(--primary)/0.1)]'}`}>
-              <AlertTriangle className={`w-5 h-5 ${filter.sla_breached ? 'text-red-500' : 'text-[hsl(var(--primary))]'}`} />
+              <FileText className={`w-5 h-5 ${filter.sla_breached ? 'text-red-500' : 'text-[hsl(var(--primary))]'}`} />
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-              {filter.sla_breached ? t('incidents.slaBreached') : statusFilter ? `${statusFilter} ${t('incidents.title')}` : t('incidents.title')}
+              {filter.sla_breached ? t('requests.slaBreached', 'SLA Breached Requests') : statusFilter ? `${statusFilter} ${t('requests.title', 'Requests')}` : t('requests.title', 'Requests')}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {filter.sla_breached
-              ? t('incidents.showingSlaBreach')
+              ? t('requests.showingSlaBreach', 'Showing requests with breached SLA')
               : statusFilter
-              ? `${t('incidents.showingStatus')}: ${statusFilter}`
-              : t('incidents.subtitle')
+              ? `${t('requests.showingStatus', 'Showing status')}: ${statusFilter}`
+              : t('requests.subtitle', 'Manage service requests converted from incidents')
             }
           </p>
         </div>
@@ -310,85 +319,10 @@ export const IncidentsPage: React.FC = () => {
             isLoading={isFetching}
             leftIcon={!isFetching ? <RefreshCw className="w-4 h-4" /> : undefined}
           >
-            {t('common.refresh')}
-          </Button>
-          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => navigate('/incidents/new')}>
-            {t('incidents.createIncident')}
+            {t('common.refresh', 'Refresh')}
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards - Only show when no status filter is active */}
-      {stats && !statusFilter && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <AlertTriangle className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.total}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Total</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-yellow-500/10">
-                <AlertCircle className="w-5 h-5 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.open}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Open</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Clock className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.in_progress}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">In Progress</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.resolved}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Resolved</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-500/10">
-                <XCircle className="w-5 h-5 text-gray-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.closed}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Closed</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.sla_breached}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">SLA Breached</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Filters Bar */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
@@ -397,7 +331,7 @@ export const IncidentsPage: React.FC = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by title or incident number..."
+              placeholder={t('requests.searchPlaceholder', 'Search by title or request number...')}
               value={filter.search || ''}
               onChange={(e) => handleFilterChange('search', e.target.value || undefined)}
               className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
@@ -410,14 +344,14 @@ export const IncidentsPage: React.FC = () => {
               leftIcon={<Filter className="w-4 h-4" />}
               onClick={() => setShowFilters(!showFilters)}
             >
-              Filters
+              {t('common.filters', 'Filters')}
               {hasActiveFilters && (
                 <span className="ml-1 w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />
               )}
             </Button>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Clear
+                {t('common.clear', 'Clear')}
               </Button>
             )}
             {/* Column Configuration */}
@@ -428,7 +362,7 @@ export const IncidentsPage: React.FC = () => {
                 leftIcon={<Settings2 className="w-4 h-4" />}
                 onClick={() => setShowColumnConfig(!showColumnConfig)}
               >
-                Columns
+                {t('common.columns', 'Columns')}
                 <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
                   ({visibleColumnCount})
                 </span>
@@ -436,9 +370,9 @@ export const IncidentsPage: React.FC = () => {
               {showColumnConfig && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
-                    <p className="text-sm font-semibold text-[hsl(var(--foreground))]">Configure Columns</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--foreground))]">{t('common.configureColumns', 'Configure Columns')}</p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                      Toggle column visibility
+                      {t('common.toggleColumnVisibility', 'Toggle column visibility')}
                     </p>
                   </div>
                   <div className="py-2 max-h-64 overflow-y-auto">
@@ -471,7 +405,7 @@ export const IncidentsPage: React.FC = () => {
                           {col.label}
                         </span>
                         {col.required && (
-                          <span className="text-xs text-[hsl(var(--muted-foreground))]">Required</span>
+                          <span className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.required', 'Required')}</span>
                         )}
                       </button>
                     ))}
@@ -481,7 +415,7 @@ export const IncidentsPage: React.FC = () => {
                       onClick={() => setColumns(defaultColumns)}
                       className="text-xs text-[hsl(var(--primary))] hover:text-[hsl(var(--primary)/0.8)] font-medium"
                     >
-                      Reset to defaults
+                      {t('common.resetToDefaults', 'Reset to defaults')}
                     </button>
                   </div>
                 </div>
@@ -494,39 +428,39 @@ export const IncidentsPage: React.FC = () => {
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">Workflow</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.workflow', 'Workflow')}</label>
               <select
                 value={filter.workflow_id || ''}
                 onChange={(e) => handleFilterChange('workflow_id', e.target.value || undefined)}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All Workflows</option>
+                <option value="">{t('common.allWorkflows', 'All Workflows')}</option>
                 {workflowsData?.data?.map((workflow: Workflow) => (
                   <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">State</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.state', 'State')}</label>
               <select
                 value={filter.current_state_id || ''}
                 onChange={(e) => handleFilterChange('current_state_id', e.target.value || undefined)}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All States</option>
+                <option value="">{t('common.allStates', 'All States')}</option>
                 {uniqueStates.map((state: WorkflowState) => (
                   <option key={state.id} value={state.id}>{state.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">Assignee</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.assignee', 'Assignee')}</label>
               <select
                 value={filter.assignee_id || ''}
                 onChange={(e) => handleFilterChange('assignee_id', e.target.value || undefined)}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All Assignees</option>
+                <option value="">{t('common.allAssignees', 'All Assignees')}</option>
                 {usersData?.data?.map((user: UserType) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.username}
@@ -535,84 +469,80 @@ export const IncidentsPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">Department</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.department', 'Department')}</label>
               <select
                 value={filter.department_id || ''}
                 onChange={(e) => handleFilterChange('department_id', e.target.value || undefined)}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All Departments</option>
+                <option value="">{t('common.allDepartments', 'All Departments')}</option>
                 {departmentsData?.data?.map((dept: Department) => (
                   <option key={dept.id} value={dept.id}>{dept.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">Classification</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.classification', 'Classification')}</label>
               <select
                 value={filter.classification_id || ''}
                 onChange={(e) => handleFilterChange('classification_id', e.target.value || undefined)}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All Classifications</option>
+                <option value="">{t('common.allClassifications', 'All Classifications')}</option>
                 {classificationsData?.data?.map((classification: Classification) => (
                   <option key={classification.id} value={classification.id}>{classification.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">Location</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.location', 'Location')}</label>
               <select
                 value={filter.location_id || ''}
                 onChange={(e) => handleFilterChange('location_id', e.target.value || undefined)}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All Locations</option>
+                <option value="">{t('common.allLocations', 'All Locations')}</option>
                 {locationsData?.data?.map((location: Location) => (
                   <option key={location.id} value={location.id}>{location.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">SLA Status</label>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.slaStatus', 'SLA Status')}</label>
               <select
                 value={filter.sla_breached === undefined ? '' : filter.sla_breached.toString()}
                 onChange={(e) => handleFilterChange('sla_breached', e.target.value === '' ? undefined : e.target.value === 'true')}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">All</option>
-                <option value="true">Breached</option>
-                <option value="false">On Track</option>
+                <option value="">{t('common.all', 'All')}</option>
+                <option value="true">{t('common.breached', 'Breached')}</option>
+                <option value="false">{t('common.onTrack', 'On Track')}</option>
               </select>
             </div>
           </div>
         )}
       </div>
 
-      {/* Incidents Table */}
+      {/* Requests Table */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--primary)/0.1)] rounded-2xl mb-4">
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-[hsl(var(--muted-foreground))]">Loading incidents...</p>
+            <p className="text-[hsl(var(--muted-foreground))]">{t('requests.loading', 'Loading requests...')}</p>
           </div>
-        ) : incidents.length === 0 ? (
+        ) : requests.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--muted))] rounded-2xl mb-4">
-              <AlertTriangle className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
+              <FileText className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
-            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">No Incidents Found</h3>
+            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('requests.noRequestsFound', 'No Requests Found')}</h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
-              {hasActiveFilters ? 'Try adjusting your filters' : 'Create your first incident to get started'}
+              {hasActiveFilters ? t('requests.tryAdjustingFilters', 'Try adjusting your filters') : t('requests.noRequestsYet', 'Requests will appear here when incidents are converted')}
             </p>
-            {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
-            ) : (
-              <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => navigate('/incidents/new')}>
-                Create Incident
-              </Button>
+            {hasActiveFilters && (
+              <Button variant="outline" onClick={clearFilters}>{t('common.clearFilters', 'Clear Filters')}</Button>
             )}
           </div>
         ) : (
@@ -621,111 +551,143 @@ export const IncidentsPage: React.FC = () => {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
-                    {isColumnVisible('incident') && (
+                    {isColumnVisible('request') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Incident
+                          {t('requests.request', 'Request')}
+                        </span>
+                      </th>
+                    )}
+                    {isColumnVisible('source') && (
+                      <th className="px-6 py-4 text-left">
+                        <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                          {t('requests.sourceIncident', 'Source Incident')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('state') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          State
+                          {t('common.state', 'State')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('priority') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Priority
+                          {t('common.priority', 'Priority')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('severity') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Severity
+                          {t('common.severity', 'Severity')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('assignee') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Assignee
+                          {t('common.assignee', 'Assignee')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('department') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Department
+                          {t('common.department', 'Department')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('due_date') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Due Date
+                          {t('common.dueDate', 'Due Date')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('created_at') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Created
+                          {t('common.created', 'Created')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('sla') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          SLA
+                          {t('common.sla', 'SLA')}
                         </span>
                       </th>
                     )}
                     {isColumnVisible('actions') && (
                       <th className="px-6 py-4 text-right">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          Actions
+                          {t('common.actions', 'Actions')}
                         </span>
                       </th>
                     )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[hsl(var(--border))]">
-                  {incidents.map((incident: Incident) => {
-                    const priority = getLookupValue(incident, 'PRIORITY');
-                    const severity = getLookupValue(incident, 'SEVERITY');
+                  {requests.map((request: Incident) => {
+                    const priority = getLookupValue(request, 'PRIORITY');
+                    const severity = getLookupValue(request, 'SEVERITY');
                     return (
                     <tr
-                      key={incident.id}
+                      key={request.id}
                       className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/incidents/${incident.id}`)}
+                      onClick={() => navigate(`/requests/${request.id}`)}
                     >
-                      {isColumnVisible('incident') && (
+                      {isColumnVisible('request') && (
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
                             <p className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5">
-                              {incident.incident_number}
+                              {request.incident_number}
                             </p>
                             <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
-                              {incident.title}
+                              {request.title}
                             </p>
                           </div>
                         </td>
                       )}
+                      {isColumnVisible('source') && (
+                        <td className="px-6 py-4">
+                          {request.source_incident ? (
+                            <Link
+                              to={`/incidents/${request.source_incident_id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              {request.source_incident.incident_number}
+                            </Link>
+                          ) : request.source_incident_id ? (
+                            <Link
+                              to={`/incidents/${request.source_incident_id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              {t('requests.viewSource', 'View Source')}
+                            </Link>
+                          ) : (
+                            <span className="text-sm text-[hsl(var(--muted-foreground))]">-</span>
+                          )}
+                        </td>
+                      )}
                       {isColumnVisible('state') && (
                         <td className="px-6 py-4">
-                          {incident.current_state ? (
+                          {request.current_state ? (
                             <span
                               className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
                               style={{
-                                backgroundColor: incident.current_state.color ? `${incident.current_state.color}20` : 'hsl(var(--muted))',
-                                color: incident.current_state.color || 'hsl(var(--foreground))',
+                                backgroundColor: request.current_state.color ? `${request.current_state.color}20` : 'hsl(var(--muted))',
+                                color: request.current_state.color || 'hsl(var(--foreground))',
                               }}
                             >
-                              {incident.current_state.name}
+                              {request.current_state.name}
                             </span>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">-</span>
@@ -754,39 +716,39 @@ export const IncidentsPage: React.FC = () => {
                       )}
                       {isColumnVisible('assignee') && (
                         <td className="px-6 py-4">
-                          {incident.assignee ? (
+                          {request.assignee ? (
                             <div className="flex items-center gap-2">
-                              {incident.assignee.avatar ? (
+                              {request.assignee.avatar ? (
                                 <img
-                                  src={incident.assignee.avatar}
-                                  alt={incident.assignee.username}
+                                  src={request.assignee.avatar}
+                                  alt={request.assignee.username}
                                   className="w-6 h-6 rounded-full object-cover"
                                 />
                               ) : (
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center">
                                   <span className="text-white text-xs font-semibold">
-                                    {incident.assignee.first_name?.[0] || incident.assignee.username[0]}
+                                    {request.assignee.first_name?.[0] || request.assignee.username[0]}
                                   </span>
                                 </div>
                               )}
                               <span className="text-sm text-[hsl(var(--foreground))]">
-                                {incident.assignee.first_name || incident.assignee.username}
+                                {request.assignee.first_name || request.assignee.username}
                               </span>
                             </div>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                               <User className="w-4 h-4" />
-                              Unassigned
+                              {t('common.unassigned', 'Unassigned')}
                             </span>
                           )}
                         </td>
                       )}
                       {isColumnVisible('department') && (
                         <td className="px-6 py-4">
-                          {incident.department ? (
+                          {request.department ? (
                             <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                               <Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                              {incident.department.name}
+                              {request.department.name}
                             </div>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">-</span>
@@ -797,7 +759,7 @@ export const IncidentsPage: React.FC = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                             <Calendar className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                            {formatDate(incident.due_date)}
+                            {formatDate(request.due_date)}
                           </div>
                         </td>
                       )}
@@ -805,21 +767,21 @@ export const IncidentsPage: React.FC = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                             <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                            {formatDate(incident.created_at)}
+                            {formatDate(request.created_at)}
                           </div>
                         </td>
                       )}
                       {isColumnVisible('sla') && (
                         <td className="px-6 py-4">
-                          {incident.sla_breached ? (
+                          {request.sla_breached ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
                               <AlertTriangle className="w-3 h-3" />
-                              Breached
+                              {t('common.breached', 'Breached')}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-600">
                               <CheckCircle2 className="w-3 h-3" />
-                              On Track
+                              {t('common.onTrack', 'On Track')}
                             </span>
                           )}
                         </td>
@@ -832,10 +794,10 @@ export const IncidentsPage: React.FC = () => {
                             leftIcon={<Eye className="w-4 h-4" />}
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/incidents/${incident.id}`);
+                              navigate(`/requests/${request.id}`);
                             }}
                           >
-                            View
+                            {t('common.view', 'View')}
                           </Button>
                         </td>
                       )}
@@ -848,16 +810,16 @@ export const IncidentsPage: React.FC = () => {
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Showing{' '}
+                {t('common.showing', 'Showing')}{' '}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {((filter.page || 1) - 1) * (filter.limit || 10) + 1}
                 </span>{' '}
-                to{' '}
+                {t('common.to', 'to')}{' '}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {Math.min((filter.page || 1) * (filter.limit || 10), totalItems)}
                 </span>{' '}
-                of{' '}
-                <span className="font-semibold text-[hsl(var(--foreground))]">{totalItems}</span> incidents
+                {t('common.of', 'of')}{' '}
+                <span className="font-semibold text-[hsl(var(--foreground))]">{totalItems}</span> {t('requests.requests', 'requests')}
               </p>
 
               <div className="flex items-center gap-2">

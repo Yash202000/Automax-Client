@@ -199,27 +199,27 @@ export const DepartmentsPage: React.FC = () => {
 
   const { data: treeData, isLoading } = useQuery({
     queryKey: ['admin', 'departments', 'tree'],
-    queryFn: departmentApi.getTree,
+    queryFn: () => departmentApi.getTree(),
   });
 
   const { data: departmentsList } = useQuery({
     queryKey: ['admin', 'departments', 'list'],
-    queryFn: departmentApi.list,
+    queryFn: () => departmentApi.list(),
   });
 
   const { data: locationsData } = useQuery({
     queryKey: ['admin', 'locations'],
-    queryFn: locationApi.list,
+    queryFn: () => locationApi.list(),
   });
 
   const { data: classificationsData } = useQuery({
     queryKey: ['admin', 'classifications'],
-    queryFn: classificationApi.list,
+    queryFn: () => classificationApi.list(),
   });
 
   const { data: rolesData } = useQuery({
     queryKey: ['admin', 'roles'],
-    queryFn: roleApi.list,
+    queryFn: () => roleApi.list(),
   });
 
   const createMutation = useMutation({

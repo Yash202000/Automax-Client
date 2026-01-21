@@ -14,7 +14,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { classificationApi } from '../../api/admin';
-import type { Classification, ClassificationCreateRequest, ClassificationUpdateRequest } from '../../types';
+import type { Classification, ClassificationCreateRequest, ClassificationUpdateRequest, ClassificationType } from '../../types';
 import { cn } from '@/lib/utils';
 import { Button } from '../../components/ui';
 
@@ -24,6 +24,7 @@ interface ClassificationFormData {
   parent_id: string;
   parent_name: string;
   sort_order: number;
+  type: ClassificationType;
 }
 
 const initialFormData: ClassificationFormData = {
@@ -32,6 +33,7 @@ const initialFormData: ClassificationFormData = {
   parent_id: '',
   parent_name: '',
   sort_order: 0,
+  type: 'both',
 };
 
 const levelGradients = [
@@ -102,6 +104,22 @@ const TreeNode: React.FC<TreeNodeProps> = ({ classification, level, onAdd, onEdi
           <span
             className={cn(
               "px-2.5 py-1 text-xs font-medium rounded-lg",
+              classification.type === 'incident'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                : classification.type === 'request'
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                : classification.type === 'complaint'
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                : classification.type === 'all'
+                ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+            )}
+          >
+            {classification.type === 'incident' ? 'Incident' : classification.type === 'request' ? 'Request' : classification.type === 'complaint' ? 'Complaint' : classification.type === 'all' ? 'All' : 'Both'}
+          </span>
+          <span
+            className={cn(
+              "px-2.5 py-1 text-xs font-medium rounded-lg",
               classification.is_active
                 ? 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]'
                 : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'
@@ -161,12 +179,12 @@ export const ClassificationsPage: React.FC = () => {
 
   const { data: treeData, isLoading } = useQuery({
     queryKey: ['admin', 'classifications', 'tree'],
-    queryFn: classificationApi.getTree,
+    queryFn: () => classificationApi.getTree(),
   });
 
   const { data: classificationsList } = useQuery({
     queryKey: ['admin', 'classifications', 'list'],
-    queryFn: classificationApi.list,
+    queryFn: () => classificationApi.list(),
   });
 
   const createMutation = useMutation({
@@ -213,6 +231,7 @@ export const ClassificationsPage: React.FC = () => {
       parent_id: classification.parent_id || '',
       parent_name: parentCls?.name || '',
       sort_order: classification.sort_order,
+      type: classification.type || 'both',
     });
     setIsModalOpen(true);
   };
@@ -230,6 +249,7 @@ export const ClassificationsPage: React.FC = () => {
       description: formData.description,
       parent_id: formData.parent_id || undefined,
       sort_order: formData.sort_order,
+      type: formData.type,
     };
 
     if (editingClassification) {
@@ -447,6 +467,24 @@ export const ClassificationsPage: React.FC = () => {
                   rows={3}
                   className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as ClassificationType })}
+                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                >
+                  <option value="all">All (Incidents, Requests & Complaints)</option>
+                  <option value="both">Both (Incidents & Requests)</option>
+                  <option value="incident">Incident Only</option>
+                  <option value="request">Request Only</option>
+                  <option value="complaint">Complaint Only</option>
+                </select>
+                <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+                  Determines which record types can use this classification
+                </p>
               </div>
 
               <div>

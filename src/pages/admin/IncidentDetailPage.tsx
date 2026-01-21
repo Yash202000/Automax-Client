@@ -26,10 +26,12 @@ import {
   Upload,
   History,
   Tags,
+  Star,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
-import { RevisionHistory } from '../../components/incidents';
+import { RevisionHistory, ConvertToRequestModal } from '../../components/incidents';
 import { incidentApi, userApi, workflowApi, departmentApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
@@ -59,8 +61,11 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionComment, setTransitionComment] = useState('');
   const [transitionAttachment, setTransitionAttachment] = useState<File | null>(null);
   const [transitionUploading, setTransitionUploading] = useState(false);
+  const [transitionFeedbackRating, setTransitionFeedbackRating] = useState<number>(0);
+  const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
 
   // Assignment matching state
   const [matchLoading, setMatchLoading] = useState(false);
@@ -138,14 +143,15 @@ export const IncidentDetailPage: React.FC = () => {
 
   // Mutations
   const transitionMutation = useMutation({
-    mutationFn: ({ transitionId, comment, attachments, department_id, user_id }: {
+    mutationFn: ({ transitionId, comment, attachments, feedback, department_id, user_id }: {
       transitionId: string;
       comment?: string;
       attachments?: string[];
+      feedback?: { rating: number; comment?: string };
       department_id?: string;
       user_id?: string;
     }) =>
-      incidentApi.transition(id!, { transition_id: transitionId, comment, attachments, department_id, user_id }),
+      incidentApi.transition(id!, { transition_id: transitionId, comment, attachments, feedback, department_id, user_id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incident', id] });
       refetchTransitions();
@@ -154,6 +160,8 @@ export const IncidentDetailPage: React.FC = () => {
       setSelectedTransition(null);
       setTransitionComment('');
       setTransitionAttachment(null);
+      setTransitionFeedbackRating(0);
+      setTransitionFeedbackComment('');
       setDepartmentMatchResult(null);
       setUserMatchResult(null);
       setSelectedDepartmentId('');
@@ -345,6 +353,11 @@ export const IncidentDetailPage: React.FC = () => {
       r => r.requirement_type === 'attachment' && r.is_mandatory
     );
 
+    // Check if feedback is required
+    const requiresFeedback = selectedTransition.requirements?.some(
+      r => r.requirement_type === 'feedback' && r.is_mandatory
+    );
+
     if (requiresComment && !transitionComment.trim()) {
       alert('A comment is required for this transition');
       return;
@@ -352,6 +365,11 @@ export const IncidentDetailPage: React.FC = () => {
 
     if (requiresAttachment && !transitionAttachment) {
       alert('An attachment is required for this transition');
+      return;
+    }
+
+    if (requiresFeedback && transitionFeedbackRating === 0) {
+      alert('Feedback rating is required for this transition');
       return;
     }
 
@@ -395,6 +413,10 @@ export const IncidentDetailPage: React.FC = () => {
         transitionId: selectedTransition.transition.id,
         comment: transitionComment || undefined,
         attachments: attachmentIds,
+        feedback: transitionFeedbackRating > 0 ? {
+          rating: transitionFeedbackRating,
+          comment: transitionFeedbackComment || undefined,
+        } : undefined,
         department_id: departmentId,
         user_id: userId,
       });
@@ -494,6 +516,16 @@ export const IncidentDetailPage: React.FC = () => {
               {transition.transition.name}
             </Button>
           ))}
+          {(!incident.record_type || incident.record_type === 'incident') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConvertModalOpen(true)}
+              leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+            >
+              {t('incidents.convertToRequest', 'Convert to Request')}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -1174,6 +1206,8 @@ export const IncidentDetailPage: React.FC = () => {
                   setTransitionModalOpen(false);
                   setSelectedTransition(null);
                   setTransitionComment('');
+                  setTransitionFeedbackRating(0);
+                  setTransitionFeedbackComment('');
                 }}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors"
               >
@@ -1398,6 +1432,60 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Feedback */}
+              {selectedTransition.requirements?.some(r => r.requirement_type === 'feedback') && (
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t('incidents.feedback', 'Feedback')}
+                    {selectedTransition.requirements?.some(r => r.requirement_type === 'feedback' && r.is_mandatory) && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
+                  <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
+                    {/* Star Rating */}
+                    <div>
+                      <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
+                        {t('incidents.rateExperience', 'Rate your experience')}
+                      </span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setTransitionFeedbackRating(star)}
+                            className={`p-1 transition-colors ${
+                              star <= transitionFeedbackRating
+                                ? 'text-yellow-400'
+                                : 'text-[hsl(var(--muted-foreground))] hover:text-yellow-300'
+                            }`}
+                          >
+                            <Star
+                              className="w-6 h-6"
+                              fill={star <= transitionFeedbackRating ? 'currentColor' : 'none'}
+                            />
+                          </button>
+                        ))}
+                        {transitionFeedbackRating > 0 && (
+                          <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))] self-center">
+                            {transitionFeedbackRating}/5
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Feedback Comment */}
+                    <div>
+                      <textarea
+                        value={transitionFeedbackComment}
+                        onChange={(e) => setTransitionFeedbackComment(e.target.value)}
+                        placeholder={t('incidents.feedbackCommentPlaceholder', 'Add optional feedback comments...')}
+                        rows={2}
+                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Comment */}
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -1423,6 +1511,8 @@ export const IncidentDetailPage: React.FC = () => {
                   setSelectedTransition(null);
                   setTransitionComment('');
                   setTransitionAttachment(null);
+                  setTransitionFeedbackRating(0);
+                  setTransitionFeedbackComment('');
                 }}
               >
                 {t('incidents.cancel')}
@@ -1636,6 +1726,19 @@ export const IncidentDetailPage: React.FC = () => {
             <span className="text-sm w-12">{Math.round(compareSliderPosition)}%</span>
           </div>
         </div>
+      )}
+
+      {/* Convert to Request Modal */}
+      {incident && (
+        <ConvertToRequestModal
+          incident={incident}
+          isOpen={convertModalOpen}
+          onClose={() => setConvertModalOpen(false)}
+          onSuccess={(newRequestId) => {
+            setConvertModalOpen(false);
+            navigate(`/requests/${newRequestId}`);
+          }}
+        />
       )}
     </div>
   );

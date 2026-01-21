@@ -63,7 +63,7 @@ export const SMTPSettingsPage: React.FC = () => {
   // Fetch existing SMTP config
   const { data: smtpData, isLoading } = useQuery({
     queryKey: ['admin', 'smtp'],
-    queryFn: smtpApi.get,
+    queryFn: () => smtpApi.get(),
   });
 
   const smtpConfig = smtpData?.data;

@@ -84,17 +84,17 @@ export const AdminDashboard: React.FC = () => {
 
   const { data: rolesData, isLoading: rolesLoading } = useQuery({
     queryKey: ['admin', 'roles'],
-    queryFn: roleApi.list,
+    queryFn: () => roleApi.list(),
   });
 
   const { data: departmentsData, isLoading: departmentsLoading } = useQuery({
     queryKey: ['admin', 'departments'],
-    queryFn: departmentApi.list,
+    queryFn: () => departmentApi.list(),
   });
 
   const { data: incidentStatsData, isLoading: incidentStatsLoading } = useQuery({
     queryKey: ['incidents', 'stats'],
-    queryFn: incidentApi.getStats,
+    queryFn: () => incidentApi.getStats(),
   });
 
   const { data: workflowsData, isLoading: workflowsLoading } = useQuery({

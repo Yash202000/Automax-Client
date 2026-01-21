@@ -1,3 +1,7 @@
+// Record Type definitions
+export type RecordType = 'incident' | 'request' | 'complaint';
+export type ClassificationType = 'incident' | 'request' | 'complaint' | 'both' | 'all';
+
 // Base types
 export interface User {
   id: string;
@@ -48,6 +52,7 @@ export interface Classification {
   id: string;
   name: string;
   description: string;
+  type: ClassificationType;
   parent_id: string | null;
   level: number;
   path: string;
@@ -232,6 +237,7 @@ export interface ChangePasswordRequest {
 export interface ClassificationCreateRequest {
   name: string;
   description?: string;
+  type?: ClassificationType;
   parent_id?: string;
   sort_order?: number;
 }
@@ -239,6 +245,7 @@ export interface ClassificationCreateRequest {
 export interface ClassificationUpdateRequest {
   name?: string;
   description?: string;
+  type?: ClassificationType;
   is_active?: boolean;
   sort_order?: number;
 }
@@ -480,6 +487,7 @@ export interface Workflow {
   version: number;
   is_active: boolean;
   is_default: boolean;
+  record_type: ClassificationType;
   canvas_layout?: string;
   required_fields?: IncidentFormField[];
   states?: WorkflowState[];
@@ -551,7 +559,7 @@ export interface WorkflowTransition {
 export interface TransitionRequirement {
   id: string;
   transition_id: string;
-  requirement_type: 'comment' | 'attachment' | 'field_value';
+  requirement_type: 'comment' | 'attachment' | 'feedback' | 'field_value';
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
@@ -575,6 +583,7 @@ export interface WorkflowCreateRequest {
   name: string;
   code: string;
   description?: string;
+  record_type?: ClassificationType;
   classification_ids?: string[];
   location_ids?: string[];
   sources?: IncidentSource[];
@@ -589,6 +598,7 @@ export interface WorkflowUpdateRequest {
   name?: string;
   code?: string;
   description?: string;
+  record_type?: ClassificationType;
   is_active?: boolean;
   is_default?: boolean;
   canvas_layout?: string;
@@ -671,7 +681,7 @@ export interface WorkflowTransitionUpdateRequest {
 }
 
 export interface TransitionRequirementRequest {
-  requirement_type: 'comment' | 'attachment' | 'field_value';
+  requirement_type: 'comment' | 'attachment' | 'feedback' | 'field_value';
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
@@ -694,6 +704,9 @@ export interface Incident {
   incident_number: string;
   title: string;
   description: string;
+  record_type: RecordType;
+  source_incident_id?: string;
+  source_incident?: Incident;
   classification?: Classification;
   workflow?: Workflow;
   current_state?: WorkflowState;
@@ -713,6 +726,11 @@ export interface Incident {
   reporter?: User;
   reporter_email: string;
   reporter_name: string;
+  // Complaint-specific fields
+  channel?: string;
+  created_by_name?: string;
+  created_by_mobile?: string;
+  evaluation_count?: number;
   custom_fields?: string;
   comments_count: number;
   attachments_count: number;
@@ -723,6 +741,7 @@ export interface Incident {
 export interface IncidentDetail extends Incident {
   comments?: IncidentComment[];
   attachments?: IncidentAttachment[];
+  feedback?: IncidentFeedback[];
   transition_history?: TransitionHistory[];
 }
 
@@ -745,6 +764,21 @@ export interface IncidentAttachment {
   uploaded_by?: User;
   transition_history_id?: string;
   created_at: string;
+}
+
+export interface IncidentFeedback {
+  id: string;
+  incident_id: string;
+  rating: number;
+  comment?: string;
+  created_by?: User;
+  transition_history_id?: string;
+  created_at: string;
+}
+
+export interface IncidentFeedbackRequest {
+  rating: number;
+  comment?: string;
 }
 
 export interface TransitionHistory {
@@ -869,6 +903,9 @@ export interface IncidentTransitionRequest {
   comment?: string;
   attachments?: string[];
 
+  // Feedback (collected during transition if required)
+  feedback?: IncidentFeedbackRequest;
+
   // Assignment overrides (used when auto-detect finds multiple matches)
   department_id?: string;
   user_id?: string;
@@ -918,10 +955,46 @@ export interface IncidentFilter {
   location_id?: string;
   reporter_id?: string;
   sla_breached?: boolean;
+  record_type?: RecordType;
+  channel?: string;  // For complaints
   start_date?: string;
   end_date?: string;
   page?: number;
   limit?: number;
+}
+
+// Convert Incident to Request types
+export interface ConvertToRequestRequest {
+  transition_id?: string;
+  transition_comment?: string;
+  classification_id: string;
+  workflow_id: string;
+  title?: string;
+  description?: string;
+  assignee_id?: string;
+  department_id?: string;
+  due_date?: string;
+  feedback?: IncidentFeedbackRequest;
+}
+
+export interface ConvertToRequestResponse {
+  original_incident: Incident;
+  new_request: Incident;
+}
+
+// Complaint request types
+export interface CreateComplaintRequest {
+  title: string;
+  description?: string;
+  classification_id: string;
+  workflow_id: string;
+  source_incident_id?: string;
+  channel?: string;
+  reporter_id?: string; // Link to user who reported/created the complaint
+  department_id?: string;
+  assignee_id?: string;
+  location_id?: string;
+  lookup_value_ids?: string[];
 }
 
 // ===========================================
