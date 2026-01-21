@@ -109,13 +109,23 @@ export const IncidentsPage: React.FC = () => {
 
   const visibleColumnCount = columns.filter(c => c.visible).length;
 
-  // Queries
+  // Queries - only fetch incident-type workflows
   const { data: workflowsData } = useQuery({
-    queryKey: ['workflows'],
-    queryFn: () => workflowApi.list(),
+    queryKey: ['workflows', 'incident'],
+    queryFn: async () => {
+      const [incidentRes, bothRes] = await Promise.all([
+        workflowApi.listByRecordType('incident', false),
+        workflowApi.listByRecordType('both', false),
+      ]);
+      const combined = [...(incidentRes.data || []), ...(bothRes.data || [])];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+      return { success: true, data: unique };
+    },
   });
 
-  // Get all states from all workflows for filter
+  // Get all states from incident workflows for filter
   const allStates = workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
   const uniqueStates = allStates.reduce((acc: WorkflowState[], state: WorkflowState) => {
     if (!acc.find(s => s.name === state.name)) {
@@ -185,8 +195,8 @@ export const IncidentsPage: React.FC = () => {
   });
 
   const { data: statsData } = useQuery({
-    queryKey: ['incidents', 'stats'],
-    queryFn: () => incidentApi.getStats(),
+    queryKey: ['incidents', 'stats', 'incident'],
+    queryFn: () => incidentApi.getStats('incident'),
   });
 
   const { data: usersData } = useQuery({
@@ -318,9 +328,9 @@ export const IncidentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards - Only show when no status filter is active */}
+      {/* Stats Cards */}
       {stats && !statusFilter && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-500/10">
@@ -328,7 +338,7 @@ export const IncidentsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.total}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Total</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('incidents.total', 'Total')}</p>
               </div>
             </div>
           </div>
@@ -339,7 +349,7 @@ export const IncidentsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.open}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Open</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('incidents.initial', 'Initial')}</p>
               </div>
             </div>
           </div>
@@ -350,40 +360,21 @@ export const IncidentsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.in_progress}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">In Progress</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('incidents.inProgress', 'In Progress')}</p>
               </div>
             </div>
           </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.resolved}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Resolved</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-500/10">
-                <XCircle className="w-5 h-5 text-gray-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.closed}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Closed</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
+          <div
+            className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm cursor-pointer hover:border-red-500/50 transition-colors"
+            onClick={() => setSearchParams({ sla_breached: 'true' })}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-500/10">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.sla_breached}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">SLA Breached</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('incidents.slaBreached', 'SLA Breached')}</p>
               </div>
             </div>
           </div>

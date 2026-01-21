@@ -54,7 +54,6 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   const [classificationId, setClassificationId] = useState('');
   const [workflowId, setWorkflowId] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
-  const [selectedReporter, setSelectedReporter] = useState<UserType | null>(null);
   const [selectedAssignee, setSelectedAssignee] = useState<UserType | null>(null);
   const [sourceIncident, setSourceIncident] = useState<Incident | null>(null);
   const [incidentSearch, setIncidentSearch] = useState('');
@@ -194,7 +193,6 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       setClassificationId('');
       setWorkflowId('');
       setSelectedDepartment(null);
-      setSelectedReporter(null);
       setSelectedAssignee(null);
       setSourceIncident(null);
       setIncidentSearch('');
@@ -241,7 +239,6 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       classification_id: classificationId,
       workflow_id: workflowId,
       channel: channel.trim() || undefined,
-      reporter_id: selectedReporter?.id,
       department_id: selectedDepartment?.id,
       assignee_id: selectedAssignee?.id,
       source_incident_id: sourceIncident?.id,
@@ -328,60 +325,23 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             </div>
           </div>
 
-          {/* Complainant Info */}
+          {/* Channel (Optional) */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {t('complaints.complainantInfo', 'Complainant Information')}
-            </h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Reporter (User who creates the complaint) */}
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  <User className="w-3 h-3 inline mr-1" />
-                  {t('complaints.reporter', 'Reporter')}
-                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                </label>
-                <select
-                  value={selectedReporter?.id || ''}
-                  onChange={(e) => {
-                    const user = users.find(u => u.id === e.target.value);
-                    setSelectedReporter(user || null);
-                  }}
-                  className="w-full px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                >
-                  <option value="">{t('complaints.selectReporter', 'Select reporter (defaults to you)...')}</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.first_name} {user.last_name} ({user.username})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                  {t('complaints.reporterHelp', 'If not selected, you will be set as the reporter')}
-                </p>
-              </div>
-
-              {/* Channel */}
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  <Radio className="w-3 h-3 inline mr-1" />
-                  {t('complaints.channel', 'Channel')}
-                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={channel}
-                  onChange={(e) => setChannel(e.target.value)}
-                  placeholder={t('complaints.channelPlaceholder', 'e.g., Phone, Email, Web')}
-                  className="w-full px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                <Radio className="w-3 h-3 inline mr-1" />
+                {t('complaints.channel', 'Channel')}
+                <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1">
+                  ({t('common.optional', 'Optional')})
+                </span>
+              </label>
+              <input
+                type="text"
+                value={channel}
+                onChange={(e) => setChannel(e.target.value)}
+                placeholder={t('complaints.channelPlaceholder', 'e.g., Phone, Email, Web')}
+                className="w-full px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              />
             </div>
           </div>
 

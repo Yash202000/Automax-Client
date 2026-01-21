@@ -765,8 +765,11 @@ export const incidentApi = {
   },
 
   // Stats and user queries
-  getStats: async (): Promise<ApiResponse<IncidentStats>> => {
-    const response = await apiClient.get<ApiResponse<IncidentStats>>('/incidents/stats');
+  getStats: async (recordType?: string): Promise<ApiResponse<IncidentStats>> => {
+    const params = new URLSearchParams();
+    if (recordType) params.append('record_type', recordType);
+    const url = params.toString() ? `/incidents/stats?${params.toString()}` : '/incidents/stats';
+    const response = await apiClient.get<ApiResponse<IncidentStats>>(url);
     return response.data;
   },
 
