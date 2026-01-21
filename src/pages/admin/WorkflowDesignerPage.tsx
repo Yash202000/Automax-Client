@@ -144,7 +144,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     severity_max: number;
     priority_min: number;
     priority_max: number;
-    record_type: 'incident' | 'request' | 'both';
+    record_type: 'incident' | 'request' | 'complaint' | 'both' | 'all';
   }>({
     classification_ids: [],
     location_ids: [],
@@ -192,22 +192,22 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   const { data: rolesData } = useQuery({
     queryKey: ['admin', 'roles'],
-    queryFn: roleApi.list,
+    queryFn: () => roleApi.list(),
   });
 
   const { data: classificationsData } = useQuery({
     queryKey: ['admin', 'classifications'],
-    queryFn: classificationApi.list,
+    queryFn: () => classificationApi.list(),
   });
 
   const { data: locationsData } = useQuery({
     queryKey: ['admin', 'locations'],
-    queryFn: locationApi.list,
+    queryFn: () => locationApi.list(),
   });
 
   const { data: departmentsData } = useQuery({
     queryKey: ['admin', 'departments'],
-    queryFn: departmentApi.list,
+    queryFn: () => departmentApi.list(),
   });
 
   const { data: usersData } = useQuery({
@@ -260,7 +260,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         severity_max: workflow.severity_max ?? 5,
         priority_min: workflow.priority_min ?? 1,
         priority_max: workflow.priority_max ?? 5,
-        record_type: (workflow.record_type as 'incident' | 'request' | 'both') || 'incident',
+        record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'both' | 'all') || 'incident',
       });
       setRequiredFields(workflow.required_fields || []);
     }
@@ -1017,7 +1017,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="incident"
                       checked={matchingConfig.record_type === 'incident'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'both' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1046,7 +1046,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="request"
                       checked={matchingConfig.record_type === 'request'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'both' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1075,7 +1075,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="both"
                       checked={matchingConfig.record_type === 'both'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'both' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1091,6 +1091,64 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <div>
                       <p className="text-sm font-medium text-[hsl(var(--foreground))]">Both</p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">Incidents and requests</p>
+                    </div>
+                  </label>
+                  <label className={cn(
+                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                    matchingConfig.record_type === 'complaint'
+                      ? "border-amber-500 bg-amber-50"
+                      : "border-[hsl(var(--border))] hover:border-amber-300"
+                  )}>
+                    <input
+                      type="radio"
+                      name="record_type"
+                      value="complaint"
+                      checked={matchingConfig.record_type === 'complaint'}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                      matchingConfig.record_type === 'complaint'
+                        ? "border-amber-500 bg-amber-500"
+                        : "border-[hsl(var(--muted-foreground))]"
+                    )}>
+                      {matchingConfig.record_type === 'complaint' && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Complaint Only</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For citizen complaints</p>
+                    </div>
+                  </label>
+                  <label className={cn(
+                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                    matchingConfig.record_type === 'all'
+                      ? "border-gray-500 bg-gray-50"
+                      : "border-[hsl(var(--border))] hover:border-gray-300"
+                  )}>
+                    <input
+                      type="radio"
+                      name="record_type"
+                      value="all"
+                      checked={matchingConfig.record_type === 'all'}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                      matchingConfig.record_type === 'all'
+                        ? "border-gray-500 bg-gray-500"
+                        : "border-[hsl(var(--muted-foreground))]"
+                    )}>
+                      {matchingConfig.record_type === 'all' && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">All Types</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">All record types</p>
                     </div>
                   </label>
                 </div>

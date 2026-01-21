@@ -61,7 +61,7 @@ export const PermissionsPage: React.FC = () => {
 
   const { data: modulesData } = useQuery({
     queryKey: ['admin', 'permission-modules'],
-    queryFn: permissionApi.getModules,
+    queryFn: () => permissionApi.getModules(),
   });
 
   const { data: permissionsData, isLoading } = useQuery({

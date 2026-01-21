@@ -20,7 +20,6 @@ import {
   UserCheck,
   PenLine,
   Languages,
-  AlertTriangle,
   Link2,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';

@@ -12,7 +12,6 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Filter,
   Calendar,
   User,
@@ -197,7 +196,7 @@ export const RequestsPage: React.FC = () => {
 
   const { data: departmentsData } = useQuery({
     queryKey: ['admin', 'departments', 'list'],
-    queryFn: departmentApi.list,
+    queryFn: () => departmentApi.list(),
   });
 
   const { data: classificationsData } = useQuery({
@@ -217,7 +216,7 @@ export const RequestsPage: React.FC = () => {
 
   const { data: locationsData } = useQuery({
     queryKey: ['admin', 'locations', 'list'],
-    queryFn: locationApi.list,
+    queryFn: () => locationApi.list(),
   });
 
   const requests = requestsData?.data || [];

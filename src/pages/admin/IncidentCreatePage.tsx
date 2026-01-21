@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, AlertTriangle, Info, Zap } from 'lucide-react';
-import { Button, Card, Input, Select, Textarea } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea, TreeSelect } from '../../components/ui';
+import type { TreeSelectNode } from '../../components/ui';
 import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../api/admin';
 import { userApi, departmentApi, locationApi } from '../../api/admin';
 import type { IncidentCreateRequest, User, Department, Location, Workflow, Classification, IncidentSource, LookupValue } from '../../types';
@@ -40,8 +41,8 @@ export function IncidentCreatePage() {
   });
 
   const { data: classificationsData } = useQuery({
-    queryKey: ['admin', 'classifications'],
-    queryFn: () => classificationApi.list(),
+    queryKey: ['admin', 'classifications', 'tree'],
+    queryFn: () => classificationApi.getTree(),
   });
 
   const { data: usersData } = useQuery({
@@ -55,8 +56,8 @@ export function IncidentCreatePage() {
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ['admin', 'locations'],
-    queryFn: () => locationApi.list(),
+    queryKey: ['admin', 'locations', 'tree'],
+    queryFn: () => locationApi.getTree(),
   });
 
   const { data: lookupCategoriesData } = useQuery({
@@ -80,21 +81,89 @@ export function IncidentCreatePage() {
     if (!category || !lookupValues[category.id]) return undefined;
     return category.values?.find(v => v.id === lookupValues[category.id]);
   };
-  
+
+  // Filter workflows based on selected classification and location
+  const filteredWorkflows = useMemo(() => {
+    // Only filter for incident type workflows
+    const incidentWorkflows = workflows.filter(w =>
+      w.is_active && (w.record_type === 'incident' || w.record_type === 'both' || w.record_type === 'all')
+    );
+
+    if (!formData.classification_id && !formData.location_id) {
+      // No filters yet, show all active incident workflows
+      return incidentWorkflows;
+    }
+
+    // Filter workflows that match the selected criteria
+    const matching = incidentWorkflows.filter(w => {
+      // Check if workflow has no restrictions (matches all)
+      const hasNoClassificationRestriction = !w.classifications || w.classifications.length === 0;
+      const hasNoLocationRestriction = !w.locations || w.locations.length === 0;
+
+      // Check classification match
+      let classificationMatch = hasNoClassificationRestriction;
+      if (formData.classification_id && w.classifications?.length) {
+        classificationMatch = w.classifications.some(c => c.id === formData.classification_id);
+      }
+
+      // Check location match
+      let locationMatch = hasNoLocationRestriction;
+      if (formData.location_id && w.locations?.length) {
+        locationMatch = w.locations.some(l => l.id === formData.location_id);
+      }
+
+      return classificationMatch && locationMatch;
+    });
+
+    // If no matching workflows, return all active ones with default marked
+    if (matching.length === 0) {
+      return incidentWorkflows;
+    }
+
+    return matching;
+  }, [workflows, formData.classification_id, formData.location_id]);
+
+  // Auto-select workflow if only one matches, or clear if current selection is not in filtered list
+  useEffect(() => {
+    // If current workflow is not in filtered list, clear it
+    if (formData.workflow_id && filteredWorkflows.length > 0) {
+      const isCurrentValid = filteredWorkflows.some(w => w.id === formData.workflow_id);
+      if (!isCurrentValid) {
+        // Current workflow no longer matches, select the first available or default
+        const defaultWorkflow = filteredWorkflows.find(w => w.is_default) || filteredWorkflows[0];
+        setFormData(prev => ({ ...prev, workflow_id: defaultWorkflow.id }));
+        setIsAutoMatched(true);
+      }
+    }
+    // If only one workflow matches and nothing is selected, auto-select it
+    else if (filteredWorkflows.length === 1 && !formData.workflow_id) {
+      setFormData(prev => ({ ...prev, workflow_id: filteredWorkflows[0].id }));
+      setIsAutoMatched(true);
+    }
+    // If multiple workflows and nothing selected, select the default one
+    else if (filteredWorkflows.length > 1 && !formData.workflow_id) {
+      const defaultWorkflow = filteredWorkflows.find(w => w.is_default);
+      if (defaultWorkflow) {
+        setFormData(prev => ({ ...prev, workflow_id: defaultWorkflow.id }));
+        setIsAutoMatched(true);
+      }
+    }
+  }, [filteredWorkflows, formData.workflow_id]);
+
   const matchWorkflow = useCallback(() => {
-    if (workflows.length === 0) return;
-  
+    if (filteredWorkflows.length === 0) return;
+
     const priorityValue = getLookupValueFromState('PRIORITY');
     const severityValue = getLookupValueFromState('SEVERITY');
-  
-    const matched = workflowApi.findMatchingWorkflow(workflows, {
+
+    const matched = workflowApi.findMatchingWorkflow(filteredWorkflows, {
       classification_id: formData.classification_id || undefined,
       location_id: formData.location_id || undefined,
       source: formData.source || undefined,
       priority: priorityValue ? priorityValue.sort_order : undefined,
       severity: severityValue ? severityValue.sort_order : undefined,
     });
-  
+
     if (matched) {
       setAutoMatchedWorkflow(matched);
       if (!formData.workflow_id || isAutoMatched) {
@@ -102,8 +171,8 @@ export function IncidentCreatePage() {
         setIsAutoMatched(true);
       }
     }
-  }, [workflows, formData.classification_id, formData.location_id, formData.source, lookupValues, isAutoMatched, formData.workflow_id]);
-  
+  }, [filteredWorkflows, formData.classification_id, formData.location_id, formData.source, lookupValues, isAutoMatched, formData.workflow_id]);
+
   useEffect(() => {
     matchWorkflow();
   }, [matchWorkflow]);
@@ -199,13 +268,14 @@ export function IncidentCreatePage() {
 
   const workflowOptions = [
     { value: '', label: t('incidents.selectWorkflow') },
-    ...workflows.map(wf => ({ value: wf.id, label: wf.name })),
+    ...filteredWorkflows.map(wf => ({
+      value: wf.id,
+      label: wf.is_default ? `${wf.name} (${t('common.default', 'Default')})` : wf.name
+    })),
   ];
 
-  const classificationOptions = [
-    { value: '', label: t('incidents.selectClassification') },
-    ...classifications.map(c => ({ value: c.id, label: c.name })),
-  ];
+  // Convert classifications to TreeSelectNode format
+  const classificationTree = classifications as unknown as TreeSelectNode[];
 
   const userOptions = [
     { value: '', label: t('incidents.unassigned') },
@@ -217,10 +287,8 @@ export function IncidentCreatePage() {
     ...departments.map(d => ({ value: d.id, label: d.name })),
   ];
 
-  const locationOptions = [
-    { value: '', label: t('incidents.noLocation') },
-    ...locations.map(l => ({ value: l.id, label: l.name })),
-  ];
+  // Convert locations to TreeSelectNode format
+  const locationTree = locations as unknown as TreeSelectNode[];
 
   return (
     <div className="space-y-6">
@@ -263,21 +331,27 @@ export function IncidentCreatePage() {
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">{t('incidents.details')}</h2>
               <div className="grid grid-cols-2 gap-4">
-                <Select
+                <TreeSelect
                   label={t('incidents.classification')}
+                  data={classificationTree}
                   value={formData.classification_id || ''}
-                  onChange={(e) => handleChange('classification_id', e.target.value)}
-                  options={classificationOptions}
+                  onChange={(id) => handleChange('classification_id', id)}
+                  placeholder={t('incidents.selectClassification')}
                   required={workflowRequiredFields.includes('classification_id')}
                   error={errors.classification_id}
+                  leafOnly={true}
+                  emptyMessage={t('incidents.noClassifications', 'No classifications available')}
                 />
-                <Select
+                <TreeSelect
                   label={t('incidents.location')}
+                  data={locationTree}
                   value={formData.location_id || ''}
-                  onChange={(e) => handleChange('location_id', e.target.value)}
-                  options={locationOptions}
+                  onChange={(id) => handleChange('location_id', id)}
+                  placeholder={t('incidents.selectLocation', 'Select location')}
                   required={workflowRequiredFields.includes('location_id')}
                   error={errors.location_id}
+                  leafOnly={true}
+                  emptyMessage={t('incidents.noLocations', 'No locations available')}
                 />
                 <Select
                   label={t('incidents.source')}

@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Sparkles,
   FileText,
+  MessageSquareWarning,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -43,6 +44,15 @@ export const DashboardPage: React.FC = () => {
       icon: FileText,
       gradient: 'from-emerald-500 to-teal-500',
       shadowColor: 'shadow-emerald-500/20',
+    },
+    {
+      title: t('dashboard.complaintManagement', 'Complaint Management'),
+      subtitle: t('dashboard.citizenComplaints', 'Citizen Complaints'),
+      description: t('dashboard.manageComplaints', 'Handle and resolve complaints'),
+      href: '/complaints',
+      icon: MessageSquareWarning,
+      gradient: 'from-amber-500 to-orange-500',
+      shadowColor: 'shadow-amber-500/20',
     },
     {
       title: t('dashboard.workflowManagement'),

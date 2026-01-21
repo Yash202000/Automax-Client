@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,15 +16,14 @@ import {
   Upload,
   ArrowRight,
 } from 'lucide-react';
-import { Button } from '../ui';
+import { Button, TreeSelect } from '../ui';
+import type { TreeSelectNode } from '../ui';
 import { incidentApi, classificationApi, workflowApi } from '../../api/admin';
 import type {
   IncidentDetail,
   AvailableTransition,
   Classification,
-  Workflow as WorkflowType,
   ConvertToRequestRequest,
-  IncidentFeedbackRequest,
 } from '../../types';
 import { cn } from '@/lib/utils';
 
@@ -56,10 +55,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   const [feedbackComment, setFeedbackComment] = useState('');
 
   // Classification state
-  const [selectedClassification, setSelectedClassification] = useState<Classification | null>(null);
+  const [classificationId, setClassificationId] = useState('');
 
   // Workflow state
-  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowType | null>(null);
+  const [workflowId, setWorkflowId] = useState('');
 
   // Optional overrides
   const [title, setTitle] = useState('');
@@ -114,16 +113,72 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   const classifications = classificationsData?.data || [];
   const workflows = workflowsData?.data || [];
 
+  // Convert classifications to TreeSelectNode format
+  const classificationTreeData: TreeSelectNode[] = useMemo(() => {
+    const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
+      return items.map(item => ({
+        id: item.id,
+        name: item.name,
+        children: item.children && item.children.length > 0
+          ? convertToTreeNode(item.children)
+          : undefined,
+      }));
+    };
+    return convertToTreeNode(classifications);
+  }, [classifications]);
+
+  // Helper to find classification by ID
+  const findClassificationById = (items: Classification[], id: string): Classification | undefined => {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children && item.children.length > 0) {
+        const found = findClassificationById(item.children, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+
+  const selectedClassification = classificationId ? findClassificationById(classifications, classificationId) : null;
+  const selectedWorkflow = workflowId ? workflows.find(w => w.id === workflowId) : null;
+
+  // Filter workflows based on selected classification
+  const filteredWorkflows = useMemo(() => {
+    const requestWorkflows = workflows.filter(w => w.is_active);
+
+    if (!classificationId) {
+      return requestWorkflows;
+    }
+
+    const matching = requestWorkflows.filter(w => {
+      const hasNoClassificationRestriction = !w.classifications || w.classifications.length === 0;
+
+      if (hasNoClassificationRestriction) return true;
+
+      return w.classifications?.some(c => c.id === classificationId);
+    });
+
+    // If no workflows match the classification, show all workflows as fallback
+    if (matching.length === 0) return requestWorkflows;
+    return matching;
+  }, [workflows, classificationId]);
+
+  // Auto-select workflow when only one option available
+  useEffect(() => {
+    if (filteredWorkflows.length === 1 && !workflowId) {
+      setWorkflowId(filteredWorkflows[0].id);
+    } else if (workflowId && !filteredWorkflows.find(w => w.id === workflowId)) {
+      // Clear workflow if it's no longer in the filtered list
+      setWorkflowId('');
+    }
+  }, [filteredWorkflows, workflowId]);
+
   // Convert mutation
   const convertMutation = useMutation({
     mutationFn: async (data: ConvertToRequestRequest) => {
       // If attachment, upload first
-      let attachmentIds: string[] | undefined;
       if (transitionAttachment && selectedTransition) {
-        const uploadResult = await incidentApi.uploadAttachment(incident.id, transitionAttachment);
-        if (uploadResult.data?.id) {
-          attachmentIds = [uploadResult.data.id];
-        }
+        await incidentApi.uploadAttachment(incident.id, transitionAttachment);
       }
 
       return incidentApi.convertToRequest(incident.id, {
@@ -150,8 +205,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setTransitionAttachment(null);
       setFeedbackRating(0);
       setFeedbackComment('');
-      setSelectedClassification(null);
-      setSelectedWorkflow(null);
+      setClassificationId('');
+      setWorkflowId('');
       setTitle('');
       setDescription('');
     }
@@ -186,9 +241,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         }
         return true;
       case 'classification':
-        return !!selectedClassification;
+        return !!classificationId;
       case 'workflow':
-        return !!selectedWorkflow;
+        return !!workflowId;
       case 'review':
         return true;
       default:
@@ -211,11 +266,11 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   };
 
   const handleConvert = () => {
-    if (!selectedClassification || !selectedWorkflow) return;
+    if (!classificationId || !workflowId) return;
 
     const request: ConvertToRequestRequest = {
-      classification_id: selectedClassification.id,
-      workflow_id: selectedWorkflow.id,
+      classification_id: classificationId,
+      workflow_id: workflowId,
       transition_id: selectedTransition?.transition.id,
       transition_comment: transitionComment || undefined,
       title: title || undefined,
@@ -227,18 +282,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     };
 
     convertMutation.mutate(request);
-  };
-
-  // Flatten classification tree for selection
-  const flattenClassifications = (items: Classification[], level = 0): (Classification & { level: number })[] => {
-    const result: (Classification & { level: number })[] = [];
-    for (const item of items) {
-      result.push({ ...item, level });
-      if (item.children && item.children.length > 0) {
-        result.push(...flattenClassifications(item.children, level + 1));
-      }
-    }
-    return result;
   };
 
   if (!isOpen) return null;
@@ -539,47 +582,15 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {flattenClassifications(classifications).map((classification) => (
-                    <button
-                      key={classification.id}
-                      onClick={() => setSelectedClassification(classification)}
-                      className={cn(
-                        "w-full p-3 rounded-lg border-2 text-left transition-colors",
-                        selectedClassification?.id === classification.id
-                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                          : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
-                      )}
-                      style={{ paddingLeft: `${1 + classification.level * 1.5}rem` }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                          selectedClassification?.id === classification.id
-                            ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
-                            : "border-[hsl(var(--muted-foreground))]"
-                        )}>
-                          {selectedClassification?.id === classification.id && (
-                            <CheckCircle2 className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-medium text-[hsl(var(--foreground))]">
-                            {classification.name}
-                          </span>
-                          {classification.description && (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                              {classification.description}
-                            </p>
-                          )}
-                        </div>
-                        <span className="ml-auto px-2 py-0.5 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
-                          {classification.type}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                <TreeSelect
+                  data={classificationTreeData}
+                  value={classificationId}
+                  onChange={(id) => setClassificationId(id)}
+                  placeholder={t('requests.selectClassificationPlaceholder', 'Select classification...')}
+                  leafOnly={true}
+                  emptyMessage={t('requests.noRequestClassifications', 'No request classifications found.')}
+                  maxHeight="350px"
+                />
               )}
             </div>
           )}
@@ -600,7 +611,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 <div className="flex items-center justify-center py-8">
                   <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
                 </div>
-              ) : workflows.length === 0 ? (
+              ) : filteredWorkflows.length === 0 ? (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-center gap-2 text-amber-700">
                     <AlertTriangle className="w-5 h-5" />
@@ -611,13 +622,13 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {workflows.map((workflow) => (
+                  {filteredWorkflows.map((workflow) => (
                     <button
                       key={workflow.id}
-                      onClick={() => setSelectedWorkflow(workflow)}
+                      onClick={() => setWorkflowId(workflow.id)}
                       className={cn(
                         "w-full p-4 rounded-lg border-2 text-left transition-colors",
-                        selectedWorkflow?.id === workflow.id
+                        workflowId === workflow.id
                           ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
                           : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
                       )}
@@ -625,11 +636,11 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                       <div className="flex items-start gap-3">
                         <div className={cn(
                           "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                          selectedWorkflow?.id === workflow.id
+                          workflowId === workflow.id
                             ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
                             : "border-[hsl(var(--muted-foreground))]"
                         )}>
-                          {selectedWorkflow?.id === workflow.id && (
+                          {workflowId === workflow.id && (
                             <CheckCircle2 className="w-3 h-3 text-white" />
                           )}
                         </div>

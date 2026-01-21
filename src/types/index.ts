@@ -1,6 +1,6 @@
 // Record Type definitions
-export type RecordType = 'incident' | 'request';
-export type ClassificationType = 'incident' | 'request' | 'both';
+export type RecordType = 'incident' | 'request' | 'complaint';
+export type ClassificationType = 'incident' | 'request' | 'complaint' | 'both' | 'all';
 
 // Base types
 export interface User {
@@ -726,6 +726,11 @@ export interface Incident {
   reporter?: User;
   reporter_email: string;
   reporter_name: string;
+  // Complaint-specific fields
+  channel?: string;
+  created_by_name?: string;
+  created_by_mobile?: string;
+  evaluation_count?: number;
   custom_fields?: string;
   comments_count: number;
   attachments_count: number;
@@ -951,6 +956,7 @@ export interface IncidentFilter {
   reporter_id?: string;
   sla_breached?: boolean;
   record_type?: RecordType;
+  channel?: string;  // For complaints
   start_date?: string;
   end_date?: string;
   page?: number;
@@ -974,6 +980,21 @@ export interface ConvertToRequestRequest {
 export interface ConvertToRequestResponse {
   original_incident: Incident;
   new_request: Incident;
+}
+
+// Complaint request types
+export interface CreateComplaintRequest {
+  title: string;
+  description?: string;
+  classification_id: string;
+  workflow_id: string;
+  source_incident_id?: string;
+  channel?: string;
+  reporter_id?: string; // Link to user who reported/created the complaint
+  department_id?: string;
+  assignee_id?: string;
+  location_id?: string;
+  lookup_value_ids?: string[];
 }
 
 // ===========================================

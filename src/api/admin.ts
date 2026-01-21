@@ -54,6 +54,7 @@ import type {
   IncidentSource,
   ConvertToRequestRequest,
   ConvertToRequestResponse,
+  CreateComplaintRequest,
   SMTPConfig,
   SMTPConfigCreateRequest,
   SMTPConfigUpdateRequest,
@@ -457,6 +458,21 @@ export const workflowApi = {
     return response.data;
   },
 
+  listDeleted: async (): Promise<ApiResponse<Workflow[]>> => {
+    const response = await apiClient.get<ApiResponse<Workflow[]>>('/admin/workflows/deleted');
+    return response.data;
+  },
+
+  permanentDelete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/admin/workflows/${id}/permanent`);
+    return response.data;
+  },
+
+  restore: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.post<ApiResponse<null>>(`/admin/workflows/${id}/restore`);
+    return response.data;
+  },
+
   duplicate: async (id: string): Promise<ApiResponse<Workflow>> => {
     const response = await apiClient.post<ApiResponse<Workflow>>(`/admin/workflows/${id}/duplicate`);
     return response.data;
@@ -754,13 +770,17 @@ export const incidentApi = {
     return response.data;
   },
 
-  getMyAssigned: async (page = 1, limit = 20): Promise<PaginatedResponse<Incident>> => {
-    const response = await apiClient.get<PaginatedResponse<Incident>>(`/incidents/my-assigned?page=${page}&limit=${limit}`);
+  getMyAssigned: async (page = 1, limit = 20, recordType?: string): Promise<PaginatedResponse<Incident>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (recordType) params.append('record_type', recordType);
+    const response = await apiClient.get<PaginatedResponse<Incident>>(`/incidents/my-assigned?${params.toString()}`);
     return response.data;
   },
 
-  getMyReported: async (page = 1, limit = 20): Promise<PaginatedResponse<Incident>> => {
-    const response = await apiClient.get<PaginatedResponse<Incident>>(`/incidents/my-reported?page=${page}&limit=${limit}`);
+  getMyReported: async (page = 1, limit = 20, recordType?: string): Promise<PaginatedResponse<Incident>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (recordType) params.append('record_type', recordType);
+    const response = await apiClient.get<PaginatedResponse<Incident>>(`/incidents/my-reported?${params.toString()}`);
     return response.data;
   },
 
@@ -792,6 +812,124 @@ export const incidentApi = {
     const response = await apiClient.get(`/incidents/${incidentId}/revisions/export?format=${format}`, {
       responseType: 'blob',
     });
+    return response.data;
+  },
+};
+
+// Complaint API
+export const complaintApi = {
+  create: async (data: CreateComplaintRequest): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.post<ApiResponse<Incident>>('/complaints', data);
+    return response.data;
+  },
+
+  list: async (filter: Omit<IncidentFilter, 'record_type'> = {}): Promise<PaginatedResponse<Incident>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append('page', String(filter.page));
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.search) params.append('search', filter.search);
+    if (filter.workflow_id) params.append('workflow_id', filter.workflow_id);
+    if (filter.current_state_id) params.append('current_state_id', filter.current_state_id);
+    if (filter.classification_id) params.append('classification_id', filter.classification_id);
+    if (filter.assignee_id) params.append('assignee_id', filter.assignee_id);
+    if (filter.department_id) params.append('department_id', filter.department_id);
+    if (filter.channel) params.append('channel', filter.channel);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+
+    const response = await apiClient.get<PaginatedResponse<Incident>>(`/complaints?${params.toString()}`);
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<ApiResponse<IncidentDetail>> => {
+    const response = await apiClient.get<ApiResponse<IncidentDetail>>(`/complaints/${id}`);
+    return response.data;
+  },
+
+  update: async (id: string, data: IncidentUpdateRequest): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.put<ApiResponse<Incident>>(`/complaints/${id}`, data);
+    return response.data;
+  },
+
+  // State transitions
+  transition: async (id: string, data: IncidentTransitionRequest): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.post<ApiResponse<Incident>>(`/complaints/${id}/transition`, data);
+    return response.data;
+  },
+
+  getAvailableTransitions: async (id: string): Promise<ApiResponse<AvailableTransition[]>> => {
+    const response = await apiClient.get<ApiResponse<AvailableTransition[]>>(`/complaints/${id}/available-transitions`);
+    return response.data;
+  },
+
+  getHistory: async (id: string): Promise<ApiResponse<TransitionHistory[]>> => {
+    const response = await apiClient.get<ApiResponse<TransitionHistory[]>>(`/complaints/${id}/history`);
+    return response.data;
+  },
+
+  // Comments
+  addComment: async (complaintId: string, data: IncidentCommentRequest): Promise<ApiResponse<IncidentComment>> => {
+    const response = await apiClient.post<ApiResponse<IncidentComment>>(`/complaints/${complaintId}/comments`, data);
+    return response.data;
+  },
+
+  listComments: async (complaintId: string): Promise<ApiResponse<IncidentComment[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentComment[]>>(`/complaints/${complaintId}/comments`);
+    return response.data;
+  },
+
+  updateComment: async (complaintId: string, commentId: string, data: IncidentCommentRequest): Promise<ApiResponse<IncidentComment>> => {
+    const response = await apiClient.put<ApiResponse<IncidentComment>>(`/complaints/${complaintId}/comments/${commentId}`, data);
+    return response.data;
+  },
+
+  deleteComment: async (complaintId: string, commentId: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/complaints/${complaintId}/comments/${commentId}`);
+    return response.data;
+  },
+
+  // Attachments
+  uploadAttachment: async (complaintId: string, file: File): Promise<ApiResponse<IncidentAttachment>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<IncidentAttachment>>(`/complaints/${complaintId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  listAttachments: async (complaintId: string): Promise<ApiResponse<IncidentAttachment[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentAttachment[]>>(`/complaints/${complaintId}/attachments`);
+    return response.data;
+  },
+
+  deleteAttachment: async (complaintId: string, attachmentId: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/complaints/${complaintId}/attachments/${attachmentId}`);
+    return response.data;
+  },
+
+  // Evaluation (for closed complaints)
+  incrementEvaluation: async (id: string): Promise<ApiResponse<IncidentDetail>> => {
+    const response = await apiClient.post<ApiResponse<IncidentDetail>>(`/complaints/${id}/evaluate`);
+    return response.data;
+  },
+
+  // Revision History
+  getRevisions: async (
+    complaintId: string,
+    filter: Omit<IncidentRevisionFilter, 'incident_id'> = {}
+  ): Promise<PaginatedResponse<IncidentRevision>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append('page', String(filter.page));
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.action_type) params.append('action_type', filter.action_type);
+    if (filter.performed_by_id) params.append('performed_by_id', filter.performed_by_id);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+
+    const response = await apiClient.get<PaginatedResponse<IncidentRevision>>(
+      `/complaints/${complaintId}/revisions?${params.toString()}`
+    );
     return response.data;
   },
 };

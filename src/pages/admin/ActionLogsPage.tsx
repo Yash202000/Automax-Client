@@ -54,13 +54,13 @@ export const ActionLogsPage: React.FC = () => {
 
   const { data: statsData } = useQuery({
     queryKey: ['admin', 'action-logs', 'stats'],
-    queryFn: actionLogApi.getStats,
+    queryFn: () => actionLogApi.getStats(),
     enabled: showStats,
   });
 
   const { data: filterOptionsData } = useQuery({
     queryKey: ['admin', 'action-logs', 'filter-options'],
-    queryFn: actionLogApi.getFilterOptions,
+    queryFn: () => actionLogApi.getFilterOptions(),
   });
 
   const totalPages = data?.total_pages ?? 1;

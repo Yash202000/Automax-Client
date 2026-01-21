@@ -16,6 +16,10 @@ import {
   ArrowRight,
   Tag,
   Sparkles,
+  RotateCcw,
+  Archive,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { workflowApi, classificationApi } from '../../api/admin';
 import type { Workflow, Classification, WorkflowCreateRequest, WorkflowUpdateRequest } from '../../types';
@@ -46,6 +50,8 @@ export const WorkflowsPage: React.FC = () => {
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
   const [formData, setFormData] = useState<WorkflowFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [permanentDeleteConfirm, setPermanentDeleteConfirm] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const { data: workflowsData, isLoading } = useQuery({
     queryKey: ['admin', 'workflows'],
@@ -54,7 +60,13 @@ export const WorkflowsPage: React.FC = () => {
 
   const { data: classificationsData } = useQuery({
     queryKey: ['admin', 'classifications', 'tree'],
-    queryFn: classificationApi.getTree,
+    queryFn: () => classificationApi.getTree(),
+  });
+
+  const { data: deletedWorkflowsData, isLoading: isLoadingDeleted } = useQuery({
+    queryKey: ['admin', 'workflows', 'deleted'],
+    queryFn: () => workflowApi.listDeleted(),
+    enabled: showDeleted,
   });
 
   const createMutation = useMutation({
@@ -85,6 +97,22 @@ export const WorkflowsPage: React.FC = () => {
     mutationFn: (id: string) => workflowApi.duplicate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => workflowApi.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows', 'deleted'] });
+    },
+  });
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id: string) => workflowApi.permanentDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows', 'deleted'] });
+      setPermanentDeleteConfirm(null);
     },
   });
 
@@ -345,19 +373,102 @@ export const WorkflowsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Deleted Workflows Section */}
+      <div className="mt-8">
+        <button
+          onClick={() => setShowDeleted(!showDeleted)}
+          className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+        >
+          <Archive className="w-4 h-4" />
+          {t('workflows.deletedWorkflows', 'Deleted Workflows')}
+          {showDeleted ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {deletedWorkflowsData?.data && deletedWorkflowsData.data.length > 0 && (
+            <span className="px-2 py-0.5 text-xs bg-[hsl(var(--muted))] rounded-full">
+              {deletedWorkflowsData.data.length}
+            </span>
+          )}
+        </button>
+
+        {showDeleted && (
+          <div className="mt-4">
+            {isLoadingDeleted ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : deletedWorkflowsData?.data?.length === 0 ? (
+              <div className="bg-[hsl(var(--muted)/0.3)] rounded-xl p-6 text-center">
+                <Archive className="w-8 h-8 text-[hsl(var(--muted-foreground))] mx-auto mb-2" />
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  {t('workflows.noDeletedWorkflows', 'No deleted workflows')}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {deletedWorkflowsData?.data?.map((workflow: Workflow) => (
+                  <div
+                    key={workflow.id}
+                    className="relative bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 opacity-75"
+                  >
+                    <div className="absolute top-3 right-3 px-2 py-1 text-xs font-medium bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))] rounded-lg">
+                      {t('workflows.deleted', 'Deleted')}
+                    </div>
+
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-12 h-12 bg-[hsl(var(--muted))] rounded-xl flex items-center justify-center">
+                        <GitBranch className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{workflow.name}</h3>
+                        <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">{workflow.code}</p>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
+                      {workflow.description || t('workflows.noDescription')}
+                    </p>
+
+                    <div className="flex items-center gap-2 pt-4 border-t border-[hsl(var(--border))]">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => restoreMutation.mutate(workflow.id)}
+                        isLoading={restoreMutation.isPending}
+                        leftIcon={<RotateCcw className="w-4 h-4" />}
+                        className="flex-1"
+                      >
+                        {t('workflows.restore', 'Restore')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setPermanentDeleteConfirm(workflow.id)}
+                        leftIcon={<Trash2 className="w-4 h-4" />}
+                        className="flex-1"
+                      >
+                        {t('workflows.permanentDelete', 'Delete Forever')}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal (Soft Delete) */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
             <div className="p-6">
               <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 bg-[hsl(var(--destructive)/0.1)] rounded-xl flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-6 h-6 text-[hsl(var(--destructive))]" />
+                <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Archive className="w-6 h-6 text-amber-500" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{t('workflows.deleteWorkflow')}</h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    {t('workflows.deleteConfirmMessage')}
+                    {t('workflows.softDeleteMessage', 'This workflow will be moved to the deleted section. You can restore it later or permanently delete it.')}
                   </p>
                 </div>
               </div>
@@ -371,6 +482,41 @@ export const WorkflowsPage: React.FC = () => {
                   isLoading={deleteMutation.isPending}
                 >
                   {deleteMutation.isPending ? t('workflows.deleting') : t('workflows.deleteWorkflow')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Delete Confirmation Modal */}
+      {permanentDeleteConfirm && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-[hsl(var(--destructive)/0.1)] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-[hsl(var(--destructive))]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    {t('workflows.permanentDeleteTitle', 'Permanently Delete Workflow')}
+                  </h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                    {t('workflows.permanentDeleteMessage', 'This action cannot be undone. The workflow and all its states, transitions, and configurations will be permanently removed from the database.')}
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button variant="ghost" onClick={() => setPermanentDeleteConfirm(null)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => permanentDeleteMutation.mutate(permanentDeleteConfirm)}
+                  isLoading={permanentDeleteMutation.isPending}
+                >
+                  {permanentDeleteMutation.isPending ? t('workflows.deleting') : t('workflows.permanentDelete', 'Delete Forever')}
                 </Button>
               </div>
             </div>

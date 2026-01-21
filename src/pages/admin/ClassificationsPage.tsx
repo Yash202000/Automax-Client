@@ -108,10 +108,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({ classification, level, onAdd, onEdi
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                 : classification.type === 'request'
                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                : classification.type === 'complaint'
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                : classification.type === 'all'
+                ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
                 : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
             )}
           >
-            {classification.type === 'incident' ? 'Incident' : classification.type === 'request' ? 'Request' : 'Both'}
+            {classification.type === 'incident' ? 'Incident' : classification.type === 'request' ? 'Request' : classification.type === 'complaint' ? 'Complaint' : classification.type === 'all' ? 'All' : 'Both'}
           </span>
           <span
             className={cn(
@@ -175,12 +179,12 @@ export const ClassificationsPage: React.FC = () => {
 
   const { data: treeData, isLoading } = useQuery({
     queryKey: ['admin', 'classifications', 'tree'],
-    queryFn: classificationApi.getTree,
+    queryFn: () => classificationApi.getTree(),
   });
 
   const { data: classificationsList } = useQuery({
     queryKey: ['admin', 'classifications', 'list'],
-    queryFn: classificationApi.list,
+    queryFn: () => classificationApi.list(),
   });
 
   const createMutation = useMutation({
@@ -472,9 +476,11 @@ export const ClassificationsPage: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as ClassificationType })}
                   className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                 >
+                  <option value="all">All (Incidents, Requests & Complaints)</option>
                   <option value="both">Both (Incidents & Requests)</option>
                   <option value="incident">Incident Only</option>
                   <option value="request">Request Only</option>
+                  <option value="complaint">Complaint Only</option>
                 </select>
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                   Determines which record types can use this classification

@@ -7,3 +7,4 @@ export { AdminProtectedRoute } from './AdminProtectedRoute';
 export { IncidentLayout } from './IncidentLayout';
 export { RequestLayout } from './RequestLayout';
 export { WorkflowLayout } from './WorkflowLayout';
+export { ComplaintsLayout } from './ComplaintsLayout';

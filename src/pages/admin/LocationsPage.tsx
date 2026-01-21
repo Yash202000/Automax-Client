@@ -179,12 +179,12 @@ export const LocationsPage: React.FC = () => {
 
   const { data: treeData, isLoading } = useQuery({
     queryKey: ['admin', 'locations', 'tree'],
-    queryFn: locationApi.getTree,
+    queryFn: () => locationApi.getTree(),
   });
 
   const { data: locationsList } = useQuery({
     queryKey: ['admin', 'locations', 'list'],
-    queryFn: locationApi.list,
+    queryFn: () => locationApi.list(),
   });
 
   const createMutation = useMutation({

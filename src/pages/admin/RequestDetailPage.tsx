@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Clock,
   Calendar,
-  User,
   Building2,
   MapPin,
   Edit2,
@@ -16,7 +15,6 @@ import {
   Send,
   RefreshCw,
   ChevronRight,
-  CheckCircle2,
   XCircle,
   Play,
   FileText,
@@ -31,18 +29,13 @@ import {
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
 import { RevisionHistory } from '../../components/incidents';
-import { incidentApi, userApi, workflowApi, departmentApi } from '../../api/admin';
+import { incidentApi, userApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
-  IncidentDetail,
   AvailableTransition,
-  IncidentComment,
-  IncidentAttachment,
+  LookupValue,
   TransitionHistory,
   User as UserType,
-  DepartmentMatchResponse,
-  UserMatchResponse,
-  LookupValue,
 } from '../../types';
 import { cn } from '@/lib/utils';
 
@@ -65,13 +58,6 @@ export const RequestDetailPage: React.FC = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
 
-  // Assignment matching state
-  const [matchLoading, setMatchLoading] = useState(false);
-  const [departmentMatchResult, setDepartmentMatchResult] = useState<DepartmentMatchResponse | null>(null);
-  const [userMatchResult, setUserMatchResult] = useState<UserMatchResponse | null>(null);
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-
   // Queries
   const { data: requestData, isLoading, error, refetch } = useQuery({
     queryKey: ['request', id],
@@ -87,19 +73,19 @@ export const RequestDetailPage: React.FC = () => {
 
   const { data: historyData } = useQuery({
     queryKey: ['request', id, 'history'],
-    queryFn: () => incidentApi.getTransitionHistory(id!),
+    queryFn: () => incidentApi.getHistory(id!),
     enabled: !!id,
   });
 
   const { data: commentsData, refetch: refetchComments } = useQuery({
     queryKey: ['request', id, 'comments'],
-    queryFn: () => incidentApi.getComments(id!),
+    queryFn: () => incidentApi.listComments(id!),
     enabled: !!id,
   });
 
-  const { data: attachmentsData, refetch: refetchAttachments } = useQuery({
+  const { data: attachmentsData } = useQuery({
     queryKey: ['request', id, 'attachments'],
-    queryFn: () => incidentApi.getAttachments(id!),
+    queryFn: () => incidentApi.listAttachments(id!),
     enabled: !!id,
   });
 
@@ -130,10 +116,10 @@ export const RequestDetailPage: React.FC = () => {
         }
       }
 
-      return incidentApi.executeTransition(id!, {
+      return incidentApi.transition(id!, {
         transition_id: selectedTransition.transition.id,
         comment: transitionComment || undefined,
-        attachment_ids: attachmentIds,
+        attachments: attachmentIds,
         feedback: transitionFeedbackRating > 0 ? {
           rating: transitionFeedbackRating,
           comment: transitionFeedbackComment || undefined,
@@ -398,7 +384,7 @@ export const RequestDetailPage: React.FC = () => {
                                   {item.transition?.name || 'State Change'}
                                 </span>
                                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  {formatDate(item.executed_at)}
+                                  {formatDate(item.transitioned_at)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
@@ -422,9 +408,9 @@ export const RequestDetailPage: React.FC = () => {
                                   {item.to_state?.name}
                                 </span>
                               </div>
-                              {item.executed_by && (
+                              {item.performed_by && (
                                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
-                                  by {item.executed_by.first_name || item.executed_by.username}
+                                  by {item.performed_by.first_name || item.performed_by.username}
                                 </p>
                               )}
                               {item.comment && (
@@ -483,18 +469,18 @@ export const RequestDetailPage: React.FC = () => {
                         {t('requests.noComments', 'No comments yet')}
                       </p>
                     ) : (
-                      comments.map((comment: IncidentComment) => (
+                      comments.map((comment) => (
                         <div key={comment.id} className="flex gap-3">
-                          {comment.user?.avatar ? (
+                          {comment.author?.avatar ? (
                             <img
-                              src={comment.user.avatar}
-                              alt={comment.user.username}
+                              src={comment.author.avatar}
+                              alt={comment.author.username}
                               className="w-8 h-8 rounded-full object-cover"
                             />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
                               <span className="text-white text-xs font-bold">
-                                {comment.user?.first_name?.[0] || comment.user?.username?.[0] || 'U'}
+                                {comment.author?.first_name?.[0] || comment.author?.username?.[0] || 'U'}
                               </span>
                             </div>
                           )}
@@ -502,7 +488,7 @@ export const RequestDetailPage: React.FC = () => {
                             <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                                  {comment.user?.first_name || comment.user?.username}
+                                  {comment.author?.first_name || comment.author?.username}
                                 </span>
                                 <div className="flex items-center gap-2">
                                   {comment.is_internal && (
@@ -534,12 +520,12 @@ export const RequestDetailPage: React.FC = () => {
                     </p>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {attachments.map((attachment: IncidentAttachment) => (
+                      {attachments.map((attachment) => (
                         <div
                           key={attachment.id}
                           className="border border-[hsl(var(--border))] rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                         >
-                          {attachment.content_type?.startsWith('image/') ? (
+                          {attachment.mime_type?.startsWith('image/') ? (
                             <div className="aspect-video bg-[hsl(var(--muted))] relative">
                               <img
                                 src={`${API_URL}/incidents/${id}/attachments/${attachment.id}/download`}
