@@ -1128,37 +1128,37 @@ export const reportApi = {
   // List all templates (owned + shared + public)
   listTemplates: async (dataSource?: ReportDataSource): Promise<ApiResponse<ReportTemplate[]>> => {
     const params = dataSource ? `?data_source=${dataSource}` : '';
-    const response = await apiClient.get<ApiResponse<ReportTemplate[]>>(`/admin/reports/templates${params}`);
+    const response = await apiClient.get<ApiResponse<ReportTemplate[]>>(`/admin/reports${params}`);
     return response.data;
   },
 
   // Get a single template by ID
   getTemplate: async (id: string): Promise<ApiResponse<ReportTemplate>> => {
-    const response = await apiClient.get<ApiResponse<ReportTemplate>>(`/admin/reports/templates/${id}`);
+    const response = await apiClient.get<ApiResponse<ReportTemplate>>(`/admin/reports/${id}`);
     return response.data;
   },
 
   // Create a new template
   createTemplate: async (data: ReportTemplateCreateRequest): Promise<ApiResponse<ReportTemplate>> => {
-    const response = await apiClient.post<ApiResponse<ReportTemplate>>('/admin/reports/templates', data);
+    const response = await apiClient.post<ApiResponse<ReportTemplate>>('/admin/reports', data);
     return response.data;
   },
 
   // Update a template
   updateTemplate: async (id: string, data: ReportTemplateUpdateRequest): Promise<ApiResponse<ReportTemplate>> => {
-    const response = await apiClient.put<ApiResponse<ReportTemplate>>(`/admin/reports/templates/${id}`, data);
+    const response = await apiClient.put<ApiResponse<ReportTemplate>>(`/admin/reports/${id}`, data);
     return response.data;
   },
 
   // Delete a template
   deleteTemplate: async (id: string): Promise<ApiResponse<null>> => {
-    const response = await apiClient.delete<ApiResponse<null>>(`/admin/reports/templates/${id}`);
+    const response = await apiClient.delete<ApiResponse<null>>(`/admin/reports/${id}`);
     return response.data;
   },
 
   // Duplicate a template
   duplicateTemplate: async (id: string, newName?: string): Promise<ApiResponse<ReportTemplate>> => {
-    const response = await apiClient.post<ApiResponse<ReportTemplate>>(`/admin/reports/templates/${id}/duplicate`, {
+    const response = await apiClient.post<ApiResponse<ReportTemplate>>(`/admin/reports/${id}/duplicate`, {
       name: newName,
     });
     return response.data;
@@ -1167,7 +1167,7 @@ export const reportApi = {
   // Share template with users
   shareTemplate: async (id: string, data: ReportTemplateShareRequest): Promise<ApiResponse<ReportTemplate>> => {
     const response = await apiClient.post<ApiResponse<ReportTemplate>>(
-      `/admin/reports/templates/${id}/share`,
+      `/admin/reports/${id}/share`,
       data
     );
     return response.data;
@@ -1176,7 +1176,7 @@ export const reportApi = {
   // Remove sharing for specific users
   unshareTemplate: async (id: string, userIds: string[]): Promise<ApiResponse<ReportTemplate>> => {
     const response = await apiClient.post<ApiResponse<ReportTemplate>>(
-      `/admin/reports/templates/${id}/unshare`,
+      `/admin/reports/${id}/unshare`,
       { user_ids: userIds }
     );
     return response.data;

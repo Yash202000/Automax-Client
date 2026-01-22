@@ -20,11 +20,16 @@ import {
   MapPin,
   GitBranch,
   Loader2,
+  Download,
+  X,
+  Layout,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '../../components/ui';
 import { reportApi } from '../../api/admin';
+import { listTemplates, downloadReport } from '../../services/reportTemplateApi';
 import type { ReportTemplate, ReportDataSource } from '../../types';
+import type { GenerateReportRequest, ColumnOverride } from '../../types/reportTemplate';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 
@@ -54,7 +59,25 @@ export const ReportTemplatesPage: React.FC = () => {
   const [filterSource, setFilterSource] = useState<ReportDataSource | ''>('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
+  // Custom template export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedReportTemplate, setSelectedReportTemplate] = useState<ReportTemplate | null>(null);
+  const [selectedCustomTemplate, setSelectedCustomTemplate] = useState<string>('');
+  const [exportDateFrom, setExportDateFrom] = useState('');
+  const [exportDateTo, setExportDateTo] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
+
   const canCreateReport = isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_CREATE);
+
+  // Fetch custom templates for the export modal
+  const { data: customTemplatesData } = useQuery({
+    queryKey: ['custom-report-templates'],
+    queryFn: () => listTemplates({ limit: 100 }),
+  });
+
+  const customTemplates = customTemplatesData?.data || [];
 
   // Fetch templates
   const { data: templatesData, isLoading } = useQuery({
@@ -96,6 +119,90 @@ export const ReportTemplatesPage: React.FC = () => {
     navigate(`/admin/reports/builder/${template.id}`);
   };
 
+  const openExportWithTemplate = (template: ReportTemplate) => {
+    setSelectedReportTemplate(template);
+    setSelectedCustomTemplate('');
+    setExportDateFrom('');
+    setExportDateTo('');
+    setShowExportModal(true);
+    setActiveMenu(null);
+  };
+
+  const handleExportWithCustomTemplate = async () => {
+    if (!selectedReportTemplate) return;
+
+    setExporting(true);
+    setExportError(null);
+
+    try {
+      // Build filters array from date range + old report filters
+      const filters: Array<{ field: string; operator: string; value: unknown }> = [];
+
+      if (exportDateFrom) {
+        filters.push({ field: 'created_at', operator: '>=', value: exportDateFrom });
+      }
+      if (exportDateTo) {
+        filters.push({ field: 'created_at', operator: '<=', value: exportDateTo });
+      }
+
+      // Add filters from old report config
+      if (selectedReportTemplate.config.filters) {
+        selectedReportTemplate.config.filters.forEach(f => {
+          filters.push({ field: f.field, operator: f.operator, value: f.value });
+        });
+      }
+
+      // Build sorting array from old report config
+      const sorting = selectedReportTemplate.config.sorting?.map(s => ({
+        field: s.field,
+        direction: s.direction as 'asc' | 'desc',
+      })) || [];
+
+      // Build columns override from old report config
+      const columns: ColumnOverride[] = selectedReportTemplate.config.columns.map(col => ({
+        field: col.field,
+        label: col.label || col.field,
+        width: col.width || 0,
+        alignment: 'left',
+      }));
+
+      // Use default template ID if no custom template selected
+      const templateId = selectedCustomTemplate || 'default';
+
+      console.log('Export request:', {
+        template_id: templateId,
+        data_source: selectedReportTemplate.data_source,
+        filters,
+        sorting,
+        columns,
+      });
+
+      const request: GenerateReportRequest = {
+        template_id: templateId,
+        data_source: selectedReportTemplate.data_source,
+        format: 'pdf',
+        file_name: selectedReportTemplate.name,
+        filters: filters.length > 0 ? filters : undefined,
+        sorting: sorting.length > 0 ? sorting : undefined,
+        overrides: {
+          title: selectedReportTemplate.name,
+          columns: columns,
+        },
+      };
+
+      await downloadReport(request);
+      setExportSuccess('Report downloaded successfully');
+      setTimeout(() => setExportSuccess(null), 3000);
+      setShowExportModal(false);
+    } catch (err) {
+      console.error('Export error:', err);
+      setExportError('Failed to export report');
+      setTimeout(() => setExportError(null), 3000);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Close menu when clicking outside
   React.useEffect(() => {
     const handleClickOutside = () => setActiveMenu(null);
@@ -107,6 +214,19 @@ export const ReportTemplatesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Notifications */}
+      {exportError && (
+        <div className="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+          <AlertCircle className="h-5 w-5" />
+          {exportError}
+        </div>
+      )}
+      {exportSuccess && (
+        <div className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          {exportSuccess}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -225,6 +345,13 @@ export const ReportTemplatesPage: React.FC = () => {
                             <Copy className="w-4 h-4" />
                             {t('reports.duplicate')}
                           </button>
+                          <button
+                            onClick={() => openExportWithTemplate(template)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            Export with Template
+                          </button>
                           <hr className="my-1 border-[hsl(var(--border))]" />
                           <button
                             onClick={() => handleDelete(template)}
@@ -295,6 +422,124 @@ export const ReportTemplatesPage: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Export Modal with Custom Template Selection */}
+      {showExportModal && selectedReportTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => setShowExportModal(false)}
+          />
+          <div className="relative bg-[hsl(var(--card))] rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                Export Report
+              </h3>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="p-1 hover:bg-[hsl(var(--muted))] rounded"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Report Info */}
+              <div className="bg-[hsl(var(--muted))] p-3 rounded-lg">
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Data Source</p>
+                <p className="font-medium text-[hsl(var(--foreground))]">{selectedReportTemplate.name}</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(dataSourceInfo[selectedReportTemplate.data_source].labelKey)}
+                </p>
+              </div>
+
+              {/* Custom Template Selector */}
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                  <Layout className="h-4 w-4 inline mr-1" />
+                  Use Custom Template (optional)
+                </label>
+                <select
+                  value={selectedCustomTemplate}
+                  onChange={(e) => setSelectedCustomTemplate(e.target.value)}
+                  className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--background))] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+                >
+                  <option value="">Default Template</option>
+                  {customTemplates.map((ct) => (
+                    <option key={ct.id} value={ct.id}>
+                      {ct.name} {ct.is_default ? '(Default)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  Select a custom template for header, footer, and styling
+                </p>
+              </div>
+
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                    <Calendar className="h-4 w-4 inline mr-1" />
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={exportDateFrom}
+                    onChange={(e) => setExportDateFrom(e.target.value)}
+                    className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--background))] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                    <Calendar className="h-4 w-4 inline mr-1" />
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={exportDateTo}
+                    onChange={(e) => setExportDateTo(e.target.value)}
+                    className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--background))] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+                  />
+                </div>
+              </div>
+
+              {customTemplates.length === 0 && (
+                <div className="text-center py-3 bg-[hsl(var(--muted))] rounded-lg">
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No custom templates found.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowExportModal(false);
+                      navigate('/admin/report-templates/new/edit');
+                    }}
+                    className="text-sm text-[hsl(var(--primary))] hover:underline mt-1"
+                  >
+                    Create a custom template
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg"
+              >
+                Cancel
+              </button>
+              <Button
+                onClick={handleExportWithCustomTemplate}
+                disabled={exporting}
+                leftIcon={exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              >
+                {exporting ? 'Exporting...' : 'Export PDF'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

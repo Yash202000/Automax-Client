@@ -35,7 +35,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
 
   // Format cell value based on field type
   const formatCellValue = (value: unknown, field: ReportFieldDefinition): string => {
-    if (value === null || value === undefined) return '-';
+    if (value === null || value === undefined || value === '') return '-';
 
     switch (field.type) {
       case 'boolean':
@@ -53,17 +53,30 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
           return String(value);
         }
       case 'enum':
-        const option = field.options?.find((o) => o.value === value);
+        // Handle both string and number comparisons for enum values
+        const option = field.options?.find((o) =>
+          o.value === value ||
+          String(o.value) === String(value) ||
+          Number(o.value) === Number(value)
+        );
         return option?.label || String(value);
       case 'number':
         return typeof value === 'number' ? value.toLocaleString() : String(value);
       default:
-        return String(value);
+        // Return '-' for empty strings as well
+        return String(value) || '-';
     }
   };
 
   // Get nested value from object (e.g., "assignee.username")
+  // Supports both flat keys ("assignee.username") and nested objects ({assignee: {username: ...}})
   const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+    // First check if the full path exists as a flat key
+    if (path in obj) {
+      return obj[path];
+    }
+
+    // Fall back to nested object traversal
     const parts = path.split('.');
     let current: unknown = obj;
     for (const part of parts) {

@@ -23,6 +23,7 @@ import {
   Languages,
   Database,
   Phone,
+  LayoutTemplate,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
@@ -64,6 +65,7 @@ const sidebarSectionsConfig: SidebarSection[] = [
     items: [
       { icon: Database, labelKey: 'lookups.title', path: '/admin/lookups', permission: 'lookups:view' },
       { icon: FileBarChart, labelKey: 'admin.reports', path: '/admin/reports', permission: 'reports:view' },
+      { icon: LayoutTemplate, labelKey: 'admin.reportTemplates', path: '/admin/report-templates', permission: 'reports:view' },
       { icon: Mail, labelKey: 'admin.smtpSettings', path: '/admin/smtp-settings', permission: 'settings:view' },
     ],
   },

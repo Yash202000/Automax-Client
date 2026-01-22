@@ -214,16 +214,63 @@ export const ReportBuilderPage: React.FC = () => {
           return field?.label || col;
         });
 
+        // Helper to format value for export
+        const formatExportValue = (value: unknown, fieldDef: typeof fields[0] | undefined): string => {
+          if (value === null || value === undefined || value === '') return '';
+
+          // Handle enum types (like priority, severity)
+          if (fieldDef?.type === 'enum' && fieldDef.options) {
+            const option = fieldDef.options.find((o) =>
+              o.value === value ||
+              String(o.value) === String(value) ||
+              Number(o.value) === Number(value)
+            );
+            return option?.label || String(value);
+          }
+
+          // Handle boolean
+          if (fieldDef?.type === 'boolean') {
+            return value ? 'Yes' : 'No';
+          }
+
+          // Handle dates
+          if (fieldDef?.type === 'date' || fieldDef?.type === 'datetime') {
+            try {
+              const date = new Date(value as string);
+              return fieldDef.type === 'date'
+                ? date.toLocaleDateString()
+                : date.toLocaleString();
+            } catch {
+              return String(value);
+            }
+          }
+
+          return String(value);
+        };
+
         // Build rows
         const rows = response.data.map((row) => {
           return selectedColumns.map((col) => {
-            const parts = col.split('.');
-            let value: unknown = row;
-            for (const part of parts) {
-              if (value === null || value === undefined) return '';
-              value = (value as Record<string, unknown>)[part];
+            const fieldDef = fields.find((f) => f.field === col);
+            let value: unknown;
+
+            // First check if the full path exists as a flat key
+            if (col in row) {
+              value = row[col];
+            } else {
+              // Fall back to nested object traversal
+              const parts = col.split('.');
+              value = row;
+              for (const part of parts) {
+                if (value === null || value === undefined) {
+                  value = null;
+                  break;
+                }
+                value = (value as Record<string, unknown>)[part];
+              }
             }
-            return value ?? '';
+
+            return formatExportValue(value, fieldDef);
           });
         });
 

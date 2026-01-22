@@ -34,6 +34,8 @@ import {
   SMTPSettingsPage,
   ReportBuilderPage,
   ReportTemplatesPage,
+  ReportTemplatesListPage,
+  ReportTemplateBuilderPage,
   LookupsPage,
 } from './pages';
 
@@ -109,6 +111,9 @@ function App() {
                 <Route path="/admin/reports" element={<ReportTemplatesPage />} />
                 <Route path="/admin/reports/builder" element={<ReportBuilderPage />} />
                 <Route path="/admin/reports/builder/:templateId" element={<ReportBuilderPage />} />
+                {/* Report Template Builder */}
+                <Route path="/admin/report-templates" element={<ReportTemplatesListPage />} />
+                <Route path="/admin/report-templates/:id/edit" element={<ReportTemplateBuilderPage />} />
               </Route>
               {/* Lookups - requires lookups:view permission */}
               <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOOKUPS_VIEW]} />}>

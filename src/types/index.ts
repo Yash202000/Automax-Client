@@ -1183,3 +1183,6 @@ export interface ReportTemplateShareRequest {
   user_ids: string[];
   can_edit: boolean;
 }
+
+// Re-export report template builder types
+export * from './reportTemplate';

@@ -24,4 +24,6 @@ export { QueryDetailPage } from './QueryDetailPage';
 export { SMTPSettingsPage } from './SMTPSettingsPage';
 export { ReportBuilderPage } from './ReportBuilderPage';
 export { ReportTemplatesPage } from './ReportTemplatesPage';
+export { default as ReportTemplatesListPage } from './ReportTemplatesListPage';
+export { default as ReportTemplateBuilderPage } from './ReportTemplateBuilderPage';
 export { LookupsPage } from './LookupsPage';
