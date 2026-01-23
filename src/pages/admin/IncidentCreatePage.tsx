@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, AlertTriangle, Info, Zap } from 'lucide-react';
+import { ArrowLeft, Save, AlertTriangle, Info, Zap, Upload, X, Paperclip } from 'lucide-react';
 import { Button, Card, Input, Select, Textarea, TreeSelect } from '../../components/ui';
 import type { TreeSelectNode } from '../../components/ui';
 import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../api/admin';
@@ -33,6 +33,7 @@ export function IncidentCreatePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoMatchedWorkflow, setAutoMatchedWorkflow] = useState<Workflow | null>(null);
   const [isAutoMatched, setIsAutoMatched] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -41,8 +42,20 @@ export function IncidentCreatePage() {
   });
 
   const { data: classificationsData } = useQuery({
-    queryKey: ['admin', 'classifications', 'tree'],
-    queryFn: () => classificationApi.getTree(),
+    queryKey: ['admin', 'classifications', 'tree', 'incident'],
+    queryFn: async () => {
+      // Get both 'incident' and 'all' types for incident creation
+      const [incidentRes, allRes] = await Promise.all([
+        classificationApi.getTree('incident'),
+        classificationApi.getTree('all'),
+      ]);
+      const combined = [...(incidentRes.data || []), ...(allRes.data || [])];
+      // Deduplicate by ID
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+      return { success: true, data: unique };
+    },
   });
 
   const { data: usersData } = useQuery({
@@ -178,8 +191,22 @@ export function IncidentCreatePage() {
   }, [matchWorkflow]);
 
   const createMutation = useMutation({
-    mutationFn: (data: IncidentCreateRequest) => incidentApi.create(data),
+    mutationFn: async ({ data, files }: { data: IncidentCreateRequest; files: File[] }) => {
+      console.log('Creating incident with data:', data);
+      const response = await incidentApi.create(data);
+      console.log('Incident created:', response);
+      // Upload attachments after incident is created
+      if (response.data && files.length > 0) {
+        console.log('Uploading attachments:', files.length);
+        await Promise.all(
+          files.map(file => incidentApi.uploadAttachment(response.data!.id, file))
+        );
+        console.log('Attachments uploaded successfully');
+      }
+      return response;
+    },
     onSuccess: (response) => {
+      console.log('Mutation success, navigating...');
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       if (response.data) {
         navigate(`/incidents/${response.data.id}`);
@@ -188,8 +215,9 @@ export function IncidentCreatePage() {
       }
     },
     onError: (error: any) => {
+      console.error('Mutation error:', error);
       const message = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to create incident';
-      setErrors({ submit: message });
+      setErrors(prev => ({ ...prev, submit: message }));
     },
   });
 
@@ -210,6 +238,9 @@ export function IncidentCreatePage() {
   const selectedWorkflow = workflows.find(w => w.id === formData.workflow_id);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
 
+  // List of valid form data fields for validation
+  const validFormFields = ['description', 'classification_id', 'source', 'assignee_id', 'department_id', 'location_id', 'due_date', 'reporter_name', 'reporter_email'];
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = t('incidents.titleRequired');
@@ -223,8 +254,13 @@ export function IncidentCreatePage() {
         if (category && !lookupValues[category.id]) {
           newErrors[field] = t('incidents.fieldRequired', { field: category.name });
         }
-      } else {
-        // Standard field validation
+      } else if (field === 'attachments') {
+        // Check attachments separately since they're not in formData
+        if (attachments.length === 0) {
+          newErrors.attachments = t('incidents.fieldRequired', { field: t('incidents.attachments', 'Attachments') });
+        }
+      } else if (validFormFields.includes(field)) {
+        // Standard field validation - only check fields that exist in formData
         const value = formData[field as keyof typeof formData];
         if (!value || (typeof value === 'string' && !value.trim())) {
           newErrors[field] = t('incidents.fieldRequired', { field });
@@ -232,12 +268,18 @@ export function IncidentCreatePage() {
       }
     }
     setErrors(newErrors);
+    console.log('Validation errors:', newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    console.log('Form submitted, validating...');
+    if (!validate()) {
+      console.log('Validation failed');
+      return;
+    }
+    console.log('Validation passed, creating incident...');
 
     const submitData: IncidentCreateRequest = { ...formData };
     
@@ -258,7 +300,7 @@ export function IncidentCreatePage() {
       submitData.due_date = undefined;
     }
 
-    createMutation.mutate(submitData);
+    createMutation.mutate({ data: submitData, files: attachments });
   };
   
   const sourceOptions = [
@@ -406,6 +448,68 @@ export function IncidentCreatePage() {
                   required={workflowRequiredFields.includes('reporter_email')}
                   error={errors.reporter_email}
                 />
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {t('incidents.attachments', 'Attachments')}
+                {workflowRequiredFields.includes('attachments') && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </h2>
+              <div className="space-y-4">
+                {attachments.length > 0 && (
+                  <div className="space-y-2">
+                    {attachments.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700 truncate max-w-[250px]">
+                            {file.name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ({(file.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                  <Upload className="w-5 h-5 text-gray-500" />
+                  <span className="text-sm text-gray-600">
+                    {t('incidents.clickToUpload', 'Click to upload files')}
+                  </span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        setAttachments(prev => [...prev, ...files]);
+                        if (errors.attachments) {
+                          setErrors(prev => ({ ...prev, attachments: '' }));
+                        }
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {errors.attachments && (
+                  <p className="text-sm text-red-500">{errors.attachments}</p>
+                )}
               </div>
             </Card>
           </div>

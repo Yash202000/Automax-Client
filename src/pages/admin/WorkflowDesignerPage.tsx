@@ -170,6 +170,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     { field: 'due_date', label: 'Due Date', description: 'Resolution deadline' },
     { field: 'reporter_name', label: 'Reporter Name', description: 'Name of person reporting' },
     { field: 'reporter_email', label: 'Reporter Email', description: 'Email of person reporting' },
+    { field: 'attachments', label: 'Attachments', description: 'File attachments for the incident' },
   ];
 
   const { data: workflowData, isLoading } = useQuery({
