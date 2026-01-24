@@ -140,7 +140,15 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => userApi.list(1, 100),
   });
 
+  // Check if user can convert incident to request
+  const { data: canConvertData } = useQuery({
+    queryKey: ['incident', id, 'can-convert'],
+    queryFn: () => incidentApi.canConvertToRequest(id!),
+    enabled: !!id && incidentData?.data?.record_type === 'incident',
+  });
+
   const incident = incidentData?.data as IncidentDetail | undefined;
+  const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
 
   const groupedLookupValues = useMemo(() => {
     if (!incident?.lookup_values) return {};
@@ -550,7 +558,7 @@ export const IncidentDetailPage: React.FC = () => {
               {transition.transition.name}
             </Button>
           ))}
-          {(!incident.record_type || incident.record_type === 'incident') && (
+          {(!incident.record_type || incident.record_type === 'incident') && canConvertToRequest && (
             <Button
               variant="outline"
               size="sm"

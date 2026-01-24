@@ -159,6 +159,9 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
 
+  // Convert to request role IDs
+  const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<string[]>([]);
+
   // Base form fields that can be made required
   const baseFormFields: { field: IncidentFormField; label: string; description: string }[] = [
     { field: 'description', label: 'Description', description: 'Detailed incident description' },
@@ -265,6 +268,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'both' | 'all') || 'incident',
       });
       setRequiredFields(workflow.required_fields || []);
+      setConvertToRequestRoleIds(workflow.convert_to_request_roles?.map(r => r.id) || []);
     }
   }, [workflow]);
 
@@ -290,6 +294,17 @@ export const WorkflowDesignerPage: React.FC = () => {
   const updateRequiredFieldsMutation = useMutation({
     mutationFn: (fields: IncidentFormField[]) => workflowApi.update(id!, {
       required_fields: fields,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+    },
+  });
+
+  // Convert to request roles mutation
+  const updateConvertToRequestRolesMutation = useMutation({
+    mutationFn: (roleIds: string[]) => workflowApi.update(id!, {
+      convert_to_request_role_ids: roleIds,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
@@ -1450,6 +1465,85 @@ export const WorkflowDesignerPage: React.FC = () => {
                 >
                   Save Required Fields
                 </Button>
+              </div>
+
+              {/* Convert to Request Permissions Section */}
+              <div className="mt-8 pt-8 border-t border-[hsl(var(--border))]">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Convert to Request Permissions</h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                    Configure which roles can convert incidents to requests. If no roles are selected, all users will be able to convert.
+                  </p>
+                </div>
+
+                <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">Allowed Roles</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {roles.map((role) => (
+                      <label
+                        key={role.id}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
+                          convertToRequestRoleIds.includes(role.id)
+                            ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
+                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={convertToRequestRoleIds.includes(role.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setConvertToRequestRoleIds(prev => [...prev, role.id]);
+                            } else {
+                              setConvertToRequestRoleIds(prev => prev.filter(id => id !== role.id));
+                            }
+                          }}
+                          className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">{role.name}</span>
+                          {role.description && (
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{role.description}</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 mt-4">
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Selected Roles</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {convertToRequestRoleIds.length === 0 ? (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">No roles selected - All users can convert incidents</span>
+                    ) : (
+                      convertToRequestRoleIds.map(roleId => {
+                        const role = roles.find(r => r.id === roleId);
+                        return (
+                          <span
+                            key={roleId}
+                            className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded"
+                          >
+                            {role?.name || roleId}
+                          </span>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end mt-4">
+                  <Button
+                    onClick={() => updateConvertToRequestRolesMutation.mutate(convertToRequestRoleIds)}
+                    isLoading={updateConvertToRequestRolesMutation.isPending}
+                    leftIcon={<Check className="w-4 h-4" />}
+                  >
+                    Save Convert to Request Permissions
+                  </Button>
+                </div>
               </div>
             </div>
           )}

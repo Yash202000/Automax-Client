@@ -54,6 +54,7 @@ import type {
   IncidentSource,
   ConvertToRequestRequest,
   ConvertToRequestResponse,
+  CanConvertToRequestResponse,
   CreateComplaintRequest,
   CreateQueryRequest,
   SMTPConfig,
@@ -705,6 +706,12 @@ export const incidentApi = {
   // Convert incident to request
   convertToRequest: async (id: string, data: ConvertToRequestRequest): Promise<ApiResponse<ConvertToRequestResponse>> => {
     const response = await apiClient.post<ApiResponse<ConvertToRequestResponse>>(`/incidents/${id}/convert-to-request`, data);
+    return response.data;
+  },
+
+  // Check if user can convert incident to request
+  canConvertToRequest: async (id: string): Promise<ApiResponse<CanConvertToRequestResponse>> => {
+    const response = await apiClient.get<ApiResponse<CanConvertToRequestResponse>>(`/incidents/${id}/can-convert`);
     return response.data;
   },
 

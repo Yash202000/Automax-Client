@@ -22,7 +22,7 @@ import {
   ExportDialog,
   SaveTemplateDialog,
 } from '../../components/reports';
-import { reportApi } from '../../api/admin';
+import { reportApi, departmentApi, locationApi, classificationApi } from '../../api/admin';
 import {
   DATA_SOURCES,
   getFieldsForDataSource,
@@ -34,9 +34,49 @@ import type {
   ReportSort,
   ReportTemplate,
   ReportQueryRequest,
+  ReportFieldDefinition,
+  Department,
+  Location,
+  Classification,
 } from '../../types';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+
+// Helper to build hierarchical label with path
+const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
+  if (item.path) {
+    // If path is available, use it to build the hierarchy
+    const pathParts = item.path.split('/').filter(Boolean);
+    if (pathParts.length > 1) {
+      return pathParts.join(' > ');
+    }
+  }
+  // Fallback to just the name with indentation based on level
+  const indent = item.level ? '—'.repeat(item.level) + ' ' : '';
+  return indent + item.name;
+};
+
+// Helper to flatten tree structure with hierarchical labels
+const flattenTreeWithLabels = <T extends { id: string; name: string; path?: string; level?: number; children?: T[] }>(
+  items: T[],
+  level: number = 0
+): { value: string; label: string }[] => {
+  const result: { value: string; label: string }[] = [];
+
+  for (const item of items) {
+    const indent = level > 0 ? '│  '.repeat(level - 1) + '├─ ' : '';
+    result.push({
+      value: item.id,
+      label: indent + item.name,
+    });
+
+    if (item.children && item.children.length > 0) {
+      result.push(...flattenTreeWithLabels(item.children, level + 1));
+    }
+  }
+
+  return result;
+};
 
 interface CollapsibleSectionProps {
   title: string;
@@ -103,10 +143,56 @@ export const ReportBuilderPage: React.FC = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [loadedTemplate, setLoadedTemplate] = useState<ReportTemplate | null>(null);
 
-  // Get fields for current data source
+  // Fetch hierarchical data for dynamic dropdowns
+  const { data: departmentsTree } = useQuery({
+    queryKey: ['admin', 'departments', 'tree'],
+    queryFn: () => departmentApi.getTree(),
+  });
+
+  const { data: locationsTree } = useQuery({
+    queryKey: ['admin', 'locations', 'tree'],
+    queryFn: () => locationApi.getTree(),
+  });
+
+  const { data: classificationsTree } = useQuery({
+    queryKey: ['admin', 'classifications', 'tree'],
+    queryFn: () => classificationApi.getTree(),
+  });
+
+  // Build hierarchical options from tree data
+  const dynamicOptionsMap = useMemo(() => {
+    const map: Record<string, { value: string; label: string }[]> = {};
+
+    if (departmentsTree?.data) {
+      map.departments = flattenTreeWithLabels(departmentsTree.data as (Department & { children?: Department[] })[]);
+    }
+
+    if (locationsTree?.data) {
+      map.locations = flattenTreeWithLabels(locationsTree.data as (Location & { children?: Location[] })[]);
+    }
+
+    if (classificationsTree?.data) {
+      map.classifications = flattenTreeWithLabels(classificationsTree.data as (Classification & { children?: Classification[] })[]);
+    }
+
+    return map;
+  }, [departmentsTree, locationsTree, classificationsTree]);
+
+  // Get fields for current data source with dynamic options enhanced
   const fields = useMemo(() => {
-    return dataSource ? getFieldsForDataSource(dataSource) : [];
-  }, [dataSource]);
+    const baseFields = dataSource ? getFieldsForDataSource(dataSource) : [];
+
+    // Enhance fields with dynamic options
+    return baseFields.map((field) => {
+      if (field.dynamicOptions && dynamicOptionsMap[field.dynamicOptions]) {
+        return {
+          ...field,
+          options: dynamicOptionsMap[field.dynamicOptions],
+        };
+      }
+      return field;
+    });
+  }, [dataSource, dynamicOptionsMap]);
 
   // Get data source definition
   const dataSourceDef = useMemo(() => {

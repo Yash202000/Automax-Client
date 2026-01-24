@@ -101,9 +101,9 @@ const incidentFields: ReportFieldDefinition[] = [
   // Relations
   { field: 'assignee.username', label: 'Assignee Username', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'assignee' },
   { field: 'assignee.full_name', label: 'Assignee Name', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'assignee', defaultSelected: true },
-  { field: 'department.name', label: 'Department', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'department' },
-  { field: 'location.name', label: 'Location', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'location' },
-  { field: 'classification.name', label: 'Classification', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'classification' },
+  { field: 'department_id', label: 'Department', type: 'enum', category: 'Relations', sortable: true, filterable: true, relationField: 'department', dynamicOptions: 'departments' },
+  { field: 'location_id', label: 'Location', type: 'enum', category: 'Relations', sortable: true, filterable: true, relationField: 'location', dynamicOptions: 'locations' },
+  { field: 'classification_id', label: 'Classification', type: 'enum', category: 'Relations', sortable: true, filterable: true, relationField: 'classification', dynamicOptions: 'classifications' },
   { field: 'workflow.name', label: 'Workflow', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'workflow' },
 
   // Reporter
@@ -173,8 +173,8 @@ const userFields: ReportFieldDefinition[] = [
   { field: 'last_login_at', label: 'Last Login', type: 'datetime', category: 'Status', sortable: true, filterable: true },
 
   // Relations
-  { field: 'department.name', label: 'Primary Department', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'department' },
-  { field: 'location.name', label: 'Primary Location', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'location' },
+  { field: 'department_id', label: 'Primary Department', type: 'enum', category: 'Relations', sortable: true, filterable: true, relationField: 'department', dynamicOptions: 'departments' },
+  { field: 'location_id', label: 'Primary Location', type: 'enum', category: 'Relations', sortable: true, filterable: true, relationField: 'location', dynamicOptions: 'locations' },
 
   // Timestamps
   { field: 'created_at', label: 'Created At', type: 'datetime', category: 'Timestamps', sortable: true, filterable: true },
@@ -191,7 +191,7 @@ const departmentFields: ReportFieldDefinition[] = [
   // Hierarchy
   { field: 'level', label: 'Level', type: 'number', category: 'Hierarchy', sortable: true, filterable: true },
   { field: 'path', label: 'Path', type: 'string', category: 'Hierarchy', sortable: true, filterable: true },
-  { field: 'parent.name', label: 'Parent Department', type: 'string', category: 'Hierarchy', sortable: true, filterable: true, relationField: 'parent' },
+  { field: 'parent_id', label: 'Parent Department', type: 'enum', category: 'Hierarchy', sortable: true, filterable: true, relationField: 'parent', dynamicOptions: 'departments' },
 
   // Relations
   { field: 'manager.username', label: 'Manager Username', type: 'string', category: 'Relations', sortable: true, filterable: true, relationField: 'manager' },
@@ -218,7 +218,7 @@ const locationFields: ReportFieldDefinition[] = [
   // Hierarchy
   { field: 'level', label: 'Level', type: 'number', category: 'Hierarchy', sortable: true, filterable: true },
   { field: 'path', label: 'Path', type: 'string', category: 'Hierarchy', sortable: true, filterable: true },
-  { field: 'parent.name', label: 'Parent Location', type: 'string', category: 'Hierarchy', sortable: true, filterable: true, relationField: 'parent' },
+  { field: 'parent_id', label: 'Parent Location', type: 'enum', category: 'Hierarchy', sortable: true, filterable: true, relationField: 'parent', dynamicOptions: 'locations' },
 
   // Status
   { field: 'is_active', label: 'Active', type: 'boolean', category: 'Status', sortable: true, filterable: true, defaultSelected: true },

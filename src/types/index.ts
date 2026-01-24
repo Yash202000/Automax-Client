@@ -495,6 +495,7 @@ export interface Workflow {
   states?: WorkflowState[];
   transitions?: WorkflowTransition[];
   classifications?: Classification[];
+  convert_to_request_roles?: Role[];
   locations?: Location[];
   sources?: IncidentSource[];
   severity_min?: number;
@@ -605,6 +606,7 @@ export interface WorkflowUpdateRequest {
   is_default?: boolean;
   canvas_layout?: string;
   classification_ids?: string[];
+  convert_to_request_role_ids?: string[];
   location_ids?: string[];
   sources?: IncidentSource[];
   severity_min?: number;
@@ -1001,6 +1003,11 @@ export interface ConvertToRequestResponse {
   new_request: Incident;
 }
 
+export interface CanConvertToRequestResponse {
+  can_convert: boolean;
+  reason?: string;
+}
+
 // Complaint request types
 export interface CreateComplaintRequest {
   title: string;
@@ -1080,6 +1087,7 @@ export interface ReportFieldDefinition {
   options?: { value: string | number; label: string }[];
   relationField?: string;
   description?: string;
+  dynamicOptions?: 'departments' | 'locations' | 'classifications'; // For hierarchical dropdowns
 }
 
 // Data Source Definition
