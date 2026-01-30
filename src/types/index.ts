@@ -684,6 +684,11 @@ export interface WorkflowTransitionUpdateRequest {
   manual_select_user?: boolean;
 }
 
+export interface WorkflowImportResponse {
+  workflow: Workflow;
+  warnings: string[];
+}
+
 export interface TransitionRequirementRequest {
   requirement_type: 'comment' | 'attachment' | 'feedback' | 'field_value';
   field_name?: string;

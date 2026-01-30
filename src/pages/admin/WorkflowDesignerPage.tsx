@@ -21,6 +21,7 @@ import {
   Layout,
   Mail,
   ClipboardList,
+  Download,
 } from 'lucide-react';
 import { workflowApi, roleApi, classificationApi, locationApi, departmentApi, userApi, lookupApi } from '../../api/admin';
 import type {
@@ -643,6 +644,26 @@ export const WorkflowDesignerPage: React.FC = () => {
     // TODO: Save to backend when API supports it
   }, []);
 
+  const handleExport = async () => {
+    if (!workflow) return;
+
+    try {
+      const blob = await workflowApi.export(workflow.id);
+      const filename = `workflow_${workflow.code}_${Date.now()}.json`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -685,6 +706,13 @@ export const WorkflowDesignerPage: React.FC = () => {
             </div>
           </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          leftIcon={<Download className="w-4 h-4" />}
+        >
+          Export Workflow
+        </Button>
       </div>
 
       {/* Tabs */}

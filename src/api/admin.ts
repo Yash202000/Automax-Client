@@ -29,6 +29,7 @@ import type {
   Workflow,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
+  WorkflowImportResponse,
   WorkflowState,
   WorkflowStateCreateRequest,
   WorkflowStateUpdateRequest,
@@ -154,6 +155,28 @@ export const userApi = {
     const response = await apiClient.post<ApiResponse<UserMatchResponse>>('/admin/users/match', data);
     return response.data;
   },
+
+  // Export all users as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/users/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import users from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[]; note: string }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[]; note: string }>>(
+      '/admin/users/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Classification API
@@ -207,6 +230,28 @@ export const classificationApi = {
     const response = await apiClient.delete<ApiResponse<null>>(`/admin/classifications/${id}`);
     return response.data;
   },
+
+  // Export all classifications as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/classifications/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import classifications from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[] }>>(
+      '/admin/classifications/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Location API
@@ -251,6 +296,28 @@ export const locationApi = {
 
   delete: async (id: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete<ApiResponse<null>>(`/admin/locations/${id}`);
+    return response.data;
+  },
+
+  // Export all locations as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/locations/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import locations from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[] }>>(
+      '/admin/locations/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
     return response.data;
   },
 };
@@ -300,6 +367,28 @@ export const departmentApi = {
     const response = await apiClient.post<ApiResponse<DepartmentMatchResponse>>('/admin/departments/match', data);
     return response.data;
   },
+
+  // Export all departments as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/departments/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import departments from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[] }>>(
+      '/admin/departments/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Role API
@@ -332,6 +421,24 @@ export const roleApi = {
   assignPermissions: async (id: string, permissionIds: string[]): Promise<ApiResponse<Role>> => {
     const response = await apiClient.post<ApiResponse<Role>>(`/admin/roles/${id}/permissions`, {
       permission_ids: permissionIds,
+    });
+    return response.data;
+  },
+
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/roles/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/admin/roles/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return response.data;
   },
@@ -646,6 +753,23 @@ export const workflowApi = {
     priority_max?: number;
   }): Promise<ApiResponse<Workflow>> => {
     const response = await apiClient.put<ApiResponse<Workflow>>(`/admin/workflows/${workflowId}/match-config`, config);
+    return response.data;
+  },
+
+  // Export/Import
+  export: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/admin/workflows/${id}/export`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  import: async (file: File): Promise<ApiResponse<WorkflowImportResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/admin/workflows/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 };
