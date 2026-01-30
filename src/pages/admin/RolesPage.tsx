@@ -12,6 +12,9 @@ import {
   AlertTriangle,
   Search,
   Sparkles,
+  Download,
+  Upload,
+  Info,
 } from 'lucide-react';
 import { roleApi, permissionApi } from '../../api/admin';
 import type { Role, Permission, RoleCreateRequest, RoleUpdateRequest } from '../../types';
@@ -43,6 +46,9 @@ export const RolesPage: React.FC = () => {
   const [formData, setFormData] = useState<RoleFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [permissionSearch, setPermissionSearch] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
   const canCreateRole = isSuperAdmin || hasPermission(PERMISSIONS.ROLES_CREATE);
 
@@ -179,6 +185,50 @@ export const RolesPage: React.FC = () => {
     {} as Record<string, Permission[]>
   );
 
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await roleApi.export();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `roles_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const result = await roleApi.import(file);
+      if (result.data) {
+        setImportResult(result.data);
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin', 'roles'] });
+    } catch (error) {
+      console.error('Import failed:', error);
+      setImportResult({
+        imported: 0,
+        skipped: 0,
+        errors: ['Import failed. Please check the file format.'],
+      });
+    } finally {
+      setIsImporting(false);
+      // Reset the file input
+      event.target.value = '';
+    }
+  };
+
   const getRoleGradient = (role: Role) => {
     if (role.is_system) return 'from-amber-500 to-orange-500';
     const gradients = [
@@ -205,11 +255,32 @@ export const RolesPage: React.FC = () => {
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">{t('roles.subtitle')}</p>
         </div>
-        {canCreateRole && (
-          <Button onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
-            {t('roles.addRole')}
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {isExporting ? 'Exporting...' : 'Export'}
+          </button>
+          <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
+            <Upload className="w-4 h-4" />
+            <span>{isImporting ? 'Importing...' : 'Import'}</span>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              disabled={isImporting}
+              className="hidden"
+            />
+          </label>
+          {canCreateRole && (
+            <Button onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
+              {t('roles.addRole')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Roles Grid */}
@@ -541,6 +612,61 @@ export const RolesPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Result Modal */}
+      {importResult && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                  importResult.skipped > 0
+                    ? "bg-[hsl(var(--warning)/0.1)]"
+                    : "bg-[hsl(var(--success)/0.1)]"
+                )}>
+                  <Info className={cn(
+                    "w-6 h-6",
+                    importResult.skipped > 0
+                      ? "text-[hsl(var(--warning))]"
+                      : "text-[hsl(var(--success))]"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">Import Complete</h3>
+                  <div className="space-y-1">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      <span className="font-medium text-[hsl(var(--success))]">{importResult.imported}</span> roles imported successfully
+                    </p>
+                    {importResult.skipped > 0 && (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        <span className="font-medium text-[hsl(var(--warning))]">{importResult.skipped}</span> roles skipped
+                      </p>
+                    )}
+                    {importResult.errors.length > 0 && (
+                      <div className="mt-3 max-h-40 overflow-y-auto">
+                        <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">Errors:</p>
+                        <ul className="space-y-1">
+                          {importResult.errors.map((error, index) => (
+                            <li key={index} className="text-xs text-[hsl(var(--muted-foreground))] pl-3">
+                              • {error}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setImportResult(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
