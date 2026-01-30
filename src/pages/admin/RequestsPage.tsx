@@ -20,8 +20,10 @@ import {
   Check,
   FileText,
   ExternalLink,
+  Plus,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
+import { CreateRequestModal } from '@/components/requests/CreateRequestModal';
 import { incidentApi, workflowApi, userApi, departmentApi, classificationApi, locationApi } from '../../api/admin';
 import type { Incident, IncidentFilter, Workflow, User as UserType, Department, WorkflowState, Classification, Location } from '../../types';
 import { cn } from '@/lib/utils';
@@ -81,8 +83,10 @@ export const RequestsPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [columns, setColumns] = useState<ColumnConfig[]>(loadColumnsFromStorage);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const canViewAllRequests = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL);
+  const canCreateRequest = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_CREATE);
 
   // Get status from URL - users with view permission can access if status filter is applied
   const urlStatusParam = searchParams.get('status');
@@ -329,6 +333,14 @@ export const RequestsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {canCreateRequest && (
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              {t('requests.createRequest', 'Create Request')}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -566,9 +578,16 @@ export const RequestsPage: React.FC = () => {
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {hasActiveFilters ? t('requests.tryAdjustingFilters', 'Try adjusting your filters') : t('requests.noRequestsYet', 'Requests will appear here when incidents are converted')}
             </p>
-            {hasActiveFilters && (
+            {hasActiveFilters ? (
               <Button variant="outline" onClick={clearFilters}>{t('common.clearFilters', 'Clear Filters')}</Button>
-            )}
+            ) : canCreateRequest ? (
+              <Button
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => setCreateModalOpen(true)}
+              >
+                {t('requests.createFirstRequest', 'Create First Request')}
+              </Button>
+            ) : null}
           </div>
         ) : (
           <>
@@ -898,6 +917,16 @@ export const RequestsPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Create Request Modal */}
+      <CreateRequestModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={(requestId) => {
+          setCreateModalOpen(false);
+          navigate(`/requests/${requestId}`);
+        }}
+      />
     </div>
   );
 };

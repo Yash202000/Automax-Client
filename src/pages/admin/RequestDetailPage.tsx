@@ -106,6 +106,41 @@ export const RequestDetailPage: React.FC = () => {
   const attachments = attachmentsData?.data || [];
   const users = usersData?.data || [];
 
+  // Helper function to download attachment with authentication
+  const downloadAttachment = async (attachmentId: string, fileName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/incidents/${id}/attachments/${attachmentId}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download attachment');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      alert('Failed to download attachment');
+    }
+  };
+
+  // Helper function to get authenticated attachment URL for audio/video
+  const getAuthenticatedAttachmentUrl = (attachmentId: string): string => {
+    const token = localStorage.getItem('token');
+    return `${API_URL}/incidents/${id}/attachments/${attachmentId}/download?token=${token}`;
+  };
+
   // Mutations
   const transitionMutation = useMutation({
     mutationFn: async () => {
@@ -535,7 +570,7 @@ export const RequestDetailPage: React.FC = () => {
                           {attachment.mime_type?.startsWith('image/') ? (
                             <div className="aspect-video bg-[hsl(var(--muted))] relative">
                               <img
-                                src={`${API_URL}/incidents/${id}/attachments/${attachment.id}/download`}
+                                src={getAuthenticatedAttachmentUrl(attachment.id)}
                                 alt={attachment.file_name}
                                 className="w-full h-full object-cover"
                               />
@@ -552,14 +587,13 @@ export const RequestDetailPage: React.FC = () => {
                             <p className="text-xs text-[hsl(var(--muted-foreground))]">
                               {(attachment.file_size / 1024).toFixed(1)} KB
                             </p>
-                            <a
-                              href={`${API_URL}/incidents/${id}/attachments/${attachment.id}/download`}
-                              download
+                            <button
+                              onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
                               className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
                             >
                               <Download className="w-3 h-3" />
                               {t('common.download', 'Download')}
-                            </a>
+                            </button>
                           </div>
                         </div>
                       ))}

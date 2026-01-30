@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  Plus,
   List,
   Circle,
   User,
@@ -30,6 +31,7 @@ import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n'
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import SoftPhone from '../sip/Softphone';
+import { CreateQueryModal } from '@/components/queries/CreateQueryModal';
 
 export const QueryLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +42,7 @@ export const QueryLayout: React.FC = () => {
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const [showSoftphone, setShowSoftphone] = useState(false);
+  const [createQueryModalOpen, setCreateQueryModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -47,6 +50,7 @@ export const QueryLayout: React.FC = () => {
   const canViewIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canViewQueries = isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW);
   const canViewAllQueries = isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW_ALL);
+  const canCreateQuery = isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_CREATE);
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -150,6 +154,19 @@ export const QueryLayout: React.FC = () => {
                 </>
               )}
             </NavLink>
+          )}
+
+          {canCreateQuery && (
+            <button
+              onClick={() => {
+                setCreateQueryModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className={`group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
+            >
+              <Plus size={20} className="flex-shrink-0" />
+              {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.newQuery', 'New Query')}</span>}
+            </button>
           )}
 
           {/* My Queries - Collapsible */}
@@ -567,6 +584,16 @@ export const QueryLayout: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Create Query Modal */}
+      <CreateQueryModal
+        isOpen={createQueryModalOpen}
+        onClose={() => setCreateQueryModalOpen(false)}
+        onSuccess={(queryId) => {
+          setCreateQueryModalOpen(false);
+          navigate(`/queries/${queryId}`);
+        }}
+      />
     </div>
   );
 };

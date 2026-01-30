@@ -20,7 +20,7 @@ import {
 import { Button, TreeSelect, LocationPicker } from '../ui';
 import type { TreeSelectNode, LocationData } from '../ui';
 import {
-  queryApi,
+  requestApi,
   classificationApi,
   workflowApi,
   departmentApi,
@@ -34,7 +34,7 @@ import type {
   Department,
   User as UserType,
   Incident,
-  CreateQueryQuery,
+  CreateRequestRequest,
   IncidentSource,
   Location,
   LookupValue,
@@ -42,13 +42,13 @@ import type {
 import { INCIDENT_SOURCES } from '../../types';
 import { cn } from '@/lib/utils';
 
-interface CreateQueryModalProps {
+interface CreateRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (requestId: string) => void;
 }
 
-export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
+export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
@@ -87,11 +87,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
   // Query for request classifications
   const { data: classificationsData, isLoading: classificationsLoading } = useQuery({
-    queryKey: ['classifications', 'query'],
+    queryKey: ['classifications', 'request'],
     queryFn: async () => {
-      // Get 'query', 'both', and 'all' types
+      // Get 'request', 'both', and 'all' types
       const [requestRes, bothRes, allRes] = await Promise.all([
-        classificationApi.getTreeByType('query'),
+        classificationApi.getTreeByType('request'),
         classificationApi.getTreeByType('both'),
         classificationApi.getTreeByType('all'),
       ]);
@@ -107,11 +107,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
   // Query for request workflows
   const { data: workflowsData, isLoading: workflowsLoading } = useQuery({
-    queryKey: ['workflows', 'query'],
+    queryKey: ['workflows', 'request'],
     queryFn: async () => {
-      // Get 'query', 'both', and 'all' types
+      // Get 'request', 'both', and 'all' types
       const [requestRes, bothRes, allRes] = await Promise.all([
-        workflowApi.listByRecordType('query', true),
+        workflowApi.listByRecordType('request', true),
         workflowApi.listByRecordType('both', true),
         workflowApi.listByRecordType('all', true),
       ]);
@@ -157,12 +157,12 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
     queryKey: ['incidents', 'my-reported', 'search', incidentSearch],
     queryFn: async () => {
-      // Get incidents and queries created by current user
-      const [incidentsRes, queriesRes] = await Promise.all([
+      // Get incidents and requests created by current user
+      const [incidentsRes, requestsRes] = await Promise.all([
         incidentApi.getMyReported(1, 50, 'incident'),
-        incidentApi.getMyReported(1, 50, 'query'),
+        incidentApi.getMyReported(1, 50, 'request'),
       ]);
-      const combined = [...(incidentsRes.data || []), ...(queriesRes.data || [])];
+      const combined = [...(incidentsRes.data || []), ...(requestsRes.data || [])];
       // Filter by search term
       if (incidentSearch) {
         const searchLower = incidentSearch.toLowerCase();
@@ -247,18 +247,18 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
   // Create request mutation
   const createMutation = useMutation({
-    mutationFn: async ({ data, files }: { data: CreateQueryQuery; files: File[] }) => {
-      const response = await queryApi.create(data);
+    mutationFn: async ({ data, files }: { data: CreateRequestRequest; files: File[] }) => {
+      const response = await requestApi.create(data);
       // Upload attachments after request is created
       if (response.data && files.length > 0) {
         await Promise.all(
-          files.map(file => queryApi.uploadAttachment(response.data!.id, file))
+          files.map(file => requestApi.uploadAttachment(response.data!.id, file))
         );
       }
       return response;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['queries'] });
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
       if (result.data?.id) {
         onSuccess(result.data.id);
       }
@@ -311,42 +311,42 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!title.trim()) {
-      newErrors.title = t('queries.titleRequired', 'Title is required');
+      newErrors.title = t('requests.titleRequired', 'Title is required');
     }
     if (!classificationId) {
-      newErrors.classification = t('queries.classificationRequired', 'Classification is required');
+      newErrors.classification = t('requests.classificationRequired', 'Classification is required');
     }
     if (!workflowId) {
-      newErrors.workflow = t('queries.workflowRequired', 'Workflow is required');
+      newErrors.workflow = t('requests.workflowRequired', 'Workflow is required');
     }
 
     // Check workflow required fields
     if (workflowRequiredFields.includes('description') && !description.trim()) {
-      newErrors.description = t('queries.fieldRequired', { field: t('queries.description', 'Description') });
+      newErrors.description = t('requests.fieldRequired', { field: t('requests.description', 'Description') });
     }
     if (workflowRequiredFields.includes('source') && !source) {
-      newErrors.source = t('queries.fieldRequired', { field: t('queries.source', 'Source') });
+      newErrors.source = t('requests.fieldRequired', { field: t('requests.source', 'Source') });
     }
     if (workflowRequiredFields.includes('channel') && !channel.trim()) {
-      newErrors.channel = t('queries.fieldRequired', { field: t('queries.channel', 'Channel') });
+      newErrors.channel = t('requests.fieldRequired', { field: t('requests.channel', 'Channel') });
     }
     if (workflowRequiredFields.includes('location_id') && !locationId) {
-      newErrors.location = t('queries.fieldRequired', { field: t('queries.location', 'Location') });
+      newErrors.location = t('requests.fieldRequired', { field: t('requests.location', 'Location') });
     }
     if (workflowRequiredFields.includes('department_id') && !selectedDepartment) {
-      newErrors.department = t('queries.fieldRequired', { field: t('queries.department', 'Department') });
+      newErrors.department = t('requests.fieldRequired', { field: t('requests.department', 'Department') });
     }
     if (workflowRequiredFields.includes('assignee_id') && !selectedAssignee) {
-      newErrors.assignee = t('queries.fieldRequired', { field: t('queries.assignee', 'Assignee') });
+      newErrors.assignee = t('requests.fieldRequired', { field: t('requests.assignee', 'Assignee') });
     }
     if (workflowRequiredFields.includes('due_date') && !dueDate) {
-      newErrors.due_date = t('queries.fieldRequired', { field: t('queries.dueDate', 'Due Date') });
+      newErrors.due_date = t('requests.fieldRequired', { field: t('requests.dueDate', 'Due Date') });
     }
     if (workflowRequiredFields.includes('geolocation') && (latitude === undefined || longitude === undefined)) {
-      newErrors.geolocation = t('queries.fieldRequired', { field: t('queries.geolocation', 'Geolocation') });
+      newErrors.geolocation = t('requests.fieldRequired', { field: t('requests.geolocation', 'Geolocation') });
     }
     if ((workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && attachments.length === 0) {
-      newErrors.attachments = t('queries.fieldRequired', { field: t('queries.attachments', 'Attachments') });
+      newErrors.attachments = t('requests.fieldRequired', { field: t('requests.attachments', 'Attachments') });
     }
 
     // Check lookup field requirements
@@ -355,7 +355,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
         const categoryCode = field.replace('lookup:', '');
         const category = requestLookupCategories.find(c => c.code === categoryCode);
         if (category && !lookupValues[category.id]) {
-          newErrors[field] = t('queries.fieldRequired', { field: category.name });
+          newErrors[field] = t('requests.fieldRequired', { field: category.name });
         }
       }
     }
@@ -369,7 +369,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
     const lookupIds = Object.values(lookupValues).filter(Boolean);
 
-    const data: CreateQueryQuery = {
+    const data: CreateRequestRequest = {
       title: title.trim(),
       description: description.trim() || undefined,
       classification_id: classificationId,
@@ -443,10 +443,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t('queries.createQuery', 'Create Query')}
+                {t('requests.createRequest', 'Create Request')}
               </h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t('queries.createQueryDescription', 'Create a new request record')}
+                {t('requests.createRequestDescription', 'Create a new request record')}
               </p>
             </div>
           </div>
@@ -464,19 +464,21 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {t('queries.basicInfo', 'Basic Information')}
+              {t('requests.basicInfo', 'Basic Information')}
             </h4>
 
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('queries.title', 'Title')} <span className="text-red-500">*</span>
+                {t('requests.title', 'Title')} <span className="text-red-500">*</span>
               </label>
               <input
+                id="request-title"
+                name="title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={t('queries.titlePlaceholder', 'Enter request title...')}
+                placeholder={t('requests.titlePlaceholder', 'Enter request title...')}
                 className={cn(
                   "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                   errors.title ? "border-red-500" : "border-[hsl(var(--border))]"
@@ -490,7 +492,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('queries.description', 'Description')}
+                {t('requests.description', 'Description')}
                 {workflowRequiredFields.includes('description') && (
                   <span className="text-red-500 ml-1">*</span>
                 )}
@@ -498,7 +500,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t('queries.descriptionPlaceholder', 'Describe the request...')}
+                placeholder={t('requests.descriptionPlaceholder', 'Describe the request...')}
                 rows={3}
                 className={cn(
                   "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none",
@@ -516,7 +518,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             {/* Source */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('queries.source', 'Source')}
+                {t('requests.source', 'Source')}
                 {workflowRequiredFields.includes('source') ? (
                   <span className="text-red-500 ml-1">*</span>
                 ) : (
@@ -533,7 +535,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   errors.source ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               >
-                <option value="">{t('queries.selectSource', 'Select source...')}</option>
+                <option value="">{t('requests.selectSource', 'Select source...')}</option>
                 {INCIDENT_SOURCES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
@@ -549,7 +551,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 <Radio className="w-3 h-3 inline mr-1" />
-                {t('queries.channel', 'Channel')}
+                {t('requests.channel', 'Channel')}
                 {workflowRequiredFields.includes('channel') ? (
                   <span className="text-red-500 ml-1">*</span>
                 ) : (
@@ -562,7 +564,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 type="text"
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
-                placeholder={t('queries.channelPlaceholder', 'e.g., Phone, Email, Web')}
+                placeholder={t('requests.channelPlaceholder', 'e.g., Phone, Email, Web')}
                 className={cn(
                   "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                   errors.channel ? "border-red-500" : "border-[hsl(var(--border))]"
@@ -578,7 +580,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {t('queries.sourceIncident', 'Source Incident/Query')}
+              {t('requests.sourceIncident', 'Source Incident/Request')}
               <span className="text-xs text-[hsl(var(--muted-foreground))]">
                 ({t('common.optional', 'Optional')})
               </span>
@@ -614,7 +616,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                       setShowIncidentSearch(true);
                     }}
                     onFocus={() => setShowIncidentSearch(true)}
-                    placeholder={t('queries.searchSourceIncident', 'Search for incident/request number or title...')}
+                    placeholder={t('requests.searchSourceIncident', 'Search for incident/request number or title...')}
                     className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
@@ -628,7 +630,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                       </div>
                     ) : searchedIncidents.length === 0 ? (
                       <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                        {t('queries.noIncidentsFound', 'No incidents found')}
+                        {t('requests.noIncidentsFound', 'No incidents found')}
                       </div>
                     ) : (
                       searchedIncidents.map((incident) => (
@@ -672,7 +674,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Tags className="w-4 h-4" />
-                {t('queries.classification', 'Classification')} <span className="text-red-500">*</span>
+                {t('requests.classification', 'Classification')} <span className="text-red-500">*</span>
               </h4>
 
               {classificationsLoading ? (
@@ -684,7 +686,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   <div className="flex items-center gap-2 text-blue-700">
                     <AlertTriangle className="w-4 h-4" />
                     <p className="text-xs">
-                      {t('queries.noClassifications', 'No request classifications found.')}
+                      {t('requests.noClassifications', 'No request classifications found.')}
                     </p>
                   </div>
                 </div>
@@ -693,10 +695,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   data={classificationTreeData}
                   value={classificationId}
                   onChange={(id) => setClassificationId(id)}
-                  placeholder={t('queries.selectClassification', 'Select classification...')}
+                  placeholder={t('requests.selectClassification', 'Select classification...')}
                   error={errors.classification}
                   leafOnly={true}
-                  emptyMessage={t('queries.noClassifications', 'No request classifications found.')}
+                  emptyMessage={t('requests.noClassifications', 'No request classifications found.')}
                   maxHeight="200px"
                 />
               )}
@@ -706,7 +708,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Workflow className="w-4 h-4" />
-                {t('queries.workflow', 'Workflow')} <span className="text-red-500">*</span>
+                {t('requests.workflow', 'Workflow')} <span className="text-red-500">*</span>
               </h4>
 
               {workflowsLoading ? (
@@ -718,7 +720,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   <div className="flex items-center gap-2 text-blue-700">
                     <AlertTriangle className="w-4 h-4" />
                     <p className="text-xs">
-                      {t('queries.noWorkflows', 'No request workflows found.')}
+                      {t('requests.noWorkflows', 'No request workflows found.')}
                     </p>
                   </div>
                 </div>
@@ -773,7 +775,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                {t('queries.location', 'Location')}
+                {t('requests.location', 'Location')}
                 {workflowRequiredFields.includes('location_id') ? (
                   <span className="text-red-500 ml-1">*</span>
                 ) : (
@@ -786,10 +788,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 data={locationTree}
                 value={locationId || ''}
                 onChange={(id) => setLocationId(id)}
-                placeholder={t('queries.selectLocation', 'Select location...')}
+                placeholder={t('requests.selectLocation', 'Select location...')}
                 error={errors.location}
                 leafOnly={true}
-                emptyMessage={t('queries.noLocations', 'No locations available')}
+                emptyMessage={t('requests.noLocations', 'No locations available')}
               />
             </div>
 
@@ -832,11 +834,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div>
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
-                {t('queries.geolocation', 'Geolocation')}
+                {t('requests.geolocation', 'Geolocation')}
                 <span className="text-red-500 ml-1">*</span>
               </h4>
               <LocationPicker
-                label={t('queries.geolocation', 'Geolocation')}
+                label={t('requests.geolocation', 'Geolocation')}
                 value={latitude !== undefined && longitude !== undefined ? {
                   latitude,
                   longitude,
@@ -859,7 +861,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
-                {t('queries.department', 'Department')}
+                {t('requests.department', 'Department')}
                 {workflowRequiredFields.includes('department_id') ? (
                   <span className="text-red-500 ml-1">*</span>
                 ) : (
@@ -880,7 +882,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   errors.department ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               >
-                <option value="">{t('queries.selectDepartment', 'Select department...')}</option>
+                <option value="">{t('requests.selectDepartment', 'Select department...')}</option>
                 {flattenDepartments(departments).map((dept) => (
                   <option key={dept.id} value={dept.id}>
                     {'—'.repeat(dept.level)} {dept.name}
@@ -896,7 +898,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <User className="w-4 h-4" />
-                {t('queries.assignee', 'Assignee')}
+                {t('requests.assignee', 'Assignee')}
                 {workflowRequiredFields.includes('assignee_id') ? (
                   <span className="text-red-500 ml-1">*</span>
                 ) : (
@@ -917,7 +919,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   errors.assignee ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               >
-                <option value="">{t('queries.selectAssignee', 'Select assignee...')}</option>
+                <option value="">{t('requests.selectAssignee', 'Select assignee...')}</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name} {user.last_name} ({user.username})
@@ -933,7 +935,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                {t('queries.dueDate', 'Due Date')}
+                {t('requests.dueDate', 'Due Date')}
                 {workflowRequiredFields.includes('due_date') ? (
                   <span className="text-red-500 ml-1">*</span>
                 ) : (
@@ -961,7 +963,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Paperclip className="w-4 h-4" />
-              {t('queries.attachments', 'Attachments')}
+              {t('requests.attachments', 'Attachments')}
               {(workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && (
                 <span className="text-red-500">*</span>
               )}
@@ -1001,7 +1003,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               )}>
                 <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t('queries.clickToUpload', 'Click to upload files')}
+                  {t('requests.clickToUpload', 'Click to upload files')}
                 </span>
                 <input
                   type="file"
@@ -1031,7 +1033,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               <div className="flex items-center gap-2 text-red-700">
                 <AlertTriangle className="w-4 h-4" />
                 <p className="text-sm">
-                  {(createMutation.error as Error)?.message || t('queries.createError', 'Failed to create request')}
+                  {(createMutation.error as Error)?.message || t('requests.createError', 'Failed to create request')}
                 </p>
               </div>
             </div>
@@ -1054,7 +1056,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             leftIcon={!createMutation.isPending ? <CheckCircle2 className="w-4 h-4" /> : undefined}
             className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
           >
-            {t('queries.create', 'Create Query')}
+            {t('requests.create', 'Create Request')}
           </Button>
         </div>
       </div>
@@ -1062,4 +1064,4 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   );
 };
 
-export default CreateQueryModal;
+export default CreateRequestModal;

@@ -1015,11 +1015,20 @@ export interface CreateComplaintRequest {
   classification_id: string;
   workflow_id: string;
   source_incident_id?: string;
+  source?: IncidentSource;
   channel?: string;
   reporter_id?: string; // Link to user who reported/created the complaint
   department_id?: string;
   assignee_id?: string;
   location_id?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  due_date?: string;
   lookup_value_ids?: string[];
 }
 
@@ -1029,10 +1038,41 @@ export interface CreateQueryRequest {
   classification_id: string;
   workflow_id: string;
   source_incident_id?: string;
+  source?: IncidentSource;
   channel?: string;
   department_id?: string;
   assignee_id?: string;
   location_id?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  due_date?: string;
+  lookup_value_ids?: string[];
+}
+
+export interface CreateRequestRequest {
+  title: string;
+  description?: string;
+  classification_id: string;
+  workflow_id: string;
+  source_incident_id?: string;
+  source?: IncidentSource;
+  channel?: string;
+  department_id?: string;
+  assignee_id?: string;
+  location_id?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  due_date?: string;
   lookup_value_ids?: string[];
 }
 

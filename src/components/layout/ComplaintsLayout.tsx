@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  Plus,
   List,
   Circle,
   User,
@@ -30,6 +31,7 @@ import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n'
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import SoftPhone from '../sip/Softphone';
+import { CreateComplaintModal } from '@/components/complaints/CreateComplaintModal';
 
 export const ComplaintsLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +42,7 @@ export const ComplaintsLayout: React.FC = () => {
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const [showSoftphone, setShowSoftphone] = useState(false);
+  const [createComplaintModalOpen, setCreateComplaintModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -47,6 +50,7 @@ export const ComplaintsLayout: React.FC = () => {
   const canViewIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canViewComplaints = isSuperAdmin || hasPermission(PERMISSIONS.COMPLAINTS_VIEW);
   const canViewAllComplaints = isSuperAdmin || hasPermission(PERMISSIONS.COMPLAINTS_VIEW_ALL);
+  const canCreateComplaint = isSuperAdmin || hasPermission(PERMISSIONS.COMPLAINTS_CREATE);
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -150,6 +154,19 @@ export const ComplaintsLayout: React.FC = () => {
                 </>
               )}
             </NavLink>
+          )}
+
+          {canCreateComplaint && (
+            <button
+              onClick={() => {
+                setCreateComplaintModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className={`group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
+            >
+              <Plus size={20} className="flex-shrink-0" />
+              {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.newComplaint', 'New Complaint')}</span>}
+            </button>
           )}
 
           {/* My Complaints - Collapsible */}
@@ -567,6 +584,16 @@ export const ComplaintsLayout: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Create Complaint Modal */}
+      <CreateComplaintModal
+        isOpen={createComplaintModalOpen}
+        onClose={() => setCreateComplaintModalOpen(false)}
+        onSuccess={(complaintId) => {
+          setCreateComplaintModalOpen(false);
+          navigate(`/complaints/${complaintId}`);
+        }}
+      />
     </div>
   );
 };
