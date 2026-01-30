@@ -69,8 +69,8 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.manageComplaints', 'Handle and resolve complaints'),
       href: '/complaints',
       icon: MessageSquareWarning,
-      gradient: 'from-amber-500 to-orange-500',
-      shadowColor: 'shadow-amber-500/20',
+      gradient: 'from-amber-600 to-orange-700',
+      shadowColor: 'shadow-amber-600/20',
       permissions: [PERMISSIONS.DASHBOARD_COMPLAINTS],
     },
     {
@@ -99,8 +99,8 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.viewReportsLogs'),
       href: '/admin/reports',
       icon: FileBarChart,
-      gradient: 'from-orange-500 to-amber-500',
-      shadowColor: 'shadow-orange-500/20',
+      gradient: 'from-orange-600 to-amber-700',
+      shadowColor: 'shadow-orange-600/20',
       permissions: [PERMISSIONS.REPORTS_VIEW],
     },
   ];
@@ -154,12 +154,12 @@ export const DashboardPage: React.FC = () => {
                   <card.icon className="w-6 h-6 text-white" />
                 </div>
                 <h2 className="text-lg font-bold text-white leading-tight">{card.title}</h2>
-                <p className="text-white/60 text-xs font-medium mt-0.5">{card.subtitle}</p>
+                <p className="text-white/90 text-xs font-medium mt-0.5">{card.subtitle}</p>
               </div>
 
               {/* Arrow indicator */}
               <div className="relative z-10 flex items-center justify-between mt-3">
-                <p className="text-white/70 text-xs hidden sm:block">{card.description}</p>
+                <p className="text-white/90 text-xs hidden sm:block">{card.description}</p>
                 <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:translate-x-1 transition-all ml-auto">
                   <ArrowRight className="w-4 h-4 text-white" />
                 </div>

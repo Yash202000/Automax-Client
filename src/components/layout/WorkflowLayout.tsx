@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  GitBranch,
   ChevronLeft,
   LogOut,
   Home,
@@ -95,18 +94,7 @@ export const WorkflowLayout: React.FC = () => {
       {/* Logo Section */}
       <div className={`h-[70px] flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} border-b border-white/5`}>
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <GitBranch className="w-5 h-5 text-white" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900" />
-          </div>
-          {!collapsed && (
-            <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">{t('workflows.title')}</h1>
-              <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t('workflows.designer')}</p>
-            </div>
-          )}
+          <img src="/epm-logo.png" alt="Automax" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
         </div>
       </div>
 
@@ -370,7 +358,7 @@ export const WorkflowLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search */}
+            {/* Search - Commented out for now
             <div className="hidden md:flex items-center">
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -381,6 +369,17 @@ export const WorkflowLayout: React.FC = () => {
                 />
               </div>
             </div>
+            */}
+
+            {/* Back to Home */}
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
+              title={t('workflows.backToHome')}
+            >
+              <Home className="w-5 h-5" />
+              <span className="hidden md:inline text-sm font-medium">{t('workflows.backToHome')}</span>
+            </Link>
 
             {/* Language Switcher */}
             <div className="relative" ref={langRef}>

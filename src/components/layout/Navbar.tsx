@@ -7,11 +7,9 @@ import {
   Settings,
   Shield,
   Bell,
-  Search,
   ChevronDown,
   Menu,
   X,
-  Zap,
   LayoutDashboard,
   Languages,
   Phone
@@ -101,10 +99,7 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 mr-8">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">Automax</span>
+              <img src="/epm-logo.png" alt="Automax" className="h-9 w-auto" />
             </Link>
 
             {/* Desktop Navigation */}
@@ -132,7 +127,7 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             {isAuthenticated ? (
               <>
-                {/* Search (Desktop) */}
+                {/* Search (Desktop) - Commented out for now
                 <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm text-gray-500 transition-colors w-64 focus:outline-none focus:ring-0">
                   <Search className="w-4 h-4" />
                   <span>{t('nav.searchPlaceholder')}</span>
@@ -140,6 +135,7 @@ export const Navbar: React.FC = () => {
                     /
                   </kbd>
                 </button>
+                */}
 
                 {/* Language Switcher */}
                 <div className="relative" ref={langRef}>

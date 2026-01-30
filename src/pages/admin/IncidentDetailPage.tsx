@@ -261,6 +261,11 @@ export const IncidentDetailPage: React.FC = () => {
     return mimeType.startsWith('image/');
   };
 
+  // Helper to check if attachment is audio
+  const isAudioAttachment = (mimeType: string) => {
+    return mimeType.startsWith('audio/');
+  };
+
   // Get attachment URL with auth token
   const getAttachmentUrl = (attachmentId: string) => {
     const token = localStorage.getItem('token');
@@ -973,11 +978,66 @@ export const IncidentDetailPage: React.FC = () => {
                           </>
                         )}
 
-                        {/* Non-Image Files List */}
-                        {attachments.filter((a: IncidentAttachment) => !isImageAttachment(a.mime_type)).length > 0 && (
+                        {/* Audio Files */}
+                        {attachments.filter((a: IncidentAttachment) => isAudioAttachment(a.mime_type)).length > 0 && (
+                          <div className="space-y-2 mb-4">
+                            {attachments
+                              .filter((a: IncidentAttachment) => isAudioAttachment(a.mime_type))
+                              .map((attachment: IncidentAttachment) => (
+                                <div
+                                  key={attachment.id}
+                                  className="p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="p-2 bg-[hsl(var(--background))] rounded-lg">
+                                        <svg className="w-5 h-5 text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                          {attachment.file_name}
+                                        </p>
+                                        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                          {formatFileSize(attachment.file_size)} • {formatDateTime(attachment.created_at)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <a
+                                        href={getAttachmentUrl(attachment.id)}
+                                        download={attachment.file_name}
+                                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                      </a>
+                                      <button
+                                        onClick={() => deleteAttachmentMutation.mutate(attachment.id)}
+                                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <audio
+                                    controls
+                                    className="w-full h-10"
+                                    src={getAttachmentUrl(attachment.id)}
+                                    preload="metadata"
+                                  >
+                                    Your browser does not support the audio element.
+                                  </audio>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+
+                        {/* Other Non-Image Files List */}
+                        {attachments.filter((a: IncidentAttachment) => !isImageAttachment(a.mime_type) && !isAudioAttachment(a.mime_type)).length > 0 && (
                           <div className="space-y-2">
                             {attachments
-                              .filter((a: IncidentAttachment) => !isImageAttachment(a.mime_type))
+                              .filter((a: IncidentAttachment) => !isImageAttachment(a.mime_type) && !isAudioAttachment(a.mime_type))
                               .map((attachment: IncidentAttachment) => (
                                 <div
                                   key={attachment.id}

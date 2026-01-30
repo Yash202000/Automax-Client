@@ -34,7 +34,7 @@ import type {
   ReportSort,
   ReportTemplate,
   ReportQueryRequest,
-  ReportFieldDefinition,
+  // ReportFieldDefinition,
   Department,
   Location,
   Classification,
@@ -43,18 +43,18 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 // Helper to build hierarchical label with path
-const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
-  if (item.path) {
-    // If path is available, use it to build the hierarchy
-    const pathParts = item.path.split('/').filter(Boolean);
-    if (pathParts.length > 1) {
-      return pathParts.join(' > ');
-    }
-  }
-  // Fallback to just the name with indentation based on level
-  const indent = item.level ? '—'.repeat(item.level) + ' ' : '';
-  return indent + item.name;
-};
+// const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
+//   if (item.path) {
+//     // If path is available, use it to build the hierarchy
+//     const pathParts = item.path.split('/').filter(Boolean);
+//     if (pathParts.length > 1) {
+//       return pathParts.join(' > ');
+//     }
+//   }
+//   // Fallback to just the name with indentation based on level
+//   const indent = item.level ? '—'.repeat(item.level) + ' ' : '';
+//   return indent + item.name;
+// };
 
 // Helper to flatten tree structure with hierarchical labels
 const flattenTreeWithLabels = <T extends { id: string; name: string; path?: string; level?: number; children?: T[] }>(

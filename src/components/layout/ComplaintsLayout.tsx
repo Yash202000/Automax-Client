@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  MessageSquareWarning,
   ChevronLeft,
   LogOut,
   Home,
@@ -107,18 +106,7 @@ export const ComplaintsLayout: React.FC = () => {
       {/* Logo Section */}
       <div className={`h-[70px] flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} border-b border-white/5`}>
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-              <MessageSquareWarning className="w-5 h-5 text-white" />
-            </div>
-            <div className="absolute -top-1 -end-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-slate-900" />
-          </div>
-          {!collapsed && (
-            <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">{t('sidebar.complaints', 'Complaints')}</h1>
-              <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t('sidebar.management', 'Management')}</p>
-            </div>
-          )}
+          <img src="/epm-logo.png" alt="Automax" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
         </div>
       </div>
 
@@ -411,7 +399,7 @@ export const ComplaintsLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search */}
+            {/* Search - Commented out for now
             <div className="hidden md:flex items-center">
               <div className="relative">
                 <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -422,6 +410,17 @@ export const ComplaintsLayout: React.FC = () => {
                 />
               </div>
             </div>
+            */}
+
+            {/* Back to Home */}
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors"
+              title={t('sidebar.backToHome', 'Back to Home')}
+            >
+              <Home className="w-5 h-5" />
+              <span className="hidden md:inline text-sm font-medium">{t('sidebar.backToHome', 'Back to Home')}</span>
+            </Link>
 
             {/* Language Switcher */}
             <div className="relative" ref={langRef}>

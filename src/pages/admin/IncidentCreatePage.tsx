@@ -32,8 +32,6 @@ export function IncidentCreatePage() {
     country: undefined,
     postal_code: undefined,
     due_date: '',
-    reporter_name: '',
-    reporter_email: '',
   });
 
   const [lookupValues, setLookupValues] = useState<Record<string, string>>({});
@@ -275,7 +273,7 @@ export function IncidentCreatePage() {
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
 
   // List of valid form data fields for validation
-  const validFormFields = ['description', 'classification_id', 'source', 'assignee_id', 'department_id', 'location_id', 'geolocation', 'due_date', 'reporter_name', 'reporter_email'];
+  const validFormFields = ['description', 'classification_id', 'source', 'assignee_id', 'department_id', 'location_id', 'geolocation', 'due_date'];
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -487,29 +485,6 @@ export function IncidentCreatePage() {
                     />
                   </div>
                 )}
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h2 className="text-lg font-semibold mb-4">{t('incidents.reporterInformation')}</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label={t('incidents.reporterName')}
-                  value={formData.reporter_name || ''}
-                  onChange={(e) => handleChange('reporter_name', e.target.value)}
-                  placeholder={t('incidents.reporterNamePlaceholder')}
-                  required={workflowRequiredFields.includes('reporter_name')}
-                  error={errors.reporter_name}
-                />
-                <Input
-                  label={t('incidents.reporterEmail')}
-                  type="email"
-                  value={formData.reporter_email || ''}
-                  onChange={(e) => handleChange('reporter_email', e.target.value)}
-                  placeholder={t('incidents.reporterEmailPlaceholder')}
-                  required={workflowRequiredFields.includes('reporter_email')}
-                  error={errors.reporter_email}
-                />
               </div>
             </Card>
 
