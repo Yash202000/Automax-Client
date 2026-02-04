@@ -206,8 +206,14 @@ export const QueryDetailPage: React.FC = () => {
     });
   };
 
-  const isAudioFile = (mimeType: string) => {
-    return mimeType.startsWith('audio/');
+  const isAudioFile = (mimeType: string, fileName: string) => {
+    // Check mime type first
+    if (mimeType && mimeType.startsWith('audio/')) {
+      return true;
+    }
+    // Fallback to file extension check
+    const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i;
+    return audioExtensions.test(fileName);
   };
 
   if (isLoading) {
@@ -508,7 +514,7 @@ export const QueryDetailPage: React.FC = () => {
                     <div className="space-y-3">
                       {attachments.map((attachment) => (
                         <div key={attachment.id} className="p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg">
-                          {isAudioFile(attachment.mime_type) ? (
+                          {isAudioFile(attachment.mime_type, attachment.file_name) ? (
                             <AudioPlayer
                               src={getAuthenticatedAttachmentUrl(attachment.id)}
                               fileName={attachment.file_name}

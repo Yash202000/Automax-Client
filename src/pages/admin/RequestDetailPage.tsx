@@ -29,6 +29,7 @@ import {
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
 import { RevisionHistory } from '../../components/incidents';
+import { AudioPlayer } from '../../components/common/AudioPlayer';
 import { incidentApi, userApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
@@ -139,6 +140,17 @@ export const RequestDetailPage: React.FC = () => {
   const getAuthenticatedAttachmentUrl = (attachmentId: string): string => {
     const token = localStorage.getItem('token');
     return `${API_URL}/incidents/${id}/attachments/${attachmentId}/download?token=${token}`;
+  };
+
+  // Helper function to check if file is audio
+  const isAudioFile = (mimeType: string, fileName: string) => {
+    // Check mime type first
+    if (mimeType && mimeType.startsWith('audio/')) {
+      return true;
+    }
+    // Fallback to file extension check
+    const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i;
+    return audioExtensions.test(fileName);
   };
 
   // Mutations
@@ -561,43 +573,58 @@ export const RequestDetailPage: React.FC = () => {
                       {t('requests.noAttachments', 'No attachments')}
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="border border-[hsl(var(--border))] rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                        >
-                          {attachment.mime_type?.startsWith('image/') ? (
-                            <div className="aspect-video bg-[hsl(var(--muted))] relative">
-                              <img
-                                src={getAuthenticatedAttachmentUrl(attachment.id)}
-                                alt={attachment.file_name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="aspect-video bg-[hsl(var(--muted))] flex items-center justify-center">
-                              <FileText className="w-12 h-12 text-[hsl(var(--muted-foreground))]" />
-                            </div>
-                          )}
-                          <div className="p-3">
-                            <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
-                              {attachment.file_name}
-                            </p>
-                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                              {(attachment.file_size / 1024).toFixed(1)} KB
-                            </p>
-                            <button
-                              onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
-                              className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
-                            >
-                              <Download className="w-3 h-3" />
-                              {t('common.download', 'Download')}
-                            </button>
-                          </div>
+                    <>
+                      {/* Audio Attachments */}
+                      {attachments.filter(att => isAudioFile(att.mime_type, att.file_name)).map((attachment) => (
+                        <div key={attachment.id} className="p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+                          <AudioPlayer
+                            src={getAuthenticatedAttachmentUrl(attachment.id)}
+                            fileName={attachment.file_name}
+                          />
                         </div>
                       ))}
-                    </div>
+
+                      {/* Image and Other Attachments */}
+                      {attachments.filter(att => !isAudioFile(att.mime_type, att.file_name)).length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {attachments.filter(att => !isAudioFile(att.mime_type, att.file_name)).map((attachment) => (
+                            <div
+                              key={attachment.id}
+                              className="border border-[hsl(var(--border))] rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                            >
+                              {attachment.mime_type?.startsWith('image/') ? (
+                                <div className="aspect-video bg-[hsl(var(--muted))] relative">
+                                  <img
+                                    src={getAuthenticatedAttachmentUrl(attachment.id)}
+                                    alt={attachment.file_name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="aspect-video bg-[hsl(var(--muted))] flex items-center justify-center">
+                                  <FileText className="w-12 h-12 text-[hsl(var(--muted-foreground))]" />
+                                </div>
+                              )}
+                              <div className="p-3">
+                                <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                                  {attachment.file_name}
+                                </p>
+                                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  {(attachment.file_size / 1024).toFixed(1)} KB
+                                </p>
+                                <button
+                                  onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
+                                  className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  {t('common.download', 'Download')}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

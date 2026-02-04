@@ -347,6 +347,9 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     if ((workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && attachments.length === 0) {
       newErrors.attachments = t('complaints.fieldRequired', { field: t('complaints.attachments', 'Attachments') });
     }
+    if (workflowRequiredFields.includes('source_incident_id') && !sourceIncident) {
+      newErrors.source_incident_id = t('complaints.fieldRequired', { field: t('complaints.sourceIncident', 'Source Incident') });
+    }
 
     // Check lookup field requirements
     for (const field of workflowRequiredFields) {
@@ -636,16 +639,23 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
           </div>
           )}
 
-          {/* Source Incident (Optional) - Hidden as always optional */}
-          {false && (
+          {/* Source Incident */}
+          {workflowRequiredFields.includes('source_incident_id') && (
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <FileText className="w-4 h-4" />
               {t('complaints.sourceIncident', 'Source Incident/Complaint')}
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                ({t('common.optional', 'Optional')})
-              </span>
+              {workflowRequiredFields.includes('source_incident_id') ? (
+                <span className="text-xs text-red-500">*</span>
+              ) : (
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  ({t('common.optional', 'Optional')})
+                </span>
+              )}
             </h4>
+            {errors.source_incident_id && (
+              <p className="text-xs text-red-500">{errors.source_incident_id}</p>
+            )}
 
             {sourceIncident ? (
               <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">

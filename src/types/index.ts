@@ -470,6 +470,7 @@ export type IncidentFormField =
   | 'priority'
   | 'severity'
   | 'source'
+  | 'source_incident_id'
   | 'channel'
   | 'assignee_id'
   | 'department_id'
