@@ -29,6 +29,7 @@ import { authApi } from '../../api/auth';
 import { setLoggingOut } from '../../api/client';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
 import SoftPhone from '../sip/Softphone';
+import ThemeToggle from '../common/ThemeToggle';
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -180,7 +181,7 @@ export const AdminLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-purple-500/20'
+                        ? 'bg-gradient-primary text-white shadow-lg shadow-primary/20'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`
                   }
@@ -397,7 +398,7 @@ export const AdminLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-purple-600 bg-purple-50'
+                  ? 'text-primary bg-primary/10'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -416,6 +417,8 @@ export const AdminLayout: React.FC = () => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
+
+            <ThemeToggle/>
 
             {/* Divider */}
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
@@ -501,7 +504,7 @@ export const AdminLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100">
+        <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
               <Outlet />

@@ -19,6 +19,7 @@ import { authApi } from '../../api/auth';
 import { setLoggingOut } from '../../api/client';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
 import SoftPhone from '../sip/Softphone';
+import ThemeToggle from '../common/ThemeToggle';
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
@@ -198,6 +199,8 @@ export const Navbar: React.FC = () => {
                   <Bell className="w-5 h-5" />
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
                 </button>
+                       <ThemeToggle />
+
 
                 {/* Profile Dropdown */}
                 <div className="relative" ref={profileRef}>

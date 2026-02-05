@@ -31,6 +31,7 @@ import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n'
 import SoftPhone from '../sip/Softphone';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import ThemeToggle from '../common/ThemeToggle';
 
 export const IncidentLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -138,7 +139,7 @@ export const IncidentLayout: React.FC = () => {
               className={({ isActive }) =>
                 `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                    ? 'bg-gradient-primary text-white shadow-lg shadow-blue-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`
               }
@@ -162,7 +163,7 @@ export const IncidentLayout: React.FC = () => {
               className={({ isActive }) =>
                 `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                    ? 'bg-gradient-primary text-white shadow-lg shadow-blue-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`
               }
@@ -205,7 +206,7 @@ export const IncidentLayout: React.FC = () => {
                     className={({ isActive }) =>
                       `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                          ? 'bg-gradient-primary text-white shadow-lg shadow-blue-500/20'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`
                     }
@@ -219,7 +220,7 @@ export const IncidentLayout: React.FC = () => {
                     className={({ isActive }) =>
                       `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+                          ? 'bg-gradient-primary text-white shadow-lg shadow-blue-500/20'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`
                     }
@@ -240,7 +241,7 @@ export const IncidentLayout: React.FC = () => {
               className={({ isActive }) =>
                 `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-600/90 to-teal-600/90 text-white shadow-lg shadow-emerald-500/20'
+                    ? 'bg-gradient-primary text-white shadow-lg shadow-emerald-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`
               }
@@ -353,6 +354,7 @@ export const IncidentLayout: React.FC = () => {
         </NavLink>
       </nav>
 
+
       {/* User Section */}
       <div className="p-3 border-t border-white/5">
         {collapsed ? (
@@ -372,7 +374,7 @@ export const IncidentLayout: React.FC = () => {
                   className="w-10 h-10 rounded-xl object-cover ring-2 ring-blue-500/30"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center ring-2 ring-blue-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center ring-2 ring-blue-500/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
@@ -399,12 +401,12 @@ export const IncidentLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen">
       {/* Desktop Sidebar */}
       <aside
         className={`${
           collapsed ? 'w-[72px]' : 'w-[264px]'
-        } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
+        } bg-sidebar transition-all duration-300 flex-col hidden lg:flex relative`}
       >
         <SidebarContent />
       </aside>
@@ -533,11 +535,14 @@ export const IncidentLayout: React.FC = () => {
               auth={{}}
             />
 
+
             {/* Notifications */}
             <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:outline-none focus:ring-0">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
+
+            <ThemeToggle/>
 
             {/* Divider */}
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
@@ -555,7 +560,7 @@ export const IncidentLayout: React.FC = () => {
                     className="w-9 h-9 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                     </span>
@@ -614,7 +619,7 @@ export const IncidentLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100">
+        <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
               <Outlet />

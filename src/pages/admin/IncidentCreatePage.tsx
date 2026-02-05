@@ -378,7 +378,7 @@ export function IncidentCreatePage() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('incidents.createIncident')}</h1>
+          <h1 className="text-2xl font-bold">{t('incidents.createIncident')}</h1>
           <p className="text-gray-600">{t('incidents.createIncidentSubtitle')}</p>
         </div>
       </div>
