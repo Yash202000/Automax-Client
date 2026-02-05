@@ -146,7 +146,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     severity_max: number;
     priority_min: number;
     priority_max: number;
-    record_type: 'incident' | 'request' | 'complaint' | 'both' | 'all';
+    record_type: 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all';
   }>({
     classification_ids: [],
     location_ids: [],
@@ -268,7 +268,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         severity_max: workflow.severity_max ?? 5,
         priority_min: workflow.priority_min ?? 1,
         priority_max: workflow.priority_max ?? 5,
-        record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'both' | 'all') || 'incident',
+        record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all') || 'incident',
       });
       setRequiredFields(workflow.required_fields || []);
       setConvertToRequestRoleIds(workflow.convert_to_request_roles?.map(r => r.id) || []);
@@ -1072,7 +1072,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                   Specify which record types this workflow applies to.
                 </p>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'incident'
@@ -1084,7 +1084,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="incident"
                       checked={matchingConfig.record_type === 'incident'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1098,8 +1098,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Incident Only</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For incident management</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeIncident')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeIncidentDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1113,7 +1113,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="request"
                       checked={matchingConfig.record_type === 'request'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1127,8 +1127,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Request Only</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For service requests</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeRequest')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeRequestDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1142,7 +1142,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="both"
                       checked={matchingConfig.record_type === 'both'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1156,8 +1156,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Both</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Incidents and requests</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeBoth')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeBothDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1171,7 +1171,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="complaint"
                       checked={matchingConfig.record_type === 'complaint'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1185,8 +1185,37 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Complaint Only</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For citizen complaints</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeComplaint')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeComplaintDesc')}</p>
+                    </div>
+                  </label>
+                  <label className={cn(
+                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                    matchingConfig.record_type === 'query'
+                      ? "border-indigo-500 bg-indigo-50"
+                      : "border-[hsl(var(--border))] hover:border-indigo-300"
+                  )}>
+                    <input
+                      type="radio"
+                      name="record_type"
+                      value="query"
+                      checked={matchingConfig.record_type === 'query'}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                      matchingConfig.record_type === 'query'
+                        ? "border-indigo-500 bg-indigo-500"
+                        : "border-[hsl(var(--muted-foreground))]"
+                    )}>
+                      {matchingConfig.record_type === 'query' && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeQuery')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeQueryDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1200,7 +1229,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="all"
                       checked={matchingConfig.record_type === 'all'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1214,8 +1243,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">All Types</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">All record types</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeAll')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeAllDesc')}</p>
                     </div>
                   </label>
                 </div>

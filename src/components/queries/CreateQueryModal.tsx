@@ -16,6 +16,8 @@ import {
   Paperclip,
   MapPin,
   Calendar,
+  Mic,
+  Square,
 } from 'lucide-react';
 import { Button, TreeSelect, LocationPicker } from '../ui';
 import type { TreeSelectNode, LocationData } from '../ui';
@@ -71,6 +73,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   const [lookupValues, setLookupValues] = useState<Record<string, string>>({});
   const [dueDate, setDueDate] = useState('');
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+
   // Geolocation fields
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
@@ -104,21 +111,31 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   });
 
   // Query for request workflows
-  const { data: workflowsData, isLoading: workflowsLoading } = useQuery({
+  const { data: workflowsData, isLoading: workflowsLoading, error: workflowsError } = useQuery({
     queryKey: ['workflows', 'query'],
     queryFn: async () => {
-      // Get 'query', 'both', and 'all' types
-      const [requestRes, bothRes, allRes] = await Promise.all([
-        workflowApi.listByRecordType('query', true),
-        workflowApi.listByRecordType('both', true),
-        workflowApi.listByRecordType('all', true),
-      ]);
-      const combined = [...(requestRes.data || []), ...(bothRes.data || []), ...(allRes.data || [])];
-      // Deduplicate by ID
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
-      );
-      return { success: true, data: unique };
+      try {
+        // Get 'query', 'both', and 'all' types
+        const [requestRes, bothRes, allRes] = await Promise.all([
+          workflowApi.listByRecordType('query', true).catch(err => {
+            return { data: [] };
+          }),
+          workflowApi.listByRecordType('both', true).catch(err => {
+            return { data: [] };
+          }),
+          workflowApi.listByRecordType('all', true).catch(err => {
+            return { data: [] };
+          }),
+        ]);
+        const combined = [...(requestRes.data || []), ...(bothRes.data || []), ...(allRes.data || [])];
+        // Deduplicate by ID
+        const unique = combined.filter((item, index, self) =>
+          index === self.findIndex(t => t.id === item.id)
+        );
+        return { success: true, data: unique };
+      } catch (error) {
+        throw error;
+      }
     },
     enabled: isOpen,
   });
@@ -359,6 +376,55 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
+
+      recorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], `voice-recording-${Date.now()}.webm`, { type: 'audio/webm' });
+        setAttachments(prev => [...prev, audioFile]);
+        stream.getTracks().forEach(track => track.stop());
+        setRecordingTime(0);
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Unable to access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
+  };
+
+  // Recording timer
+  useEffect(() => {
+    let interval: number;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRecording]);
+
   const handleSubmit = () => {
     if (!validate()) return;
 
@@ -464,10 +530,12 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+              <label htmlFor="query-title" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 {t('queries.title', 'Title')} <span className="text-red-500">*</span>
               </label>
               <input
+                id="query-title"
+                name="title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -483,14 +551,15 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             </div>
 
             {/* Description */}
+            {workflowRequiredFields.includes('description') && (
             <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+              <label htmlFor="query-description" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 {t('queries.description', 'Description')}
-                {workflowRequiredFields.includes('description') && (
-                  <span className="text-red-500 ml-1">*</span>
-                )}
+                <span className="text-red-500 ml-1">*</span>
               </label>
               <textarea
+                id="query-description"
+                name="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('queries.descriptionPlaceholder', 'Describe the request...')}
@@ -504,13 +573,16 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <p className="text-xs text-red-500 mt-1">{errors.description}</p>
               )}
             </div>
+            )}
           </div>
 
           {/* Source & Channel */}
+          {(workflowRequiredFields.includes('source') || workflowRequiredFields.includes('channel')) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Source */}
+            {workflowRequiredFields.includes('source') && (
             <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+              <label htmlFor="query-source" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 {t('queries.source', 'Source')}
                 {workflowRequiredFields.includes('source') ? (
                   <span className="text-red-500 ml-1">*</span>
@@ -521,6 +593,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 )}
               </label>
               <select
+                id="query-source"
+                name="source"
                 value={source || ''}
                 onChange={(e) => setSource((e.target.value as IncidentSource) || undefined)}
                 className={cn(
@@ -539,10 +613,12 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <p className="text-xs text-red-500 mt-1">{errors.source}</p>
               )}
             </div>
+            )}
 
             {/* Channel */}
+            {workflowRequiredFields.includes('channel') && (
             <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+              <label htmlFor="query-channel" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 <Radio className="w-3 h-3 inline mr-1" />
                 {t('queries.channel', 'Channel')}
                 {workflowRequiredFields.includes('channel') ? (
@@ -554,6 +630,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 )}
               </label>
               <input
+                id="query-channel"
+                name="channel"
                 type="text"
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
@@ -567,7 +645,9 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <p className="text-xs text-red-500 mt-1">{errors.channel}</p>
               )}
             </div>
+            )}
           </div>
+          )}
 
           {/* Source Incident */}
           {workflowRequiredFields.includes('source_incident_id') && (
@@ -717,13 +797,29 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <div className="flex items-center justify-center py-4">
                   <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 </div>
+              ) : workflowsError ? (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertTriangle className="w-4 h-4" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium">Error loading workflows</p>
+                      <p className="text-xs mt-1">{String(workflowsError)}</p>
+                      <p className="text-xs mt-1">Check browser console for details</p>
+                    </div>
+                  </div>
+                </div>
               ) : filteredWorkflows.length === 0 ? (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center gap-2 text-blue-700">
                     <AlertTriangle className="w-4 h-4" />
-                    <p className="text-xs">
-                      {t('queries.noWorkflows', 'No request workflows found.')}
-                    </p>
+                    <div className="flex-1">
+                      <p className="text-xs">
+                        {t('queries.noWorkflows', 'No query workflows found.')}
+                      </p>
+                      <p className="text-xs mt-1">
+                        Make sure workflows are created with record type: 'query', 'both', or 'all'
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -772,8 +868,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           </div>
 
           {/* Location & Lookup Categories */}
+          {(workflowRequiredFields.includes('location_id') || workflowRequiredFields.some(f => f.startsWith('lookup:'))) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Location */}
+            {workflowRequiredFields.includes('location_id') && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
@@ -796,9 +894,13 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 emptyMessage={t('queries.noLocations', 'No locations available')}
               />
             </div>
+            )}
 
             {/* Lookup Categories */}
-            {requestLookupCategories.map(category => {
+            {requestLookupCategories.filter(category => {
+              const lookupFieldKey = `lookup:${category.code}`;
+              return workflowRequiredFields.includes(lookupFieldKey as any);
+            }).map(category => {
               const lookupFieldKey = `lookup:${category.code}`;
               const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
               return (
@@ -830,6 +932,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               );
             })}
           </div>
+          )}
 
           {/* Geolocation - full width if required */}
           {workflowRequiredFields.includes('geolocation') && (
@@ -858,8 +961,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           )}
 
           {/* Assignment */}
+          {(workflowRequiredFields.includes('department_id') || workflowRequiredFields.includes('assignee_id') || workflowRequiredFields.includes('due_date')) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Department */}
+            {workflowRequiredFields.includes('department_id') && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
@@ -895,8 +1000,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <p className="text-xs text-red-500">{errors.department}</p>
               )}
             </div>
+            )}
 
             {/* Assignee */}
+            {workflowRequiredFields.includes('assignee_id') && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -932,10 +1039,12 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <p className="text-xs text-red-500">{errors.assignee}</p>
               )}
             </div>
+            )}
 
             {/* Due Date */}
+            {workflowRequiredFields.includes('due_date') && (
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+              <label htmlFor="query-due-date" className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 {t('queries.dueDate', 'Due Date')}
                 {workflowRequiredFields.includes('due_date') ? (
@@ -945,8 +1054,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                     ({t('common.optional', 'Optional')})
                   </span>
                 )}
-              </h4>
+              </label>
               <input
+                id="query-due-date"
+                name="due_date"
                 type="datetime-local"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
@@ -959,9 +1070,12 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <p className="text-xs text-red-500">{errors.due_date}</p>
               )}
             </div>
+            )}
           </div>
+          )}
 
           {/* Attachments */}
+          {(workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && (
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Paperclip className="w-4 h-4" />
@@ -999,7 +1113,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   ))}
                 </div>
               )}
-              <label className={cn(
+              <label htmlFor="query-attachments" className={cn(
                 "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors",
                 errors.attachments ? "border-red-500" : "border-[hsl(var(--border))]"
               )}>
@@ -1008,6 +1122,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   {t('queries.clickToUpload', 'Click to upload files')}
                 </span>
                 <input
+                  id="query-attachments"
+                  name="attachments"
                   type="file"
                   className="hidden"
                   multiple
@@ -1023,11 +1139,41 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   }}
                 />
               </label>
+
+              {/* Voice Recording Button */}
+              <button
+                type="button"
+                onClick={isRecording ? stopRecording : startRecording}
+                className={cn(
+                  "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg transition-all",
+                  isRecording
+                    ? "border-red-500 bg-red-50 hover:bg-red-100"
+                    : "border-[hsl(var(--border))] hover:border-blue-500 hover:bg-blue-50"
+                )}
+              >
+                {isRecording ? (
+                  <>
+                    <Square className="w-5 h-5 text-red-500 fill-red-500" />
+                    <span className="text-sm text-red-600 font-medium">
+                      {t('queries.stopRecording', 'Stop Recording')} ({Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                      {t('queries.recordVoice', 'Record Voice')}
+                    </span>
+                  </>
+                )}
+              </button>
+
               {errors.attachments && (
                 <p className="text-xs text-red-500">{errors.attachments}</p>
               )}
             </div>
           </div>
+          )}
 
           {/* Error Message */}
           {createMutation.isError && (

@@ -124,11 +124,13 @@ export default function LocationPicker({
         {
           headers: {
             'Accept-Language': 'en',
+            'User-Agent': 'AutomaxWebApp/1.0',
           },
         }
       );
 
       if (!response.ok) {
+        console.error('Location search failed:', response.status, response.statusText);
         throw new Error('Search failed');
       }
 

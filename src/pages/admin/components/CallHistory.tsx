@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, RefreshCw, ChevronLeft, ChevronRight, ShieldAlert } from 'lucide-react';
+import { Phone, RefreshCw, ChevronLeft, ChevronRight, ShieldAlert } from 'lucide-react';
 import { callLogApi } from '../../../api/admin';
 
 export const CallHistory: React.FC = () => {
@@ -19,19 +19,6 @@ export const CallHistory: React.FC = () => {
     const calls = data?.data || [];
     const isPermissionError = error && (error as any)?.response?.status === 403;
 
-    const getStatusIcon = (callType: string, status: string) => {
-        if (status === 'missed' || status === 'rejected') {
-            return <PhoneMissed className="w-4 h-4 text-red-500" />;
-        }
-        if (callType === 'outbound') {
-            return <PhoneOutgoing className="w-4 h-4 text-blue-500" />;
-        }
-        if (callType === 'inbound') {
-            return <PhoneIncoming className="w-4 h-4 text-green-500" />;
-        }
-        return <Phone className="w-4 h-4 text-slate-400" />;
-    };
-
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'missed':
@@ -47,6 +34,13 @@ export const CallHistory: React.FC = () => {
         }
     };
 
+    const calculateDuration = (startAt: string, endAt?: string) => {
+        if (!endAt) return 0;
+        const start = new Date(startAt).getTime();
+        const end = new Date(endAt).getTime();
+        return Math.floor((end - start) / 1000); // duration in seconds
+    };
+
     const formatDuration = (seconds?: number) => {
         if (!seconds || seconds === 0) return '0:00';
         const mins = Math.floor(seconds / 60);
@@ -55,6 +49,7 @@ export const CallHistory: React.FC = () => {
     };
 
     const formatTimestamp = (dateString: string) => {
+        if (!dateString) return '—';
         const date = new Date(dateString);
         const now = new Date();
         const diff = now.getTime() - date.getTime();
@@ -113,34 +108,50 @@ export const CallHistory: React.FC = () => {
                 ) : (
                     <>
                         <div className="divide-y divide-slate-100">
-                            {calls.map((call: any) => (
-                                <div key={call.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                            call.status === 'missed' || call.status === 'rejected' ? 'bg-red-50' :
-                                            call.status === 'answered' ? 'bg-green-50' : 'bg-slate-100'
-                                        }`}>
-                                            {getStatusIcon(call.call_type, call.status)}
-                                        </div>
-                                        <div>
-                                            <h3 className={`font-medium ${getStatusColor(call.status)}`}>
-                                                {call.call_type === 'outbound' ? call.callee_number : call.caller_number}
-                                            </h3>
-                                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                                <span>{call.call_type === 'outbound' ? 'Outgoing' : call.call_type === 'inbound' ? 'Incoming' : 'Internal'}</span>
-                                                <span>•</span>
-                                                <span className="capitalize">{call.status}</span>
+                            {calls.map((call: any) => {
+                                const duration = calculateDuration(call.start_at, call.end_at);
+                                const creatorName = call.creator
+                                    ? `${call.creator.first_name} ${call.creator.last_name}`.trim() || call.creator.username
+                                    : 'Unknown';
+                                const extension = call.creator?.extension || '—';
+
+                                return (
+                                    <div key={call.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                                call.status === 'missed' || call.status === 'rejected' || call.status === 'failed' ? 'bg-red-50' :
+                                                call.status === 'completed' || call.status === 'answered' ? 'bg-green-50' : 'bg-slate-100'
+                                            }`}>
+                                                <Phone className={`w-4 h-4 ${
+                                                    call.status === 'missed' || call.status === 'rejected' || call.status === 'failed' ? 'text-red-500' :
+                                                    call.status === 'completed' || call.status === 'answered' ? 'text-green-500' : 'text-slate-400'
+                                                }`} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className={`font-medium ${getStatusColor(call.status)}`}>
+                                                        {creatorName}
+                                                    </h3>
+                                                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                                                        Ext. {extension}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
+                                                    <span className="capitalize">{call.status}</span>
+                                                    <span>•</span>
+                                                    <span className="text-xs text-slate-400 truncate">{call.call_uuid}</span>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="text-right ml-4">
+                                            <p className="text-sm font-medium text-slate-900">{formatTimestamp(call.start_at)}</p>
+                                            <p className="text-sm text-slate-500">
+                                                {duration > 0 ? formatDuration(duration) : '—'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-sm font-medium text-slate-900">{formatTimestamp(call.start_time)}</p>
-                                        <p className="text-sm text-slate-500">
-                                            {call.duration ? formatDuration(call.duration) : '—'}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Pagination */}

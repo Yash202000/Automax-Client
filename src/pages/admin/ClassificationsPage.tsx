@@ -124,7 +124,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ classification, level, onAdd, onEdi
                 : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
             )}
           >
-            {classification.type === 'incident' ? t('classifications.incident') : classification.type === 'request' ? t('classifications.request') : classification.type === 'complaint' ? t('classifications.complaint') : classification.type === 'all' ? t('classifications.all') : t('classifications.both')}
+            {classification.type === 'incident' ? t('classifications.incident') : classification.type === 'request' ? t('classifications.request') : classification.type === 'complaint' ? t('classifications.complaint') : classification.type === 'query' ? t('classifications.query') : classification.type === 'all' ? t('classifications.all') : t('classifications.both')}
           </span>
           <span
             className={cn(
@@ -628,6 +628,7 @@ export const ClassificationsPage: React.FC = () => {
                   <option value="incident">{t('classifications.typeIncident')}</option>
                   <option value="request">{t('classifications.typeRequest')}</option>
                   <option value="complaint">{t('classifications.typeComplaint')}</option>
+                  <option value="query">{t('classifications.typeQuery')}</option>
                 </select>
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                   {t('classifications.typeHelp')}
