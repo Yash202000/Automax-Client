@@ -24,6 +24,7 @@ import {
   MapPin,
   Upload,
   Info,
+  Phone,
 } from 'lucide-react';
 import { Button, HierarchicalTreeSelect, type TreeNode } from '../../components/ui';
 import { userApi, departmentApi, locationApi, roleApi, classificationApi } from '../../api/admin';
@@ -38,6 +39,7 @@ interface UserFormData {
   last_name: string;
   username: string;
   phone: string;
+  extension: string;
   department_id: string;
   location_id: string;
   department_ids: string[];
@@ -52,6 +54,7 @@ const initialFormData: UserFormData = {
   last_name: '',
   username: '',
   phone: '',
+  extension: '',
   department_id: '',
   location_id: '',
   department_ids: [],
@@ -84,6 +87,7 @@ export const UsersPage: React.FC = () => {
     first_name: '',
     last_name: '',
     phone: '',
+    extension: '',
     department_id: '',
     location_id: '',
     department_ids: [] as string[],
@@ -188,6 +192,7 @@ export const UsersPage: React.FC = () => {
       first_name: '',
       last_name: '',
       phone: '',
+      extension: '',
       department_id: '',
       location_id: '',
       department_ids: [],
@@ -209,6 +214,7 @@ export const UsersPage: React.FC = () => {
       first_name: '',
       last_name: '',
       phone: '',
+      extension: '',
       department_id: '',
       location_id: '',
       department_ids: [],
@@ -258,6 +264,7 @@ export const UsersPage: React.FC = () => {
       last_name: user.last_name || '',
       username: user.username,
       phone: user.phone || '',
+      extension: (user as any).extension || '',
       department_id: user.department_id || '',
       location_id: user.location_id || '',
       department_ids: user.departments?.map((d) => d.id) || [],
@@ -296,6 +303,7 @@ export const UsersPage: React.FC = () => {
       last_name: formData.last_name,
       username: formData.username,
       phone: formData.phone,
+      extension: formData.extension || undefined,
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,
       department_ids: formData.department_ids,
@@ -303,7 +311,7 @@ export const UsersPage: React.FC = () => {
       classification_ids: formData.classification_ids,
       role_ids: formData.role_ids,
       is_active: formData.is_active,
-    };
+    } as any;
 
     updateMutation.mutate({ id: editingUser.id, data: payload });
   };
@@ -489,6 +497,11 @@ export const UsersPage: React.FC = () => {
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                        Extension
+                      </span>
+                    </th>
+                    <th className="px-6 py-4 text-left">
+                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t('users.roles')}
                       </span>
                     </th>
@@ -547,6 +560,16 @@ export const UsersPage: React.FC = () => {
                             {user.email}
                           </span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {(user as any).extension ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
+                            <Phone className="w-3 h-3" />
+                            Ext. {(user as any).extension}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1.5">
@@ -849,6 +872,17 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Extension</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 1001"
+                    value={formData.extension}
+                    onChange={(e) => setFormData({ ...formData, extension: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
                   data={departmentsTree}
@@ -1120,6 +1154,18 @@ export const UsersPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Extension */}
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Extension</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 1001"
+                    value={createFormData.extension}
+                    onChange={(e) => setCreateFormData({ ...createFormData, extension: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
                   data={departmentsTree}
@@ -1253,7 +1299,7 @@ export const UsersPage: React.FC = () => {
             {/* Modal Body */}
             <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-6">
               {/* Contact Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{t('users.email')}</p>
                   <div className="flex items-center gap-2">
@@ -1264,6 +1310,13 @@ export const UsersPage: React.FC = () => {
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{t('users.phone')}</p>
                   <p className="text-sm text-[hsl(var(--foreground))]">{viewingUser.phone || t('users.notProvided')}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Extension</p>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-[hsl(var(--primary))]" />
+                    <p className="text-sm text-[hsl(var(--foreground))]">{(viewingUser as any).extension || t('users.notProvided')}</p>
+                  </div>
                 </div>
               </div>
 

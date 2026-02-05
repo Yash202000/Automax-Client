@@ -1506,3 +1506,48 @@ export const lookupApi = {
     return response.data;
   },
 };
+
+// Call Log API
+export const callLogApi = {
+  list: async (page = 1, limit = 20, userId?: string): Promise<any> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (userId) params.append('user_id', userId);
+    const response = await apiClient.get(`/admin/call-logs?${params.toString()}`);
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<any> => {
+    const response = await apiClient.get(`/admin/call-logs/${id}`);
+    return response.data;
+  },
+
+  create: async (data: {
+    user_id: string;
+    caller_number: string;
+    callee_number: string;
+    call_type: 'inbound' | 'outbound' | 'internal';
+    start_time: string;
+    end_time?: string;
+    duration?: number;
+    status: 'answered' | 'missed' | 'rejected' | 'busy' | 'failed';
+    recording_url?: string;
+  }): Promise<any> => {
+    const response = await apiClient.post('/admin/call-logs', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<{
+    end_time: string;
+    duration: number;
+    status: string;
+    recording_url: string;
+  }>): Promise<any> => {
+    const response = await apiClient.put(`/admin/call-logs/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<any> => {
+    const response = await apiClient.delete(`/admin/call-logs/${id}`);
+    return response.data;
+  },
+};

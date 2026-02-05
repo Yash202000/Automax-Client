@@ -191,6 +191,9 @@
     "buildWorkflows": "بناء سير العمل بالحالات والانتقالات",
     "reportsAnalytics": "التقارير والتحليلات",
     "insightsLogs": "الرؤى والسجلات",
+    "callCentreManagement": "إدارة مركز الاتصال",
+    "callCentre": "إدارة المكالمات",
+    "viewCall": "عرض / إدارة المكالمات والسجلات",
     "viewReportsLogs": "عرض التقارير وسجلات المراجعة",
     "allSystemsOperational": "جميع الأنظمة تعمل بشكل طبيعي",
     "requestManagement": "إدارة الطلبات",
@@ -980,7 +983,8 @@
     "allQueries": "جميع الاستفسارات",
     "myQueries": "استفساراتي",
     "searchQueries": "بحث في الاستفسارات...",
-    "viewIncidents": "عرض الحوادث"
+    "viewIncidents": "عرض الحوادث",
+    "callCentre": "مركز الاتصال"
   },
   "workflows": {
     "title": "سير العمل",

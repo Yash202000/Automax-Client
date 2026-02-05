@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MainLayout, AuthLayout, ProtectedRoute, AdminLayout, AdminProtectedRoute, PermissionRoute, IncidentLayout, RequestLayout, WorkflowLayout, ComplaintsLayout, QueryLayout } from './components/layout';
+import { MainLayout, AuthLayout, ProtectedRoute, AdminLayout, AdminProtectedRoute, PermissionRoute, IncidentLayout, RequestLayout, WorkflowLayout, ComplaintsLayout, QueryLayout, CallCentreLayout } from './components/layout';
 import { PERMISSIONS } from './constants/permissions';
 import {
   LoginPage,
@@ -37,6 +37,8 @@ import {
   ReportTemplatesListPage,
   ReportTemplateBuilderPage,
   LookupsPage,
+  CallCentrePage,
+  CallHistory,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -186,6 +188,16 @@ function App() {
 
           {/* Clean URL redirects */}
           <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
+
+          {/* Call Centre Management - dedicated layout */}
+          <Route element={<AdminProtectedRoute />}>
+            <Route element={<CallCentreLayout />}>
+              <Route path="/call-centre" element={<Navigate to="/call-centre/contacts" replace />} />
+              <Route path="/call-centre/contacts" element={<CallCentrePage />} />
+              <Route path="/call-centre/history" element={<CallHistory />} />
+              {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+            </Route>
+          </Route>
 
           {/* Redirect root to dashboard or login */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

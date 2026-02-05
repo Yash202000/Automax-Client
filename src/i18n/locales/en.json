@@ -191,6 +191,9 @@
     "buildWorkflows": "Build workflows with states & transitions",
     "reportsAnalytics": "Reports & Analytics",
     "insightsLogs": "Insights & Logs",
+    "callCentreManagement": "Call Centre Management",
+    "callCentre": "Manage calls",
+    "viewCall": "View/Manage call and logs",
     "viewReportsLogs": "View reports and audit logs",
     "allSystemsOperational": "All systems operational",
     "requestManagement": "Request Management",
@@ -980,7 +983,8 @@
     "allQueries": "All Queries",
     "myQueries": "My Queries",
     "searchQueries": "Search queries...",
-    "viewIncidents": "View Incidents"
+    "viewIncidents": "View Incidents",
+    "callCentre": "Call Centre"
   },
   "workflows": {
     "title": "Workflows",

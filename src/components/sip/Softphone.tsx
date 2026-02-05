@@ -14,6 +14,7 @@ import {
   Volume2,
   VolumeX,
   Delete,
+  Settings,
 } from "lucide-react";
 
 /* -------------------- Types -------------------- */
@@ -87,6 +88,7 @@ export default function SoftPhone({
   showSip,
   onClose,
   settings,
+  auth,
 }: SoftPhoneProps) {
   const { t } = useTranslation();
   const dragRef = useRef<HTMLDivElement | null>(null);
@@ -109,6 +111,10 @@ export default function SoftPhone({
   const [dragging, setDragging] = useState<boolean>(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Extension credentials
+  const [sipPassword, setSipPassword] = useState<string>("51234");
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState<boolean>(false);
+
   /* ---------------- SIP CONNECTION ---------------- */
 
   // Initialize persistent audio element on mount
@@ -126,11 +132,22 @@ export default function SoftPhone({
   const tryConnect = (): void => {
     if (sipConnected || isConnecting) return;
 
+    const extension = auth?.user?.extension;
+
+    if (!extension) {
+      alert('No extension configured for your account. Please contact your administrator to set up your extension.');
+      if (onClose) onClose();
+      return;
+    }
+
+    // Use default password "51234" if not set
+    const password = sipPassword || "51234";
+
     if (settings?.socketURL && settings?.domain) {
       setIsConnecting(true);
       sipService.init({
-        username: "1005",
-        password: "51234",
+        username: extension,
+        password: password,
         domain: settings.domain,
         socketUrl: settings.socketURL,
       });
@@ -180,7 +197,16 @@ export default function SoftPhone({
         audioEl.srcObject = stream;
         audioEl.volume = 1;
         audioEl.muted = false;
-        audioEl.play().catch(() => {});
+        audioEl.play().catch(() => { });
+      }
+    };
+
+    const initiateCallHandler = (e: Event) => {
+      const ce = e as CustomEvent<{ number: string }>;
+      if (ce.detail && ce.detail.number) {
+        setDialedNumber(ce.detail.number);
+        // Optional: auto-dial if desired
+        // makeCall(); 
       }
     };
 
@@ -190,6 +216,7 @@ export default function SoftPhone({
     window.addEventListener("call-connected", callConnectedHandler);
     window.addEventListener("call-ended", callEndedHandler);
     window.addEventListener("remote-stream", remoteStreamHandler as EventListener);
+    window.addEventListener("initiate-call", initiateCallHandler as EventListener);
 
     return () => {
       window.removeEventListener("incoming-call", incomingHandler as EventListener);
@@ -198,6 +225,7 @@ export default function SoftPhone({
       window.removeEventListener("call-connected", callConnectedHandler);
       window.removeEventListener("call-ended", callEndedHandler);
       window.removeEventListener("remote-stream", remoteStreamHandler as EventListener);
+      window.removeEventListener("initiate-call", initiateCallHandler as EventListener);
     };
   }, []);
 
@@ -402,32 +430,54 @@ export default function SoftPhone({
       </div>
 
       {/* Connection Status */}
-      <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              sipConnected
-                ? "bg-green-500"
+      <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-2 h-2 rounded-full ${sipConnected
+                  ? "bg-green-500"
+                  : isConnecting
+                    ? "bg-yellow-500 animate-pulse"
+                    : "bg-red-500"
+                }`}
+            />
+            <span className="text-xs text-gray-600">
+              {sipConnected
+                ? t('softphone.connected')
                 : isConnecting
-                ? "bg-yellow-500 animate-pulse"
-                : "bg-red-500"
-            }`}
-          />
-          <span className="text-xs text-gray-600">
-            {sipConnected
-              ? t('softphone.connected')
-              : isConnecting
-              ? t('softphone.connecting')
-              : t('softphone.disconnected')}
-          </span>
+                  ? t('softphone.connecting')
+                  : t('softphone.disconnected')}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPasswordPrompt(true)}
+              className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
+              title="Change SIP Password"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+            {!sipConnected && !isConnecting && (
+              <button
+                onClick={tryConnect}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {t('softphone.reconnect')}
+              </button>
+            )}
+          </div>
         </div>
-        {!sipConnected && !isConnecting && (
-          <button
-            onClick={tryConnect}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-          >
-            {t('softphone.reconnect')}
-          </button>
+        {auth?.user?.extension && (
+          <div className="flex items-center gap-1.5">
+            <Phone className="w-3 h-3 text-gray-400" />
+            <span className="text-xs text-gray-500">
+              Ext. {auth.user.extension}
+            </span>
+            <span className="text-xs text-gray-400 mx-1">•</span>
+            <span className="text-xs text-gray-400">
+              Default password
+            </span>
+          </div>
         )}
       </div>
 
@@ -485,21 +535,19 @@ export default function SoftPhone({
           <div className="flex justify-center gap-4 mb-4">
             <button
               onClick={toggleMute}
-              className={`p-3 rounded-full transition-colors ${
-                isMuted
+              className={`p-3 rounded-full transition-colors ${isMuted
                   ? "bg-red-100 text-red-600"
                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-              }`}
+                }`}
             >
               {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </button>
             <button
               onClick={toggleSpeaker}
-              className={`p-3 rounded-full transition-colors ${
-                !isSpeakerOn
+              className={`p-3 rounded-full transition-colors ${!isSpeakerOn
                   ? "bg-red-100 text-red-600"
                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-              }`}
+                }`}
             >
               {isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
             </button>
@@ -565,17 +613,76 @@ export default function SoftPhone({
           <button
             onClick={makeCall}
             disabled={!dialedNumber.trim() || !sipConnected}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors ${
-              dialedNumber.trim() && sipConnected
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors ${dialedNumber.trim() && sipConnected
                 ? "bg-green-500 hover:bg-green-600 text-white"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+              }`}
           >
             <Phone className="w-5 h-5" />
             {t('softphone.call')}
           </button>
         )}
       </div>
+
+      {/* SIP Password Prompt */}
+      {showPasswordPrompt && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full mx-4 animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">SIP Password Settings</h3>
+                <p className="text-sm text-gray-500">Extension: {auth?.user?.extension}</p>
+              </div>
+            </div>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs font-medium text-blue-900 mb-1">Default Password</p>
+              <p className="text-sm text-blue-700">
+                Using default password: <span className="font-mono font-bold">51234</span>
+              </p>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              Enter a custom SIP password or leave as default:
+            </p>
+            <input
+              type="password"
+              value={sipPassword}
+              onChange={(e) => setSipPassword(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  setShowPasswordPrompt(false);
+                }
+              }}
+              placeholder="51234 (default)"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordPrompt(false);
+                }}
+                className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowPasswordPrompt(false);
+                  if (!sipConnected) {
+                    tryConnect();
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

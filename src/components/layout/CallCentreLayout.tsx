@@ -1,55 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  HelpCircle,
   ChevronLeft,
   LogOut,
   Home,
   Bell,
+  Search,
   Menu,
   X,
   ChevronDown,
-  ChevronRight,
   Sparkles,
-  Plus,
   List,
-  Circle,
-  User,
-  UserCheck,
-  PenLine,
-  Languages,
-  Link2,
   Phone,
+  Languages,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { authApi } from '../../api/auth';
-import { setLoggingOut } from '../../api/client';
-import { incidentApi } from '../../api/admin';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
-import { usePermissions } from '../../hooks/usePermissions';
-import { PERMISSIONS } from '../../constants/permissions';
 import SoftPhone from '../sip/Softphone';
-import { CreateQueryModal } from '@/components/queries/CreateQueryModal';
 
-export const QueryLayout: React.FC = () => {
+export const CallCentreLayout: React.FC = () => {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [myQueriesOpen, setMyQueriesOpen] = useState(false);
+  const [showSoftphone, setShowSoftphone] = useState(false);
+
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const [showSoftphone, setShowSoftphone] = useState(false);
-  const [createQueryModalOpen, setCreateQueryModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
-  const { hasPermission, isSuperAdmin } = usePermissions();
-  const canViewIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
-  const canViewQueries = isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW);
-  const canViewAllQueries = isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW_ALL);
-  const canCreateQuery = isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_CREATE);
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -72,44 +54,38 @@ export const QueryLayout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch query stats
-  const { data: statsData } = useQuery({
-    queryKey: ['queries', 'stats'],
-    queryFn: () => incidentApi.getStats('query'),
-  });
+  useEffect(() => {
+    const handleInitiateCall = () => {
+      setShowSoftphone(true);
+    };
 
-  const handleLogout = async () => {
-    // Set flag to prevent 401 interceptor from running during logout
-    setLoggingOut(true);
+    window.addEventListener('initiate-call', handleInitiateCall);
+    return () => window.removeEventListener('initiate-call', handleInitiateCall);
+  }, []);
 
-    // Clear auth state first to prevent any race conditions
+  const handleLogout = () => {
     logout();
-
-    try {
-      await authApi.logout();
-    } catch {
-      // Continue with logout even if API call fails
-    } finally {
-      setLoggingOut(false);
-    }
-
     navigate('/login');
   };
 
-  // Build sidebar items from stats
-  const statusItems = statsData?.data?.by_state
-    ? Object.entries(statsData.data.by_state).map(([stateName, count]) => ({
-        name: stateName,
-        count: count as number,
-      }))
-    : [];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo Section */}
       <div className={`h-[70px] flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} border-b border-white/5`}>
         <div className="flex items-center gap-3">
-          <img src="/epm-logo.png" alt="Automax" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
+          <div className="relative">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <HelpCircle className="w-5 h-5 text-white" />
+            </div>
+            <div className="absolute -top-1 -end-1 w-3 h-3 bg-violet-400 rounded-full border-2 border-slate-900" />
+          </div>
+          {!collapsed && (
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-tight">{t('sidebar.callCentre', 'Call Centre')}</h1>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t('sidebar.management', 'Management')}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -124,185 +100,54 @@ export const QueryLayout: React.FC = () => {
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 overflow-y-auto">
         {/* Main Actions */}
-        {!collapsed && (
-          <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t('sidebar.actions', 'Actions')}
-          </p>
-        )}
+
         <div className="space-y-1">
-          {canViewAllQueries && (
-            <NavLink
-              to="/queries"
-              end
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
-                  )}
-                  <List size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.allQueries', 'All Queries')}</span>}
-                </>
-              )}
-            </NavLink>
-          )}
-
-          {canCreateQuery && (
-            <button
-              onClick={() => {
-                setCreateQueryModalOpen(true);
-                setMobileMenuOpen(false);
-              }}
-              className={`group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
-            >
-              <Plus size={20} className="flex-shrink-0" />
-              {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.newQuery', 'New Query')}</span>}
-            </button>
-          )}
-
-          {/* My Queries - Collapsible */}
-          {canViewQueries && (
-            <div>
-              <button
-                onClick={() => setMyQueriesOpen(!myQueriesOpen)}
-                className={`w-full group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
-              >
-                <User size={20} className="flex-shrink-0" />
-                {!collapsed && (
-                  <>
-                    <span className="ms-3 font-medium text-sm flex-1 text-start">{t('sidebar.myQueries', 'My Queries')}</span>
-                    <ChevronRight
-                      size={16}
-                      className={`transition-transform duration-200 ${myQueriesOpen ? 'ltr:rotate-90 rtl:-rotate-90' : 'rtl:rotate-180'}`}
-                    />
-                  </>
-                )}
-              </button>
-              {myQueriesOpen && !collapsed && (
-                <div className="ms-4 mt-1 space-y-1 border-s border-white/10 ps-2">
-                  <NavLink
-                    to="/queries/my-assigned"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
-                          : 'text-slate-400 hover:text-white hover:bg-white/5'
-                      }`
-                    }
-                  >
-                    <UserCheck size={16} className="flex-shrink-0" />
-                    <span className="ms-2 font-medium text-sm">{t('sidebar.assignedToMe', 'Assigned to Me')}</span>
-                  </NavLink>
-                  <NavLink
-                    to="/queries/my-created"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
-                          : 'text-slate-400 hover:text-white hover:bg-white/5'
-                      }`
-                    }
-                  >
-                    <PenLine size={16} className="flex-shrink-0" />
-                    <span className="ms-2 font-medium text-sm">{t('sidebar.createdByMe', 'Created by Me')}</span>
-                  </NavLink>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Link to Incidents */}
-          {canViewIncidents && (
-            <NavLink
-              to="/incidents"
-              onClick={() => setMobileMenuOpen(false)}
-              className="group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5"
-            >
-              <Link2 size={20} className="flex-shrink-0" />
-              {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.viewIncidents', 'View Incidents')}</span>}
-            </NavLink>
-          )}
-        </div>
-
-        {/* Status Filters */}
-        {canViewQueries && statusItems.length > 0 && (
-          <>
-            {!collapsed && (
+          <NavLink
+            to="/call-centre/contacts"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            {({ isActive }) => (
               <>
-                <div className="my-6 border-t border-white/5" />
-                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                  {t('sidebar.byStatus', 'By Status')}
-                </p>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                )}
+                <List size={20} className="flex-shrink-0" />
+                {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.contacts', 'Contacts')}</span>}
               </>
             )}
-            <div className="space-y-1">
-              {statusItems.map((status) => (
-                <NavLink
-                  key={status.name}
-                  to={`/queries?status=${encodeURIComponent(status.name)}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
-                >
-                  <Circle size={8} className="flex-shrink-0 fill-current" />
-                  {!collapsed && (
-                    <>
-                      <span className="ms-3 font-medium text-sm flex-1">{status.name}</span>
-                      <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
-                        {status.count}
-                      </span>
-                    </>
-                  )}
-                </NavLink>
-              ))}
-            </div>
-          </>
-        )}
+          </NavLink>
 
-        {/* Quick Stats */}
-        {canViewQueries && statsData?.data && !collapsed && (
-          <>
-            <div className="my-6 border-t border-white/5" />
-            <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('sidebar.overview', 'Overview')}
-            </p>
-            <div className="px-3 space-y-3">
-              {canViewAllQueries ? (
-                <NavLink
-                  to="/queries"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
-                >
-                  <span className="text-slate-400">{t('sidebar.total', 'Total')}</span>
-                  <span className="text-white font-semibold">{statsData.data.total || 0}</span>
-                </NavLink>
-              ) : (
-                <div className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2">
-                  <span className="text-slate-400">{t('sidebar.total', 'Total')}</span>
-                  <span className="text-white font-semibold">{statsData.data.total || 0}</span>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+          <NavLink
+            to="/call-centre/history"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                )}
+                <Phone size={20} className="flex-shrink-0" />
+                {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.callHistory', 'Call History')}</span>}
+              </>
+            )}
+          </NavLink>
+        </div>
 
-        {!collapsed && (
-          <>
-            <div className="my-6 border-t border-white/5" />
-            <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('sidebar.quickLinks', 'Quick Links')}
-            </p>
-          </>
-        )}
+
 
         <NavLink
           to="/dashboard"
@@ -363,9 +208,8 @@ export const QueryLayout: React.FC = () => {
     <div className="flex h-screen bg-slate-100">
       {/* Desktop Sidebar */}
       <aside
-        className={`${
-          collapsed ? 'w-[72px]' : 'w-[264px]'
-        } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
+        className={`${collapsed ? 'w-[72px]' : 'w-[264px]'
+          } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
       >
         <SidebarContent />
       </aside>
@@ -380,9 +224,8 @@ export const QueryLayout: React.FC = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
-        }`}
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${mobileMenuOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
+          }`}
       >
         <button
           onClick={() => setMobileMenuOpen(false)}
@@ -415,7 +258,21 @@ export const QueryLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search - Commented out for now
+            {/* Softphone Toggle */}
+            <button
+              onClick={() => setShowSoftphone(!showSoftphone)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
+                showSoftphone
+                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+              title={t('callCentre.softphone', 'Softphone')}
+            >
+              <Phone className="w-4 h-4" />
+              <span className="hidden sm:inline text-sm font-medium">{t('callCentre.phone', 'Phone')}</span>
+            </button>
+
+            {/* Search */}
             <div className="hidden md:flex items-center">
               <div className="relative">
                 <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -426,17 +283,6 @@ export const QueryLayout: React.FC = () => {
                 />
               </div>
             </div>
-            */}
-
-            {/* Back to Home */}
-            <Link
-              to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-colors"
-              title={t('sidebar.backToHome', 'Back to Home')}
-            >
-              <Home className="w-5 h-5" />
-              <span className="hidden md:inline text-sm font-medium">{t('sidebar.backToHome', 'Back to Home')}</span>
-            </Link>
 
             {/* Language Switcher */}
             <div className="relative" ref={langRef}>
@@ -458,11 +304,10 @@ export const QueryLayout: React.FC = () => {
                     <button
                       key={lang.code}
                       onClick={() => handleLanguageChange(lang.code)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                        currentLang === lang.code
-                          ? 'bg-violet-50 text-violet-600'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${currentLang === lang.code
+                        ? 'bg-violet-50 text-violet-600'
+                        : 'text-slate-700 hover:bg-slate-50'
+                        }`}
                     >
                       <span className="text-lg">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
                       <div className="text-start">
@@ -474,30 +319,6 @@ export const QueryLayout: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* Phone/Softphone */}
-            <button
-              onClick={() => setShowSoftphone(!showSoftphone)}
-              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                showSoftphone
-                  ? 'text-emerald-600 bg-emerald-50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Phone className="w-5 h-5" />
-            </button>
-
-            <SoftPhone
-              showSip={showSoftphone}
-              onClose={() => setShowSoftphone(false)}
-              settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
-              auth={{
-                user: {
-                  userID: user?.id || '',
-                  extension: (user as any)?.extension || '',
-                }
-              }}
-            />
 
             {/* Notifications */}
             <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
@@ -533,7 +354,7 @@ export const QueryLayout: React.FC = () => {
                   </p>
                   <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
                     {user?.is_super_admin && <Sparkles className="w-3 h-3 text-violet-500" />}
-                    {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : user?.roles?.[0]?.name || t('sidebar.user', 'User')}
+                    {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : t('sidebar.user', 'User')}
                   </p>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -589,15 +410,17 @@ export const QueryLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Create Query Modal */}
-      <CreateQueryModal
-        isOpen={createQueryModalOpen}
-        onClose={() => setCreateQueryModalOpen(false)}
-        onSuccess={(queryId) => {
-          setCreateQueryModalOpen(false);
-          navigate(`/queries/${queryId}`);
+      <SoftPhone
+        showSip={showSoftphone}
+        onClose={() => setShowSoftphone(false)}
+        settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
+        auth={{
+          user: {
+            userID: user?.id || '',
+            extension: (user as any)?.extension || '',
+          }
         }}
       />
-    </div>
+    </div >
   );
 };

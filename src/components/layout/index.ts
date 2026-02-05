@@ -10,3 +10,4 @@ export { RequestLayout } from './RequestLayout';
 export { WorkflowLayout } from './WorkflowLayout';
 export { ComplaintsLayout } from './ComplaintsLayout';
 export { QueryLayout } from './QueryLayout';
+export { CallCentreLayout } from './CallCentreLayout'
