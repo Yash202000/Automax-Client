@@ -80,7 +80,15 @@ export function useIncidentListWebSocket() {
       isConnecting = true;
 
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsHost = import.meta.env.VITE_WS_URL || `${wsProtocol}//localhost:8080`;
+      // Use runtime config (Docker) if available, otherwise use build-time config
+      const wsHost = (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
+
+      if (!wsHost) {
+        console.error('[IncidentList WS] No WebSocket URL configured. Please set VITE_WS_URL in .env file');
+        isConnecting = false;
+        return;
+      }
+
       const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', ''));
 
       const params = new URLSearchParams({

@@ -100,7 +100,15 @@ export function useIncidentWebSocket(
       state.isConnecting = true;
 
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsHost = import.meta.env.VITE_WS_URL || `${wsProtocol}//localhost:8080`;
+      // Use runtime config (Docker) if available, otherwise use build-time config
+      const wsHost = (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
+
+      if (!wsHost) {
+        console.error('[WebSocket] No WebSocket URL configured. Please set VITE_WS_URL in .env file');
+        state.isConnecting = false;
+        return;
+      }
+
       const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', ''));
 
       // Get user info from localStorage or auth store
