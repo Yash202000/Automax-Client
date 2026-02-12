@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Info,
   Layers,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { classificationApi } from '../../api/admin';
 import type { Classification, ClassificationCreateRequest, ClassificationUpdateRequest, ClassificationType } from '../../types';
@@ -122,7 +124,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ classification, level, onAdd, onEdi
                 : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
             )}
           >
-            {classification.type === 'incident' ? t('classifications.incident') : classification.type === 'request' ? t('classifications.request') : classification.type === 'complaint' ? t('classifications.complaint') : classification.type === 'all' ? t('classifications.all') : t('classifications.both')}
+            {classification.type === 'incident' ? t('classifications.incident') : classification.type === 'request' ? t('classifications.request') : classification.type === 'complaint' ? t('classifications.complaint') : classification.type === 'query' ? t('classifications.query') : classification.type === 'all' ? t('classifications.all') : t('classifications.both')}
           </span>
           <span
             className={cn(
@@ -195,6 +197,9 @@ export const ClassificationsPage: React.FC = () => {
   const [editingClassification, setEditingClassification] = useState<Classification | null>(null);
   const [formData, setFormData] = useState<ClassificationFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
   const canCreateClassification = isSuperAdmin || hasPermission(PERMISSIONS.CLASSIFICATIONS_CREATE);
   const canEditClassification = isSuperAdmin || hasPermission(PERMISSIONS.CLASSIFICATIONS_UPDATE);
@@ -282,6 +287,42 @@ export const ClassificationsPage: React.FC = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await classificationApi.export();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `classifications_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const result = await classificationApi.import(file);
+      setImportResult(result.data || null);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'classifications'] });
+    } catch (error) {
+      console.error('Import failed:', error);
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -327,15 +368,36 @@ export const ClassificationsPage: React.FC = () => {
               </p>
             </div>
           </div>
-          {canCreateClassification && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => openCreateModal()}
-              className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus className="w-4 h-4" />
-              {t('classifications.addRootClassification')}
+              <Download className="w-4 h-4" />
+              {isExporting ? 'Exporting...' : 'Export'}
             </button>
-          )}
+            <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
+              <Upload className="w-4 h-4" />
+              <span>{isImporting ? 'Importing...' : 'Import'}</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                disabled={isImporting}
+                className="hidden"
+              />
+            </label>
+            {canCreateClassification && (
+              <button
+                onClick={() => openCreateModal()}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
+              >
+                <Plus className="w-4 h-4" />
+                {t('classifications.addRootClassification')}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tree Content */}
@@ -376,6 +438,61 @@ export const ClassificationsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Import Result Modal */}
+      {importResult && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                  importResult.skipped > 0
+                    ? "bg-[hsl(var(--warning)/0.1)]"
+                    : "bg-[hsl(var(--success)/0.1)]"
+                )}>
+                  <Info className={cn(
+                    "w-6 h-6",
+                    importResult.skipped > 0
+                      ? "text-[hsl(var(--warning))]"
+                      : "text-[hsl(var(--success))]"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Import Complete</h3>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      <span className="font-medium text-[hsl(var(--success))]">{importResult.imported}</span> classifications imported successfully
+                    </p>
+                    {importResult.skipped > 0 && (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        <span className="font-medium text-[hsl(var(--warning))]">{importResult.skipped}</span> classifications skipped
+                      </p>
+                    )}
+                    {importResult.errors.length > 0 && (
+                      <div className="mt-3 max-h-40 overflow-y-auto">
+                        <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">Errors:</p>
+                        <ul className="space-y-1">
+                          {importResult.errors.map((error, index) => (
+                            <li key={index} className="text-xs text-[hsl(var(--muted-foreground))] pl-3">
+                              • {error}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setImportResult(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
@@ -511,6 +628,7 @@ export const ClassificationsPage: React.FC = () => {
                   <option value="incident">{t('classifications.typeIncident')}</option>
                   <option value="request">{t('classifications.typeRequest')}</option>
                   <option value="complaint">{t('classifications.typeComplaint')}</option>
+                  <option value="query">{t('classifications.typeQuery')}</option>
                 </select>
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                   {t('classifications.typeHelp')}

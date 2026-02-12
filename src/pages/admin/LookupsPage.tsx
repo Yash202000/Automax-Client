@@ -21,6 +21,8 @@ import type {
   LookupCategoryUpdateRequest,
   LookupValueCreateRequest,
   LookupValueUpdateRequest,
+  FieldType,
+  ValidationRules,
 } from '../../types';
 import { cn } from '@/lib/utils';
 import { Button } from '../../components/ui';
@@ -35,6 +37,8 @@ interface CategoryFormData {
   description: string;
   is_active: boolean;
   add_to_incident_form: boolean;
+  field_type: FieldType;
+  validation_rules: ValidationRules;
 }
 
 const initialCategoryFormData: CategoryFormData = {
@@ -44,6 +48,8 @@ const initialCategoryFormData: CategoryFormData = {
   description: '',
   is_active: true,
   add_to_incident_form: false,
+  field_type: 'select',
+  validation_rules: {},
 };
 
 // Value Form Data
@@ -173,6 +179,17 @@ export const LookupsPage: React.FC = () => {
 
   const openEditCategoryModal = (category: LookupCategory) => {
     setEditingCategory(category);
+
+    // Parse validation rules from JSON string
+    let validationRules: ValidationRules = {};
+    if (category.validation_rules) {
+      try {
+        validationRules = JSON.parse(category.validation_rules);
+      } catch (e) {
+        validationRules = {};
+      }
+    }
+
     setCategoryFormData({
       code: category.code,
       name: category.name,
@@ -180,6 +197,8 @@ export const LookupsPage: React.FC = () => {
       description: category.description || '',
       is_active: category.is_active,
       add_to_incident_form: category.add_to_incident_form || false,
+      field_type: (category.field_type || 'select') as FieldType,
+      validation_rules: validationRules,
     });
     setIsCategoryModalOpen(true);
   };
@@ -192,6 +211,12 @@ export const LookupsPage: React.FC = () => {
 
   const handleCategorySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Convert validation_rules object to JSON string
+    const validationRulesJSON = Object.keys(categoryFormData.validation_rules).length > 0
+      ? JSON.stringify(categoryFormData.validation_rules)
+      : '';
+
     const payload: LookupCategoryUpdateRequest = {
       code: categoryFormData.code.toUpperCase(),
       name: categoryFormData.name,
@@ -199,6 +224,8 @@ export const LookupsPage: React.FC = () => {
       description: categoryFormData.description || undefined,
       is_active: categoryFormData.is_active,
       add_to_incident_form: categoryFormData.add_to_incident_form,
+      field_type: categoryFormData.field_type,
+      validation_rules: validationRulesJSON || undefined,
     };
 
     if (editingCategory) {
@@ -349,9 +376,15 @@ export const LookupsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {category.values_count} {t('lookups.values')}
-                          </span>
+                          {(category.field_type === 'select' || category.field_type === 'multiselect' || !category.field_type) ? (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              {category.values_count} {t('lookups.values')}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))] font-medium">
+                              {category.field_type}
+                            </span>
+                          )}
                           <ChevronRight className={cn(
                             "w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform",
                             selectedCategory?.id === category.id && "transform rotate-90"
@@ -406,7 +439,7 @@ export const LookupsPage: React.FC = () => {
                   </p>
                 )}
               </div>
-              {selectedCategory && canCreateLookup && (
+              {selectedCategory && canCreateLookup && (selectedCategory.field_type === 'select' || selectedCategory.field_type === 'multiselect' || !selectedCategory.field_type) && (
                 <button
                   onClick={openCreateValueModal}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
@@ -422,6 +455,17 @@ export const LookupsPage: React.FC = () => {
               <div className="p-12 text-center">
                 <Database className="w-12 h-12 text-[hsl(var(--muted-foreground))] mx-auto mb-3" />
                 <p className="text-[hsl(var(--muted-foreground))]">{t('lookups.selectCategory')}</p>
+              </div>
+            ) : selectedCategory.field_type && selectedCategory.field_type !== 'select' && selectedCategory.field_type !== 'multiselect' ? (
+              <div className="p-12 text-center">
+                <AlertTriangle className="w-12 h-12 text-[hsl(var(--warning))] mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">Values Not Applicable</h3>
+                <p className="text-[hsl(var(--muted-foreground))] mb-2">
+                  This category uses field type: <span className="font-semibold text-[hsl(var(--primary))]">{selectedCategory.field_type}</span>
+                </p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  Values are only required for <strong>Select</strong> and <strong>Multi-select</strong> field types.
+                </p>
               </div>
             ) : selectedCategoryValues.length === 0 ? (
               <div className="p-12 text-center">
@@ -666,6 +710,102 @@ export const LookupsPage: React.FC = () => {
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Field Type
+                  </label>
+                  <select
+                    value={categoryFormData.field_type}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, field_type: e.target.value as FieldType })}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    disabled={editingCategory?.is_system}
+                  >
+                    <option value="select">Select (Dropdown)</option>
+                    <option value="multiselect">Multi-select</option>
+                    <option value="text">Text</option>
+                    <option value="textarea">Textarea</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                    <option value="checkbox">Checkbox</option>
+                  </select>
+                  {categoryFormData.field_type !== 'select' && categoryFormData.field_type !== 'multiselect' && editingCategory && (editingCategory.values_count || 0) > 0 && (
+                    <p className="mt-2 text-xs text-[hsl(var(--warning))] flex items-center gap-2">
+                      <AlertTriangle className="w-3 h-3" />
+                      Warning: This category has {editingCategory.values_count} value(s). Non-select field types don't use values.
+                    </p>
+                  )}
+                </div>
+
+                {(categoryFormData.field_type === 'text' || categoryFormData.field_type === 'textarea') && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        Min Length
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={categoryFormData.validation_rules.minLength || ''}
+                        onChange={(e) => setCategoryFormData({
+                          ...categoryFormData,
+                          validation_rules: { ...categoryFormData.validation_rules, minLength: e.target.value ? parseInt(e.target.value) : undefined }
+                        })}
+                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        Max Length
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="100"
+                        value={categoryFormData.validation_rules.maxLength || ''}
+                        onChange={(e) => setCategoryFormData({
+                          ...categoryFormData,
+                          validation_rules: { ...categoryFormData.validation_rules, maxLength: e.target.value ? parseInt(e.target.value) : undefined }
+                        })}
+                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {categoryFormData.field_type === 'number' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        Min Value
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={categoryFormData.validation_rules.minValue || ''}
+                        onChange={(e) => setCategoryFormData({
+                          ...categoryFormData,
+                          validation_rules: { ...categoryFormData.validation_rules, minValue: e.target.value ? parseFloat(e.target.value) : undefined }
+                        })}
+                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        Max Value
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="999"
+                        value={categoryFormData.validation_rules.maxValue || ''}
+                        onChange={(e) => setCategoryFormData({
+                          ...categoryFormData,
+                          validation_rules: { ...categoryFormData.validation_rules, maxValue: e.target.value ? parseFloat(e.target.value) : undefined }
+                        })}
+                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

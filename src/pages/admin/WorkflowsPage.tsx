@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   Plus,
   Edit2,
@@ -20,6 +21,8 @@ import {
   Archive,
   ChevronDown,
   ChevronUp,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { workflowApi, classificationApi } from '../../api/admin';
 import type { Workflow, Classification, WorkflowCreateRequest, WorkflowUpdateRequest } from '../../types';
@@ -57,6 +60,9 @@ export const WorkflowsPage: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [permanentDeleteConfirm, setPermanentDeleteConfirm] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
 
   const { data: workflowsData, isLoading } = useQuery({
     queryKey: ['admin', 'workflows'],
@@ -78,7 +84,16 @@ export const WorkflowsPage: React.FC = () => {
     mutationFn: (data: WorkflowCreateRequest) => workflowApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      toast.success('Workflow created successfully');
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to create workflow';
+      toast.error('Failed to create workflow', {
+        description: errorMessage,
+        duration: 5000,
+      });
+      console.error('Create workflow error:', error);
     },
   });
 
@@ -86,7 +101,16 @@ export const WorkflowsPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: WorkflowUpdateRequest }) => workflowApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      toast.success('Workflow updated successfully');
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update workflow';
+      toast.error('Failed to update workflow', {
+        description: errorMessage,
+        duration: 5000,
+      });
+      console.error('Update workflow error:', error);
     },
   });
 
@@ -94,7 +118,12 @@ export const WorkflowsPage: React.FC = () => {
     mutationFn: (id: string) => workflowApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      toast.success('Workflow deleted successfully');
       setDeleteConfirm(null);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete workflow';
+      toast.error('Failed to delete workflow', { description: errorMessage });
     },
   });
 
@@ -102,6 +131,11 @@ export const WorkflowsPage: React.FC = () => {
     mutationFn: (id: string) => workflowApi.duplicate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      toast.success('Workflow duplicated successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to duplicate workflow';
+      toast.error('Failed to duplicate workflow', { description: errorMessage });
     },
   });
 
@@ -110,6 +144,11 @@ export const WorkflowsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows', 'deleted'] });
+      toast.success('Workflow restored successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to restore workflow';
+      toast.error('Failed to restore workflow', { description: errorMessage });
     },
   });
 
@@ -117,7 +156,43 @@ export const WorkflowsPage: React.FC = () => {
     mutationFn: (id: string) => workflowApi.permanentDelete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows', 'deleted'] });
+      toast.success('Workflow permanently deleted');
       setPermanentDeleteConfirm(null);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to permanently delete workflow';
+      toast.error('Failed to permanently delete workflow', { description: errorMessage });
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const blob = await workflowApi.export(id);
+      const workflow = workflowsData?.data?.find(w => w.id === id);
+      const filename = `workflow_${workflow?.code}_${Date.now()}.json`;
+
+      // Trigger browser download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: (file: File) => workflowApi.import(file),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      setIsImportModalOpen(false);
+      setImportFile(null);
+
+      if (response.data?.warnings && response.data.warnings.length > 0) {
+        setImportWarnings(response.data.warnings);
+      }
     },
   });
 
@@ -159,11 +234,11 @@ export const WorkflowsPage: React.FC = () => {
         },
       });
     } else {
+      // When creating, only send basic info. Classifications/locations are configured later in the designer.
       createMutation.mutate({
         name: formData.name,
         code: formData.code,
         description: formData.description,
-        classification_ids: formData.classification_ids,
       });
     }
   };
@@ -220,9 +295,14 @@ export const WorkflowsPage: React.FC = () => {
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">{t('workflows.subtitle')}</p>
         </div>
         {canCreateWorkflow && (
-          <Button onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
-            {t('workflows.addWorkflow')}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsImportModalOpen(true)} leftIcon={<Upload className="w-4 h-4" />}>
+              Import
+            </Button>
+            <Button onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
+              {t('workflows.addWorkflow')}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -291,6 +371,16 @@ export const WorkflowsPage: React.FC = () => {
                         title={t('workflows.duplicateWorkflow')}
                       >
                         <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportMutation.mutate(workflow.id);
+                        }}
+                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-colors"
+                        title="Export Workflow"
+                      >
+                        <Download className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(workflow.id)}
@@ -599,71 +689,88 @@ export const WorkflowsPage: React.FC = () => {
                   />
                 </div>
 
-                {editingWorkflow && (
-                  <div className="flex items-center gap-3 p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
-                    <input
-                      type="checkbox"
-                      id="is_default"
-                      checked={formData.is_default}
-                      onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-                      className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
-                    />
-                    <label htmlFor="is_default" className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      {t('workflows.setAsDefault')}
-                    </label>
+                {/* Info message for create mode */}
+                {!editingWorkflow && (
+                  <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                    <Settings2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
+                        Configure Later
+                      </p>
+                      <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                        After creating the workflow, you can configure matching rules (classifications, locations), states, transitions, and required fields in the Workflow Designer.
+                      </p>
+                    </div>
                   </div>
                 )}
 
-                {/* Classifications Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.classificationsLabel')}</label>
-                    <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
-                      {formData.classification_ids.length} {t('workflows.selected')}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    {t('workflows.assignClassifications')}
-                  </p>
+                {editingWorkflow && (
+                  <>
+                    <div className="flex items-center gap-3 p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
+                      <input
+                        type="checkbox"
+                        id="is_default"
+                        checked={formData.is_default}
+                        onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                        className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
+                      />
+                      <label htmlFor="is_default" className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t('workflows.setAsDefault')}
+                      </label>
+                    </div>
 
-                  <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
-                    {flatClassifications.length === 0 ? (
-                      <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
-                        {t('workflows.noClassifications')}
+                    {/* Classifications Section - Only shown in edit mode */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.classificationsLabel')}</label>
+                        <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
+                          {formData.classification_ids.length} {t('workflows.selected')}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="p-3 space-y-2">
-                        {flatClassifications.map((classification) => (
-                          <label
-                            key={classification.id}
-                            className={cn(
-                              "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
-                              formData.classification_ids.includes(classification.id)
-                                ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
-                                : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]"
-                            )}
-                            style={{ paddingLeft: `${(classification.level || 0) * 16 + 12}px` }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.classification_ids.includes(classification.id)}
-                              onChange={() => toggleClassification(classification.id)}
-                              className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-[hsl(var(--foreground))] block truncate">
-                                {classification.name}
-                              </span>
-                              {classification.description && (
-                                <span className="text-xs text-[hsl(var(--muted-foreground))]">{classification.description}</span>
-                              )}
-                            </div>
-                          </label>
-                        ))}
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                        {t('workflows.assignClassifications')}
+                      </p>
+
+                      <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                        {flatClassifications.length === 0 ? (
+                          <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
+                            {t('workflows.noClassifications')}
+                          </div>
+                        ) : (
+                          <div className="p-3 space-y-2">
+                            {flatClassifications.map((classification) => (
+                              <label
+                                key={classification.id}
+                                className={cn(
+                                  "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
+                                  formData.classification_ids.includes(classification.id)
+                                    ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
+                                    : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]"
+                                )}
+                                style={{ paddingLeft: `${(classification.level || 0) * 16 + 12}px` }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={formData.classification_ids.includes(classification.id)}
+                                  onChange={() => toggleClassification(classification.id)}
+                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-medium text-[hsl(var(--foreground))] block truncate">
+                                    {classification.name}
+                                  </span>
+                                  {classification.description && (
+                                    <span className="text-xs text-[hsl(var(--muted-foreground))]">{classification.description}</span>
+                                  )}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Modal Footer */}
@@ -684,6 +791,140 @@ export const WorkflowsPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl border border-[hsl(var(--border))] max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
+                    <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                    Import Workflow
+                  </h3>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
+                  Upload a JSON file to import workflow
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                }}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  Select JSON File
+                </label>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[hsl(var(--primary))] file:text-white hover:file:bg-[hsl(var(--primary))]/90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                />
+                {importFile && (
+                  <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                    Selected: {importFile.name} ({(importFile.size / 1024).toFixed(2)} KB)
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="font-medium text-[hsl(var(--foreground))] mb-1">Import Notes:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>File must be a valid JSON workflow export</li>
+                      <li>Max file size: 10MB</li>
+                      <li>Duplicate workflow codes will be renamed automatically</li>
+                      <li>Missing roles or classifications will show warnings</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (importFile) {
+                    importMutation.mutate(importFile);
+                  }
+                }}
+                disabled={!importFile}
+                isLoading={importMutation.isPending}
+                leftIcon={!importMutation.isPending ? <Upload className="w-4 h-4" /> : undefined}
+              >
+                {importMutation.isPending ? 'Importing...' : 'Import Workflow'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Warnings Modal */}
+      {importWarnings.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl border border-[hsl(var(--border))] max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                    Import Warnings
+                  </h3>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
+                  Workflow imported with warnings
+                </p>
+              </div>
+              <button
+                onClick={() => setImportWarnings([])}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              {importWarnings.map((warning, index) => (
+                <div key={index} className="flex gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-[hsl(var(--foreground))]">{warning}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+              <Button onClick={() => setImportWarnings([])}>
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       )}

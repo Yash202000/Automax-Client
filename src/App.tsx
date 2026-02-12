@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MainLayout, AuthLayout, ProtectedRoute, AdminLayout, AdminProtectedRoute, PermissionRoute, IncidentLayout, RequestLayout, WorkflowLayout, ComplaintsLayout, QueryLayout } from './components/layout';
+import { Toaster } from 'sonner';
+import { MainLayout, AuthLayout, ProtectedRoute, AdminLayout, AdminProtectedRoute, PermissionRoute, IncidentLayout, RequestLayout, WorkflowLayout, ComplaintsLayout, QueryLayout, CallCentreLayout } from './components/layout';
 import { PERMISSIONS } from './constants/permissions';
+import { SettingsProvider } from './contexts/SettingsContext';
 import {
   LoginPage,
   RegisterPage,
@@ -31,12 +33,15 @@ import {
   ComplaintDetailPage,
   QueriesPage,
   QueryDetailPage,
-  SMTPSettingsPage,
   ReportBuilderPage,
   ReportTemplatesPage,
   ReportTemplatesListPage,
   ReportTemplateBuilderPage,
   LookupsPage,
+  ApplicationLinksPage,
+  SettingsManagementPage,
+  CallCentrePage,
+  CallHistory,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -51,8 +56,10 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
+      <SettingsProvider>
+        <Toaster position="top-right" richColors closeButton />
+        <BrowserRouter>
+          <Routes>
           {/* Auth routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginPage />} />
@@ -102,10 +109,6 @@ function App() {
               <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.ACTION_LOGS_VIEW]} />}>
                 <Route path="/admin/action-logs" element={<ActionLogsPage />} />
               </Route>
-              {/* SMTP Settings - requires settings:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.SETTINGS_VIEW]} />}>
-                <Route path="/admin/smtp-settings" element={<SMTPSettingsPage />} />
-              </Route>
               {/* Reports - requires reports:view permission */}
               <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REPORTS_VIEW]} />}>
                 <Route path="/admin/reports" element={<ReportTemplatesPage />} />
@@ -118,6 +121,14 @@ function App() {
               {/* Lookups - requires lookups:view permission */}
               <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOOKUPS_VIEW]} />}>
                 <Route path="/admin/lookups" element={<LookupsPage />} />
+              </Route>
+              {/* Application Links - requires application-links:view permission */}
+              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.APPLICATION_LINKS_VIEW]} />}>
+                <Route path="/admin/application-links" element={<ApplicationLinksPage />} />
+              </Route>
+              {/* Settings - requires settings:update permission */}
+              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.SETTINGS_UPDATE]} />}>
+                <Route path="/admin/settings" element={<SettingsManagementPage />} />
               </Route>
             </Route>
           </Route>
@@ -187,6 +198,16 @@ function App() {
           {/* Clean URL redirects */}
           <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
 
+          {/* Call Centre Management - dedicated layout */}
+          <Route element={<AdminProtectedRoute />}>
+            <Route element={<CallCentreLayout />}>
+              <Route path="/call-centre" element={<Navigate to="/call-centre/contacts" replace />} />
+              <Route path="/call-centre/contacts" element={<CallCentrePage />} />
+              <Route path="/call-centre/history" element={<CallHistory />} />
+              {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+            </Route>
+          </Route>
+
           {/* Redirect root to dashboard or login */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
@@ -194,6 +215,7 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
+      </SettingsProvider>
     </QueryClientProvider>
   );
 }

@@ -166,6 +166,13 @@ export const ReportTemplatesPage: React.FC = () => {
         alignment: 'left',
       }));
 
+      // Validate columns
+      if (!columns || columns.length === 0) {
+        setExportError('Report template has no columns defined. Please edit the template first.');
+        setExporting(false);
+        return;
+      }
+
       // Use default template ID if no custom template selected
       const templateId = selectedCustomTemplate || 'default';
 

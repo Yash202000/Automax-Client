@@ -9,13 +9,16 @@ import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../ap
 import { userApi, departmentApi, locationApi } from '../../api/admin';
 import type { IncidentCreateRequest, User, Department, Location, Workflow, Classification, IncidentSource, LookupValue } from '../../types';
 import { INCIDENT_SOURCES } from '../../types';
+import { DynamicLookupField } from '../../components/common/DynamicLookupField';
+import { useAuthStore } from '../../stores/authStore';
 
 export function IncidentCreatePage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
 
-  const [formData, setFormData] = useState<Omit<IncidentCreateRequest, 'lookup_value_ids'>>({
+  const [formData, setFormData] = useState<Omit<IncidentCreateRequest, 'lookup_value_ids' | 'custom_lookup_fields'>>({
     title: '',
     description: '',
     workflow_id: '',
@@ -34,7 +37,7 @@ export function IncidentCreatePage() {
     due_date: '',
   });
 
-  const [lookupValues, setLookupValues] = useState<Record<string, string>>({});
+  const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoMatchedWorkflow, setAutoMatchedWorkflow] = useState<Workflow | null>(null);
   const [isAutoMatched, setIsAutoMatched] = useState(false);
@@ -84,10 +87,84 @@ export function IncidentCreatePage() {
   });
 
   const workflows: Workflow[] = workflowsData?.data || [];
-  const classifications: Classification[] = classificationsData?.data || [];
+  const rawClassifications: Classification[] = classificationsData?.data || [];
   const users: User[] = usersData?.data || [];
   const departments: Department[] = departmentsData?.data || [];
-  const locations: Location[] = locationsData?.data || [];
+  const rawLocations: Location[] = locationsData?.data || [];
+
+  // Filter classifications based on user's assignments (unless super admin)
+  const classifications = useMemo(() => {
+    if (!user || user.is_super_admin) return rawClassifications;
+    if (!user.classifications || user.classifications.length === 0) return rawClassifications;
+
+    const userClassificationIds = new Set(user.classifications.map(c => c.id));
+
+    // Helper to check if node or any descendant is assigned to user
+    const hasUserAccess = (node: Classification): boolean => {
+      if (userClassificationIds.has(node.id)) return true;
+      if (node.children && node.children.length > 0) {
+        return node.children.some(child => hasUserAccess(child));
+      }
+      return false;
+    };
+
+    // Filter tree to only include nodes with user access
+    const filterByUserAccess = (nodes: Classification[]): Classification[] => {
+      return nodes
+        .map(node => {
+          if (!hasUserAccess(node)) return null;
+
+          const filteredNode: Classification = {
+            ...node,
+            children: node.children && node.children.length > 0
+              ? filterByUserAccess(node.children)
+              : undefined,
+          };
+
+          return filteredNode;
+        })
+        .filter(Boolean) as Classification[];
+    };
+
+    return filterByUserAccess(rawClassifications);
+  }, [rawClassifications, user]);
+
+  // Filter locations based on user's assignments (unless super admin)
+  const locations = useMemo(() => {
+    if (!user || user.is_super_admin) return rawLocations;
+    if (!user.locations || user.locations.length === 0) return rawLocations;
+
+    const userLocationIds = new Set(user.locations.map(l => l.id));
+
+    // Helper to check if node or any descendant is assigned to user
+    const hasUserAccess = (node: Location): boolean => {
+      if (userLocationIds.has(node.id)) return true;
+      if (node.children && node.children.length > 0) {
+        return node.children.some(child => hasUserAccess(child));
+      }
+      return false;
+    };
+
+    // Filter tree to only include nodes with user access
+    const filterByUserAccess = (nodes: Location[]): Location[] => {
+      return nodes
+        .map(node => {
+          if (!hasUserAccess(node)) return null;
+
+          const filteredNode: Location = {
+            ...node,
+            children: node.children && node.children.length > 0
+              ? filterByUserAccess(node.children)
+              : undefined,
+          };
+
+          return filteredNode;
+        })
+        .filter(Boolean) as Location[];
+    };
+
+    return filterByUserAccess(rawLocations);
+  }, [rawLocations, user]);
 
   const incidentLookupCategories = (lookupCategoriesData?.data || []).filter(
     (cat) => cat.add_to_incident_form
@@ -172,14 +249,12 @@ export function IncidentCreatePage() {
     if (filteredWorkflows.length === 0) return;
 
     const priorityValue = getLookupValueFromState('PRIORITY');
-    const severityValue = getLookupValueFromState('SEVERITY');
 
     const matched = workflowApi.findMatchingWorkflow(filteredWorkflows, {
       classification_id: formData.classification_id || undefined,
       location_id: formData.location_id || undefined,
       source: formData.source || undefined,
       priority: priorityValue ? priorityValue.sort_order : undefined,
-      severity: severityValue ? severityValue.sort_order : undefined,
     });
 
     if (matched) {
@@ -236,8 +311,8 @@ export function IncidentCreatePage() {
     }
   };
 
-  const handleLookupChange = (categoryId: string, valueId: string) => {
-    setLookupValues(prev => ({ ...prev, [categoryId]: valueId }));
+  const handleLookupChange = (categoryId: string, value: any) => {
+    setLookupValues(prev => ({ ...prev, [categoryId]: value }));
   };
 
   const handleLocationChange = (location: LocationData | undefined) => {
@@ -285,8 +360,16 @@ export function IncidentCreatePage() {
       if (field.startsWith('lookup:')) {
         const categoryCode = field.replace('lookup:', '');
         const category = incidentLookupCategories.find(c => c.code === categoryCode);
-        if (category && !lookupValues[category.id]) {
-          newErrors[field] = t('incidents.fieldRequired', { field: category.name });
+        if (category) {
+          const value = lookupValues[category.id];
+          // For multiselect, check if array is empty
+          if (category.field_type === 'multiselect') {
+            if (!value || (Array.isArray(value) && value.length === 0)) {
+              newErrors[field] = t('incidents.fieldRequired', { field: category.name });
+            }
+          } else if (!value) {
+            newErrors[field] = t('incidents.fieldRequired', { field: category.name });
+          }
         }
       } else if (field === 'attachments') {
         // Check attachments separately since they're not in formData
@@ -321,16 +404,46 @@ export function IncidentCreatePage() {
     console.log('Validation passed, creating incident...');
 
     const submitData: IncidentCreateRequest = { ...formData };
-    
+
     // Ensure empty strings are not sent for optional UUID fields
     if (submitData.assignee_id === '') submitData.assignee_id = undefined;
     if (submitData.department_id === '') submitData.department_id = undefined;
     if (submitData.location_id === '') submitData.location_id = undefined;
     if (submitData.classification_id === '') submitData.classification_id = undefined;
 
-    const lookupIds = Object.values(lookupValues).filter(Boolean);
-    if (lookupIds.length > 0) {
-      submitData.lookup_value_ids = lookupIds;
+    // Separate lookup values by field type
+    const selectLookupIds: string[] = [];
+    const customLookupFields: Record<string, any> = {};
+
+    for (const [categoryId, value] of Object.entries(lookupValues)) {
+      const category = incidentLookupCategories.find(c => c.id === categoryId);
+      if (!category) continue;
+
+      const fieldType = category.field_type || 'select';
+
+      if (fieldType === 'select' || fieldType === 'multiselect') {
+        // Add to lookup_value_ids array
+        if (Array.isArray(value)) {
+          selectLookupIds.push(...value.filter(Boolean));
+        } else if (value) {
+          selectLookupIds.push(value);
+        }
+      } else {
+        // Add to custom_lookup_fields with metadata
+        customLookupFields[`lookup:${category.code}`] = {
+          value: value,
+          field_type: fieldType,
+          category_id: categoryId,
+        };
+      }
+    }
+
+    if (selectLookupIds.length > 0) {
+      submitData.lookup_value_ids = selectLookupIds;
+    }
+
+    if (Object.keys(customLookupFields).length > 0) {
+      submitData.custom_lookup_fields = customLookupFields;
     }
 
     if (formData.due_date) {
@@ -447,18 +560,11 @@ export function IncidentCreatePage() {
                   const lookupFieldKey = `lookup:${category.code}`;
                   const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
                   return (
-                    <Select
+                    <DynamicLookupField
                       key={category.id}
-                      label={i18n.language === 'ar' ? category.name_ar || category.name : category.name}
-                      value={lookupValues[category.id] || ''}
-                      onChange={(e) => handleLookupChange(category.id, e.target.value)}
-                      options={[
-                        { value: '', label: t('common.select') },
-                        ...(category.values || []).map(v => ({
-                          value: v.id,
-                          label: i18n.language === 'ar' && v.name_ar ? v.name_ar : v.name,
-                        }))
-                      ]}
+                      category={category}
+                      value={lookupValues[category.id]}
+                      onChange={handleLookupChange}
                       required={isRequired}
                       error={errors[lookupFieldKey]}
                     />

@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Phone,
   ThumbsUp,
+  Radio,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
@@ -98,6 +99,41 @@ export const ComplaintDetailPage: React.FC = () => {
   // Check if complaint is closed (terminal state)
   const isClosed = complaint?.current_state?.state_type === 'terminal';
 
+  // Helper function to download attachment with authentication
+  const downloadAttachment = async (attachmentId: string, fileName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/attachments/${attachmentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download attachment');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      alert('Failed to download attachment');
+    }
+  };
+
+  // Helper function to get authenticated attachment URL for audio/video
+  const getAuthenticatedAttachmentUrl = (attachmentId: string): string => {
+    const token = localStorage.getItem('token');
+    return `${API_URL}/attachments/${attachmentId}?token=${token}`;
+  };
+
   // Mutations
   const transitionMutation = useMutation({
     mutationFn: async () => {
@@ -121,6 +157,7 @@ export const ComplaintDetailPage: React.FC = () => {
           rating: transitionFeedbackRating,
           comment: transitionFeedbackComment || undefined,
         } : undefined,
+        version: complaint?.version || 1,
       });
     },
     onSuccess: () => {
@@ -171,8 +208,14 @@ export const ComplaintDetailPage: React.FC = () => {
     });
   };
 
-  const isAudioFile = (mimeType: string) => {
-    return mimeType.startsWith('audio/');
+  const isAudioFile = (mimeType: string, fileName: string) => {
+    // Check mime type first
+    if (mimeType && mimeType.startsWith('audio/')) {
+      return true;
+    }
+    // Fallback to file extension check
+    const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i;
+    return audioExtensions.test(fileName);
   };
 
   if (isLoading) {
@@ -473,9 +516,9 @@ export const ComplaintDetailPage: React.FC = () => {
                     <div className="space-y-3">
                       {attachments.map((attachment) => (
                         <div key={attachment.id} className="p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg">
-                          {isAudioFile(attachment.mime_type) ? (
+                          {isAudioFile(attachment.mime_type, attachment.file_name) ? (
                             <AudioPlayer
-                              src={`${API_URL}/attachments/${attachment.id}`}
+                              src={getAuthenticatedAttachmentUrl(attachment.id)}
                               fileName={attachment.file_name}
                             />
                           ) : (
@@ -489,13 +532,12 @@ export const ComplaintDetailPage: React.FC = () => {
                                   </p>
                                 </div>
                               </div>
-                              <a
-                                href={`${API_URL}/attachments/${attachment.id}`}
-                                download
+                              <button
+                                onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
                                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
                               >
                                 <Download className="w-4 h-4" />
-                              </a>
+                              </button>
                             </div>
                           )}
                         </div>
@@ -622,6 +664,19 @@ export const ComplaintDetailPage: React.FC = () => {
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.department', 'Department')}</p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">{complaint.department.name}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Channel */}
+              {complaint.channel && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Radio className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('complaints.channel', 'Channel')}</p>
+                    <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">{complaint.channel.replace('_', ' ')}</p>
                   </div>
                 </div>
               )}

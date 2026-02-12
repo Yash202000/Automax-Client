@@ -85,13 +85,6 @@ const incidentFields: ReportFieldDefinition[] = [
     { value: 4, label: 'Low' },
     { value: 5, label: 'Minimal' },
   ]},
-  { field: 'severity', label: 'Severity', type: 'enum', category: 'Status', sortable: true, filterable: true, options: [
-    { value: 1, label: 'Critical' },
-    { value: 2, label: 'Major' },
-    { value: 3, label: 'Moderate' },
-    { value: 4, label: 'Minor' },
-    { value: 5, label: 'Trivial' },
-  ]},
 
   // SLA
   { field: 'sla_breached', label: 'SLA Breached', type: 'boolean', category: 'SLA', sortable: true, filterable: true },
@@ -246,8 +239,6 @@ const workflowFields: ReportFieldDefinition[] = [
   { field: 'transitions_count', label: 'Transitions Count', type: 'number', category: 'Counts', sortable: true, filterable: true },
 
   // Matching Config
-  { field: 'severity_min', label: 'Min Severity', type: 'number', category: 'Matching', sortable: true, filterable: true },
-  { field: 'severity_max', label: 'Max Severity', type: 'number', category: 'Matching', sortable: true, filterable: true },
   { field: 'priority_min', label: 'Min Priority', type: 'number', category: 'Matching', sortable: true, filterable: true },
   { field: 'priority_max', label: 'Max Priority', type: 'number', category: 'Matching', sortable: true, filterable: true },
 

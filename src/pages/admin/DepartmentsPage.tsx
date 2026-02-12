@@ -16,6 +16,9 @@ import {
   Shield,
   FolderTree,
   Eye,
+  Download,
+  Upload,
+  Info,
 } from 'lucide-react';
 import { departmentApi, locationApi, classificationApi, roleApi } from '../../api/admin';
 import type { Department, DepartmentCreateRequest, DepartmentUpdateRequest, Location, Classification, Role } from '../../types';
@@ -189,6 +192,9 @@ export const DepartmentsPage: React.FC = () => {
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [formData, setFormData] = useState<DepartmentFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
   const canCreateDepartment = isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_CREATE);
   const canEditDepartment = isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_UPDATE);
@@ -330,6 +336,42 @@ export const DepartmentsPage: React.FC = () => {
     }));
   };
 
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await departmentApi.export();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `departments_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const result = await departmentApi.import(file);
+      setImportResult(result.data || null);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'departments'] });
+    } catch (error) {
+      console.error('Import failed:', error);
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -360,15 +402,36 @@ export const DepartmentsPage: React.FC = () => {
               </p>
             </div>
           </div>
-          {canCreateDepartment && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => openCreateModal()}
-              className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus className="w-4 h-4" />
-              {t('departments.addRootDepartment')}
+              <Download className="w-4 h-4" />
+              {isExporting ? 'Exporting...' : 'Export'}
             </button>
-          )}
+            <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
+              <Upload className="w-4 h-4" />
+              <span>{isImporting ? 'Importing...' : 'Import'}</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                disabled={isImporting}
+                className="hidden"
+              />
+            </label>
+            {canCreateDepartment && (
+              <button
+                onClick={() => openCreateModal()}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
+              >
+                <Plus className="w-4 h-4" />
+                {t('departments.addRootDepartment')}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tree Content */}
@@ -410,6 +473,61 @@ export const DepartmentsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Import Result Modal */}
+      {importResult && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                  importResult.skipped > 0
+                    ? "bg-[hsl(var(--warning)/0.1)]"
+                    : "bg-[hsl(var(--success)/0.1)]"
+                )}>
+                  <Info className={cn(
+                    "w-6 h-6",
+                    importResult.skipped > 0
+                      ? "text-[hsl(var(--warning))]"
+                      : "text-[hsl(var(--success))]"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Import Complete</h3>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      <span className="font-medium text-[hsl(var(--success))]">{importResult.imported}</span> departments imported successfully
+                    </p>
+                    {importResult.skipped > 0 && (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        <span className="font-medium text-[hsl(var(--warning))]">{importResult.skipped}</span> departments skipped
+                      </p>
+                    )}
+                    {importResult.errors.length > 0 && (
+                      <div className="mt-3 max-h-40 overflow-y-auto">
+                        <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">Errors:</p>
+                        <ul className="space-y-1">
+                          {importResult.errors.map((error, index) => (
+                            <li key={index} className="text-xs text-[hsl(var(--muted-foreground))] pl-3">
+                              • {error}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setImportResult(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (

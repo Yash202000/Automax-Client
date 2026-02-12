@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   Plus,
   Edit2,
@@ -21,6 +22,7 @@ import {
   Layout,
   Mail,
   ClipboardList,
+  Download,
 } from 'lucide-react';
 import { workflowApi, roleApi, classificationApi, locationApi, departmentApi, userApi, lookupApi } from '../../api/admin';
 import type {
@@ -30,6 +32,7 @@ import type {
   WorkflowStateUpdateRequest,
   WorkflowTransitionCreateRequest,
   WorkflowTransitionUpdateRequest,
+  WorkflowUpdateRequest,
   TransitionRequirementRequest,
   TransitionActionRequest,
   Classification,
@@ -140,17 +143,13 @@ export const WorkflowDesignerPage: React.FC = () => {
     classification_ids: string[];
     location_ids: string[];
     sources: IncidentSource[];
-    severity_min: number;
-    severity_max: number;
     priority_min: number;
     priority_max: number;
-    record_type: 'incident' | 'request' | 'complaint' | 'both' | 'all';
+    record_type: 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all';
   }>({
     classification_ids: [],
     location_ids: [],
     sources: [],
-    severity_min: 1,
-    severity_max: 5,
     priority_min: 1,
     priority_max: 5,
     record_type: 'incident',
@@ -167,6 +166,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     { field: 'description', label: 'Description', description: 'Detailed incident description' },
     { field: 'classification_id', label: 'Classification', description: 'Incident category/type' },
     { field: 'source', label: 'Source', description: 'Where the incident originated' },
+    { field: 'source_incident_id', label: 'Source Incident Reference', description: 'Link to related incident/complaint/query' },
     { field: 'assignee_id', label: 'Assignee', description: 'User assigned to handle' },
     { field: 'department_id', label: 'Department', description: 'Responsible department' },
     { field: 'location_id', label: 'Location', description: 'Physical location' },
@@ -240,9 +240,7 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Get Priority and Severity categories for matching rules
   const allLookupCategories: LookupCategory[] = lookupCategoriesData?.data || [];
   const priorityCategory = allLookupCategories.find(c => c.code === 'PRIORITY');
-  const severityCategory = allLookupCategories.find(c => c.code === 'SEVERITY');
   const priorityValues = (priorityCategory?.values || []).sort((a, b) => a.sort_order - b.sort_order);
-  const severityValues = (severityCategory?.values || []).sort((a, b) => a.sort_order - b.sort_order);
 
   // Available form fields including dynamic lookup categories
   const availableFormFields = React.useMemo(() => {
@@ -261,11 +259,9 @@ export const WorkflowDesignerPage: React.FC = () => {
         classification_ids: workflow.classifications?.map(c => c.id) || [],
         location_ids: workflow.locations?.map(l => l.id) || [],
         sources: workflow.sources || [],
-        severity_min: workflow.severity_min ?? 1,
-        severity_max: workflow.severity_max ?? 5,
         priority_min: workflow.priority_min ?? 1,
         priority_max: workflow.priority_max ?? 5,
-        record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'both' | 'all') || 'incident',
+        record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all') || 'incident',
       });
       setRequiredFields(workflow.required_fields || []);
       setConvertToRequestRoleIds(workflow.convert_to_request_roles?.map(r => r.id) || []);
@@ -278,8 +274,6 @@ export const WorkflowDesignerPage: React.FC = () => {
       classification_ids: config.classification_ids,
       location_ids: config.location_ids,
       sources: config.sources,
-      severity_min: config.severity_min,
-      severity_max: config.severity_max,
       priority_min: config.priority_min,
       priority_max: config.priority_max,
       record_type: config.record_type,
@@ -287,6 +281,24 @@ export const WorkflowDesignerPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      toast.success('Matching rules updated successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update matching rules';
+
+      // Check if it's a duplicate workflow conflict
+      if (errorMessage.includes('workflow rules conflict')) {
+        toast.error('Duplicate Workflow Rules', {
+          description: errorMessage,
+          duration: 6000,
+        });
+      } else {
+        toast.error('Failed to update matching rules', {
+          description: errorMessage,
+          duration: 5000,
+        });
+      }
+      console.error('Update matching rules error:', error);
     },
   });
 
@@ -312,6 +324,16 @@ export const WorkflowDesignerPage: React.FC = () => {
     },
   });
 
+  // Canvas layout mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id: workflowId, data }: { id: string; data: WorkflowUpdateRequest }) =>
+      workflowApi.update(workflowId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+    },
+  });
+
   // State mutations
   const createStateMutation = useMutation({
     mutationFn: (data: WorkflowStateCreateRequest) => workflowApi.createState(id!, data),
@@ -323,8 +345,8 @@ export const WorkflowDesignerPage: React.FC = () => {
   });
 
   const updateStateMutation = useMutation({
-    mutationFn: ({ stateId, data }: { stateId: string; data: WorkflowStateUpdateRequest }) =>
-      workflowApi.updateState(id!, stateId, data),
+    mutationFn: ({ workflowId, stateId, data }: { workflowId?: string; stateId: string; data: WorkflowStateUpdateRequest }) =>
+      workflowApi.updateState(workflowId || id!, stateId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'states'] });
@@ -637,11 +659,41 @@ export const WorkflowDesignerPage: React.FC = () => {
     setDeleteTransitionConfirm(transitionId);
   }, []);
 
-  const handleCanvasLayoutSave = useCallback((layout: string) => {
-    // For now, just log it - can be saved to backend with canvas_layout field
-    console.log('Layout saved:', layout);
-    // TODO: Save to backend when API supports it
-  }, []);
+  const handleCanvasLayoutSave = useCallback(
+    async (layout: string) => {
+      if (!workflow) return;
+
+      try {
+        await updateMutation.mutateAsync({
+          id: workflow.id,
+          data: { canvas_layout: layout },
+        });
+      } catch (error) {
+        console.error('Failed to save layout:', error);
+      }
+    },
+    [workflow, updateMutation]
+  );
+
+  const handleExport = async () => {
+    if (!workflow) return;
+
+    try {
+      const blob = await workflowApi.export(workflow.id);
+      const filename = `workflow_${workflow.code}_${Date.now()}.json`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -685,6 +737,13 @@ export const WorkflowDesignerPage: React.FC = () => {
             </div>
           </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          leftIcon={<Download className="w-4 h-4" />}
+        >
+          Export Workflow
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -1012,7 +1071,7 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <h3 className="text-sm font-medium text-blue-800 mb-1">Auto-Workflow Matching</h3>
                 <p className="text-xs text-blue-700">
-                  Configure which incidents should automatically use this workflow based on classification, location, source, and severity.
+                  Configure which incidents should automatically use this workflow based on classification, location, and source.
                 </p>
               </div>
 
@@ -1022,7 +1081,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                   Specify which record types this workflow applies to.
                 </p>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'incident'
@@ -1034,7 +1093,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="incident"
                       checked={matchingConfig.record_type === 'incident'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1048,8 +1107,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Incident Only</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For incident management</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeIncident')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeIncidentDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1063,7 +1122,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="request"
                       checked={matchingConfig.record_type === 'request'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1077,8 +1136,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Request Only</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For service requests</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeRequest')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeRequestDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1092,7 +1151,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="both"
                       checked={matchingConfig.record_type === 'both'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1106,8 +1165,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Both</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Incidents and requests</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeBoth')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeBothDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1121,7 +1180,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="complaint"
                       checked={matchingConfig.record_type === 'complaint'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1135,8 +1194,37 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">Complaint Only</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">For citizen complaints</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeComplaint')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeComplaintDesc')}</p>
+                    </div>
+                  </label>
+                  <label className={cn(
+                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                    matchingConfig.record_type === 'query'
+                      ? "border-indigo-500 bg-indigo-50"
+                      : "border-[hsl(var(--border))] hover:border-indigo-300"
+                  )}>
+                    <input
+                      type="radio"
+                      name="record_type"
+                      value="query"
+                      checked={matchingConfig.record_type === 'query'}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                      matchingConfig.record_type === 'query'
+                        ? "border-indigo-500 bg-indigo-500"
+                        : "border-[hsl(var(--muted-foreground))]"
+                    )}>
+                      {matchingConfig.record_type === 'query' && (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeQuery')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeQueryDesc')}</p>
                     </div>
                   </label>
                   <label className={cn(
@@ -1150,7 +1238,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="all"
                       checked={matchingConfig.record_type === 'all'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1164,8 +1252,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">All Types</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">All record types</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeAll')}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeAllDesc')}</p>
                     </div>
                   </label>
                 </div>
@@ -1279,53 +1367,11 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 {/* Severity & Priority Ranges */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Severity & Priority Range</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Priority Range</h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Define the severity and priority range this workflow applies to.
+                    Define the priority range this workflow applies to.
                   </p>
                   <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Severity Range</label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <select
-                          value={matchingConfig.severity_min}
-                          onChange={(e) => setMatchingConfig(prev => ({ ...prev, severity_min: parseInt(e.target.value) || 1 }))}
-                          className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                        >
-                          {severityValues.map(v => (
-                            <option key={v.id} value={v.sort_order}>{v.name}</option>
-                          ))}
-                          {severityValues.length === 0 && (
-                            <>
-                              <option value={1}>1 - Critical</option>
-                              <option value={2}>2 - Major</option>
-                              <option value={3}>3 - Moderate</option>
-                              <option value={4}>4 - Minor</option>
-                              <option value={5}>5 - Cosmetic</option>
-                            </>
-                          )}
-                        </select>
-                        <span className="text-[hsl(var(--muted-foreground))]">to</span>
-                        <select
-                          value={matchingConfig.severity_max}
-                          onChange={(e) => setMatchingConfig(prev => ({ ...prev, severity_max: parseInt(e.target.value) || 5 }))}
-                          className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                        >
-                          {severityValues.map(v => (
-                            <option key={v.id} value={v.sort_order}>{v.name}</option>
-                          ))}
-                          {severityValues.length === 0 && (
-                            <>
-                              <option value={1}>1 - Critical</option>
-                              <option value={2}>2 - Major</option>
-                              <option value={3}>3 - Moderate</option>
-                              <option value={4}>4 - Minor</option>
-                              <option value={5}>5 - Cosmetic</option>
-                            </>
-                          )}
-                        </select>
-                      </div>
-                    </div>
                     <div>
                       <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Priority Range</label>
                       <div className="flex items-center gap-2 mt-1">

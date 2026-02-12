@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   XCircle,
   Play,
-  HelpCircle,
   Download,
   X,
   History,
@@ -24,17 +23,35 @@ import {
   ExternalLink,
   Phone,
   ThumbsUp,
+  AlertTriangle,
+  MapPin,
+  FileText,
+  Upload,
+  Radio,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
 import { RevisionHistory } from '../../components/incidents';
 import { queryApi, userApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
-import { AudioPlayer } from '../../components/common/AudioPlayer';
 import type {
   AvailableTransition,
 } from '../../types';
 import { cn } from '@/lib/utils';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { Icon } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icon - using local images
+const defaultIcon = new Icon({
+  iconUrl: '/images/leaflet/marker-icon.png',
+  iconRetinaUrl: '/images/leaflet/marker-icon-2x.png',
+  shadowUrl: '/images/leaflet/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 export const QueryDetailPage: React.FC = () => {
   const { t } = useTranslation();
@@ -52,6 +69,10 @@ export const QueryDetailPage: React.FC = () => {
   const [transitionUploading, setTransitionUploading] = useState(false);
   const [transitionFeedbackRating, setTransitionFeedbackRating] = useState<number>(0);
   const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('');
+
+  // Image lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Queries
   const { data: queryData, isLoading, error, refetch } = useQuery({
@@ -98,6 +119,41 @@ export const QueryDetailPage: React.FC = () => {
   // Check if query is closed (terminal state)
   const isClosed = query?.current_state?.state_type === 'terminal';
 
+  // Helper function to download attachment with authentication
+  const downloadAttachment = async (attachmentId: string, fileName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/attachments/${attachmentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download attachment');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      alert('Failed to download attachment');
+    }
+  };
+
+  // Helper function to get authenticated attachment URL for audio/video
+  const getAuthenticatedAttachmentUrl = (attachmentId: string): string => {
+    const token = localStorage.getItem('token');
+    return `${API_URL}/attachments/${attachmentId}?token=${token}`;
+  };
+
   // Mutations
   const transitionMutation = useMutation({
     mutationFn: async () => {
@@ -121,6 +177,7 @@ export const QueryDetailPage: React.FC = () => {
           rating: transitionFeedbackRating,
           comment: transitionFeedbackComment || undefined,
         } : undefined,
+        version: query?.version || 1,
       });
     },
     onSuccess: () => {
@@ -160,6 +217,43 @@ export const QueryDetailPage: React.FC = () => {
     setTransitionModalOpen(true);
   };
 
+  const executeTransition = () => {
+    if (!selectedTransition) return;
+
+    // Check if comment is required
+    const requiresComment = selectedTransition.requirements?.some(
+      r => r.requirement_type === 'comment' && r.is_mandatory
+    );
+
+    // Check if attachment is required
+    const requiresAttachment = selectedTransition.requirements?.some(
+      r => r.requirement_type === 'attachment' && r.is_mandatory
+    );
+
+    // Check if feedback is required
+    const requiresFeedback = selectedTransition.requirements?.some(
+      r => r.requirement_type === 'feedback' && r.is_mandatory
+    );
+
+    if (requiresComment && !transitionComment.trim()) {
+      alert('A comment is required for this transition');
+      return;
+    }
+
+    if (requiresAttachment && !transitionAttachment) {
+      alert('An attachment is required for this transition');
+      return;
+    }
+
+    if (requiresFeedback && transitionFeedbackRating === 0) {
+      alert('Feedback rating is required for this transition');
+      return;
+    }
+
+    // All validations passed, execute the transition
+    transitionMutation.mutate();
+  };
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -171,8 +265,31 @@ export const QueryDetailPage: React.FC = () => {
     });
   };
 
-  const isAudioFile = (mimeType: string) => {
-    return mimeType.startsWith('audio/');
+  // Helper to check if attachment is an image
+  const isImageFile = (mimeType: string) => {
+    return mimeType && mimeType.startsWith('image/');
+  };
+
+  // Helper to check if attachment is audio
+  const isAudioFile = (mimeType: string, fileName: string) => {
+    // Check mime type first
+    if (mimeType && mimeType.startsWith('audio/')) {
+      return true;
+    }
+    // Fallback to file extension check
+    const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i;
+    return audioExtensions.test(fileName);
+  };
+
+  // Categorize attachments
+  const imageAttachments = attachments?.filter(att => isImageFile(att.mime_type)) || [];
+  const audioAttachments = attachments?.filter(att => isAudioFile(att.mime_type, att.file_name)) || [];
+  const otherAttachments = attachments?.filter(att => !isImageFile(att.mime_type) && !isAudioFile(att.mime_type, att.file_name)) || [];
+
+  // Open image in lightbox
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
   };
 
   if (isLoading) {
@@ -212,97 +329,71 @@ export const QueryDetailPage: React.FC = () => {
         <div>
           <button
             onClick={() => navigate('/queries')}
-            className="flex items-center gap-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] text-sm mb-3 transition-colors"
+            className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-3 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             {t('common.backToQueries', 'Back to Queries')}
           </button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-violet-500/10">
-              <HelpCircle className="w-5 h-5 text-violet-500" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-violet-500 mb-0.5">{query.incident_number}</p>
-              <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">{query.title}</h1>
-            </div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-sm font-medium text-[hsl(var(--primary))]">{query.incident_number}</span>
+            {query.current_state && (
+              <span
+                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: query.current_state.color ? `${query.current_state.color}20` : 'hsl(var(--muted))',
+                  color: query.current_state.color || 'hsl(var(--foreground))',
+                }}
+              >
+                {query.current_state.name}
+              </span>
+            )}
+            {query.sla_breached && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
+                <AlertTriangle className="w-3 h-3" />
+                {t('queries.slaBreached')}
+              </span>
+            )}
           </div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">{query.title}</h1>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {availableTransitions.filter(t => t.can_execute).map((transition) => (
+            <Button
+              key={transition.transition.id}
+              variant="outline"
+              size="sm"
+              onClick={() => handleTransitionClick(transition)}
+              leftIcon={<Play className="w-4 h-4" />}
+            >
+              {transition.transition.name}
+            </Button>
+          ))}
+          {isClosed && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => evaluateMutation.mutate()}
+              isLoading={evaluateMutation.isPending}
+              leftIcon={<ThumbsUp className="w-4 h-4" />}
+            >
+              {t('queries.evaluate', 'Evaluate')} ({query.evaluation_count || 0})
+            </Button>
+          )}
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
             {t('common.refresh', 'Refresh')}
           </Button>
-          {isClosed && (
-            <Button
-              size="sm"
-              onClick={() => evaluateMutation.mutate()}
-              isLoading={evaluateMutation.isPending}
-              leftIcon={<ThumbsUp className="w-4 h-4" />}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-            >
-              {t('queries.evaluate', 'Evaluate')} ({query.evaluation_count || 0})
-            </Button>
-          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Status & Workflow */}
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">{t('common.status', 'Status')}</h2>
-              {query.current_state && (
-                <span
-                  className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium"
-                  style={{
-                    backgroundColor: query.current_state.color ? `${query.current_state.color}20` : 'hsl(var(--muted))',
-                    color: query.current_state.color || 'hsl(var(--foreground))',
-                  }}
-                >
-                  {query.current_state.name}
-                </span>
-              )}
-            </div>
-
-            {/* Available Transitions */}
-            {availableTransitions.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
-                <p className="text-sm font-medium text-[hsl(var(--muted-foreground))] mb-3">{t('common.availableActions', 'Available Actions')}</p>
-                <div className="flex flex-wrap gap-2">
-                  {availableTransitions.map((transition) => (
-                    <Button
-                      key={transition.transition.id}
-                      size="sm"
-                      variant={transition.can_execute ? 'default' : 'outline'}
-                      disabled={!transition.can_execute}
-                      onClick={() => handleTransitionClick(transition)}
-                      leftIcon={<Play className="w-4 h-4" />}
-                      className={transition.can_execute ? 'bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600' : ''}
-                    >
-                      {transition.transition.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Mini Workflow View */}
-            {query.workflow && (
-              <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
-                <MiniWorkflowView
-                  workflow={query.workflow}
-                  currentStateId={query.current_state?.id}
-                />
-              </div>
-            )}
-          </div>
-
           {/* Description */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">{t('common.description', 'Description')}</h2>
@@ -470,37 +561,109 @@ export const QueryDetailPage: React.FC = () => {
                   {attachments.length === 0 ? (
                     <p className="text-center text-[hsl(var(--muted-foreground))] py-8">{t('common.noAttachments', 'No attachments yet.')}</p>
                   ) : (
-                    <div className="space-y-3">
-                      {attachments.map((attachment) => (
-                        <div key={attachment.id} className="p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg">
-                          {isAudioFile(attachment.mime_type) ? (
-                            <AudioPlayer
-                              src={`${API_URL}/attachments/${attachment.id}`}
-                              fileName={attachment.file_name}
-                            />
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Paperclip className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                                <div>
-                                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">{attachment.file_name}</p>
-                                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                    {(attachment.file_size / 1024).toFixed(1)} KB
-                                  </p>
+                    <>
+                      {/* Image Gallery */}
+                      {imageAttachments.length > 0 && (
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">{t('common.images', 'Images')}</h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {imageAttachments.map((attachment, index) => (
+                              <div
+                                key={attachment.id}
+                                className="relative group rounded-lg overflow-hidden border-2 border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] transition-all cursor-pointer"
+                                onClick={() => openLightbox(index)}
+                              >
+                                <img
+                                  src={getAuthenticatedAttachmentUrl(attachment.id)}
+                                  alt={attachment.file_name}
+                                  className="w-full h-32 object-cover transition-opacity hover:opacity-90"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <button className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2 truncate">
+                                  {attachment.file_name}
                                 </div>
                               </div>
-                              <a
-                                href={`${API_URL}/attachments/${attachment.id}`}
-                                download
-                                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
-                              >
-                                <Download className="w-4 h-4" />
-                              </a>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      )}
+
+                      {/* Audio Files */}
+                      {audioAttachments.length > 0 && (
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">{t('common.audio', 'Audio')}</h3>
+                          {audioAttachments.map((attachment) => (
+                            <div key={attachment.id} className="p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-[hsl(var(--background))] rounded-lg">
+                                    <svg className="w-5 h-5 text-[hsl(var(--primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">{attachment.file_name}</p>
+                                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                      {(attachment.file_size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
+                                  className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <audio
+                                controls
+                                className="w-full h-10"
+                                src={getAuthenticatedAttachmentUrl(attachment.id)}
+                                preload="metadata"
+                              >
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Other Files */}
+                      {otherAttachments.length > 0 && (
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">{t('common.files', 'Files')}</h3>
+                          <div className="space-y-2">
+                            {otherAttachments.map((attachment) => (
+                              <div key={attachment.id} className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-[hsl(var(--background))] rounded-lg">
+                                    <FileText className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">{attachment.file_name}</p>
+                                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                      {(attachment.file_size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
+                                  className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -626,6 +789,19 @@ export const QueryDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Source */}
+              {query.source && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                    <Radio className="w-4 h-4 text-violet-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('queries.source', 'Source')}</p>
+                    <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">{query.source.replace('_', ' ')}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Created Date */}
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
@@ -662,8 +838,74 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Geolocation - only show if has coordinates */}
+              {(query.latitude !== undefined && query.longitude !== undefined) && (
+                <div className="pt-4 border-t border-[hsl(var(--border))]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="w-4 h-4 text-violet-500" />
+                    <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">{t('queries.geolocation', 'Geolocation')}</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {/* Map - compact height */}
+                    <div className="h-32 rounded-lg overflow-hidden border border-[hsl(var(--border))]">
+                      <MapContainer
+                        center={[query.latitude, query.longitude]}
+                        zoom={15}
+                        className="h-full w-full"
+                        style={{ height: '100%', width: '100%' }}
+                        scrollWheelZoom={false}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker
+                          position={[query.latitude, query.longitude]}
+                          icon={defaultIcon}
+                        />
+                      </MapContainer>
+                    </div>
+                    {/* Compact location info */}
+                    <div className="text-xs text-[hsl(var(--muted-foreground))] space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-[hsl(var(--foreground))]">
+                          {query.latitude?.toFixed(6)}, {query.longitude?.toFixed(6)}
+                        </span>
+                      </div>
+                      {query.address && (
+                        <p className="break-words">{query.address}</p>
+                      )}
+                      {(query.city || query.state || query.country) && (
+                        <p>
+                          {[query.city, query.state, query.country, query.postal_code].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Workflow Info */}
+          {query.workflow && (
+            <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">{t('queries.workflow', 'Workflow')}</h3>
+              <p className="text-sm text-[hsl(var(--foreground))]">{query.workflow.name}</p>
+              {query.workflow.description && (
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 mb-4">{query.workflow.description}</p>
+              )}
+              {query.workflow && (
+                <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
+                  <MiniWorkflowView
+                    workflow={query.workflow}
+                    currentStateId={query.current_state?.id}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -703,6 +945,9 @@ export const QueryDetailPage: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                   {t('common.comment', 'Comment')}
+                  {selectedTransition.requirements?.some(r => r.requirement_type === 'comment' && r.is_mandatory) && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <textarea
                   value={transitionComment}
@@ -712,6 +957,53 @@ export const QueryDetailPage: React.FC = () => {
                   placeholder={t('common.addOptionalComment', 'Add an optional comment...')}
                 />
               </div>
+
+              {/* Attachment */}
+              {selectedTransition.requirements?.some(r => r.requirement_type === 'attachment') && (
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                    {t('common.attachment', 'Attachment')}
+                    {selectedTransition.requirements?.some(r => r.requirement_type === 'attachment' && r.is_mandatory) && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
+                  {transitionAttachment ? (
+                    <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                        <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
+                          {transitionAttachment.name}
+                        </span>
+                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                          ({(transitionAttachment.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setTransitionAttachment(null)}
+                        className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-violet-500 hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                      <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                      <span className="text-sm text-[hsl(var(--muted-foreground))]">{t('common.clickToUpload', 'Click to upload')}</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setTransitionAttachment(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
 
               {/* Feedback (if required) */}
               {selectedTransition.requirements?.some(r => r.requirement_type === 'feedback') && (
@@ -750,14 +1042,84 @@ export const QueryDetailPage: React.FC = () => {
                 {t('common.cancel', 'Cancel')}
               </Button>
               <Button
-                onClick={() => transitionMutation.mutate()}
+                onClick={executeTransition}
                 isLoading={transitionMutation.isPending || transitionUploading}
                 className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
               >
-                {t('common.confirm', 'Confirm')}
+                {transitionUploading ? t('common.uploading', 'Uploading...') : t('common.confirm', 'Confirm')}
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxOpen && imageAttachments.length > 0 && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Image Name */}
+          <div className="absolute top-4 left-4 text-white text-sm bg-black/50 px-3 py-1.5 rounded-lg">
+            {imageAttachments[lightboxIndex]?.file_name}
+          </div>
+
+          {/* Download Button */}
+          <a
+            href={getAuthenticatedAttachmentUrl(imageAttachments[lightboxIndex]?.id)}
+            download={imageAttachments[lightboxIndex]?.file_name}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          >
+            <Download className="w-6 h-6" />
+          </a>
+
+          {/* Navigation Arrows */}
+          {imageAttachments.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((prev) => (prev > 0 ? prev - 1 : imageAttachments.length - 1));
+                }}
+                className="absolute left-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              >
+                <ChevronRight className="w-6 h-6 rotate-180" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((prev) => (prev < imageAttachments.length - 1 ? prev + 1 : 0));
+                }}
+                className="absolute right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          {/* Image Counter */}
+          {imageAttachments.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1.5 rounded-lg">
+              {lightboxIndex + 1} / {imageAttachments.length}
+            </div>
+          )}
+
+          {/* Image */}
+          <img
+            src={getAuthenticatedAttachmentUrl(imageAttachments[lightboxIndex]?.id)}
+            alt={imageAttachments[lightboxIndex]?.file_name}
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

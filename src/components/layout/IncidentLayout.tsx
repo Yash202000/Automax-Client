@@ -7,7 +7,6 @@ import {
   LogOut,
   Home,
   Bell,
-  Search,
   Menu,
   X,
   ChevronDown,
@@ -32,6 +31,7 @@ import SoftPhone from '../sip/Softphone';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import ThemeToggle from '../common/ThemeToggle';
+import { CreateRequestModal } from '@/components/requests/CreateRequestModal';
 
 export const IncidentLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -42,6 +42,7 @@ export const IncidentLayout: React.FC = () => {
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const [showSoftphone, setShowSoftphone] = useState(false);
+  const [createRequestModalOpen, setCreateRequestModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -51,6 +52,7 @@ export const IncidentLayout: React.FC = () => {
   const canViewIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
   const canViewAllIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canViewRequests = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW);
+  const canCreateRequest = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_CREATE);
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -256,6 +258,19 @@ export const IncidentLayout: React.FC = () => {
                 </>
               )}
             </NavLink>
+          )}
+
+          {canCreateRequest && (
+            <button
+              onClick={() => {
+                setCreateRequestModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className={`group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
+            >
+              <Plus size={20} className="flex-shrink-0" />
+              {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.newRequest', 'New Request')}</span>}
+            </button>
           )}
         </div>
 
@@ -532,7 +547,12 @@ export const IncidentLayout: React.FC = () => {
               showSip={showSoftphone}
               onClose={() => setShowSoftphone(false)}
               settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
-              auth={{}}
+              auth={{
+                user: {
+                  userID: user?.id || '',
+                  extension: (user as any)?.extension || '',
+                }
+              }}
             />
 
 
@@ -627,6 +647,16 @@ export const IncidentLayout: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Create Request Modal */}
+      <CreateRequestModal
+        isOpen={createRequestModalOpen}
+        onClose={() => setCreateRequestModalOpen(false)}
+        onSuccess={(requestId) => {
+          setCreateRequestModalOpen(false);
+          navigate(`/requests/${requestId}`);
+        }}
+      />
     </div>
   );
 };

@@ -1,13 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   AlertTriangle,
   Clock,
   Calendar,
   User,
+  Users,
   Building2,
   MapPin,
   Edit2,
@@ -29,11 +31,12 @@ import {
   Star,
   ArrowRightLeft,
   ExternalLink,
+  Radio,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
 import { RevisionHistory, ConvertToRequestModal } from '../../components/incidents';
-import { incidentApi, userApi, workflowApi, departmentApi } from '../../api/admin';
+import { incidentApi, userApi, workflowApi, departmentApi, lookupApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
   IncidentDetail,
@@ -49,9 +52,12 @@ import type {
 import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import { useAuthStore } from '../../stores/authStore';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { parseCustomLookupFields, formatCustomLookupValue } from '../../utils/customFields';
+import { useIncidentWebSocket } from '../../lib/services/incidentWebSocket';
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -72,6 +78,7 @@ export const IncidentDetailPage: React.FC = () => {
   const { hasPermission, isSuperAdmin } = usePermissions();
 
   const canEditIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
+  const canViewReports = isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
 
   const [activeTab, setActiveTab] = useState<'activity' | 'comments' | 'attachments' | 'revisions'>('activity');
   const [commentText, setCommentText] = useState('');
@@ -103,6 +110,9 @@ export const IncidentDetailPage: React.FC = () => {
   const [selectedForCompare, setSelectedForCompare] = useState<IncidentAttachment[]>([]);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [compareSliderPosition, setCompareSliderPosition] = useState(50);
+
+  // Report download state
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   // Queries
   const { data: incidentData, isLoading, error, refetch } = useQuery({
@@ -140,6 +150,11 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => userApi.list(1, 100),
   });
 
+  const { data: lookupCategoriesData } = useQuery({
+    queryKey: ['admin', 'lookups', 'categories'],
+    queryFn: () => lookupApi.listCategories(),
+  });
+
   // Check if user can convert incident to request
   const { data: canConvertData } = useQuery({
     queryKey: ['incident', id, 'can-convert'],
@@ -149,6 +164,53 @@ export const IncidentDetailPage: React.FC = () => {
 
   const incident = incidentData?.data as IncidentDetail | undefined;
   const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
+  const lookupCategories = lookupCategoriesData?.data || [];
+  const user = useAuthStore((state) => state.user);
+
+  // WebSocket real-time connection - replaces polling!
+  // Automatically handles presence, updates, and notifications
+  useIncidentWebSocket(id, user?.id);
+
+  // Presence tracking - get active users viewing this incident
+  // Now only fetches initially and when WebSocket pushes updates
+  const { data: presenceData } = useQuery({
+    queryKey: ['incident-presence', id],
+    queryFn: () => incidentApi.getPresence(id!),
+    enabled: !!id,
+    refetchInterval: 60000, // Only poll every 60 seconds as backup (WebSocket is primary)
+    refetchOnWindowFocus: false,
+  });
+
+  // Mark presence on mount and periodically as backup
+  // (WebSocket connection is primary presence indicator)
+  useEffect(() => {
+    if (!id) return;
+
+    // Mark initial presence
+    incidentApi.markPresence(id).catch((err) => {
+      console.error('Failed to mark presence:', err);
+    });
+
+    // Update presence every 3 minutes as backup (WebSocket is primary)
+    const presenceInterval = setInterval(() => {
+      incidentApi.markPresence(id).catch((err) => {
+        console.error('Failed to mark presence:', err);
+      });
+    }, 180000); // 3 minutes (increased from 2 min since WebSocket handles this)
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(presenceInterval);
+      incidentApi.removePresence(id).catch((err) => {
+        console.error('Failed to remove presence:', err);
+      });
+    };
+  }, [id]);
+
+  // Calculate other users (exclude current user)
+  const otherUsers = useMemo(() => {
+    return presenceData?.data?.filter(u => u.user_id !== user?.id) || [];
+  }, [presenceData, user?.id]);
 
   const groupedLookupValues = useMemo(() => {
     if (!incident?.lookup_values) return {};
@@ -161,6 +223,11 @@ export const IncidentDetailPage: React.FC = () => {
       return acc;
     }, {} as Record<string, LookupValue[]>);
   }, [incident?.lookup_values]);
+
+  // Parse custom lookup fields from custom_fields JSON
+  const customLookupFields = useMemo(() => {
+    return parseCustomLookupFields(incident?.custom_fields, lookupCategories);
+  }, [incident?.custom_fields, lookupCategories]);
 
   // Fetch full workflow with states and transitions for visualization
   const { data: fullWorkflowData } = useQuery({
@@ -179,7 +246,15 @@ export const IncidentDetailPage: React.FC = () => {
       department_id?: string;
       user_id?: string;
     }) =>
-      incidentApi.transition(id!, { transition_id: transitionId, comment, attachments, feedback, department_id, user_id }),
+      incidentApi.transition(id!, {
+        transition_id: transitionId,
+        comment,
+        attachments,
+        feedback,
+        department_id,
+        user_id,
+        version: incident?.version || 1, // Include current version for optimistic locking
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incident', id] });
       refetchTransitions();
@@ -194,6 +269,28 @@ export const IncidentDetailPage: React.FC = () => {
       setUserMatchResult(null);
       setSelectedDepartmentId('');
       setSelectedUserId('');
+      toast.success('Transition completed successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to execute transition';
+
+      // Check for version conflict
+      if (errorMessage.includes('conflict') || errorMessage.includes('modified by another user')) {
+        toast.error('Conflict Detected', {
+          description: 'This incident was modified by another user. Refreshing...',
+          duration: 5000,
+        });
+
+        // Auto-refresh after short delay
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['incident', id] });
+          refetchTransitions();
+        }, 1000);
+      } else {
+        toast.error('Transition Failed', {
+          description: errorMessage,
+        });
+      }
     },
   });
 
@@ -312,6 +409,30 @@ export const IncidentDetailPage: React.FC = () => {
     setCompareMode(false);
     setSelectedForCompare([]);
     setCompareModalOpen(false);
+  };
+
+  const handleDownloadReport = async (format: 'pdf' | 'json' | 'txt' = 'pdf') => {
+    if (!incident || !id) return;
+
+    try {
+      setDownloadingReport(true);
+      const blob = await incidentApi.downloadReport(id, format);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `incident_${incident.incident_number}_${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download report:', error);
+      alert('Failed to download report. Please try again.');
+    } finally {
+      setDownloadingReport(false);
+    }
   };
 
   const handleTransitionClick = async (transition: AvailableTransition) => {
@@ -504,6 +625,28 @@ export const IncidentDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Presence Indicator - Show who else is viewing this incident */}
+      {otherUsers.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <Users className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-800">
+                Currently viewing: {otherUsers.map(u => u.user_name).join(', ')}
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                {otherUsers.length === 1
+                  ? 'Another user is viewing this incident. Changes may occur.'
+                  : `${otherUsers.length} other users are viewing this incident. Changes may occur.`
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
@@ -571,6 +714,17 @@ export const IncidentDetailPage: React.FC = () => {
               leftIcon={<ArrowRightLeft className="w-4 h-4" />}
             >
               {t('incidents.convertToRequest', 'Convert to Request')}
+            </Button>
+          )}
+          {canViewReports && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDownloadReport('pdf')}
+              leftIcon={downloadingReport ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              disabled={downloadingReport}
+            >
+              {downloadingReport ? t('incidents.downloading', 'Downloading...') : t('incidents.downloadReport', 'Download PDF Report')}
             </Button>
           )}
           <Button
@@ -1136,6 +1290,19 @@ export const IncidentDetailPage: React.FC = () => {
                   </div>
                 )}
 
+                {/* Source */}
+                {incident.source && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t('incidents.source')}
+                    </label>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Radio className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                      <span className="capitalize">{incident.source.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Due Date - only show if set */}
                 {incident.due_date && (
                   <div>
@@ -1175,34 +1342,50 @@ export const IncidentDetailPage: React.FC = () => {
                     {formatDateTime(incident.created_at)}
                   </div>
                 </div>
-              </div>
 
-              {/* Dynamic Lookups - full width */}
-              {Object.entries(groupedLookupValues).length > 0 && (
-                <div className="pt-2 border-t border-[hsl(var(--border))]">
-                  {Object.entries(groupedLookupValues).map(([category, values]) => (
-                    <div key={category} className="mb-2 last:mb-0">
+                {/* Dynamic Lookups - in 2-column grid */}
+                {Object.entries(groupedLookupValues).map(([category, values]) => (
+                  <div key={category}>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {i18n.language === 'ar' ? (values[0]?.category?.name_ar || category) : category}
+                    </label>
+                    <div className="mt-0.5 flex flex-wrap gap-1.5">
+                      {(values as LookupValue[]).map(value => (
+                        <span
+                          key={value.id}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                          style={{
+                            backgroundColor: value.color ? `${value.color}20` : 'hsl(var(--muted))',
+                            color: value.color || 'hsl(var(--foreground))',
+                          }}
+                        >
+                          {i18n.language === 'ar' && value.name_ar ? value.name_ar : value.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Custom Lookup Fields (text, number, date, checkbox, textarea) - inside main grid */}
+                {Object.entries(customLookupFields).map(([key, field]) => {
+                  const categoryName = i18n.language === 'ar' && field.category_name_ar
+                    ? field.category_name_ar
+                    : field.category_name || key.replace('lookup:', '');
+
+                  const displayValue = formatCustomLookupValue(field, i18n.language, (key: string, defaultValue?: string) => t(key, { defaultValue }));
+
+                  return (
+                    <div key={key}>
                       <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        {i18n.language === 'ar' ? (values[0]?.category?.name_ar || category) : category}
+                        {categoryName}
                       </label>
-                      <div className="mt-0.5 flex flex-wrap gap-1.5">
-                        {(values as LookupValue[]).map(value => (
-                          <span
-                            key={value.id}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                            style={{
-                              backgroundColor: value.color ? `${value.color}20` : 'hsl(var(--muted))',
-                              color: value.color || 'hsl(var(--foreground))',
-                            }}
-                          >
-                            {i18n.language === 'ar' && value.name_ar ? value.name_ar : value.name}
-                          </span>
-                        ))}
+                      <div className="mt-0.5 text-sm text-[hsl(var(--foreground))]">
+                        {displayValue}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
 
               {/* Assignees - full width */}
               <div className="pt-2 border-t border-[hsl(var(--border))]">

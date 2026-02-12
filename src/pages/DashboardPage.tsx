@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import { usePermissions } from '../hooks/usePermissions';
 import { PERMISSIONS } from '../constants/permissions';
+import { applicationLinkApi } from '../api/applicationLinks';
 import {
   Settings,
   AlertTriangle,
@@ -14,7 +16,10 @@ import {
   FileText,
   MessageSquareWarning,
   HelpCircle,
+  PhoneCallIcon,
+  ExternalLink
 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
 interface NavigationCard {
   title: string;
@@ -27,10 +32,49 @@ interface NavigationCard {
   permissions: string[];
 }
 
+// Helper to get Lucide icon component by name
+const getIconComponent = (iconName: string): React.ElementType => {
+  const Icons = LucideIcons as any;
+  return Icons[iconName] || ExternalLink;
+};
+
+// Helper to get gradient classes by color name
+const getGradientClasses = (color: string) => {
+  const gradients: Record<string, string> = {
+    blue: 'from-blue-500 to-cyan-500',
+    violet: 'from-violet-500 to-purple-600',
+    emerald: 'from-emerald-500 to-teal-600',
+    amber: 'from-amber-500 to-orange-600',
+    rose: 'from-rose-500 to-pink-600',
+    orange: 'from-orange-500 to-red-600',
+  };
+  return gradients[color] || 'from-blue-500 to-cyan-500';
+};
+
+const getShadowColor = (color: string) => {
+  const shadows: Record<string, string> = {
+    blue: 'shadow-blue-500/20',
+    violet: 'shadow-violet-500/20',
+    emerald: 'shadow-emerald-500/20',
+    amber: 'shadow-amber-500/20',
+    rose: 'shadow-rose-500/20',
+    orange: 'shadow-orange-500/20',
+  };
+  return shadows[color] || 'shadow-blue-500/20';
+};
+
 export const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { hasAnyPermission, isSuperAdmin } = usePermissions();
+
+  // Fetch active application links
+  const { data: appLinksResponse } = useQuery({
+    queryKey: ['application-links'],
+    queryFn: () => applicationLinkApi.listActive(),
+  });
+
+  const applicationLinks = appLinksResponse?.data || [];
 
   const navigationCards: NavigationCard[] = [
     {
@@ -103,11 +147,21 @@ export const DashboardPage: React.FC = () => {
       shadowColor: 'shadow-orange-600/20',
       permissions: [PERMISSIONS.REPORTS_VIEW],
     },
+    {
+      title: t('dashboard.callCentreManagement'),
+      subtitle: t('dashboard.callCentre'),
+      description: t('dashboard.viewCall'),
+      href: '/call-centre',
+      icon: PhoneCallIcon,
+      gradient: 'from-orange-500 to-amber-500',
+      shadowColor: 'shadow-orange-500/20',
+      permissions: [],
+    }
   ];
 
   // Filter cards based on user permissions
   const visibleCards = navigationCards.filter(
-    (card) => isSuperAdmin || hasAnyPermission(card.permissions)
+    (card) => isSuperAdmin || !card.permissions || card.permissions.length === 0 || hasAnyPermission(card.permissions)
   );
 
   return (
@@ -128,8 +182,9 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Navigation Cards Grid - 4 columns on large screens */}
-      {visibleCards.length > 0 ? (
+      {(visibleCards.length > 0 || applicationLinks.length > 0) ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Internal navigation cards */}
           {visibleCards.map((card) => (
             <Link
               key={card.title}
@@ -171,6 +226,72 @@ export const DashboardPage: React.FC = () => {
               </div>
             </Link>
           ))}
+
+          {/* Application link cards - open in new tab */}
+          {applicationLinks.map((appLink) => {
+            const AppIcon = getIconComponent(appLink.icon);
+            const gradient = getGradientClasses(appLink.color);
+            const shadowColor = getShadowColor(appLink.color);
+            const hasImage = Boolean(appLink.image_url);
+
+            return (
+              <a
+                key={appLink.id}
+                href={appLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`
+                  group relative overflow-hidden rounded-2xl p-5
+                  bg-gradient-to-br ${gradient}
+                  shadow-lg ${shadowColor}
+                  hover:shadow-xl hover:scale-[1.02]
+                  transition-all duration-300 ease-out
+                  min-h-[160px] flex flex-col justify-between
+                `}
+              >
+                {/* Background decoration */}
+                <div className="absolute -top-4 -right-4 w-24 h-24 opacity-10">
+                  {hasImage ? (
+                    <img src={appLink.image_url} alt="" className="w-full h-full object-contain" />
+                  ) : (
+                    <AppIcon className="w-full h-full" strokeWidth={0.5} />
+                  )}
+                </div>
+
+                {/* External link indicator */}
+                <div className="absolute top-3 right-3 p-1 bg-white/20 rounded-md">
+                  <ExternalLink className="w-3 h-3 text-white" />
+                </div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl w-fit mb-3">
+                    {hasImage ? (
+                      <img src={appLink.image_url} alt={appLink.name} className="w-6 h-6 object-contain" />
+                    ) : (
+                      <AppIcon className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <h2 className="text-lg font-bold text-white leading-tight">{appLink.name}</h2>
+                  {appLink.description && (
+                    <p className="text-white/90 text-xs font-medium mt-0.5 line-clamp-1">{appLink.description}</p>
+                  )}
+                </div>
+
+                {/* Arrow indicator */}
+                <div className="relative z-10 flex items-center justify-end mt-3">
+                  <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:translate-x-1 transition-all ml-auto">
+                    <ArrowRight className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+
+                {/* Hover shine effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                </div>
+              </a>
+            );
+          })}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">

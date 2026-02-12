@@ -15,12 +15,14 @@ export const usePermissions = () => {
   const hasAnyPermission = useCallback((permissions: string[]): boolean => {
     if (!user) return false;
     if (user.is_super_admin) return true;
+    if (!permissions || permissions.length === 0) return true; // No permissions required
     return permissions.some(perm => hasPermission(perm));
   }, [user, hasPermission]);
 
   const hasAllPermissions = useCallback((permissions: string[]): boolean => {
     if (!user) return false;
     if (user.is_super_admin) return true;
+    if (!permissions || permissions.length === 0) return true; // No permissions required
     return permissions.every(perm => hasPermission(perm));
   }, [user, hasPermission]);
 
@@ -86,6 +88,7 @@ export const usePermissions = () => {
 
     // Incident permissions
     canViewIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_VIEW),
+    canViewAllIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL),
     canCreateIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_CREATE),
     canUpdateIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_UPDATE),
     canDeleteIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_DELETE),
@@ -95,6 +98,7 @@ export const usePermissions = () => {
 
     // Request permissions
     canViewRequests: () => hasPermission(PERMISSIONS.REQUESTS_VIEW),
+    canViewAllRequests: () => hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL),
     canCreateRequests: () => hasPermission(PERMISSIONS.REQUESTS_CREATE),
     canUpdateRequests: () => hasPermission(PERMISSIONS.REQUESTS_UPDATE),
     canDeleteRequests: () => hasPermission(PERMISSIONS.REQUESTS_DELETE),
@@ -104,6 +108,7 @@ export const usePermissions = () => {
 
     // Complaint permissions
     canViewComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_VIEW),
+    canViewAllComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_VIEW_ALL),
     canCreateComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_CREATE),
     canUpdateComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_UPDATE),
     canDeleteComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_DELETE),
@@ -113,6 +118,7 @@ export const usePermissions = () => {
 
     // Query permissions
     canViewQueries: () => hasPermission(PERMISSIONS.QUERIES_VIEW),
+    canViewAllQueries: () => hasPermission(PERMISSIONS.QUERIES_VIEW_ALL),
     canCreateQueries: () => hasPermission(PERMISSIONS.QUERIES_CREATE),
     canUpdateQueries: () => hasPermission(PERMISSIONS.QUERIES_UPDATE),
     canDeleteQueries: () => hasPermission(PERMISSIONS.QUERIES_DELETE),

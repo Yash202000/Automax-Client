@@ -106,6 +106,12 @@ export const PERMISSIONS = {
   LOOKUPS_UPDATE: 'lookups:update',
   LOOKUPS_DELETE: 'lookups:delete',
 
+  // Application Links permissions
+  APPLICATION_LINKS_VIEW: 'application-links:view',
+  APPLICATION_LINKS_CREATE: 'application-links:create',
+  APPLICATION_LINKS_UPDATE: 'application-links:update',
+  APPLICATION_LINKS_DELETE: 'application-links:delete',
+
   // Settings permissions
   SETTINGS_VIEW: 'settings:view',
   SETTINGS_UPDATE: 'settings:update',

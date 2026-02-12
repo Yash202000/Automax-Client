@@ -22,6 +22,7 @@ import {
 import { Button } from '../../components/ui';
 import { incidentApi } from '../../api/admin';
 import type { Incident } from '../../types';
+import { useIncidentListWebSocket } from '../../lib/services/incidentListWebSocket';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
@@ -52,6 +53,9 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
       ? incidentApi.getMyAssigned(page, limit, 'incident')
       : incidentApi.getMyReported(page, limit, 'incident'),
   });
+
+  // Real-time viewer count updates via WebSocket (no polling!)
+  useIncidentListWebSocket();
 
   const incidents = incidentsData?.data || [];
   const totalPages = incidentsData?.total_pages ?? 1;
@@ -285,9 +289,23 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                     >
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
-                          <p className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5">
-                            {incident.incident_number}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5">
+                              {incident.incident_number}
+                            </p>
+                            {incident.active_viewers && incident.active_viewers > 0 && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300"
+                                title={`${incident.active_viewers} user${incident.active_viewers > 1 ? 's' : ''} currently viewing`}
+                              >
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                                {incident.active_viewers}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
                             {incident.title}
                           </p>

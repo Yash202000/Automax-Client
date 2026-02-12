@@ -22,9 +22,13 @@ import {
   X,
   Check,
   MapPin,
+  Upload,
+  Info,
+  Phone,
 } from 'lucide-react';
 import { Button, HierarchicalTreeSelect, type TreeNode } from '../../components/ui';
 import { userApi, departmentApi, locationApi, roleApi, classificationApi } from '../../api/admin';
+import { toast } from 'sonner';
 import type { User, Role, UpdateProfileRequest } from '../../types';
 import { cn } from '@/lib/utils';
 import { FolderTree } from 'lucide-react';
@@ -36,6 +40,7 @@ interface UserFormData {
   last_name: string;
   username: string;
   phone: string;
+  extension: string;
   department_id: string;
   location_id: string;
   department_ids: string[];
@@ -50,6 +55,7 @@ const initialFormData: UserFormData = {
   last_name: '',
   username: '',
   phone: '',
+  extension: '',
   department_id: '',
   location_id: '',
   department_ids: [],
@@ -82,6 +88,7 @@ export const UsersPage: React.FC = () => {
     first_name: '',
     last_name: '',
     phone: '',
+    extension: '',
     department_id: '',
     location_id: '',
     department_ids: [] as string[],
@@ -90,6 +97,9 @@ export const UsersPage: React.FC = () => {
     role_ids: [] as string[],
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[]; note?: string } | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const limit = 10;
 
@@ -162,7 +172,14 @@ export const UsersPage: React.FC = () => {
       userApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success(t('users.userUpdatedSuccessfully', 'User updated successfully'));
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || t('users.updateFailed', 'Failed to update user');
+      toast.error(t('common.error', 'Error'), {
+        description: errorMessage,
+      });
     },
   });
 
@@ -171,7 +188,14 @@ export const UsersPage: React.FC = () => {
       userApi.create(params.data, params.avatar),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success(t('users.userCreatedSuccessfully', 'User created successfully'));
       closeCreateModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || t('users.createFailed', 'Failed to create user');
+      toast.error(t('common.error', 'Error'), {
+        description: errorMessage,
+      });
     },
   });
 
@@ -183,6 +207,7 @@ export const UsersPage: React.FC = () => {
       first_name: '',
       last_name: '',
       phone: '',
+      extension: '',
       department_id: '',
       location_id: '',
       department_ids: [],
@@ -204,6 +229,7 @@ export const UsersPage: React.FC = () => {
       first_name: '',
       last_name: '',
       phone: '',
+      extension: '',
       department_id: '',
       location_id: '',
       department_ids: [],
@@ -247,17 +273,21 @@ export const UsersPage: React.FC = () => {
   };
 
   const openEditModal = (user: User) => {
+    const classificationIds = user.classifications?.map((c) => c.id) || [];
+    const locationIds = user.locations?.map((l) => l.id) || [];
+
     setEditingUser(user);
     setFormData({
       first_name: user.first_name || '',
       last_name: user.last_name || '',
       username: user.username,
       phone: user.phone || '',
+      extension: (user as any).extension || '',
       department_id: user.department_id || '',
       location_id: user.location_id || '',
       department_ids: user.departments?.map((d) => d.id) || [],
-      location_ids: user.locations?.map((l) => l.id) || [],
-      classification_ids: user.classifications?.map((c) => c.id) || [],
+      location_ids: locationIds,
+      classification_ids: classificationIds,
       role_ids: user.roles?.map((r) => r.id) || [],
       is_active: user.is_active,
     });
@@ -291,6 +321,7 @@ export const UsersPage: React.FC = () => {
       last_name: formData.last_name,
       username: formData.username,
       phone: formData.phone,
+      extension: formData.extension || undefined,
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,
       department_ids: formData.department_ids,
@@ -298,7 +329,7 @@ export const UsersPage: React.FC = () => {
       classification_ids: formData.classification_ids,
       role_ids: formData.role_ids,
       is_active: formData.is_active,
-    };
+    } as any;
 
     updateMutation.mutate({ id: editingUser.id, data: payload });
   };
@@ -310,6 +341,42 @@ export const UsersPage: React.FC = () => {
         ? prev.role_ids.filter((id) => id !== roleId)
         : [...prev.role_ids, roleId],
     }));
+  };
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await userApi.export();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `users_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const result = await userApi.import(file);
+      setImportResult(result.data || null);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    } catch (error) {
+      console.error('Import failed:', error);
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
+    }
   };
 
   const filteredUsers = data?.data?.filter(
@@ -357,9 +424,32 @@ export const UsersPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />}>
-            {t('common.export')}
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-4 h-4" />}
+            onClick={handleExport}
+            isLoading={isExporting}
+          >
+            {isExporting ? 'Exporting...' : t('common.export')}
           </Button>
+          <label className="inline-flex">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Upload className="w-4 h-4" />}
+              disabled={isImporting}
+            >
+              {isImporting ? 'Importing...' : 'Import'}
+            </Button>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              disabled={isImporting}
+              className="hidden"
+            />
+          </label>
           {canCreateUser && (
             <Button leftIcon={<Plus className="w-4 h-4" />} onClick={openCreateModal}>
               {t('users.addUser')}
@@ -425,6 +515,11 @@ export const UsersPage: React.FC = () => {
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                        Extension
+                      </span>
+                    </th>
+                    <th className="px-6 py-4 text-left">
+                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t('users.roles')}
                       </span>
                     </th>
@@ -483,6 +578,16 @@ export const UsersPage: React.FC = () => {
                             {user.email}
                           </span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {(user as any).extension ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
+                            <Phone className="w-3 h-3" />
+                            Ext. {(user as any).extension}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1.5">
@@ -785,11 +890,50 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Extension</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 1001"
+                    value={formData.extension}
+                    onChange={(e) => setFormData({ ...formData, extension: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
                   data={departmentsTree}
                   selectedIds={formData.department_ids}
-                  onSelectionChange={(ids) => setFormData({ ...formData, department_ids: ids })}
+                  onSelectionChange={async (ids) => {
+                    setFormData({ ...formData, department_ids: ids });
+
+                    // Auto-populate classifications and locations from departments
+                    try {
+                      const allClassifications = new Set<string>();
+                      const allLocations = new Set<string>();
+
+                      for (const deptId of ids) {
+                        const dept = await departmentApi.getById(deptId);
+                        if (dept.success && dept.data) {
+                          // Add department's classifications
+                          dept.data.classifications?.forEach(c => allClassifications.add(c.id));
+                          // Add department's locations
+                          dept.data.locations?.forEach(l => allLocations.add(l.id));
+                        }
+                      }
+
+                      setFormData(prev => ({
+                        ...prev,
+                        department_ids: ids,
+                        classification_ids: Array.from(allClassifications),
+                        location_ids: Array.from(allLocations),
+                      }));
+                    } catch (error) {
+                      console.error('Error fetching department details:', error);
+                      setFormData({ ...formData, department_ids: ids });
+                    }
+                  }}
                   label={t('users.departments')}
                   icon={<Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />}
                   emptyMessage={t('users.noDepartmentsAvailable')}
@@ -1056,11 +1200,49 @@ export const UsersPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Extension */}
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Extension</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 1001"
+                    value={createFormData.extension}
+                    onChange={(e) => setCreateFormData({ ...createFormData, extension: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
                   data={departmentsTree}
                   selectedIds={createFormData.department_ids}
-                  onSelectionChange={(ids) => setCreateFormData({ ...createFormData, department_ids: ids })}
+                  onSelectionChange={async (ids) => {
+                    // Auto-populate classifications and locations from departments
+                    try {
+                      const allClassifications = new Set<string>();
+                      const allLocations = new Set<string>();
+
+                      for (const deptId of ids) {
+                        const dept = await departmentApi.getById(deptId);
+                        if (dept.success && dept.data) {
+                          // Add department's classifications
+                          dept.data.classifications?.forEach(c => allClassifications.add(c.id));
+                          // Add department's locations
+                          dept.data.locations?.forEach(l => allLocations.add(l.id));
+                        }
+                      }
+
+                      setCreateFormData(prev => ({
+                        ...prev,
+                        department_ids: ids,
+                        classification_ids: Array.from(allClassifications),
+                        location_ids: Array.from(allLocations),
+                      }));
+                    } catch (error) {
+                      console.error('Error fetching department details:', error);
+                      setCreateFormData({ ...createFormData, department_ids: ids });
+                    }
+                  }}
                   label={t('users.departments')}
                   icon={<Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />}
                   emptyMessage={t('users.noDepartmentsAvailable')}
@@ -1189,7 +1371,7 @@ export const UsersPage: React.FC = () => {
             {/* Modal Body */}
             <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-6">
               {/* Contact Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{t('users.email')}</p>
                   <div className="flex items-center gap-2">
@@ -1200,6 +1382,13 @@ export const UsersPage: React.FC = () => {
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{t('users.phone')}</p>
                   <p className="text-sm text-[hsl(var(--foreground))]">{viewingUser.phone || t('users.notProvided')}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Extension</p>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-[hsl(var(--primary))]" />
+                    <p className="text-sm text-[hsl(var(--foreground))]">{(viewingUser as any).extension || t('users.notProvided')}</p>
+                  </div>
                 </div>
               </div>
 
@@ -1342,6 +1531,68 @@ export const UsersPage: React.FC = () => {
               >
                 {t('users.editUser')}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Result Modal */}
+      {importResult && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                  importResult.skipped > 0
+                    ? "bg-[hsl(var(--warning)/0.1)]"
+                    : "bg-[hsl(var(--success)/0.1)]"
+                )}>
+                  <Info className={cn(
+                    "w-6 h-6",
+                    importResult.skipped > 0
+                      ? "text-[hsl(var(--warning))]"
+                      : "text-[hsl(var(--success))]"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Import Complete</h3>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      <span className="font-medium text-[hsl(var(--success))]">{importResult.imported}</span> users imported successfully
+                    </p>
+                    {importResult.skipped > 0 && (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        <span className="font-medium text-[hsl(var(--warning))]">{importResult.skipped}</span> users skipped
+                      </p>
+                    )}
+                    {importResult.note && (
+                      <div className="mt-3 p-3 bg-[hsl(var(--accent)/0.1)] border border-[hsl(var(--accent))] rounded-lg">
+                        <p className="text-xs font-medium text-[hsl(var(--accent-foreground))]">
+                          ⚠️ {importResult.note}
+                        </p>
+                      </div>
+                    )}
+                    {importResult.errors.length > 0 && (
+                      <div className="mt-3 max-h-40 overflow-y-auto">
+                        <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">Errors:</p>
+                        <ul className="space-y-1">
+                          {importResult.errors.map((error, index) => (
+                            <li key={index} className="text-xs text-[hsl(var(--muted-foreground))] pl-3">
+                              • {error}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setImportResult(null)}>
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>

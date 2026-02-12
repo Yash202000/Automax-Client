@@ -29,6 +29,7 @@ import type {
   Workflow,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
+  WorkflowImportResponse,
   WorkflowState,
   WorkflowStateCreateRequest,
   WorkflowStateUpdateRequest,
@@ -57,10 +58,7 @@ import type {
   CanConvertToRequestResponse,
   CreateComplaintRequest,
   CreateQueryRequest,
-  SMTPConfig,
-  SMTPConfigCreateRequest,
-  SMTPConfigUpdateRequest,
-  SMTPTestRequest,
+  CreateRequestRequest,
   ReportDataSource,
   ReportFieldDefinition,
   DataSourceDefinition,
@@ -79,6 +77,7 @@ import type {
   LookupCategoryUpdateRequest,
   LookupValueCreateRequest,
   LookupValueUpdateRequest,
+  PresenceInfo,
 } from '../types';
 
 // User Management
@@ -153,6 +152,28 @@ export const userApi = {
     const response = await apiClient.post<ApiResponse<UserMatchResponse>>('/admin/users/match', data);
     return response.data;
   },
+
+  // Export all users as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/users/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import users from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[]; note: string }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[]; note: string }>>(
+      '/admin/users/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Classification API
@@ -206,6 +227,28 @@ export const classificationApi = {
     const response = await apiClient.delete<ApiResponse<null>>(`/admin/classifications/${id}`);
     return response.data;
   },
+
+  // Export all classifications as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/classifications/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import classifications from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[] }>>(
+      '/admin/classifications/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Location API
@@ -250,6 +293,28 @@ export const locationApi = {
 
   delete: async (id: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete<ApiResponse<null>>(`/admin/locations/${id}`);
+    return response.data;
+  },
+
+  // Export all locations as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/locations/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import locations from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[] }>>(
+      '/admin/locations/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
     return response.data;
   },
 };
@@ -299,6 +364,28 @@ export const departmentApi = {
     const response = await apiClient.post<ApiResponse<DepartmentMatchResponse>>('/admin/departments/match', data);
     return response.data;
   },
+
+  // Export all departments as JSON file
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/departments/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Import departments from JSON file
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ imported: number; skipped: number; errors: string[] }>>(
+      '/admin/departments/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
 };
 
 // Role API
@@ -331,6 +418,24 @@ export const roleApi = {
   assignPermissions: async (id: string, permissionIds: string[]): Promise<ApiResponse<Role>> => {
     const response = await apiClient.post<ApiResponse<Role>>(`/admin/roles/${id}/permissions`, {
       permission_ids: permissionIds,
+    });
+    return response.data;
+  },
+
+  export: async (): Promise<Blob> => {
+    const response = await apiClient.get('/admin/roles/export', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  import: async (file: File): Promise<ApiResponse<{ imported: number; skipped: number; errors: string[] }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/admin/roles/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return response.data;
   },
@@ -556,7 +661,6 @@ export const workflowApi = {
       classification_id?: string;
       location_id?: string;
       source?: string;
-      severity?: number;
       priority?: number;
     }
   ): Workflow | null => {
@@ -590,16 +694,6 @@ export const workflowApi = {
       if (criteria.source && workflow.sources?.length) {
         if (workflow.sources.includes(criteria.source as IncidentSource)) {
           score += 10;
-          matchCount++;
-        }
-      }
-
-      // Check severity range
-      if (criteria.severity !== undefined) {
-        const minSev = workflow.severity_min ?? 1;
-        const maxSev = workflow.severity_max ?? 5;
-        if (criteria.severity >= minSev && criteria.severity <= maxSev) {
-          score += 5;
           matchCount++;
         }
       }
@@ -639,12 +733,27 @@ export const workflowApi = {
     classification_ids?: string[];
     location_ids?: string[];
     sources?: string[];
-    severity_min?: number;
-    severity_max?: number;
     priority_min?: number;
     priority_max?: number;
   }): Promise<ApiResponse<Workflow>> => {
     const response = await apiClient.put<ApiResponse<Workflow>>(`/admin/workflows/${workflowId}/match-config`, config);
+    return response.data;
+  },
+
+  // Export/Import
+  export: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/admin/workflows/${id}/export`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  import: async (file: File): Promise<ApiResponse<WorkflowImportResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/admin/workflows/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 };
@@ -665,7 +774,6 @@ export const incidentApi = {
     if (filter.current_state_id) params.append('current_state_id', filter.current_state_id);
     if (filter.classification_id) params.append('classification_id', filter.classification_id);
     if (filter.priority) params.append('priority', String(filter.priority));
-    if (filter.severity) params.append('severity', String(filter.severity));
     if (filter.assignee_id) params.append('assignee_id', filter.assignee_id);
     if (filter.department_id) params.append('department_id', filter.department_id);
     if (filter.location_id) params.append('location_id', filter.location_id);
@@ -823,6 +931,30 @@ export const incidentApi = {
     const response = await apiClient.get(`/incidents/${incidentId}/revisions/export?format=${format}`, {
       responseType: 'blob',
     });
+    return response.data;
+  },
+
+  // Download Report
+  downloadReport: async (incidentId: string, format: 'pdf' | 'json' | 'txt' = 'pdf'): Promise<Blob> => {
+    const response = await apiClient.get(`/incidents/${incidentId}/report?format=${format}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // Presence tracking
+  markPresence: async (incidentId: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.post<ApiResponse<null>>(`/incidents/${incidentId}/presence`);
+    return response.data;
+  },
+
+  getPresence: async (incidentId: string): Promise<ApiResponse<PresenceInfo[]>> => {
+    const response = await apiClient.get<ApiResponse<PresenceInfo[]>>(`/incidents/${incidentId}/presence`);
+    return response.data;
+  },
+
+  removePresence: async (incidentId: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/incidents/${incidentId}/presence`);
     return response.data;
   },
 };
@@ -1063,41 +1195,125 @@ export const queryApi = {
   },
 };
 
-// SMTP Configuration API
-export const smtpApi = {
-  // Get current SMTP configuration
-  get: async (): Promise<ApiResponse<SMTPConfig | null>> => {
-    const response = await apiClient.get<ApiResponse<SMTPConfig | null>>('/admin/smtp');
+export const requestApi = {
+  create: async (data: CreateRequestRequest): Promise<ApiResponse<Incident>> => {
+    // Requests are created as incidents with record_type='request'
+    const requestData = {
+      ...data,
+      record_type: 'request',
+    };
+    const response = await apiClient.post<ApiResponse<Incident>>('/incidents', requestData);
     return response.data;
   },
 
-  // Create SMTP configuration
-  create: async (data: SMTPConfigCreateRequest): Promise<ApiResponse<SMTPConfig>> => {
-    const response = await apiClient.post<ApiResponse<SMTPConfig>>('/admin/smtp', data);
+  list: async (filter: Omit<IncidentFilter, 'record_type'> = {}): Promise<PaginatedResponse<Incident>> => {
+    const params = new URLSearchParams();
+    params.append('record_type', 'request'); // Filter for requests only
+    if (filter.page) params.append('page', String(filter.page));
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.search) params.append('search', filter.search);
+    if (filter.workflow_id) params.append('workflow_id', filter.workflow_id);
+    if (filter.current_state_id) params.append('current_state_id', filter.current_state_id);
+    if (filter.classification_id) params.append('classification_id', filter.classification_id);
+    if (filter.assignee_id) params.append('assignee_id', filter.assignee_id);
+    if (filter.department_id) params.append('department_id', filter.department_id);
+    if (filter.channel) params.append('channel', filter.channel);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+
+    const response = await apiClient.get<PaginatedResponse<Incident>>(`/incidents?${params.toString()}`);
     return response.data;
   },
 
-  // Update SMTP configuration
-  update: async (data: SMTPConfigUpdateRequest): Promise<ApiResponse<SMTPConfig>> => {
-    const response = await apiClient.put<ApiResponse<SMTPConfig>>('/admin/smtp', data);
+  getById: async (id: string): Promise<ApiResponse<IncidentDetail>> => {
+    const response = await apiClient.get<ApiResponse<IncidentDetail>>(`/incidents/${id}`);
     return response.data;
   },
 
-  // Delete SMTP configuration
-  delete: async (): Promise<ApiResponse<null>> => {
-    const response = await apiClient.delete<ApiResponse<null>>('/admin/smtp');
+  update: async (id: string, data: IncidentUpdateRequest): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.put<ApiResponse<Incident>>(`/incidents/${id}`, data);
     return response.data;
   },
 
-  // Test SMTP configuration
-  test: async (data: SMTPTestRequest): Promise<ApiResponse<{ success: boolean; message: string }>> => {
-    const response = await apiClient.post<ApiResponse<{ success: boolean; message: string }>>('/admin/smtp/test', data);
+  // State transitions
+  transition: async (id: string, data: IncidentTransitionRequest): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.post<ApiResponse<Incident>>(`/incidents/${id}/transition`, data);
     return response.data;
   },
 
-  // Verify SMTP connection
-  verify: async (): Promise<ApiResponse<{ success: boolean; message: string }>> => {
-    const response = await apiClient.post<ApiResponse<{ success: boolean; message: string }>>('/admin/smtp/verify');
+  getAvailableTransitions: async (id: string): Promise<ApiResponse<AvailableTransition[]>> => {
+    const response = await apiClient.get<ApiResponse<AvailableTransition[]>>(`/incidents/${id}/available-transitions`);
+    return response.data;
+  },
+
+  getHistory: async (id: string): Promise<ApiResponse<TransitionHistory[]>> => {
+    const response = await apiClient.get<ApiResponse<TransitionHistory[]>>(`/incidents/${id}/history`);
+    return response.data;
+  },
+
+  // Comments
+  addComment: async (requestId: string, data: IncidentCommentRequest): Promise<ApiResponse<IncidentComment>> => {
+    const response = await apiClient.post<ApiResponse<IncidentComment>>(`/incidents/${requestId}/comments`, data);
+    return response.data;
+  },
+
+  listComments: async (requestId: string): Promise<ApiResponse<IncidentComment[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentComment[]>>(`/incidents/${requestId}/comments`);
+    return response.data;
+  },
+
+  updateComment: async (requestId: string, commentId: string, data: IncidentCommentRequest): Promise<ApiResponse<IncidentComment>> => {
+    const response = await apiClient.put<ApiResponse<IncidentComment>>(`/incidents/${requestId}/comments/${commentId}`, data);
+    return response.data;
+  },
+
+  deleteComment: async (requestId: string, commentId: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/incidents/${requestId}/comments/${commentId}`);
+    return response.data;
+  },
+
+  // Attachments
+  uploadAttachment: async (requestId: string, file: File): Promise<ApiResponse<IncidentAttachment>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<IncidentAttachment>>(`/incidents/${requestId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  listAttachments: async (requestId: string): Promise<ApiResponse<IncidentAttachment[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentAttachment[]>>(`/incidents/${requestId}/attachments`);
+    return response.data;
+  },
+
+  deleteAttachment: async (requestId: string, attachmentId: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/incidents/${requestId}/attachments/${attachmentId}`);
+    return response.data;
+  },
+
+  // Revision History
+  getRevisions: async (
+    requestId: string,
+    filter: Omit<IncidentRevisionFilter, 'incident_id'> = {}
+  ): Promise<PaginatedResponse<IncidentRevision>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append('page', String(filter.page));
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.action_type) params.append('action_type', filter.action_type);
+    if (filter.performed_by_id) params.append('performed_by_id', filter.performed_by_id);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+
+    const response = await apiClient.get<PaginatedResponse<IncidentRevision>>(
+      `/incidents/${requestId}/revisions?${params.toString()}`
+    );
+    return response.data;
+  },
+
+  // Evaluation
+  incrementEvaluation: async (id: string): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.post<ApiResponse<Incident>>(`/incidents/${id}/evaluate`);
     return response.data;
   },
 };
@@ -1247,6 +1463,51 @@ export const lookupApi = {
   // Public - get values by category code (for dropdowns)
   getValuesByCode: async (code: string): Promise<ApiResponse<LookupValue[]>> => {
     const response = await apiClient.get<ApiResponse<LookupValue[]>>(`/lookups/${code}`);
+    return response.data;
+  },
+};
+
+// Call Log API
+export const callLogApi = {
+  list: async (page = 1, limit = 20, userId?: string): Promise<any> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (userId) params.append('user_id', userId);
+    const response = await apiClient.get(`/admin/call-logs?${params.toString()}`);
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<any> => {
+    const response = await apiClient.get(`/admin/call-logs/${id}`);
+    return response.data;
+  },
+
+  create: async (data: {
+    user_id: string;
+    caller_number: string;
+    callee_number: string;
+    call_type: 'inbound' | 'outbound' | 'internal';
+    start_time: string;
+    end_time?: string;
+    duration?: number;
+    status: 'answered' | 'missed' | 'rejected' | 'busy' | 'failed';
+    recording_url?: string;
+  }): Promise<any> => {
+    const response = await apiClient.post('/admin/call-logs', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<{
+    end_time: string;
+    duration: number;
+    status: string;
+    recording_url: string;
+  }>): Promise<any> => {
+    const response = await apiClient.put(`/admin/call-logs/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<any> => {
+    const response = await apiClient.delete(`/admin/call-logs/${id}`);
     return response.data;
   },
 };

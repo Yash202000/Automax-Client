@@ -7,12 +7,12 @@ import {
   LogOut,
   Home,
   Bell,
-  Search,
   Menu,
   X,
   ChevronDown,
   ChevronRight,
   Sparkles,
+  Plus,
   List,
   Circle,
   User,
@@ -30,6 +30,7 @@ import { incidentApi } from '../../api/admin';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import { CreateRequestModal } from '@/components/requests/CreateRequestModal';
 
 export const RequestLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ export const RequestLayout: React.FC = () => {
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const [showSoftphone, setShowSoftphone] = useState(false);
+  const [createRequestModalOpen, setCreateRequestModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -47,6 +49,7 @@ export const RequestLayout: React.FC = () => {
   const canViewIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canViewRequests = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW);
   const canViewAllRequests = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL);
+  const canCreateRequest = isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_CREATE);
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -150,6 +153,19 @@ export const RequestLayout: React.FC = () => {
                 </>
               )}
             </NavLink>
+          )}
+
+          {canCreateRequest && (
+            <button
+              onClick={() => {
+                setCreateRequestModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className={`group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
+            >
+              <Plus size={20} className="flex-shrink-0" />
+              {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.newRequest', 'New Request')}</span>}
+            </button>
           )}
 
           {/* My Requests - Collapsible */}
@@ -475,7 +491,12 @@ export const RequestLayout: React.FC = () => {
               showSip={showSoftphone}
               onClose={() => setShowSoftphone(false)}
               settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
-              auth={{}}
+              auth={{
+                user: {
+                  userID: user?.id || '',
+                  extension: (user as any)?.extension || '',
+                }
+              }}
             />
 
             {/* Notifications */}
@@ -567,6 +588,16 @@ export const RequestLayout: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Create Request Modal */}
+      <CreateRequestModal
+        isOpen={createRequestModalOpen}
+        onClose={() => setCreateRequestModalOpen(false)}
+        onSuccess={(requestId) => {
+          setCreateRequestModalOpen(false);
+          navigate(`/requests/${requestId}`);
+        }}
+      />
     </div>
   );
 };

@@ -25,10 +25,12 @@ import {
   Tags,
   Star,
   ExternalLink,
+  Radio,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
 import { RevisionHistory } from '../../components/incidents';
+import { AudioPlayer } from '../../components/common/AudioPlayer';
 import { incidentApi, userApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
@@ -106,6 +108,52 @@ export const RequestDetailPage: React.FC = () => {
   const attachments = attachmentsData?.data || [];
   const users = usersData?.data || [];
 
+  // Helper function to download attachment with authentication
+  const downloadAttachment = async (attachmentId: string, fileName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/incidents/${id}/attachments/${attachmentId}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download attachment');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      alert('Failed to download attachment');
+    }
+  };
+
+  // Helper function to get authenticated attachment URL for audio/video
+  const getAuthenticatedAttachmentUrl = (attachmentId: string): string => {
+    const token = localStorage.getItem('token');
+    return `${API_URL}/incidents/${id}/attachments/${attachmentId}/download?token=${token}`;
+  };
+
+  // Helper function to check if file is audio
+  const isAudioFile = (mimeType: string, fileName: string) => {
+    // Check mime type first
+    if (mimeType && mimeType.startsWith('audio/')) {
+      return true;
+    }
+    // Fallback to file extension check
+    const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i;
+    return audioExtensions.test(fileName);
+  };
+
   // Mutations
   const transitionMutation = useMutation({
     mutationFn: async () => {
@@ -129,6 +177,7 @@ export const RequestDetailPage: React.FC = () => {
           rating: transitionFeedbackRating,
           comment: transitionFeedbackComment || undefined,
         } : undefined,
+        version: request?.version || 1,
       });
     },
     onSuccess: () => {
@@ -157,7 +206,10 @@ export const RequestDetailPage: React.FC = () => {
   });
 
   const assignMutation = useMutation({
-    mutationFn: (assigneeId: string) => incidentApi.update(id!, { assignee_id: assigneeId }),
+    mutationFn: (assigneeId: string) => incidentApi.update(id!, {
+      assignee_id: assigneeId,
+      version: request?.version || 1,
+    }),
     onSuccess: () => {
       refetch();
       setAssignModalOpen(false);
@@ -215,7 +267,6 @@ export const RequestDetailPage: React.FC = () => {
   }
 
   const priority = request.lookup_values?.find(lv => lv.category?.code === 'PRIORITY');
-  const severity = request.lookup_values?.find(lv => lv.category?.code === 'SEVERITY');
 
   return (
     <div className="space-y-6">
@@ -526,44 +577,58 @@ export const RequestDetailPage: React.FC = () => {
                       {t('requests.noAttachments', 'No attachments')}
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="border border-[hsl(var(--border))] rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                        >
-                          {attachment.mime_type?.startsWith('image/') ? (
-                            <div className="aspect-video bg-[hsl(var(--muted))] relative">
-                              <img
-                                src={`${API_URL}/incidents/${id}/attachments/${attachment.id}/download`}
-                                alt={attachment.file_name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="aspect-video bg-[hsl(var(--muted))] flex items-center justify-center">
-                              <FileText className="w-12 h-12 text-[hsl(var(--muted-foreground))]" />
-                            </div>
-                          )}
-                          <div className="p-3">
-                            <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
-                              {attachment.file_name}
-                            </p>
-                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                              {(attachment.file_size / 1024).toFixed(1)} KB
-                            </p>
-                            <a
-                              href={`${API_URL}/incidents/${id}/attachments/${attachment.id}/download`}
-                              download
-                              className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
-                            >
-                              <Download className="w-3 h-3" />
-                              {t('common.download', 'Download')}
-                            </a>
-                          </div>
+                    <>
+                      {/* Audio Attachments */}
+                      {attachments.filter(att => isAudioFile(att.mime_type, att.file_name)).map((attachment) => (
+                        <div key={attachment.id} className="p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+                          <AudioPlayer
+                            src={getAuthenticatedAttachmentUrl(attachment.id)}
+                            fileName={attachment.file_name}
+                          />
                         </div>
                       ))}
-                    </div>
+
+                      {/* Image and Other Attachments */}
+                      {attachments.filter(att => !isAudioFile(att.mime_type, att.file_name)).length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {attachments.filter(att => !isAudioFile(att.mime_type, att.file_name)).map((attachment) => (
+                            <div
+                              key={attachment.id}
+                              className="border border-[hsl(var(--border))] rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                            >
+                              {attachment.mime_type?.startsWith('image/') ? (
+                                <div className="aspect-video bg-[hsl(var(--muted))] relative">
+                                  <img
+                                    src={getAuthenticatedAttachmentUrl(attachment.id)}
+                                    alt={attachment.file_name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="aspect-video bg-[hsl(var(--muted))] flex items-center justify-center">
+                                  <FileText className="w-12 h-12 text-[hsl(var(--muted-foreground))]" />
+                                </div>
+                              )}
+                              <div className="p-3">
+                                <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                                  {attachment.file_name}
+                                </p>
+                                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  {(attachment.file_size / 1024).toFixed(1)} KB
+                                </p>
+                                <button
+                                  onClick={() => downloadAttachment(attachment.id, attachment.file_name)}
+                                  className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  {t('common.download', 'Download')}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -591,19 +656,6 @@ export const RequestDetailPage: React.FC = () => {
                     style={{ backgroundColor: priority.color || '#6b7280' }}
                   >
                     {getLookupLabel(priority)}
-                  </span>
-                </div>
-              )}
-
-              {/* Severity */}
-              {severity && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[hsl(var(--muted-foreground))]">{t('requests.severity', 'Severity')}</span>
-                  <span
-                    className="px-2.5 py-1 rounded-md text-xs font-medium text-white"
-                    style={{ backgroundColor: severity.color || '#6b7280' }}
-                  >
-                    {getLookupLabel(severity)}
                   </span>
                 </div>
               )}
@@ -669,6 +721,17 @@ export const RequestDetailPage: React.FC = () => {
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
                     <Tags className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                     {request.classification.name}
+                  </span>
+                </div>
+              )}
+
+              {/* Source */}
+              {request.source && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[hsl(var(--muted-foreground))]">{t('requests.source', 'Source')}</span>
+                  <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1 capitalize">
+                    <Radio className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    {request.source.replace('_', ' ')}
                   </span>
                 </div>
               )}
