@@ -433,9 +433,9 @@ export interface ActionLogFilterOptions {
 }
 
 // Email notification recipients for transitions
-export type EmailRecipient = 'assignee' | 'previous_assignee' | 'reporter' | 'creator' | 'department_head' | 'custom';
+export type EmailRecipientType = 'assignee' | 'previous_assignee' | 'reporter' | 'creator' | 'department_head' | 'custom';
 
-export const EMAIL_RECIPIENTS: { value: EmailRecipient; label: string; description: string }[] = [
+export const EMAIL_RECIPIENTS: { value: EmailRecipientType; label: string; description: string }[] = [
   { value: 'assignee', label: 'Current Assignee', description: 'The user currently assigned to the incident' },
   { value: 'previous_assignee', label: 'Previous Assignee', description: 'The user who was previously assigned' },
   { value: 'reporter', label: 'Reporter', description: 'The person who reported the incident' },
@@ -1331,3 +1331,100 @@ export interface SettingsUpdateRequest {
 
 // Re-export report template builder types
 export * from './reportTemplate';
+
+// Communication types
+export interface EmailRecipient {
+  email: string;
+  type: 'to' | 'cc' | 'bcc';
+  status?: string;
+  error?: string;
+}
+
+export interface EmailAttachment {
+  id?: string;
+  filename: string;
+  size?: number;
+  content_type?: string;
+  url?: string;
+  preview_url?: string;
+}
+
+export interface Email {
+  id: string;
+  channel: string;
+  direction: string;
+  category: string;
+  subject: string;
+  body: string;
+  status: string;
+  recipients: EmailRecipient[];
+  attachments?: EmailAttachment[];
+  sender?: string; // Optional as it might not be in the root object for all types
+  sent_by?: string; // UUID of user
+  sent_at?: string;
+  created_at: string;
+  updated_at?: string;
+  is_read: boolean;
+  is_starred: boolean;
+  has_attachments?: boolean;
+  provider?: string;
+  template_code?: string;
+  language?: string;
+}
+
+export interface EmailFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  channel?: string;
+  sent_by?: string;
+  is_starred?: boolean;
+  category?: string;
+  direction?: string;
+  is_read?: boolean;
+}
+
+// SMS types (using same notification structure as Email)
+export interface SMSRecipient {
+  email: string; // Actually phone number, but API uses 'email' field
+  type: 'to' | 'cc' | 'bcc';
+  status?: string;
+  error?: string;
+}
+
+export interface SMS {
+  id: string;
+  channel: string;
+  direction: string;
+  category: string;
+  template_code?: string;
+  language: string;
+  recipients: SMSRecipient[];
+  body: string;
+  status: string;
+  provider?: string;
+  is_read: boolean;
+  is_starred: boolean;
+  sent_by?: string;
+  sent_at?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface SMSFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  channel?: string;
+  sent_by?: string;
+  category?: string;
+  direction?: string;
+  is_read?: boolean;
+}
+

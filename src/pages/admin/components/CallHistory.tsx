@@ -118,14 +118,12 @@ export const CallHistory: React.FC = () => {
                                 return (
                                     <div key={call.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
                                         <div className="flex items-center gap-4 flex-1">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                call.status === 'missed' || call.status === 'rejected' || call.status === 'failed' ? 'bg-red-50' :
-                                                call.status === 'completed' || call.status === 'answered' ? 'bg-green-50' : 'bg-slate-100'
-                                            }`}>
-                                                <Phone className={`w-4 h-4 ${
-                                                    call.status === 'missed' || call.status === 'rejected' || call.status === 'failed' ? 'text-red-500' :
-                                                    call.status === 'completed' || call.status === 'answered' ? 'text-green-500' : 'text-slate-400'
-                                                }`} />
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${call.status === 'missed' || call.status === 'rejected' || call.status === 'failed' ? 'bg-red-50' :
+                                                    call.status === 'completed' || call.status === 'answered' ? 'bg-green-50' : 'bg-slate-100'
+                                                }`}>
+                                                <Phone className={`w-4 h-4 ${call.status === 'missed' || call.status === 'rejected' || call.status === 'failed' ? 'text-red-500' :
+                                                        call.status === 'completed' || call.status === 'answered' ? 'text-green-500' : 'text-slate-400'
+                                                    }`} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
