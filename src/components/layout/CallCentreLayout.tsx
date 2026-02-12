@@ -15,6 +15,8 @@ import {
   List,
   Phone,
   Languages,
+  Mail,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
@@ -145,6 +147,50 @@ export const CallCentreLayout: React.FC = () => {
               </>
             )}
           </NavLink>
+
+          <NavLink
+            to="/call-centre/email"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                )}
+                <Mail size={20} className="flex-shrink-0" />
+                {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.email', 'Email')}</span>}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/call-centre/sms"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                )}
+                <MessageSquare size={20} className="flex-shrink-0" />
+                {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.sms', 'SMS')}</span>}
+              </>
+            )}
+          </NavLink>
         </div>
 
 
@@ -261,11 +307,10 @@ export const CallCentreLayout: React.FC = () => {
             {/* Softphone Toggle */}
             <button
               onClick={() => setShowSoftphone(!showSoftphone)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
-                showSoftphone
-                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${showSoftphone
+                ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               title={t('callCentre.softphone', 'Softphone')}
             >
               <Phone className="w-4 h-4" />

@@ -42,6 +42,8 @@ import {
   SettingsManagementPage,
   CallCentrePage,
   CallHistory,
+  EmailPage,
+  SMSPage,
 } from './pages';
 
 const queryClient = new QueryClient({
@@ -204,6 +206,8 @@ function App() {
               <Route path="/call-centre" element={<Navigate to="/call-centre/contacts" replace />} />
               <Route path="/call-centre/contacts" element={<CallCentrePage />} />
               <Route path="/call-centre/history" element={<CallHistory />} />
+              <Route path="/call-centre/email" element={<EmailPage />} />
+              <Route path="/call-centre/sms" element={<SMSPage />} />
               {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
             </Route>
           </Route>
