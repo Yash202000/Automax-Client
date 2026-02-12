@@ -43,7 +43,7 @@ import type {
   IncidentFormField,
   LookupCategory,
 } from '../../types';
-import { INCIDENT_SOURCES, EMAIL_RECIPIENTS, type EmailRecipient, type TransitionEmailConfig } from '../../types';
+import { INCIDENT_SOURCES, EMAIL_RECIPIENTS, type EmailRecipientType, type TransitionEmailConfig } from '../../types';
 import { cn } from '@/lib/utils';
 import { Button } from '../../components/ui';
 import { WorkflowCanvas } from '../../components/workflow';
@@ -2229,7 +2229,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                           updateAction(index, 'config', JSON.stringify(updated));
                         };
 
-                        const toggleRecipient = (recipient: EmailRecipient) => {
+                        const toggleRecipient = (recipient: EmailRecipientType) => {
                           const config = getEmailConfig();
                           const recipients = config.recipients || [];
                           if (recipients.includes(recipient)) {

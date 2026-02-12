@@ -63,7 +63,7 @@ export const EmailPage: React.FC = () => {
         }
     });
 
-    const { mutate: getEmailById, isPending } = useMutation({
+    const { mutate: getEmailById } = useMutation({
         mutationFn: (id: string) => emailApi.getById(id),
         onSuccess: (response) => {
             console.log(response)
@@ -74,7 +74,7 @@ export const EmailPage: React.FC = () => {
         }
     });
 
-    const { mutate: getAttachment, isPending: isAttachmentPending } =
+    const { mutate: getAttachment } =
         useMutation({
             mutationFn: (id: string) => emailApi.attachmentById(id),
 

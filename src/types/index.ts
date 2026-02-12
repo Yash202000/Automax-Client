@@ -446,7 +446,7 @@ export const EMAIL_RECIPIENTS: { value: EmailRecipientType; label: string; descr
 
 export interface TransitionEmailConfig {
   enabled: boolean;
-  recipients: EmailRecipient[];
+  recipients: EmailRecipientType[];
   custom_emails?: string[];
   subject_template?: string;
   body_template?: string;
