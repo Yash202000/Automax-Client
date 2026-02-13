@@ -1,8 +1,9 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '../api/settings';
 import type { Settings } from '../types';
+import { hexToHSL } from '@/lib/utils';
 
 interface SettingsContextType {
   settings: Settings | null;
@@ -20,6 +21,17 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   });
 
   const settings = data?.data || null;
+
+  useEffect(() => {
+    if (!settings) return;
+
+    const root = document.documentElement;
+
+    root.style.setProperty('--primary', hexToHSL(settings.primary_color));
+    root.style.setProperty('--secondary', hexToHSL(settings.secondary_color));
+    root.style.setProperty('--accent', hexToHSL(settings.accent_color));
+
+  }, [settings]);
 
   return (
     <SettingsContext.Provider value={{ settings, isLoading }}>

@@ -160,7 +160,7 @@ export const Navbar: React.FC = () => {
                           onClick={() => handleLanguageChange(lang.code)}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-0 ${
                             currentLang === lang.code
-                              ? 'bg-blue-50 text-blue-600'
+                              ? 'bg-primary/5 text-primary'
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                         >

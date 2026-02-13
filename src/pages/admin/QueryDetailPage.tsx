@@ -296,8 +296,8 @@ export const QueryDetailPage: React.FC = () => {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
         <div className="flex flex-col items-center justify-center">
-          <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center mb-4">
-            <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
           <p className="text-[hsl(var(--muted-foreground))]">{t('queries.loading', 'Loading query...')}</p>
         </div>
