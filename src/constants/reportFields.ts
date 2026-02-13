@@ -64,11 +64,18 @@ const incidentFields: ReportFieldDefinition[] = [
   { field: 'title', label: 'Title', type: 'string', category: 'Basic Info', sortable: true, filterable: true, defaultSelected: true },
   { field: 'description', label: 'Description', type: 'string', category: 'Basic Info', sortable: false, filterable: true },
   { field: 'source', label: 'Source', type: 'enum', category: 'Basic Info', sortable: true, filterable: true, options: [
-    { value: 'field', label: 'Field' },
-    { value: '940_system', label: '940 System' },
-    { value: 'manual', label: 'Manual Entry' },
-    { value: 'api', label: 'API Integration' },
+    { value: 'web', label: 'Web Portal' },
+    { value: 'mobile', label: 'Mobile App' },
     { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'walk_in', label: 'Walk-in' },
+    { value: 'api', label: 'API Integration' },
+    { value: 'social_media', label: 'Social Media' },
+    { value: '940_system', label: '940 System' },
+    { value: '940_manual', label: '940 Manual' },
+    { value: 'field', label: 'Field' },
+    { value: 'manual', label: 'Manual Entry' },
+    { value: 'other', label: 'Other' },
   ]},
 
   // Status
