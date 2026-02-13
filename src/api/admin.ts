@@ -524,6 +524,24 @@ export const actionLogApi = {
     );
     return response.data;
   },
+
+  export: async (filter: ActionLogFilter = {}, format: 'csv' | 'excel' = 'csv'): Promise<Blob> => {
+    const params = new URLSearchParams();
+    if (filter.user_id) params.append('user_id', filter.user_id);
+    if (filter.action) params.append('action', filter.action);
+    if (filter.module) params.append('module', filter.module);
+    if (filter.status) params.append('status', filter.status);
+    if (filter.resource_id) params.append('resource_id', filter.resource_id);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+    if (filter.search) params.append('search', filter.search);
+    params.append('format', format);
+
+    const response = await apiClient.get(`/admin/action-logs/export?${params.toString()}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 // Workflow API

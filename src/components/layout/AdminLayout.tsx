@@ -68,6 +68,7 @@ const sidebarSectionsConfig: SidebarSection[] = [
       { icon: Settings, labelKey: 'admin.systemSettings', path: '/admin/settings', permission: 'settings:update' },
       { icon: FileBarChart, labelKey: 'admin.reports', path: '/admin/reports', permission: 'reports:view' },
       { icon: LayoutTemplate, labelKey: 'admin.reportTemplates', path: '/admin/report-templates', permission: 'reports:view' },
+      { icon: Database, labelKey: 'admin.actionLogs', path: '/admin/action-logs', permission: 'action-logs:view' },
     ],
   },
 ];
