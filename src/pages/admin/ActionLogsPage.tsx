@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { actionLogApi } from '../../api/admin';
+import { usePermissions } from '../../hooks/usePermissions';
+import { PERMISSIONS } from '../../constants/permissions';
 import type { ActionLog, ActionLogFilter } from '../../types';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +41,7 @@ const statusColors: Record<string, string> = {
 };
 
 export const ActionLogsPage: React.FC = () => {
+  const { hasPermission } = usePermissions();
   const [filter, setFilter] = useState<ActionLogFilter>({
     page: 1,
     limit: 20,
@@ -72,6 +75,25 @@ export const ActionLogsPage: React.FC = () => {
   const hasActiveFilters = Boolean(
     filter.action || filter.module || filter.status || filter.search || filter.start_date || filter.end_date
   );
+
+  const handleExport = async (format: 'csv' | 'excel') => {
+    try {
+      const blob = await actionLogApi.export(filter, format);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.${format === 'csv' ? 'csv' : 'xlsx'}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      // You could show an error toast here
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -126,9 +148,26 @@ export const ActionLogsPage: React.FC = () => {
           >
             {showStats ? 'Hide Stats' : 'Show Stats'}
           </Button>
-          <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />}>
-            Export
-          </Button>
+          {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={() => handleExport('csv')}
+            >
+              Export CSV
+            </Button>
+          )}
+          {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={() => handleExport('excel')}
+            >
+              Export Excel
+            </Button>
+          )}
         </div>
       </div>
 
