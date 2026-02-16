@@ -117,7 +117,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           checked={isChecked || allChildrenSelected}
           ref={(input) => {
             if (input) {
-              input.indeterminate = isIndeterminate;
+              input.indeterminate = isIndeterminate || false;
             }
           }}
           onChange={handleCheckboxChange}
@@ -235,7 +235,7 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
                 checked={allSelected}
                 ref={(input) => {
                   if (input) {
-                    input.indeterminate = someSelected;
+                    input.indeterminate = someSelected || false;
                   }
                 }}
                 onChange={(e) => {

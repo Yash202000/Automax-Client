@@ -250,17 +250,23 @@ export function IncidentCreatePage() {
 
     const priorityValue = getLookupValueFromState('PRIORITY');
 
-    const matched = workflowApi.findMatchingWorkflow(filteredWorkflows, {
+    const criteria = {
       classification_id: formData.classification_id || undefined,
       location_id: formData.location_id || undefined,
       source: formData.source || undefined,
       priority: priorityValue ? priorityValue.sort_order : undefined,
-    });
+    };
+
+    const matched = workflowApi.findMatchingWorkflow(filteredWorkflows, criteria);
 
     if (matched) {
       setAutoMatchedWorkflow(matched);
+      // Always update if auto-matched, or if no workflow is selected yet
       if (!formData.workflow_id || isAutoMatched) {
-        setFormData(prev => ({ ...prev, workflow_id: matched.id }));
+        // Only update if the matched workflow is different from current
+        if (matched.id !== formData.workflow_id) {
+          setFormData(prev => ({ ...prev, workflow_id: matched.id }));
+        }
         setIsAutoMatched(true);
       }
     }
@@ -268,7 +274,57 @@ export function IncidentCreatePage() {
 
   useEffect(() => {
     matchWorkflow();
-  }, [matchWorkflow]);
+  }, [filteredWorkflows, formData.classification_id, formData.location_id, formData.source, lookupValues]);
+
+  // Auto-generate title from classification, location, and geolocation
+  useEffect(() => {
+    const parts: string[] = [];
+
+    // Add classification name
+    if (formData.classification_id) {
+      const findClassificationName = (nodes: Classification[], id: string): string | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node.name;
+          if (node.children) {
+            const found = findClassificationName(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const classificationName = findClassificationName(classifications, formData.classification_id);
+      if (classificationName) parts.push(classificationName);
+    }
+
+    // Add location name
+    if (formData.location_id) {
+      const findLocationName = (nodes: Location[], id: string): string | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node.name;
+          if (node.children) {
+            const found = findLocationName(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const locationName = findLocationName(locations, formData.location_id);
+      if (locationName) parts.push(locationName);
+    }
+
+    // Add geolocation area/address if available
+    if (formData.city) {
+      parts.push(formData.city);
+    } else if (formData.address) {
+      parts.push(formData.address);
+    }
+
+    // Generate title from parts
+    if (parts.length > 0) {
+      const generatedTitle = parts.join(' - ');
+      setFormData(prev => ({ ...prev, title: generatedTitle }));
+    }
+  }, [formData.classification_id, formData.location_id, formData.address, formData.city, classifications, locations]);
 
   const createMutation = useMutation({
     mutationFn: async ({ data, files }: { data: IncidentCreateRequest; files: File[] }) => {
@@ -355,7 +411,32 @@ export function IncidentCreatePage() {
     if (!formData.title.trim()) newErrors.title = t('incidents.titleRequired');
     if (!formData.workflow_id) newErrors.workflow_id = t('incidents.workflowRequired');
 
+    // Always require classification, location, source on web client
+    if (!formData.classification_id || !formData.classification_id.trim()) {
+      newErrors.classification_id = t('incidents.fieldRequired', { field: t('incidents.classification') });
+    }
+    if (!formData.location_id || !formData.location_id.trim()) {
+      newErrors.location_id = t('incidents.fieldRequired', { field: t('incidents.location') });
+    }
+    if (!formData.source || !formData.source.trim()) {
+      newErrors.source = t('incidents.fieldRequired', { field: t('incidents.source') });
+    }
+
+    // Always require priority (lookup:PRIORITY)
+    const priorityCategory = incidentLookupCategories.find(c => c.code === 'PRIORITY');
+    if (priorityCategory) {
+      const priorityValue = lookupValues[priorityCategory.id];
+      if (!priorityValue) {
+        newErrors['lookup:PRIORITY'] = t('incidents.fieldRequired', { field: priorityCategory.name });
+      }
+    }
+
     for (const field of workflowRequiredFields) {
+      // Skip classification, location, source, and priority since we already validated them above
+      if (field === 'classification_id' || field === 'location_id' || field === 'source' || field === 'lookup:PRIORITY') {
+        continue;
+      }
+
       // Check for lookup field requirements (format: lookup:CATEGORY_CODE)
       if (field.startsWith('lookup:')) {
         const categoryCode = field.replace('lookup:', '');
@@ -390,7 +471,6 @@ export function IncidentCreatePage() {
       }
     }
     setErrors(newErrors);
-    console.log('Validation errors:', newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -502,14 +582,32 @@ export function IncidentCreatePage() {
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">{t('incidents.basicInformation')}</h2>
               <div className="space-y-4">
-                <Input
-                  label={t('incidents.incidentTitle')}
-                  value={formData.title}
-                  onChange={(e) => handleChange('title', e.target.value)}
-                  error={errors.title}
-                  placeholder={t('incidents.titlePlaceholder')}
-                  required
-                />
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
+                    {t('incidents.incidentTitle')} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.title}
+                      readOnly
+                      placeholder="Auto-generated from classification, location, and area"
+                      className="w-full px-4 py-2 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"
+                    />
+                    <svg
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                    Title is automatically generated from selected classification, location, and area
+                  </p>
+                  {errors.title && <p className="text-xs text-red-500">{errors.title}</p>}
+                </div>
                 <Textarea
                   label={t('incidents.description')}
                   value={formData.description || ''}
@@ -531,7 +629,7 @@ export function IncidentCreatePage() {
                   value={formData.classification_id || ''}
                   onChange={(id) => handleChange('classification_id', id)}
                   placeholder={t('incidents.selectClassification')}
-                  required={workflowRequiredFields.includes('classification_id')}
+                  required={true}
                   error={errors.classification_id}
                   leafOnly={true}
                   emptyMessage={t('incidents.noClassifications', 'No classifications available')}
@@ -542,7 +640,7 @@ export function IncidentCreatePage() {
                   value={formData.location_id || ''}
                   onChange={(id) => handleChange('location_id', id)}
                   placeholder={t('incidents.selectLocation', 'Select location')}
-                  required={workflowRequiredFields.includes('location_id')}
+                  required={true}
                   error={errors.location_id}
                   leafOnly={true}
                   emptyMessage={t('incidents.noLocations', 'No locations available')}
@@ -552,13 +650,14 @@ export function IncidentCreatePage() {
                   value={formData.source || ''}
                   onChange={(e) => handleChange('source', e.target.value as IncidentSource || undefined)}
                   options={sourceOptions}
-                  required={workflowRequiredFields.includes('source')}
+                  required={true}
                   error={errors.source}
                 />
 
                 {incidentLookupCategories.map(category => {
                   const lookupFieldKey = `lookup:${category.code}`;
-                  const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
+                  // Priority is always required on web, other fields check workflow requirements
+                  const isRequired = category.code === 'PRIORITY' ? true : workflowRequiredFields.includes(lookupFieldKey as any);
                   return (
                     <DynamicLookupField
                       key={category.id}

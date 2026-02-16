@@ -1293,7 +1293,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     Select which classifications this workflow applies to. Leave empty for all classifications.
                   </p>
                   <HierarchicalCheckboxTree
-                    data={classifications}
+                    data={classifications as any}
                     selectedIds={matchingConfig.classification_ids}
                     onSelectionChange={(selectedIds) => {
                       setMatchingConfig(prev => ({
@@ -1313,7 +1313,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     Select which locations this workflow applies to. Leave empty for all locations.
                   </p>
                   <HierarchicalCheckboxTree
-                    data={locations}
+                    data={locations as any}
                     selectedIds={matchingConfig.location_ids}
                     onSelectionChange={(selectedIds) => {
                       setMatchingConfig(prev => ({

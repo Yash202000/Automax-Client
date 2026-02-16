@@ -677,39 +677,62 @@ export const workflowApi = {
     for (const workflow of activeWorkflows) {
       let score = 0;
       let matchCount = 0;
+      let isExcluded = false;
 
       // Check classification match
       if (criteria.classification_id && workflow.classifications?.length) {
-        if (workflow.classifications.some(c => c.id === criteria.classification_id)) {
+        const matches = workflow.classifications.some(c => c.id === criteria.classification_id);
+        if (matches) {
           score += 10;
           matchCount++;
+        } else {
+          // Workflow has specific classifications and this one doesn't match - EXCLUDE
+          isExcluded = true;
         }
       }
 
       // Check location match
       if (criteria.location_id && workflow.locations?.length) {
-        if (workflow.locations.some(l => l.id === criteria.location_id)) {
+        const matches = workflow.locations.some(l => l.id === criteria.location_id);
+        if (matches) {
           score += 10;
           matchCount++;
+        } else {
+          // Workflow has specific locations and this one doesn't match - EXCLUDE
+          isExcluded = true;
         }
       }
 
-      // Check source match
+      // Check source match - if workflow defines sources, criteria MUST match
       if (criteria.source && workflow.sources?.length) {
-        if (workflow.sources.includes(criteria.source as IncidentSource)) {
+        const matches = workflow.sources.includes(criteria.source as IncidentSource);
+        if (matches) {
           score += 10;
           matchCount++;
+        } else {
+          // Workflow has specific sources and this one doesn't match - EXCLUDE
+          isExcluded = true;
         }
       }
 
-      // Check priority range
+      // Check priority - if workflow defines priorities, criteria MUST match
       if (criteria.priority !== undefined) {
-        const minPri = workflow.priority_min ?? 1;
-        const maxPri = workflow.priority_max ?? 5;
-        if (criteria.priority >= minPri && criteria.priority <= maxPri) {
+        // If workflow has no priorities specified, it matches all priorities
+        if (!workflow.priorities || workflow.priorities.length === 0) {
           score += 5;
           matchCount++;
+        } else if (workflow.priorities.includes(criteria.priority)) {
+          score += 5;
+          matchCount++;
+        } else {
+          // Workflow has specific priorities and this one doesn't match - EXCLUDE
+          isExcluded = true;
         }
+      }
+
+      // Skip excluded workflows
+      if (isExcluded) {
+        continue;
       }
 
       // Prefer workflows with more specific matching (more criteria matched)
@@ -737,8 +760,7 @@ export const workflowApi = {
     classification_ids?: string[];
     location_ids?: string[];
     sources?: string[];
-    priority_min?: number;
-    priority_max?: number;
+    priorities?: number[];
   }): Promise<ApiResponse<Workflow>> => {
     const response = await apiClient.put<ApiResponse<Workflow>>(`/admin/workflows/${workflowId}/match-config`, config);
     return response.data;
