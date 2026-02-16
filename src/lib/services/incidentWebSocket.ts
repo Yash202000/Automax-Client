@@ -164,10 +164,13 @@ export function useIncidentWebSocket(
 
             case 'state_changed':
               const data = message.data as any;
-              toast.success('State Changed', {
-                description: `Status changed from ${data.from_state} to ${data.to_state}`,
-                duration: 5000,
-              });
+              // Only show toast if we have valid state data
+              if (data?.from_state && data?.to_state) {
+                toast.success('State Changed', {
+                  description: `Status changed from ${data.from_state} to ${data.to_state}`,
+                  duration: 5000,
+                });
+              }
               qc.invalidateQueries({ queryKey: ['incident', incidentId] });
               qc.invalidateQueries({ queryKey: ['incident', incidentId, 'transitions'] });
               qc.invalidateQueries({ queryKey: ['incident', incidentId, 'available-transitions'] });
@@ -193,19 +196,25 @@ export function useIncidentWebSocket(
 
             case 'user_joined':
               const joinData = message.data as any;
-              toast('User Joined', {
-                description: `${joinData.user_name} is now viewing this incident`,
-                duration: 3000,
-              });
+              // Only show toast if we have valid user data and it's not the current user
+              if (joinData?.user_name && joinData.user_name !== 'Unknown User' && joinData.user_id !== userId) {
+                toast.info('User Joined', {
+                  description: `${joinData.user_name} is now viewing this incident`,
+                  duration: 3000,
+                });
+              }
               qc.invalidateQueries({ queryKey: ['incident-presence', incidentId] });
               break;
 
             case 'user_left':
               const leftData = message.data as any;
-              toast('User Left', {
-                description: `${leftData.user_name} stopped viewing this incident`,
-                duration: 3000,
-              });
+              // Only show toast if we have valid user data and it's not the current user
+              if (leftData?.user_name && leftData.user_name !== 'Unknown User' && leftData.user_id !== userId) {
+                toast.info('User Left', {
+                  description: `${leftData.user_name} stopped viewing this incident`,
+                  duration: 3000,
+                });
+              }
               qc.invalidateQueries({ queryKey: ['incident-presence', incidentId] });
               break;
 

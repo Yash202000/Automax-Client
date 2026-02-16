@@ -30,3 +30,5 @@ export { default as ApplicationLinksPage } from './ApplicationLinksPage';
 export { SettingsManagementPage } from './SettingsManagementPage';
 export { CallCentrePage } from './CallCentrePage';
 export { CallHistory } from './components/CallHistory';
+export { EmailPage } from './EmailPage';
+export { SMSPage } from './SMSPage';

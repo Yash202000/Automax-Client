@@ -171,6 +171,30 @@ export const IncidentDetailPage: React.FC = () => {
   // Automatically handles presence, updates, and notifications
   useIncidentWebSocket(id, user?.id);
 
+  // Close transition modal if incident state changes (due to another user's action)
+  useEffect(() => {
+    if (transitionModalOpen && incident?.current_state?.id && selectedTransition) {
+      // If current state doesn't match the "from state" of the selected transition anymore,
+      // it means someone else executed a transition - close the modal
+      if (incident.current_state.id !== selectedTransition.transition.from_state_id) {
+        setTransitionModalOpen(false);
+        setSelectedTransition(null);
+        setTransitionComment('');
+        setTransitionAttachment(null);
+        setTransitionFeedbackRating(0);
+        setTransitionFeedbackComment('');
+        setDepartmentMatchResult(null);
+        setUserMatchResult(null);
+        setSelectedDepartmentId('');
+        setSelectedUserId('');
+        toast.info('Incident Updated', {
+          description: 'This incident was updated by another user. Please review the changes.',
+          duration: 5000,
+        });
+      }
+    }
+  }, [incident?.current_state?.id, incident?.version, transitionModalOpen, selectedTransition]);
+
   // Presence tracking - get active users viewing this incident
   // Now only fetches initially and when WebSocket pushes updates
   const { data: presenceData } = useQuery({
@@ -627,20 +651,38 @@ export const IncidentDetailPage: React.FC = () => {
     <div className="space-y-6">
       {/* Presence Indicator - Show who else is viewing this incident */}
       {otherUsers.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              <Users className="h-5 w-5 text-yellow-600" />
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="relative">
+                <Users className="h-6 w-6 text-yellow-600" />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-yellow-500 items-center justify-center text-[10px] text-white font-bold">
+                    {otherUsers.length}
+                  </span>
+                </span>
+              </div>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-yellow-800">
-                Currently viewing: {otherUsers.map(u => u.user_name).join(', ')}
-              </p>
-              <p className="text-xs text-yellow-700 mt-1">
-                {otherUsers.length === 1
-                  ? 'Another user is viewing this incident. Changes may occur.'
-                  : `${otherUsers.length} other users are viewing this incident. Changes may occur.`
-                }
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-semibold text-yellow-900">
+                  {otherUsers.length === 1 ? 'Also viewing:' : `${otherUsers.length} users viewing:`}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {otherUsers.map((u, idx) => (
+                    <div key={u.user_id || idx} className="flex items-center gap-1.5 bg-yellow-100 px-2.5 py-1 rounded-full">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium text-yellow-900">
+                        {u.user_name || u.user_email || 'Unknown User'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-yellow-700 mt-1.5 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Live collaboration active - changes may occur in real-time
               </p>
             </div>
           </div>

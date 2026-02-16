@@ -78,6 +78,10 @@ import type {
   LookupValueCreateRequest,
   LookupValueUpdateRequest,
   PresenceInfo,
+  Email,
+  EmailFilter,
+  SMS,
+  SMSFilter,
 } from '../types';
 
 // User Management
@@ -1508,6 +1512,143 @@ export const callLogApi = {
 
   delete: async (id: string): Promise<any> => {
     const response = await apiClient.delete(`/admin/call-logs/${id}`);
+    return response.data;
+  },
+};
+
+// Email API
+export const emailApi = {
+  list: async (filter: EmailFilter = {}): Promise<PaginatedResponse<Email>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append('page', String(filter.page));
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.search) params.append('search', filter.search);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+    if (filter.status) params.append('status', filter.status);
+    if (filter.channel) params.append('channel', filter.channel);
+    if (filter.sent_by) params.append('sent_by', filter.sent_by);
+    if (filter.is_starred !== undefined) params.append('is_starred', String(filter.is_starred));
+    if (filter.category) params.append('category', filter.category);
+    if (filter.direction) params.append('direction', filter.direction);
+    if (filter.is_read !== undefined) params.append('is_read', String(filter.is_read));
+
+    // Determine endpoint based on channel if needed, but here we use the one provided by user
+    const response = await apiClient.get<PaginatedResponse<Email>>(`/notifications?${params.toString()}`);
+    return response.data;
+  },
+
+  send: async (data: {
+    to: string;
+    subject: string;
+    body: string;
+    cc?: string;
+    bcc?: string;
+    attachments?: File[];
+    language?: string;
+    variables?: Record<string, any>;
+    templateCode?: string;
+  }): Promise<ApiResponse<any>> => {
+    const formData = new FormData();
+    formData.append('channel', 'email');
+    formData.append('language', data.language || 'en');
+    formData.append('to', data.to);
+    formData.append('subject', data.subject);
+    formData.append('body', data.body);
+    formData.append('htmlBody', data.body); // Send as HTML body
+
+    if (data.cc) {
+      formData.append('cc', data.cc);
+    }
+
+    if (data.bcc) {
+      formData.append('bcc', data.bcc);
+    }
+
+    if (data.variables) {
+      formData.append('variables', JSON.stringify(data.variables));
+    }
+
+    if (data.templateCode) {
+      formData.append('templateCode', data.templateCode);
+    }
+
+    if (data.attachments) {
+      data.attachments.forEach(file => {
+        formData.append('attachments', file);
+      });
+    }
+
+    const response = await apiClient.post<ApiResponse<any>>('/notifications/send', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  star: async (id: string, is_starred: boolean): Promise<ApiResponse<any>> => {
+    const response = await apiClient.patch<ApiResponse<any>>(`/notifications/${id}/star`, {
+      is_starred
+    });
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(`/notifications/${id}`);
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<ApiResponse<Email>> => {
+    const response = await apiClient.get<ApiResponse<Email>>(`/notifications/${id}`);
+    return response.data;
+  },
+
+  attachmentById: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get<ApiResponse<any>>(`/attachments/${id}`, { responseType: 'blob' });
+    return response.data;
+  },
+};
+
+// SMS API
+export const smsApi = {
+  list: async (filter: SMSFilter = {}): Promise<PaginatedResponse<SMS>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append('page', String(filter.page));
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.search) params.append('search', filter.search);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+    if (filter.status) params.append('status', filter.status);
+    if (filter.sent_by) params.append('sent_by', filter.sent_by);
+    if (filter.category) params.append('category', filter.category);
+    if (filter.direction) params.append('direction', filter.direction);
+    if (filter.is_read !== undefined) params.append('is_read', String(filter.is_read));
+
+    // Set channel to sms
+    params.append('channel', 'sms');
+
+    const response = await apiClient.get<PaginatedResponse<SMS>>(`/notifications?${params.toString()}`);
+    return response.data;
+  },
+
+  send: async (data: {
+    to: string; // Phone number
+    body: string;
+    language?: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>('/notifications/send', {
+      channel: 'sms',
+      language: data.language || 'en',
+      to: [data.to], // Convert to array
+      subject: '', // SMS doesn't need subject
+      body: data.body,
+    });
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(`/notifications/${id}`);
     return response.data;
   },
 };
