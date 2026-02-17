@@ -86,8 +86,22 @@ import type {
 
 // User Management
 export const userApi = {
-  list: async (page = 1, limit = 10): Promise<PaginatedResponse<User>> => {
-    const response = await apiClient.get<PaginatedResponse<User>>(`/admin/users?page=${page}&limit=${limit}`);
+  list: async (
+    page = 1,
+    limit = 10,
+    search = '',
+    roleIds: string[] = [],
+    departmentIds: string[] = [],
+    locationIds: string[] = [],
+    classificationIds: string[] = [],
+  ): Promise<PaginatedResponse<User>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search) params.append('search', search);
+    if (roleIds.length) params.append('role_ids', roleIds.join(','));
+    if (departmentIds.length) params.append('department_ids', departmentIds.join(','));
+    if (locationIds.length) params.append('location_ids', locationIds.join(','));
+    if (classificationIds.length) params.append('classification_ids', classificationIds.join(','));
+    const response = await apiClient.get<PaginatedResponse<User>>(`/admin/users?${params.toString()}`);
     return response.data;
   },
 

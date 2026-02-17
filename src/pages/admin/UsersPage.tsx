@@ -73,6 +73,11 @@ export const UsersPage: React.FC = () => {
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
   const [search, setSearch] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
+  const [filterDepartmentIds, setFilterDepartmentIds] = useState<string[]>([]);
+  const [filterLocationIds, setFilterLocationIds] = useState<string[]>([]);
+  const [filterClassificationIds, setFilterClassificationIds] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,9 +108,42 @@ export const UsersPage: React.FC = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const limit = 10;
 
+  const [deptSearch, setDeptSearch] = useState('');
+  const [locSearch, setLocSearch] = useState('');
+  const [classSearch, setClassSearch] = useState('');
+
+  const filterTreeNodes = useCallback((nodes: TreeNode[], search: string): TreeNode[] => {
+    if (!search) return nodes;
+    return nodes.reduce<TreeNode[]>((acc, node) => {
+      if (node.name.toLowerCase().includes(search.toLowerCase())) {
+        acc.push(node);
+      } else {
+        const filteredChildren = filterTreeNodes(node.children ?? [], search);
+        if (filteredChildren.length > 0) acc.push({ ...node, children: filteredChildren });
+      }
+      return acc;
+    }, []);
+  }, []);
+
+  const activeFilterCount =
+    filterRoleIds.length + filterDepartmentIds.length + filterLocationIds.length + filterClassificationIds.length;
+
+  const clearAllFilters = () => {
+    setFilterRoleIds([]);
+    setFilterDepartmentIds([]);
+    setFilterLocationIds([]);
+    setFilterClassificationIds([]);
+    setPage(1);
+  };
+
+  const toggleRoleId = (id: string) => {
+    setFilterRoleIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    setPage(1);
+  };
+
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['admin', 'users', page, limit],
-    queryFn: () => userApi.list(page, limit),
+    queryKey: ['admin', 'users', page, limit, search, filterRoleIds, filterDepartmentIds, filterLocationIds, filterClassificationIds],
+    queryFn: () => userApi.list(page, limit, search, filterRoleIds, filterDepartmentIds, filterLocationIds, filterClassificationIds),
   });
 
   const { data: departmentsTreeData } = useQuery({
@@ -143,6 +181,10 @@ export const UsersPage: React.FC = () => {
   const departmentsTree = useMemo(() => transformToTreeNodes(departmentsTreeData?.data || []), [departmentsTreeData?.data, transformToTreeNodes]);
   const locationsTree = useMemo(() => transformToTreeNodes(locationsTreeData?.data || []), [locationsTreeData?.data, transformToTreeNodes]);
   const classificationsTree = useMemo(() => transformToTreeNodes(classificationsTreeData?.data || []), [classificationsTreeData?.data, transformToTreeNodes]);
+
+  const filteredDepartmentsTree = useMemo(() => filterTreeNodes(departmentsTree, deptSearch), [departmentsTree, deptSearch, filterTreeNodes]);
+  const filteredLocationsTree = useMemo(() => filterTreeNodes(locationsTree, locSearch), [locationsTree, locSearch, filterTreeNodes]);
+  const filteredClassificationsTree = useMemo(() => filterTreeNodes(classificationsTree, classSearch), [classificationsTree, classSearch, filterTreeNodes]);
 
   // Handle dropdown positioning
   const handleDropdownToggle = useCallback((userId: string) => {
@@ -379,13 +421,7 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const filteredUsers = data?.data?.filter(
-    (user: User) =>
-      user.username.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = data?.data;
 
   const totalPages = data?.total_pages ?? 1;
 
@@ -459,22 +495,45 @@ export const UsersPage: React.FC = () => {
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm">
+        <div className="p-4 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
             <input
               type="text"
               placeholder={t('users.searchPlaceholder')}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" leftIcon={<Filter className="w-4 h-4" />}>
+            <button
+              onClick={() => setIsFilterOpen((v) => !v)}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all",
+                isFilterOpen || activeFilterCount > 0
+                  ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary)/0.3)] text-[hsl(var(--primary))]"
+                  : "bg-transparent border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]"
+              )}
+            >
+              <Filter className="w-4 h-4" />
               {t('common.filter')}
-            </Button>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 text-xs font-bold bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg border border-transparent transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+                Clear
+              </button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -486,6 +545,167 @@ export const UsersPage: React.FC = () => {
             </Button>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {isFilterOpen && (
+          <div className="border-t border-[hsl(var(--border))] p-5 space-y-5">
+
+            {/* Roles — flat chips */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" /> {t('users.roles')}
+                  {filterRoleIds.length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded">
+                      {filterRoleIds.length}
+                    </span>
+                  )}
+                </p>
+                {filterRoleIds.length > 0 && (
+                  <button onClick={() => { setFilterRoleIds([]); setPage(1); }} className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rolesData?.data?.map((role: Role) => (
+                  <button
+                    key={role.id}
+                    onClick={() => toggleRoleId(role.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                      filterRoleIds.includes(role.id)
+                        ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)]"
+                        : "bg-[hsl(var(--muted)/0.5)] text-[hsl(var(--foreground))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                    )}
+                  >
+                    {filterRoleIds.includes(role.id) && <Check className="inline w-3 h-3 mr-1" />}
+                    {role.name}
+                  </button>
+                ))}
+                {!rolesData?.data?.length && (
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">No roles available</span>
+                )}
+              </div>
+            </div>
+
+            {/* Tree selects — 3-column grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+              {/* Departments */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> {t('users.department')}
+                    {filterDepartmentIds.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-[hsl(var(--accent)/0.2)] text-[hsl(var(--accent-foreground))] rounded">
+                        {filterDepartmentIds.length}
+                      </span>
+                    )}
+                  </p>
+                  {filterDepartmentIds.length > 0 && (
+                    <button onClick={() => { setFilterDepartmentIds([]); setPage(1); }} className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    placeholder="Search departments..."
+                    value={deptSearch}
+                    onChange={(e) => setDeptSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+                <HierarchicalTreeSelect
+                  data={filteredDepartmentsTree}
+                  selectedIds={filterDepartmentIds}
+                  onSelectionChange={(ids) => { setFilterDepartmentIds(ids); setPage(1); }}
+                  emptyMessage="No departments found"
+                  colorScheme="accent"
+                  maxHeight="220px"
+                />
+              </div>
+
+              {/* Locations */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" /> {t('users.location')}
+                    {filterLocationIds.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-[hsl(var(--success)/0.2)] text-[hsl(var(--success))] rounded">
+                        {filterLocationIds.length}
+                      </span>
+                    )}
+                  </p>
+                  {filterLocationIds.length > 0 && (
+                    <button onClick={() => { setFilterLocationIds([]); setPage(1); }} className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    placeholder="Search locations..."
+                    value={locSearch}
+                    onChange={(e) => setLocSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+                <HierarchicalTreeSelect
+                  data={filteredLocationsTree}
+                  selectedIds={filterLocationIds}
+                  onSelectionChange={(ids) => { setFilterLocationIds(ids); setPage(1); }}
+                  emptyMessage="No locations found"
+                  colorScheme="success"
+                  maxHeight="220px"
+                />
+              </div>
+
+              {/* Classifications */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
+                    <FolderTree className="w-3.5 h-3.5" /> {t('users.classifications')}
+                    {filterClassificationIds.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))] rounded">
+                        {filterClassificationIds.length}
+                      </span>
+                    )}
+                  </p>
+                  {filterClassificationIds.length > 0 && (
+                    <button onClick={() => { setFilterClassificationIds([]); setPage(1); }} className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    placeholder="Search classifications..."
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+                <HierarchicalTreeSelect
+                  data={filteredClassificationsTree}
+                  selectedIds={filterClassificationIds}
+                  onSelectionChange={(ids) => { setFilterClassificationIds(ids); setPage(1); }}
+                  emptyMessage="No classifications found"
+                  colorScheme="warning"
+                  maxHeight="220px"
+                />
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}

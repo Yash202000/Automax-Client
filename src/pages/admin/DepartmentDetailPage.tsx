@@ -37,14 +37,13 @@ export const DepartmentDetailPage: React.FC = () => {
   });
 
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['admin', 'users', 'all'],
-    queryFn: () => userApi.list(1, 100),
+    queryKey: ['admin', 'dept-users', id],
+    queryFn: () => userApi.list(1, 500, '', [], [id!]),
+    enabled: !!id,
   });
 
   const department = departmentData?.data;
-  const departmentUsers = usersData?.data?.filter(
-    (user: User) => user.department_id === id
-  ) || [];
+  const departmentUsers = (usersData?.data as unknown as User[]) || [];
 
   if (isLoadingDepartment) {
     return (
