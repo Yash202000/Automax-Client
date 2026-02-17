@@ -176,7 +176,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
         });
         setSuccessMessage('Template created successfully');
         setTimeout(() => setSuccessMessage(null), 3000);
-        navigate(`/admin/report-templates/${newTemplate.id}/edit`, { replace: true });
+        navigate(`/reports/templates/${newTemplate.id}/edit`, { replace: true });
       }
     } catch {
       setError('Failed to save template');
@@ -361,7 +361,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
       <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/admin/report-templates')}
+            onClick={() => navigate('/reports/templates')}
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <ArrowLeft className="h-5 w-5" />

@@ -414,16 +414,22 @@ export const IncidentDetailPage: React.FC = () => {
     return mimeType.startsWith('audio/');
   };
 
-  // Get attachment URL with auth token
+  // Get attachment URL with auth token (forces download via Content-Disposition: attachment)
   const getAttachmentUrl = (attachmentId: string) => {
     const token = localStorage.getItem('token');
     return `${API_URL}/attachments/${attachmentId}?token=${token}`;
   };
 
+  // Get attachment preview URL (inline display via Content-Disposition: inline)
+  const getAttachmentPreviewUrl = (attachmentId: string) => {
+    const token = localStorage.getItem('token');
+    return `${API_URL}/attachments/${attachmentId}/preview?token=${token}`;
+  };
+
   // Open image in lightbox
   const openLightbox = (attachment: IncidentAttachment) => {
     setLightboxImage({
-      url: getAttachmentUrl(attachment.id),
+      url: getAttachmentPreviewUrl(attachment.id),
       name: attachment.file_name,
     });
     setLightboxOpen(true);
@@ -1161,7 +1167,7 @@ export const IncidentDetailPage: React.FC = () => {
                                     )}
 
                                     <img
-                                      src={getAttachmentUrl(attachment.id)}
+                                      src={getAttachmentPreviewUrl(attachment.id)}
                                       alt={attachment.file_name}
                                       className={cn(
                                         "w-full h-32 object-cover transition-opacity",
@@ -1256,7 +1262,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   <audio
                                     controls
                                     className="w-full h-10"
-                                    src={getAttachmentUrl(attachment.id)}
+                                    src={getAttachmentPreviewUrl(attachment.id)}
                                     preload="metadata"
                                   >
                                     Your browser does not support the audio element.
@@ -2165,7 +2171,7 @@ export const IncidentDetailPage: React.FC = () => {
             <div className="relative w-full max-w-5xl h-[70vh] overflow-hidden rounded-lg">
               {/* Image 2 (Right/Bottom layer) */}
               <img
-                src={getAttachmentUrl(selectedForCompare[1].id)}
+                src={getAttachmentPreviewUrl(selectedForCompare[1].id)}
                 alt={selectedForCompare[1].file_name}
                 className="absolute inset-0 w-full h-full object-contain"
               />
@@ -2176,7 +2182,7 @@ export const IncidentDetailPage: React.FC = () => {
                 style={{ clipPath: `inset(0 ${100 - compareSliderPosition}% 0 0)` }}
               >
                 <img
-                  src={getAttachmentUrl(selectedForCompare[0].id)}
+                  src={getAttachmentPreviewUrl(selectedForCompare[0].id)}
                   alt={selectedForCompare[0].file_name}
                   className="absolute inset-0 w-full h-full object-contain"
                 />
