@@ -274,36 +274,151 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     return convertToTreeNode(classifications);
   }, [classifications]);
 
-  // Filter workflows based on selected classification
+  // Get priority value from lookup
+  const getPriorityValue = (): number | undefined => {
+    const priorityCategory = requestLookupCategories.find(c => c.code === 'PRIORITY');
+    if (!priorityCategory || !lookupValues[priorityCategory.id]) return undefined;
+    const priorityLookup = priorityCategory.values?.find(v => v.id === lookupValues[priorityCategory.id]);
+    return priorityLookup?.sort_order;
+  };
+
+  // Filter workflows based on selected criteria with exclusion logic
   const filteredWorkflows = useMemo(() => {
     const requestWorkflows = workflows.filter(w => w.is_active);
 
-    if (!classificationId) {
+    if (!classificationId && !locationId && !source) {
       return requestWorkflows;
     }
 
     const matching = requestWorkflows.filter(w => {
-      const hasNoClassificationRestriction = !w.classifications || w.classifications.length === 0;
+      // Check classification match - EXCLUDE if workflow has specific classifications that don't match
+      if (classificationId && w.classifications?.length) {
+        if (!w.classifications.some(c => c.id === classificationId)) {
+          return false; // EXCLUDE
+        }
+      }
 
-      if (hasNoClassificationRestriction) return true;
+      // Check location match - EXCLUDE if workflow has specific locations that don't match
+      if (locationId && w.locations?.length) {
+        if (!w.locations.some(l => l.id === locationId)) {
+          return false; // EXCLUDE
+        }
+      }
 
-      return w.classifications?.some(c => c.id === classificationId);
+      // Check source match - EXCLUDE if workflow has specific sources that don't match
+      if (source && w.sources?.length) {
+        if (!w.sources.includes(source)) {
+          return false; // EXCLUDE
+        }
+      }
+
+      // Check priority match - EXCLUDE if workflow has specific priorities that don't match
+      const priority = getPriorityValue();
+      if (priority !== undefined && w.priorities?.length) {
+        if (!w.priorities.includes(priority)) {
+          return false; // EXCLUDE
+        }
+      }
+
+      return true; // Workflow passes all criteria
     });
 
-    // If no workflows match the classification, show all workflows as fallback
     if (matching.length === 0) return requestWorkflows;
     return matching;
-  }, [workflows, classificationId]);
+  }, [workflows, classificationId, locationId, source, lookupValues]);
 
-  // Auto-select workflow when only one option available
+  // Auto-match workflow when criteria change
   useEffect(() => {
-    if (filteredWorkflows.length === 1 && !workflowId) {
-      setWorkflowId(filteredWorkflows[0].id);
-    } else if (workflowId && !filteredWorkflows.find(w => w.id === workflowId)) {
-      // Clear workflow if it's no longer in the filtered list
-      setWorkflowId('');
+    if (filteredWorkflows.length === 0) return;
+
+    const priority = getPriorityValue();
+
+    // Find best matching workflow using score-based matching
+    let bestMatch: { workflow: any; score: number } | null = null;
+
+    for (const workflow of filteredWorkflows) {
+      let score = 0;
+
+      if (classificationId && workflow.classifications?.some((c: any) => c.id === classificationId)) {
+        score += 10;
+      }
+      if (locationId && workflow.locations?.some((l: any) => l.id === locationId)) {
+        score += 10;
+      }
+      if (source && workflow.sources?.includes(source)) {
+        score += 10;
+      }
+      if (priority !== undefined && workflow.priorities?.includes(priority)) {
+        score += 5;
+      }
+
+      if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+        bestMatch = { workflow, score };
+      }
     }
-  }, [filteredWorkflows, workflowId]);
+
+    // Set the best match or default
+    if (bestMatch) {
+      setWorkflowId(bestMatch.workflow.id);
+    } else if (filteredWorkflows.length === 1) {
+      setWorkflowId(filteredWorkflows[0].id);
+    } else {
+      const defaultWorkflow = filteredWorkflows.find(w => w.is_default);
+      if (defaultWorkflow) {
+        setWorkflowId(defaultWorkflow.id);
+      }
+    }
+  }, [filteredWorkflows, classificationId, locationId, source, lookupValues]);
+
+  // Auto-generate title from classification, location, and geolocation
+  useEffect(() => {
+    const parts: string[] = [];
+
+    // Add classification name
+    if (classificationId) {
+      const findClassificationName = (nodes: Classification[], id: string): string | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node.name;
+          if (node.children) {
+            const found = findClassificationName(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const classificationName = findClassificationName(classifications, classificationId);
+      if (classificationName) parts.push(classificationName);
+    }
+
+    // Add location name
+    if (locationId) {
+      const findLocationName = (nodes: any[], id: string): string | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node.name;
+          if (node.children) {
+            const found = findLocationName(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const locationName = findLocationName(locations, locationId);
+      if (locationName) parts.push(locationName);
+    }
+
+    // Add geolocation area/address if available
+    if (city) {
+      parts.push(city);
+    } else if (address) {
+      parts.push(address);
+    }
+
+    // Generate title from parts
+    if (parts.length > 0) {
+      const generatedTitle = parts.join(' - ');
+      setTitle(generatedTitle);
+    }
+  }, [classificationId, locationId, address, city, classifications, locations]);
 
   // Create request mutation
   const createMutation = useMutation({
@@ -380,12 +495,29 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       newErrors.workflow = t('requests.workflowRequired', 'Workflow is required');
     }
 
-    // Check workflow required fields
+    // Always require classification, location, source, and priority on web
+    if (!classificationId) {
+      newErrors.classification = t('requests.fieldRequired', { field: t('requests.classification') });
+    }
+    if (!locationId) {
+      newErrors.location = t('requests.fieldRequired', { field: t('requests.location') });
+    }
+    if (!source) {
+      newErrors.source = t('requests.fieldRequired', { field: t('requests.source') });
+    }
+
+    // Always require priority (lookup:PRIORITY)
+    const priorityCategory = requestLookupCategories.find(c => c.code === 'PRIORITY');
+    if (priorityCategory) {
+      const priorityValue = lookupValues[priorityCategory.id];
+      if (!priorityValue) {
+        newErrors['lookup:PRIORITY'] = t('requests.fieldRequired', { field: priorityCategory.name });
+      }
+    }
+
+    // Check workflow required fields (skip already validated ones)
     if (workflowRequiredFields.includes('description') && !description.trim()) {
       newErrors.description = t('requests.fieldRequired', { field: t('requests.description', 'Description') });
-    }
-    if (workflowRequiredFields.includes('source') && !source) {
-      newErrors.source = t('requests.fieldRequired', { field: t('requests.source', 'Source') });
     }
     if (workflowRequiredFields.includes('channel') && !channel.trim()) {
       newErrors.channel = t('requests.fieldRequired', { field: t('requests.channel', 'Channel') });
@@ -527,23 +659,33 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               {t('requests.basicInfo', 'Basic Information')}
             </h4>
 
-            {/* Title */}
+            {/* Title - Auto-generated */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 {t('requests.title', 'Title')} <span className="text-red-500">*</span>
               </label>
-              <input
-                id="request-title"
-                name="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t('requests.titlePlaceholder', 'Enter request title...')}
-                className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                  errors.title ? "border-red-500" : "border-[hsl(var(--border))]"
-                )}
-              />
+              <div className="relative">
+                <input
+                  id="request-title"
+                  name="title"
+                  type="text"
+                  value={title}
+                  readOnly
+                  placeholder="Auto-generated from classification, location, and area"
+                  className="w-full px-4 py-2 pr-10 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"
+                />
+                <svg
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] italic mt-1">
+                Title is automatically generated from selected classification, location, and area
+              </p>
               {errors.title && (
                 <p className="text-xs text-red-500 mt-1">{errors.title}</p>
               )}
@@ -578,14 +720,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             {/* Source */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('requests.source', 'Source')}
-                {workflowRequiredFields.includes('source') ? (
-                  <span className="text-red-500 ml-1">*</span>
-                ) : (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                )}
+                {t('requests.source', 'Source')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={source || ''}
@@ -835,14 +970,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                {t('requests.location', 'Location')}
-                {workflowRequiredFields.includes('location_id') ? (
-                  <span className="text-red-500 ml-1">*</span>
-                ) : (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                )}
+                {t('requests.location', 'Location')} <span className="text-red-500">*</span>
               </h4>
               <TreeSelect
                 data={locationTree}
@@ -858,7 +986,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             {/* Lookup Categories */}
             {requestLookupCategories.map(category => {
               const lookupFieldKey = `lookup:${category.code}`;
-              const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
+              // Priority is always required on web, other fields check workflow requirements
+              const isRequired = category.code === 'PRIORITY' ? true : workflowRequiredFields.includes(lookupFieldKey as any);
               return (
                 <div key={category.id} className="space-y-3">
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">

@@ -456,14 +456,33 @@ export interface TransitionEmailConfig {
 }
 
 // Incident Source types
-export type IncidentSource = 'field' | '940_system' | 'manual' | 'api' | 'email';
+export type IncidentSource =
+  | 'web'
+  | 'mobile'
+  | 'email'
+  | 'phone'
+  | 'walk_in'
+  | 'api'
+  | 'social_media'
+  | '940_system'
+  | '940_manual'
+  | 'field'
+  | 'manual'
+  | 'other';
 
 export const INCIDENT_SOURCES: { value: IncidentSource; label: string }[] = [
-  { value: 'field', label: 'Field' },
-  { value: '940_system', label: '940 System' },
-  { value: 'manual', label: 'Manual Entry' },
-  { value: 'api', label: 'API Integration' },
+  { value: 'web', label: 'Web Portal' },
+  { value: 'mobile', label: 'Mobile App' },
   { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'walk_in', label: 'Walk-in' },
+  { value: 'api', label: 'API Integration' },
+  { value: 'social_media', label: 'Social Media' },
+  { value: '940_system', label: '940 System' },
+  { value: '940_manual', label: '940 Manual' },
+  { value: 'field', label: 'Field' },
+  { value: 'manual', label: 'Manual Entry' },
+  { value: 'other', label: 'Other' },
 ];
 
 // Workflow matching configuration
@@ -513,8 +532,7 @@ export interface Workflow {
   convert_to_request_roles?: Role[];
   locations?: Location[];
   sources?: IncidentSource[];
-  priority_min?: number;
-  priority_max?: number;
+  priorities?: number[];
   match_config?: WorkflowMatchConfig;
   states_count: number;
   transitions_count: number;
@@ -603,8 +621,7 @@ export interface WorkflowCreateRequest {
   classification_ids?: string[];
   location_ids?: string[];
   sources?: IncidentSource[];
-  priority_min?: number;
-  priority_max?: number;
+  priorities?: number[];
   required_fields?: IncidentFormField[];
 }
 
@@ -620,8 +637,7 @@ export interface WorkflowUpdateRequest {
   convert_to_request_role_ids?: string[];
   location_ids?: string[];
   sources?: IncidentSource[];
-  priority_min?: number;
-  priority_max?: number;
+  priorities?: number[];
   required_fields?: IncidentFormField[];
 }
 

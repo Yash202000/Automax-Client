@@ -25,6 +25,7 @@ import {
   Download,
 } from 'lucide-react';
 import { workflowApi, roleApi, classificationApi, locationApi, departmentApi, userApi, lookupApi } from '../../api/admin';
+import { HierarchicalCheckboxTree } from '../../components/workflow/HierarchicalCheckboxTree';
 import type {
   WorkflowState,
   WorkflowTransition,
@@ -143,15 +144,13 @@ export const WorkflowDesignerPage: React.FC = () => {
     classification_ids: string[];
     location_ids: string[];
     sources: IncidentSource[];
-    priority_min: number;
-    priority_max: number;
+    priorities: number[];
     record_type: 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all';
   }>({
     classification_ids: [],
     location_ids: [],
     sources: [],
-    priority_min: 1,
-    priority_max: 5,
+    priorities: [],
     record_type: 'incident',
   });
 
@@ -200,14 +199,16 @@ export const WorkflowDesignerPage: React.FC = () => {
     queryFn: () => roleApi.list(),
   });
 
+  // Fetch classifications based on selected record type
   const { data: classificationsData } = useQuery({
-    queryKey: ['admin', 'classifications'],
-    queryFn: () => classificationApi.list(),
+    queryKey: ['admin', 'classifications', 'tree', matchingConfig.record_type],
+    queryFn: () => classificationApi.getTree(matchingConfig.record_type),
+    enabled: !!matchingConfig.record_type,
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ['admin', 'locations'],
-    queryFn: () => locationApi.list(),
+    queryKey: ['admin', 'locations', 'tree'],
+    queryFn: () => locationApi.getTree(),
   });
 
   const { data: departmentsData } = useQuery({
@@ -259,8 +260,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         classification_ids: workflow.classifications?.map(c => c.id) || [],
         location_ids: workflow.locations?.map(l => l.id) || [],
         sources: workflow.sources || [],
-        priority_min: workflow.priority_min ?? 1,
-        priority_max: workflow.priority_max ?? 5,
+        priorities: workflow.priorities || [],
         record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all') || 'incident',
       });
       setRequiredFields(workflow.required_fields || []);
@@ -274,8 +274,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       classification_ids: config.classification_ids,
       location_ids: config.location_ids,
       sources: config.sources,
-      priority_min: config.priority_min,
-      priority_max: config.priority_max,
+      priorities: config.priorities,
       record_type: config.record_type,
     }),
     onSuccess: () => {
@@ -1069,9 +1068,12 @@ export const WorkflowDesignerPage: React.FC = () => {
           {activeTab === 'matching' && (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-blue-800 mb-1">Auto-Workflow Matching</h3>
+                <h3 className="text-sm font-medium text-blue-800 mb-1">Auto-Workflow Matching Rules</h3>
+                <p className="text-xs text-blue-700 mb-2">
+                  Configure which incidents should automatically use this workflow based on sources, priorities, classifications, and locations.
+                </p>
                 <p className="text-xs text-blue-700">
-                  Configure which incidents should automatically use this workflow based on classification, location, and source.
+                  <strong>Tip:</strong> Leave a category empty to match ALL items in that category (generic/fallback). For example, empty sources = matches all sources.
                 </p>
               </div>
 
@@ -1093,7 +1095,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="incident"
                       checked={matchingConfig.record_type === 'incident'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({
+                        ...prev,
+                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
+                        classification_ids: [] // Clear classifications when record type changes
+                      }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1122,7 +1128,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="request"
                       checked={matchingConfig.record_type === 'request'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({
+                        ...prev,
+                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
+                        classification_ids: [] // Clear classifications when record type changes
+                      }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1151,7 +1161,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="both"
                       checked={matchingConfig.record_type === 'both'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({
+                        ...prev,
+                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
+                        classification_ids: [] // Clear classifications when record type changes
+                      }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1180,7 +1194,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="complaint"
                       checked={matchingConfig.record_type === 'complaint'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({
+                        ...prev,
+                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
+                        classification_ids: [] // Clear classifications when record type changes
+                      }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1209,7 +1227,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="query"
                       checked={matchingConfig.record_type === 'query'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({
+                        ...prev,
+                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
+                        classification_ids: [] // Clear classifications when record type changes
+                      }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1238,7 +1260,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="all"
                       checked={matchingConfig.record_type === 'all'}
-                      onChange={(e) => setMatchingConfig(prev => ({ ...prev, record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all' }))}
+                      onChange={(e) => setMatchingConfig(prev => ({
+                        ...prev,
+                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
+                        classification_ids: [] // Clear classifications when record type changes
+                      }))}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -1261,82 +1287,50 @@ export const WorkflowDesignerPage: React.FC = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Classifications */}
-                <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Classifications</h4>
+                <div>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Classifications</h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which classifications this workflow applies to.
+                    Select which classifications this workflow applies to. Leave empty for all classifications.
                   </p>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {classifications.map((c) => (
-                      <label key={c.id} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={matchingConfig.classification_ids.includes(c.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setMatchingConfig(prev => ({
-                                ...prev,
-                                classification_ids: [...prev.classification_ids, c.id],
-                              }));
-                            } else {
-                              setMatchingConfig(prev => ({
-                                ...prev,
-                                classification_ids: prev.classification_ids.filter(id => id !== c.id),
-                              }));
-                            }
-                          }}
-                          className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
-                        />
-                        <span className="text-sm text-[hsl(var(--foreground))]">{c.name}</span>
-                      </label>
-                    ))}
-                    {classifications.length === 0 && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] py-2">No classifications available</p>
-                    )}
-                  </div>
+                  <HierarchicalCheckboxTree
+                    data={classifications as any}
+                    selectedIds={matchingConfig.classification_ids}
+                    onSelectionChange={(selectedIds) => {
+                      setMatchingConfig(prev => ({
+                        ...prev,
+                        classification_ids: selectedIds,
+                      }));
+                    }}
+                    emptyMessage="No classifications available"
+                    showSelectAll={true}
+                  />
                 </div>
 
                 {/* Locations */}
-                <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Locations</h4>
+                <div>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Locations</h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which locations this workflow applies to.
+                    Select which locations this workflow applies to. Leave empty for all locations.
                   </p>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {locations.map((l) => (
-                      <label key={l.id} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={matchingConfig.location_ids.includes(l.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setMatchingConfig(prev => ({
-                                ...prev,
-                                location_ids: [...prev.location_ids, l.id],
-                              }));
-                            } else {
-                              setMatchingConfig(prev => ({
-                                ...prev,
-                                location_ids: prev.location_ids.filter(id => id !== l.id),
-                              }));
-                            }
-                          }}
-                          className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
-                        />
-                        <span className="text-sm text-[hsl(var(--foreground))]">{l.name}</span>
-                      </label>
-                    ))}
-                    {locations.length === 0 && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] py-2">No locations available</p>
-                    )}
-                  </div>
+                  <HierarchicalCheckboxTree
+                    data={locations as any}
+                    selectedIds={matchingConfig.location_ids}
+                    onSelectionChange={(selectedIds) => {
+                      setMatchingConfig(prev => ({
+                        ...prev,
+                        location_ids: selectedIds,
+                      }));
+                    }}
+                    emptyMessage="No locations available"
+                    showSelectAll={true}
+                  />
                 </div>
 
                 {/* Sources */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Sources</h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which incident sources this workflow applies to.
+                    Select which incident sources this workflow applies to. Leave empty for all sources.
                   </p>
                   <div className="space-y-2">
                     {INCIDENT_SOURCES.map((source) => (
@@ -1362,61 +1356,106 @@ export const WorkflowDesignerPage: React.FC = () => {
                         <span className="text-sm text-[hsl(var(--foreground))]">{source.label}</span>
                       </label>
                     ))}
+
+                    {matchingConfig.sources.length === 0 && (
+                      <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
+                        <strong>No selection</strong> - This workflow will match <strong>all sources</strong> (generic/fallback behavior)
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Severity & Priority Ranges */}
+                {/* Priorities */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Priority Range</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Priorities</h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Define the priority range this workflow applies to.
+                    Select which priorities this workflow applies to. Leave empty for all priorities.
                   </p>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Priority Range</label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <select
-                          value={matchingConfig.priority_min}
-                          onChange={(e) => setMatchingConfig(prev => ({ ...prev, priority_min: parseInt(e.target.value) || 1 }))}
-                          className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                        >
-                          {priorityValues.map(v => (
-                            <option key={v.id} value={v.sort_order}>{v.name}</option>
-                          ))}
-                          {priorityValues.length === 0 && (
-                            <>
-                              <option value={1}>1 - Critical</option>
-                              <option value={2}>2 - High</option>
-                              <option value={3}>3 - Medium</option>
-                              <option value={4}>4 - Low</option>
-                              <option value={5}>5 - Very Low</option>
-                            </>
-                          )}
-                        </select>
-                        <span className="text-[hsl(var(--muted-foreground))]">to</span>
-                        <select
-                          value={matchingConfig.priority_max}
-                          onChange={(e) => setMatchingConfig(prev => ({ ...prev, priority_max: parseInt(e.target.value) || 5 }))}
-                          className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                        >
-                          {priorityValues.map(v => (
-                            <option key={v.id} value={v.sort_order}>{v.name}</option>
-                          ))}
-                          {priorityValues.length === 0 && (
-                            <>
-                              <option value={1}>1 - Critical</option>
-                              <option value={2}>2 - High</option>
-                              <option value={3}>3 - Medium</option>
-                              <option value={4}>4 - Low</option>
-                              <option value={5}>5 - Very Low</option>
-                            </>
-                          )}
-                        </select>
+                  <div className="space-y-2">
+                    {priorityValues.map((priority) => (
+                      <label key={priority.id} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={matchingConfig.priorities.includes(priority.sort_order)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setMatchingConfig(prev => ({
+                                ...prev,
+                                priorities: [...prev.priorities, priority.sort_order],
+                              }));
+                            } else {
+                              setMatchingConfig(prev => ({
+                                ...prev,
+                                priorities: prev.priorities.filter(p => p !== priority.sort_order),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                        />
+                        <span className="text-sm text-[hsl(var(--foreground))]">{priority.name}</span>
+                      </label>
+                    ))}
+                    {priorityValues.length === 0 && (
+                      <>
+                        {[
+                          { value: 1, label: '1 - Critical' },
+                          { value: 2, label: '2 - High' },
+                          { value: 3, label: '3 - Medium' },
+                          { value: 4, label: '4 - Low' },
+                          { value: 5, label: '5 - Very Low' },
+                        ].map((priority) => (
+                          <label key={priority.value} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={matchingConfig.priorities.includes(priority.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setMatchingConfig(prev => ({
+                                    ...prev,
+                                    priorities: [...prev.priorities, priority.value],
+                                  }));
+                                } else {
+                                  setMatchingConfig(prev => ({
+                                    ...prev,
+                                    priorities: prev.priorities.filter(p => p !== priority.value),
+                                  }));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                            />
+                            <span className="text-sm text-[hsl(var(--foreground))]">{priority.label}</span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+
+                    {matchingConfig.priorities.length === 0 && (
+                      <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
+                        <strong>No selection</strong> - This workflow will match <strong>all priorities</strong> (generic/fallback behavior)
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Generic Workflow Warning */}
+              {matchingConfig.sources.length === 0 &&
+                matchingConfig.priorities.length === 0 &&
+                matchingConfig.classification_ids.length === 0 &&
+                matchingConfig.location_ids.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-amber-900 mb-1 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      Fully Generic Workflow
+                    </h3>
+                    <p className="text-xs text-amber-800">
+                      This workflow has NO matching rules configured. It will match <strong>ALL incidents</strong> and may conflict with other workflows.
+                      Consider adding at least one rule (source, priority, classification, or location) to make it more specific.
+                    </p>
+                  </div>
+                )}
 
               {/* Save Button */}
               <div className="flex justify-end">
