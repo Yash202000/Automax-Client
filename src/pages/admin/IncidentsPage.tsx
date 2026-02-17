@@ -84,7 +84,7 @@ export const IncidentsPage: React.FC = () => {
   const [columns, setColumns] = useState<ColumnConfig[]>(loadColumnsFromStorage);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
 
   const canViewAllIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canCreateIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
@@ -294,20 +294,28 @@ export const IncidentsPage: React.FC = () => {
     });
   };
 
-  const handleCheckboxChange = (
-      e: React.ChangeEvent<HTMLInputElement>,
-      id: string
-    ) => {
-      const checked = e.target.checked;
+ const handleCheckboxChange = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  item: Incident
+) => {
+  const { checked } = e.target;
 
-      setSelectedIds((prev) => {
-        if (checked) {
-          return prev.includes(id) ? prev : [...prev, id];
-        } else {
-          return prev.filter((item) => item !== id);
-        }
-      });
-    };
+  setSelectedIncidents((prev) =>
+    checked
+      ? [...prev, item]
+      : prev.filter((i) => i.id !== item.id)
+  );
+};
+
+
+  const isDisabled = (item: Incident) =>
+    selectedIncidents?.length > 0 &&
+    selectedIncidents[0]?.current_state?.name !== item?.current_state?.name;
+
+  const isSelected = (item: Incident) =>
+    selectedIncidents.some((i) => i?.id === item?.id);
+
+
 
   if (error) {
     return (
@@ -351,7 +359,7 @@ export const IncidentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-        {selectedIds?.length ? 
+        {selectedIncidents?.length ? 
           <Button leftIcon={<Repeat className="w-4 h-4" />} onClick={() => {}}>
             {t('incidents.convertToRequest')}
           </Button> : null }
@@ -742,8 +750,9 @@ export const IncidentsPage: React.FC = () => {
                     <td  onClick={(e) => e.stopPropagation()} className='ps-4'>
                        <Checkbox
                         id={incident.id}
-                        checked={selectedIds.includes(incident.id)}
-                        onChange={(e) => handleCheckboxChange(e, incident.id)}
+                        checked={isSelected(incident)}
+                        disabled={isDisabled(incident)}
+                        onChange={(e) => handleCheckboxChange(e, incident)}
                       />
                     </td>
                       {isColumnVisible('incident') && (
