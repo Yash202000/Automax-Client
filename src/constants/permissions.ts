@@ -98,6 +98,7 @@ export const PERMISSIONS = {
 
   // Action log permissions
   ACTION_LOGS_VIEW: 'action-logs:view',
+  ACTION_LOGS_EXPORT: 'action-logs:export',
   ACTION_LOGS_DELETE: 'action-logs:delete',
 
   // Lookup permissions
