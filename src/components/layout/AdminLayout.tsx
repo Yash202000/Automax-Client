@@ -64,6 +64,7 @@ const sidebarSectionsConfig: SidebarSection[] = [
       { icon: Database, labelKey: 'lookups.title', path: '/admin/lookups', permission: 'lookups:view' },
       { icon: Link2, labelKey: 'admin.applicationLinks', path: '/admin/application-links', permission: 'application-links:view' },
       { icon: Settings, labelKey: 'admin.systemSettings', path: '/admin/settings', permission: 'settings:update' },
+      { icon: Database, labelKey: 'admin.actionLogs', path: '/admin/action-logs', permission: 'action-logs:view' },
     ],
   },
 ];

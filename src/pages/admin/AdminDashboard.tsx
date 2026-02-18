@@ -351,10 +351,12 @@ export const AdminDashboard: React.FC = () => {
                 <h3 className="text-lg font-bold text-slate-800">{t('admin.actionLogs')}</h3>
                 <p className="text-sm text-slate-500">{t('dashboard.insightsLogs')}</p>
               </div>
-              <button className="text-sm font-medium text-violet-600 hover:text-violet-700 flex items-center gap-1 transition-colors">
-                {t('dashboard.viewAll')}
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {hasPermission(PERMISSIONS.ACTION_LOGS_VIEW) && (
+                <Link to="/admin/action-logs" className="text-sm font-medium text-violet-600 hover:text-violet-700 flex items-center gap-1 transition-colors">
+                  {t('dashboard.viewAll')}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
 
             <div className="space-y-3">
