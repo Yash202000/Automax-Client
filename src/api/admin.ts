@@ -82,6 +82,15 @@ import type {
   EmailFilter,
   SMS,
   SMSFilter,
+  // Incident Merge types
+  IncidentMergeValidationResponse,
+  IncidentMergeRequest as IncidentMergeRequestType,
+  IncidentMergeResponse,
+  IncidentUnmergeRequest,
+  IncidentUnmergeResponse,
+  IncidentBulkUnmergeRequest,
+  IncidentBulkUnmergeResponse,
+  CanMergeResponse,
 } from '../types';
 
 // User Management
@@ -1671,6 +1680,41 @@ export const smsApi = {
 
   delete: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.delete<ApiResponse<any>>(`/notifications/${id}`);
+    return response.data;
+  },
+};
+
+// Incident Merge API
+export const incidentMergeApi = {
+  canMerge: async (): Promise<ApiResponse<CanMergeResponse>> => {
+    const response = await apiClient.get<ApiResponse<CanMergeResponse>>('/incidents/merge/can-merge');
+    return response.data;
+  },
+
+  validateMerge: async (incidentIds: string[]): Promise<ApiResponse<IncidentMergeValidationResponse>> => {
+    const response = await apiClient.post<ApiResponse<IncidentMergeValidationResponse>>('/incidents/merge/validate', {
+      incident_ids: incidentIds,
+    });
+    return response.data;
+  },
+
+  mergeIncidents: async (data: IncidentMergeRequestType): Promise<ApiResponse<IncidentMergeResponse>> => {
+    const response = await apiClient.post<ApiResponse<IncidentMergeResponse>>('/incidents/merge', data);
+    return response.data;
+  },
+
+  unmergeIncident: async (data: IncidentUnmergeRequest): Promise<ApiResponse<IncidentUnmergeResponse>> => {
+    const response = await apiClient.post<ApiResponse<IncidentUnmergeResponse>>('/incidents/merge/unmerge', data);
+    return response.data;
+  },
+
+  bulkUnmergeIncidents: async (data: IncidentBulkUnmergeRequest): Promise<ApiResponse<IncidentBulkUnmergeResponse>> => {
+    const response = await apiClient.post<ApiResponse<IncidentBulkUnmergeResponse>>('/incidents/merge/bulk-unmerge', data);
+    return response.data;
+  },
+
+  getMergedIncidents: async (masterIncidentId: string): Promise<ApiResponse<Incident[]>> => {
+    const response = await apiClient.get<ApiResponse<Incident[]>>(`/incidents/merge/${masterIncidentId}/merged`);
     return response.data;
   },
 };

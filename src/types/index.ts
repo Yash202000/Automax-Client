@@ -552,6 +552,7 @@ export interface WorkflowState {
   position_x: number;
   position_y: number;
   sla_hours?: number;
+  is_mergable: boolean;
   sort_order: number;
   is_active: boolean;
   viewable_roles?: Role[];
@@ -650,6 +651,7 @@ export interface WorkflowStateCreateRequest {
   position_x?: number;
   position_y?: number;
   sla_hours?: number;
+  is_mergable?: boolean;
   sort_order?: number;
   viewable_role_ids?: string[];
 }
@@ -663,6 +665,7 @@ export interface WorkflowStateUpdateRequest {
   position_x?: number;
   position_y?: number;
   sla_hours?: number;
+  is_mergable?: boolean;
   sort_order?: number;
   is_active?: boolean;
   viewable_role_ids?: string[];
@@ -779,6 +782,13 @@ export interface Incident {
   updated_at: string;
   version: number;
   active_viewers?: number;
+
+  // Merge-related fields
+  master_incident_id?: string;
+  master_incident?: Incident;
+  is_merged: boolean;
+  merged_at?: string;
+  merged_incidents_count?: number;
 }
 
 export interface IncidentDetail extends Incident {
@@ -1442,5 +1452,59 @@ export interface SMSFilter {
   category?: string;
   direction?: string;
   is_read?: boolean;
+}
+
+// Incident Merge Types
+export interface IncidentMergeOption {
+  id: string;
+  incident_number: string;
+  title: string;
+  current_state_id: string;
+  current_state: string;
+}
+
+export interface IncidentMergeValidationResponse {
+  can_merge: boolean;
+  errors?: string[];
+  warning?: string;
+  master_options?: IncidentMergeOption[];
+}
+
+export interface IncidentMergeRequest {
+  incident_ids: string[];
+  master_incident_id: string;
+  comment?: string;
+}
+
+export interface IncidentMergeResponse {
+  master_incident: Incident;
+  merged_incidents: Incident[];
+  merged_count: number;
+  message: string;
+}
+
+export interface IncidentUnmergeRequest {
+  incident_id: string;
+  comment?: string;
+}
+
+export interface IncidentUnmergeResponse {
+  unmerged_incident: Incident;
+  message: string;
+}
+
+export interface IncidentBulkUnmergeRequest {
+  incident_ids: string[];
+  comment?: string;
+}
+
+export interface IncidentBulkUnmergeResponse {
+  unmerged_count: number;
+  failures?: string[];
+  message: string;
+}
+
+export interface CanMergeResponse {
+  can_merge: boolean;
 }
 

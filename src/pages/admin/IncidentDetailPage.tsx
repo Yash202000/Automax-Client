@@ -35,8 +35,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { MiniWorkflowView } from '../../components/workflow';
-import { RevisionHistory, ConvertToRequestModal } from '../../components/incidents';
-import { incidentApi, userApi, workflowApi, departmentApi, lookupApi } from '../../api/admin';
+import { RevisionHistory, ConvertToRequestModal, UnmergeIncidentsModal, BulkUnmergeModal } from '../../components/incidents';
+import { incidentApi, userApi, workflowApi, departmentApi, lookupApi, incidentMergeApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
   IncidentDetail,
@@ -79,6 +79,7 @@ export const IncidentDetailPage: React.FC = () => {
 
   const canEditIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
   const canViewReports = isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
+  const canMergeIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
 
   const [activeTab, setActiveTab] = useState<'activity' | 'comments' | 'attachments' | 'revisions'>('activity');
   const [commentText, setCommentText] = useState('');
@@ -93,6 +94,11 @@ export const IncidentDetailPage: React.FC = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
   const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [unmergeModalOpen, setUnmergeModalOpen] = useState(false);
+  const [mergedIncidents, setMergedIncidents] = useState<any[]>([]);
+  const [showMergedIncidents, setShowMergedIncidents] = useState(false);
+  const [selectedForUnmerge, setSelectedForUnmerge] = useState<Set<string>>(new Set());
+  const [bulkUnmergeModalOpen, setBulkUnmergeModalOpen] = useState(false);
 
   // Assignment matching state
   const [matchLoading, setMatchLoading] = useState(false);
@@ -145,6 +151,13 @@ export const IncidentDetailPage: React.FC = () => {
     enabled: !!id,
   });
 
+  // Fetch merged incidents if this is a master incident
+  const { data: mergedIncidentsData, refetch: refetchMergedIncidents } = useQuery({
+    queryKey: ['incident', id, 'merged'],
+    queryFn: () => incidentMergeApi.getMergedIncidents(id!),
+    enabled: !!id && canMergeIncidents,
+  });
+
   const { data: usersData } = useQuery({
     queryKey: ['admin', 'users', 1, 100],
     queryFn: () => userApi.list(1, 100),
@@ -166,6 +179,13 @@ export const IncidentDetailPage: React.FC = () => {
   const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
   const lookupCategories = lookupCategoriesData?.data || [];
   const user = useAuthStore((state) => state.user);
+
+  // Update merged incidents when data changes
+  useEffect(() => {
+    if (mergedIncidentsData?.data) {
+      setMergedIncidents(mergedIncidentsData.data);
+    }
+  }, [mergedIncidentsData]);
 
   // WebSocket real-time connection - replaces polling!
   // Automatically handles presence, updates, and notifications
@@ -782,6 +802,26 @@ export const IncidentDetailPage: React.FC = () => {
               {t('incidents.edit')}
             </Button>
           )}
+          {canMergeIncidents && incident?.is_merged && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setUnmergeModalOpen(true)}
+              leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+            >
+              {t('incidentMerge.unmerge')}
+            </Button>
+          )}
+          {canMergeIncidents && mergedIncidents.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMergedIncidents(!showMergedIncidents)}
+              leftIcon={<Users className="w-4 h-4" />}
+            >
+              {t('incidentMerge.mergedIncidents')} ({mergedIncidents.length})
+            </Button>
+          )}
         </div>
       </div>
 
@@ -795,6 +835,93 @@ export const IncidentDetailPage: React.FC = () => {
               {incident.description || t('incidents.noDescription')}
             </p>
           </div>
+
+          {/* Merged Incidents Section */}
+          {showMergedIncidents && mergedIncidents.length > 0 && (
+            <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedForUnmerge.size === mergedIncidents.length && mergedIncidents.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedForUnmerge(new Set(mergedIncidents.map((m: any) => m.id)));
+                      } else {
+                        setSelectedForUnmerge(new Set());
+                      }
+                    }}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    {t('incidentMerge.mergedIncidents')}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedForUnmerge.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setBulkUnmergeModalOpen(true)}
+                    >
+                      {t('incidentMerge.confirmUnmerge')} ({selectedForUnmerge.size})
+                    </Button>
+                  )}
+                  <button
+                    onClick={() => setShowMergedIncidents(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {mergedIncidents.map((merged) => (
+                  <div
+                    key={merged.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedForUnmerge.has(merged.id)}
+                        onChange={(e) => {
+                          const next = new Set(selectedForUnmerge);
+                          if (e.target.checked) {
+                            next.add(merged.id);
+                          } else {
+                            next.delete(merged.id);
+                          }
+                          setSelectedForUnmerge(next);
+                        }}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <div className="flex-1">
+                        <Link
+                          to={`/incidents/${merged.id}`}
+                          className="font-medium text-[hsl(var(--primary))] hover:underline"
+                        >
+                          {merged.incident_number} - {merged.title}
+                        </Link>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {t('incidents.status')}: {merged.current_state?.name}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigate(`/incidents/${merged.id}`);
+                      }}
+                    >
+                      {t('common.view')}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm overflow-hidden">
@@ -2138,6 +2265,33 @@ export const IncidentDetailPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* Unmerge Incident Modal */}
+      {incident && (
+        <UnmergeIncidentsModal
+          isOpen={unmergeModalOpen}
+          onClose={() => setUnmergeModalOpen(false)}
+          incident={incident}
+          onUnmergeSuccess={() => {
+            toast.success(t('incidentMerge.unmergeSuccess'));
+            refetch();
+            refetchMergedIncidents();
+          }}
+        />
+      )}
+
+      {/* Bulk Unmerge Modal */}
+      <BulkUnmergeModal
+        isOpen={bulkUnmergeModalOpen}
+        onClose={() => setBulkUnmergeModalOpen(false)}
+        incidents={mergedIncidents.filter((m: any) => selectedForUnmerge.has(m.id))}
+        onUnmergeSuccess={() => {
+          toast.success(t('incidentMerge.unmergeSuccess'));
+          setSelectedForUnmerge(new Set());
+          refetch();
+          refetchMergedIncidents();
+        }}
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
   Check,
+  CheckCircle2,
   GitBranch,
   Circle,
   ArrowRight,
@@ -58,6 +59,7 @@ interface StateFormData {
   state_type: 'initial' | 'normal' | 'terminal';
   color: string;
   sla_hours: number | undefined;
+  is_mergable: boolean;
   viewable_role_ids: string[];
 }
 
@@ -85,6 +87,7 @@ const initialStateFormData: StateFormData = {
   state_type: 'normal',
   color: '#6366f1',
   sla_hours: undefined,
+  is_mergable: false,
   viewable_role_ids: [],
 };
 
@@ -424,6 +427,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       state_type: state.state_type as 'initial' | 'normal' | 'terminal',
       color: state.color,
       sla_hours: state.sla_hours || undefined,
+      is_mergable: state.is_mergable || false,
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
     });
     setIsStateModalOpen(true);
@@ -511,6 +515,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       state_type: stateFormData.state_type,
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
+      is_mergable: stateFormData.is_mergable,
       viewable_role_ids: stateFormData.viewable_role_ids,
     };
 
@@ -856,6 +861,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Code</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Type</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">SLA Hours</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Mergable</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Viewable Roles</th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Actions</th>
                       </tr>
@@ -885,6 +891,18 @@ export const WorkflowDesignerPage: React.FC = () => {
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
                               {state.sla_hours ? `${state.sla_hours}h` : '-'}
                             </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {state.is_mergable ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Mergable
+                                </span>
+                              ) : (
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">-</span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex flex-wrap gap-1">
@@ -1737,6 +1755,23 @@ export const WorkflowDesignerPage: React.FC = () => {
                   />
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
                     Maximum time an incident should remain in this state
+                  </p>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={stateFormData.is_mergable}
+                      onChange={(e) => setStateFormData({ ...stateFormData, is_mergable: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                    />
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      Mergable Status
+                    </span>
+                  </label>
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
+                    Allow incidents in this status to be merged together
                   </p>
                 </div>
 

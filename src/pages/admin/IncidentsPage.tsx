@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   Search,
   ChevronLeft,
@@ -20,6 +21,7 @@ import {
   Building2,
   Settings2,
   Check,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { incidentApi, workflowApi, userApi, departmentApi, classificationApi, locationApi } from '../../api/admin';
@@ -28,6 +30,7 @@ import { useIncidentListWebSocket } from '../../lib/services/incidentListWebSock
 import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import { MergeIncidentsModal } from '../../components/incidents';
 
 // Column configuration
 interface ColumnConfig {
@@ -82,10 +85,13 @@ export const IncidentsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [columns, setColumns] = useState<ColumnConfig[]>(loadColumnsFromStorage);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
+  const [selectedIncidents, setSelectedIncidents] = useState<Set<string>>(new Set());
+  const [showMergeModal, setShowMergeModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
 
   const canViewAllIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canCreateIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+  const canMergeIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
 
   // Get status from URL - users with view permission can access if status filter is applied
   const urlStatusParam = searchParams.get('status');
@@ -126,6 +132,38 @@ export const IncidentsPage: React.FC = () => {
   };
 
   const visibleColumnCount = columns.filter(c => c.visible).length;
+
+  // Multi-select handlers
+  const toggleSelectIncident = (incidentId: string) => {
+    setSelectedIncidents(prev => {
+      const next = new Set(prev);
+      if (next.has(incidentId)) {
+        next.delete(incidentId);
+      } else {
+        next.add(incidentId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (checked: boolean, incidentIds: string[]) => {
+    if (checked) {
+      setSelectedIncidents(prev => new Set([...Array.from(prev), ...incidentIds]));
+    } else {
+      setSelectedIncidents(new Set());
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIncidents(new Set());
+  };
+
+  const handleMergeSuccess = () => {
+    clearSelection();
+    setShowMergeModal(false);
+    refetch();
+    toast.success(t('incidentMerge.mergeSuccess'));
+  };
 
   // Queries - only fetch incident-type workflows
   const { data: workflowsData } = useQuery({
@@ -334,6 +372,28 @@ export const IncidentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {selectedIncidents.size >= 2 && canMergeIncidents && (
+            <>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <span className="text-sm font-medium text-indigo-700">
+                  {selectedIncidents.size} {t('common.selected')}
+                </span>
+                <button
+                  onClick={clearSelection}
+                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                >
+                  {t('common.clear')}
+                </button>
+              </div>
+              <Button
+                variant="default"
+                onClick={() => setShowMergeModal(true)}
+                leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+              >
+                {t('incidentMerge.title')}
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -643,6 +703,15 @@ export const IncidentsPage: React.FC = () => {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
+                    {/* Select Checkbox Column */}
+                    <th className="px-6 py-4 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIncidents.size === incidents.length && incidents.length > 0}
+                        onChange={(e) => toggleSelectAll(e.target.checked, incidents.map(i => i.id))}
+                        className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                      />
+                    </th>
                     {isColumnVisible('incident') && (
                       <th className="px-6 py-4 text-left">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -714,9 +783,21 @@ export const IncidentsPage: React.FC = () => {
                     return (
                     <tr
                       key={incident.id}
-                      className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/incidents/${incident.id}`)}
+                      className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
                     >
+                      {/* Select Checkbox */}
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIncidents.has(incident.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleSelectIncident(incident.id);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                        />
+                      </td>
                       {isColumnVisible('incident') && (
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
@@ -929,6 +1010,16 @@ export const IncidentsPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Merge Incidents Modal */}
+      {selectedIncidents.size >= 2 && (
+        <MergeIncidentsModal
+          isOpen={showMergeModal}
+          onClose={() => setShowMergeModal(false)}
+          selectedIncidents={incidents.filter(i => selectedIncidents.has(i.id))}
+          onMergeSuccess={handleMergeSuccess}
+        />
+      )}
     </div>
   );
 };
