@@ -53,7 +53,6 @@ import type {
   TransitionHistory,
   IncidentRevision,
   IncidentRevisionFilter,
-  IncidentSource,
   ConvertToRequestRequest,
   ConvertToRequestResponse,
   CanConvertToRequestResponse,
