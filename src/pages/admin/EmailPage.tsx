@@ -66,7 +66,7 @@ export const EmailPage: React.FC = () => {
     });
 
 
-    const { mutate: getEmailById, isPending } = useMutation({
+    const { mutate: getEmailById } = useMutation({
         mutationFn: (id: string) => emailApi.getById(id),
         onSuccess: (response) => {
             setSelectedEmail(response.data || null);
