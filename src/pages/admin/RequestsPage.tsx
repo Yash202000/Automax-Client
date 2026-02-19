@@ -540,6 +540,21 @@ export const RequestsPage: React.FC = () => {
               </select>
             </div>
             <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.priority', 'Priority')}</label>
+              <select
+                value={filter.priority ?? ''}
+                onChange={(e) => handleFilterChange('priority', e.target.value === '' ? undefined : Number(e.target.value))}
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              >
+                <option value="">{t('common.allPriorities', 'All Priorities')}</option>
+                <option value="1">{t('priorities.critical', 'Critical')}</option>
+                <option value="2">{t('priorities.high', 'High')}</option>
+                <option value="3">{t('priorities.medium', 'Medium')}</option>
+                <option value="4">{t('priorities.low', 'Low')}</option>
+                <option value="5">{t('priorities.veryLow', 'Very Low')}</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">{t('common.slaStatus', 'SLA Status')}</label>
               <select
                 value={filter.sla_breached === undefined ? '' : filter.sla_breached.toString()}

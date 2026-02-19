@@ -116,7 +116,7 @@ export const ReportTemplatesPage: React.FC = () => {
   };
 
   const handleEdit = (template: ReportTemplate) => {
-    navigate(`/admin/reports/builder/${template.id}`);
+    navigate(`/reports/builder/${template.id}`);
   };
 
   const openExportWithTemplate = (template: ReportTemplate) => {
@@ -250,7 +250,7 @@ export const ReportTemplatesPage: React.FC = () => {
 
         {canCreateReport && (
           <Button
-            onClick={() => navigate('/admin/reports/builder')}
+            onClick={() => navigate('/reports/builder')}
             leftIcon={<Plus className="w-4 h-4" />}
           >
             {t('reports.newReport')}
@@ -292,7 +292,7 @@ export const ReportTemplatesPage: React.FC = () => {
           <p className="text-[hsl(var(--muted-foreground))] mb-4">
             {t('reports.createFirstTemplate')}
           </p>
-          <Button onClick={() => navigate('/admin/reports/builder')}>
+          <Button onClick={() => navigate('/reports/builder')}>
             {t('reports.createReport')}
           </Button>
         </div>
@@ -521,7 +521,7 @@ export const ReportTemplatesPage: React.FC = () => {
                   <button
                     onClick={() => {
                       setShowExportModal(false);
-                      navigate('/admin/report-templates/new/edit');
+                      navigate('/reports/templates/new/edit');
                     }}
                     className="text-sm text-[hsl(var(--primary))] hover:underline mt-1"
                   >

@@ -212,8 +212,8 @@ const ReportTemplatesListPage: React.FC = () => {
           <p className="text-gray-500 mt-1">Create and manage customizable report templates</p>
         </div>
         <Button
-          onClick={() => navigate('/admin/report-templates/new/edit')}
-          className="flex items-center gap-2   "
+          onClick={() => navigate('/reports/templates/new/edit')}
+          className="flex items-center gap-2 px-4 py-2"
         >
           <Plus className="h-5 w-5" />
           New Template
@@ -249,7 +249,7 @@ const ReportTemplatesListPage: React.FC = () => {
             <p className="text-lg font-medium">No templates found</p>
             <p className="text-sm mt-1">Create your first report template to get started</p>
             <button
-              onClick={() => navigate('/admin/report-templates/new/edit')}
+              onClick={() => navigate('/reports/templates/new/edit')}
               className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus className="h-5 w-5" />
@@ -294,7 +294,7 @@ const ReportTemplatesListPage: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate(`/admin/report-templates/${template.id}/edit`)}
+                    onClick={() => navigate(`/reports/templates/${template.id}/edit`)}
                     className="p-2 hover:bg-gray-200 rounded-lg"
                     title="Edit"
                   >
@@ -322,7 +322,7 @@ const ReportTemplatesListPage: React.FC = () => {
                         />
                         <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-20">
                           <button
-                            onClick={() => navigate(`/admin/report-templates/${template.id}/edit`)}
+                            onClick={() => navigate(`/reports/templates/${template.id}/edit`)}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Edit className="h-4 w-4" />

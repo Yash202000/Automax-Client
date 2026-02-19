@@ -38,6 +38,7 @@ import type {
   WorkflowTransitionUpdateRequest,
   TransitionRequirementRequest,
   TransitionActionRequest,
+  TransitionFieldChangeRequest,
   Incident,
   IncidentDetail,
   IncidentCreateRequest,
@@ -52,7 +53,6 @@ import type {
   TransitionHistory,
   IncidentRevision,
   IncidentRevisionFilter,
-  IncidentSource,
   ConvertToRequestRequest,
   ConvertToRequestResponse,
   CanConvertToRequestResponse,
@@ -86,8 +86,22 @@ import type {
 
 // User Management
 export const userApi = {
-  list: async (page = 1, limit = 10): Promise<PaginatedResponse<User>> => {
-    const response = await apiClient.get<PaginatedResponse<User>>(`/admin/users?page=${page}&limit=${limit}`);
+  list: async (
+    page = 1,
+    limit = 10,
+    search = '',
+    roleIds: string[] = [],
+    departmentIds: string[] = [],
+    locationIds: string[] = [],
+    classificationIds: string[] = [],
+  ): Promise<PaginatedResponse<User>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search) params.append('search', search);
+    if (roleIds.length) params.append('role_ids', roleIds.join(','));
+    if (departmentIds.length) params.append('department_ids', departmentIds.join(','));
+    if (locationIds.length) params.append('location_ids', locationIds.join(','));
+    if (classificationIds.length) params.append('classification_ids', classificationIds.join(','));
+    const response = await apiClient.get<PaginatedResponse<User>>(`/admin/users?${params.toString()}`);
     return response.data;
   },
 
@@ -528,6 +542,24 @@ export const actionLogApi = {
     );
     return response.data;
   },
+
+  export: async (filter: ActionLogFilter = {}, format: 'csv' | 'excel' = 'csv'): Promise<Blob> => {
+    const params = new URLSearchParams();
+    if (filter.user_id) params.append('user_id', filter.user_id);
+    if (filter.action) params.append('action', filter.action);
+    if (filter.module) params.append('module', filter.module);
+    if (filter.status) params.append('status', filter.status);
+    if (filter.resource_id) params.append('resource_id', filter.resource_id);
+    if (filter.start_date) params.append('start_date', filter.start_date);
+    if (filter.end_date) params.append('end_date', filter.end_date);
+    if (filter.search) params.append('search', filter.search);
+    params.append('format', format);
+
+    const response = await apiClient.get(`/admin/action-logs/export?${params.toString()}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 // Workflow API
@@ -647,6 +679,11 @@ export const workflowApi = {
     return response.data;
   },
 
+  setTransitionFieldChanges: async (transitionId: string, fieldChanges: TransitionFieldChangeRequest[]): Promise<ApiResponse<WorkflowTransition>> => {
+    const response = await apiClient.put<ApiResponse<WorkflowTransition>>(`/admin/transitions/${transitionId}/field-changes`, { field_changes: fieldChanges });
+    return response.data;
+  },
+
   // Classification assignment
   assignClassifications: async (workflowId: string, classificationIds: string[]): Promise<ApiResponse<Workflow>> => {
     const response = await apiClient.put<ApiResponse<Workflow>>(`/admin/workflows/${workflowId}/classifications`, { classification_ids: classificationIds });
@@ -658,101 +695,15 @@ export const workflowApi = {
     return response.data;
   },
 
-  // Find matching workflow based on criteria
-  findMatchingWorkflow: (
-    workflows: Workflow[],
-    criteria: {
-      classification_id?: string;
-      location_id?: string;
-      source?: string;
-      priority?: number;
-    }
-  ): Workflow | null => {
-    // Filter only active workflows
-    const activeWorkflows = workflows.filter(w => w.is_active);
-
-    // Score-based matching - higher score = better match
-    let bestMatch: { workflow: Workflow; score: number } | null = null;
-
-    for (const workflow of activeWorkflows) {
-      let score = 0;
-      let matchCount = 0;
-      let isExcluded = false;
-
-      // Check classification match
-      if (criteria.classification_id && workflow.classifications?.length) {
-        const matches = workflow.classifications.some(c => c.id === criteria.classification_id);
-        if (matches) {
-          score += 10;
-          matchCount++;
-        } else {
-          // Workflow has specific classifications and this one doesn't match - EXCLUDE
-          isExcluded = true;
-        }
-      }
-
-      // Check location match
-      if (criteria.location_id && workflow.locations?.length) {
-        const matches = workflow.locations.some(l => l.id === criteria.location_id);
-        if (matches) {
-          score += 10;
-          matchCount++;
-        } else {
-          // Workflow has specific locations and this one doesn't match - EXCLUDE
-          isExcluded = true;
-        }
-      }
-
-      // Check source match - if workflow defines sources, criteria MUST match
-      if (criteria.source && workflow.sources?.length) {
-        const matches = workflow.sources.includes(criteria.source as IncidentSource);
-        if (matches) {
-          score += 10;
-          matchCount++;
-        } else {
-          // Workflow has specific sources and this one doesn't match - EXCLUDE
-          isExcluded = true;
-        }
-      }
-
-      // Check priority - if workflow defines priorities, criteria MUST match
-      if (criteria.priority !== undefined) {
-        // If workflow has no priorities specified, it matches all priorities
-        if (!workflow.priorities || workflow.priorities.length === 0) {
-          score += 5;
-          matchCount++;
-        } else if (workflow.priorities.includes(criteria.priority)) {
-          score += 5;
-          matchCount++;
-        } else {
-          // Workflow has specific priorities and this one doesn't match - EXCLUDE
-          isExcluded = true;
-        }
-      }
-
-      // Skip excluded workflows
-      if (isExcluded) {
-        continue;
-      }
-
-      // Prefer workflows with more specific matching (more criteria matched)
-      // Also prefer workflows that are marked as default if no match
-      if (workflow.is_default && score === 0) {
-        score = 1; // Default workflow gets lowest priority score
-      }
-
-      if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-        bestMatch = { workflow, score };
-      }
-    }
-
-    // If no match found, return the default workflow
-    if (!bestMatch) {
-      const defaultWorkflow = activeWorkflows.find(w => w.is_default);
-      return defaultWorkflow || activeWorkflows[0] || null;
-    }
-
-    return bestMatch.workflow;
+  // Match workflow via backend API based on incident criteria
+  matchWorkflow: async (criteria: {
+    classification_id?: string;
+    location_id?: string;
+    source?: string;
+    priority?: number;
+  }): Promise<ApiResponse<{ matched: boolean; workflow_id?: string; workflow_name?: string; workflow_code?: string; record_type?: string; required_fields: string[]; initial_state_id?: string; initial_state?: string }>> => {
+    const response = await apiClient.post('/admin/workflows/match', criteria);
+    return response.data;
   },
 
   // Update workflow matching configuration
@@ -961,8 +912,8 @@ export const incidentApi = {
   },
 
   // Download Report
-  downloadReport: async (incidentId: string, format: 'pdf' | 'json' | 'txt' = 'pdf'): Promise<Blob> => {
-    const response = await apiClient.get(`/incidents/${incidentId}/report?format=${format}`, {
+  downloadReport: async (incidentId: string, format: 'pdf' | 'html' | 'json' | 'txt' = 'pdf', lang: 'ar' | 'en' = 'ar'): Promise<Blob> => {
+    const response = await apiClient.get(`/incidents/${incidentId}/report?format=${format}&lang=${lang}`, {
       responseType: 'blob',
     });
     return response.data;
@@ -1000,8 +951,10 @@ export const complaintApi = {
     if (filter.workflow_id) params.append('workflow_id', filter.workflow_id);
     if (filter.current_state_id) params.append('current_state_id', filter.current_state_id);
     if (filter.classification_id) params.append('classification_id', filter.classification_id);
+    if (filter.priority) params.append('priority', String(filter.priority));
     if (filter.assignee_id) params.append('assignee_id', filter.assignee_id);
     if (filter.department_id) params.append('department_id', filter.department_id);
+    if (filter.location_id) params.append('location_id', filter.location_id);
     if (filter.channel) params.append('channel', filter.channel);
     if (filter.start_date) params.append('start_date', filter.start_date);
     if (filter.end_date) params.append('end_date', filter.end_date);
@@ -1118,8 +1071,10 @@ export const queryApi = {
     if (filter.workflow_id) params.append('workflow_id', filter.workflow_id);
     if (filter.current_state_id) params.append('current_state_id', filter.current_state_id);
     if (filter.classification_id) params.append('classification_id', filter.classification_id);
+    if (filter.priority) params.append('priority', String(filter.priority));
     if (filter.assignee_id) params.append('assignee_id', filter.assignee_id);
     if (filter.department_id) params.append('department_id', filter.department_id);
+    if (filter.location_id) params.append('location_id', filter.location_id);
     if (filter.channel) params.append('channel', filter.channel);
     if (filter.start_date) params.append('start_date', filter.start_date);
     if (filter.end_date) params.append('end_date', filter.end_date);
@@ -1554,6 +1509,8 @@ export const emailApi = {
     if (filter.category) params.append('category', filter.category);
     if (filter.direction) params.append('direction', filter.direction);
     if (filter.is_read !== undefined) params.append('is_read', String(filter.is_read));
+    if (filter.received_by) params.append('received_by', String(filter.received_by));
+    if (filter.is_draft !== undefined) params.append('is_draft', String(filter.is_draft));
 
     // Determine endpoint based on channel if needed, but here we use the one provided by user
     const response = await apiClient.get<PaginatedResponse<Email>>(`/notifications?${params.toString()}`);
@@ -1609,6 +1566,57 @@ export const emailApi = {
     return response.data;
   },
 
+  // Save a new draft — POST /notifications/drafts with JSON body
+  saveDraft: async (data: {
+    to?: string;
+    subject?: string;
+    body?: string;
+    cc?: string;
+    bcc?: string;
+    language?: string;
+  }): Promise<ApiResponse<any>> => {
+    const payload: Record<string, any> = {
+      channel: 'email',
+      language: data.language || 'en',
+    };
+    // API expects arrays for recipients
+    if (data.to) payload.to = data.to.split(',').map(s => s.trim()).filter(Boolean);
+    if (data.subject) payload.subject = data.subject;
+    if (data.body) payload.body = data.body;
+    if (data.cc) payload.cc = data.cc.split(',').map(s => s.trim()).filter(Boolean);
+    if (data.bcc) payload.bcc = data.bcc.split(',').map(s => s.trim()).filter(Boolean);
+    const response = await apiClient.post<ApiResponse<any>>('/notifications/drafts', payload);
+    return response.data;
+  },
+
+  // Update an existing draft — PUT /notifications/drafts/:id
+  updateDraft: async (id: string, data: {
+    to?: string;
+    subject?: string;
+    body?: string;
+    cc?: string;
+    bcc?: string;
+    language?: string;
+  }): Promise<ApiResponse<any>> => {
+    const payload: Record<string, any> = {
+      channel: 'email',
+      language: data.language || 'en',
+    };
+    if (data.to) payload.to = data.to.split(',').map(s => s.trim()).filter(Boolean);
+    if (data.subject) payload.subject = data.subject;
+    if (data.body) payload.body = data.body;
+    if (data.cc) payload.cc = data.cc.split(',').map(s => s.trim()).filter(Boolean);
+    if (data.bcc) payload.bcc = data.bcc.split(',').map(s => s.trim()).filter(Boolean);
+    const response = await apiClient.put<ApiResponse<any>>(`/notifications/drafts/${id}`, payload);
+    return response.data;
+  },
+
+  // Send a saved draft — POST /notifications/drafts/:id/send
+  sendDraft: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/notifications/drafts/${id}/send`);
+    return response.data;
+  },
+
   star: async (id: string, is_starred: boolean): Promise<ApiResponse<any>> => {
     const response = await apiClient.patch<ApiResponse<any>>(`/notifications/${id}/star`, {
       is_starred
@@ -1618,6 +1626,11 @@ export const emailApi = {
 
   delete: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.delete<ApiResponse<any>>(`/notifications/${id}`);
+    return response.data;
+  },
+
+  hardDelete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(`/notifications/${id}/permanent`);
     return response.data;
   },
 

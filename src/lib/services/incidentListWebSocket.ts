@@ -89,7 +89,7 @@ export function useIncidentListWebSocket() {
         return;
       }
 
-      const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', ''));
+      const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', '')).replace(/\/$/, '');
 
       const params = new URLSearchParams({
         channel: 'incident_list',

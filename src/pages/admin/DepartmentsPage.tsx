@@ -19,13 +19,18 @@ import {
   Download,
   Upload,
   Info,
+  Users as UsersIcon,
+  UserMinus,
+  Mail,
+  Search,
 } from 'lucide-react';
-import { departmentApi, locationApi, classificationApi, roleApi } from '../../api/admin';
-import type { Department, DepartmentCreateRequest, DepartmentUpdateRequest, Location, Classification, Role } from '../../types';
+import { departmentApi, locationApi, classificationApi, roleApi, userApi } from '../../api/admin';
+import type { Department, DepartmentCreateRequest, DepartmentUpdateRequest, Location, Classification, Role, User } from '../../types';
 import { cn } from '@/lib/utils';
 import { Button } from '../../components/ui';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import { toast } from 'sonner';
 
 interface DepartmentFormData {
   name: string;
@@ -195,6 +200,8 @@ export const DepartmentsPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+  const [modalTab, setModalTab] = useState<'details' | 'users'>('details');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
 
   const canCreateDepartment = isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_CREATE);
   const canEditDepartment = isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_UPDATE);
@@ -276,13 +283,72 @@ export const DepartmentsPage: React.FC = () => {
     },
   });
 
+  const { data: deptUsersData, isLoading: deptUsersLoading } = useQuery({
+    queryKey: ['admin', 'dept-users', editingDepartment?.id],
+    queryFn: () => userApi.list(1, 500, '', [], [editingDepartment!.id]),
+    enabled: !!editingDepartment,
+  });
+
+  const { data: userSearchData, isFetching: userSearchFetching } = useQuery({
+    queryKey: ['admin', 'user-search-dept', userSearchTerm],
+    queryFn: () => userApi.list(1, 20, userSearchTerm),
+    enabled: userSearchTerm.trim().length >= 2,
+  });
+
+  const currentDeptUserIds = new Set(
+    (deptUsersData?.data as unknown as User[] ?? []).map((u: User) => u.id)
+  );
+  const userSearchResults = (userSearchData?.data as unknown as User[] ?? []).filter(
+    (u: User) => !currentDeptUserIds.has(u.id)
+  );
+
+  const addUserToDeptMutation = useMutation({
+    mutationFn: ({ user }: { user: User }) => {
+      const currentDeptIds = (user.departments ?? []).map((d) => d.id);
+      const newDeptIds = [...new Set([...currentDeptIds, editingDepartment!.id])];
+      return userApi.update(user.id, {
+        username: user.username,
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        phone: user.phone ?? '',
+        department_ids: newDeptIds,
+      } as any);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dept-users', editingDepartment?.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user-search-dept', userSearchTerm] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success('User added to department');
+    },
+    onError: () => toast.error('Failed to add user to department'),
+  });
+
+  const removeUserFromDeptMutation = useMutation({
+    mutationFn: ({ user }: { user: User }) => {
+      const newDeptIds = (user.departments ?? [])
+        .filter((d) => d.id !== editingDepartment!.id)
+        .map((d) => d.id);
+      return userApi.update(user.id, {
+        username: user.username,
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        phone: user.phone ?? '',
+        department_ids: newDeptIds,
+      } as any);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dept-users', editingDepartment?.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success('User removed from department');
+    },
+    onError: () => toast.error('Failed to remove user from department'),
+  });
+
   const openCreateModal = (parentId: string = '', parentName: string = '') => {
     setEditingDepartment(null);
-    setFormData({
-      ...initialFormData,
-      parent_id: parentId,
-      parent_name: parentName,
-    });
+    setFormData({ ...initialFormData, parent_id: parentId, parent_name: parentName });
+    setModalTab('details');
+    setUserSearchTerm('');
     setIsModalOpen(true);
   };
 
@@ -299,6 +365,8 @@ export const DepartmentsPage: React.FC = () => {
       classification_ids: department.classifications?.map((c) => c.id) || [],
       role_ids: department.roles?.map((r) => r.id) || [],
     });
+    setModalTab('details');
+    setUserSearchTerm('');
     setIsModalOpen(true);
   };
 
@@ -306,6 +374,8 @@ export const DepartmentsPage: React.FC = () => {
     setIsModalOpen(false);
     setEditingDepartment(null);
     setFormData(initialFormData);
+    setModalTab('details');
+    setUserSearchTerm('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -594,8 +664,174 @@ export const DepartmentsPage: React.FC = () => {
               </button>
             </div>
 
+            {/* Tab bar — edit mode only */}
+            {editingDepartment && (
+              <div className="flex border-b border-[hsl(var(--border))] px-6">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('details')}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+                    modalTab === 'details'
+                      ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                      : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  )}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTab('users')}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+                    modalTab === 'users'
+                      ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                      : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  )}
+                >
+                  <UsersIcon className="w-4 h-4" />
+                  Users
+                  {deptUsersData?.data && (
+                    <span className="px-1.5 py-0.5 text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded">
+                      {(deptUsersData.data as unknown as User[]).length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* Modal Body */}
             <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* ── Users tab ── */}
+              {modalTab === 'users' && editingDepartment && (
+                <div className="p-6 space-y-4">
+                  {/* Search to add */}
+                  <div>
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                      <input
+                        type="text"
+                        placeholder="Search users to add..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      />
+                      {userSearchFetching && (
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </div>
+                    {userSearchTerm.trim().length >= 2 && (
+                      <div className="mt-2 border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                        {!userSearchFetching && userSearchResults.length === 0 ? (
+                          <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-5">No users found</p>
+                        ) : (
+                          userSearchResults.map((user: User) => (
+                            <div key={user.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-[hsl(var(--border))] last:border-b-0 hover:bg-[hsl(var(--muted)/0.4)] transition-colors">
+                              {user.avatar ? (
+                                <img src={user.avatar} alt={user.username} className="w-8 h-8 rounded-lg object-cover ring-1 ring-[hsl(var(--border))] flex-shrink-0" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-semibold text-white">{user.first_name?.[0] || user.username[0]}</span>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                                  {user.first_name || user.last_name ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : user.username}
+                                </p>
+                                <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{user.email}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => addUserToDeptMutation.mutate({ user })}
+                                disabled={addUserToDeptMutation.isPending}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors disabled:opacity-50 flex-shrink-0"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Add
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-[hsl(var(--border))]" />
+                    <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      Current members ({(deptUsersData?.data as unknown as User[] ?? []).length})
+                    </span>
+                    <div className="flex-1 h-px bg-[hsl(var(--border))]" />
+                  </div>
+
+                  {/* Members list */}
+                  {deptUsersLoading ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[hsl(var(--border))] animate-pulse">
+                          <div className="w-9 h-9 rounded-lg bg-[hsl(var(--muted))]" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3.5 bg-[hsl(var(--muted))] rounded w-1/3" />
+                            <div className="h-3 bg-[hsl(var(--muted))] rounded w-1/2" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : !(deptUsersData?.data as unknown as User[] ?? []).length ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="w-10 h-10 rounded-xl bg-[hsl(var(--muted))] flex items-center justify-center mb-2">
+                        <UsersIcon className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                      </div>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">No users assigned yet</p>
+                    </div>
+                  ) : (
+                    <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                      {(deptUsersData!.data as unknown as User[]).map((user: User) => (
+                        <div key={user.id} className="flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))] last:border-b-0 hover:bg-[hsl(var(--muted)/0.4)] transition-colors group">
+                          {user.avatar ? (
+                            <img src={user.avatar} alt={user.username} className="w-9 h-9 rounded-lg object-cover ring-1 ring-[hsl(var(--border))] flex-shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-semibold text-white">{user.first_name?.[0] || user.username[0]}</span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                              {user.first_name || user.last_name ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : user.username}
+                            </p>
+                            <div className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] truncate">
+                              <Mail className="w-3 h-3 flex-shrink-0" />
+                              {user.email}
+                            </div>
+                          </div>
+                          <span className={cn(
+                            "hidden sm:inline-flex px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0",
+                            user.is_active
+                              ? "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]"
+                              : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                          )}>
+                            {user.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeUserFromDeptMutation.mutate({ user })}
+                            disabled={removeUserFromDeptMutation.isPending}
+                            title="Remove from department"
+                            className="p-1.5 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-50"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Details tab (and create mode) ── */}
+              {(modalTab === 'details' || !editingDepartment) && (
               <div className="p-6 space-y-5">
                 {/* Parent Info Banner (when adding child) */}
                 {!editingDepartment && formData.parent_name && (
@@ -767,23 +1003,26 @@ export const DepartmentsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+              )} {/* end details tab */}
 
               {/* Modal Footer */}
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
                 <Button variant="ghost" type="button" onClick={closeModal}>
                   {t('common.cancel')}
                 </Button>
-                <Button
-                  type="submit"
-                  isLoading={createMutation.isPending || updateMutation.isPending}
-                  leftIcon={!(createMutation.isPending || updateMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
-                >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? t('departments.saving')
-                    : editingDepartment
-                    ? t('common.update')
-                    : t('common.create')}
-                </Button>
+                {(modalTab === 'details' || !editingDepartment) && (
+                  <Button
+                    type="submit"
+                    isLoading={createMutation.isPending || updateMutation.isPending}
+                    leftIcon={!(createMutation.isPending || updateMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
+                  >
+                    {createMutation.isPending || updateMutation.isPending
+                      ? t('departments.saving')
+                      : editingDepartment
+                      ? t('common.update')
+                      : t('common.create')}
+                  </Button>
+                )}
               </div>
             </form>
           </div>

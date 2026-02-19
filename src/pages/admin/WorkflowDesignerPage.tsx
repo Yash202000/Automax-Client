@@ -23,6 +23,7 @@ import {
   Mail,
   ClipboardList,
   Download,
+  PenLine,
 } from 'lucide-react';
 import { workflowApi, roleApi, classificationApi, locationApi, departmentApi, userApi, lookupApi } from '../../api/admin';
 import { HierarchicalCheckboxTree } from '../../components/workflow/HierarchicalCheckboxTree';
@@ -36,6 +37,7 @@ import type {
   WorkflowUpdateRequest,
   TransitionRequirementRequest,
   TransitionActionRequest,
+  TransitionFieldChangeRequest,
   Classification,
   Location,
   Department,
@@ -135,9 +137,10 @@ export const WorkflowDesignerPage: React.FC = () => {
   const [deleteStateConfirm, setDeleteStateConfirm] = useState<string | null>(null);
   const [deleteTransitionConfirm, setDeleteTransitionConfirm] = useState<string | null>(null);
 
-  // Requirements & Actions config
+  // Requirements, Actions & Field Changes config
   const [requirements, setRequirements] = useState<TransitionRequirementRequest[]>([]);
   const [actions, setActions] = useState<TransitionActionRequest[]>([]);
+  const [fieldChanges, setFieldChanges] = useState<TransitionFieldChangeRequest[]>([]);
 
   // Matching configuration
   const [matchingConfig, setMatchingConfig] = useState<{
@@ -408,6 +411,14 @@ export const WorkflowDesignerPage: React.FC = () => {
     },
   });
 
+  const setFieldChangesMutation = useMutation({
+    mutationFn: ({ transitionId, changes }: { transitionId: string; changes: TransitionFieldChangeRequest[] }) =>
+      workflowApi.setTransitionFieldChanges(transitionId, changes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+    },
+  });
+
   // State modal handlers
   const openCreateStateModal = () => {
     setEditingState(null);
@@ -492,6 +503,14 @@ export const WorkflowDesignerPage: React.FC = () => {
         is_active: a.is_active,
       })) || []
     );
+    setFieldChanges(
+      transition.field_changes?.map((f) => ({
+        field_name: f.field_name,
+        label: f.label,
+        is_required: f.is_required,
+        sort_order: f.sort_order,
+      })) || []
+    );
     setIsConfigModalOpen(true);
   };
 
@@ -500,6 +519,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     setConfiguringTransition(null);
     setRequirements([]);
     setActions([]);
+    setFieldChanges([]);
   };
 
   const handleStateSubmit = (e: React.FormEvent) => {
@@ -558,7 +578,28 @@ export const WorkflowDesignerPage: React.FC = () => {
       transitionId: configuringTransition.id,
       acts: actions,
     });
+    await setFieldChangesMutation.mutateAsync({
+      transitionId: configuringTransition.id,
+      changes: fieldChanges,
+    });
     closeConfigModal();
+  };
+
+  const addFieldChange = () => {
+    setFieldChanges([
+      ...fieldChanges,
+      { field_name: 'priority', label: '', is_required: false, sort_order: fieldChanges.length },
+    ]);
+  };
+
+  const removeFieldChange = (index: number) => {
+    setFieldChanges(fieldChanges.filter((_, i) => i !== index));
+  };
+
+  const updateFieldChange = (index: number, field: string, value: any) => {
+    const updated = [...fieldChanges];
+    updated[index] = { ...updated[index], [field]: value };
+    setFieldChanges(updated);
   };
 
   const addRequirement = () => {
@@ -2219,6 +2260,85 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Field Changes Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <PenLine className="w-5 h-5 text-violet-500" />
+                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">Field Changes</label>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">— fields the user can edit during this transition</span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={addFieldChange} leftIcon={<Plus className="w-4 h-4" />}>
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {fieldChanges.length === 0 ? (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">No field changes configured</p>
+                    ) : (
+                      fieldChanges.map((fc, index) => (
+                        <div key={index} className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <select
+                              value={fc.field_name}
+                              onChange={(e) => {
+                                const field = e.target.value;
+                                const defaultLabels: Record<string, string> = {
+                                  priority: 'Priority',
+                                  department_id: 'Department',
+                                  location_id: 'Location',
+                                  classification_id: 'Classification',
+                                  title: 'Title',
+                                  description: 'Description',
+                                };
+                                // Update both field_name and auto-label in one atomic state write
+                                // to avoid the second setFieldChanges overwriting the first.
+                                const updated = [...fieldChanges];
+                                updated[index] = {
+                                  ...updated[index],
+                                  field_name: field,
+                                  label: updated[index].label || defaultLabels[field] || field,
+                                };
+                                setFieldChanges(updated);
+                              }}
+                              className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                            >
+                              <option value="priority">Priority</option>
+                              <option value="department_id">Department</option>
+                              <option value="location_id">Location</option>
+                              <option value="classification_id">Classification</option>
+                              <option value="title">Title</option>
+                              <option value="description">Description</option>
+                            </select>
+                            <button
+                              onClick={() => removeFieldChange(index)}
+                              className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg flex-shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Label (e.g. 'Select Department')"
+                            value={fc.label || ''}
+                            onChange={(e) => updateFieldChange(index, 'label', e.target.value)}
+                            className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                          />
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={fc.is_required}
+                              onChange={(e) => updateFieldChange(index, 'is_required', e.target.checked)}
+                              className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                            />
+                            <span className="text-sm text-[hsl(var(--foreground))]">Required</span>
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
                 {/* Actions Section */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -2483,8 +2603,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </Button>
                 <Button
                   onClick={handleSaveConfig}
-                  isLoading={setRequirementsMutation.isPending || setActionsMutation.isPending}
-                  leftIcon={!(setRequirementsMutation.isPending || setActionsMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
+                  isLoading={setRequirementsMutation.isPending || setActionsMutation.isPending || setFieldChangesMutation.isPending}
+                  leftIcon={!(setRequirementsMutation.isPending || setActionsMutation.isPending || setFieldChangesMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
                 >
                   Save Configuration
                 </Button>

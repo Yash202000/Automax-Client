@@ -327,48 +327,25 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     return matching;
   }, [workflows, classificationId, locationId, source, lookupValues]);
 
-  // Auto-match workflow when criteria change
+  // Auto-match workflow when criteria change via backend API
   useEffect(() => {
-    if (filteredWorkflows.length === 0) return;
-
     const priority = getPriorityValue();
 
-    // Find best matching workflow using score-based matching
-    let bestMatch: { workflow: any; score: number } | null = null;
+    const criteria = {
+      classification_id: classificationId || undefined,
+      location_id: locationId || undefined,
+      source: source || undefined,
+      priority,
+    };
 
-    for (const workflow of filteredWorkflows) {
-      let score = 0;
-
-      if (classificationId && workflow.classifications?.some((c: any) => c.id === classificationId)) {
-        score += 10;
+    workflowApi.matchWorkflow(criteria).then(result => {
+      if (result.data?.workflow_id) {
+        setWorkflowId(result.data.workflow_id);
       }
-      if (locationId && workflow.locations?.some((l: any) => l.id === locationId)) {
-        score += 10;
-      }
-      if (source && workflow.sources?.includes(source)) {
-        score += 10;
-      }
-      if (priority !== undefined && workflow.priorities?.includes(priority)) {
-        score += 5;
-      }
-
-      if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-        bestMatch = { workflow, score };
-      }
-    }
-
-    // Set the best match or default
-    if (bestMatch) {
-      setWorkflowId(bestMatch.workflow.id);
-    } else if (filteredWorkflows.length === 1) {
-      setWorkflowId(filteredWorkflows[0].id);
-    } else {
-      const defaultWorkflow = filteredWorkflows.find(w => w.is_default);
-      if (defaultWorkflow) {
-        setWorkflowId(defaultWorkflow.id);
-      }
-    }
-  }, [filteredWorkflows, classificationId, locationId, source, lookupValues]);
+    }).catch(() => {
+      // Silently fail - let user manually select workflow
+    });
+  }, [classificationId, locationId, source, lookupValues]);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
@@ -652,6 +629,102 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Matching Criteria — drives workflow auto-selection */}
+          <div className="space-y-3 p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg border border-[hsl(var(--border))]">
+            <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+              <Workflow className="w-4 h-4" />
+              {t('requests.matchingCriteria', 'Matching Criteria')}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Classification */}
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <Tags className="w-3 h-3 inline mr-1" />
+                  {t('requests.classification', 'Classification')} <span className="text-red-500">*</span>
+                </label>
+                {classificationsLoading ? (
+                  <div className="flex items-center justify-center py-3">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <TreeSelect
+                    data={classificationTreeData}
+                    value={classificationId}
+                    onChange={(id) => setClassificationId(id)}
+                    placeholder={t('requests.selectClassification', 'Select classification...')}
+                    error={errors.classification}
+                    leafOnly={true}
+                    emptyMessage={t('requests.noClassifications', 'No request classifications found.')}
+                    maxHeight="200px"
+                  />
+                )}
+              </div>
+              {/* Location */}
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <MapPin className="w-3 h-3 inline mr-1" />
+                  {t('requests.location', 'Location')} <span className="text-red-500">*</span>
+                </label>
+                <TreeSelect
+                  data={locationTree}
+                  value={locationId || ''}
+                  onChange={(id) => setLocationId(id)}
+                  placeholder={t('requests.selectLocation', 'Select location...')}
+                  error={errors.location}
+                  leafOnly={true}
+                  emptyMessage={t('requests.noLocations', 'No locations available')}
+                />
+              </div>
+              {/* Source */}
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  {t('requests.source', 'Source')} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={source || ''}
+                  onChange={(e) => setSource((e.target.value as IncidentSource) || undefined)}
+                  className={cn(
+                    "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                    errors.source ? "border-red-500" : "border-[hsl(var(--border))]"
+                  )}
+                >
+                  <option value="">{t('requests.selectSource', 'Select source...')}</option>
+                  {INCIDENT_SOURCES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+                {errors.source && <p className="text-xs text-red-500">{errors.source}</p>}
+              </div>
+              {/* Priority */}
+              {requestLookupCategories.filter(cat => cat.code === 'PRIORITY').map(category => (
+                <div key={category.id} className="space-y-2">
+                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                    {i18n.language === 'ar' ? category.name_ar || category.name : category.name}
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <select
+                    value={lookupValues[category.id] || ''}
+                    onChange={(e) => handleLookupChange(category.id, e.target.value)}
+                    className={cn(
+                      "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                      errors[`lookup:${category.code}`] ? "border-red-500" : "border-[hsl(var(--border))]"
+                    )}
+                  >
+                    <option value="">{t('common.select', 'Select...')}</option>
+                    {(category.values || []).map(v => (
+                      <option key={v.id} value={v.id}>
+                        {i18n.language === 'ar' && v.name_ar ? v.name_ar : v.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors[`lookup:${category.code}`] && (
+                    <p className="text-xs text-red-500">{errors[`lookup:${category.code}`]}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
@@ -715,33 +788,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             </div>
           </div>
 
-          {/* Source & Channel */}
+          {/* Channel */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Source */}
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('requests.source', 'Source')} <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={source || ''}
-                onChange={(e) => setSource((e.target.value as IncidentSource) || undefined)}
-                className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                  errors.source ? "border-red-500" : "border-[hsl(var(--border))]"
-                )}
-              >
-                <option value="">{t('requests.selectSource', 'Select source...')}</option>
-                {INCIDENT_SOURCES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              {errors.source && (
-                <p className="text-xs text-red-500 mt-1">{errors.source}</p>
-              )}
-            </div>
-
             {/* Channel */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
@@ -863,48 +911,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             )}
           </div>
 
-          {/* Classification & Workflow */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Classification */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                <Tags className="w-4 h-4" />
-                {t('requests.classification', 'Classification')} <span className="text-red-500">*</span>
-              </h4>
-
-              {classificationsLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : classifications.length === 0 ? (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-700">
-                    <AlertTriangle className="w-4 h-4" />
-                    <p className="text-xs">
-                      {t('requests.noClassifications', 'No request classifications found.')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <TreeSelect
-                  data={classificationTreeData}
-                  value={classificationId}
-                  onChange={(id) => setClassificationId(id)}
-                  placeholder={t('requests.selectClassification', 'Select classification...')}
-                  error={errors.classification}
-                  leafOnly={true}
-                  emptyMessage={t('requests.noClassifications', 'No request classifications found.')}
-                  maxHeight="200px"
-                />
-              )}
-            </div>
-
-            {/* Workflow */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                <Workflow className="w-4 h-4" />
-                {t('requests.workflow', 'Workflow')} <span className="text-red-500">*</span>
-              </h4>
+          {/* Workflow */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+              <Workflow className="w-4 h-4" />
+              {t('requests.workflow', 'Workflow')} <span className="text-red-500">*</span>
+            </h4>
 
               {workflowsLoading ? (
                 <div className="flex items-center justify-center py-4">
@@ -961,33 +973,14 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               {errors.workflow && (
                 <p className="text-xs text-red-500">{errors.workflow}</p>
               )}
-            </div>
           </div>
 
-          {/* Location & Lookup Categories */}
+          {/* Additional Details — other workflow-required lookup fields */}
+          {requestLookupCategories.some(cat => cat.code !== 'PRIORITY') && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Location */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                {t('requests.location', 'Location')} <span className="text-red-500">*</span>
-              </h4>
-              <TreeSelect
-                data={locationTree}
-                value={locationId || ''}
-                onChange={(id) => setLocationId(id)}
-                placeholder={t('requests.selectLocation', 'Select location...')}
-                error={errors.location}
-                leafOnly={true}
-                emptyMessage={t('requests.noLocations', 'No locations available')}
-              />
-            </div>
-
-            {/* Lookup Categories */}
-            {requestLookupCategories.map(category => {
+            {requestLookupCategories.filter(cat => cat.code !== 'PRIORITY').map(category => {
               const lookupFieldKey = `lookup:${category.code}`;
-              // Priority is always required on web, other fields check workflow requirements
-              const isRequired = category.code === 'PRIORITY' ? true : workflowRequiredFields.includes(lookupFieldKey as any);
+              const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
               return (
                 <div key={category.id} className="space-y-3">
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
@@ -1017,6 +1010,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               );
             })}
           </div>
+          )}
 
           {/* Geolocation - full width if required */}
           {workflowRequiredFields.includes('geolocation') && (

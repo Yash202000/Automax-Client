@@ -141,7 +141,7 @@ export const DashboardPage: React.FC = () => {
       title: t('dashboard.reportsAnalytics'),
       subtitle: t('dashboard.insightsLogs'),
       description: t('dashboard.viewReportsLogs'),
-      href: '/admin/reports',
+      href: '/reports',
       icon: FileBarChart,
       gradient: 'from-[#5ABEAA] to-[#25A78E]',
       shadowColor: 'shadow-orange-600/20',

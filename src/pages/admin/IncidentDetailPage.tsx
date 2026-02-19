@@ -34,9 +34,10 @@ import {
   Radio,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
+import { TreeSelect, type TreeSelectNode } from '../../components/ui/TreeSelect';
 import { MiniWorkflowView } from '../../components/workflow';
 import { RevisionHistory, ConvertToRequestModal } from '../../components/incidents';
-import { incidentApi, userApi, workflowApi, departmentApi, lookupApi } from '../../api/admin';
+import { incidentApi, userApi, workflowApi, departmentApi, locationApi, classificationApi, lookupApi } from '../../api/admin';
 import { API_URL } from '../../api/client';
 import type {
   IncidentDetail,
@@ -90,6 +91,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionUploading, setTransitionUploading] = useState(false);
   const [transitionFeedbackRating, setTransitionFeedbackRating] = useState<number>(0);
   const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('');
+  const [transitionFieldValues, setTransitionFieldValues] = useState<Record<string, string>>({});
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
   const [convertModalOpen, setConvertModalOpen] = useState(false);
@@ -110,9 +112,6 @@ export const IncidentDetailPage: React.FC = () => {
   const [selectedForCompare, setSelectedForCompare] = useState<IncidentAttachment[]>([]);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [compareSliderPosition, setCompareSliderPosition] = useState(50);
-
-  // Report download state
-  const [downloadingReport, setDownloadingReport] = useState(false);
 
   // Queries
   const { data: incidentData, isLoading, error, refetch } = useQuery({
@@ -153,6 +152,28 @@ export const IncidentDetailPage: React.FC = () => {
   const { data: lookupCategoriesData } = useQuery({
     queryKey: ['admin', 'lookups', 'categories'],
     queryFn: () => lookupApi.listCategories(),
+  });
+
+  // Tree data for field change selectors — fetch trees so the TreeSelect component can show hierarchy
+  const hasFieldChanges = (selectedTransition?.transition?.field_changes?.length ?? 0) > 0;
+  const needsDepts = hasFieldChanges && selectedTransition?.transition?.field_changes?.some(f => f.field_name === 'department_id');
+  const needsLocs = hasFieldChanges && selectedTransition?.transition?.field_changes?.some(f => f.field_name === 'location_id');
+  const needsClassifications = hasFieldChanges && selectedTransition?.transition?.field_changes?.some(f => f.field_name === 'classification_id');
+
+  const { data: fcDepartmentsData } = useQuery({
+    queryKey: ['admin', 'departments', 'tree'],
+    queryFn: () => departmentApi.getTree(),
+    enabled: !!needsDepts,
+  });
+  const { data: fcLocationsData } = useQuery({
+    queryKey: ['admin', 'locations', 'tree'],
+    queryFn: () => locationApi.getTree(),
+    enabled: !!needsLocs,
+  });
+  const { data: fcClassificationsData } = useQuery({
+    queryKey: ['admin', 'classifications', 'tree'],
+    queryFn: () => classificationApi.getTree(),
+    enabled: !!needsClassifications,
   });
 
   // Check if user can convert incident to request
@@ -262,13 +283,14 @@ export const IncidentDetailPage: React.FC = () => {
 
   // Mutations
   const transitionMutation = useMutation({
-    mutationFn: ({ transitionId, comment, attachments, feedback, department_id, user_id }: {
+    mutationFn: ({ transitionId, comment, attachments, feedback, department_id, user_id, field_changes }: {
       transitionId: string;
       comment?: string;
       attachments?: string[];
       feedback?: { rating: number; comment?: string };
       department_id?: string;
       user_id?: string;
+      field_changes?: Record<string, string>;
     }) =>
       incidentApi.transition(id!, {
         transition_id: transitionId,
@@ -277,6 +299,7 @@ export const IncidentDetailPage: React.FC = () => {
         feedback,
         department_id,
         user_id,
+        field_changes,
         version: incident?.version || 1, // Include current version for optimistic locking
       }),
     onSuccess: () => {
@@ -289,6 +312,7 @@ export const IncidentDetailPage: React.FC = () => {
       setTransitionAttachment(null);
       setTransitionFeedbackRating(0);
       setTransitionFeedbackComment('');
+      setTransitionFieldValues({});
       setDepartmentMatchResult(null);
       setUserMatchResult(null);
       setSelectedDepartmentId('');
@@ -387,16 +411,22 @@ export const IncidentDetailPage: React.FC = () => {
     return mimeType.startsWith('audio/');
   };
 
-  // Get attachment URL with auth token
+  // Get attachment URL with auth token (forces download via Content-Disposition: attachment)
   const getAttachmentUrl = (attachmentId: string) => {
     const token = localStorage.getItem('token');
     return `${API_URL}/attachments/${attachmentId}?token=${token}`;
   };
 
+  // Get attachment preview URL (inline display via Content-Disposition: inline)
+  const getAttachmentPreviewUrl = (attachmentId: string) => {
+    const token = localStorage.getItem('token');
+    return `${API_URL}/attachments/${attachmentId}/preview?token=${token}`;
+  };
+
   // Open image in lightbox
   const openLightbox = (attachment: IncidentAttachment) => {
     setLightboxImage({
-      url: getAttachmentUrl(attachment.id),
+      url: getAttachmentPreviewUrl(attachment.id),
       name: attachment.file_name,
     });
     setLightboxOpen(true);
@@ -435,27 +465,24 @@ export const IncidentDetailPage: React.FC = () => {
     setCompareModalOpen(false);
   };
 
-  const handleDownloadReport = async (format: 'pdf' | 'json' | 'txt' = 'pdf') => {
-    if (!incident || !id) return;
+  const [generatingReport, setGeneratingReport] = useState(false);
 
+  const handleDownloadReport = async () => {
+    if (!id || !incident) return;
     try {
-      setDownloadingReport(true);
-      const blob = await incidentApi.downloadReport(id, format);
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `incident_${incident.incident_number}_${new Date().toISOString().split('T')[0]}.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to download report:', error);
-      alert('Failed to download report. Please try again.');
+      setGeneratingReport(true);
+      const lang = i18n.language.startsWith('ar') ? 'ar' : 'en';
+      const blob = await incidentApi.downloadReport(id, 'pdf', lang);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `incident_${incident.incident_number}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download report:', err);
     } finally {
-      setDownloadingReport(false);
+      setGeneratingReport(false);
     }
   };
 
@@ -551,6 +578,15 @@ export const IncidentDetailPage: React.FC = () => {
       return;
     }
 
+    // Validate required field changes
+    const requiredFieldChanges = selectedTransition.transition.field_changes?.filter(f => f.is_required) || [];
+    for (const fc of requiredFieldChanges) {
+      if (!transitionFieldValues[fc.field_name]) {
+        alert(`${fc.label || fc.field_name} is required for this transition`);
+        return;
+      }
+    }
+
     try {
       let attachmentIds: string[] | undefined;
 
@@ -597,6 +633,7 @@ export const IncidentDetailPage: React.FC = () => {
         } : undefined,
         department_id: departmentId,
         user_id: userId,
+        field_changes: Object.keys(transitionFieldValues).length > 0 ? transitionFieldValues : undefined,
       });
     } catch (error) {
       setTransitionUploading(false);
@@ -762,11 +799,11 @@ export const IncidentDetailPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleDownloadReport('pdf')}
-              leftIcon={downloadingReport ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              disabled={downloadingReport}
+              onClick={handleDownloadReport}
+              disabled={generatingReport}
+              leftIcon={generatingReport ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             >
-              {downloadingReport ? t('incidents.downloading', 'Downloading...') : t('incidents.downloadReport', 'Download PDF Report')}
+              {generatingReport ? t('incidents.generating', 'Generating...') : t('incidents.downloadReport', 'Download Report')}
             </Button>
           )}
           <Button
@@ -1124,7 +1161,7 @@ export const IncidentDetailPage: React.FC = () => {
                                     )}
 
                                     <img
-                                      src={getAttachmentUrl(attachment.id)}
+                                      src={getAttachmentPreviewUrl(attachment.id)}
                                       alt={attachment.file_name}
                                       className={cn(
                                         "w-full h-32 object-cover transition-opacity",
@@ -1219,7 +1256,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   <audio
                                     controls
                                     className="w-full h-10"
-                                    src={getAttachmentUrl(attachment.id)}
+                                    src={getAttachmentPreviewUrl(attachment.id)}
                                     preload="metadata"
                                   >
                                     Your browser does not support the audio element.
@@ -1606,6 +1643,7 @@ export const IncidentDetailPage: React.FC = () => {
                   setTransitionComment('');
                   setTransitionFeedbackRating(0);
                   setTransitionFeedbackComment('');
+                  setTransitionFieldValues({});
                 }}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors"
               >
@@ -1884,6 +1922,83 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Field Changes */}
+              {selectedTransition.transition.field_changes && selectedTransition.transition.field_changes.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">Field Changes</p>
+                  {selectedTransition.transition.field_changes.map((fc) => (
+                    <div key={fc.id}>
+                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
+                        {fc.label || fc.field_name}
+                        {fc.is_required && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      {fc.field_name === 'priority' && (
+                        <select
+                          value={transitionFieldValues[fc.field_name] || ''}
+                          onChange={(e) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                        >
+                          <option value="">Select priority...</option>
+                          <option value="1">Low</option>
+                          <option value="2">Medium</option>
+                          <option value="3">High</option>
+                          <option value="4">Urgent</option>
+                          <option value="5">Critical</option>
+                        </select>
+                      )}
+                      {fc.field_name === 'department_id' && (
+                        <TreeSelect
+                          data={(fcDepartmentsData?.data as unknown as TreeSelectNode[]) || []}
+                          value={transitionFieldValues[fc.field_name] || ''}
+                          onChange={(id) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: id }))}
+                          placeholder="Select department..."
+                          leafOnly={false}
+                          maxHeight="240px"
+                        />
+                      )}
+                      {fc.field_name === 'location_id' && (
+                        <TreeSelect
+                          data={(fcLocationsData?.data as unknown as TreeSelectNode[]) || []}
+                          value={transitionFieldValues[fc.field_name] || ''}
+                          onChange={(id) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: id }))}
+                          placeholder="Select location..."
+                          leafOnly={false}
+                          maxHeight="240px"
+                        />
+                      )}
+                      {fc.field_name === 'classification_id' && (
+                        <TreeSelect
+                          data={(fcClassificationsData?.data as unknown as TreeSelectNode[]) || []}
+                          value={transitionFieldValues[fc.field_name] || ''}
+                          onChange={(id) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: id }))}
+                          placeholder="Select classification..."
+                          leafOnly={false}
+                          maxHeight="240px"
+                        />
+                      )}
+                      {fc.field_name === 'title' && (
+                        <input
+                          type="text"
+                          value={transitionFieldValues[fc.field_name] || ''}
+                          onChange={(e) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: e.target.value }))}
+                          placeholder="Enter title..."
+                          className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                        />
+                      )}
+                      {fc.field_name === 'description' && (
+                        <textarea
+                          value={transitionFieldValues[fc.field_name] || ''}
+                          onChange={(e) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: e.target.value }))}
+                          placeholder="Enter description..."
+                          rows={3}
+                          className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Comment */}
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -1911,6 +2026,7 @@ export const IncidentDetailPage: React.FC = () => {
                   setTransitionAttachment(null);
                   setTransitionFeedbackRating(0);
                   setTransitionFeedbackComment('');
+                  setTransitionFieldValues({});
                 }}
               >
                 {t('incidents.cancel')}
@@ -2049,7 +2165,7 @@ export const IncidentDetailPage: React.FC = () => {
             <div className="relative w-full max-w-5xl h-[70vh] overflow-hidden rounded-lg">
               {/* Image 2 (Right/Bottom layer) */}
               <img
-                src={getAttachmentUrl(selectedForCompare[1].id)}
+                src={getAttachmentPreviewUrl(selectedForCompare[1].id)}
                 alt={selectedForCompare[1].file_name}
                 className="absolute inset-0 w-full h-full object-contain"
               />
@@ -2060,7 +2176,7 @@ export const IncidentDetailPage: React.FC = () => {
                 style={{ clipPath: `inset(0 ${100 - compareSliderPosition}% 0 0)` }}
               >
                 <img
-                  src={getAttachmentUrl(selectedForCompare[0].id)}
+                  src={getAttachmentPreviewUrl(selectedForCompare[0].id)}
                   alt={selectedForCompare[0].file_name}
                   className="absolute inset-0 w-full h-full object-contain"
                 />

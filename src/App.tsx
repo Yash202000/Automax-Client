@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { MainLayout, AuthLayout, ProtectedRoute, AdminLayout, AdminProtectedRoute, PermissionRoute, IncidentLayout, RequestLayout, WorkflowLayout, ComplaintsLayout, QueryLayout, CallCentreLayout } from './components/layout';
+import { MainLayout, AuthLayout, ProtectedRoute, AdminLayout, AdminProtectedRoute, PermissionRoute, IncidentLayout, RequestLayout, WorkflowLayout, ComplaintsLayout, QueryLayout, CallCentreLayout, ReportsLayout } from './components/layout';
 import { PERMISSIONS } from './constants/permissions';
 import { SettingsProvider } from './contexts/SettingsContext';
 import {
@@ -60,7 +60,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>
         <Toaster position="top-right" richColors closeButton />
-        <BrowserRouter>
+        <BrowserRouter basename={window.APP_CONFIG?.BASE_PATH || import.meta.env.VITE_BASE_PATH || '/'}>
           <Routes>
           {/* Auth routes */}
           <Route element={<AuthLayout />}>
@@ -110,15 +110,6 @@ function App() {
               {/* Action logs - requires action-logs:view permission */}
               <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.ACTION_LOGS_VIEW]} />}>
                 <Route path="/admin/action-logs" element={<ActionLogsPage />} />
-              </Route>
-              {/* Reports - requires reports:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REPORTS_VIEW]} />}>
-                <Route path="/admin/reports" element={<ReportTemplatesPage />} />
-                <Route path="/admin/reports/builder" element={<ReportBuilderPage />} />
-                <Route path="/admin/reports/builder/:templateId" element={<ReportBuilderPage />} />
-                {/* Report Template Builder */}
-                <Route path="/admin/report-templates" element={<ReportTemplatesListPage />} />
-                <Route path="/admin/report-templates/:id/edit" element={<ReportTemplateBuilderPage />} />
               </Route>
               {/* Lookups - requires lookups:view permission */}
               <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOOKUPS_VIEW]} />}>
@@ -197,8 +188,18 @@ function App() {
             </Route>
           </Route>
 
-          {/* Clean URL redirects */}
-          <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
+          {/* Reports routes - dedicated layout */}
+          <Route element={<AdminProtectedRoute />}>
+            <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REPORTS_VIEW]} />}>
+              <Route element={<ReportsLayout />}>
+                <Route path="/reports" element={<ReportTemplatesPage />} />
+                <Route path="/reports/builder" element={<ReportBuilderPage />} />
+                <Route path="/reports/builder/:templateId" element={<ReportBuilderPage />} />
+                <Route path="/reports/templates" element={<ReportTemplatesListPage />} />
+                <Route path="/reports/templates/:id/edit" element={<ReportTemplateBuilderPage />} />
+              </Route>
+            </Route>
+          </Route>
 
           {/* Call Centre Management - dedicated layout */}
           <Route element={<AdminProtectedRoute />}>

@@ -109,7 +109,7 @@ export function useIncidentWebSocket(
         return;
       }
 
-      const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', ''));
+      const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', '')).replace(/\/$/, '');
 
       // Get user info from localStorage or auth store
       const userStr = localStorage.getItem('user');

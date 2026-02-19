@@ -446,7 +446,7 @@ export const ReportBuilderPage: React.FC = () => {
     setTotalPages(0);
     setPage(1);
     setLoadedTemplate(null);
-    navigate('/admin/reports/builder');
+    navigate('/reports/builder');
   };
 
   // Load a template

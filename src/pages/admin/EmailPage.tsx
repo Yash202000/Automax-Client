@@ -16,17 +16,23 @@ import {
     X,
     Loader2,
     AlertCircle,
-    Download
+    Download,
+    FileText,
+    Save,
 } from 'lucide-react';
 import { RichTextEditor } from '../../components/RichTextEditor';
+import { useAuthStore } from '@/stores/authStore';
+
+type Folder = 'inbox' | 'sent' | 'drafts' | 'trash';
 
 export const EmailPage: React.FC = () => {
     const queryClient = useQueryClient();
-    const [currentFolder, setCurrentFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
+    const [currentFolder, setCurrentFolder] = useState<Folder>('inbox');
     const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
     const [isComposeOpen, setIsComposeOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [page] = useState(1);
+    const { user } = useAuthStore();
 
     // Compose State
     const [composeTo, setComposeTo] = useState('');
@@ -35,6 +41,8 @@ export const EmailPage: React.FC = () => {
     const [composeSubject, setComposeSubject] = useState('');
     const [composeBody, setComposeBody] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
+    // Track if we're editing an existing draft
+    const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
     // Fetch Emails
     const { data: emailData, isLoading } = useQuery({
@@ -45,28 +53,22 @@ export const EmailPage: React.FC = () => {
                 limit: 50,
                 search: searchTerm,
                 channel: 'email',
-                // Map folder to API filters
-                // 'inbox' -> status=received, direction=inbound (assuming conventions)
-                // 'sent' -> direction=outbound
-                // 'trash' -> status=deleted? (Need to check API, for now assuming category logic if supported or status)
+                // For drafts, the same /notifications endpoint is used with category='draft'
+                category: currentFolder === 'drafts' ? 'draft' : currentFolder,
             };
 
             if (currentFolder === 'inbox') {
-                filter.direction = 'inbound';
-            } else if (currentFolder === 'sent') {
-                filter.direction = 'outbound';
-            } else {
-                filter.category = currentFolder;
+                filter.received_by = user?.id || '';
             }
 
             return emailApi.list(filter);
         }
     });
 
+
     const { mutate: getEmailById } = useMutation({
         mutationFn: (id: string) => emailApi.getById(id),
         onSuccess: (response) => {
-            console.log(response)
             setSelectedEmail(response.data || null);
         },
         onError: (error) => {
@@ -78,21 +80,17 @@ export const EmailPage: React.FC = () => {
         useMutation({
             mutationFn: (id: string) => emailApi.attachmentById(id),
 
-            onSuccess: (response, id) => {
-                const blob = new Blob([response.data]);
-
+            onSuccess: (blob: any, id) => {
                 const fileName =
                     selectedEmail?.attachments?.find(att => att.id === id)?.filename ||
                     'attachment';
 
                 const url = window.URL.createObjectURL(blob);
+
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = fileName;
-
-                document.body.appendChild(a);
                 a.click();
-                a.remove();
 
                 window.URL.revokeObjectURL(url);
             },
@@ -102,13 +100,17 @@ export const EmailPage: React.FC = () => {
             }
         });
 
-
-
     const emails = emailData?.data || [];
 
     // Helpers
     const getSender = (email: Email) => {
         if (email.direction === 'outbound') return 'Me';
+        // Use sent_by_user from API response (inbound emails)
+        if (email.sent_by_user) {
+            const { first_name, last_name, email: userEmail } = email.sent_by_user;
+            const fullName = [first_name, last_name].filter(Boolean).join(' ');
+            return fullName || userEmail || 'Unknown';
+        }
         return email.sender || 'Unknown';
     };
 
@@ -119,37 +121,117 @@ export const EmailPage: React.FC = () => {
             .join(', ') || '';
     };
 
+    // Reset compose form
+    const resetCompose = () => {
+        setComposeTo('');
+        setComposeCc('');
+        setComposeBcc('');
+        setComposeSubject('');
+        setComposeBody('');
+        setAttachments([]);
+        setEditingDraftId(null);
+    };
+
+    const closeCompose = () => {
+        setIsComposeOpen(false);
+        resetCompose();
+    };
+
     // Send Email Mutation
     const sendEmailMutation = useMutation({
         mutationFn: (data: { to: string; cc?: string; bcc?: string; subject: string; body: string; attachments?: File[] }) =>
             emailApi.send(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['emails'] });
-            setIsComposeOpen(false);
-            setComposeTo('');
-            setComposeCc('');
-            setComposeBcc('');
-            setComposeSubject('');
-            setComposeBody('');
-            setAttachments([]);
-            // Ideally show success toast
+            closeCompose();
         },
         onError: (error) => {
             console.error('Failed to send email:', error);
-            // Ideally show error toast
+        }
+    });
+
+    // Save Draft Mutation (new draft)
+    const saveDraftMutation = useMutation({
+        mutationFn: (data: { to?: string; cc?: string; bcc?: string; subject?: string; body?: string; attachments?: File[] }) =>
+            emailApi.saveDraft(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['emails'] });
+            closeCompose();
+        },
+        onError: (error) => {
+            console.error('Failed to save draft:', error);
+        }
+    });
+
+    // Update Draft Mutation (existing draft)
+    const updateDraftMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: { to?: string; cc?: string; bcc?: string; subject?: string; body?: string; attachments?: File[] } }) =>
+            emailApi.updateDraft(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['emails'] });
+            closeCompose();
+        },
+        onError: (error) => {
+            console.error('Failed to update draft:', error);
+        }
+    });
+
+    // Send Draft Mutation (send an existing draft)
+    const sendDraftMutation = useMutation({
+        mutationFn: (id: string) => emailApi.sendDraft(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['emails'] });
+            closeCompose();
+        },
+        onError: (error) => {
+            console.error('Failed to send draft:', error);
         }
     });
 
     const handleSendEmail = (e: React.FormEvent) => {
         e.preventDefault();
-        sendEmailMutation.mutate({
-            to: composeTo,
+        if (editingDraftId) {
+            // Send the existing draft directly
+            sendDraftMutation.mutate(editingDraftId);
+        } else {
+            sendEmailMutation.mutate({
+                to: composeTo,
+                cc: composeCc || undefined,
+                bcc: composeBcc || undefined,
+                subject: composeSubject,
+                body: composeBody,
+                attachments: attachments
+            });
+        }
+    };
+
+    const handleSaveDraft = () => {
+        const draftData = {
+            to: composeTo || undefined,
             cc: composeCc || undefined,
             bcc: composeBcc || undefined,
-            subject: composeSubject,
-            body: composeBody,
-            attachments: attachments
-        });
+            subject: composeSubject || undefined,
+            body: composeBody || undefined,
+            attachments: attachments.length > 0 ? attachments : undefined,
+        };
+
+        if (editingDraftId) {
+            updateDraftMutation.mutate({ id: editingDraftId, data: draftData });
+        } else {
+            saveDraftMutation.mutate(draftData);
+        }
+    };
+
+    // Open a draft for editing in the compose window
+    const openDraftForEditing = (email: Email) => {
+        setEditingDraftId(email.id);
+        setComposeTo(getRecipients(email, 'to'));
+        setComposeCc(getRecipients(email, 'cc'));
+        setComposeBcc(getRecipients(email, 'bcc'));
+        setComposeSubject(email.subject || '');
+        setComposeBody(email.body || '');
+        setAttachments([]);
+        setIsComposeOpen(true);
     };
 
     const formatBytes = (bytes: number) => {
@@ -182,7 +264,7 @@ export const EmailPage: React.FC = () => {
 
     const toggleStar = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        const email = emails.find(em => em.id === id);
+        const email = emails.find((em: Email) => em.id === id);
         if (email) {
             starMutation.mutate({ id, is_starred: !email.is_starred });
         }
@@ -196,16 +278,32 @@ export const EmailPage: React.FC = () => {
         },
     });
 
+    const hardDeleteMutation = useMutation({
+        mutationFn: (id: string) => emailApi.hardDelete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['emails'] });
+            setSelectedEmail(null);
+        },
+    });
+
     const deleteEmail = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (window.confirm('Are you sure you want to delete this email?')) {
-            deleteMutation.mutate(id);
+        const email = emails.find((em: Email) => em.id === id);
+        if (email?.category === 'trash') {
+            if (window.confirm('Are you sure you want to delete this email permanently?')) {
+                hardDeleteMutation.mutate(id);
+            }
+        } else {
+            if (window.confirm('Are you sure you want to delete this email?')) {
+                deleteMutation.mutate(id);
+            }
         }
     };
 
     const handleReply = () => {
         if (!selectedEmail) return;
         const sender = getSender(selectedEmail);
+        setEditingDraftId(null);
         setComposeTo(sender);
         setComposeSubject(selectedEmail.subject.startsWith('Re: ') ? selectedEmail.subject : `Re: ${selectedEmail.subject}`);
         setComposeBody(`<br/><br/>---<br/>On ${new Date(selectedEmail.created_at).toLocaleString()}, ${sender} wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body}</blockquote>`);
@@ -214,11 +312,23 @@ export const EmailPage: React.FC = () => {
 
     const handleForward = () => {
         if (!selectedEmail) return;
+        setEditingDraftId(null);
         setComposeTo('');
         setComposeSubject(selectedEmail.subject.startsWith('Fwd: ') ? selectedEmail.subject : `Fwd: ${selectedEmail.subject}`);
         setComposeBody(`<br/><br/>---<br/>Forwarded message from ${getSender(selectedEmail)}:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body}</blockquote>`);
         setIsComposeOpen(true);
     };
+
+    const isSavingDraft = saveDraftMutation.isPending || updateDraftMutation.isPending;
+    const isSendingDraft = sendDraftMutation.isPending;
+    const isSending = sendEmailMutation.isPending || isSendingDraft;
+
+    const folderConfig: { key: Folder; label: string; icon: React.ReactNode }[] = [
+        { key: 'inbox', label: 'Inbox', icon: <Inbox className="w-4 h-4" /> },
+        { key: 'sent', label: 'Sent', icon: <Send className="w-4 h-4" /> },
+        { key: 'drafts', label: 'Drafts', icon: <FileText className="w-4 h-4" /> },
+        { key: 'trash', label: 'Trash', icon: <Trash className="w-4 h-4" /> },
+    ];
 
     return (
         <div className="h-[calc(100vh-100px)] flex bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
@@ -226,7 +336,7 @@ export const EmailPage: React.FC = () => {
             <div className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col hidden md:flex">
                 <div className="p-4">
                     <button
-                        onClick={() => setIsComposeOpen(true)}
+                        onClick={() => { resetCompose(); setIsComposeOpen(true); }}
                         className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors shadow-sm"
                     >
                         <Plus className="w-5 h-5" />
@@ -236,29 +346,16 @@ export const EmailPage: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto py-2">
                     <div className="px-3 space-y-1">
-                        <button
-                            onClick={() => { setCurrentFolder('inbox'); setSelectedEmail(null); }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'inbox' ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Inbox className="w-4 h-4" />
-                                <span>Inbox</span>
-                            </div>
-                        </button>
-                        <button
-                            onClick={() => { setCurrentFolder('sent'); setSelectedEmail(null); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'sent' ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
-                        >
-                            <Send className="w-4 h-4" />
-                            <span>Sent</span>
-                        </button>
-                        <button
-                            onClick={() => { setCurrentFolder('trash'); setSelectedEmail(null); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'trash' ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
-                        >
-                            <Trash className="w-4 h-4" />
-                            <span>Trash</span>
-                        </button>
+                        {folderConfig.map(({ key, label, icon }) => (
+                            <button
+                                key={key}
+                                onClick={() => { setCurrentFolder(key); setSelectedEmail(null); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === key ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                            >
+                                {icon}
+                                <span>{label}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -267,14 +364,15 @@ export const EmailPage: React.FC = () => {
             <div className={`${selectedEmail ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 border-r border-slate-200 bg-white`}>
                 <div className="p-4 border-b border-slate-200">
                     <div className="md:hidden mb-4 flex gap-2">
-                        <button onClick={() => setIsComposeOpen(true)} className="flex-1 bg-violet-600 text-white py-2 rounded-lg text-sm font-medium">Compose</button>
+                        <button onClick={() => { resetCompose(); setIsComposeOpen(true); }} className="flex-1 bg-violet-600 text-white py-2 rounded-lg text-sm font-medium">Compose</button>
                         <select
                             value={currentFolder}
-                            onChange={(e) => { setCurrentFolder(e.target.value as any); setSelectedEmail(null); }}
+                            onChange={(e) => { setCurrentFolder(e.target.value as Folder); setSelectedEmail(null); }}
                             className="bg-slate-50 border border-slate-200 rounded-lg px-2 text-sm"
                         >
                             <option value="inbox">Inbox</option>
                             <option value="sent">Sent</option>
+                            <option value="drafts">Drafts</option>
                             <option value="trash">Trash</option>
                         </select>
                     </div>
@@ -301,21 +399,35 @@ export const EmailPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100">
-                            {emails.map(email => (
+                            {emails.map((email: Email) => (
                                 <div
                                     key={email.id}
-                                    onClick={() => getEmailById(email.id)}
+                                    onClick={() => {
+                                        if (currentFolder === 'drafts') {
+                                            openDraftForEditing(email);
+                                        } else {
+                                            getEmailById(email.id);
+                                        }
+                                    }}
                                     className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors ${selectedEmail?.id === email.id ? 'bg-violet-50 hover:bg-violet-50' : ''} ${!email.is_read ? 'bg-slate-50' : ''}`}
                                 >
                                     <div className="flex items-start justify-between mb-1">
                                         <h3 className={`text-sm truncate pr-2 ${!email.is_read ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
-                                            {getSender(email)}
+                                            {currentFolder === 'drafts'
+                                                ? (getRecipients(email, 'to') || 'No recipient')
+                                                : getSender(email)}
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             {email.status === 'failed' && (
                                                 <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full font-medium">
                                                     <AlertCircle className="w-3 h-3" />
                                                     Failed
+                                                </span>
+                                            )}
+                                            {(email.is_draft || currentFolder === 'drafts') && (
+                                                <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                                                    <FileText className="w-3 h-3" />
+                                                    Draft
                                                 </span>
                                             )}
                                             <span className={`text-xs whitespace-nowrap ${!email.is_read ? 'text-violet-600 font-medium' : 'text-slate-400'}`}>
@@ -326,20 +438,31 @@ export const EmailPage: React.FC = () => {
                                     <div className="flex items-start justify-between">
                                         <div className="min-w-0 flex-1">
                                             <p className={`text-sm mb-1 truncate ${!email.is_read ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
-                                                {email.subject}
+                                                {email.subject || '(No subject)'}
                                             </p>
                                             <p className="text-xs text-slate-500 truncate">
                                                 {stripHtml(email.body)}
                                             </p>
                                         </div>
-                                        <div className="ml-2 flex flex-col gap-2">
+                                        {currentFolder !== 'drafts' && (
+                                            <div className="ml-2 flex flex-col gap-2">
+                                                <button
+                                                    onClick={(e) => toggleStar(e, email.id)}
+                                                    className={`hover:bg-slate-200 p-1 rounded-full transition-colors ${email.is_starred ? 'text-yellow-400' : 'text-slate-300'}`}
+                                                >
+                                                    <Star className="w-4 h-4 fill-current" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        {currentFolder === 'drafts' && (
                                             <button
-                                                onClick={(e) => toggleStar(e, email.id)}
-                                                className={`hover:bg-slate-200 p-1 rounded-full transition-colors ${email.is_starred ? 'text-yellow-400' : 'text-slate-300'}`}
+                                                onClick={(e) => deleteEmail(e, email.id)}
+                                                className="ml-2 p-1 hover:bg-red-50 rounded-full text-slate-300 hover:text-red-500 transition-colors"
+                                                title="Delete draft"
                                             >
-                                                <Star className="w-4 h-4 fill-current" />
+                                                <Trash className="w-4 h-4" />
                                             </button>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -414,7 +537,6 @@ export const EmailPage: React.FC = () => {
                         </div>
 
                         {/* Body */}
-
                         <div className="flex-1 overflow-y-auto p-6">
                             <div
                                 className="prose max-w-none text-slate-800"
@@ -438,7 +560,7 @@ export const EmailPage: React.FC = () => {
                                                     <p className="text-xs text-slate-500">{attachment.size ? formatBytes(attachment.size) : ''}</p>
                                                 </div>
                                                 {attachment.url && (
-                                                    <Download className="w-4 h-4" onClick={() => getAttachment(attachment.id || '')} />
+                                                    <Download className="w-4 h-4 cursor-pointer" onClick={() => getAttachment(attachment.id || '')} />
                                                 )}
                                             </div>
                                         ))}
@@ -463,9 +585,11 @@ export const EmailPage: React.FC = () => {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-                            <h3 className="font-semibold text-slate-900">New Message</h3>
+                            <h3 className="font-semibold text-slate-900">
+                                {editingDraftId ? 'Edit Draft' : 'New Message'}
+                            </h3>
                             <button
-                                onClick={() => setIsComposeOpen(false)}
+                                onClick={closeCompose}
                                 className="text-slate-400 hover:text-slate-600"
                             >
                                 <X className="w-5 h-5" />
@@ -477,7 +601,6 @@ export const EmailPage: React.FC = () => {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">To</label>
                                     <input
                                         type="email"
-                                        required
                                         value={composeTo}
                                         onChange={e => setComposeTo(e.target.value)}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -508,7 +631,6 @@ export const EmailPage: React.FC = () => {
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
                                     <input
                                         type="text"
-                                        required
                                         value={composeSubject}
                                         onChange={e => setComposeSubject(e.target.value)}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -539,26 +661,43 @@ export const EmailPage: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+                            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between gap-3">
+                                {/* Save as Draft button */}
                                 <button
                                     type="button"
-                                    onClick={() => setIsComposeOpen(false)}
-                                    className="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-lg font-medium transition-colors"
+                                    onClick={handleSaveDraft}
+                                    disabled={isSavingDraft}
+                                    className="px-4 py-2 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={sendEmailMutation.isPending}
-                                    className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    {sendEmailMutation.isPending ? (
+                                    {isSavingDraft ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                        <Send className="w-4 h-4" />
+                                        <Save className="w-4 h-4" />
                                     )}
-                                    Send Message
+                                    {editingDraftId ? 'Update Draft' : 'Save as Draft'}
                                 </button>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={closeCompose}
+                                        className="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-lg font-medium transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSending || (!composeTo && !editingDraftId)}
+                                        className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isSending ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Send className="w-4 h-4" />
+                                        )}
+                                        Send Message
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

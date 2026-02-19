@@ -485,6 +485,25 @@ export const INCIDENT_SOURCES: { value: IncidentSource; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+// Workflow matching API request/response
+export interface WorkflowMatchRequest {
+  classification_id?: string;
+  location_id?: string;
+  source?: string;
+  priority?: number;
+}
+
+export interface WorkflowMatchResponse {
+  matched: boolean;
+  workflow_id?: string;
+  workflow_name?: string;
+  workflow_code?: string;
+  record_type?: string;
+  required_fields: string[];
+  initial_state_id?: string;
+  initial_state?: string;
+}
+
 // Workflow matching configuration
 export interface WorkflowMatchConfig {
   classification_ids?: string[];
@@ -585,6 +604,7 @@ export interface WorkflowTransition {
 
   requirements?: TransitionRequirement[];
   actions?: TransitionAction[];
+  field_changes?: TransitionFieldChange[];
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -610,6 +630,22 @@ export interface TransitionAction {
   execution_order: number;
   is_async: boolean;
   is_active: boolean;
+}
+
+export interface TransitionFieldChange {
+  id: string;
+  transition_id: string;
+  field_name: string;
+  label: string;
+  is_required: boolean;
+  sort_order: number;
+}
+
+export interface TransitionFieldChangeRequest {
+  field_name: string;
+  label?: string;
+  is_required: boolean;
+  sort_order?: number;
 }
 
 // Workflow request types
@@ -965,6 +1001,10 @@ export interface IncidentTransitionRequest {
   // Assignment overrides (used when auto-detect finds multiple matches)
   department_id?: string;
   user_id?: string;
+
+  // Field changes configured on the transition (user-editable fields)
+  field_changes?: Record<string, string>;
+
   version: number;
 }
 
@@ -1375,13 +1415,27 @@ export interface Email {
   status: string;
   recipients: EmailRecipient[];
   attachments?: EmailAttachment[];
-  sender?: string; // Optional as it might not be in the root object for all types
-  sent_by?: string; // UUID of user
+  sender?: string;
+  sent_by?: string;
+  sent_by_user?: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
+  received_by?: string;
+  received_by_user?: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
   sent_at?: string;
   created_at: string;
   updated_at?: string;
   is_read: boolean;
   is_starred: boolean;
+  is_draft?: boolean;
   has_attachments?: boolean;
   provider?: string;
   template_code?: string;
@@ -1401,6 +1455,9 @@ export interface EmailFilter {
   category?: string;
   direction?: string;
   is_read?: boolean;
+  is_draft?: boolean;
+  received_by?: string;
+  deleted_at?: string | null;
 }
 
 // SMS types (using same notification structure as Email)

@@ -6,6 +6,8 @@ declare global {
   interface Window {
     APP_CONFIG?: {
       API_URL?: string;
+      WS_URL?: string;
+      BASE_PATH?: string;
     };
   }
 }

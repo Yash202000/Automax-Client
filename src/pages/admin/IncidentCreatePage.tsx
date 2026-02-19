@@ -245,9 +245,7 @@ export function IncidentCreatePage() {
     }
   }, [filteredWorkflows, formData.workflow_id]);
 
-  const matchWorkflow = useCallback(() => {
-    if (filteredWorkflows.length === 0) return;
-
+  const matchWorkflow = useCallback(async () => {
     const priorityValue = getLookupValueFromState('PRIORITY');
 
     const criteria = {
@@ -257,24 +255,28 @@ export function IncidentCreatePage() {
       priority: priorityValue ? priorityValue.sort_order : undefined,
     };
 
-    const matched = workflowApi.findMatchingWorkflow(filteredWorkflows, criteria);
-
-    if (matched) {
-      setAutoMatchedWorkflow(matched);
-      // Always update if auto-matched, or if no workflow is selected yet
-      if (!formData.workflow_id || isAutoMatched) {
-        // Only update if the matched workflow is different from current
-        if (matched.id !== formData.workflow_id) {
-          setFormData(prev => ({ ...prev, workflow_id: matched.id }));
+    try {
+      const result = await workflowApi.matchWorkflow(criteria);
+      if (result.data?.workflow_id) {
+        const matched = workflows.find(w => w.id === result.data!.workflow_id) || null;
+        if (matched) {
+          setAutoMatchedWorkflow(matched);
+          if (!formData.workflow_id || isAutoMatched) {
+            if (matched.id !== formData.workflow_id) {
+              setFormData(prev => ({ ...prev, workflow_id: matched.id }));
+            }
+            setIsAutoMatched(true);
+          }
         }
-        setIsAutoMatched(true);
       }
+    } catch {
+      // Silently fail - let user manually select workflow
     }
-  }, [filteredWorkflows, formData.classification_id, formData.location_id, formData.source, lookupValues, isAutoMatched, formData.workflow_id]);
+  }, [workflows, formData.classification_id, formData.location_id, formData.source, lookupValues, isAutoMatched, formData.workflow_id]);
 
   useEffect(() => {
     matchWorkflow();
-  }, [filteredWorkflows, formData.classification_id, formData.location_id, formData.source, lookupValues]);
+  }, [formData.classification_id, formData.location_id, formData.source, lookupValues]);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
@@ -620,8 +622,9 @@ export function IncidentCreatePage() {
               </div>
             </Card>
 
+            {/* Matching Criteria — drives workflow auto-selection */}
             <Card className="p-6">
-              <h2 className="text-lg font-semibold mb-4">{t('incidents.details')}</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('incidents.matchingCriteria', 'Matching Criteria')}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <TreeSelect
                   label={t('incidents.classification')}
@@ -653,45 +656,64 @@ export function IncidentCreatePage() {
                   required={true}
                   error={errors.source}
                 />
-
-                {incidentLookupCategories.map(category => {
-                  const lookupFieldKey = `lookup:${category.code}`;
-                  // Priority is always required on web, other fields check workflow requirements
-                  const isRequired = category.code === 'PRIORITY' ? true : workflowRequiredFields.includes(lookupFieldKey as any);
-                  return (
+                {incidentLookupCategories
+                  .filter(category => category.code === 'PRIORITY')
+                  .map(category => (
                     <DynamicLookupField
                       key={category.id}
                       category={category}
                       value={lookupValues[category.id]}
                       onChange={handleLookupChange}
-                      required={isRequired}
-                      error={errors[lookupFieldKey]}
+                      required={true}
+                      error={errors[`lookup:${category.code}`]}
                     />
-                  );
-                })}
-
-                {/* Geolocation field - spans full width */}
-                {workflowRequiredFields.includes('geolocation') && (
-                  <div className="col-span-2">
-                    <LocationPicker
-                      label={t('incidents.geolocation', 'Geolocation')}
-                      value={formData.latitude !== undefined && formData.longitude !== undefined ? {
-                        latitude: formData.latitude,
-                        longitude: formData.longitude,
-                        address: formData.address,
-                        city: formData.city,
-                        state: formData.state,
-                        country: formData.country,
-                        postal_code: formData.postal_code,
-                      } : undefined}
-                      onChange={handleLocationChange}
-                      required
-                      error={errors.geolocation}
-                    />
-                  </div>
-                )}
+                  ))}
               </div>
             </Card>
+
+            {/* Additional Details — other workflow-required fields */}
+            {(incidentLookupCategories.some(cat => cat.code !== 'PRIORITY') || workflowRequiredFields.includes('geolocation')) && (
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold mb-4">{t('incidents.additionalDetails', 'Additional Details')}</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {incidentLookupCategories
+                    .filter(category => category.code !== 'PRIORITY')
+                    .map(category => {
+                      const lookupFieldKey = `lookup:${category.code}`;
+                      const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
+                      return (
+                        <DynamicLookupField
+                          key={category.id}
+                          category={category}
+                          value={lookupValues[category.id]}
+                          onChange={handleLookupChange}
+                          required={isRequired}
+                          error={errors[lookupFieldKey]}
+                        />
+                      );
+                    })}
+                  {workflowRequiredFields.includes('geolocation') && (
+                    <div className="col-span-2">
+                      <LocationPicker
+                        label={t('incidents.geolocation', 'Geolocation')}
+                        value={formData.latitude !== undefined && formData.longitude !== undefined ? {
+                          latitude: formData.latitude,
+                          longitude: formData.longitude,
+                          address: formData.address,
+                          city: formData.city,
+                          state: formData.state,
+                          country: formData.country,
+                          postal_code: formData.postal_code,
+                        } : undefined}
+                        onChange={handleLocationChange}
+                        required
+                        error={errors.geolocation}
+                      />
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
 
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">
