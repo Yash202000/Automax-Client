@@ -75,7 +75,7 @@ export const ReportsLayout: React.FC = () => {
   const navLinkClass = (isActive: boolean) =>
     `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
       isActive
-        ? 'bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-lg shadow-blue-500/20'
+        ? 'bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20'
         : 'text-slate-400 hover:text-white hover:bg-white/5'
     }`;
 
@@ -182,7 +182,7 @@ export const ReportsLayout: React.FC = () => {
               {user?.avatar ? (
                 <img src={user.avatar} alt={user.username} className="w-10 h-10 rounded-xl object-cover ring-2 ring-blue-500/30" />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center ring-2 ring-blue-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center ring-2 ring-blue-500/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
