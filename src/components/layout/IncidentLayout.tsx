@@ -149,10 +149,10 @@ export const IncidentLayout: React.FC = () => {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                   )}
                   <List size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.allIncidents')}</span>}
+                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.allIncidents')}</span>}
                 </>
               )}
             </NavLink>
@@ -173,10 +173,10 @@ export const IncidentLayout: React.FC = () => {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                   )}
                   <Plus size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.newIncident')}</span>}
+                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.newIncident')}</span>}
                 </>
               )}
             </NavLink>
@@ -192,16 +192,16 @@ export const IncidentLayout: React.FC = () => {
                 <User size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <>
-                    <span className="ml-3 font-medium text-sm flex-1 text-left">{t('sidebar.myIncidents')}</span>
+                    <span className="ms-3 font-medium text-sm flex-1 text-start">{t('sidebar.myIncidents')}</span>
                     <ChevronRight
                       size={16}
-                      className={`transition-transform duration-200 ${myIncidentsOpen ? 'rotate-90' : ''}`}
+                      className={`transition-transform duration-200 rtl:-rotate-180 ${myIncidentsOpen ? 'rotate-90' : ''}`}
                     />
                   </>
                 )}
               </button>
               {myIncidentsOpen && !collapsed && (
-                <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-2">
+                <div className="ms-4 mt-1 space-y-1 border-l border-white/10 pl-2">
                   <NavLink
                     to="/incidents/my-assigned"
                     onClick={() => setMobileMenuOpen(false)}
@@ -214,7 +214,7 @@ export const IncidentLayout: React.FC = () => {
                     }
                   >
                     <UserCheck size={16} className="flex-shrink-0" />
-                    <span className="ml-2 font-medium text-sm">{t('sidebar.assignedToMe')}</span>
+                    <span className="ms-2 font-medium text-sm">{t('sidebar.assignedToMe')}</span>
                   </NavLink>
                   <NavLink
                     to="/incidents/my-created"
@@ -228,7 +228,7 @@ export const IncidentLayout: React.FC = () => {
                     }
                   >
                     <PenLine size={16} className="flex-shrink-0" />
-                    <span className="ml-2 font-medium text-sm">{t('sidebar.createdByMe')}</span>
+                    <span className="ms-2 font-medium text-sm">{t('sidebar.createdByMe')}</span>
                   </NavLink>
                 </div>
               )}
@@ -251,10 +251,10 @@ export const IncidentLayout: React.FC = () => {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                    <div className="absolute strat-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                   )}
                   <FileText size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.requests', 'Requests')}</span>}
+                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.requests', 'Requests')}</span>}
                 </>
               )}
             </NavLink>
@@ -269,7 +269,7 @@ export const IncidentLayout: React.FC = () => {
               className={`group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-white/5`}
             >
               <Plus size={20} className="flex-shrink-0" />
-              {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.newRequest', 'New Request')}</span>}
+              {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.newRequest', 'New Request')}</span>}
             </button>
           )}
         </div>
@@ -296,7 +296,7 @@ export const IncidentLayout: React.FC = () => {
                   <Circle size={8} className="flex-shrink-0 fill-current" />
                   {!collapsed && (
                     <>
-                      <span className="ml-3 font-medium text-sm flex-1">{status.name}</span>
+                      <span className="ms-3 font-medium text-sm flex-1">{status.name}</span>
                       <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
                         {status.count}
                       </span>
@@ -365,7 +365,7 @@ export const IncidentLayout: React.FC = () => {
           className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ml-3 font-medium text-sm">{t('sidebar.backToHome')}</span>}
+          {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.backToHome')}</span>}
         </NavLink>
       </nav>
 

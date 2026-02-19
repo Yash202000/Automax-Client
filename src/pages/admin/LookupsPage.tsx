@@ -386,8 +386,8 @@ export const LookupsPage: React.FC = () => {
                             </span>
                           )}
                           <ChevronRight className={cn(
-                            "w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform",
-                            selectedCategory?.id === category.id && "transform rotate-90"
+                            "w-4 h-4 text-[hsl(var(--muted-foreground))] rtl:-rotate-180 transition-transform",
+                            selectedCategory?.id === category.id && "transform rotate-90 rtl:rotate-90"
                           )} />
                         </div>
                       </div>

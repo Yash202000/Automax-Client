@@ -50,7 +50,7 @@ const StatCard: React.FC<StatCardProps> = ({
         : 'opacity-50 cursor-not-allowed'
     }`}>
       {/* Background gradient decoration */}
-      <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${gradient} opacity-10 ${hasPermission ? 'group-hover:opacity-20 group-hover:scale-125' : ''} transition-all duration-500`} />
+      <div className={`absolute -top-12 -end-12 w-32 h-32 rounded-full ${gradient} opacity-10 ${hasPermission ? 'group-hover:opacity-20 group-hover:scale-125' : ''} transition-all duration-500`} />
 
       <div className="relative">
         <div className="flex items-start justify-between mb-4">
@@ -58,7 +58,7 @@ const StatCard: React.FC<StatCardProps> = ({
             <Icon className="w-6 h-6 text-white" />
           </div>
           {hasPermission && (
-            <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+            <ArrowUpRight className="w-5 h-5 rtl:-rotate-90 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
           )}
         </div>
 
@@ -255,7 +255,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 text-white">
+      <div className="relative overflow-hidden bg-linear-to-br rtl:bg-linear-to-bl from-primary to-accent rounded-3xl p-8 text-white">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl" />
@@ -271,7 +271,7 @@ export const AdminDashboard: React.FC = () => {
             <h1 className="text-3xl lg:text-4xl font-bold mb-2">
               {t('dashboard.welcome')}, {user?.first_name || user?.username}
             </h1>
-            <p className="text-slate-400 text-lg max-w-xl">
+            <p className="text-slate-300 text-lg max-w-xl">
               {t('dashboard.whatToWorkOn')}
             </p>
           </div>

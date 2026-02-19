@@ -258,7 +258,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
       {label && (
         <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-red-500 ms-1">*</span>}
         </label>
       )}
 
@@ -268,7 +268,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "w-full flex items-center justify-between px-3 py-2.5 bg-[hsl(var(--background))] border rounded-lg text-sm transition-all text-left",
+          "w-full flex items-center justify-between px-3 py-2.5 bg-[hsl(var(--background))] border rounded-lg text-sm transition-all text-start",
           error
             ? "border-red-500 focus:ring-red-500/20"
             : "border-[hsl(var(--border))] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]",

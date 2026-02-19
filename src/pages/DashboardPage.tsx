@@ -199,7 +199,7 @@ export const DashboardPage: React.FC = () => {
               `}
             >
               {/* Background decoration */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 opacity-10">
+              <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
                 <card.icon className="w-full h-full" strokeWidth={0.5} />
               </div>
 
@@ -215,14 +215,14 @@ export const DashboardPage: React.FC = () => {
               {/* Arrow indicator */}
               <div className="relative z-10 flex items-center justify-between mt-3">
                 <p className="text-white/90 text-xs hidden sm:block">{card.description}</p>
-                <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:translate-x-1 transition-all ml-auto">
-                  <ArrowRight className="w-4 h-4 text-white" />
+                <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:rtl:-translate-x-1 group-hover:ltr:translate-x-1 transition-all ms-auto">
+                  <ArrowRight className="w-4 h-4 text-white rtl:-rotate-180" />
                 </div>
               </div>
 
               {/* Hover shine effect */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
               </div>
             </Link>
           ))}
@@ -242,7 +242,7 @@ export const DashboardPage: React.FC = () => {
                 rel="noopener noreferrer"
                 className={`
                   group relative overflow-hidden rounded-2xl p-5
-                  bg-gradient-to-br ${gradient}
+                  bg-linear-to-br ${gradient}
                   shadow-lg ${shadowColor}
                   hover:shadow-xl hover:scale-[1.02]
                   transition-all duration-300 ease-out
@@ -250,7 +250,7 @@ export const DashboardPage: React.FC = () => {
                 `}
               >
                 {/* Background decoration */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 opacity-10">
+                <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
                   {hasImage ? (
                     <img src={appLink.image_url} alt="" className="w-full h-full object-contain" />
                   ) : (

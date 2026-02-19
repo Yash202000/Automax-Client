@@ -13,6 +13,7 @@ import {
   Phone,
   Upload,
 } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 export const SettingsManagementPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -117,7 +118,7 @@ export const SettingsManagementPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl">
+          <div className="p-2 bg-linear-to-br from-primary to-accent rounded-xl">
             <SettingsIcon className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -133,7 +134,7 @@ export const SettingsManagementPage: React.FC = () => {
         {/* Application Branding Section */}
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
-            <FileText className="w-5 h-5 text-violet-600" />
+            <FileText className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Application Branding</h2>
           </div>
 
@@ -147,7 +148,7 @@ export const SettingsManagementPage: React.FC = () => {
                 name="app_name"
                 value={formData.app_name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="e.g., Automax"
                 required
               />
@@ -162,7 +163,7 @@ export const SettingsManagementPage: React.FC = () => {
                 name="app_tagline"
                 value={formData.app_tagline}
                 onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="e.g., Streamline your workflow automation"
               />
             </div>
@@ -176,7 +177,7 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.app_description}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="Short description of your application"
               />
             </div>
@@ -204,13 +205,13 @@ export const SettingsManagementPage: React.FC = () => {
                   className="flex-1 px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="/logo.png or https://cdn.example.com/logo.png"
                 />
-                <button
+                <Button
                   type="button"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className="px-4 py-2  text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
                   Upload
-                </button>
+                </Button>
               </div>
               {formData.logo_url && (
                 <div className="mt-2">
@@ -497,7 +498,7 @@ export const SettingsManagementPage: React.FC = () => {
           <button
             type="submit"
             disabled={updateMutation.isPending}
-            className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-violet-500/30"
+            className="px-6 py-3 bg-gradient-to-r from-primary to-accent text-white rounded-lg hover:from-accent hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-violet-500/30"
           >
             <Save className="w-5 h-5" />
             {updateMutation.isPending ? 'Saving...' : 'Save Settings'}

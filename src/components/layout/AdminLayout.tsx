@@ -159,7 +159,7 @@ export const AdminLayout: React.FC = () => {
       {/* Collapse Button - Desktop */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'left-[60px]' : 'left-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
+        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
         <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
       </button>
@@ -182,7 +182,7 @@ export const AdminLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-primary/20'
+                        ? 'bg-linear-to-r rtl:bg-linear-to-l from-primary to-accent text-white shadow-lg shadow-primary/20'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`
                   }
@@ -190,14 +190,14 @@ export const AdminLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                        <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                       )}
                       <item.icon size={20} className="flex-shrink-0" />
                       {!collapsed && (
                         <>
-                          <span className="ml-3 font-medium text-sm">{t(item.labelKey)}</span>
+                          <span className="ms-3 font-medium text-sm">{t(item.labelKey)}</span>
                           {item.badge && (
-                            <span className="ml-auto bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                            <span className="ms-auto bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
                               {item.badge}
                             </span>
                           )}
@@ -226,7 +226,7 @@ export const AdminLayout: React.FC = () => {
           className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ml-3 font-medium text-sm">{t('admin.backToApp')}</span>}
+          {!collapsed && <span className="ms-3 font-medium text-sm">{t('admin.backToApp')}</span>}
         </NavLink>
       </nav>
 
@@ -276,12 +276,12 @@ export const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen ">
       {/* Desktop Sidebar */}
       <aside
         className={`${
           collapsed ? 'w-[72px]' : 'w-[264px]'
-        } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
+        } bg-sidebar transition-all duration-300 flex-col hidden lg:flex relative`}
       >
         <SidebarContent />
       </aside>

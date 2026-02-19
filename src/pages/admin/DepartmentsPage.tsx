@@ -104,7 +104,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ department, level, onView, onAdd, o
           </button>
           <button
             onClick={() => onView(department.id)}
-            className="text-left hover:opacity-80 transition-opacity"
+            className="text-start hover:opacity-80 transition-opacity"
           >
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors">{department.name}</h4>
             <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">{department.code}</p>

@@ -878,7 +878,7 @@ export const IncidentsPage: React.FC = () => {
                 <span className="font-semibold text-[hsl(var(--foreground))]">{totalItems}</span> {t('incidents.title').toLowerCase()}
               </p>
 
-              <div className="flex items-center gap-2">
+              <div dir='ltr' className="flex items-center gap-2">
                 <button
                   onClick={() => setFilter(prev => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))}
                   disabled={(filter.page || 1) === 1}
