@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { smsApi } from '../../api/admin';
 import type { SMS, SMSFilter } from '../../types';
+import { Button } from '@/components/ui';
 
 export const SMSPage: React.FC = () => {
     const queryClient = useQueryClient();
@@ -91,24 +92,24 @@ export const SMSPage: React.FC = () => {
     };
 
     return (
-        <div className="h-[calc(100vh-100px)] flex bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Sidebar */}
-            <div className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col hidden md:flex">
+            <div className="w-64 bg-card border-r border-slate-200 flex flex-col hidden md:flex">
                 <div className="p-4">
-                    <button
+                    <Button
                         onClick={() => setIsComposeOpen(true)}
-                        className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors shadow-sm"
+                        className="w-full"
                     >
                         <Plus className="w-5 h-5" />
                         <span>New SMS</span>
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto py-2">
                     <div className="px-3 space-y-1">
                         <button
                             onClick={() => { setCurrentFolder('inbox'); setSelectedSMS(null); }}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'inbox' ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'inbox' ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100'}`}
                         >
                             <div className="flex items-center gap-3">
                                 <Inbox className="w-4 h-4" />
@@ -117,14 +118,14 @@ export const SMSPage: React.FC = () => {
                         </button>
                         <button
                             onClick={() => { setCurrentFolder('sent'); setSelectedSMS(null); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'sent' ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'sent' ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100'}`}
                         >
                             <Send className="w-4 h-4" />
                             <span>Sent</span>
                         </button>
                         <button
                             onClick={() => { setCurrentFolder('trash'); setSelectedSMS(null); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'trash' ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === 'trash' ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100'}`}
                         >
                             <Trash className="w-4 h-4" />
                             <span>Trash</span>
@@ -134,10 +135,10 @@ export const SMSPage: React.FC = () => {
             </div>
 
             {/* SMS List */}
-            <div className={`${selectedSMS ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 border-r border-slate-200 bg-white`}>
+            <div className={`${selectedSMS ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 border-r border-slate-200 bg-card`}>
                 <div className="p-4 border-b border-slate-200">
                     <div className="md:hidden mb-4 flex gap-2">
-                        <button onClick={() => setIsComposeOpen(true)} className="flex-1 bg-violet-600 text-white py-2 rounded-lg text-sm font-medium">New SMS</button>
+                        <button onClick={() => setIsComposeOpen(true)} className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium">New SMS</button>
                         <select
                             value={currentFolder}
                             onChange={(e) => { setCurrentFolder(e.target.value as any); setSelectedSMS(null); }}
@@ -156,14 +157,14 @@ export const SMSPage: React.FC = () => {
                             placeholder="Search messages..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         />
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {isLoading ? (
                         <div className="flex justify-center p-8">
-                            <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
                         </div>
                     ) : smsList.length === 0 ? (
                         <div className="p-8 text-center text-slate-500">
@@ -175,7 +176,7 @@ export const SMSPage: React.FC = () => {
                                 <div
                                     key={sms.id}
                                     onClick={() => setSelectedSMS(sms)}
-                                    className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors ${selectedSMS?.id === sms.id ? 'bg-violet-50 hover:bg-violet-50' : ''} ${!sms.is_read ? 'bg-slate-50' : ''}`}
+                                    className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors ${selectedSMS?.id === sms.id ? 'bg-primary/10 hover:bg-primary/10' : ''} ${!sms.is_read ? 'bg-slate-50' : ''}`}
                                 >
                                     <div className="flex items-start justify-between mb-1">
                                         <div className="flex items-center gap-2">
@@ -184,7 +185,7 @@ export const SMSPage: React.FC = () => {
                                                 {getPhoneNumber(sms)}
                                             </h3>
                                         </div>
-                                        <span className={`text-xs whitespace-nowrap ${!sms.is_read ? 'text-violet-600 font-medium' : 'text-slate-400'}`}>
+                                        <span className={`text-xs whitespace-nowrap ${!sms.is_read ? 'text-primary font-medium' : 'text-slate-400'}`}>
                                             {new Date(sms.created_at).toLocaleDateString()}
                                         </span>
                                     </div>
@@ -199,7 +200,7 @@ export const SMSPage: React.FC = () => {
             </div>
 
             {/* SMS Detail */}
-            <div className={`${!selectedSMS ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-white overflow-hidden`}>
+            <div className={`${!selectedSMS ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-card overflow-hidden`}>
                 {selectedSMS ? (
                     <>
                         <div className="p-6 border-b border-slate-200 flex items-start justify-between bg-white">
@@ -209,7 +210,7 @@ export const SMSPage: React.FC = () => {
                                         <X className="w-5 h-5 text-slate-500" />
                                     </button>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold">
+                                        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-primary font-bold">
                                             <Phone className="w-5 h-5" />
                                         </div>
                                         <div>
@@ -268,7 +269,7 @@ export const SMSPage: React.FC = () => {
                                         required
                                         value={composeTo}
                                         onChange={e => setComposeTo(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                         placeholder="+1234567890"
                                     />
                                 </div>
@@ -278,7 +279,7 @@ export const SMSPage: React.FC = () => {
                                         required
                                         value={composeBody}
                                         onChange={e => setComposeBody(e.target.value)}
-                                        className="w-full h-40 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                                        className="w-full h-40 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                                         placeholder="Write your message here..."
                                     />
                                 </div>
@@ -295,7 +296,7 @@ export const SMSPage: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={sendSMSMutation.isPending}
-                                    className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-6 py-2 bg-primary hover:bg-primary text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {sendSMSMutation.isPending ? (
                                         <>

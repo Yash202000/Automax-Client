@@ -119,7 +119,7 @@ export const RequestLayout: React.FC = () => {
         onClick={() => setCollapsed(!collapsed)}
         className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:rotate-180'}`} />
+        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:-rotate-180'}`} />
       </button>
 
       {/* Navigation */}
@@ -182,7 +182,7 @@ export const RequestLayout: React.FC = () => {
                     <span className="ms-3 font-medium text-sm flex-1 text-start">{t('sidebar.myRequests', 'My Requests')}</span>
                     <ChevronRight
                       size={16}
-                      className={`transition-transform duration-200 ${myRequestsOpen ? 'ltr:rotate-90 rtl:-rotate-90' : 'rtl:rotate-180'}`}
+                      className={`transition-transform duration-200 ${myRequestsOpen ? 'rotate-90' : 'rtl:-rotate-180'}`}
                     />
                   </>
                 )}
@@ -432,7 +432,7 @@ export const RequestLayout: React.FC = () => {
             {/* Back to Home */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
               title={t('sidebar.backToHome', 'Back to Home')}
             >
               <Home className="w-5 h-5" />

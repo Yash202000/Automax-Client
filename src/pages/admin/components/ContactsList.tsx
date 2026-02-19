@@ -76,7 +76,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
     return (
         <div className="space-y-6">
             {/* Filters Bar */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div className="bg-card rounded-xl border border-slate-200 p-4 shadow-sm">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute start-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -85,7 +85,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
                             placeholder={t('users.searchPlaceholder', 'Search contacts...')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full ps-12 pe-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 placeholder:text-slate-400"
+                            className="w-full ps-12 pe-4 py-3 bg-slate-50 dark:bg-background border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -103,11 +103,11 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
             </div>
 
             {/* Users Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {isLoading ? (
                     <div className="p-12 text-center">
-                        <div className="inline-flex items-center justify-center w-14 h-14 bg-violet-50 rounded-2xl mb-4">
-                            <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-4">
+                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         </div>
                         <p className="text-slate-500">{t('users.loadingUsers', 'Loading contacts...')}</p>
                     </div>
@@ -173,7 +173,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
                                                                 className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-sm"
                                                             />
                                                         ) : (
-                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-white shadow-sm">
+                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center ring-2 ring-white shadow-sm">
                                                                 <span className="text-white text-sm font-bold">
                                                                     {user.first_name?.[0] || user.username[0]}
                                                                 </span>
@@ -206,7 +206,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
                                             {variant === 'call-centre' && (
                                                 <td className="px-6 py-4">
                                                     {(user as any).extension ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-violet-50 text-violet-700 rounded-lg border border-violet-200">
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-primary/10 text-primary rounded-lg border border-violet-200">
                                                             <Phone className="w-3 h-3" />
                                                             Ext. {(user as any).extension}
                                                         </span>
@@ -295,7 +295,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
                                                             }
                                                         }}
                                                         disabled={!(user as any).extension && !user.phone}
-                                                        className="p-2 text-violet-600 hover:bg-violet-50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                                                        className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                                                         title={(user as any).extension ? `Call ext. ${(user as any).extension}` : user.phone ? `Call ${user.phone}` : 'No extension'}
                                                     >
                                                         <Phone className="w-4 h-4" />
@@ -361,7 +361,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({ variant = 'default' 
                                                 className={cn(
                                                     "w-8 h-8 rounded-lg text-sm font-medium transition-all",
                                                     page === pageNum
-                                                        ? "bg-violet-600 text-white shadow-lg shadow-violet-500/30"
+                                                        ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-primary/30"
                                                         : "text-slate-600 hover:bg-white hover:shadow-sm"
                                                 )}
                                             >

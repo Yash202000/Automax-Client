@@ -119,7 +119,7 @@ export const ComplaintsLayout: React.FC = () => {
         onClick={() => setCollapsed(!collapsed)}
         className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:rotate-180'}`} />
+        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:-rotate-180'}`} />
       </button>
 
       {/* Navigation */}
@@ -182,7 +182,7 @@ export const ComplaintsLayout: React.FC = () => {
                     <span className="ms-3 font-medium text-sm flex-1 text-start">{t('sidebar.myComplaints', 'My Complaints')}</span>
                     <ChevronRight
                       size={16}
-                      className={`transition-transform duration-200 ${myComplaintsOpen ? 'ltr:rotate-90 rtl:-rotate-90' : 'rtl:rotate-180'}`}
+                      className={`transition-transform duration-200 ${myComplaintsOpen ? 'rotate-90' : 'rtl:-rotate-180'}`}
                     />
                   </>
                 )}
@@ -331,10 +331,10 @@ export const ComplaintsLayout: React.FC = () => {
                 <img
                   src={user.avatar}
                   alt={user.username}
-                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-amber-500/30"
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/30"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center ring-2 ring-amber-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center ring-2 ring-primary/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
@@ -423,7 +423,7 @@ export const ComplaintsLayout: React.FC = () => {
                 <input
                   type="text"
                   placeholder={t('sidebar.searchComplaints', 'Search complaints...')}
-                  className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition-all placeholder:text-slate-400"
+                  className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-amber-400 transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -432,7 +432,7 @@ export const ComplaintsLayout: React.FC = () => {
             {/* Back to Home */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
               title={t('sidebar.backToHome', 'Back to Home')}
             >
               <Home className="w-5 h-5" />
@@ -461,7 +461,7 @@ export const ComplaintsLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-amber-50 text-amber-600'
+                          ? 'bg-primary/10 text-primary'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -481,7 +481,7 @@ export const ComplaintsLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-emerald-600 bg-emerald-50'
+                  ? 'text-primary bg-primary/10'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -503,7 +503,7 @@ export const ComplaintsLayout: React.FC = () => {
             {/* Notifications */}
             <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 end-2 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-2 end-2 w-2 h-2 bg-primary rounded-full ring-2 ring-white" />
             </button>
 
             <ThemeToggle/>
@@ -524,7 +524,7 @@ export const ComplaintsLayout: React.FC = () => {
                     className="w-9 h-9 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                     </span>
@@ -535,7 +535,7 @@ export const ComplaintsLayout: React.FC = () => {
                     {user?.first_name || user?.username}
                   </p>
                   <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
-                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-amber-500" />}
+                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-primary" />}
                     {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : user?.roles?.[0]?.name || t('sidebar.user', 'User')}
                   </p>
                 </div>

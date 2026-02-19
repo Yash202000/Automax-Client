@@ -101,9 +101,9 @@ export const WorkflowLayout: React.FC = () => {
       {/* Collapse Button - Desktop */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'left-[60px]' : 'left-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
+        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180 rtl:rotate-0' : 'rtl:-rotate-180'}`} />
       </button>
 
       {/* Navigation */}
@@ -130,10 +130,10 @@ export const WorkflowLayout: React.FC = () => {
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
                 )}
                 <List size={20} className="flex-shrink-0" />
-                {!collapsed && <span className="ml-3 font-medium text-sm">{t('workflows.allWorkflows')}</span>}
+                {!collapsed && <span className="ms-3 font-medium text-sm">{t('workflows.allWorkflows')}</span>}
               </>
             )}
           </NavLink>
@@ -153,10 +153,10 @@ export const WorkflowLayout: React.FC = () => {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                   )}
                   <Plus size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ml-3 font-medium text-sm">{t('workflows.newWorkflow')}</span>}
+                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('workflows.newWorkflow')}</span>}
                 </>
               )}
             </NavLink>
@@ -183,7 +183,7 @@ export const WorkflowLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-emerald-500/20'
+                        ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`
                   }
@@ -191,12 +191,12 @@ export const WorkflowLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                        <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                       )}
                       <Settings size={16} className="flex-shrink-0" />
                       {!collapsed && (
                         <>
-                          <span className="ml-3 font-medium text-sm flex-1 truncate">{workflow.name}</span>
+                          <span className="ms-3 font-medium text-sm flex-1 truncate">{workflow.name}</span>
                           <span className={`text-xs px-1.5 py-0.5 rounded ${workflow.is_active ? 'bg-primary/50 text-white' : 'bg-slate-700 text-slate-400'}`}>
                             {workflow.states_count || 0}
                           </span>
@@ -253,7 +253,7 @@ export const WorkflowLayout: React.FC = () => {
           className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ml-3 font-medium text-sm">{t('workflows.backToHome')}</span>}
+          {!collapsed && <span className="ms-3 font-medium text-sm">{t('workflows.backToHome')}</span>}
         </NavLink>
       </nav>
 
@@ -273,7 +273,7 @@ export const WorkflowLayout: React.FC = () => {
                 <img
                   src={user.avatar}
                   alt={user.username}
-                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/30"
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/30"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center ring-2 ring-primary/30">
@@ -323,7 +323,7 @@ export const WorkflowLayout: React.FC = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -361,11 +361,11 @@ export const WorkflowLayout: React.FC = () => {
             {/* Search - Commented out for now
             <div className="hidden md:flex items-center">
               <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder={t('workflows.searchWorkflows')}
-                  className="w-64 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all placeholder:text-slate-400"
+                  className="w-64 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-emerald-400 transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -374,7 +374,7 @@ export const WorkflowLayout: React.FC = () => {
             {/* Back to Home */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
               title={t('workflows.backToHome')}
             >
               <Home className="w-5 h-5" />
@@ -393,7 +393,7 @@ export const WorkflowLayout: React.FC = () => {
               </button>
 
               {isLangOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
+                <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage')}</p>
                   </div>
@@ -403,12 +403,12 @@ export const WorkflowLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-emerald-50 text-emerald-600'
+                          ? 'bg-primary/10 text-primary'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
                       <span className="text-lg">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
-                      <div className="text-left">
+                      <div className="text-start">
                         <p className="font-medium">{lang.nativeName}</p>
                         <p className="text-xs text-slate-500">{lang.name}</p>
                       </div>
@@ -423,7 +423,7 @@ export const WorkflowLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-emerald-600 bg-emerald-50'
+                  ? 'text-primary bg-primary/10'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -466,13 +466,13 @@ export const WorkflowLayout: React.FC = () => {
                     className="w-9 h-9 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                     </span>
                   </div>
                 )}
-                <div className="hidden sm:block text-left">
+                <div className="hidden sm:block text-start">
                   <p className="text-sm font-semibold text-slate-700 leading-tight">
                     {user?.first_name || user?.username}
                   </p>

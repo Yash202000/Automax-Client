@@ -119,9 +119,9 @@ export const IncidentLayout: React.FC = () => {
       {/* Collapse Button - Desktop */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'left-[60px]' : 'left-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
+        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180 rtl:rotate-0' : 'rtl:-rotate-180'}`} />
       </button>
 
       {/* Navigation */}
@@ -436,13 +436,13 @@ export const IncidentLayout: React.FC = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <button
           onClick={() => setMobileMenuOpen(false)}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white"
+          className="absolute top-4 end-4 p-2 text-slate-400 hover:text-white"
         >
           <X size={20} />
         </button>
@@ -506,7 +506,7 @@ export const IncidentLayout: React.FC = () => {
               </button>
 
               {isLangOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
+                <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage')}</p>
                   </div>
@@ -521,7 +521,7 @@ export const IncidentLayout: React.FC = () => {
                       }`}
                     >
                       <span className="text-lg">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
-                      <div className="text-left">
+                      <div className="text-start">
                         <p className="font-medium">{lang.nativeName}</p>
                         <p className="text-xs text-slate-500">{lang.name}</p>
                       </div>
@@ -559,7 +559,7 @@ export const IncidentLayout: React.FC = () => {
             {/* Notifications */}
             <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:outline-none focus:ring-0">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-2 end-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
 
             <ThemeToggle/>
@@ -586,7 +586,7 @@ export const IncidentLayout: React.FC = () => {
                     </span>
                   </div>
                 )}
-                <div className="hidden sm:block text-left">
+                <div className="hidden sm:block text-start">
                   <p className="text-sm font-semibold text-slate-700 leading-tight">
                     {user?.first_name || user?.username}
                   </p>
@@ -605,7 +605,7 @@ export const IncidentLayout: React.FC = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setUserMenuOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
+                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
                     <div className="px-4 py-3 border-b border-slate-100">
                       <p className="text-sm font-medium text-slate-700">{user?.email}</p>
                     </div>

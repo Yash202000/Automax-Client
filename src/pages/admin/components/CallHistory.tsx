@@ -69,26 +69,26 @@ export const CallHistory: React.FC = () => {
             {/* Page Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">{t('callCentre.callHistory', 'Call History')}</h1>
+                    <h1 className="text-2xl font-bold">{t('callCentre.callHistory', 'Call History')}</h1>
                     <p className="text-slate-500 mt-1">{t('callCentre.historySubtitle', 'View your recent calls')}</p>
                 </div>
                 <button
                     onClick={() => refetch()}
                     disabled={isFetching}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-card border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >
                     <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                     <span className="text-sm font-medium">Refresh</span>
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-200">
-                    <h2 className="text-lg font-semibold text-slate-900">{t('callCentre.recentCalls', 'Recent Calls')}</h2>
+                    <h2 className="text-lg font-semibold ">{t('callCentre.recentCalls', 'Recent Calls')}</h2>
                 </div>
                 {isLoading ? (
                     <div className="p-12 text-center">
-                        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                         <p className="text-slate-500">Loading call history...</p>
                     </div>
                 ) : isPermissionError ? (
@@ -96,7 +96,7 @@ export const CallHistory: React.FC = () => {
                         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ShieldAlert className="w-8 h-8 text-red-500" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-900 mb-2">Access Denied</h3>
+                        <h3 className="text-lg font-semibold  mb-2">Access Denied</h3>
                         <p className="text-slate-500">You don't have permission to view call logs.</p>
                         <p className="text-sm text-slate-400 mt-2">Contact your administrator for access.</p>
                     </div>
