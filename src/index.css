@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@config "../tailwind.config.ts";
 @source "../index.html";
 @source "./**/*.{js,ts,jsx,tsx}";
 
@@ -9,7 +10,7 @@
 @layer base {
   :root {
     /* Base colors - Clean white theme */
-    --background: 0 0% 100%;
+    --background: 210 40% 96%;
     --foreground: 222.2 47.4% 11.2%;
 
     /* Card components - Enhanced contrast */

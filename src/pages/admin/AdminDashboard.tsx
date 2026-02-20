@@ -44,13 +44,13 @@ const StatCard: React.FC<StatCardProps> = ({
   hasPermission = true,
 }) => {
   const CardContent = (
-    <div className={`relative overflow-hidden bg-white rounded-2xl border border-slate-200/60 p-6 transition-all duration-300 ${
+    <div className={`relative overflow-hidden bg-card rounded-2xl border border-slate-200/60 p-6 transition-all duration-300 ${
       hasPermission
-        ? 'hover:shadow-xl hover:shadow-slate-200/50 hover:border-slate-300/60 cursor-pointer'
+        ? 'hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-card hover:border-slate-300/60 cursor-pointer'
         : 'opacity-50 cursor-not-allowed'
     }`}>
       {/* Background gradient decoration */}
-      <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${gradient} opacity-10 ${hasPermission ? 'group-hover:opacity-20 group-hover:scale-125' : ''} transition-all duration-500`} />
+      <div className={`absolute -top-12 -end-12 w-32 h-32 rounded-full ${gradient} opacity-10 ${hasPermission ? 'group-hover:opacity-20 group-hover:scale-125' : ''} transition-all duration-500`} />
 
       <div className="relative">
         <div className="flex items-start justify-between mb-4">
@@ -58,7 +58,7 @@ const StatCard: React.FC<StatCardProps> = ({
             <Icon className="w-6 h-6 text-white" />
           </div>
           {hasPermission && (
-            <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+            <ArrowUpRight className="w-5 h-5 rtl:-rotate-90 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
           )}
         </div>
 
@@ -67,7 +67,7 @@ const StatCard: React.FC<StatCardProps> = ({
           {isLoading ? (
             <div className="h-9 w-20 bg-slate-200 animate-pulse rounded-lg" />
           ) : (
-            <p className="text-3xl font-bold text-slate-800">{count.toLocaleString()}</p>
+            <p className="text-3xl font-bold ">{count.toLocaleString()}</p>
           )}
         </div>
 
@@ -191,8 +191,8 @@ export const AdminDashboard: React.FC = () => {
       description: t('dashboard.createTrackManage'),
       icon: AlertTriangle,
       href: '/incidents',
-      color: 'text-red-600',
-      bg: 'bg-red-50 hover:bg-red-100',
+      color: 'text-red-600 dark:text-red-400',
+      bg: 'bg-red-50 hover:bg-red-100 dark:border-red-500/40 ',
       hasPermission: canViewIncidentsDashboard,
     },
     {
@@ -200,8 +200,8 @@ export const AdminDashboard: React.FC = () => {
       description: t('dashboard.designConfigure'),
       icon: GitBranch,
       href: '/workflows',
-      color: 'text-cyan-600',
-      bg: 'bg-cyan-50 hover:bg-cyan-100',
+      color: 'text-cyan-600 dark:text-cyan-400', 
+      bg: 'bg-cyan-50 hover:bg-cyan-100 dark:border-cyan-500/40 ',
       hasPermission: canViewWorkflowsDashboard,
     },
     {
@@ -209,8 +209,8 @@ export const AdminDashboard: React.FC = () => {
       description: t('dashboard.userAccessControl'),
       icon: Users,
       href: '/admin/users',
-      color: 'text-blue-600',
-      bg: 'bg-blue-50 hover:bg-blue-100',
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-50 hover:bg-blue-100 dark:border-blue-500/40',
       hasPermission: canViewAdminDashboard,
     },
     {
@@ -218,8 +218,8 @@ export const AdminDashboard: React.FC = () => {
       description: t('admin.permissions'),
       icon: Shield,
       href: '/admin/roles',
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50 hover:bg-emerald-100',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-500/40',
       hasPermission: canViewAdminDashboard,
     },
   ];
@@ -255,7 +255,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 text-white">
+      <div className="relative overflow-hidden bg-linear-to-br rtl:bg-linear-to-bl from-primary to-accent rounded-3xl p-8 text-white">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl" />
@@ -271,7 +271,7 @@ export const AdminDashboard: React.FC = () => {
             <h1 className="text-3xl lg:text-4xl font-bold mb-2">
               {t('dashboard.welcome')}, {user?.first_name || user?.username}
             </h1>
-            <p className="text-slate-400 text-lg max-w-xl">
+            <p className="text-slate-300 text-lg max-w-xl">
               {t('dashboard.whatToWorkOn')}
             </p>
           </div>
@@ -289,7 +289,7 @@ export const AdminDashboard: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">{t('dashboard.title')}</h2>
+            <h2 className="text-xl font-bold ">{t('dashboard.title')}</h2>
             <p className="text-slate-500 text-sm">{t('dashboard.insightsLogs')}</p>
           </div>
         </div>
@@ -304,10 +304,10 @@ export const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Quick Actions */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+          <div className="bg-card rounded-2xl border border-slate-200/60 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">{t('dashboard.quickActions')}</h3>
+                <h3 className="text-lg font-bold ">{t('dashboard.quickActions')}</h3>
                 <p className="text-sm text-slate-500">{t('common.actions')}</p>
               </div>
               <Zap className="w-5 h-5 text-amber-500" />
@@ -331,10 +331,10 @@ export const AdminDashboard: React.FC = () => {
                   <Link
                     key={action.title}
                     to={action.href}
-                    className={`group p-4 rounded-xl ${action.bg} transition-all duration-200`}
+                    className={`group p-4 rounded-xl ${action.bg} dark:bg-white/5  dark:border  dark:hover:bg-white/10 backdrop-blur-xl transition-all duration-200`}
                   >
-                    <action.icon className={`w-6 h-6 ${action.color} mb-3`} />
-                    <p className="font-semibold text-slate-800 text-sm">{action.title}</p>
+                    <action.icon className={`w-6 h-6 ${action.color}  mb-3`} />
+                    <p className="font-semibold  text-sm">{action.title}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{action.description}</p>
                   </Link>
                 );
@@ -345,10 +345,10 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Recent Activity */}
         <div className="lg:col-span-3">
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 h-full">
+          <div className="bg-card rounded-2xl border border-slate-200/60 p-6 h-full">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">{t('admin.actionLogs')}</h3>
+                <h3 className="text-lg font-bold ">{t('admin.actionLogs')}</h3>
                 <p className="text-sm text-slate-500">{t('dashboard.insightsLogs')}</p>
               </div>
               {hasPermission(PERMISSIONS.ACTION_LOGS_VIEW) && (
@@ -386,16 +386,19 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* System Health */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
+      <div className="bg-card rounded-2xl border border-slate-200/60 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">{t('admin.systemSettings')}</h3>
+            <h3 className="text-lg font-bold ">{t('admin.systemSettings')}</h3>
             <p className="text-sm text-slate-500">{t('dashboard.allSystemsOperational')}</p>
           </div>
-          <span className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-lg">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            {t('profile.active')}
+          <span className=" relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 backdrop-blur-md dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-400/20">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
+          {t('profile.active')}
+        </span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -405,13 +408,14 @@ export const AdminDashboard: React.FC = () => {
             { name: 'Cache', status: 'Redis active', latency: '3ms', color: 'emerald' },
             { name: 'API Server', status: 'Operational', latency: '45ms', color: 'emerald' },
           ].map((service) => (
-            <div key={service.name} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div key={service.name} className=" relative overflow-hidden p-4 rounded-2xl  bg-white/70 dark:bg-white/5 backdrop-blur-xl  dark:border border-slate-200/60 dark:border-white/10 shadow-sm hover:shadow-lg transition-all duration-300  hover:-translate-y-0.5"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-2.5 h-2.5 bg-${service.color}-500 rounded-full`} />
-                <span className="text-sm font-semibold text-slate-700">{service.name}</span>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{service.name}</span>
               </div>
-              <p className="text-lg font-bold text-slate-900">{service.status}</p>
-              <p className="text-xs text-slate-400 mt-1">Latency: {service.latency}</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">{service.status}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">Latency: {service.latency}</p>
             </div>
           ))}
         </div>

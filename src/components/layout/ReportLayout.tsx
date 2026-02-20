@@ -7,28 +7,33 @@ import {
   LogOut,
   Home,
   Bell,
+  Search,
   Menu,
   X,
   ChevronDown,
+  ChevronRight,
   Sparkles,
-  Plus,
   List,
-  Settings,
+  Circle,
+  User,
+  UserCheck,
+  PenLine,
   Languages,
+  Link2,
   Phone,
+  FileBarChart,
+  LayoutTemplate,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
 import { setLoggingOut } from '../../api/client';
-import { workflowApi } from '../../api/admin';
+import { incidentApi } from '../../api/admin';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
-import type { Workflow } from '../../types';
-import SoftPhone from '../sip/Softphone';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
-import ThemeToggle from '../common/ThemeToggle';
+import SoftPhone from '../sip/Softphone';
 
-export const WorkflowLayout: React.FC = () => {
+export const ReportLayout: React.FC = () => {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,7 +45,7 @@ export const WorkflowLayout: React.FC = () => {
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin } = usePermissions();
-  const canCreateWorkflow = isSuperAdmin || hasPermission(PERMISSIONS.WORKFLOWS_CREATE);
+  const canViewAllReports = hasPermission(PERMISSIONS.REPORTS_VIEW) || isSuperAdmin;
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -63,13 +68,7 @@ export const WorkflowLayout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch workflows
-  const { data: workflowsData } = useQuery({
-    queryKey: ['workflows'],
-    queryFn: () => workflowApi.list(),
-  });
-
-  const workflows: Workflow[] = workflowsData?.data || [];
+  
 
   const handleLogout = async () => {
     // Set flag to prevent 401 interceptor from running during logout
@@ -89,6 +88,8 @@ export const WorkflowLayout: React.FC = () => {
     navigate('/login');
   };
 
+ 
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo Section */}
@@ -103,7 +104,7 @@ export const WorkflowLayout: React.FC = () => {
         onClick={() => setCollapsed(!collapsed)}
         className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180 rtl:rotate-0' : 'rtl:-rotate-180'}`} />
+        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:rotate-180'}`} />
       </button>
 
       {/* Navigation */}
@@ -111,36 +112,14 @@ export const WorkflowLayout: React.FC = () => {
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t('workflows.actions')}
+            {t('sidebar.actions', 'Actions')}
           </p>
         )}
         <div className="space-y-1">
-          <NavLink
-            to="/workflows"
-            end
-            onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) =>
-              `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                isActive
-                  ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
-                )}
-                <List size={20} className="flex-shrink-0" />
-                {!collapsed && <span className="ms-3 font-medium text-sm">{t('workflows.allWorkflows')}</span>}
-              </>
-            )}
-          </NavLink>
-
-          {canCreateWorkflow && (
+          {canViewAllReports && (
             <NavLink
-              to="/workflows/new"
+              to="/reports"
+              end
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
                 `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
@@ -153,96 +132,48 @@ export const WorkflowLayout: React.FC = () => {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
                   )}
-                  <Plus size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('workflows.newWorkflow')}</span>}
+                  <FileBarChart size={20} className="flex-shrink-0" />
+                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('admin.reports', 'All Reports')}</span>}
                 </>
               )}
             </NavLink>
           )}
-        </div>
 
-        {/* Workflow List */}
-        {workflows.length > 0 && (
-          <>
-            {!collapsed && (
-              <>
-                <div className="my-6 border-t border-white/5" />
-                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                  {t('workflows.yourWorkflows')}
-                </p>
-              </>
-            )}
-            <div className="space-y-1">
-              {workflows.map((workflow) => (
-                <NavLink
-                  key={workflow.id}
-                  to={`/workflows/${workflow.id}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                      )}
-                      <Settings size={16} className="flex-shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="ms-3 font-medium text-sm flex-1 truncate">{workflow.name}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${workflow.is_active ? 'bg-primary/50 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                            {workflow.states_count || 0}
-                          </span>
-                        </>
-                      )}
-                    </>
+          {canViewAllReports && (
+             <NavLink
+              to="/report-templates"
+              end
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
                   )}
-                </NavLink>
-              ))}
-            </div>
-          </>
-        )}
+                  <LayoutTemplate size={20} className="flex-shrink-0" />
+                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('admin.reportTemplates', 'Report Templates')}</span>}
+                </>
+              )}
+            </NavLink>
+          )}
 
-        {/* Quick Stats */}
-        {!collapsed && workflows.length > 0 && (
-          <>
-            <div className="my-6 border-t border-white/5" />
-            <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('workflows.overview')}
-            </p>
-            <div className="px-3 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{t('workflows.totalWorkflows')}</span>
-                <span className="text-white font-semibold">{workflows.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{t('workflows.active')}</span>
-                <span className="text-primary font-semibold">
-                  {workflows.filter(w => w.is_active).length}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{t('workflows.inactive')}</span>
-                <span className="text-slate-400 font-semibold">
-                  {workflows.filter(w => !w.is_active).length}
-                </span>
-              </div>
-            </div>
-          </>
-        )}
+         
+        </div>
 
         {!collapsed && (
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('workflows.quickLinks')}
+              {t('sidebar.quickLinks', 'Quick Links')}
             </p>
           </>
         )}
@@ -253,7 +184,7 @@ export const WorkflowLayout: React.FC = () => {
           className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ms-3 font-medium text-sm">{t('workflows.backToHome')}</span>}
+          {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.backToHome', 'Back to Home')}</span>}
         </NavLink>
       </nav>
 
@@ -267,16 +198,16 @@ export const WorkflowLayout: React.FC = () => {
             <LogOut size={20} />
           </button>
         ) : (
-          <div className="p-3 bg-linear-to-br from-slate-800/80 to-slate-800/40 rounded-xl border border-white/5">
+          <div className="p-3 bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-xl border border-white/5">
             <div className="flex items-center gap-3">
               {user?.avatar ? (
                 <img
                   src={user.avatar}
                   alt={user.username}
-                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/30"
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-violet-500/30"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center ring-2 ring-primary/30">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center ring-2 ring-violet-500/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
@@ -294,7 +225,7 @@ export const WorkflowLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t('workflows.signOut')}
+              {t('sidebar.signOut', 'Sign Out')}
             </button>
           </div>
         )}
@@ -303,7 +234,7 @@ export const WorkflowLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-slate-100">
       {/* Desktop Sidebar */}
       <aside
         className={`${
@@ -324,12 +255,12 @@ export const WorkflowLayout: React.FC = () => {
       {/* Mobile Sidebar */}
       <aside
         className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          mobileMenuOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
         }`}
       >
         <button
           onClick={() => setMobileMenuOpen(false)}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white"
+          className="absolute top-4 end-4 p-2 text-slate-400 hover:text-white"
         >
           <X size={20} />
         </button>
@@ -350,11 +281,11 @@ export const WorkflowLayout: React.FC = () => {
 
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-400">{t('workflows.title')}</span>
+              <span className="text-slate-400">{t('admin.reports', 'Reports')}</span>
               <span className="text-slate-300">/</span>
-              <span className="font-semibold text-slate-700">{t('workflows.designer')}</span>
+              <span className="font-semibold text-slate-700">{t('sidebar.management', 'Management')}</span>
             </div>
-            <h1 className="text-lg font-bold text-slate-800 sm:hidden">{t('workflows.title')}</h1>
+            <h1 className="text-lg font-bold text-slate-800 sm:hidden">{t('admin.reports', 'Reports')}</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -364,8 +295,8 @@ export const WorkflowLayout: React.FC = () => {
                 <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={t('workflows.searchWorkflows')}
-                  className="w-64 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-emerald-400 transition-all placeholder:text-slate-400"
+                  placeholder={t('sidebar.searchQueries', 'Search queries...')}
+                  className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -374,11 +305,11 @@ export const WorkflowLayout: React.FC = () => {
             {/* Back to Home */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-              title={t('workflows.backToHome')}
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-violet-50 rounded-xl transition-colors"
+              title={t('sidebar.backToHome', 'Back to Home')}
             >
               <Home className="w-5 h-5" />
-              <span className="hidden md:inline text-sm font-medium">{t('workflows.backToHome')}</span>
+              <span className="hidden md:inline text-sm font-medium">{t('sidebar.backToHome', 'Back to Home')}</span>
             </Link>
 
             {/* Language Switcher */}
@@ -386,16 +317,16 @@ export const WorkflowLayout: React.FC = () => {
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-1.5 p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                title={t('settings.language')}
+                title={t('settings.language', 'Language')}
               >
                 <Languages className="w-5 h-5" />
                 <span className="text-xs font-medium uppercase">{currentLang}</span>
               </button>
 
               {isLangOpen && (
-                <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
+                <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage')}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage', 'Select Language')}</p>
                   </div>
                   {supportedLanguages.map((lang) => (
                     <button
@@ -403,7 +334,7 @@ export const WorkflowLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-primary/10 text-primary'
+                          ? 'bg-primary/50 text-primary'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -423,7 +354,7 @@ export const WorkflowLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-primary bg-primary/10'
+                  ? 'text-emerald-600 bg-emerald-50'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -434,22 +365,14 @@ export const WorkflowLayout: React.FC = () => {
               showSip={showSoftphone}
               onClose={() => setShowSoftphone(false)}
               settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
-              auth={{
-                user: {
-                  userID: user?.id || '',
-                  extension: (user as any)?.extension || '',
-                }
-              }}
+              auth={{}}
             />
 
             {/* Notifications */}
-            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors focus:outline-none focus:ring-0">
+            <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-2 end-2 w-2 h-2 bg-primary rounded-full ring-2 ring-white" />
             </button>
-
-            <ThemeToggle/>
-
             {/* Divider */}
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
 
@@ -457,7 +380,7 @@ export const WorkflowLayout: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 p-1.5 pr-3 hover:bg-slate-50 rounded-xl transition-colors focus:outline-none focus:ring-0"
+                className="flex items-center gap-3 p-1.5 pe-3 hover:bg-slate-50 rounded-xl transition-colors"
               >
                 {user?.avatar ? (
                   <img
@@ -477,8 +400,8 @@ export const WorkflowLayout: React.FC = () => {
                     {user?.first_name || user?.username}
                   </p>
                   <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
-                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-amber-500" />}
-                    {user?.is_super_admin ? t('profile.superAdmin') : user?.roles?.[0]?.name || t('sidebar.user')}
+                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-primary" />}
+                    {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : user?.roles?.[0]?.name || t('sidebar.user', 'User')}
                   </p>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -491,7 +414,7 @@ export const WorkflowLayout: React.FC = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setUserMenuOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in origin-top-right">
+                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                     <div className="px-4 py-3 border-b border-slate-100">
                       <p className="text-sm font-medium text-slate-700">{user?.email}</p>
                     </div>
@@ -502,7 +425,7 @@ export const WorkflowLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t('workflows.backToHome')}
+                        {t('sidebar.backToHome', 'Back to Home')}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -514,7 +437,7 @@ export const WorkflowLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t('workflows.signOut')}
+                        {t('sidebar.signOut', 'Sign Out')}
                       </button>
                     </div>
                   </div>

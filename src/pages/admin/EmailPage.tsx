@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { RichTextEditor } from '../../components/RichTextEditor';
 import { useAuthStore } from '@/stores/authStore';
+import { Button } from '@/components/ui';
 
 type Folder = 'inbox' | 'sent' | 'drafts' | 'trash';
 
@@ -331,17 +332,17 @@ export const EmailPage: React.FC = () => {
     ];
 
     return (
-        <div className="h-[calc(100vh-100px)] flex bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Sidebar */}
-            <div className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col hidden md:flex">
+            <div className="w-64 bg-card border-r border-slate-200 flex flex-col hidden md:flex">
                 <div className="p-4">
-                    <button
+                    <Button
                         onClick={() => { resetCompose(); setIsComposeOpen(true); }}
-                        className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors shadow-sm"
-                    >
+                        className="w-full"
+                        >
                         <Plus className="w-5 h-5" />
                         <span>Compose</span>
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto py-2">
@@ -350,7 +351,7 @@ export const EmailPage: React.FC = () => {
                             <button
                                 key={key}
                                 onClick={() => { setCurrentFolder(key); setSelectedEmail(null); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === key ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === key ? 'bg-primary/5 text-primary' : 'text-slate-600 hover:bg-slate-100'}`}
                             >
                                 {icon}
                                 <span>{label}</span>
@@ -361,10 +362,10 @@ export const EmailPage: React.FC = () => {
             </div>
 
             {/* Email List */}
-            <div className={`${selectedEmail ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 border-r border-slate-200 bg-white`}>
+            <div className={`${selectedEmail ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 border-r border-slate-200 bg-card`}>
                 <div className="p-4 border-b border-slate-200">
                     <div className="md:hidden mb-4 flex gap-2">
-                        <button onClick={() => { resetCompose(); setIsComposeOpen(true); }} className="flex-1 bg-violet-600 text-white py-2 rounded-lg text-sm font-medium">Compose</button>
+                        <button onClick={() => { resetCompose(); setIsComposeOpen(true); }} className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium">Compose</button>
                         <select
                             value={currentFolder}
                             onChange={(e) => { setCurrentFolder(e.target.value as Folder); setSelectedEmail(null); }}
@@ -384,14 +385,14 @@ export const EmailPage: React.FC = () => {
                             placeholder="Search mail..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         />
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {isLoading ? (
                         <div className="flex justify-center p-8">
-                            <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
                         </div>
                     ) : emails.length === 0 ? (
                         <div className="p-8 text-center text-slate-500">
@@ -430,7 +431,7 @@ export const EmailPage: React.FC = () => {
                                                     Draft
                                                 </span>
                                             )}
-                                            <span className={`text-xs whitespace-nowrap ${!email.is_read ? 'text-violet-600 font-medium' : 'text-slate-400'}`}>
+                                            <span className={`text-xs whitespace-nowrap ${!email.is_read ? 'text-primary font-medium' : 'text-slate-400'}`}>
                                                 {new Date(email.created_at).toLocaleDateString()}
                                             </span>
                                         </div>
@@ -472,7 +473,7 @@ export const EmailPage: React.FC = () => {
             </div>
 
             {/* Email Detail / Reading Pane */}
-            <div className={`${!selectedEmail ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-white overflow-hidden`}>
+            <div className={`${!selectedEmail ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-card overflow-hidden`}>
                 {selectedEmail ? (
                     <>
                         {/* Header */}
@@ -493,7 +494,7 @@ export const EmailPage: React.FC = () => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold">
+                                        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-primary font-bold">
                                             {getSender(selectedEmail).charAt(0).toUpperCase()}
                                         </div>
                                         <div>
@@ -553,7 +554,7 @@ export const EmailPage: React.FC = () => {
                                         {selectedEmail.attachments.map(attachment => (
                                             <div key={attachment.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3">
                                                 <div className="p-2 bg-white rounded-lg border border-slate-100">
-                                                    <Paperclip className="w-4 h-4 text-violet-600" />
+                                                    <Paperclip className="w-4 h-4 text-primary" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-slate-700 truncate">{attachment.filename}</p>
@@ -603,7 +604,7 @@ export const EmailPage: React.FC = () => {
                                         type="email"
                                         value={composeTo}
                                         onChange={e => setComposeTo(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                         placeholder="recipient@example.com"
                                     />
                                 </div>
@@ -613,7 +614,7 @@ export const EmailPage: React.FC = () => {
                                         type="email"
                                         value={composeCc}
                                         onChange={e => setComposeCc(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                         placeholder="cc@example.com"
                                     />
                                 </div>
@@ -623,7 +624,7 @@ export const EmailPage: React.FC = () => {
                                         type="email"
                                         value={composeBcc}
                                         onChange={e => setComposeBcc(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                         placeholder="bcc@example.com"
                                     />
                                 </div>
@@ -633,7 +634,7 @@ export const EmailPage: React.FC = () => {
                                         type="text"
                                         value={composeSubject}
                                         onChange={e => setComposeSubject(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                                         placeholder="Subject"
                                     />
                                 </div>
@@ -688,7 +689,7 @@ export const EmailPage: React.FC = () => {
                                     <button
                                         type="submit"
                                         disabled={isSending || (!composeTo && !editingDraftId)}
-                                        className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                                        className="px-6 py-2 bg-primary hover:bg-violet-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {isSending ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />

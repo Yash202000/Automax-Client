@@ -30,6 +30,7 @@ import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n'
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import SoftPhone from '../sip/Softphone';
+import ThemeToggle from '../common/ThemeToggle';
 import { CreateQueryModal } from '@/components/queries/CreateQueryModal';
 
 export const QueryLayout: React.FC = () => {
@@ -118,7 +119,7 @@ export const QueryLayout: React.FC = () => {
         onClick={() => setCollapsed(!collapsed)}
         className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:rotate-180'}`} />
+        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:-rotate-180'}`} />
       </button>
 
       {/* Navigation */}
@@ -138,7 +139,7 @@ export const QueryLayout: React.FC = () => {
               className={({ isActive }) =>
                 `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                    ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`
               }
@@ -181,7 +182,7 @@ export const QueryLayout: React.FC = () => {
                     <span className="ms-3 font-medium text-sm flex-1 text-start">{t('sidebar.myQueries', 'My Queries')}</span>
                     <ChevronRight
                       size={16}
-                      className={`transition-transform duration-200 ${myQueriesOpen ? 'ltr:rotate-90 rtl:-rotate-90' : 'rtl:rotate-180'}`}
+                      className={`transition-transform duration-200 ${myQueriesOpen ? 'rotate-90' : 'rtl:-rotate-180'}`}
                     />
                   </>
                 )}
@@ -194,7 +195,7 @@ export const QueryLayout: React.FC = () => {
                     className={({ isActive }) =>
                       `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                          ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`
                     }
@@ -208,7 +209,7 @@ export const QueryLayout: React.FC = () => {
                     className={({ isActive }) =>
                       `group relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                          ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`
                     }
@@ -333,7 +334,7 @@ export const QueryLayout: React.FC = () => {
                   className="w-10 h-10 rounded-xl object-cover ring-2 ring-violet-500/30"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-violet-500/30">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center ring-2 ring-violet-500/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
@@ -431,7 +432,7 @@ export const QueryLayout: React.FC = () => {
             {/* Back to Home */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
               title={t('sidebar.backToHome', 'Back to Home')}
             >
               <Home className="w-5 h-5" />
@@ -460,7 +461,7 @@ export const QueryLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-violet-50 text-violet-600'
+                          ? 'bg-primary/10 text-primary'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -480,7 +481,7 @@ export const QueryLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-emerald-600 bg-emerald-50'
+                  ? 'text-primary bg-primary/10'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -502,9 +503,9 @@ export const QueryLayout: React.FC = () => {
             {/* Notifications */}
             <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 end-2 w-2 h-2 bg-violet-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-2 end-2 w-2 h-2 bg-primary rounded-full ring-2 ring-white" />
             </button>
-
+            <ThemeToggle/>
             {/* Divider */}
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
 
@@ -521,7 +522,7 @@ export const QueryLayout: React.FC = () => {
                     className="w-9 h-9 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                     </span>
@@ -532,7 +533,7 @@ export const QueryLayout: React.FC = () => {
                     {user?.first_name || user?.username}
                   </p>
                   <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
-                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-violet-500" />}
+                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-primary" />}
                     {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : user?.roles?.[0]?.name || t('sidebar.user', 'User')}
                   </p>
                 </div>
@@ -580,7 +581,7 @@ export const QueryLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100">
+        <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
               <Outlet />

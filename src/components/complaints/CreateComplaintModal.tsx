@@ -569,7 +569,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary to-accent flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -697,7 +697,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t('complaints.titlePlaceholder', 'Enter request title...')}
                 className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
                   errors.title ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               />
@@ -721,7 +721,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 placeholder={t('complaints.descriptionPlaceholder', 'Describe the request...')}
                 rows={3}
                 className={cn(
-                  "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none",
+                  "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none",
                   errors.description ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               />
@@ -806,7 +806,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                     }}
                     onFocus={() => setShowIncidentSearch(true)}
                     placeholder={t('complaints.searchSourceIncident', 'Search for incident/request number or title...')}
-                    className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
                   />
                 </div>
 
@@ -815,7 +815,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                     {incidentsLoading ? (
                       <div className="p-4 text-center">
-                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                       </div>
                     ) : searchedIncidents.length === 0 ? (
                       <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
@@ -867,7 +867,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
               {workflowsLoading ? (
                 <div className="flex items-center justify-center py-4">
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : filteredWorkflows.length === 0 ? (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -891,7 +891,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                       className={cn(
                         "w-full p-2 rounded-lg text-left transition-colors text-sm",
                         workflowId === workflow.id
-                          ? "bg-blue-500/10 text-blue-700 border border-blue-500"
+                          ? "bg-primary/10 text-primary border border-primary"
                           : "hover:bg-[hsl(var(--muted)/0.5)]"
                       )}
                     >
@@ -899,7 +899,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                         <div className={cn(
                           "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0",
                           workflowId === workflow.id
-                            ? "border-blue-500 bg-blue-500"
+                            ? "border-primary bg-primary"
                             : "border-[hsl(var(--muted-foreground))]"
                         )}>
                           {workflowId === workflow.id && (
@@ -942,7 +942,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                     value={lookupValues[category.id] || ''}
                     onChange={(e) => handleLookupChange(category.id, e.target.value)}
                     className={cn(
-                      "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                      "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
                       errors[lookupFieldKey] ? "border-red-500" : "border-[hsl(var(--border))]"
                     )}
                   >
@@ -1013,7 +1013,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   setSelectedDepartment(dept || null);
                 }}
                 className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
                   errors.department ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               >
@@ -1052,7 +1052,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   setSelectedAssignee(user || null);
                 }}
                 className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
                   errors.assignee ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               >
@@ -1090,7 +1090,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
                   errors.due_date ? "border-red-500" : "border-[hsl(var(--border))]"
                 )}
               />
@@ -1142,7 +1142,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 </div>
               )}
               <label htmlFor="complaint-attachments" className={cn(
-                "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors",
+                "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors",
                 errors.attachments ? "border-red-500" : "border-[hsl(var(--border))]"
               )}>
                 <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
@@ -1176,7 +1176,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg transition-all",
                   isRecording
                     ? "border-red-500 bg-red-50 hover:bg-red-100"
-                    : "border-[hsl(var(--border))] hover:border-blue-500 hover:bg-blue-50"
+                    : "border-[hsl(var(--border))] hover:border-primary hover:bg-blue-50"
                 )}
               >
                 {isRecording ? (
@@ -1230,7 +1230,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             disabled={createMutation.isPending}
             isLoading={createMutation.isPending}
             leftIcon={!createMutation.isPending ? <CheckCircle2 className="w-4 h-4" /> : undefined}
-            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
+            className="bg-gradient-to-r from-primary to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
           >
             {t('complaints.create', 'Create Complaint')}
           </Button>

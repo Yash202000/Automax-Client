@@ -83,7 +83,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.usersRolesPermissions'),
       href: '/admin',
       icon: Settings,
-      gradient: 'from-violet-500 to-purple-600',
+      gradient: 'from-[#A7B1BA] to-[#777E84]',
       shadowColor: 'shadow-violet-500/20',
       permissions: [PERMISSIONS.DASHBOARD_ADMIN],
     },
@@ -93,7 +93,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.createTrackManage'),
       href: '/incidents',
       icon: AlertTriangle,
-      gradient: 'from-blue-500 to-cyan-500',
+      gradient: 'from-[#5997F8] to-[#2968CC]',
       shadowColor: 'shadow-blue-500/20',
       permissions: [PERMISSIONS.DASHBOARD_INCIDENTS],
     },
@@ -103,7 +103,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.manageServiceRequests', 'Handle and track service requests'),
       href: '/requests',
       icon: FileText,
-      gradient: 'from-emerald-500 to-teal-500',
+      gradient: 'from-[#73C54F] to-[#469822]',
       shadowColor: 'shadow-emerald-500/20',
       permissions: [PERMISSIONS.DASHBOARD_REQUESTS],
     },
@@ -113,7 +113,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.manageComplaints', 'Handle and resolve complaints'),
       href: '/complaints',
       icon: MessageSquareWarning,
-      gradient: 'from-amber-600 to-orange-700',
+      gradient: 'from-[#EF9D39] to-[#C17B26]',
       shadowColor: 'shadow-amber-600/20',
       permissions: [PERMISSIONS.DASHBOARD_COMPLAINTS],
     },
@@ -123,7 +123,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.manageQueries', 'Handle and respond to queries'),
       href: '/queries',
       icon: HelpCircle,
-      gradient: 'from-violet-500 to-purple-500',
+      gradient: 'from-[#DC68B2] to-[#B13283]',
       shadowColor: 'shadow-violet-500/20',
       permissions: [PERMISSIONS.DASHBOARD_QUERIES],
     },
@@ -133,7 +133,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.buildWorkflows'),
       href: '/workflows',
       icon: GitBranch,
-      gradient: 'from-rose-500 to-pink-500',
+      gradient: 'from-[#5C39EF] to-[#3B22A2]',
       shadowColor: 'shadow-rose-500/20',
       permissions: [PERMISSIONS.DASHBOARD_WORKFLOWS],
     },
@@ -143,7 +143,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.viewReportsLogs'),
       href: '/reports',
       icon: FileBarChart,
-      gradient: 'from-orange-600 to-amber-700',
+      gradient: 'from-[#5ABEAA] to-[#25A78E]',
       shadowColor: 'shadow-orange-600/20',
       permissions: [PERMISSIONS.REPORTS_VIEW],
     },
@@ -153,7 +153,7 @@ export const DashboardPage: React.FC = () => {
       description: t('dashboard.viewCall'),
       href: '/call-centre',
       icon: PhoneCallIcon,
-      gradient: 'from-orange-500 to-amber-500',
+      gradient: 'from-[#EF5C39] to-[#9D3A22]',
       shadowColor: 'shadow-orange-500/20',
       permissions: [],
     }
@@ -169,7 +169,7 @@ export const DashboardPage: React.FC = () => {
       {/* Welcome Section */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-xl">
+          <div className="p-2 bg-linear-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-xl">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
@@ -191,15 +191,15 @@ export const DashboardPage: React.FC = () => {
               to={card.href}
               className={`
                 group relative overflow-hidden rounded-2xl p-5
-                bg-gradient-to-br ${card.gradient}
-                shadow-lg ${card.shadowColor}
+                bg-linear-to-b ${card.gradient}
+                shadow-lg 
                 hover:shadow-xl hover:scale-[1.02]
                 transition-all duration-300 ease-out
                 min-h-[160px] flex flex-col justify-between
               `}
             >
               {/* Background decoration */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 opacity-10">
+              <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
                 <card.icon className="w-full h-full" strokeWidth={0.5} />
               </div>
 
@@ -215,14 +215,14 @@ export const DashboardPage: React.FC = () => {
               {/* Arrow indicator */}
               <div className="relative z-10 flex items-center justify-between mt-3">
                 <p className="text-white/90 text-xs hidden sm:block">{card.description}</p>
-                <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:translate-x-1 transition-all ml-auto">
-                  <ArrowRight className="w-4 h-4 text-white" />
+                <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:rtl:-translate-x-1 group-hover:ltr:translate-x-1 transition-all ms-auto">
+                  <ArrowRight className="w-4 h-4 text-white rtl:-rotate-180" />
                 </div>
               </div>
 
               {/* Hover shine effect */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
               </div>
             </Link>
           ))}
@@ -242,7 +242,7 @@ export const DashboardPage: React.FC = () => {
                 rel="noopener noreferrer"
                 className={`
                   group relative overflow-hidden rounded-2xl p-5
-                  bg-gradient-to-br ${gradient}
+                  bg-linear-to-br ${gradient}
                   shadow-lg ${shadowColor}
                   hover:shadow-xl hover:scale-[1.02]
                   transition-all duration-300 ease-out
@@ -250,7 +250,7 @@ export const DashboardPage: React.FC = () => {
                 `}
               >
                 {/* Background decoration */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 opacity-10">
+                <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
                   {hasImage ? (
                     <img src={appLink.image_url} alt="" className="w-full h-full object-contain" />
                   ) : (

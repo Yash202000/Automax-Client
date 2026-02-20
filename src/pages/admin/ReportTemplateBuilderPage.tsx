@@ -42,6 +42,9 @@ import {
   createDefaultTableElement,
   createDefaultDynamicFieldElement,
   generateElementId,
+  createDefaultLineElement,
+  createDefaultShapeElement,
+  createDefaultChartElement,
 } from '../../types/reportTemplate';
 import {
   getTemplate,
@@ -101,6 +104,8 @@ const ReportTemplateBuilderPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'elements' | 'page' | 'header' | 'footer' | 'properties'>('elements');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [selectedHeaderElementId, setSelectedHeaderElementId] = useState<string | null>(null);
+
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -236,6 +241,15 @@ const ReportTemplateBuilderPage: React.FC = () => {
       case 'dynamic_field':
         newElement = createDefaultDynamicFieldElement(x, y, 'date');
         break;
+      case 'line':
+        newElement = createDefaultLineElement(x, y);
+        break;
+      case 'shape':
+        newElement = createDefaultShapeElement(x, y);
+        break;
+      case 'chart':
+        newElement = createDefaultChartElement(x, y, dataSource);
+        break;
       default:
         newElement = createDefaultTextElement(x, y);
     }
@@ -243,6 +257,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
     setElements(prev => [...prev, newElement]);
     setSelectedElementId(newElement.id);
     setActiveTab('properties');
+    setSelectedHeaderElementId(null);
   };
 
   const updateElement = (elementId: string, updates: Partial<TemplateElement>) => {
@@ -300,7 +315,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
     setSelectedElementId(elementId);
     setIsDragging(true);
 
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setDragOffset({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
@@ -324,9 +339,38 @@ const ReportTemplateBuilderPage: React.FC = () => {
     });
   };
 
-  const handleCanvasMouseUp = () => {
+   const handleCanvasMouseUp = () => {
     setIsDragging(false);
   };
+
+  // header elements
+  const updateHeaderElement = (elementId: string, updates: Partial<TemplateElement>) => {
+  setHeader(prev => ({
+    ...prev,
+    elements: prev.elements.map(el =>
+      el.id === elementId ? { ...el, ...updates } : el
+    ),
+  }));
+};
+
+const updateHeaderElementContent = (elementId: string, content: TemplateElement['content']) => {
+  setHeader(prev => ({
+    ...prev,
+    elements: prev.elements.map(el =>
+      el.id === elementId ? { ...el, content } : el
+    ),
+  }));
+};
+
+const deleteHeaderElement = (elementId: string) => {
+  setHeader(prev => ({
+    ...prev,
+    elements: prev.elements.filter(el => el.id !== elementId),
+  }));
+  setSelectedHeaderElementId(null);
+};
+
+ 
 
   const selectedElement = elements.find(el => el.id === selectedElementId);
 
@@ -358,7 +402,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+      <div className="bg-background border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/reports/templates')}
@@ -378,7 +422,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
               type="text"
               value={templateDescription}
               onChange={(e) => setTemplateDescription(e.target.value)}
-              className="text-sm text-gray-500 border-none focus:ring-0 p-0 bg-transparent block w-full"
+              className="text-sm text-gray-500 dark:text-gray-300 border-none focus:ring-0 p-0 bg-transparent block w-full"
               placeholder="Add description..."
             />
           </div>
@@ -387,10 +431,10 @@ const ReportTemplateBuilderPage: React.FC = () => {
           <select
             value={dataSource}
             onChange={(e) => setDataSource(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm"
+            className="border rounded-lg px-3 py-2 text-sm "
           >
             {DATA_SOURCES.map(ds => (
-              <option key={ds.key} value={ds.key}>{ds.label}</option>
+              <option className='text-black' key={ds.key} value={ds.key}>{ds.label}</option>
             ))}
           </select>
           <label className="flex items-center gap-2 text-sm">
@@ -404,14 +448,14 @@ const ReportTemplateBuilderPage: React.FC = () => {
           </label>
           <button
             onClick={handlePreview}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 border rounded-lg dark:hover:bg-gray-700 hover:bg-gray-100"
           >
             <Eye className="h-4 w-4" />
             Preview
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 border rounded-lg dark:hover:bg-gray-700 hover:bg-gray-100"
             disabled={!id || id === 'new'}
           >
             <Download className="h-4 w-4" />
@@ -420,7 +464,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving...' : 'Save'}
@@ -431,7 +475,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Toolbox */}
-        <div className="w-64 bg-white border-r overflow-y-auto">
+        <div className="w-64 bg-card border-r overflow-y-auto">
           {/* Tabs */}
           <div className="flex border-b">
             {(['elements', 'page', 'header', 'footer'] as const).map(tab => (
@@ -440,8 +484,8 @@ const ReportTemplateBuilderPage: React.FC = () => {
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 px-3 py-2 text-xs font-medium capitalize ${
                   activeTab === tab
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-500  hover:text-gray-700  dark:text-gray-300  dark:hover:text-gray-400'
                 }`}
               >
                 {tab}
@@ -452,21 +496,21 @@ const ReportTemplateBuilderPage: React.FC = () => {
           <div className="p-4">
             {activeTab === 'elements' && (
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-700">Add Elements</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Elements</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {ELEMENT_TOOLS.map(tool => (
                     <button
                       key={tool.type}
                       onClick={() => addElement(tool.type)}
-                      className="flex flex-col items-center gap-1 p-3 border rounded-lg hover:bg-gray-50 hover:border-blue-300"
+                      className="flex flex-col items-center gap-1 p-3 border rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 hover:border-blue-300"
                     >
-                      <tool.icon className="h-5 w-5 text-gray-600" />
-                      <span className="text-xs text-gray-600">{tool.label}</span>
+                      <tool.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{tool.label}</span>
                     </button>
                   ))}
                 </div>
 
-                <h3 className="text-sm font-medium text-gray-700 mt-6">Element List</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-6">Element List</h3>
                 <div className="space-y-1">
                   {elements.map((element, index) => (
                     <div
@@ -477,12 +521,12 @@ const ReportTemplateBuilderPage: React.FC = () => {
                       }}
                       className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
                         selectedElementId === element.id
-                          ? 'bg-blue-50 border border-blue-200'
-                          : 'hover:bg-gray-50'
+                          ? 'bg-blue-50 dark:bg-white/5 border border-blue-200'
+                          : 'hover:bg-gray-50 dark:hover:bg-white/5'
                       }`}
                     >
                       <GripVertical className="h-4 w-4 text-gray-400" />
-                      <span className="flex-1 text-sm truncate capitalize">
+                      <span className="flex-1 text-sm truncate capitalize ">
                         {element.type === 'text' && (element.content as TextContent).text?.slice(0, 20)}
                         {element.type === 'table' && 'Data Table'}
                         {element.type === 'image' && 'Image'}
@@ -519,7 +563,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
 
             {activeTab === 'page' && (
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-700">Page Settings</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Page Settings</h3>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Page Size</label>
                   <select
@@ -587,7 +631,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
             {activeTab === 'header' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-700">Header</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Header</h3>
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -627,23 +671,73 @@ const ReportTemplateBuilderPage: React.FC = () => {
                       />
                       <span className="text-xs">Show on all pages</span>
                     </label>
-                    <button
+                    <div className='space-y-2'>
+                      <button
                       onClick={() => {
-                        const logoElement = createDefaultImageElement(5, 5);
                         const titleElement = createDefaultTextElement(60, 10);
                         (titleElement.content as TextContent).text = templateName;
                         (titleElement.content as TextContent).font.size = 16;
                         (titleElement.content as TextContent).font.weight = 'bold';
                         setHeader(prev => ({
                           ...prev,
-                          elements: [...prev.elements, logoElement, titleElement],
+                          elements: [...prev.elements, titleElement],
                         }));
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 text-sm"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm cursor-pointer"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Logo + Title
+                     Add Title
                     </button>
+                    <button
+                      onClick={() => {
+                        const logoElement = createDefaultImageElement(5, 5);
+                        setHeader(prev => ({
+                          ...prev,
+                          elements: [...prev.elements, logoElement],
+                        }));
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Logo/Image
+                    </button>
+                    </div>
+                    {header.elements.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h4 className="text-xs font-medium text-gray-600 mb-2">
+                          Header Elements List
+                        </h4>
+
+                        <div className="space-y-1">
+                          {header.elements.map((el) => (
+                            <div
+                              key={el.id}
+                               onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedHeaderElementId(el.id);
+                                  setSelectedElementId(null);
+                                  setActiveTab('properties');
+                                }}
+                              className={`p-2 rounded cursor-pointer text-sm flex items-center justify-between ${
+                                selectedHeaderElementId === el.id
+                                  ? "bg-blue-50 border border-blue-200"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                              }`}
+                            >
+                              {el.type === "text" &&
+                                (el.content as TextContent).text?.slice(0, 25)}
+
+                              {el.type === "image" && "Logo Image"}
+                               <button
+                                onClick={(e) => { e.stopPropagation(); deleteHeaderElement(el.id); }}
+                                className="p-1 hover:bg-red-100 rounded text-red-500" >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -652,7 +746,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
             {activeTab === 'footer' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-700">Footer</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Footer</h3>
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -709,16 +803,31 @@ const ReportTemplateBuilderPage: React.FC = () => {
               </div>
             )}
 
-            {activeTab === 'properties' && selectedElement && (
-              <ElementPropertiesPanel
-                element={selectedElement}
-                onUpdate={(updates) => updateElement(selectedElement.id, updates)}
-                onUpdateContent={(content) => updateElementContent(selectedElement.id, content)}
-                onDelete={() => deleteElement(selectedElement.id)}
-                onDuplicate={() => duplicateElement(selectedElement.id)}
-                availableFields={availableFields}
-              />
-            )}
+           {activeTab === 'properties' && (
+                <>
+                  {selectedElement && (
+                    <ElementPropertiesPanel
+                      element={selectedElement}
+                      onUpdate={(updates) => updateElement(selectedElement.id, updates)}
+                      onUpdateContent={(content) => updateElementContent(selectedElement.id, content)}
+                      onDelete={() => deleteElement(selectedElement.id)}
+                      onDuplicate={() => duplicateElement(selectedElement.id)}
+                      availableFields={availableFields}
+                    />
+                  )}
+
+                  {selectedHeaderElementId && (
+                    <ElementPropertiesPanel
+                      element={header.elements.find(el => el.id === selectedHeaderElementId)!}
+                      onUpdate={(updates) => updateHeaderElement(selectedHeaderElementId, updates)}
+                      onUpdateContent={(content) => updateHeaderElementContent(selectedHeaderElementId, content)}
+                      onDelete={() => deleteHeaderElement(selectedHeaderElementId)}
+                      onDuplicate={() => {}}
+                      availableFields={availableFields}
+                    />
+                  )}
+                </>
+              )}
           </div>
         </div>
 
@@ -742,7 +851,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
             {/* Header Preview */}
             {header.enabled && (
               <div
-                className="border-b border-dashed border-gray-300"
+                className="relative border-b border-dashed border-gray-300"
                 style={{
                   height: `${header.height}mm`,
                   backgroundColor: header.background || 'transparent',
@@ -751,28 +860,61 @@ const ReportTemplateBuilderPage: React.FC = () => {
               >
                 <div className="text-xs text-gray-400 mb-1">Header Area</div>
                 {header.elements.map(el => (
-                  <div
-                    key={el.id}
-                    className="absolute"
-                    style={{
-                      left: `${el.position.x}mm`,
-                      top: `${el.position.y}mm`,
-                      width: `${el.size.width}mm`,
-                      height: `${el.size.height}mm`,
-                    }}
-                  >
-                    {el.type === 'text' && (
-                      <span style={{ fontSize: `${(el.content as TextContent).font.size}pt` }}>
-                        {(el.content as TextContent).text}
-                      </span>
-                    )}
-                    {el.type === 'image' && (el.content as ImageContent).source && (
-                      <img
-                        src={(el.content as ImageContent).source}
-                        alt=""
-                        className="w-full h-full object-contain"
-                      />
-                    )}
+                <div
+                  key={el.id}
+                  className={`absolute ${
+                    selectedHeaderElementId === el.id
+                      ? 'ring-2 ring-blue-500'
+                      : 'hover:ring-1 hover:ring-gray-300'
+                  } ${el.locked ? 'opacity-75' : ''}`}
+                  style={{
+                    left: el.position.relative ? undefined : `${el.position.x}mm`,
+                    top: el.position.relative ? undefined : `${el.position.y}mm`,
+                    width: el.size.width > 0 ? `${el.size.width}mm` : 'auto',
+                    height: el.size.auto_height ? 'auto' : `${el.size.height}mm`,
+                    zIndex: el.z_index,
+                    backgroundColor: el.style.background_color,
+                    borderWidth: el.style.border_width,
+                    borderColor: el.style.border_color,
+                    borderStyle: el.style.border_style,
+                    borderRadius: el.style.border_radius,
+                    opacity: el.style.opacity ?? 1,
+                    position: el.position.relative ? 'relative' : 'absolute',
+                  }}
+                  onClick={() => {
+                    setSelectedHeaderElementId(el.id);
+                    setActiveTab('properties');
+                    setSelectedElementId(null);
+                  }}
+                >
+                  {el.type === 'text' && (
+                    <div
+                      style={{
+                        fontFamily: (el.content as TextContent).font.family,
+                        fontSize: `${(el.content as TextContent).font.size}pt`,
+                        fontWeight: (el.content as TextContent).font.weight,
+                        fontStyle: (el.content as TextContent).font.style,
+                        color: (el.content as TextContent).font.color,
+                        textAlign: (el.content as TextContent).alignment,
+                      }}
+                    >
+                      {(el.content as TextContent).text || 'Enter text...'}
+                    </div>
+                  )}
+
+                  {el.type === 'image' && (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
+                      {(el.content as ImageContent).source ? (
+                        <img
+                          src={(el.content as ImageContent).source}
+                          alt={(el.content as ImageContent).alt || ''}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      ) : (
+                        <Image className="h-8 w-8 text-gray-400" />
+                      )}
+                    </div>
+                  )}
                   </div>
                 ))}
               </div>
@@ -812,6 +954,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
                   onClick={() => {
                     setSelectedElementId(element.id);
                     setActiveTab('properties');
+                    setSelectedHeaderElementId(null);
                   }}
                 >
                   {element.type === 'text' && (

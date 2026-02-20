@@ -974,7 +974,7 @@ export const IncidentsPage: React.FC = () => {
                 <span className="font-semibold text-[hsl(var(--foreground))]">{totalItems}</span> {t('incidents.title').toLowerCase()}
               </p>
 
-              <div className="flex items-center gap-2">
+              <div dir='ltr' className="flex items-center gap-2">
                 <button
                   onClick={() => setFilter(prev => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))}
                   disabled={(filter.page || 1) === 1}
@@ -1003,7 +1003,7 @@ export const IncidentsPage: React.FC = () => {
                         className={cn(
                           "w-10 h-10 rounded-lg text-sm font-semibold transition-all",
                           currentPage === pageNum
-                            ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-lg shadow-[hsl(var(--primary)/0.3)]"
+                            ? "bg-linear-to-br from-primary to-accent text-[hsl(var(--primary-foreground))] shadow-lg shadow-[hsl(var(--primary)/0.3)]"
                             : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card))] hover:border-[hsl(var(--border))] border border-transparent"
                         )}
                       >

@@ -573,7 +573,7 @@ export function IncidentCreatePage() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('incidents.createIncident')}</h1>
+          <h1 className="text-2xl font-bold">{t('incidents.createIncident')}</h1>
           <p className="text-gray-600">{t('incidents.createIncidentSubtitle')}</p>
         </div>
       </div>
@@ -597,7 +597,7 @@ export function IncidentCreatePage() {
                       className="w-full px-4 py-2 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"
                     />
                     <svg
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

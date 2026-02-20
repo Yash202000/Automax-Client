@@ -238,7 +238,7 @@ export const ReportTemplatesPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500">
+            <div className="p-2 rounded-lg bg-linear-to-br from-primary to-accent">
               <FileBarChart className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">{t('reports.templates')}</h1>

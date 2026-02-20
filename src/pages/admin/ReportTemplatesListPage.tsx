@@ -24,6 +24,7 @@ import {
   downloadReport,
 } from '../../services/reportTemplateApi';
 import type { ReportTemplate, GenerateReportRequest } from '../../types/reportTemplate';
+import { Button } from '@/components/ui';
 
 interface ExportFilters {
   date_from?: string;
@@ -207,20 +208,20 @@ const ReportTemplatesListPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Report Templates</h1>
+          <h1 className="text-2xl font-bold">Report Templates</h1>
           <p className="text-gray-500 mt-1">Create and manage customizable report templates</p>
         </div>
-        <button
+        <Button
           onClick={() => navigate('/reports/templates/new/edit')}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center gap-2 px-4 py-2"
         >
           <Plus className="h-5 w-5" />
           New Template
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-lg shadow mb-6">
+      <div className="bg-card rounded-lg shadow mb-6">
         <div className="p-4 border-b">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -260,15 +261,15 @@ const ReportTemplatesListPage: React.FC = () => {
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="p-4 hover:bg-gray-50 flex items-center justify-between"
+                className="p-4 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center justify-between"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-primary" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-gray-900">{template.name}</h3>
+                      <h3 className="font-medium">{template.name}</h3>
                       {template.is_default && (
                         <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
                           <Star className="h-3 w-3" />

@@ -1151,7 +1151,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'incident'
-                      ? "border-blue-500 bg-blue-50"
+                      ? "border-blue-500 bg-blue-500/20"
                       : "border-[hsl(var(--border))] hover:border-blue-300"
                   )}>
                     <input
@@ -1184,7 +1184,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'request'
-                      ? "border-emerald-500 bg-emerald-50"
+                      ? "border-emerald-500 bg-emerald-500/20"
                       : "border-[hsl(var(--border))] hover:border-emerald-300"
                   )}>
                     <input
@@ -1217,7 +1217,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'both'
-                      ? "border-purple-500 bg-purple-50"
+                      ? "border-purple-500 bg-purple-500/20"
                       : "border-[hsl(var(--border))] hover:border-purple-300"
                   )}>
                     <input
@@ -1250,7 +1250,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'complaint'
-                      ? "border-amber-500 bg-amber-50"
+                      ? "border-amber-500 bg-amber-500/20"
                       : "border-[hsl(var(--border))] hover:border-amber-300"
                   )}>
                     <input
@@ -1316,7 +1316,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <label className={cn(
                     "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
                     matchingConfig.record_type === 'all'
-                      ? "border-gray-500 bg-gray-50"
+                      ? "border-gray-500 bg-gray-500/20"
                       : "border-[hsl(var(--border))] hover:border-gray-300"
                   )}>
                     <input

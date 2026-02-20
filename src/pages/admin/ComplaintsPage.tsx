@@ -314,7 +314,7 @@ export const ComplaintsPage: React.FC = () => {
               size="sm"
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              className="bg-linear-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
             >
               {t('complaints.createComplaint', 'Create Complaint')}
             </Button>
@@ -547,8 +547,8 @@ export const ComplaintsPage: React.FC = () => {
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="p-12 text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-500/10 rounded-2xl mb-4">
-              <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-4">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">{t('complaints.loading', 'Loading complaints...')}</p>
           </div>
@@ -567,7 +567,7 @@ export const ComplaintsPage: React.FC = () => {
               <Button
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                className="bg-linear-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
               >
                 {t('complaints.createFirstComplaint', 'Create First Complaint')}
               </Button>
@@ -661,7 +661,7 @@ export const ComplaintsPage: React.FC = () => {
                       {isColumnVisible('complaint') && (
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
-                            <p className="text-xs font-medium text-amber-500 mb-0.5">
+                            <p className="text-xs font-medium text-primary mb-0.5">
                               {complaint.incident_number}
                             </p>
                             <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
@@ -673,7 +673,7 @@ export const ComplaintsPage: React.FC = () => {
                       {isColumnVisible('channel') && (
                         <td className="px-6 py-4">
                           {complaint.channel ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 capitalize">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                               {complaint.channel}
                             </span>
                           ) : (
@@ -706,7 +706,7 @@ export const ComplaintsPage: React.FC = () => {
                             <Link
                               to={`/incidents/${complaint.source_incident_id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-1.5 text-sm text-amber-500 hover:underline"
+                              className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               {complaint.source_incident.incident_number}
@@ -715,7 +715,7 @@ export const ComplaintsPage: React.FC = () => {
                             <Link
                               to={`/incidents/${complaint.source_incident_id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-1.5 text-sm text-amber-500 hover:underline"
+                              className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               {t('complaints.viewSource', 'View Source')}
@@ -753,7 +753,7 @@ export const ComplaintsPage: React.FC = () => {
                                   className="w-6 h-6 rounded-full object-cover"
                                 />
                               ) : (
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center">
                                   <span className="text-white text-xs font-semibold">
                                     {complaint.assignee.first_name?.[0] || complaint.assignee.username[0]}
                                   </span>
@@ -868,7 +868,7 @@ export const ComplaintsPage: React.FC = () => {
                         className={cn(
                           "w-10 h-10 rounded-lg text-sm font-semibold transition-all",
                           currentPage === pageNum
-                            ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30"
+                            ? "bg-linear-to-br from-primary to-accent text-white shadow-lg "
                             : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card))] hover:border-[hsl(var(--border))] border border-transparent"
                         )}
                       >

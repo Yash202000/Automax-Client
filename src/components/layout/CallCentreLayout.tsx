@@ -21,6 +21,7 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
 import SoftPhone from '../sip/Softphone';
+import ThemeToggle from '../common/ThemeToggle';
 
 export const CallCentreLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -77,10 +78,10 @@ export const CallCentreLayout: React.FC = () => {
       <div className={`h-[70px] flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} border-b border-white/5`}>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
               <HelpCircle className="w-5 h-5 text-white" />
             </div>
-            <div className="absolute -top-1 -end-1 w-3 h-3 bg-violet-400 rounded-full border-2 border-slate-900" />
+            <div className="absolute -top-1 -end-1 w-3 h-3 bg-primary rounded-full border-2 border-slate-900" />
           </div>
           {!collapsed && (
             <div>
@@ -110,7 +111,7 @@ export const CallCentreLayout: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) =>
               `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
-                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                ? 'bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
@@ -132,7 +133,7 @@ export const CallCentreLayout: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) =>
               `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
-                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                ? 'bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
@@ -154,7 +155,7 @@ export const CallCentreLayout: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) =>
               `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
-                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                ? 'bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
@@ -176,7 +177,7 @@ export const CallCentreLayout: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) =>
               `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
-                ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-violet-500/20'
+                ? 'bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
@@ -224,7 +225,7 @@ export const CallCentreLayout: React.FC = () => {
                   className="w-10 h-10 rounded-xl object-cover ring-2 ring-violet-500/30"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-violet-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-accent flex items-center justify-center ring-2 ring-violet-500/30">
                   <span className="text-white text-sm font-bold">
                     {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                   </span>
@@ -308,7 +309,7 @@ export const CallCentreLayout: React.FC = () => {
             <button
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${showSoftphone
-                ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                ? 'bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-violet-500/30'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               title={t('callCentre.softphone', 'Softphone')}
@@ -350,7 +351,7 @@ export const CallCentreLayout: React.FC = () => {
                       key={lang.code}
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${currentLang === lang.code
-                        ? 'bg-violet-50 text-violet-600'
+                        ? 'bg-violet-50 text-primary'
                         : 'text-slate-700 hover:bg-slate-50'
                         }`}
                     >
@@ -371,8 +372,10 @@ export const CallCentreLayout: React.FC = () => {
               <span className="absolute top-2 end-2 w-2 h-2 bg-violet-500 rounded-full ring-2 ring-white" />
             </button>
 
+            <ThemeToggle/>
+
             {/* Divider */}
-            <div className="hidden sm:block w-px h-8 bg-slate-200" />
+            <div className="hidden sm:block w-px h-8 bg-background" />
 
             {/* User Menu */}
             <div className="relative">
@@ -387,7 +390,7 @@ export const CallCentreLayout: React.FC = () => {
                     className="w-9 h-9 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-accent flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
                       {user?.first_name?.[0] || user?.username?.[0] || 'U'}
                     </span>
@@ -446,7 +449,7 @@ export const CallCentreLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100">
+        <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
               <Outlet />

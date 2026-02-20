@@ -27,6 +27,7 @@ import { authApi } from '../../api/auth';
 import { setLoggingOut } from '../../api/client';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
 import SoftPhone from '../sip/Softphone';
+import ThemeToggle from '../common/ThemeToggle';
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -155,7 +156,7 @@ export const AdminLayout: React.FC = () => {
       {/* Collapse Button - Desktop */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'left-[60px]' : 'left-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
+        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
         <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
       </button>
@@ -178,7 +179,7 @@ export const AdminLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-white shadow-lg shadow-purple-500/20'
+                        ? 'bg-linear-to-r rtl:bg-linear-to-l from-primary to-accent text-white shadow-lg shadow-primary/20'
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`
                   }
@@ -186,14 +187,14 @@ export const AdminLayout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                        <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
                       )}
                       <item.icon size={20} className="flex-shrink-0" />
                       {!collapsed && (
                         <>
-                          <span className="ml-3 font-medium text-sm">{t(item.labelKey)}</span>
+                          <span className="ms-3 font-medium text-sm">{t(item.labelKey)}</span>
                           {item.badge && (
-                            <span className="ml-auto bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                            <span className="ms-auto bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
                               {item.badge}
                             </span>
                           )}
@@ -222,7 +223,7 @@ export const AdminLayout: React.FC = () => {
           className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ml-3 font-medium text-sm">{t('admin.backToApp')}</span>}
+          {!collapsed && <span className="ms-3 font-medium text-sm">{t('admin.backToApp')}</span>}
         </NavLink>
       </nav>
 
@@ -272,12 +273,12 @@ export const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen ">
       {/* Desktop Sidebar */}
       <aside
         className={`${
           collapsed ? 'w-[72px]' : 'w-[264px]'
-        } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
+        } bg-sidebar transition-all duration-300 flex-col hidden lg:flex relative`}
       >
         <SidebarContent />
       </aside>
@@ -346,7 +347,7 @@ export const AdminLayout: React.FC = () => {
             {/* Back to Home */}
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
               title={t('sidebar.backToHome', 'Back to Home')}
             >
               <Home className="w-5 h-5" />
@@ -375,7 +376,7 @@ export const AdminLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-purple-50 text-purple-600'
+                          ? 'bg-primary/10 text-primary'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -395,7 +396,7 @@ export const AdminLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-purple-600 bg-purple-50'
+                  ? 'text-primary bg-primary/10'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -419,6 +420,8 @@ export const AdminLayout: React.FC = () => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
+
+            <ThemeToggle/>
 
             {/* Divider */}
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
@@ -504,7 +507,7 @@ export const AdminLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100">
+        <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
               <Outlet />

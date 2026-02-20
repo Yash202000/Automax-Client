@@ -111,7 +111,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ department, level, onView, onAdd, o
           </button>
           <button
             onClick={() => onView(department.id)}
-            className="text-left hover:opacity-80 transition-opacity"
+            className="text-start hover:opacity-80 transition-opacity"
           >
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors">{department.name}</h4>
             <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">{department.code}</p>
@@ -500,7 +500,7 @@ export const DepartmentsPage: React.FC = () => {
             {canCreateDepartment && (
               <button
                 onClick={() => openCreateModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
+                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
               >
                 <Plus className="w-4 h-4" />
                 {t('departments.addRootDepartment')}

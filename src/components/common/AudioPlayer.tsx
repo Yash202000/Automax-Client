@@ -158,7 +158,7 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
         variant="ghost"
         onClick={togglePlayPause}
         disabled={isLoading}
-        className="h-10 w-10 shrink-0 rounded-full bg-amber-500 hover:bg-amber-600 text-white p-0"
+        className="h-10 w-10 shrink-0 rounded-full bg-primary/90 hover:bg-primary text-white p-0"
       >
         {isLoading ? (
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -190,7 +190,7 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
             )}
           >
             <div
-              className="h-full bg-amber-500 rounded-full transition-all duration-100"
+              className="h-full bg-primary rounded-full transition-all duration-100"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>

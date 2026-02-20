@@ -165,7 +165,7 @@ npm run preview
 - `/admin/locations` - Location management
 - `/admin/classifications` - Classification management
 - `/admin/workflows` - Workflow management
-- `/admin/reports` - Report builder
+- `/reports` - Report builder
 - `/admin/action-logs` - Audit logs
 - `/admin/smtp-settings` - SMTP configuration
 - `/admin/lookups` - Lookup values

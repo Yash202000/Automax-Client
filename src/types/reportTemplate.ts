@@ -171,6 +171,7 @@ export interface ShapeContent {
 }
 
 export interface LineContent {
+  direction: 'horizontal' | 'vertical';
   start_x: number;
   start_y: number;
   end_x: number;
@@ -395,3 +396,112 @@ export const createDefaultDynamicFieldElement = (x: number, y: number, field: Dy
   visible: true,
   z_index: 0,
 });
+
+export const createDefaultShapeElement = (
+  x: number,
+  y: number
+): TemplateElement => ({
+  id: generateElementId('shape'),
+  type: 'shape',
+  position: { x, y, anchor: 'top-left', relative: false },
+  size: { width: 40, height: 30, unit: 'mm' },
+  style: {
+    background_color: '#e5e7eb',
+    border_width: 1,
+    border_color: '#000000',
+    border_style: 'solid',
+    border_radius: 0,
+    opacity: 1,
+  },
+  content: {
+    shape_type: 'rectangle', // rectangle | circle
+  },
+  locked: false,
+  visible: true,
+  z_index: 0,
+});
+
+export const createDefaultLineElement = (
+  x: number,
+  y: number
+): TemplateElement => ({
+  id: generateElementId('line'),
+  type: 'line',
+  position: { x, y, anchor: 'top-left', relative: false },
+  size: { width: 60, height: 0, unit: 'mm' }, // height 0 for horizontal line
+  style: {
+    border_width: 1,
+    border_color: '#000000',
+    border_style: 'solid',
+  },
+  content:{
+    direction: 'horizontal',
+    start_x: 0,
+    start_y: 0,
+    end_x: 60,
+    end_y: 0,
+    stroke_color: '#000000',
+    stroke_width: 1,
+    stroke_style: 'solid',
+  },
+  locked: false,
+  visible: true,
+  z_index: 0,
+});
+
+export const createDefaultChartElement = (
+  x: number,
+  y: number,
+  dataSource: string
+): TemplateElement => ({
+  id: generateElementId('chart'),
+  type: 'chart',
+  position: { x, y, anchor: 'top-left', relative: false },
+
+  size: {
+    width: 120,
+    height: 70,
+    unit: 'mm',
+  },
+
+  style: {
+    border_width: 1,
+    border_color: '#e5e7eb',
+    border_style: 'solid',
+    border_radius: 4,
+    background_color: '#ffffff',
+  },
+
+  content: {
+    chart_type: 'bar',
+
+    data_source: dataSource,
+
+    // Default empty fields — user must configure
+    x_field: '',
+    y_field: '',
+    group_field: undefined,
+
+    aggregation: 'count',
+
+    colors: [
+      '#3b82f6',
+      '#10b981',
+      '#f59e0b',
+      '#ef4444',
+      '#8b5cf6',
+    ],
+
+    show_legend: true,
+    show_labels: true,
+
+    title: 'Chart Title',
+
+    filters: [],
+  } as ChartContent,
+
+  locked: false,
+  visible: true,
+  z_index: 0,
+});
+

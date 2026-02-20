@@ -88,7 +88,7 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
           {getStateIcon(state.state_type)}
         </div>
         <div className="min-w-0">
-          <p className={`text-xs font-medium truncate ${isCurrent ? 'text-gray-900' : 'text-gray-700'}`}>
+          <p className={`text-xs font-medium truncate ${isCurrent ? 'text-gray-900 dark:text-gray-300' : 'text-gray-700'}`}>
             {state.name}
           </p>
         </div>
@@ -155,8 +155,8 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
       {currentStateId && (
         <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-          <span className="text-xs text-gray-500">
-            Current: <span className="font-medium text-gray-700">{states.find((s) => s.id === currentStateId)?.name}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Current: <span className="font-medium text-gray-700 dark:text-gray-300">{states.find((s) => s.id === currentStateId)?.name}</span>
           </span>
           {reachableFromCurrent.size > 0 && (
             <span className="text-xs text-gray-400">

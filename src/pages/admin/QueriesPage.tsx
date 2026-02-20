@@ -285,8 +285,8 @@ export const QueriesPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-violet-500/10">
-              <HelpCircle className="w-5 h-5 text-violet-500" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <HelpCircle className="w-5 h-5 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {statusFilter ? `${statusFilter} ${t('queries.title', 'Queries')}` : t('queries.title', 'Queries')}
@@ -314,7 +314,6 @@ export const QueriesPage: React.FC = () => {
               size="sm"
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
             >
               {t('queries.createQuery', 'Create Query')}
             </Button>
@@ -332,7 +331,7 @@ export const QueriesPage: React.FC = () => {
               placeholder={t('queries.searchPlaceholder', 'Search by title or query number...')}
               value={filter.search || ''}
               onChange={(e) => handleFilterChange('search', e.target.value || undefined)}
-              className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
+              className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -344,7 +343,7 @@ export const QueriesPage: React.FC = () => {
             >
               {t('common.filters', 'Filters')}
               {hasActiveFilters && (
-                <span className="ml-1 w-2 h-2 rounded-full bg-violet-500" />
+                <span className="ml-1 w-2 h-2 rounded-full bg-primary" />
               )}
             </Button>
             {hasActiveFilters && canViewAllQueries && (
@@ -390,7 +389,7 @@ export const QueriesPage: React.FC = () => {
                           className={cn(
                             "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
                             col.visible
-                              ? "bg-violet-500 border-violet-500"
+                              ? "bg-primary border-primary"
                               : "border-[hsl(var(--border))]"
                           )}
                         >
@@ -411,7 +410,7 @@ export const QueriesPage: React.FC = () => {
                   <div className="px-4 py-3 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
                     <button
                       onClick={() => setColumns(defaultColumns)}
-                      className="text-xs text-violet-500 hover:text-violet-600 font-medium"
+                      className="text-xs text-primary hover:text-primary/90 font-medium"
                     >
                       {t('common.resetToDefaults', 'Reset to defaults')}
                     </button>
@@ -430,7 +429,7 @@ export const QueriesPage: React.FC = () => {
               <select
                 value={filter.workflow_id || ''}
                 onChange={(e) => handleFilterChange('workflow_id', e.target.value || undefined)}
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">{t('common.allWorkflows', 'All Workflows')}</option>
                 {workflowsData?.data?.map((workflow: Workflow) => (
@@ -445,7 +444,7 @@ export const QueriesPage: React.FC = () => {
                 onChange={(e) => handleFilterChange('current_state_id', e.target.value || undefined)}
                 disabled={!canViewAllQueries && hasUrlFilter}
                 className={cn(
-                  "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500",
+                  "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
                   !canViewAllQueries && hasUrlFilter && "opacity-60 cursor-not-allowed"
                 )}
               >
@@ -460,7 +459,7 @@ export const QueriesPage: React.FC = () => {
               <select
                 value={filter.channel || ''}
                 onChange={(e) => handleFilterChange('channel', e.target.value || undefined)}
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">{t('common.allChannels', 'All Channels')}</option>
                 <option value="phone">{t('channels.phone', 'Phone')}</option>
@@ -475,7 +474,7 @@ export const QueriesPage: React.FC = () => {
               <select
                 value={filter.assignee_id || ''}
                 onChange={(e) => handleFilterChange('assignee_id', e.target.value || undefined)}
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">{t('common.allAssignees', 'All Assignees')}</option>
                 {usersData?.data?.map((user: UserType) => (
@@ -490,7 +489,7 @@ export const QueriesPage: React.FC = () => {
               <select
                 value={filter.department_id || ''}
                 onChange={(e) => handleFilterChange('department_id', e.target.value || undefined)}
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">{t('common.allDepartments', 'All Departments')}</option>
                 {departmentsData?.data?.map((dept: Department) => (
@@ -503,7 +502,7 @@ export const QueriesPage: React.FC = () => {
               <select
                 value={filter.classification_id || ''}
                 onChange={(e) => handleFilterChange('classification_id', e.target.value || undefined)}
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="">{t('common.allClassifications', 'All Classifications')}</option>
                 {classificationsData?.data?.map((classification: Classification) => (
@@ -547,8 +546,8 @@ export const QueriesPage: React.FC = () => {
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="p-12 text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-violet-500/10 rounded-2xl mb-4">
-              <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-4">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">{t('queries.loading', 'Loading queries...')}</p>
           </div>
@@ -567,7 +566,7 @@ export const QueriesPage: React.FC = () => {
               <Button
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
+                className="bg-linear-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent"
               >
                 {t('queries.createFirstQuery', 'Create First Query')}
               </Button>
@@ -661,7 +660,7 @@ export const QueriesPage: React.FC = () => {
                       {isColumnVisible('query') && (
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
-                            <p className="text-xs font-medium text-violet-500 mb-0.5">
+                            <p className="text-xs font-medium text-primary mb-0.5">
                               {query.incident_number}
                             </p>
                             <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
@@ -673,7 +672,7 @@ export const QueriesPage: React.FC = () => {
                       {isColumnVisible('channel') && (
                         <td className="px-6 py-4">
                           {query.channel ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-600 capitalize">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                               {query.channel}
                             </span>
                           ) : (
@@ -706,7 +705,7 @@ export const QueriesPage: React.FC = () => {
                             <Link
                               to={`/incidents/${query.source_incident_id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-1.5 text-sm text-violet-500 hover:underline"
+                              className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               {query.source_incident.incident_number}
@@ -715,7 +714,7 @@ export const QueriesPage: React.FC = () => {
                             <Link
                               to={`/incidents/${query.source_incident_id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-1.5 text-sm text-violet-500 hover:underline"
+                              className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               {t('queries.viewSource', 'View Source')}
@@ -753,7 +752,7 @@ export const QueriesPage: React.FC = () => {
                                   className="w-6 h-6 rounded-full object-cover"
                                 />
                               ) : (
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center">
                                   <span className="text-white text-xs font-semibold">
                                     {query.assignee.first_name?.[0] || query.assignee.username[0]}
                                   </span>
@@ -868,7 +867,7 @@ export const QueriesPage: React.FC = () => {
                         className={cn(
                           "w-10 h-10 rounded-lg text-sm font-semibold transition-all",
                           currentPage === pageNum
-                            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/30"
+                            ? "bg-linear-to-br from-primary to-accent text-white shadow-lg shadow-primary/30"
                             : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card))] hover:border-[hsl(var(--border))] border border-transparent"
                         )}
                       >

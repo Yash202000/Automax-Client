@@ -607,7 +607,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary to-accent flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -745,10 +745,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   value={title}
                   readOnly
                   placeholder="Auto-generated from classification, location, and area"
-                  className="w-full px-4 py-2 pr-10 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"
+                  className="w-full px-4 py-2 pe-10 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"
                 />
                 <svg
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -769,7 +769,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 {t('requests.description', 'Description')}
                 {workflowRequiredFields.includes('description') && (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ms-1">*</span>
                 )}
               </label>
               <textarea
@@ -793,12 +793,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             {/* Channel */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                <Radio className="w-3 h-3 inline mr-1" />
+                <Radio className="w-3 h-3 inline me-1" />
                 {t('requests.channel', 'Channel')}
                 {workflowRequiredFields.includes('channel') ? (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ms-1">*</span>
                 ) : (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1">
+                  <span className="text-xs text-[hsl(var(--muted-foreground))] ms-1">
                     ({t('common.optional', 'Optional')})
                   </span>
                 )}
@@ -986,7 +986,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                     <Tags className="w-4 h-4" />
                     {i18n.language === 'ar' ? category.name_ar || category.name : category.name}
-                    {isRequired && <span className="text-red-500 ml-1">*</span>}
+                    {isRequired && <span className="text-red-500 ms-1">*</span>}
                   </h4>
                   <select
                     value={lookupValues[category.id] || ''}
@@ -1018,7 +1018,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
                 {t('requests.geolocation', 'Geolocation')}
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-red-500 ms-1">*</span>
               </h4>
               <LocationPicker
                 label={t('requests.geolocation', 'Geolocation')}
@@ -1046,7 +1046,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 <Building2 className="w-4 h-4" />
                 {t('requests.department', 'Department')}
                 {workflowRequiredFields.includes('department_id') ? (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
                     ({t('common.optional', 'Optional')})
@@ -1083,7 +1083,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 <User className="w-4 h-4" />
                 {t('requests.assignee', 'Assignee')}
                 {workflowRequiredFields.includes('assignee_id') ? (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
                     ({t('common.optional', 'Optional')})
@@ -1120,7 +1120,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 <Calendar className="w-4 h-4" />
                 {t('requests.dueDate', 'Due Date')}
                 {workflowRequiredFields.includes('due_date') ? (
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
                     ({t('common.optional', 'Optional')})
@@ -1237,7 +1237,6 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             disabled={createMutation.isPending}
             isLoading={createMutation.isPending}
             leftIcon={!createMutation.isPending ? <CheckCircle2 className="w-4 h-4" /> : undefined}
-            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
           >
             {t('requests.create', 'Create Request')}
           </Button>

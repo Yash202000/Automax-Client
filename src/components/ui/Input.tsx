@@ -164,15 +164,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2"
           >
             {label}
-            {props.required && <span className="text-[hsl(var(--destructive))] ml-1">*</span>}
+            {props.required && <span className="text-[hsl(var(--destructive))] ms-1">*</span>}
           </label>
         )}
         <select
           ref={ref}
           id={selectId}
           className={cn(
-            "w-full px-4 py-3 bg-[hsl(var(--background))] border-2 rounded-xl text-[hsl(var(--foreground))] text-sm transition-all duration-200 focus:outline-none appearance-none cursor-pointer pr-12",
-            "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5rem_1.5rem] bg-[right_0.75rem_center] bg-no-repeat",
+            "w-full px-4 py-3 bg-[hsl(var(--background))] border-2 rounded-xl text-[hsl(var(--foreground))] text-sm transition-all duration-200 focus:outline-none appearance-none cursor-pointer pe-12",
+            "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5rem_1.5rem] bg-[right_0.75rem_center] bg-no-repeat rtl:bg-[left_0.75rem_center]",
             error
               ? "border-[hsl(var(--destructive)/0.5)] focus:border-[hsl(var(--destructive))] focus:ring-4 focus:ring-[hsl(var(--destructive)/0.1)]"
               : "border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)] focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/0.1)]",
@@ -187,7 +187,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           )}
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option className='text-black' key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}

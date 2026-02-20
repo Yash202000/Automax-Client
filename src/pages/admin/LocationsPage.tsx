@@ -395,7 +395,7 @@ export const LocationsPage: React.FC = () => {
             {canCreateLocation && (
               <button
                 onClick={() => openCreateModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
+                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors text-sm font-medium shadow-md shadow-[hsl(var(--primary)/0.25)]"
               >
                 <Plus className="w-4 h-4" />
                 {t('locations.addRootLocation')}

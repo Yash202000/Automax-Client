@@ -222,8 +222,8 @@ export const ComplaintDetailPage: React.FC = () => {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
         <div className="flex flex-col items-center justify-center">
-          <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-4">
-            <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
           <p className="text-[hsl(var(--muted-foreground))]">{t('complaints.loading', 'Loading complaint...')}</p>
         </div>
@@ -261,11 +261,11 @@ export const ComplaintDetailPage: React.FC = () => {
             {t('common.backToComplaints', 'Back to Complaints')}
           </button>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10">
-              <MessageSquareWarning className="w-5 h-5 text-amber-500" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <MessageSquareWarning className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs font-medium text-amber-500 mb-0.5">{complaint.incident_number}</p>
+              <p className="text-xs font-medium text-primary mb-0.5">{complaint.incident_number}</p>
               <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">{complaint.title}</h1>
             </div>
           </div>
@@ -285,7 +285,7 @@ export const ComplaintDetailPage: React.FC = () => {
               onClick={() => evaluateMutation.mutate()}
               isLoading={evaluateMutation.isPending}
               leftIcon={<ThumbsUp className="w-4 h-4" />}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+              className="bg-linear-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
             >
               {t('complaints.evaluate', 'Evaluate')} ({complaint.evaluation_count || 0})
             </Button>
@@ -326,7 +326,7 @@ export const ComplaintDetailPage: React.FC = () => {
                       disabled={!transition.can_execute}
                       onClick={() => handleTransitionClick(transition)}
                       leftIcon={<Play className="w-4 h-4" />}
-                      className={transition.can_execute ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : ''}
+                      className={transition.can_execute ? 'bg-linear-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent' : ''}
                     >
                       {transition.transition.name}
                     </Button>
@@ -364,7 +364,7 @@ export const ComplaintDetailPage: React.FC = () => {
                   className={cn(
                     "flex-1 px-4 py-3 text-sm font-medium transition-colors relative",
                     activeTab === tab
-                      ? "text-amber-500"
+                      ? "text-primary"
                       : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                   )}
                 >
@@ -375,18 +375,18 @@ export const ComplaintDetailPage: React.FC = () => {
                     {tab === 'revisions' && <Tags className="w-4 h-4" />}
                     <span className="capitalize">{t(`tabs.${tab}`, tab)}</span>
                     {tab === 'comments' && comments.length > 0 && (
-                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-amber-500/10 text-amber-500 rounded-full">
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
                         {comments.length}
                       </span>
                     )}
                     {tab === 'attachments' && attachments.length > 0 && (
-                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-amber-500/10 text-amber-500 rounded-full">
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
                         {attachments.length}
                       </span>
                     )}
                   </div>
                   {activeTab === tab && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                   )}
                 </button>
               ))}
@@ -402,8 +402,8 @@ export const ComplaintDetailPage: React.FC = () => {
                     <div className="space-y-4">
                       {history.map((item) => (
                         <div key={item.id} className="flex gap-4 pb-4 border-b border-[hsl(var(--border))] last:border-0">
-                          <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                            <ChevronRight className="w-4 h-4 text-amber-500" />
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <ChevronRight className="w-4 h-4 text-primary" />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -448,7 +448,7 @@ export const ComplaintDetailPage: React.FC = () => {
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder={t('common.addComment', 'Add a comment...')}
-                      className="flex-1 px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                      className="flex-1 px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       rows={2}
                     />
                     <Button
@@ -456,7 +456,7 @@ export const ComplaintDetailPage: React.FC = () => {
                       isLoading={addCommentMutation.isPending}
                       disabled={!commentText.trim()}
                       leftIcon={<Send className="w-4 h-4" />}
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                      className="bg-linear-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent"
                     >
                       {t('common.send', 'Send')}
                     </Button>
@@ -481,7 +481,7 @@ export const ComplaintDetailPage: React.FC = () => {
                     <div className="space-y-4 mt-6">
                       {comments.map((comment) => (
                         <div key={comment.id} className="flex gap-3 pb-4 border-b border-[hsl(var(--border))] last:border-0">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
                             <span className="text-white text-xs font-semibold">
                               {comment.author?.first_name?.[0] || comment.author?.username?.[0] || 'U'}
                             </span>
@@ -564,8 +564,8 @@ export const ComplaintDetailPage: React.FC = () => {
               {/* Channel */}
               {complaint.channel && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <MessageSquare className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.channel', 'Channel')}</p>
@@ -577,8 +577,8 @@ export const ComplaintDetailPage: React.FC = () => {
               {/* Created By */}
               {(complaint.created_by_name || complaint.created_by_mobile) && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('complaints.createdBy', 'Created By')}</p>
@@ -598,14 +598,14 @@ export const ComplaintDetailPage: React.FC = () => {
               {/* Source Incident */}
               {complaint.source_incident_id && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <ExternalLink className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <ExternalLink className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('complaints.sourceIncident', 'Source Incident')}</p>
                     <Link
                       to={`/incidents/${complaint.source_incident_id}`}
-                      className="text-sm font-medium text-amber-500 hover:underline flex items-center gap-1"
+                      className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
                     >
                       {complaint.source_incident?.incident_number || t('complaints.viewIncident', 'View Incident')}
                       <ExternalLink className="w-3 h-3" />
@@ -617,8 +617,8 @@ export const ComplaintDetailPage: React.FC = () => {
               {/* Classification */}
               {complaint.classification && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <Tags className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Tags className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.classification', 'Classification')}</p>
@@ -629,8 +629,8 @@ export const ComplaintDetailPage: React.FC = () => {
 
               {/* Assignee */}
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-amber-500" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.assignee', 'Assignee')}</p>
@@ -639,7 +639,7 @@ export const ComplaintDetailPage: React.FC = () => {
                       {complaint.assignee.avatar ? (
                         <img src={complaint.assignee.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                           <span className="text-white text-xs font-semibold">
                             {complaint.assignee.first_name?.[0] || complaint.assignee.username[0]}
                           </span>
@@ -658,8 +658,8 @@ export const ComplaintDetailPage: React.FC = () => {
               {/* Department */}
               {complaint.department && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.department', 'Department')}</p>
@@ -683,8 +683,8 @@ export const ComplaintDetailPage: React.FC = () => {
 
               {/* Created Date */}
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-4 h-4 text-amber-500" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('common.created', 'Created')}</p>
@@ -740,7 +740,7 @@ export const ComplaintDetailPage: React.FC = () => {
             <div className="p-6 space-y-4">
               {/* Requirements info */}
               {selectedTransition.requirements && selectedTransition.requirements.length > 0 && (
-                <div className="p-3 bg-amber-500/10 rounded-lg text-sm">
+                <div className="p-3 bg-primary/10 rounded-lg text-sm">
                   <p className="font-medium text-amber-600 mb-2">{t('common.requirements', 'Requirements')}:</p>
                   <ul className="list-disc list-inside text-amber-700 space-y-1">
                     {selectedTransition.requirements.map((req) => (
@@ -763,7 +763,7 @@ export const ComplaintDetailPage: React.FC = () => {
                   value={transitionComment}
                   onChange={(e) => setTransitionComment(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   placeholder={t('common.addOptionalComment', 'Add an optional comment...')}
                 />
               </div>
@@ -782,8 +782,8 @@ export const ComplaintDetailPage: React.FC = () => {
                         className={cn(
                           "w-10 h-10 rounded-lg flex items-center justify-center transition-all",
                           transitionFeedbackRating >= rating
-                            ? "bg-amber-500 text-white"
-                            : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-amber-500/20"
+                            ? "bg-primary text-white"
+                            : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-primary/20"
                         )}
                       >
                         <Star className={cn("w-5 h-5", transitionFeedbackRating >= rating && "fill-current")} />
@@ -794,7 +794,7 @@ export const ComplaintDetailPage: React.FC = () => {
                     value={transitionFeedbackComment}
                     onChange={(e) => setTransitionFeedbackComment(e.target.value)}
                     rows={2}
-                    className="w-full mt-2 px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                    className="w-full mt-2 px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     placeholder={t('common.feedbackComment', 'Add feedback comment...')}
                   />
                 </div>
@@ -807,7 +807,7 @@ export const ComplaintDetailPage: React.FC = () => {
               <Button
                 onClick={() => transitionMutation.mutate()}
                 isLoading={transitionMutation.isPending || transitionUploading}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                className="bg-linear-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent"
               >
                 {t('common.confirm', 'Confirm')}
               </Button>
