@@ -15,6 +15,174 @@ interface ReportPreviewProps {
   onPageChange: (page: number) => void;
 }
 
+// ── Shared label helper ──────────────────────────────────────────────────────
+
+/**
+ * Convert a raw field key to a human-readable label.
+ * e.g. "incident_number" → "Incident Number"
+ *      "current_state.name" → "Current State Name"
+ *      "assignee.full_name" → "Assignee Full Name"
+ *      "department_id"      → "Department"
+ */
+export const toHumanReadable = (key: string): string =>
+  key
+    .replace(/_id$/, '')   // strip trailing _id → "department"
+    .split(/[._]/)         // split on dots and underscores
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
+// ── Styled cell helpers ──────────────────────────────────────────────────────
+
+const PRIORITY_CONFIG: Record<number, { label: string; bg: string; text: string }> = {
+  1: { label: 'Critical', bg: '#fee2e2', text: '#dc2626' },
+  2: { label: 'High',     bg: '#ffedd5', text: '#ea580c' },
+  3: { label: 'Medium',   bg: '#fef9c3', text: '#ca8a04' },
+  4: { label: 'Low',      bg: '#dbeafe', text: '#2563eb' },
+  5: { label: 'Minimal',  bg: '#f3f4f6', text: '#6b7280' },
+};
+
+const Badge: React.FC<{ label: string; bg: string; text: string }> = ({ label, bg, text }) => (
+  <span
+    style={{ backgroundColor: bg, color: text }}
+    className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+  >
+    {label}
+  </span>
+);
+
+export const renderStyledCell = (value: unknown, field: ReportFieldDefinition): React.ReactNode => {
+  if (value === null || value === undefined || value === '') {
+    return <span className="text-[hsl(var(--muted-foreground))]">—</span>;
+  }
+
+  // Priority
+  if (field.field === 'priority') {
+    const cfg = PRIORITY_CONFIG[Number(value)];
+    if (cfg) return <Badge {...cfg} />;
+  }
+
+  // Boolean / SLA
+  if (field.type === 'boolean') {
+    const bool = value === true || value === 'true' || value === 1;
+    if (field.field === 'sla_breached') {
+      return bool
+        ? <Badge label="Breached" bg="#fee2e2" text="#dc2626" />
+        : <Badge label="On Track" bg="#d1fae5" text="#059669" />;
+    }
+    if (field.field === 'is_active') {
+      return bool
+        ? <Badge label="Active"   bg="#d1fae5" text="#059669" />
+        : <Badge label="Inactive" bg="#f3f4f6" text="#6b7280" />;
+    }
+    return bool
+      ? <Badge label="Yes" bg="#d1fae5" text="#059669" />
+      : <Badge label="No"  bg="#f3f4f6" text="#6b7280" />;
+  }
+
+  // State type
+  if (field.field === 'current_state.state_type') {
+    const STATE_COLORS: Record<string, { bg: string; text: string }> = {
+      initial:  { bg: '#dbeafe', text: '#2563eb' },
+      normal:   { bg: '#f3f4f6', text: '#374151' },
+      terminal: { bg: '#d1fae5', text: '#059669' },
+    };
+    const colors = STATE_COLORS[String(value)] || { bg: '#f3f4f6', text: '#374151' };
+    const label = field.options?.find(o => o.value === value || String(o.value) === String(value))?.label || String(value);
+    return <Badge label={label} {...colors} />;
+  }
+
+  // Action log status
+  if (field.field === 'status' && field.options) {
+    const option = field.options.find(o => o.value === value || String(o.value) === String(value));
+    if (option) {
+      const isSuccess = option.value === 'success';
+      return isSuccess
+        ? <Badge label={option.label} bg="#d1fae5" text="#059669" />
+        : <Badge label={option.label} bg="#fee2e2" text="#dc2626" />;
+    }
+  }
+
+  // Enum — resolve label from options
+  if (field.type === 'enum' && field.options) {
+    const option = field.options.find(
+      o => o.value === value || String(o.value) === String(value) || Number(o.value) === Number(value)
+    );
+    return <span>{option?.label || String(value)}</span>;
+  }
+
+  // Date / datetime
+  if (field.type === 'date' || field.type === 'datetime') {
+    try {
+      const d = new Date(value as string);
+      return <span>{field.type === 'date' ? d.toLocaleDateString() : d.toLocaleString()}</span>;
+    } catch {
+      return <span>{String(value)}</span>;
+    }
+  }
+
+  // Number
+  if (field.type === 'number') {
+    return <span>{typeof value === 'number' ? value.toLocaleString() : String(value)}</span>;
+  }
+
+  return <span>{String(value)}</span>;
+};
+
+// ── formatCellValue (string output — used by xlsx export) ────────────────────
+
+export const formatCellValue = (value: unknown, field: ReportFieldDefinition): string => {
+  if (value === null || value === undefined || value === '') return '';
+
+  if (field.field === 'priority') {
+    const cfg = PRIORITY_CONFIG[Number(value)];
+    if (cfg) return cfg.label;
+  }
+
+  if (field.type === 'boolean') {
+    const bool = value === true || value === 'true' || value === 1;
+    if (field.field === 'sla_breached') return bool ? 'Breached' : 'On Track';
+    if (field.field === 'is_active')    return bool ? 'Active'   : 'Inactive';
+    return bool ? 'Yes' : 'No';
+  }
+
+  if (field.type === 'enum' && field.options) {
+    const option = field.options.find(
+      o => o.value === value || String(o.value) === String(value) || Number(o.value) === Number(value)
+    );
+    return option?.label || String(value);
+  }
+
+  if (field.type === 'date' || field.type === 'datetime') {
+    try {
+      const d = new Date(value as string);
+      return field.type === 'date' ? d.toLocaleDateString() : d.toLocaleString();
+    } catch {
+      return String(value);
+    }
+  }
+
+  if (field.type === 'number') {
+    return typeof value === 'number' ? value.toLocaleString() : String(value);
+  }
+
+  return String(value) || '-';
+};
+
+// ── getNestedValue (shared) ──────────────────────────────────────────────────
+
+export const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+  if (path in obj) return obj[path];
+  const parts = path.split('.');
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined) return null;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+};
+
+// ── Component ────────────────────────────────────────────────────────────────
+
 export const ReportPreview: React.FC<ReportPreviewProps> = ({
   data,
   columns,
@@ -28,63 +196,13 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Get field definitions for selected columns
-  const columnDefs = columns
-    .map((col) => fields.find((f) => f.field === col))
-    .filter(Boolean) as ReportFieldDefinition[];
-
-  // Format cell value based on field type
-  const formatCellValue = (value: unknown, field: ReportFieldDefinition): string => {
-    if (value === null || value === undefined || value === '') return '-';
-
-    switch (field.type) {
-      case 'boolean':
-        return value ? 'Yes' : 'No';
-      case 'date':
-        try {
-          return new Date(value as string).toLocaleDateString();
-        } catch {
-          return String(value);
-        }
-      case 'datetime':
-        try {
-          return new Date(value as string).toLocaleString();
-        } catch {
-          return String(value);
-        }
-      case 'enum':
-        // Handle both string and number comparisons for enum values
-        const option = field.options?.find((o) =>
-          o.value === value ||
-          String(o.value) === String(value) ||
-          Number(o.value) === Number(value)
-        );
-        return option?.label || String(value);
-      case 'number':
-        return typeof value === 'number' ? value.toLocaleString() : String(value);
-      default:
-        // Return '-' for empty strings as well
-        return String(value) || '-';
-    }
-  };
-
-  // Get nested value from object (e.g., "assignee.username")
-  // Supports both flat keys ("assignee.username") and nested objects ({assignee: {username: ...}})
-  const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
-    // First check if the full path exists as a flat key
-    if (path in obj) {
-      return obj[path];
-    }
-
-    // Fall back to nested object traversal
-    const parts = path.split('.');
-    let current: unknown = obj;
-    for (const part of parts) {
-      if (current === null || current === undefined) return null;
-      current = (current as Record<string, unknown>)[part];
-    }
-    return current;
-  };
+  // Never drop a column — fall back to a human-readable label if the field
+  // definition is not found (e.g. relation fields returned differently by API)
+  const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
+    const found = fields.find((f) => f.field === col);
+    if (found) return found;
+    return { field: col, label: toHumanReadable(col), type: 'string' } as ReportFieldDefinition;
+  });
 
   if (isLoading) {
     return (
@@ -144,7 +262,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                         key={col.field}
                         className="px-4 py-3 text-sm text-[hsl(var(--foreground))] whitespace-nowrap"
                       >
-                        {formatCellValue(value, col)}
+                        {renderStyledCell(value, col)}
                       </td>
                     );
                   })}
@@ -171,7 +289,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            {/* Page numbers */}
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum: number;

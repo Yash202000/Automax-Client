@@ -638,7 +638,13 @@
     "noRolesAssigned": "لا توجد أدوار معينة",
     "noUsersInDepartment": "لا يوجد مستخدمون في هذا القسم",
     "moreUsers": "+{{count}} مستخدمين آخرين",
-    "viewAll": "عرض الكل"
+    "viewAll": "عرض الكل",
+    "type": "النوع",
+    "typeInternal": "داخلي",
+    "typeExternal": "خارجي",
+    "saveChanges": "حفظ التغييرات",
+    "departmentUpdated": "تم تحديث القسم بنجاح",
+    "failedToUpdate": "فشل تحديث القسم"
   },
   "locations": {
     "title": "المواقع",

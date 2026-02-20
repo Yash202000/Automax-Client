@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +41,7 @@ import type {
 } from '../../types';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { formatCellValue, getNestedValue, toHumanReadable } from '../../components/reports/ReportPreview';
 
 // Helper to build hierarchical label with path
 // const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
@@ -133,15 +134,20 @@ export const ReportBuilderPage: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [filters, setFilters] = useState<ReportFilter[]>([]);
   const [sorting, setSorting] = useState<ReportSort[]>([]);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  // recordLimit — how many rows the query should return (sent as the API limit)
+  const [recordLimit, setRecordLimit] = useState(100);
+  // displayPage — client-side pagination through previewData
+  const [displayPage, setDisplayPage] = useState(1);
+  const DISPLAY_SIZE = 50;
   const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [dbTotalCount, setDbTotalCount] = useState(0); // total matching rows in DB
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [loadedTemplate, setLoadedTemplate] = useState<ReportTemplate | null>(null);
+
+  // Ref used to scroll to the preview section after generating
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // Fetch hierarchical data for dynamic dropdowns
   const { data: departmentsTree } = useQuery({
@@ -226,137 +232,65 @@ export const ReportBuilderPage: React.FC = () => {
 
   const templates = templatesData?.data || [];
 
-  // Handle data source change
+  // Handle data source change — reset state only, user clicks Generate Report to fetch
   const handleDataSourceChange = useCallback((source: ReportDataSource) => {
     setDataSource(source);
     setSelectedColumns(getDefaultFieldsForDataSource(source));
     setFilters([]);
     setSorting([]);
     setPreviewData([]);
-    setTotalItems(0);
-    setTotalPages(0);
-    setPage(1);
+    setDbTotalCount(0);
+    setDisplayPage(1);
     setLoadedTemplate(null);
   }, []);
 
-  // Generate report preview
+  // Generate report — fetches recordLimit rows in a single request, no server pagination
   const generateReport = useCallback(async () => {
     if (!dataSource || selectedColumns.length === 0) return;
 
     setIsPreviewLoading(true);
+    setDisplayPage(1);
     try {
       const request: ReportQueryRequest = {
         data_source: dataSource,
         columns: selectedColumns,
         filters: filters.map(({ field, operator, value }) => ({ field, operator, value })),
         sorting,
-        page,
-        limit,
+        page: 1,
+        limit: recordLimit,
       };
 
       const response = await reportApi.query(request);
       setPreviewData(response.data);
-      setTotalItems(response.total_items);
-      setTotalPages(response.total_pages);
+      setDbTotalCount(response.total_items);
+      setTimeout(() => previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
     } catch (error) {
       console.error('Failed to generate report:', error);
     } finally {
       setIsPreviewLoading(false);
     }
-  }, [dataSource, selectedColumns, filters, sorting, page, limit]);
-
-  // Handle page change
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  // Regenerate when page changes
-  React.useEffect(() => {
-    if (previewData.length > 0 || totalItems > 0) {
-      generateReport();
-    }
-  }, [page]);
+  }, [dataSource, selectedColumns, filters, sorting, recordLimit]);
 
   // Export mutation
   const exportMutation = useMutation({
     mutationFn: async ({ format, options }: { format: 'xlsx' | 'pdf'; options: { title: string; includeFilters: boolean; includeTimestamp: boolean } }) => {
       if (!dataSource) throw new Error('No data source selected');
 
-      // For Excel, we can do client-side export
+      // For Excel, use the already-fetched previewData (respects the configured recordLimit)
       if (format === 'xlsx') {
-        // Fetch all data (no pagination)
-        const response = await reportApi.query({
-          data_source: dataSource,
-          columns: selectedColumns,
-          filters: filters.map(({ field, operator, value }) => ({ field, operator, value })),
-          sorting,
-          page: 1,
-          limit: 10000, // Large limit to get all data
-        });
-
-        // Build headers from field labels
+        // Build headers — use field label, fall back to human-readable key
         const headers = selectedColumns.map((col) => {
           const field = fields.find((f) => f.field === col);
-          return field?.label || col;
+          return field?.label || toHumanReadable(col);
         });
 
-        // Helper to format value for export
-        const formatExportValue = (value: unknown, fieldDef: typeof fields[0] | undefined): string => {
-          if (value === null || value === undefined || value === '') return '';
-
-          // Handle enum types (like priority, severity)
-          if (fieldDef?.type === 'enum' && fieldDef.options) {
-            const option = fieldDef.options.find((o) =>
-              o.value === value ||
-              String(o.value) === String(value) ||
-              Number(o.value) === Number(value)
-            );
-            return option?.label || String(value);
-          }
-
-          // Handle boolean
-          if (fieldDef?.type === 'boolean') {
-            return value ? 'Yes' : 'No';
-          }
-
-          // Handle dates
-          if (fieldDef?.type === 'date' || fieldDef?.type === 'datetime') {
-            try {
-              const date = new Date(value as string);
-              return fieldDef.type === 'date'
-                ? date.toLocaleDateString()
-                : date.toLocaleString();
-            } catch {
-              return String(value);
-            }
-          }
-
-          return String(value);
-        };
-
-        // Build rows
-        const rows = response.data.map((row) => {
+        // Build rows from previewData
+        const rows = previewData.map((row) => {
           return selectedColumns.map((col) => {
             const fieldDef = fields.find((f) => f.field === col);
-            let value: unknown;
-
-            // First check if the full path exists as a flat key
-            if (col in row) {
-              value = row[col];
-            } else {
-              // Fall back to nested object traversal
-              const parts = col.split('.');
-              value = row;
-              for (const part of parts) {
-                if (value === null || value === undefined) {
-                  value = null;
-                  break;
-                }
-                value = (value as Record<string, unknown>)[part];
-              }
-            }
-
-            return formatExportValue(value, fieldDef);
+            const value = getNestedValue(row, col);
+            if (!fieldDef) return value == null ? '' : String(value);
+            return formatCellValue(value, fieldDef);
           });
         });
 
@@ -442,9 +376,8 @@ export const ReportBuilderPage: React.FC = () => {
     setFilters([]);
     setSorting([]);
     setPreviewData([]);
-    setTotalItems(0);
-    setTotalPages(0);
-    setPage(1);
+    setDbTotalCount(0);
+    setDisplayPage(1);
     setLoadedTemplate(null);
     navigate('/reports/builder');
   };
@@ -457,12 +390,16 @@ export const ReportBuilderPage: React.FC = () => {
     setSorting(template.config.sorting);
     setLoadedTemplate(template);
     setPreviewData([]);
-    setTotalItems(0);
-    setPage(1);
+    setDbTotalCount(0);
+    setDisplayPage(1);
   };
 
   const canGenerate = dataSource && selectedColumns.length > 0;
-  const canExport = previewData.length > 0 || totalItems > 0;
+  const canExport = previewData.length > 0;
+
+  // Client-side display pagination over previewData
+  const displayTotalPages = Math.ceil(previewData.length / DISPLAY_SIZE);
+  const displayData = previewData.slice((displayPage - 1) * DISPLAY_SIZE, displayPage * DISPLAY_SIZE);
 
   return (
     <div className="space-y-6">
@@ -590,7 +527,7 @@ export const ReportBuilderPage: React.FC = () => {
 
       {/* Action buttons */}
       {dataSource && (
-        <div className="flex items-center gap-3 p-4 bg-[hsl(var(--muted)/0.3)] rounded-xl border border-[hsl(var(--border))]">
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-[hsl(var(--muted)/0.3)] rounded-xl border border-[hsl(var(--border))]">
           <Button
             onClick={generateReport}
             disabled={!canGenerate}
@@ -615,26 +552,57 @@ export const ReportBuilderPage: React.FC = () => {
           >
             {t('reports.export')}
           </Button>
+
+          {/* Record limit selector */}
+          <div className="flex items-center gap-2 ltr:ml-auto rtl:mr-auto text-sm text-[hsl(var(--muted-foreground))]">
+            <span>Limit</span>
+            <select
+              value={recordLimit}
+              onChange={(e) => setRecordLimit(Number(e.target.value))}
+              className="px-2 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+            >
+              {[100, 500, 1000, 5000, 10000].map((n) => (
+                <option key={n} value={n}>{n.toLocaleString()} records</option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
       {/* Preview */}
       {dataSource && (previewData.length > 0 || isPreviewLoading) && (
-        <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
-          <div className="px-4 py-3 bg-[hsl(var(--muted)/0.3)] border-b border-[hsl(var(--border))]">
+        <div ref={previewRef} className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-[hsl(var(--muted)/0.3)] border-b border-[hsl(var(--border))] flex items-center justify-between gap-4">
             <h2 className="font-semibold text-[hsl(var(--foreground))]">{t('reports.previewResults')}</h2>
+            {previewData.length > 0 && (
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                {previewData.length < dbTotalCount ? (
+                  <>
+                    Fetched <strong>{previewData.length.toLocaleString()}</strong> of{' '}
+                    <strong>{dbTotalCount.toLocaleString()}</strong> total records
+                    {previewData.length < dbTotalCount && (
+                      <span className="ltr:ml-1 rtl:mr-1 text-amber-600 dark:text-amber-400">
+                        — increase limit to fetch more
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>All <strong>{previewData.length.toLocaleString()}</strong> records fetched</>
+                )}
+              </span>
+            )}
           </div>
           <div className="p-4">
             <ReportPreview
-              data={previewData}
+              data={displayData}
               columns={selectedColumns}
               fields={fields}
               isLoading={isPreviewLoading}
-              page={page}
-              limit={limit}
-              totalItems={totalItems}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
+              page={displayPage}
+              limit={DISPLAY_SIZE}
+              totalItems={previewData.length}
+              totalPages={displayTotalPages}
+              onPageChange={setDisplayPage}
             />
           </div>
         </div>
@@ -647,7 +615,10 @@ export const ReportBuilderPage: React.FC = () => {
         onExport={(format, options) => exportMutation.mutateAsync({ format, options })}
         isExporting={exportMutation.isPending}
         dataSourceLabel={dataSourceDef?.label || ''}
-        recordCount={totalItems}
+        recordCount={previewData.length}
+        previewData={previewData}
+        columns={selectedColumns}
+        fields={fields}
       />
 
       {/* Save Template Dialog */}

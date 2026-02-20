@@ -636,7 +636,13 @@
     "noRolesAssigned": "No roles assigned",
     "noUsersInDepartment": "No users in this department",
     "moreUsers": "+{{count}} more users",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "type": "Type",
+    "typeInternal": "Internal",
+    "typeExternal": "External",
+    "saveChanges": "Save Changes",
+    "departmentUpdated": "Department updated successfully",
+    "failedToUpdate": "Failed to update department"
   },
   "locations": {
     "title": "Locations",

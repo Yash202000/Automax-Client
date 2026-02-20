@@ -73,6 +73,7 @@ interface TransitionFormData {
   // Department Assignment
   assign_department_id: string;
   auto_detect_department: boolean;
+  department_type_filter: '' | 'internal' | 'external';
   // User Assignment
   assign_user_id: string;
   assignment_role_id: string;
@@ -100,6 +101,7 @@ const initialTransitionFormData: TransitionFormData = {
   // Department Assignment
   assign_department_id: '',
   auto_detect_department: false,
+  department_type_filter: '',
   // User Assignment
   assign_user_id: '',
   assignment_role_id: '',
@@ -465,6 +467,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       // Department Assignment
       assign_department_id: transition.assign_department_id || '',
       auto_detect_department: transition.auto_detect_department || false,
+      department_type_filter: (transition.department_type_filter as '' | 'internal' | 'external') || '',
       // User Assignment
       assign_user_id: transition.assign_user_id || '',
       assignment_role_id: transition.assignment_role_id || '',
@@ -508,6 +511,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         field_name: f.field_name,
         label: f.label,
         is_required: f.is_required,
+        department_type_filter: f.department_type_filter || '',
         sort_order: f.sort_order,
       })) || []
     );
@@ -553,6 +557,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       // Department Assignment
       assign_department_id: transitionFormData.assign_department_id || undefined,
       auto_detect_department: transitionFormData.auto_detect_department,
+      department_type_filter: transitionFormData.department_type_filter || undefined,
       // User Assignment
       assign_user_id: transitionFormData.assign_user_id || undefined,
       assignment_role_id: transitionFormData.assignment_role_id || undefined,
@@ -1983,6 +1988,32 @@ export const WorkflowDesignerPage: React.FC = () => {
                       </div>
                     </label>
 
+                    {transitionFormData.auto_detect_department && (
+                      <div>
+                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                          Department type to show:
+                        </label>
+                        <div className="flex gap-2">
+                          {([['', 'All Types'], ['internal', 'Internal Only'], ['external', 'External Only']] as const).map(([val, label]) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setTransitionFormData({ ...transitionFormData, department_type_filter: val })}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                                transitionFormData.department_type_filter === val
+                                  ? val === 'external'
+                                    ? 'bg-amber-500 text-white border-amber-500'
+                                    : 'bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]'
+                                  : 'bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {!transitionFormData.auto_detect_department && (
                       <div>
                         <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
@@ -1995,7 +2026,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                         >
                           <option value="">No department assignment</option>
                           {departments.map((dept) => (
-                            <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            <option key={dept.id} value={dept.id}>{dept.name} ({dept.type || 'internal'})</option>
                           ))}
                         </select>
                       </div>
@@ -2333,6 +2364,31 @@ export const WorkflowDesignerPage: React.FC = () => {
                             />
                             <span className="text-sm text-[hsl(var(--foreground))]">Required</span>
                           </label>
+                          {fc.field_name === 'department_id' && (
+                            <div>
+                              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                                Department type to show:
+                              </label>
+                              <div className="flex gap-2">
+                                {([['', 'All Types'], ['internal', 'Internal Only'], ['external', 'External Only']] as const).map(([val, label]) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => updateFieldChange(index, 'department_type_filter', val)}
+                                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                                      (fc.department_type_filter || '') === val
+                                        ? val === 'external'
+                                          ? 'bg-amber-500 text-white border-amber-500'
+                                          : 'bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]'
+                                        : 'bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]'
+                                    }`}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}

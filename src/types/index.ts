@@ -85,6 +85,7 @@ export interface Department {
   name: string;
   code: string;
   description: string;
+  type: 'internal' | 'external';
   parent_id: string | null;
   level: number;
   path: string;
@@ -337,6 +338,7 @@ export interface DepartmentCreateRequest {
   name: string;
   code: string;
   description?: string;
+  type?: 'internal' | 'external';
   parent_id?: string;
   manager_id?: string;
   location_ids?: string[];
@@ -349,6 +351,7 @@ export interface DepartmentUpdateRequest {
   name?: string;
   code?: string;
   description?: string;
+  type?: 'internal' | 'external';
   manager_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
@@ -593,6 +596,7 @@ export interface WorkflowTransition {
   assign_department_id?: string;
   assign_department?: Department;
   auto_detect_department: boolean;
+  department_type_filter?: 'internal' | 'external' | '';
 
   // User Assignment
   assign_user_id?: string;
@@ -638,6 +642,7 @@ export interface TransitionFieldChange {
   field_name: string;
   label: string;
   is_required: boolean;
+  department_type_filter?: string;
   sort_order: number;
 }
 
@@ -645,6 +650,7 @@ export interface TransitionFieldChangeRequest {
   field_name: string;
   label?: string;
   is_required: boolean;
+  department_type_filter?: string;
   sort_order?: number;
 }
 
@@ -716,6 +722,7 @@ export interface WorkflowTransitionCreateRequest {
   // Department Assignment
   assign_department_id?: string;
   auto_detect_department?: boolean;
+  department_type_filter?: 'internal' | 'external' | '';
 
   // User Assignment
   assign_user_id?: string;
@@ -737,6 +744,7 @@ export interface WorkflowTransitionUpdateRequest {
   // Department Assignment
   assign_department_id?: string | null;
   auto_detect_department?: boolean;
+  department_type_filter?: 'internal' | 'external' | '';
 
   // User Assignment
   assign_user_id?: string | null;
@@ -1020,6 +1028,7 @@ export interface PresenceInfo {
 export interface DepartmentMatchRequest {
   classification_id?: string;
   location_id?: string;
+  department_type?: 'internal' | 'external';
 }
 
 export interface DepartmentMatchResponse {

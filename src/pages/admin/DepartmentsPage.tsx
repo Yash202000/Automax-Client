@@ -36,6 +36,7 @@ interface DepartmentFormData {
   name: string;
   code: string;
   description: string;
+  type: 'internal' | 'external';
   parent_id: string;
   parent_name: string;
   location_ids: string[];
@@ -47,6 +48,7 @@ const initialFormData: DepartmentFormData = {
   name: '',
   code: '',
   description: '',
+  type: 'internal',
   parent_id: '',
   parent_name: '',
   location_ids: [],
@@ -217,8 +219,9 @@ export const DepartmentsPage: React.FC = () => {
         name: dept.name,
         code: dept.code,
         description: dept.description || '',
+        type: (dept.type as 'internal' | 'external') || 'internal',
         parent_id: dept.parent_id || '',
-        parent_name: '', // Parent name will be resolved from tree data if needed
+        parent_name: '',
         location_ids: dept.locations?.map((l) => l.id) || [],
         classification_ids: dept.classifications?.map((c) => c.id) || [],
         role_ids: dept.roles?.map((r) => r.id) || [],
@@ -359,6 +362,7 @@ export const DepartmentsPage: React.FC = () => {
       name: department.name,
       code: department.code,
       description: department.description,
+      type: (department.type as 'internal' | 'external') || 'internal',
       parent_id: department.parent_id || '',
       parent_name: parentDept?.name || '',
       location_ids: department.locations?.map((l) => l.id) || [],
@@ -384,6 +388,7 @@ export const DepartmentsPage: React.FC = () => {
       name: formData.name,
       code: formData.code,
       description: formData.description,
+      type: formData.type,
       parent_id: formData.parent_id || undefined,
       location_ids: formData.location_ids,
       classification_ids: formData.classification_ids,
@@ -866,6 +871,29 @@ export const DepartmentsPage: React.FC = () => {
                       className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Department Type */}
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">{t('departments.type')}</label>
+                  <div className="flex gap-3">
+                    {(['internal', 'external'] as const).map((t_) => (
+                      <button
+                        key={t_}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: t_ })}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
+                          formData.type === t_
+                            ? t_ === 'internal'
+                              ? 'bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]'
+                              : 'bg-amber-500 text-white border-amber-500'
+                            : 'bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]'
+                        }`}
+                      >
+                        {t_ === 'internal' ? t('departments.typeInternal') : t('departments.typeExternal')}
+                      </button>
+                    ))}
                   </div>
                 </div>
 

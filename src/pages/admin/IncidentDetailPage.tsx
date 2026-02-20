@@ -49,6 +49,7 @@ import type {
   DepartmentMatchResponse,
   UserMatchResponse,
   LookupValue,
+  Department,
 } from '../../types';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -165,6 +166,13 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => departmentApi.getTree(),
     enabled: !!needsDepts,
   });
+
+  // Recursively filter department tree by type ('internal' | 'external')
+  const filterDeptTree = (nodes: Department[], type: string): Department[] =>
+    nodes
+      .map(node => ({ ...node, children: node.children ? filterDeptTree(node.children, type) : [] }))
+      .filter(node => node.type === type || (node.children && node.children.length > 0));
+
   const { data: fcLocationsData } = useQuery({
     queryKey: ['admin', 'locations', 'tree'],
     queryFn: () => locationApi.getTree(),
@@ -508,6 +516,7 @@ export const IncidentDetailPage: React.FC = () => {
           const deptResult = await departmentApi.match({
             classification_id: incident.classification?.id,
             location_id: incident.location?.id,
+            ...(trans.department_type_filter ? { department_type: trans.department_type_filter as 'internal' | 'external' } : {}),
           });
           if (deptResult.success && deptResult.data) {
             setDepartmentMatchResult(deptResult.data);
@@ -1948,10 +1957,16 @@ export const IncidentDetailPage: React.FC = () => {
                       )}
                       {fc.field_name === 'department_id' && (
                         <TreeSelect
-                          data={(fcDepartmentsData?.data as unknown as TreeSelectNode[]) || []}
+                          data={(() => {
+                            const allDepts = (fcDepartmentsData?.data as unknown as Department[]) || [];
+                            const filtered = fc.department_type_filter
+                              ? filterDeptTree(allDepts, fc.department_type_filter)
+                              : allDepts;
+                            return filtered as unknown as TreeSelectNode[];
+                          })()}
                           value={transitionFieldValues[fc.field_name] || ''}
                           onChange={(id) => setTransitionFieldValues(prev => ({ ...prev, [fc.field_name]: id }))}
-                          placeholder="Select department..."
+                          placeholder={`Select ${fc.department_type_filter || ''} department...`.replace('  ', ' ').trim()}
                           leafOnly={false}
                           maxHeight="240px"
                         />
