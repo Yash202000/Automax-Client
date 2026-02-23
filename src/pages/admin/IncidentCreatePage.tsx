@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, AlertTriangle, Info, Zap, Upload, X, Paperclip } from 'lucide-react';
-import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '../../components/ui';
 import type { TreeSelectNode, LocationData } from '../../components/ui';
 import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../api/admin';
 import { userApi, departmentApi, locationApi } from '../../api/admin';
-import type { IncidentCreateRequest, User, Department, Location, Workflow, Classification, IncidentSource, LookupValue } from '../../types';
+import type { IncidentCreateRequest, User, Department, Location, Workflow, Classification, IncidentSource, LookupValue, iLocationOption } from '../../types';
 import { INCIDENT_SOURCES } from '../../types';
 import { DynamicLookupField } from '../../components/common/DynamicLookupField';
 import { useAuthStore } from '../../stores/authStore';
+import { Modal } from '../../components/ui';
 
 export function IncidentCreatePage() {
   const { t } = useTranslation();
@@ -42,6 +43,8 @@ export function IncidentCreatePage() {
   const [autoMatchedWorkflow, setAutoMatchedWorkflow] = useState<Workflow | null>(null);
   const [isAutoMatched, setIsAutoMatched] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [locationOptions, setLocationOptions] = useState<iLocationOption[]>([]);
+  const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -359,9 +362,53 @@ export function IncidentCreatePage() {
     },
   });
 
+  const fetchLocationCoords = async (name: string) => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json`
+    );
+
+    const data = await response.json();
+
+    if (data.length > 0) {
+      if (data.length === 1) {
+        const { lat, lon } = data[0];
+        setFormData(prev => ({ ...prev, latitude: lat, longitude: lon }));
+      } else {
+        setLocationOptions(data.map((item: any) => ({
+          name: item.display_name,
+          lat: item.lat,
+          lon: item.lon,
+          type: item.type
+        })))
+        setShowLocationOption(true);
+      }
+    } else {
+      setFormData(prev => ({ ...prev, latitude: undefined, longitude: undefined }));
+    }
+  }
+
+  const updateNode = (nodes: any[], id: string, callback: (node: any) => void) => {
+    for (let node of nodes) {
+      if (node.id === id) {
+        callback(node);
+        return true;
+      }
+      if (node.children && node.children.length) {
+        const found = updateNode(node.children, id, callback);
+        if (found) return true;
+      }
+    }
+    return false;
+  }
+
   const handleChange = (field: keyof typeof formData, value: string | IncidentSource | undefined) => {
     if (field === 'workflow_id' && value) {
       setIsAutoMatched(false);
+    }
+    if (field === 'location_id' && value) {
+      updateNode(locations, value, (node) => {
+        fetchLocationCoords(node.name);
+      });
     }
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -536,7 +583,7 @@ export function IncidentCreatePage() {
 
     createMutation.mutate({ data: submitData, files: attachments });
   };
-  
+
   const sourceOptions = [
     { value: '', label: t('incidents.selectSource') },
     ...INCIDENT_SOURCES.map(s => ({ value: s.value, label: s.label })),
@@ -859,6 +906,38 @@ export function IncidentCreatePage() {
           </div>
         </div>
       </form>
+      {/* if there is multiple location in fetchLocation show a modal to select the location */}
+      <Modal
+        isOpen={showLocationOption}
+        showCloseButton={false}
+        onClose={() => { }}
+      >
+        <ModalHeader>
+          <ModalTitle>Select Location</ModalTitle>
+          <ModalDescription>Please select a location</ModalDescription>
+        </ModalHeader>
+        <ModalBody>
+          <div className='flex flex-col gap-2'>
+            {
+              locationOptions.map(x => (
+                <div className='flex flex-col hover:bg-gray-100 cursor-pointer p-2 rounded-lg' onClick={() => {
+                  setFormData(prev => ({ ...prev, latitude: x.lat, longitude: x.lon }));
+                  setShowLocationOption(false);
+                }}>
+                  <span>{x.name}</span>
+                  <span className='text-gray-500'>Lat: {x.lat} Lon: {x.lon}</span>
+                  <span>{x.type}</span>
+                </div>
+              ))
+            }
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setShowLocationOption(false)}>
+            {t('common.cancel')}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }
