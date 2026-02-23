@@ -32,6 +32,8 @@ const ApplicationLinksPage: React.FC = () => {
     color: 'blue',
     sort_order: 0,
     is_active: true,
+    sso_enabled: false,
+    sso_callback_url: '',
   });
 
   // Fetch application links
@@ -135,6 +137,8 @@ const ApplicationLinksPage: React.FC = () => {
       color: 'blue',
       sort_order: 0,
       is_active: true,
+      sso_enabled: false,
+      sso_callback_url: '',
     });
   };
 
@@ -149,6 +153,8 @@ const ApplicationLinksPage: React.FC = () => {
       color: link.color,
       sort_order: link.sort_order,
       is_active: link.is_active,
+      sso_enabled: link.sso_enabled,
+      sso_callback_url: link.sso_callback_url || '',
     });
   };
 
@@ -343,6 +349,39 @@ const ApplicationLinksPage: React.FC = () => {
               <label htmlFor="is_active" className="text-sm text-[hsl(var(--foreground))]">
                 Active (visible on dashboard)
               </label>
+            </div>
+
+            {/* SSO Settings */}
+            <div className="border border-[hsl(var(--border))] rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sso_enabled"
+                  checked={formData.sso_enabled}
+                  onChange={(e) => setFormData({ ...formData, sso_enabled: e.target.checked })}
+                  className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                />
+                <label htmlFor="sso_enabled" className="text-sm font-medium text-[hsl(var(--foreground))]">
+                  Enable SSO (Single Sign-On)
+                </label>
+              </div>
+              {formData.sso_enabled && (
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                    SSO Callback URL
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.sso_callback_url}
+                    onChange={(e) => setFormData({ ...formData, sso_callback_url: e.target.value })}
+                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                    placeholder="https://target.app/sso/callback"
+                  />
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                    The URL on the target application that receives the SSO JWT token.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pt-2">

@@ -10,6 +10,7 @@ import {
   DashboardPage,
   ProfilePage,
   SettingsPage,
+  SSOCompletePage,
   AdminDashboard,
   UsersPage,
   RolesPage,
@@ -67,6 +68,9 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
           </Route>
+
+          {/* SSO complete — public, bootstraps its own auth from URL params */}
+          <Route path="/sso-complete" element={<SSOCompletePage />} />
 
           {/* Protected routes */}
           <Route element={<MainLayout />}>

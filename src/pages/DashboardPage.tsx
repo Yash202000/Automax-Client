@@ -6,6 +6,8 @@ import { useAuthStore } from '../stores/authStore';
 import { usePermissions } from '../hooks/usePermissions';
 import { PERMISSIONS } from '../constants/permissions';
 import { applicationLinkApi } from '../api/applicationLinks';
+import { ssoApi } from '../api/sso';
+import type { ApplicationLink } from '../types';
 import {
   Settings,
   AlertTriangle,
@@ -164,6 +166,24 @@ export const DashboardPage: React.FC = () => {
     (card) => isSuperAdmin || !card.permissions || card.permissions.length === 0 || hasAnyPermission(card.permissions)
   );
 
+  const handleAppLinkClick = async (appLink: ApplicationLink) => {
+    if (appLink.sso_enabled) {
+      // Open blank tab immediately (before async call) to avoid popup blockers
+      const newTab = window.open('', '_blank');
+      try {
+        const { data } = await ssoApi.launch(appLink.id);
+        if (newTab) {
+          newTab.location.href = data.redirect_url;
+        }
+      } catch {
+        newTab?.close();
+        window.open(appLink.url, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      window.open(appLink.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-120px)] flex flex-col">
       {/* Welcome Section */}
@@ -227,7 +247,7 @@ export const DashboardPage: React.FC = () => {
             </Link>
           ))}
 
-          {/* Application link cards - open in new tab */}
+          {/* Application link cards */}
           {applicationLinks.map((appLink) => {
             const AppIcon = getIconComponent(appLink.icon);
             const gradient = getGradientClasses(appLink.color);
@@ -235,11 +255,9 @@ export const DashboardPage: React.FC = () => {
             const hasImage = Boolean(appLink.image_url);
 
             return (
-              <a
+              <button
                 key={appLink.id}
-                href={appLink.url}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => handleAppLinkClick(appLink)}
                 className={`
                   group relative overflow-hidden rounded-2xl p-5
                   bg-linear-to-br ${gradient}
@@ -247,6 +265,7 @@ export const DashboardPage: React.FC = () => {
                   hover:shadow-xl hover:scale-[1.02]
                   transition-all duration-300 ease-out
                   min-h-[160px] flex flex-col justify-between
+                  text-left w-full cursor-pointer
                 `}
               >
                 {/* Background decoration */}
@@ -289,7 +308,7 @@ export const DashboardPage: React.FC = () => {
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 </div>
-              </a>
+              </button>
             );
           })}
         </div>

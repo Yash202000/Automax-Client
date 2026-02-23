@@ -210,6 +210,8 @@ export interface ApplicationLink {
   color: string;
   sort_order: number;
   is_active: boolean;
+  sso_enabled: boolean;
+  sso_callback_url: string;
   created_at: string;
   updated_at: string;
 }
@@ -223,6 +225,8 @@ export interface ApplicationLinkCreateRequest {
   color?: string;
   sort_order?: number;
   is_active?: boolean;
+  sso_enabled?: boolean;
+  sso_callback_url?: string;
 }
 
 export interface ApplicationLinkUpdateRequest {
@@ -234,6 +238,8 @@ export interface ApplicationLinkUpdateRequest {
   color?: string;
   sort_order?: number;
   is_active?: boolean;
+  sso_enabled?: boolean;
+  sso_callback_url?: string;
 }
 
 export interface PaginatedResponse<T> {
