@@ -25,6 +25,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import type { ActionLog, ActionLogFilter } from '../../types';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 const actionColors: Record<string, string> = {
   create: 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]',
@@ -38,6 +39,109 @@ const actionColors: Record<string, string> = {
 const statusColors: Record<string, string> = {
   success: 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]',
   failed: 'bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]',
+};
+
+const exportToCSV = (logs: ActionLog[]) => {
+  const headers = [
+    'Time',
+    'User',
+    'Username',
+    'Action',
+    'Module',
+    'Description',
+    'Status',
+    'Duration (ms)',
+    'IP Address',
+  ];
+
+  const rows = logs.map((log) => [
+    new Date(log?.created_at).toLocaleString(),
+    `${log.user?.first_name || ''} ${log?.user?.last_name || ''}`,
+    log?.user?.username || '',
+    log?.action,
+    log?.module,
+    log?.description,
+    log?.status,
+    log?.duration,
+    log?.ip_address,
+  ]);
+
+  const csvContent =
+    [headers, ...rows]
+      .map((row) =>
+        row
+          .map((field) =>
+            `"${String(field ?? '').replace(/"/g, '""')}"`
+          )
+          .join(',')
+      )
+      .join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Action_Logs_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+};
+
+
+const exportToExcel = (logs: ActionLog[]) => {
+  const formattedData = logs.map((log) => ({
+    Time: new Date(log?.created_at).toLocaleString(),
+    User: `${log?.user?.first_name || ''} ${log?.user?.last_name || ''}`,
+    Username: log?.user?.username,
+    Action: log?.action,
+    Module: log?.module,
+    Description: log?.description,
+    Status: log?.status,
+    Duration: log?.duration,
+    'IP Address': log?.ip_address,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+   worksheet['!cols'] = [
+    { wch: 22 }, 
+    { wch: 22 }, 
+    { wch: 18 }, 
+    { wch: 15 }, 
+    { wch: 18 }, 
+    { wch: 40 }, 
+    { wch: 14 }, 
+    { wch: 12 }, 
+    { wch: 20 }, 
+  ];
+  
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Action Logs');
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array',
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = `Action_Logs_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
 };
 
 export const ActionLogsPage: React.FC = () => {
@@ -76,22 +180,32 @@ export const ActionLogsPage: React.FC = () => {
     filter.action || filter.module || filter.status || filter.search || filter.start_date || filter.end_date
   );
 
-  const handleExport = async (format: 'csv' | 'excel') => {
-    try {
-      const blob = await actionLogApi.export(filter, format);
+  // const handleExport = async (format: 'csv' | 'excel') => {
+  //   try {
+  //     const blob = await actionLogApi.export(filter, format);
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.${format === 'csv' ? 'csv' : 'xlsx'}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export failed:', error);
-      // You could show an error toast here
+  //     // Create download link
+  //     const url = window.URL.createObjectURL(blob);
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.${format === 'csv' ? 'csv' : 'xlsx'}`);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Export failed:', error);
+  //     // You could show an error toast here
+  //   }
+  // };
+
+  const handleExport = (format: 'csv' | 'excel') => {
+    if (!data?.data || data.data.length === 0) return;
+
+    if (format === 'csv') {
+      exportToCSV(data.data);
+    } else {
+      exportToExcel(data.data);
     }
   };
 
