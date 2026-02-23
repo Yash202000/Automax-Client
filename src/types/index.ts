@@ -1574,3 +1574,10 @@ export interface CanMergeResponse {
   can_merge: boolean;
 }
 
+export interface iLocationOption {
+  name: string,
+  lat: number,
+  lon: number,
+  type: string
+}
+

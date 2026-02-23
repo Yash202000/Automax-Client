@@ -179,6 +179,30 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
     setMapCenter(null);
   }, [onChange]);
 
+  const reverseAndSetLatLong = async () => {
+    if (value?.latitude && value.longitude) {
+      setIsLoading(true);
+
+      const addressData = await reverseGeocode(value?.latitude, value?.longitude);
+
+      const locationData: LocationData = {
+        latitude: value.latitude,
+        longitude: value.longitude,
+        ...addressData,
+      };
+
+      onChange(locationData);
+      setMapCenter([value.latitude, value.longitude]);
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (value?.latitude && value.longitude) {
+      reverseAndSetLatLong()
+    }
+  }, [value?.latitude, value?.longitude])
+
   return (
     <div className="space-y-3">
       {label && (
@@ -255,7 +279,7 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
             <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900">
-                {value.latitude.toFixed(6)}, {value.longitude.toFixed(6)}
+                {value?.latitude}, {value?.longitude}
               </p>
               {value.address && (
                 <p className="text-sm text-gray-600 mt-1 break-words">{value.address}</p>
