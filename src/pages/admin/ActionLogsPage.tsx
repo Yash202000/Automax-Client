@@ -41,6 +41,53 @@ const statusColors: Record<string, string> = {
   failed: 'bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]',
 };
 
+const formatValue = (val: any) => {
+  if (val === null || val === undefined) return "null";
+
+  if (Array.isArray(val)) {
+    if (val.length === 0) return "[]";
+    return val.join(", ");
+  }
+
+  if (typeof val === "object") {
+    return JSON.stringify(val);
+  }
+
+  return String(val);
+};
+
+const getChangedValues = (oldValue?: string, newValue?: string) => {
+  try {
+    const oldObj = JSON.parse(oldValue || "{}");
+    const newObj = JSON.parse(newValue || "{}");
+
+    const allKeys = new Set([
+      ...Object.keys(oldObj),
+      ...Object.keys(newObj),
+    ]);
+
+    const oldChanges: string[] = [];
+    const newChanges: string[] = [];
+
+    allKeys.forEach((key) => {
+      const oldVal = oldObj[key];
+      const newVal = newObj[key];
+
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        oldChanges.push(`${key}: ${formatValue(oldVal)}`);
+        newChanges.push(`${key}: ${formatValue(newVal)}`);
+      }
+    });
+
+    return {
+      oldText: oldChanges.join(", "),
+      newText: newChanges.join(", "),
+    };
+  } catch {
+    return { oldText: "", newText: "" };
+  }
+};
+
 const exportToCSV = (logs: ActionLog[]) => {
   const headers = [
     'Time',
@@ -49,6 +96,8 @@ const exportToCSV = (logs: ActionLog[]) => {
     'Action',
     'Module',
     'Description',
+    'Old Value',
+    'New Value',
     'Status',
     'Duration (ms)',
     'IP Address',
@@ -61,6 +110,8 @@ const exportToCSV = (logs: ActionLog[]) => {
     log?.action,
     log?.module,
     log?.description,
+    log?.old_value ? getChangedValues(log.old_value, log.new_value).oldText : '',
+    log?.new_value ? getChangedValues(log.old_value, log.new_value).newText : '',
     log?.status,
     log?.duration,
     log?.ip_address,
@@ -92,6 +143,7 @@ const exportToCSV = (logs: ActionLog[]) => {
 
 
 const exportToExcel = (logs: ActionLog[]) => {
+
   const formattedData = logs.map((log) => ({
     Time: new Date(log?.created_at).toLocaleString(),
     User: `${log?.user?.first_name || ''} ${log?.user?.last_name || ''}`,
@@ -99,6 +151,8 @@ const exportToExcel = (logs: ActionLog[]) => {
     Action: log?.action,
     Module: log?.module,
     Description: log?.description,
+    "Old Value":log?.old_value ? getChangedValues(log.old_value, log.new_value).oldText : '',
+    "New Value":log?.new_value ? getChangedValues(log.old_value, log.new_value).newText : '',
     Status: log?.status,
     Duration: log?.duration,
     'IP Address': log?.ip_address,
@@ -112,6 +166,8 @@ const exportToExcel = (logs: ActionLog[]) => {
     { wch: 18 }, 
     { wch: 15 }, 
     { wch: 18 }, 
+    { wch: 40 }, 
+    { wch: 40 }, 
     { wch: 40 }, 
     { wch: 14 }, 
     { wch: 12 }, 
