@@ -91,7 +91,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({ incidentId }) 
       Action: rev.action_description,
       'Action Taken By': rev.performed_by
         ? `${rev.performed_by.first_name || ''} ${rev.performed_by.last_name || ''}`.trim() ||
-          rev.performed_by.username
+        rev.performed_by.username
         : 'System',
       Role: rev.performed_by_roles?.join(', ') || '',
       Mobile: rev.performed_by_phone || rev.performed_by?.phone || '',
@@ -239,20 +239,20 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({ incidentId }) 
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
                           {revision.performed_by
                             ? `${revision.performed_by.first_name || ''} ${revision.performed_by.last_name || ''}`.trim() ||
-                              revision.performed_by.username
+                            revision.performed_by.username
                             : 'System'}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1 max-w-xs">
-                        {revision.performed_by_roles?.map((role, idx) => (
+                        {revision.performed_by?.roles?.map((role, idx) => (
                           <span
                             key={idx}
                             className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-full"
                           >
                             <Shield className="w-3 h-3" />
-                            {role}
+                            {role.name}
                           </span>
                         ))}
                         {(!revision.performed_by_roles || revision.performed_by_roles.length === 0) && (
