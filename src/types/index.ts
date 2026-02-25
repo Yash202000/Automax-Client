@@ -58,8 +58,21 @@ export interface Classification {
   path: string;
   is_active: boolean;
   sort_order: number;
+  criticalities?: ClassificationCriticality[];
   children?: Classification[];
   created_at: string;
+}
+
+export interface ClassificationCriticality {
+  id: string;
+  classification_id: string;
+  criticality_id: string;
+  criticality?: LookupValue;
+  max_closing_hours: number;
+  max_closing_minutes: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Location {
@@ -304,6 +317,13 @@ export interface ClassificationCreateRequest {
   type?: ClassificationType;
   parent_id?: string;
   sort_order?: number;
+  criticalities?: ClassificationCriticalityCreateRequest[];
+}
+
+export interface ClassificationCriticalityCreateRequest {
+  criticality_id: string;
+  max_closing_hours: number;
+  max_closing_minutes: number;
 }
 
 export interface ClassificationUpdateRequest {

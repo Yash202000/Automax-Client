@@ -15,9 +15,10 @@ import {
   Layers,
   Download,
   Upload,
+  Clock,
 } from 'lucide-react';
-import { classificationApi } from '../../api/admin';
-import type { Classification, ClassificationCreateRequest, ClassificationUpdateRequest, ClassificationType } from '../../types';
+import { classificationApi, lookupApi } from '../../api/admin';
+import type { Classification, ClassificationCreateRequest, ClassificationUpdateRequest, ClassificationType, ClassificationCriticalityCreateRequest, LookupValue } from '../../types';
 import { cn } from '@/lib/utils';
 import { Button } from '../../components/ui';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -30,6 +31,7 @@ interface ClassificationFormData {
   parent_name: string;
   sort_order: number;
   type: ClassificationType;
+  criticalities: ClassificationCriticalityCreateRequest[];
 }
 
 const initialFormData: ClassificationFormData = {
@@ -39,6 +41,7 @@ const initialFormData: ClassificationFormData = {
   parent_name: '',
   sort_order: 0,
   type: 'both',
+  criticalities: [],
 };
 
 const levelGradients = [
@@ -215,6 +218,21 @@ export const ClassificationsPage: React.FC = () => {
     queryFn: () => classificationApi.list(),
   });
 
+  // Fetch PRIORITY lookup values for criticality configuration
+  const { data: priorityLookupData } = useQuery({
+    queryKey: ['admin', 'lookups', 'priority'],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      const priorityCategory = categories.data?.find(cat => cat.code === 'PRIORITY');
+      if (priorityCategory) {
+        return await lookupApi.listValues(priorityCategory.id);
+      }
+      return { data: [] };
+    },
+  });
+
+  const priorityValues: LookupValue[] = priorityLookupData?.data || [];
+
   const createMutation = useMutation({
     mutationFn: (data: ClassificationCreateRequest) => classificationApi.create(data),
     onSuccess: () => {
@@ -242,10 +260,17 @@ export const ClassificationsPage: React.FC = () => {
 
   const openCreateModal = (parentId: string = '', parentName: string = '') => {
     setEditingClassification(null);
+    // Initialize criticalities with default values (0 hours, 30 minutes) for each priority
+    const defaultCriticalities = priorityValues.map(priority => ({
+      criticality_id: priority.id,
+      max_closing_hours: 0,
+      max_closing_minutes: 30,
+    }));
     setFormData({
       ...initialFormData,
       parent_id: parentId,
       parent_name: parentName,
+      criticalities: defaultCriticalities,
     });
     setIsModalOpen(true);
   };
@@ -253,6 +278,25 @@ export const ClassificationsPage: React.FC = () => {
   const openEditModal = (classification: Classification) => {
     const parentCls = classificationsList?.data?.find((c: Classification) => c.id === classification.parent_id);
     setEditingClassification(classification);
+    
+    // Initialize criticalities - use existing values or defaults
+    const existingCriticalities = classification.criticalities || [];
+    const criticalities = priorityValues.map(priority => {
+      const existing = existingCriticalities.find(c => c.criticality_id === priority.id);
+      if (existing) {
+        return {
+          criticality_id: existing.criticality_id,
+          max_closing_hours: existing.max_closing_hours,
+          max_closing_minutes: existing.max_closing_minutes,
+        };
+      }
+      return {
+        criticality_id: priority.id,
+        max_closing_hours: 0,
+        max_closing_minutes: 30,
+      };
+    });
+    
     setFormData({
       name: classification.name,
       description: classification.description,
@@ -260,6 +304,7 @@ export const ClassificationsPage: React.FC = () => {
       parent_name: parentCls?.name || '',
       sort_order: classification.sort_order,
       type: classification.type || 'both',
+      criticalities,
     });
     setIsModalOpen(true);
   };
@@ -272,12 +317,24 @@ export const ClassificationsPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate criticalities - all must have closing time configured
+    const hasInvalidCriticality = formData.criticalities.some(
+      c => c.max_closing_hours < 0 || c.max_closing_minutes < 0 || c.max_closing_minutes > 59
+    );
+    
+    if (hasInvalidCriticality) {
+      alert(t('classifications.criticalityRequired'));
+      return;
+    }
+    
     const payload = {
       name: formData.name,
       description: formData.description,
       parent_id: formData.parent_id || undefined,
       sort_order: formData.sort_order,
       type: formData.type,
+      criticalities: formData.criticalities,
     };
 
     if (editingClassification) {
@@ -530,9 +587,9 @@ export const ClassificationsPage: React.FC = () => {
       {/* Create/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-2xl w-full animate-scale-in max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)] flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-xl flex items-center justify-center shadow-lg shadow-[hsl(var(--primary)/0.25)]">
                   <FolderTree className="w-5 h-5 text-white" />
@@ -559,8 +616,8 @@ export const ClassificationsPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {/* Modal Body - Scrollable */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Parent Info Banner (when adding child) */}
               {!editingClassification && formData.parent_name && (
                 <div className="flex items-center gap-3 p-3 bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.2)] rounded-xl">
@@ -647,8 +704,95 @@ export const ClassificationsPage: React.FC = () => {
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">{t('classifications.sortOrderHelp')}</p>
               </div>
 
-              {/* Modal Footer */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-[hsl(var(--border))]">
+              {/* Criticality Configuration Section */}
+              <div className="border-t border-[hsl(var(--border))] pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-5 h-5 text-[hsl(var(--primary))]" />
+                  <div>
+                    <label className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                      {t('classifications.maxClosingTimeByCriticality')}
+                    </label>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {t('classifications.criticalitySettingsHelp')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {priorityValues.map((priority) => {
+                    const criticality = formData.criticalities.find(c => c.criticality_id === priority.id);
+                    const index = formData.criticalities.findIndex(c => c.criticality_id === priority.id);
+                    
+                    return (
+                      <div
+                        key={priority.id}
+                        className="flex items-center gap-3 p-3 bg-[hsl(var(--muted)/0.3)] rounded-xl border border-[hsl(var(--border))]"
+                        style={{ borderLeftColor: priority.color || '#6B7280', borderLeftWidth: '4px' }}
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: priority.color || '#6B7280' }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                            {priority.name}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-0.5">
+                              {t('classifications.hours')}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={criticality?.max_closing_hours || 0}
+                              onChange={(e) => {
+                                const newCriticalities = [...formData.criticalities];
+                                if (index >= 0) {
+                                  newCriticalities[index] = {
+                                    ...newCriticalities[index],
+                                    max_closing_hours: parseInt(e.target.value) || 0,
+                                  };
+                                }
+                                setFormData({ ...formData, criticalities: newCriticalities });
+                              }}
+                              className="w-20 px-2 py-1.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                              placeholder={t('classifications.hoursPlaceholder')}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-0.5">
+                              {t('classifications.minutes')}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="59"
+                              value={criticality?.max_closing_minutes || 0}
+                              onChange={(e) => {
+                                const newCriticalities = [...formData.criticalities];
+                                if (index >= 0) {
+                                  newCriticalities[index] = {
+                                    ...newCriticalities[index],
+                                    max_closing_minutes: Math.min(59, parseInt(e.target.value) || 0),
+                                  };
+                                }
+                                setFormData({ ...formData, criticalities: newCriticalities });
+                              }}
+                              className="w-20 px-2 py-1.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                              placeholder={t('classifications.minutesPlaceholder')}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Footer - Fixed at bottom */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-[hsl(var(--border))] flex-shrink-0 sticky bottom-0 bg-[hsl(var(--card))] pt-4">
                 <Button variant="ghost" type="button" onClick={closeModal}>
                   {t('common.cancel')}
                 </Button>

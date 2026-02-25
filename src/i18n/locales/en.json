@@ -780,7 +780,18 @@
     "complaint": "Complaint",
     "query": "Query",
     "both": "Both",
-    "all": "All"
+    "all": "All",
+    "maxClosingTime": "Max Closing Time",
+    "maxClosingTimeByCriticality": "Max Closing Time by Criticality",
+    "maxClosingTimeRequired": "Max closing time is required for all criticalities",
+    "criticality": "Criticality",
+    "criticalitySettings": "Criticality Settings",
+    "criticalitySettingsHelp": "Define maximum closing time for each criticality level. This is used for SLA calculation.",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "hoursPlaceholder": "0",
+    "minutesPlaceholder": "0",
+    "criticalityRequired": "Please configure closing time for all criticalities"
   },
   "reports": {
     "title": "Reports",

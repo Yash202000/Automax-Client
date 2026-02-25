@@ -8,6 +8,8 @@ import type {
   ClassificationCreateRequest,
   ClassificationUpdateRequest,
   ClassificationType,
+  ClassificationCriticality,
+  ClassificationCriticalityCreateRequest,
   Location,
   LocationCreateRequest,
   LocationUpdateRequest,
@@ -274,6 +276,32 @@ export const classificationApi = {
         headers: { 'Content-Type': 'multipart/form-data' },
       }
     );
+    return response.data;
+  },
+
+  // Classification Criticality methods
+  getCriticalities: async (classificationId: string): Promise<ApiResponse<ClassificationCriticality[]>> => {
+    const response = await apiClient.get<ApiResponse<ClassificationCriticality[]>>(`/admin/classifications/${classificationId}/criticalities`);
+    return response.data;
+  },
+
+  createCriticality: async (classificationId: string, data: ClassificationCriticalityCreateRequest): Promise<ApiResponse<ClassificationCriticality>> => {
+    const response = await apiClient.post<ApiResponse<ClassificationCriticality>>(`/admin/classifications/${classificationId}/criticalities`, data);
+    return response.data;
+  },
+
+  getCriticalityById: async (id: string): Promise<ApiResponse<ClassificationCriticality>> => {
+    const response = await apiClient.get<ApiResponse<ClassificationCriticality>>(`/admin/classifications/criticalities/${id}`);
+    return response.data;
+  },
+
+  updateCriticality: async (id: string, data: { max_closing_hours?: number; max_closing_minutes?: number; is_active?: boolean }): Promise<ApiResponse<ClassificationCriticality>> => {
+    const response = await apiClient.put<ApiResponse<ClassificationCriticality>>(`/admin/classifications/criticalities/${id}`, data);
+    return response.data;
+  },
+
+  deleteCriticality: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/admin/classifications/criticalities/${id}`);
     return response.data;
   },
 };

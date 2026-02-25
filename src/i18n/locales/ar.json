@@ -742,7 +742,18 @@
     "complaint": "شكوى",
     "query": "استفسار",
     "both": "كلاهما",
-    "all": "الكل"
+    "all": "الكل",
+    "maxClosingTime": "أقصى وقت للإغلاق",
+    "maxClosingTimeByCriticality": "أقصى وقت للإغلاق حسب الأهمية",
+    "maxClosingTimeRequired": "أقصى وقت للإغلاق مطلوب لجميع مستويات الأهمية",
+    "criticality": "الأهمية",
+    "criticalitySettings": "إعدادات الأهمية",
+    "criticalitySettingsHelp": "حدد أقصى وقت للإغلاق لكل مستوى أهمية. يُستخدم لحساب SLA.",
+    "hours": "ساعات",
+    "minutes": "دقائق",
+    "hoursPlaceholder": "0",
+    "minutesPlaceholder": "0",
+    "criticalityRequired": "يرجى configuring وقت الإغلاق لجميع مستويات الأهمية"
   },
   "reports": {
     "title": "التقارير",
