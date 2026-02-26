@@ -18,14 +18,16 @@ import {
   Building2,
   UserCheck,
   PenLine,
+  Repeat,
 } from 'lucide-react';
-import { Button } from '../../components/ui';
+import { Button, Checkbox } from '../../components/ui';
 import { incidentApi } from '../../api/admin';
 import type { Incident } from '../../types';
 import { useIncidentListWebSocket } from '../../lib/services/incidentListWebSocket';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import BulkConvertToRequestModal from '@/components/incidents/BulkConvertToRequestModal';
 
 interface MyIncidentsPageProps {
   type: 'assigned' | 'created';
@@ -33,11 +35,13 @@ interface MyIncidentsPageProps {
 
 export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
+  const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
 
   const isAssigned = type === 'assigned';
   const canCreateIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
@@ -87,6 +91,39 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     });
   };
 
+   const toggleSelectAll = (checked: boolean, incidents: any[]) => {
+    if (checked) {
+      setSelectedIncidents(incidents);
+    } else {
+      setSelectedIncidents([]);
+    }
+  };
+
+  const handleCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    item: Incident
+    ) => {
+      const { checked } = e.target;
+  
+      setSelectedIncidents((prev) =>
+        checked
+          ? [...prev, item]
+          : prev.filter((i) => i.id !== item.id)
+      );
+    };
+  
+   const allSameState =
+  selectedIncidents?.length > 0 &&
+  selectedIncidents.every((incident) =>
+    incident?.current_state?.name === selectedIncidents[0]?.current_state?.name &&
+    incident?.location?.id === selectedIncidents[0]?.location?.id &&
+    incident?.classification?.id === selectedIncidents[0]?.classification?.id
+  );
+
+    const isSelected = (item: Incident) =>
+      selectedIncidents.some((i) => i?.id === item?.id);
+  
+
   if (error) {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
@@ -120,6 +157,10 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">{pageDescription}</p>
         </div>
         <div className="flex items-center gap-3">
+           {selectedIncidents?.length > 1 && allSameState ? 
+          <Button leftIcon={<Repeat className="w-4 h-4" />} onClick={() => setShowConvertModal(true)}>
+            {t('incidents.convertToRequest')}
+          </Button> : null }
           <Button
             variant="outline"
             size="sm"
@@ -241,6 +282,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
+                    <th className="ps-4">
+                        <Checkbox
+                          checked={selectedIncidents.length === incidents.length && incidents.length > 0}
+                          onChange={(e) => toggleSelectAll(e.target.checked, incidents)}
+                        />
+                      </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         Incident
@@ -287,6 +334,14 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                       className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors cursor-pointer"
                       onClick={() => navigate(`/incidents/${incident.id}`)}
                     >
+                      <td  onClick={(e) => e.stopPropagation()} className='ps-4'>
+                          <Checkbox
+                          id={incident.id}
+                          checked={isSelected(incident)}
+                          // disabled={isDisabled(incident)}
+                          onChange={(e) => handleCheckboxChange(e, incident)}
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
                           <div className="flex items-center gap-2">
@@ -477,6 +532,15 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           </>
         )}
       </div>
+      <BulkConvertToRequestModal
+        incidents={selectedIncidents}
+        isOpen={showConvertModal}
+        onClose={() => setShowConvertModal(false)}
+        onSuccess={(newRequestId) => {
+          setShowConvertModal(false);
+          navigate(`/requests/${newRequestId}`);
+        }}
+      />
     </div>
   );
 };

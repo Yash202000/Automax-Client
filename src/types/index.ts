@@ -833,6 +833,7 @@ export interface Incident {
   is_merged: boolean;
   merged_at?: string;
   merged_incidents_count?: number;
+  source_incidents?: Incident[];
 }
 
 export interface IncidentDetail extends Incident {
@@ -1098,6 +1099,20 @@ export interface ConvertToRequestRequest {
   department_id?: string;
   due_date?: string;
   feedback?: IncidentFeedbackRequest;
+}
+
+export interface BulkConvertToRequestRequest {
+  incident_ids: string[];
+  classification_id: string;
+  workflow_id: string;
+  assignee_id?: string;
+  department_id?: string;
+  due_date?: string;
+  items?: {
+    incident_id: string;
+    transition_id?: string;
+    transition_comment?: string;
+  }
 }
 
 export interface ConvertToRequestResponse {

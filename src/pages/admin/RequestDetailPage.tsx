@@ -306,18 +306,40 @@ export const RequestDetailPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">{request.title}</h1>
 
           {/* Source Incident Link */}
-          {request.source_incident_id && (
+       {request.source_incidents && request.source_incidents.length > 0 ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                {t('requests.convertedFrom', 'Converted from')}:
+              </span>
+
+              {request.source_incidents.map((incident: any) => (
+                <div>
+                <Link
+                  key={incident.id}
+                  to={`/incidents/${incident.id}`}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {incident.incident_number}
+                </Link>
+                </div>
+              ))}
+            </div>
+          ) : request.source_incident_id ? (
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">{t('requests.convertedFrom', 'Converted from')}:</span>
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                {t('requests.convertedFrom', 'Converted from')}:
+              </span>
               <Link
                 to={`/incidents/${request.source_incident_id}`}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                {request.source_incident?.incident_number || t('requests.viewSourceIncident', 'View Source Incident')}
+                {request.source_incident?.incident_number ||
+                  t('requests.viewSourceIncident', 'View Source Incident')}
               </Link>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">

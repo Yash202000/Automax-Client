@@ -91,6 +91,7 @@ import type {
   IncidentBulkUnmergeRequest,
   IncidentBulkUnmergeResponse,
   CanMergeResponse,
+  BulkConvertToRequestRequest,
 } from '../types';
 
 // User Management
@@ -800,6 +801,11 @@ export const incidentApi = {
   // Convert incident to request
   convertToRequest: async (id: string, data: ConvertToRequestRequest): Promise<ApiResponse<ConvertToRequestResponse>> => {
     const response = await apiClient.post<ApiResponse<ConvertToRequestResponse>>(`/incidents/${id}/convert-to-request`, data);
+    return response.data;
+  },
+
+  bulkConvertToRequest:async(data:BulkConvertToRequestRequest):Promise<ApiResponse<any>>=>{
+    const response = await apiClient.post<ApiResponse<any>>(`incidents/bulk/convert-to-request`, data);
     return response.data;
   },
 

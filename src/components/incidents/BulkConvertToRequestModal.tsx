@@ -23,7 +23,7 @@ import type {
   IncidentDetail,
   AvailableTransition,
   Classification,
-  ConvertToRequestRequest,
+  BulkConvertToRequestRequest,
 } from '../../types';
 import { cn } from '@/lib/utils';
 
@@ -175,18 +175,16 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
 
   // Convert mutation
   const convertMutation = useMutation({
-    mutationFn: async (data: ConvertToRequestRequest) => {
+    mutationFn: async (data: BulkConvertToRequestRequest) => {
       // If attachment, upload first
-      if (transitionAttachment && selectedTransition) {
-        await incidentApi.uploadAttachment(incidents?.[0]?.id, transitionAttachment);
-      }
+    //   if (transitionAttachment && selectedTransition) {
+    //     await incidentApi.uploadAttachment(incidents?.[0]?.id, transitionAttachment);
+    //   }
 
-      return incidentApi.convertToRequest(incidents?.[0]?.id, {
-        ...data,
-        feedback: feedbackRating > 0 ? {
-          rating: feedbackRating,
-          comment: feedbackComment || undefined,
-        } : undefined,
+      return incidentApi.bulkConvertToRequest({
+        incident_ids: incidents.map(i => i.id),
+        classification_id: data.classification_id,
+        workflow_id: data.workflow_id,
       });
     },
     onSuccess: (result) => {
@@ -268,17 +266,10 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
   const handleConvert = () => {
     if (!classificationId || !workflowId) return;
 
-    const request: ConvertToRequestRequest = {
+    const request: BulkConvertToRequestRequest = {
+      incident_ids: incidents.map(i => i.id),
       classification_id: classificationId,
       workflow_id: workflowId,
-      transition_id: selectedTransition?.transition.id,
-      transition_comment: transitionComment || undefined,
-      title: title || undefined,
-      description: description || undefined,
-      feedback: feedbackRating > 0 ? {
-        rating: feedbackRating,
-        comment: feedbackComment || undefined,
-      } : undefined,
     };
 
     convertMutation.mutate(request);
