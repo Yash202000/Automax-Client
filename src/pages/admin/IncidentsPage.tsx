@@ -355,12 +355,12 @@ export const IncidentsPage: React.FC = () => {
 
 
   const allSameState =
-  selectedIncidents?.length > 0 &&
-  selectedIncidents.every(
-    (incident) =>
-      incident?.current_state?.name ===
-      selectedIncidents[0]?.current_state?.name
-  );
+      selectedIncidents?.length > 0 &&
+      selectedIncidents.every((incident) =>
+        incident?.current_state?.name === selectedIncidents[0]?.current_state?.name &&
+        incident?.location?.id === selectedIncidents[0]?.location?.id &&
+        incident?.classification?.id === selectedIncidents[0]?.classification?.id
+      );
 
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
@@ -856,7 +856,9 @@ export const IncidentsPage: React.FC = () => {
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
                             <div className="flex items-center gap-2">
-                              <p className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5">
+                              <p className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5 cursor-pointer"
+                              onClick={() => navigate(`/incidents/${incident.id}`)}
+                              >
                                 {incident.incident_number}
                               </p>
                               {incident.active_viewers && incident.active_viewers > 0 && (
