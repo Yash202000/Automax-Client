@@ -25,6 +25,7 @@ import {
   WorkflowDesignerPage,
   IncidentsPage,
   IncidentCreatePage,
+  IncidentEditPage,
   IncidentDetailPage,
   MyIncidentsPage,
   RequestsPage,
@@ -63,167 +64,168 @@ function App() {
         <Toaster position="top-right" richColors closeButton />
         <BrowserRouter basename={window.APP_CONFIG?.BASE_PATH || import.meta.env.VITE_BASE_PATH || '/'}>
           <Routes>
-          {/* Auth routes */}
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-          </Route>
-
-          {/* SSO complete — public, bootstraps its own auth from URL params */}
-          <Route path="/sso-complete" element={<SSOCompletePage />} />
-
-          {/* Protected routes */}
-          <Route element={<MainLayout />}>
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+            {/* Auth routes */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
             </Route>
-          </Route>
 
-          {/* Admin routes */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<AdminLayout />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              {/* User management - requires users:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.USERS_VIEW]} />}>
-                <Route path="/admin/users" element={<UsersPage />} />
-              </Route>
-              {/* Role management - requires roles:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.ROLES_VIEW]} />}>
-                <Route path="/admin/roles" element={<RolesPage />} />
-              </Route>
-              {/* Permission management - requires permissions:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.PERMISSIONS_VIEW]} />}>
-                <Route path="/admin/permissions" element={<PermissionsPage />} />
-              </Route>
-              {/* Department management - requires departments:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.DEPARTMENTS_VIEW]} />}>
-                <Route path="/admin/departments" element={<DepartmentsPage />} />
-                <Route path="/admin/departments/:id" element={<DepartmentDetailPage />} />
-              </Route>
-              {/* Location management - requires locations:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOCATIONS_VIEW]} />}>
-                <Route path="/admin/locations" element={<LocationsPage />} />
-                <Route path="/admin/locations/map" element={<LocationMapPage />} />
-              </Route>
-              {/* Classification management - requires classifications:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.CLASSIFICATIONS_VIEW]} />}>
-                <Route path="/admin/classifications" element={<ClassificationsPage />} />
-              </Route>
-              {/* Action logs - requires action-logs:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.ACTION_LOGS_VIEW]} />}>
-                <Route path="/admin/action-logs" element={<ActionLogsPage />} />
-              </Route>
-              {/* Lookups - requires lookups:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOOKUPS_VIEW]} />}>
-                <Route path="/admin/lookups" element={<LookupsPage />} />
-              </Route>
-              {/* Application Links - requires application-links:view permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.APPLICATION_LINKS_VIEW]} />}>
-                <Route path="/admin/application-links" element={<ApplicationLinksPage />} />
-              </Route>
-              {/* Settings - requires settings:update permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.SETTINGS_UPDATE]} />}>
-                <Route path="/admin/settings" element={<SettingsManagementPage />} />
+            {/* SSO complete — public, bootstraps its own auth from URL params */}
+            <Route path="/sso-complete" element={<SSOCompletePage />} />
+
+            {/* Protected routes */}
+            <Route element={<MainLayout />}>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Route>
-          </Route>
 
-          {/* Workflow routes - separate layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.WORKFLOWS_VIEW]} />}>
-              <Route element={<WorkflowLayout />}>
-                <Route path="/workflows" element={<WorkflowsPage />} />
-                <Route path="/workflows/:id" element={<WorkflowDesignerPage />} />
+            {/* Admin routes */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                {/* User management - requires users:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.USERS_VIEW]} />}>
+                  <Route path="/admin/users" element={<UsersPage />} />
+                </Route>
+                {/* Role management - requires roles:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.ROLES_VIEW]} />}>
+                  <Route path="/admin/roles" element={<RolesPage />} />
+                </Route>
+                {/* Permission management - requires permissions:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.PERMISSIONS_VIEW]} />}>
+                  <Route path="/admin/permissions" element={<PermissionsPage />} />
+                </Route>
+                {/* Department management - requires departments:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.DEPARTMENTS_VIEW]} />}>
+                  <Route path="/admin/departments" element={<DepartmentsPage />} />
+                  <Route path="/admin/departments/:id" element={<DepartmentDetailPage />} />
+                </Route>
+                {/* Location management - requires locations:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOCATIONS_VIEW]} />}>
+                  <Route path="/admin/locations" element={<LocationsPage />} />
+                  <Route path="/admin/locations/map" element={<LocationMapPage />} />
+                </Route>
+                {/* Classification management - requires classifications:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.CLASSIFICATIONS_VIEW]} />}>
+                  <Route path="/admin/classifications" element={<ClassificationsPage />} />
+                </Route>
+                {/* Action logs - requires action-logs:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.ACTION_LOGS_VIEW]} />}>
+                  <Route path="/admin/action-logs" element={<ActionLogsPage />} />
+                </Route>
+                {/* Lookups - requires lookups:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.LOOKUPS_VIEW]} />}>
+                  <Route path="/admin/lookups" element={<LookupsPage />} />
+                </Route>
+                {/* Application Links - requires application-links:view permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.APPLICATION_LINKS_VIEW]} />}>
+                  <Route path="/admin/application-links" element={<ApplicationLinksPage />} />
+                </Route>
+                {/* Settings - requires settings:update permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.SETTINGS_UPDATE]} />}>
+                  <Route path="/admin/settings" element={<SettingsManagementPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
 
-          {/* Incident routes - separate layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<IncidentLayout />}>
-              {/* Base route requires view permission, page handles redirect if no view_all */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.INCIDENTS_VIEW]} />}>
-                <Route path="/incidents" element={<IncidentsPage />} />
-                <Route path="/incidents/my-assigned" element={<MyIncidentsPage type="assigned" />} />
-                <Route path="/incidents/my-created" element={<MyIncidentsPage type="created" />} />
-                <Route path="/incidents/:id" element={<IncidentDetailPage />} />
-              </Route>
-              {/* Create incident - requires create permission */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.INCIDENTS_CREATE]} />}>
-                <Route path="/incidents/new" element={<IncidentCreatePage />} />
+            {/* Workflow routes - separate layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.WORKFLOWS_VIEW]} />}>
+                <Route element={<WorkflowLayout />}>
+                  <Route path="/workflows" element={<WorkflowsPage />} />
+                  <Route path="/workflows/:id" element={<WorkflowDesignerPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
 
-          {/* Request routes - dedicated layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<RequestLayout />}>
-              {/* Base route requires view permission, page handles redirect if no view_all */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REQUESTS_VIEW]} />}>
-                <Route path="/requests" element={<RequestsPage />} />
-                <Route path="/requests/my-assigned" element={<MyRequestsPage type="assigned" />} />
-                <Route path="/requests/my-created" element={<MyRequestsPage type="created" />} />
-                <Route path="/requests/:id" element={<RequestDetailPage />} />
+            {/* Incident routes - separate layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<IncidentLayout />}>
+                {/* Base route requires view permission, page handles redirect if no view_all */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.INCIDENTS_VIEW]} />}>
+                  <Route path="/incidents" element={<IncidentsPage />} />
+                  <Route path="/incidents/my-assigned" element={<MyIncidentsPage type="assigned" />} />
+                  <Route path="/incidents/my-created" element={<MyIncidentsPage type="created" />} />
+                  <Route path="/incidents/:id" element={<IncidentDetailPage />} />
+                  <Route path="/incidents/:id/edit" element={<IncidentEditPage />} />
+                </Route>
+                {/* Create incident - requires create permission */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.INCIDENTS_CREATE]} />}>
+                  <Route path="/incidents/new" element={<IncidentCreatePage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
 
-          {/* Complaint routes - dedicated layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<ComplaintsLayout />}>
-              {/* Base route requires view permission, page handles redirect if no view_all */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.COMPLAINTS_VIEW]} />}>
-                <Route path="/complaints" element={<ComplaintsPage />} />
-                <Route path="/complaints/:id" element={<ComplaintDetailPage />} />
+            {/* Request routes - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<RequestLayout />}>
+                {/* Base route requires view permission, page handles redirect if no view_all */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REQUESTS_VIEW]} />}>
+                  <Route path="/requests" element={<RequestsPage />} />
+                  <Route path="/requests/my-assigned" element={<MyRequestsPage type="assigned" />} />
+                  <Route path="/requests/my-created" element={<MyRequestsPage type="created" />} />
+                  <Route path="/requests/:id" element={<RequestDetailPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
 
-          {/* Query routes - dedicated layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<QueryLayout />}>
-              {/* Base route requires view permission, page handles redirect if no view_all */}
-              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.QUERIES_VIEW]} />}>
-                <Route path="/queries" element={<QueriesPage />} />
-                <Route path="/queries/:id" element={<QueryDetailPage />} />
+            {/* Complaint routes - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<ComplaintsLayout />}>
+                {/* Base route requires view permission, page handles redirect if no view_all */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.COMPLAINTS_VIEW]} />}>
+                  <Route path="/complaints" element={<ComplaintsPage />} />
+                  <Route path="/complaints/:id" element={<ComplaintDetailPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
 
-          {/* Reports routes - dedicated layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REPORTS_VIEW]} />}>
-              <Route element={<ReportsLayout />}>
-                <Route path="/reports" element={<ReportTemplatesPage />} />
-                <Route path="/reports/builder" element={<ReportBuilderPage />} />
-                <Route path="/reports/builder/:templateId" element={<ReportBuilderPage />} />
-                <Route path="/reports/templates" element={<ReportTemplatesListPage />} />
-                <Route path="/reports/templates/:id/edit" element={<ReportTemplateBuilderPage />} />
+            {/* Query routes - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<QueryLayout />}>
+                {/* Base route requires view permission, page handles redirect if no view_all */}
+                <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.QUERIES_VIEW]} />}>
+                  <Route path="/queries" element={<QueriesPage />} />
+                  <Route path="/queries/:id" element={<QueryDetailPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
 
-          {/* Call Centre Management - dedicated layout */}
-          <Route element={<AdminProtectedRoute />}>
-            <Route element={<CallCentreLayout />}>
-              <Route path="/call-centre" element={<Navigate to="/call-centre/contacts" replace />} />
-              <Route path="/call-centre/contacts" element={<CallCentrePage />} />
-              <Route path="/call-centre/history" element={<CallHistory />} />
-              <Route path="/call-centre/email" element={<EmailPage />} />
-              <Route path="/call-centre/sms" element={<SMSPage />} />
-              {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+            {/* Reports routes - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.REPORTS_VIEW]} />}>
+                <Route element={<ReportsLayout />}>
+                  <Route path="/reports" element={<ReportTemplatesPage />} />
+                  <Route path="/reports/builder" element={<ReportBuilderPage />} />
+                  <Route path="/reports/builder/:templateId" element={<ReportBuilderPage />} />
+                  <Route path="/reports/templates" element={<ReportTemplatesListPage />} />
+                  <Route path="/reports/templates/:id/edit" element={<ReportTemplateBuilderPage />} />
+                </Route>
+              </Route>
             </Route>
-          </Route>
 
-          {/* Redirect root to dashboard or login */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Call Centre Management - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<CallCentreLayout />}>
+                <Route path="/call-centre" element={<Navigate to="/call-centre/contacts" replace />} />
+                <Route path="/call-centre/contacts" element={<CallCentrePage />} />
+                <Route path="/call-centre/history" element={<CallHistory />} />
+                <Route path="/call-centre/email" element={<EmailPage />} />
+                <Route path="/call-centre/sms" element={<SMSPage />} />
+                {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+              </Route>
+            </Route>
 
-          {/* 404 redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
+            {/* Redirect root to dashboard or login */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* 404 redirect */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
       </SettingsProvider>
     </QueryClientProvider>
   );
