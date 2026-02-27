@@ -886,7 +886,7 @@ export const IncidentDetailPage: React.FC = () => {
             {t('incidents.refresh')}
           </Button>
           {canEditIncident && (
-            <Button variant="ghost" size="sm" leftIcon={<Edit2 className="w-4 h-4" />}>
+            <Button variant="ghost" size="sm" leftIcon={<Edit2 className="w-4 h-4" />} onClick={() => navigate(`/incidents/${incident.id}/edit`)}>
               {t('incidents.edit')}
             </Button>
           )}
@@ -1948,78 +1948,78 @@ export const IncidentDetailPage: React.FC = () => {
                   {/* User Assignment */}
                   {(selectedTransition.transition.assign_user_id ||
                     ((selectedTransition.transition.auto_match_user || selectedTransition.transition.manual_select_user) && selectedTransition.transition.assignment_role_id)) && (
-                    <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
-                      <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase mb-2 flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {t('incidents.userAssignment')}
-                        {selectedTransition.transition.manual_select_user && (
-                          <span className="text-amber-500">({t('incidents.manualSelectionRequired')})</span>
-                        )}
-                        {selectedTransition.transition.auto_match_user && !selectedTransition.transition.manual_select_user && (
-                          <span className="text-green-500">({t('incidents.autoAssignAllMatched')})</span>
-                        )}
-                        {selectedTransition.transition.assignment_role && (
-                          <span className="text-[hsl(var(--primary))] ml-1">{t('incidents.role')}: {selectedTransition.transition.assignment_role.name}</span>
-                        )}
-                      </p>
-                      {selectedTransition.transition.assign_user_id ? (
-                        <p className="text-sm text-[hsl(var(--foreground))]">
-                          {t('incidents.willAssignTo')} <span className="font-medium">
-                            {selectedTransition.transition.assign_user?.first_name || selectedTransition.transition.assign_user?.username || t('incidents.assignee')}
-                          </span>
+                      <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
+                        <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase mb-2 flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {t('incidents.userAssignment')}
+                          {selectedTransition.transition.manual_select_user && (
+                            <span className="text-amber-500">({t('incidents.manualSelectionRequired')})</span>
+                          )}
+                          {selectedTransition.transition.auto_match_user && !selectedTransition.transition.manual_select_user && (
+                            <span className="text-green-500">({t('incidents.autoAssignAllMatched')})</span>
+                          )}
+                          {selectedTransition.transition.assignment_role && (
+                            <span className="text-[hsl(var(--primary))] ml-1">{t('incidents.role')}: {selectedTransition.transition.assignment_role.name}</span>
+                          )}
                         </p>
-                      ) : selectedTransition.transition.manual_select_user ? (
-                        // Manual select mode - always show dropdown
-                        userMatchResult ? (
-                          userMatchResult.users.length === 0 ? (
-                            <p className="text-sm text-amber-600">{t('incidents.noUsersWithRole')}</p>
-                          ) : (
-                            <select
-                              value={selectedUserId}
-                              onChange={(e) => setSelectedUserId(e.target.value)}
-                              className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                            >
-                              <option value="">{t('incidents.selectAssignee')}</option>
-                              {userMatchResult.users.map((user) => (
-                                <option key={user.id} value={user.id}>
-                                  {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.username} ({user.email})
-                                </option>
-                              ))}
-                            </select>
-                          )
-                        ) : (
-                          <p className="text-sm text-[hsl(var(--muted-foreground))]">{t('incidents.loadingUsers')}</p>
-                        )
-                      ) : selectedTransition.transition.auto_match_user ? (
-                        // Auto-match mode - assign to ALL matched users
-                        userMatchResult ? (
-                          userMatchResult.users.length === 0 ? (
-                            <p className="text-sm text-amber-600">{t('incidents.noMatchingUsers')}</p>
-                          ) : (
-                            <div>
-                              <p className="text-sm text-[hsl(var(--foreground))] mb-2">
-                                {t('incidents.willAssignToUsers', { count: userMatchResult.users.length })}
-                              </p>
-                              <div className="flex flex-wrap gap-1">
+                        {selectedTransition.transition.assign_user_id ? (
+                          <p className="text-sm text-[hsl(var(--foreground))]">
+                            {t('incidents.willAssignTo')} <span className="font-medium">
+                              {selectedTransition.transition.assign_user?.first_name || selectedTransition.transition.assign_user?.username || t('incidents.assignee')}
+                            </span>
+                          </p>
+                        ) : selectedTransition.transition.manual_select_user ? (
+                          // Manual select mode - always show dropdown
+                          userMatchResult ? (
+                            userMatchResult.users.length === 0 ? (
+                              <p className="text-sm text-amber-600">{t('incidents.noUsersWithRole')}</p>
+                            ) : (
+                              <select
+                                value={selectedUserId}
+                                onChange={(e) => setSelectedUserId(e.target.value)}
+                                className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                              >
+                                <option value="">{t('incidents.selectAssignee')}</option>
                                 {userMatchResult.users.map((user) => (
-                                  <span
-                                    key={user.id}
-                                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
-                                  >
-                                    {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.username}
-                                  </span>
+                                  <option key={user.id} value={user.id}>
+                                    {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.username} ({user.email})
+                                  </option>
                                 ))}
+                              </select>
+                            )
+                          ) : (
+                            <p className="text-sm text-[hsl(var(--muted-foreground))]">{t('incidents.loadingUsers')}</p>
+                          )
+                        ) : selectedTransition.transition.auto_match_user ? (
+                          // Auto-match mode - assign to ALL matched users
+                          userMatchResult ? (
+                            userMatchResult.users.length === 0 ? (
+                              <p className="text-sm text-amber-600">{t('incidents.noMatchingUsers')}</p>
+                            ) : (
+                              <div>
+                                <p className="text-sm text-[hsl(var(--foreground))] mb-2">
+                                  {t('incidents.willAssignToUsers', { count: userMatchResult.users.length })}
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {userMatchResult.users.map((user) => (
+                                    <span
+                                      key={user.id}
+                                      className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                                    >
+                                      {user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.username}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )
+                          ) : (
+                            <p className="text-sm text-[hsl(var(--muted-foreground))]">{t('incidents.autoAssignRoleCriteria')}</p>
                           )
                         ) : (
-                          <p className="text-sm text-[hsl(var(--muted-foreground))]">{t('incidents.autoAssignRoleCriteria')}</p>
-                        )
-                      ) : (
-                        <p className="text-sm text-[hsl(var(--muted-foreground))]">{t('incidents.noAssignmentConfigured')}</p>
-                      )}
-                    </div>
-                  )}
+                          <p className="text-sm text-[hsl(var(--muted-foreground))]">{t('incidents.noAssignmentConfigured')}</p>
+                        )}
+                      </div>
+                    )}
                 </>
               )}
 
@@ -2091,11 +2091,10 @@ export const IncidentDetailPage: React.FC = () => {
                             key={star}
                             type="button"
                             onClick={() => setTransitionFeedbackRating(star)}
-                            className={`p-1 transition-colors ${
-                              star <= transitionFeedbackRating
-                                ? 'text-yellow-400'
-                                : 'text-[hsl(var(--muted-foreground))] hover:text-yellow-300'
-                            }`}
+                            className={`p-1 transition-colors ${star <= transitionFeedbackRating
+                              ? 'text-yellow-400'
+                              : 'text-[hsl(var(--muted-foreground))] hover:text-yellow-300'
+                              }`}
                           >
                             <Star
                               className="w-6 h-6"

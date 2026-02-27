@@ -12,6 +12,7 @@ export { WorkflowsPage } from './WorkflowsPage';
 export { WorkflowDesignerPage } from './WorkflowDesignerPage';
 export { IncidentsPage } from './IncidentsPage';
 export { IncidentCreatePage } from './IncidentCreatePage';
+export { IncidentEditPage } from './IncidentEditPage';
 export { IncidentDetailPage } from './IncidentDetailPage';
 export { MyIncidentsPage } from './MyIncidentsPage';
 export { RequestsPage } from './RequestsPage';
