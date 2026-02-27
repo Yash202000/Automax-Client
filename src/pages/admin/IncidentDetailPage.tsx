@@ -94,6 +94,8 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionFeedbackRating, setTransitionFeedbackRating] = useState<number>(0);
   const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('');
   const [transitionFieldValues, setTransitionFieldValues] = useState<Record<string, string>>({});
+  // Ready-to-Close duration picker state
+  const [readyToCloseDuration, setReadyToCloseDuration] = useState<string>('');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
   const [convertModalOpen, setConvertModalOpen] = useState(false);
@@ -168,6 +170,22 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
+  // Fetch global Ready-to-Close duration options (state-specific options come via transition.to_state.duration_options)
+  const isReadyToCloseTransition = selectedTransition?.transition?.to_state?.is_ready_to_close === true;
+  const { data: rtcDurationOptionsData } = useQuery({
+    queryKey: ['incidents', 'ready-to-close', 'duration-options'],
+    queryFn: () => incidentApi.getReadyToCloseDurationOptions(),
+    enabled: isReadyToCloseTransition,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Merge state-specific options with global defaults (state-specific takes priority)
+  const readyToCloseDurationOptions: string[] = isReadyToCloseTransition
+    ? (selectedTransition.transition.to_state?.duration_options?.length
+        ? selectedTransition.transition.to_state.duration_options
+        : rtcDurationOptionsData?.data ?? [])
+    : [];
+
   // Tree data for field change selectors — fetch trees so the TreeSelect component can show hierarchy
   const hasFieldChanges = (selectedTransition?.transition?.field_changes?.length ?? 0) > 0;
   const needsDepts = hasFieldChanges && selectedTransition?.transition?.field_changes?.some(f => f.field_name === 'department_id');
@@ -232,6 +250,7 @@ export const IncidentDetailPage: React.FC = () => {
         setTransitionAttachment(null);
         setTransitionFeedbackRating(0);
         setTransitionFeedbackComment('');
+        setReadyToCloseDuration('');
         setDepartmentMatchResult(null);
         setUserMatchResult(null);
         setSelectedDepartmentId('');
@@ -311,7 +330,7 @@ export const IncidentDetailPage: React.FC = () => {
 
   // Mutations
   const transitionMutation = useMutation({
-    mutationFn: ({ transitionId, comment, attachments, feedback, department_id, user_id, field_changes }: {
+    mutationFn: ({ transitionId, comment, attachments, feedback, department_id, user_id, field_changes, ready_to_close_duration }: {
       transitionId: string;
       comment?: string;
       attachments?: string[];
@@ -319,6 +338,7 @@ export const IncidentDetailPage: React.FC = () => {
       department_id?: string;
       user_id?: string;
       field_changes?: Record<string, string>;
+      ready_to_close_duration?: string;
     }) =>
       incidentApi.transition(id!, {
         transition_id: transitionId,
@@ -328,6 +348,7 @@ export const IncidentDetailPage: React.FC = () => {
         department_id,
         user_id,
         field_changes,
+        ready_to_close_duration,
         version: incident?.version || 1, // Include current version for optimistic locking
       }),
     onSuccess: () => {
@@ -341,6 +362,7 @@ export const IncidentDetailPage: React.FC = () => {
       setTransitionFeedbackRating(0);
       setTransitionFeedbackComment('');
       setTransitionFieldValues({});
+      setReadyToCloseDuration('');
       setDepartmentMatchResult(null);
       setUserMatchResult(null);
       setSelectedDepartmentId('');
@@ -607,6 +629,12 @@ export const IncidentDetailPage: React.FC = () => {
       return;
     }
 
+    // Validate Ready-to-Close duration when required
+    if (isReadyToCloseTransition && !readyToCloseDuration) {
+      alert('Please select a duration for the Ready to Close state');
+      return;
+    }
+
     // Validate required field changes
     const requiredFieldChanges = selectedTransition.transition.field_changes?.filter(f => f.is_required) || [];
     for (const fc of requiredFieldChanges) {
@@ -663,6 +691,7 @@ export const IncidentDetailPage: React.FC = () => {
         department_id: departmentId,
         user_id: userId,
         field_changes: Object.keys(transitionFieldValues).length > 0 ? transitionFieldValues : undefined,
+        ready_to_close_duration: readyToCloseDuration || undefined,
       });
     } catch (error) {
       setTransitionUploading(false);
@@ -784,6 +813,19 @@ export const IncidentDetailPage: React.FC = () => {
                 {t('incidents.slaBreached')}
               </span>
             )}
+            {incident.ready_to_close_expires_at && incident.current_state?.is_ready_to_close && (() => {
+              const hoursLeft = (new Date(incident.ready_to_close_expires_at).getTime() - Date.now()) / (1000 * 60 * 60);
+              const urgent = hoursLeft > 0 && hoursLeft <= 24;
+              return (
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${urgent ? 'bg-amber-500/20 text-amber-700 animate-pulse' : 'bg-amber-500/10 text-amber-600'}`}>
+                  <Clock className="w-3 h-3" />
+                  {urgent
+                    ? `RTC expires in ${Math.floor(hoursLeft)}h ${Math.round((hoursLeft % 1) * 60)}m`
+                    : `${t('incidents.expiresAt') || 'Expires'}: ${new Date(incident.ready_to_close_expires_at).toLocaleDateString()}`
+                  }
+                </span>
+              );
+            })()}
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">{incident.title}</h1>
 
@@ -870,6 +912,30 @@ export const IncidentDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Ready-to-Close pre-expiry warning banner */}
+      {incident.ready_to_close_expires_at && incident.current_state?.is_ready_to_close && (() => {
+        const expiresAt = new Date(incident.ready_to_close_expires_at);
+        const hoursLeft = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60);
+        if (hoursLeft <= 0 || hoursLeft > 24) return null;
+        const h = Math.floor(hoursLeft);
+        const m = Math.round((hoursLeft % 1) * 60);
+        return (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800">
+                Ready to Close — Expiring in {h}h {m}m
+              </p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                This incident will automatically revert if not closed by{' '}
+                <strong>{expiresAt.toLocaleString()}</strong>.
+                {incident.ready_to_close_duration && ` Duration selected: ${incident.ready_to_close_duration}.`}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
@@ -2141,6 +2207,29 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Ready-to-Close Duration Picker */}
+              {isReadyToCloseTransition && (
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t('incidents.readyToCloseDuration') || 'Auto-Revert Duration'}
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+                    {t('incidents.readyToCloseDurationHint') || 'The incident will automatically revert if not closed within the selected period.'}
+                  </p>
+                  <select
+                    value={readyToCloseDuration}
+                    onChange={(e) => setReadyToCloseDuration(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                  >
+                    <option value="">{t('incidents.selectDuration') || 'Select a duration...'}</option>
+                    {readyToCloseDurationOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Comment */}
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2169,6 +2258,7 @@ export const IncidentDetailPage: React.FC = () => {
                   setTransitionFeedbackRating(0);
                   setTransitionFeedbackComment('');
                   setTransitionFieldValues({});
+                  setReadyToCloseDuration('');
                 }}
               >
                 {t('incidents.cancel')}

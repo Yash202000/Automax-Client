@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LogOut,
   User,
@@ -12,10 +13,12 @@ import {
   X,
   LayoutDashboard,
   Languages,
-  Phone
+  Phone,
+  CheckCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../api/auth';
+import { emailApi } from '../../api/admin';
 import { setLoggingOut } from '../../api/client';
 import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
 import SoftPhone from '../sip/Softphone';
@@ -26,13 +29,49 @@ export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const [showSoftphone, setShowSoftphone] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // In-app notifications
+  const { data: notifData } = useQuery({
+    queryKey: ['in-app-notifications', user?.id],
+    queryFn: () => emailApi.list({
+      channel: 'notification',
+      category: 'inbox',
+      received_by: user?.id,
+      limit: 15,
+      page: 1,
+    }),
+    enabled: !!user?.id && isAuthenticated,
+    refetchInterval: 60_000,
+  });
+
+  const notifications = notifData?.data ?? [];
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => emailApi.markAsRead(id, true),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['in-app-notifications', user?.id] }),
+  });
+
+  // Extract incident number from a notification subject like "Incident AMX1-0042: Ready to Close Expiring Soon"
+  const getNotifRoute = (subject: string): string | null => {
+    const match = subject.match(/Incident\s+([A-Z0-9\-]+)\s*:/i);
+    if (!match) return null;
+    const num = match[1];
+    if (/req/i.test(num)) return `/requests?search=${num}`;
+    if (/com/i.test(num)) return `/complaints?search=${num}`;
+    if (/qry/i.test(num)) return `/queries?search=${num}`;
+    return `/incidents?search=${num}`;
+  };
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -80,6 +119,9 @@ export const Navbar: React.FC = () => {
       }
       if (langRef.current && !langRef.current.contains(event.target as Node)) {
         setIsLangOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -200,10 +242,74 @@ export const Navbar: React.FC = () => {
                 />
 
                 {/* Notifications */}
-                <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </button>
+                <div className="relative" ref={notifRef}>
+                  <button
+                    onClick={() => setIsNotifOpen(!isNotifOpen)}
+                    className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isNotifOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 animate-scale-in origin-top-right z-50 overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <span className="text-xs text-gray-500">{unreadCount} unread</span>
+                        )}
+                      </div>
+
+                      {/* List */}
+                      <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
+                        {notifications.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-center">
+                            <Bell className="w-8 h-8 text-gray-300 mb-2" />
+                            <p className="text-sm text-gray-500">No notifications</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              onClick={() => {
+                                if (!notif.is_read) markReadMutation.mutate(notif.id);
+                                const route = getNotifRoute(notif.subject);
+                                if (route) {
+                                  setIsNotifOpen(false);
+                                  navigate(route);
+                                }
+                              }}
+                              className={`px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${
+                                !notif.is_read ? 'bg-blue-50/50' : ''
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!notif.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm ${!notif.is_read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'} truncate`}>
+                                    {notif.subject}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {new Date(notif.created_at).toLocaleString()}
+                                  </p>
+                                </div>
+                                {!notif.is_read && (
+                                  <CheckCheck className="w-4 h-4 text-blue-400 flex-shrink-0 mt-1" />
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
                        <ThemeToggle />
 
 

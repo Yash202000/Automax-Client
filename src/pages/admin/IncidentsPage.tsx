@@ -56,6 +56,13 @@ const defaultColumns: ColumnConfig[] = [
   { id: 'actions', label: 'Actions', visible: true, required: true },
 ];
 
+// Returns true when an incident is in a ready_to_close state and within 24 hours of auto-reversion.
+const getRtcHoursRemaining = (incident: Incident): number | null => {
+  if (!incident.ready_to_close_expires_at || !incident.current_state?.is_ready_to_close) return null;
+  const hoursLeft = (new Date(incident.ready_to_close_expires_at).getTime() - Date.now()) / (1000 * 60 * 60);
+  return hoursLeft > 0 ? hoursLeft : null;
+};
+
 const loadColumnsFromStorage = (): ColumnConfig[] => {
   try {
     const stored = localStorage.getItem(COLUMN_STORAGE_KEY);
@@ -827,10 +834,15 @@ export const IncidentsPage: React.FC = () => {
                 <tbody className="divide-y divide-[hsl(var(--border))]">
                   {incidents.map((incident: Incident) => {
                     const priority = getLookupValue(incident, 'PRIORITY');
+                    const rtcHours = getRtcHoursRemaining(incident);
+                    const isExpiringSoon = rtcHours !== null && rtcHours <= 24;
                     return (
                     <tr
                       key={incident.id}
-                      className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
+                      className={cn(
+                        "hover:bg-[hsl(var(--muted)/0.5)] transition-colors",
+                        isExpiringSoon && "bg-amber-50/40 border-l-2 border-l-amber-400"
+                      )}
                     >
                     <td  onClick={(e) => e.stopPropagation()} className='ps-4'>
                        <Checkbox
@@ -952,17 +964,28 @@ export const IncidentsPage: React.FC = () => {
                       )}
                       {isColumnVisible('sla') && (
                         <td className="px-6 py-4">
-                          {incident.sla_breached ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
-                              <AlertTriangle className="w-3 h-3" />
-                              {t('common.breached')}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-600">
-                              <CheckCircle2 className="w-3 h-3" />
-                              {t('common.onTrack')}
-                            </span>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {incident.sla_breached ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
+                                <AlertTriangle className="w-3 h-3" />
+                                {t('common.breached')}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-600">
+                                <CheckCircle2 className="w-3 h-3" />
+                                {t('common.onTrack')}
+                              </span>
+                            )}
+                            {isExpiringSoon && rtcHours !== null && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-700"
+                                title={`Ready to Close expires at ${new Date(incident.ready_to_close_expires_at!).toLocaleString()}`}
+                              >
+                                <Clock className="w-3 h-3" />
+                                RTC: {Math.floor(rtcHours)}h {Math.round((rtcHours % 1) * 60)}m left
+                              </span>
+                            )}
+                          </div>
                         </td>
                       )}
                       {isColumnVisible('actions') && (

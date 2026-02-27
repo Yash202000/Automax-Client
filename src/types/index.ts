@@ -601,6 +601,11 @@ export interface WorkflowState {
   position_y: number;
   sla_hours?: number;
   is_mergable: boolean;
+  /** When true this state requires a duration selection before entering
+   *  and triggers automatic reversion if not closed in time. */
+  is_ready_to_close: boolean;
+  /** State-specific duration options (overrides global defaults when set). */
+  duration_options?: string[];
   sort_order: number;
   is_active: boolean;
   viewable_roles?: Role[];
@@ -720,6 +725,8 @@ export interface WorkflowStateCreateRequest {
   position_y?: number;
   sla_hours?: number;
   is_mergable?: boolean;
+  is_ready_to_close?: boolean;
+  duration_options?: string[];
   sort_order?: number;
   viewable_role_ids?: string[];
 }
@@ -734,6 +741,8 @@ export interface WorkflowStateUpdateRequest {
   position_y?: number;
   sla_hours?: number;
   is_mergable?: boolean;
+  is_ready_to_close?: boolean;
+  duration_options?: string[];
   sort_order?: number;
   is_active?: boolean;
   viewable_role_ids?: string[];
@@ -837,6 +846,10 @@ export interface Incident {
   closed_at?: string;
   sla_breached: boolean;
   sla_deadline?: string;
+  /** Set when the incident is in a ready_to_close state. Null after closure or reversion. */
+  ready_to_close_expires_at?: string;
+  /** Human-readable duration label selected when transitioning to ready_to_close. */
+  ready_to_close_duration?: string;
   reporter?: User;
   reporter_email: string;
   reporter_name: string;
@@ -1049,6 +1062,10 @@ export interface IncidentTransitionRequest {
 
   // Field changes configured on the transition (user-editable fields)
   field_changes?: Record<string, string>;
+
+  /** Required when transitioning to a state where is_ready_to_close=true.
+   *  Must be one of the configured duration options (e.g. "1 Week"). */
+  ready_to_close_duration?: string;
 
   version: number;
 }

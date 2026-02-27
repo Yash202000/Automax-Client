@@ -962,6 +962,12 @@ export const incidentApi = {
     return response.data;
   },
 
+  // Ready-to-Close duration options (global defaults)
+  getReadyToCloseDurationOptions: async (): Promise<ApiResponse<string[]>> => {
+    const response = await apiClient.get<ApiResponse<string[]>>('/incidents/ready-to-close/duration-options');
+    return response.data;
+  },
+
   // Presence tracking
   markPresence: async (incidentId: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.post<ApiResponse<null>>(`/incidents/${incidentId}/presence`);
@@ -1657,6 +1663,11 @@ export const emailApi = {
   // Send a saved draft — POST /notifications/drafts/:id/send
   sendDraft: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.post<ApiResponse<any>>(`/notifications/drafts/${id}/send`);
+    return response.data;
+  },
+
+  markAsRead: async (id: string, is_read: boolean = true): Promise<ApiResponse<any>> => {
+    const response = await apiClient.patch<ApiResponse<any>>(`/notifications/${id}/read`, { is_read });
     return response.data;
   },
 

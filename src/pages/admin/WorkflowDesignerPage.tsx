@@ -62,6 +62,8 @@ interface StateFormData {
   color: string;
   sla_hours: number | undefined;
   is_mergable: boolean;
+  is_ready_to_close: boolean;
+  duration_options: string; // comma-separated input string
   viewable_role_ids: string[];
 }
 
@@ -91,6 +93,8 @@ const initialStateFormData: StateFormData = {
   color: '#6366f1',
   sla_hours: undefined,
   is_mergable: false,
+  is_ready_to_close: false,
+  duration_options: '',
   viewable_role_ids: [],
 };
 
@@ -441,6 +445,8 @@ export const WorkflowDesignerPage: React.FC = () => {
       color: state.color,
       sla_hours: state.sla_hours || undefined,
       is_mergable: state.is_mergable || false,
+      is_ready_to_close: state.is_ready_to_close || false,
+      duration_options: (state.duration_options || []).join(', '),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
     });
     setIsStateModalOpen(true);
@@ -540,6 +546,10 @@ export const WorkflowDesignerPage: React.FC = () => {
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
       is_mergable: stateFormData.is_mergable,
+      is_ready_to_close: stateFormData.is_ready_to_close,
+      duration_options: stateFormData.duration_options
+        ? stateFormData.duration_options.split(',').map((s) => s.trim()).filter(Boolean)
+        : [],
       viewable_role_ids: stateFormData.viewable_role_ids,
     };
 
@@ -1820,6 +1830,40 @@ export const WorkflowDesignerPage: React.FC = () => {
                     Allow incidents in this status to be merged together
                   </p>
                 </div>
+
+                {/* Ready to Close */}
+                <div>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={stateFormData.is_ready_to_close}
+                      onChange={(e) => setStateFormData({ ...stateFormData, is_ready_to_close: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                    />
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      Ready to Close
+                    </span>
+                  </label>
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
+                    Requires a duration selection when entering this state. Incident reverts automatically if not closed in time.
+                  </p>
+                </div>
+
+                {stateFormData.is_ready_to_close && (
+                  <div className="ml-7">
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                      Duration Options
+                      <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">(comma-separated, leave empty to use global defaults)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={stateFormData.duration_options}
+                      onChange={(e) => setStateFormData({ ...stateFormData, duration_options: e.target.value })}
+                      placeholder="e.g. 1 Day, 2 Days, 1 Week, 2 Weeks"
+                      className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                    />
+                  </div>
+                )}
 
                 {/* Viewable Roles */}
                 <div>
