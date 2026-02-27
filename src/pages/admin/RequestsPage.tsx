@@ -704,15 +704,53 @@ export const RequestsPage: React.FC = () => {
                       )}
                       {isColumnVisible('source') && (
                         <td className="px-6 py-4">
-                          {request.source_incident ? (
-                            <Link
-                              to={`/incidents/${request.source_incident_id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              {request.source_incident.incident_number}
-                            </Link>
+                          
+                          {request.source_incidents?.length ? (
+                      <div
+                        className="group relative flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {request.source_incidents.slice(0, 2).map((incident: any) => (
+                          <Link
+                            key={incident.id}
+                            to={`/incidents/${incident.id}`}
+                            className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            {incident.incident_number}
+                          </Link>
+                      ))}
+
+                    {request.source_incidents.length > 2 && (
+                      <span className="text-sm text-[hsl(var(--primary))] cursor-pointer">
+                        +{request.source_incidents.length - 2}
+                      </span>
+                    )}
+
+                  {request.source_incidents.length > 2 && (
+                    <div className="absolute left-0 top-6 z-10 hidden min-w-[180px] flex-col gap-2 rounded-md border bg-white p-2 shadow-md group-hover:flex">
+                      {request.source_incidents.map((incident: any) => (
+                        <Link
+                          key={incident.id}
+                          to={`/incidents/${incident.id}`}
+                          className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          {incident.incident_number}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                    </div>
+                  ) : request.source_incident ? (
+                        <Link
+                          to={`/incidents/${request.source_incident_id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          {request.source_incident.incident_number}
+                        </Link>
                           ) : request.source_incident_id ? (
                             <Link
                               to={`/incidents/${request.source_incident_id}`}

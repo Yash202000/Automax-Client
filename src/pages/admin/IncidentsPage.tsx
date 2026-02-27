@@ -22,8 +22,9 @@ import {
   Settings2,
   Check,
   ArrowRightLeft,
+  Repeat,
 } from 'lucide-react';
-import { Button } from '../../components/ui';
+import { Button, Checkbox } from '../../components/ui';
 import { incidentApi, workflowApi, userApi, departmentApi, classificationApi, locationApi } from '../../api/admin';
 import type { Incident, IncidentFilter, Workflow, User as UserType, Department, WorkflowState, Classification, Location } from '../../types';
 import { useIncidentListWebSocket } from '../../lib/services/incidentListWebSocket';
@@ -31,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import { MergeIncidentsModal } from '../../components/incidents';
+import BulkConvertToRequestModal from '@/components/incidents/BulkConvertToRequestModal';
 
 // Column configuration
 interface ColumnConfig {
@@ -85,9 +87,10 @@ export const IncidentsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [columns, setColumns] = useState<ColumnConfig[]>(loadColumnsFromStorage);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
-  const [selectedIncidents, setSelectedIncidents] = useState<Set<string>>(new Set());
+  const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
   const [showMergeModal, setShowMergeModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
+  const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
 
   const canViewAllIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canCreateIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
@@ -133,29 +136,29 @@ export const IncidentsPage: React.FC = () => {
 
   const visibleColumnCount = columns.filter(c => c.visible).length;
 
-  // Multi-select handlers
-  const toggleSelectIncident = (incidentId: string) => {
-    setSelectedIncidents(prev => {
-      const next = new Set(prev);
-      if (next.has(incidentId)) {
-        next.delete(incidentId);
-      } else {
-        next.add(incidentId);
-      }
-      return next;
-    });
-  };
+  // // Multi-select handlers
+  // const toggleSelectIncident = (incidentId: string) => {
+  //   setSelectedIncidents(prev => {
+  //     const next = new Set(prev);
+  //     if (next.has(incidentId)) {
+  //       next.delete(incidentId);
+  //     } else {
+  //       next.add(incidentId);
+  //     }
+  //     return next;
+  //   });
+  // };
 
-  const toggleSelectAll = (checked: boolean, incidentIds: string[]) => {
+  const toggleSelectAll = (checked: boolean, incidents: any[]) => {
     if (checked) {
-      setSelectedIncidents(prev => new Set([...Array.from(prev), ...incidentIds]));
+      setSelectedIncidents(incidents);
     } else {
-      setSelectedIncidents(new Set());
+      setSelectedIncidents([]);
     }
   };
 
   const clearSelection = () => {
-    setSelectedIncidents(new Set());
+    setSelectedIncidents([]);
   };
 
   const handleMergeSuccess = () => {
@@ -330,6 +333,33 @@ export const IncidentsPage: React.FC = () => {
     });
   };
 
+ const handleCheckboxChange = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  item: Incident
+  ) => {
+    const { checked } = e.target;
+
+    setSelectedIncidents((prev) =>
+      checked
+        ? [...prev, item]
+        : prev.filter((i) => i.id !== item.id)
+    );
+  };
+
+
+  const allSameState =
+  selectedIncidents?.length > 0 &&
+  selectedIncidents.every(
+    (incident) =>
+      incident?.current_state?.name ===
+      selectedIncidents[0]?.current_state?.name
+  );
+
+  const isSelected = (item: Incident) =>
+    selectedIncidents.some((i) => i?.id === item?.id);
+
+
+
   if (error) {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
@@ -372,11 +402,11 @@ export const IncidentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {selectedIncidents.size >= 2 && canMergeIncidents && (
+          {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
                 <span className="text-sm font-medium text-indigo-700">
-                  {selectedIncidents.size} {t('common.selected')}
+                  {selectedIncidents?.length} {t('common.selected')}
                 </span>
                 <button
                   onClick={clearSelection}
@@ -394,6 +424,10 @@ export const IncidentsPage: React.FC = () => {
               </Button>
             </>
           )}
+        {selectedIncidents?.length > 1 && allSameState ? 
+          <Button leftIcon={<Repeat className="w-4 h-4" />} onClick={() => setShowConvertModal(true)}>
+            {t('incidents.convertToRequest')}
+          </Button> : null }
           <Button
             variant="outline"
             size="sm"
@@ -719,12 +753,10 @@ export const IncidentsPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
                     {/* Select Checkbox Column */}
-                    <th className="px-6 py-4 w-12">
-                      <input
-                        type="checkbox"
-                        checked={selectedIncidents.size === incidents.length && incidents.length > 0}
-                        onChange={(e) => toggleSelectAll(e.target.checked, incidents.map(i => i.id))}
-                        className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                    <th className="ps-4">
+                      <Checkbox
+                        checked={selectedIncidents.length === incidents.length && incidents.length > 0}
+                        onChange={(e) => toggleSelectAll(e.target.checked, incidents)}
                       />
                     </th>
                     {isColumnVisible('incident') && (
@@ -800,19 +832,14 @@ export const IncidentsPage: React.FC = () => {
                       key={incident.id}
                       className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
                     >
-                      {/* Select Checkbox */}
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedIncidents.has(incident.id)}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            toggleSelectIncident(incident.id);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
-                        />
-                      </td>
+                    <td  onClick={(e) => e.stopPropagation()} className='ps-4'>
+                       <Checkbox
+                        id={incident.id}
+                        checked={isSelected(incident)}
+                        // disabled={isDisabled(incident)}
+                        onChange={(e) => handleCheckboxChange(e, incident)}
+                      />
+                    </td>
                       {isColumnVisible('incident') && (
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
@@ -1027,14 +1054,24 @@ export const IncidentsPage: React.FC = () => {
       </div>
 
       {/* Merge Incidents Modal */}
-      {selectedIncidents.size >= 2 && (
+      {selectedIncidents?.length >= 2 && (
         <MergeIncidentsModal
           isOpen={showMergeModal}
           onClose={() => setShowMergeModal(false)}
-          selectedIncidents={incidents.filter(i => selectedIncidents.has(i.id))}
+          selectedIncidents={incidents.filter(i => selectedIncidents.includes(i.id))}
           onMergeSuccess={handleMergeSuccess}
         />
       )}
+
+      <BulkConvertToRequestModal
+        incidents={selectedIncidents}
+        isOpen={showConvertModal}
+        onClose={() => setShowConvertModal(false)}
+        onSuccess={(newRequestId) => {
+          setShowConvertModal(false);
+          navigate(`/requests/${newRequestId}`);
+        }}
+      />
     </div>
   );
 };
