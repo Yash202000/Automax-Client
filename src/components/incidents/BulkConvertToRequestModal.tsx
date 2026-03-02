@@ -188,11 +188,12 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
       });
     },
     onSuccess: (result) => {
-      if (result.data?.new_request?.id) {
-        onSuccess(result.data.new_request.id);
-      }
-    },
-  });
+      const firstSuccess = result.data?.results?.find((r:any) => r.success);
+          if (firstSuccess?.new_request?.id) {
+          onSuccess(firstSuccess.new_request.id);
+        }
+      },
+    });
 
   // Reset state when modal opens
   useEffect(() => {
