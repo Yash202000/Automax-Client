@@ -60,6 +60,7 @@ import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parseCustomLookupFields, formatCustomLookupValue } from '../../utils/customFields';
 import { useIncidentWebSocket } from '../../lib/services/incidentWebSocket';
+import ImageEditor from '@/components/common/ImageEditor';
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -121,6 +122,10 @@ export const IncidentDetailPage: React.FC = () => {
   const [selectedForCompare, setSelectedForCompare] = useState<IncidentAttachment[]>([]);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [compareSliderPosition, setCompareSliderPosition] = useState(50);
+
+  //Image Editor state
+  const [openImageEditor, setOpenImageEditor] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<IncidentAttachment | null>(null);
 
   // Queries
   const { data: incidentData, isLoading, error, refetch } = useQuery({
@@ -595,6 +600,63 @@ export const IncidentDetailPage: React.FC = () => {
       }
     }
   };
+
+  const evaluateReplaceButton = () => {
+    if (selectedImage && selectedImage.uploaded_by?.id === user?.id) {
+      return true;
+    }
+    return false;
+  }
+
+  const evaluateSaveAsCopyButton = () => {
+    return true;
+  }
+
+  const replaceImage = async (editedImage: string) => {
+    setOpenImageEditor(true); // Keep modal or indicator if loading
+
+    try {
+      // Convert dataURL to File
+      const response = await fetch(editedImage);
+      const blob = await response.blob();
+      const file = new File([blob], `edited_${Date.now()}.png`, { type: 'image/png' });
+
+      // Upload to incident
+      incidentApi.deleteAttachment(incident?.id || '', selectedImage?.id!);
+      await incidentApi.uploadAttachment(incident?.id || '', file);
+      refetchAttachments();
+
+      toast.success(t('incidents.attachmentUploaded', 'Edited image saved as new attachment'));
+      setOpenImageEditor(false);
+      refetch(); // Reload incident data to show new attachment
+    } catch (error) {
+      console.error('Failed to save edited image:', error);
+      toast.error(t('incidents.saveFailed', 'Failed to save edited image'));
+      setOpenImageEditor(false);
+    }
+  }
+
+  const saveAsCopy = async (editedImage: string) => {
+    setOpenImageEditor(true); // Keep modal or indicator if loading
+
+    try {
+      // Convert dataURL to File
+      const response = await fetch(editedImage);
+      const blob = await response.blob();
+      const file = new File([blob], `edited_${Date.now()}.png`, { type: 'image/png' });
+
+      // Upload to incident
+      await incidentApi.uploadAttachment(id!, file);
+      refetchAttachments();
+      toast.success(t('incidents.attachmentUploaded', 'Edited image saved as new attachment'));
+      setOpenImageEditor(false);
+      refetch(); // Reload incident data to show new attachment
+    } catch (error) {
+      console.error('Failed to save edited image:', error);
+      toast.error(t('incidents.saveFailed', 'Failed to save edited image'));
+      setOpenImageEditor(false);
+    }
+  }
 
   const executeTransition = async () => {
     if (!selectedTransition) return;
@@ -1380,10 +1442,10 @@ export const IncidentDetailPage: React.FC = () => {
                                       }}
                                     />
                                     {!compareMode && (
-                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
                                         <button
                                           onClick={() => openLightbox(attachment)}
-                                          className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors mr-2"
+                                          className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors"
                                         >
                                           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -1392,7 +1454,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         <a
                                           href={getAttachmentUrl(attachment.id)}
                                           download={attachment.file_name}
-                                          className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors mr-2"
+                                          className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors"
                                         >
                                           <Download className="w-5 h-5" />
                                         </a>
@@ -1401,6 +1463,12 @@ export const IncidentDetailPage: React.FC = () => {
                                           className="p-2 bg-white/90 rounded-full text-red-600 hover:bg-white transition-colors"
                                         >
                                           <Trash2 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                          onClick={() => { setOpenImageEditor(true); setSelectedImage(attachment) }}
+                                          className="p-2 bg-white/90 rounded-full text-red-600 hover:bg-white transition-colors"
+                                        >
+                                          <Edit2 className="w-5 h-5" />
                                         </button>
                                       </div>
                                     )}
@@ -2511,6 +2579,17 @@ export const IncidentDetailPage: React.FC = () => {
           refetch();
           refetchMergedIncidents();
         }}
+      />
+
+      {/* Image Editor Modal */}
+      <ImageEditor
+        isOpen={openImageEditor}
+        onClose={() => setOpenImageEditor(false)}
+        imageUrl={getAttachmentUrl(selectedImage?.id!)}
+        showReplaceButton={evaluateReplaceButton()}
+        showSaveAsCopyButton={evaluateSaveAsCopyButton()}
+        onSave={replaceImage}
+        onSaveAsCopy={saveAsCopy}
       />
     </div>
   );
