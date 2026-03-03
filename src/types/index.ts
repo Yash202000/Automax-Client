@@ -578,6 +578,7 @@ export interface Workflow {
   transitions?: WorkflowTransition[];
   classifications?: Classification[];
   convert_to_request_roles?: Role[];
+  merge_allowed_roles?: Role[];
   locations?: Location[];
   sources?: IncidentSource[];
   priorities?: number[];
@@ -709,6 +710,7 @@ export interface WorkflowUpdateRequest {
   canvas_layout?: string;
   classification_ids?: string[];
   convert_to_request_role_ids?: string[];
+  merge_allowed_role_ids?: string[];
   location_ids?: string[];
   sources?: IncidentSource[];
   priorities?: number[];

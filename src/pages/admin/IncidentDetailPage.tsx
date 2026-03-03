@@ -81,7 +81,6 @@ export const IncidentDetailPage: React.FC = () => {
 
   const canEditIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
   const canViewReports = isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
-  const canMergeIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
 
   const [activeTab, setActiveTab] = useState<'activity' | 'comments' | 'attachments' | 'revisions'>('activity');
   const [commentText, setCommentText] = useState('');
@@ -157,7 +156,7 @@ export const IncidentDetailPage: React.FC = () => {
   const { data: mergedIncidentsData, refetch: refetchMergedIncidents } = useQuery({
     queryKey: ['incident', id, 'merged'],
     queryFn: () => incidentMergeApi.getMergedIncidents(id!),
-    enabled: !!id && canMergeIncidents,
+    enabled: !!id,
   });
 
   const { data: usersData } = useQuery({
@@ -226,6 +225,15 @@ export const IncidentDetailPage: React.FC = () => {
   const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
   const lookupCategories = lookupCategoriesData?.data || [];
   const user = useAuthStore((state) => state.user);
+
+  // Check merge permission based on incident's workflow
+  const { data: mergePermissionData } = useQuery({
+    queryKey: ['incidents', 'merge', 'can-merge', incident?.workflow?.id],
+    queryFn: () => incidentMergeApi.canMerge(incident?.workflow?.id),
+    enabled: !!incident?.workflow?.id,
+  });
+
+  const canMergeIncidents = isSuperAdmin || (incident?.workflow?.id && mergePermissionData?.data?.can_merge) || false;
 
   // Update merged incidents when data changes
   useEffect(() => {
@@ -890,6 +898,7 @@ export const IncidentDetailPage: React.FC = () => {
               {t('incidents.edit')}
             </Button>
           )}
+          {/* Show unmerge button if this incident is a child (merged into another) */}
           {canMergeIncidents && incident?.is_merged && (
             <Button
               variant="outline"
@@ -900,15 +909,28 @@ export const IncidentDetailPage: React.FC = () => {
               {t('incidentMerge.unmerge')}
             </Button>
           )}
+          {/* Show bulk unmerge button if this incident is a master (has merged children) */}
           {canMergeIncidents && mergedIncidents.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowMergedIncidents(!showMergedIncidents)}
-              leftIcon={<Users className="w-4 h-4" />}
-            >
-              {t('incidentMerge.mergedIncidents')} ({mergedIncidents.length})
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMergedIncidents(!showMergedIncidents)}
+                leftIcon={<Users className="w-4 h-4" />}
+              >
+                {t('incidentMerge.mergedIncidents')} ({mergedIncidents.length})
+              </Button>
+              {showMergedIncidents && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBulkUnmergeModalOpen(true)}
+                  leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                >
+                  {t('incidentMerge.bulkUnmerge')} ({mergedIncidents.length})
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

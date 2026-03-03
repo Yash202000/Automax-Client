@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   Search,
   ChevronLeft,
@@ -19,15 +20,17 @@ import {
   UserCheck,
   PenLine,
   Repeat,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Button, Checkbox } from '../../components/ui';
-import { incidentApi } from '../../api/admin';
+import { incidentApi, incidentMergeApi } from '../../api/admin';
 import type { Incident } from '../../types';
 import { useIncidentListWebSocket } from '../../lib/services/incidentListWebSocket';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
 import BulkConvertToRequestModal from '@/components/incidents/BulkConvertToRequestModal';
+import { MergeIncidentsModal } from '../../components/incidents';
 
 interface MyIncidentsPageProps {
   type: 'assigned' | 'created';
@@ -42,6 +45,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   const isAssigned = type === 'assigned';
   const canCreateIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
@@ -50,6 +54,29 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     ? 'Incidents that are currently assigned to you'
     : 'Incidents that you have reported or created';
   const PageIcon = isAssigned ? UserCheck : PenLine;
+
+  // Check if all selected incidents belong to the same workflow
+  const selectedWorkflowId = selectedIncidents?.length >= 2
+    ? selectedIncidents.every((inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id)
+      ? selectedIncidents[0].workflow?.id || null
+      : null
+    : null;
+
+  // Check merge permission for the selected workflow
+  const { data: mergePermissionData } = useQuery({
+    queryKey: ['incidents', 'merge', 'can-merge', selectedWorkflowId],
+    queryFn: () => incidentMergeApi.canMerge(selectedWorkflowId || undefined),
+    enabled: !!selectedWorkflowId,
+  });
+
+  const canMergeIncidents = isSuperAdmin || (selectedWorkflowId && mergePermissionData?.data?.can_merge) || false;
+
+  const handleMergeSuccess = () => {
+    setSelectedIncidents([]);
+    setShowMergeModal(false);
+    refetch();
+    toast.success(t('incidentMerge.mergeSuccess'));
+  };
 
   const { data: incidentsData, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['incidents', type === 'assigned' ? 'my-assigned' : 'my-reported', page, limit],
@@ -157,7 +184,29 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">{pageDescription}</p>
         </div>
         <div className="flex items-center gap-3">
-           {selectedIncidents?.length > 1 && allSameState ? 
+          {selectedIncidents?.length >= 2 && canMergeIncidents && (
+            <>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <span className="text-sm font-medium text-indigo-700">
+                  {selectedIncidents?.length} {t('common.selected')}
+                </span>
+                <button
+                  onClick={() => setSelectedIncidents([])}
+                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                >
+                  {t('common.clear')}
+                </button>
+              </div>
+              <Button
+                variant="default"
+                onClick={() => setShowMergeModal(true)}
+                leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+              >
+                {t('incidentMerge.title')}
+              </Button>
+            </>
+          )}
+           {selectedIncidents?.length > 1 && allSameState ?
           <Button leftIcon={<Repeat className="w-4 h-4" />} onClick={() => setShowConvertModal(true)}>
             {t('incidents.convertToRequest')}
           </Button> : null }
@@ -541,6 +590,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           setShowConvertModal(false);
           navigate(`/requests/${newRequestId}`);
         }}
+      />
+      <MergeIncidentsModal
+        isOpen={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        selectedIncidents={selectedIncidents}
+        onMergeSuccess={handleMergeSuccess}
       />
     </div>
   );

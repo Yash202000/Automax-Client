@@ -172,6 +172,9 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Convert to request role IDs
   const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<string[]>([]);
 
+  // Merge allowed role IDs
+  const [mergeAllowedRoleIds, setMergeAllowedRoleIds] = useState<string[]>([]);
+
   // Base form fields that can be made required
   const baseFormFields: { field: IncidentFormField; label: string; description: string }[] = [
     { field: 'description', label: 'Description', description: 'Detailed incident description' },
@@ -277,6 +280,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
       setRequiredFields(workflow.required_fields || []);
       setConvertToRequestRoleIds(workflow.convert_to_request_roles?.map(r => r.id) || []);
+      setMergeAllowedRoleIds(workflow.merge_allowed_roles?.map(r => r.id) || []);
     }
   }, [workflow]);
 
@@ -332,6 +336,30 @@ export const WorkflowDesignerPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+    },
+  });
+
+  // Merge allowed roles mutation
+  const updateMergeAllowedRolesMutation = useMutation({
+    mutationFn: (roleIds: string[]) => workflowApi.update(id!, {
+      merge_allowed_role_ids: roleIds,
+    }),
+    onSuccess: (data) => {
+      // Update local state with saved roles
+      if (data.data) {
+        setMergeAllowedRoleIds(data.data.merge_allowed_roles?.map(r => r.id) || []);
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      toast.success('Merge permissions updated successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update merge permissions';
+      toast.error('Failed to update merge permissions', {
+        description: errorMessage,
+        duration: 5000,
+      });
+      console.error('Update merge permissions error:', error);
     },
   });
 
@@ -1701,6 +1729,85 @@ export const WorkflowDesignerPage: React.FC = () => {
                     leftIcon={<Check className="w-4 h-4" />}
                   >
                     Save Convert to Request Permissions
+                  </Button>
+                </div>
+              </div>
+
+              {/* Merge Permissions Section */}
+              <div className="mt-8 pt-8 border-t border-[hsl(var(--border))]">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Merge Incident Permissions</h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                    Configure which roles can merge incidents. If no roles are selected, all users will be able to merge.
+                  </p>
+                </div>
+
+                <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">Allowed Roles</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {roles.map((role) => (
+                      <label
+                        key={role.id}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
+                          mergeAllowedRoleIds.includes(role.id)
+                            ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
+                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={mergeAllowedRoleIds.includes(role.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setMergeAllowedRoleIds(prev => [...prev, role.id]);
+                            } else {
+                              setMergeAllowedRoleIds(prev => prev.filter(id => id !== role.id));
+                            }
+                          }}
+                          className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">{role.name}</span>
+                          {role.description && (
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{role.description}</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 mt-4">
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Selected Roles</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {mergeAllowedRoleIds.length === 0 ? (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">No roles selected - All users can merge incidents</span>
+                    ) : (
+                      mergeAllowedRoleIds.map(roleId => {
+                        const role = roles.find(r => r.id === roleId);
+                        return (
+                          <span
+                            key={roleId}
+                            className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded"
+                          >
+                            {role?.name || roleId}
+                          </span>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end mt-4">
+                  <Button
+                    onClick={() => updateMergeAllowedRolesMutation.mutate(mergeAllowedRoleIds)}
+                    isLoading={updateMergeAllowedRolesMutation.isPending}
+                    leftIcon={<Check className="w-4 h-4" />}
+                  >
+                    Save Merge Permissions
                   </Button>
                 </div>
               </div>
