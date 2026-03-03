@@ -361,7 +361,8 @@
     "convertToRequest": "تحويل إلى طلب",
     "feedback": "التقييم",
     "rateExperience": "قيّم تجربتك",
-    "feedbackCommentPlaceholder": "أضف تعليقات تقييم اختيارية..."
+    "feedbackCommentPlaceholder": "أضف تعليقات تقييم اختيارية...",
+    "clone": "استنساخ"
   },
   "priorities": {
     "critical": "حرج",

@@ -360,6 +360,7 @@
     "feedback": "Feedback",
     "rateExperience": "Rate your experience",
     "feedbackCommentPlaceholder": "Add optional feedback comments...",
+    "clone": "Clone",
     "merge": {
       "title": "Merge Incidents",
       "cannotMerge": "Cannot Merge Incidents",

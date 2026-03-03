@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, AlertTriangle, Info, Zap, Upload, X, Paperclip } from 'lucide-react';
@@ -18,6 +18,7 @@ export function IncidentCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const { id } = useParams<{ id: string }>();
 
   const [formData, setFormData] = useState<Omit<IncidentCreateRequest, 'lookup_value_ids' | 'custom_lookup_fields'>>({
     title: '',
@@ -173,6 +174,30 @@ export function IncidentCreatePage() {
     (cat) => cat.add_to_incident_form
   );
 
+  const fetchIncidentById = async (id: string) => {
+    const d = await incidentApi.getById(id);
+    if (d && d.data) {
+      setFormData({
+        title: d.data.title,
+        description: d.data.description,
+        workflow_id: d.data.workflow?.id,
+        classification_id: d.data.classification?.id,
+        source: d.data.source,
+        assignee_id: d.data.assignee?.id,
+        department_id: d.data.department?.id,
+        location_id: d.data.location?.id,
+        latitude: d.data.latitude,
+        longitude: d.data.longitude,
+        address: d.data.address,
+        city: d.data.city,
+        state: d.data.state,
+        country: d.data.country,
+        postal_code: d.data.postal_code,
+        due_date: d.data.due_date,
+      });
+    }
+  }
+
 
   const getLookupValueFromState = (categoryCode: string): LookupValue | undefined => {
     const category = incidentLookupCategories.find(c => c.code === categoryCode);
@@ -280,6 +305,28 @@ export function IncidentCreatePage() {
   useEffect(() => {
     matchWorkflow();
   }, [formData.classification_id, formData.location_id, formData.source, lookupValues]);
+
+  useEffect(() => {
+    if (id) {
+      fetchIncidentById(id);
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        workflow_id: '',
+        classification_id: '',
+        assignee_id: '',
+        department_id: '',
+        location_id: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        postal_code: '',
+        due_date: '',
+      });
+    }
+  }, [id])
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {

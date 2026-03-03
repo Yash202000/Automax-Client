@@ -7,7 +7,7 @@ import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker, Moda
 import type { TreeSelectNode, LocationData } from '../../components/ui';
 import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../api/admin';
 import { userApi, departmentApi, locationApi } from '../../api/admin';
-import type { IncidentUpdateRequest, User, Department, Location, Workflow, Classification, IncidentSource, iLocationOption, LookupValue } from '../../types';
+import type { IncidentUpdateRequest, User, Department, Location, Workflow, Classification, IncidentSource, iLocationOption } from '../../types';
 
 import { DynamicLookupField } from '../../components/common/DynamicLookupField';
 import { useAuthStore } from '../../stores/authStore';
@@ -221,11 +221,7 @@ export function IncidentEditPage() {
         setInitialized(true);
     }, [incident, incidentLookupCategories, initialized]);
 
-    const getLookupValueFromState = (categoryCode: string): LookupValue | undefined => {
-        const category = incidentLookupCategories.find(c => c.code === categoryCode);
-        if (!category || !lookupValues[category.id]) return undefined;
-        return category.values?.find(v => v.id === lookupValues[category.id]);
-    };
+
 
     const selectedWorkflow = workflows.find(w => w.id === incident?.workflow?.id);
     const workflowRequiredFields = selectedWorkflow?.required_fields || [];

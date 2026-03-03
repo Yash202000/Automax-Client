@@ -155,6 +155,7 @@ function App() {
                 {/* Create incident - requires create permission */}
                 <Route element={<PermissionRoute requiredPermissions={[PERMISSIONS.INCIDENTS_CREATE]} />}>
                   <Route path="/incidents/new" element={<IncidentCreatePage />} />
+                  <Route path="/incidents/:id/clone" element={<IncidentCreatePage />} />
                 </Route>
               </Route>
             </Route>
