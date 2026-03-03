@@ -269,9 +269,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   }, [rawLocations, user]);
 
   // Filter lookup categories for request form
-  const requestLookupCategories = (lookupCategoriesData?.data || []).filter(
-    (cat) => cat.add_to_incident_form
-  );
+  const requestLookupCategories = useMemo(() => {
+    return (lookupCategoriesData?.data || []).filter(
+      (cat) => cat.add_to_incident_form
+    );
+  }, [lookupCategoriesData]);
 
   // Get selected workflow and its required fields
   const selectedWorkflow = workflows.find(w => w.id === workflowId);
