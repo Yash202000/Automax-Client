@@ -2177,9 +2177,9 @@ export const IncidentDetailPage: React.FC = () => {
                       <span className="text-red-500 ml-1">*</span>
                     )}
                   </label>
-                  <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
+                  <div className="p-2 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
                     {/* Star Rating */}
-                    <div>
+                    {/* <div>
                       <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
                         {t('incidents.rateExperience', 'Rate your experience')}
                       </span>
@@ -2206,16 +2206,23 @@ export const IncidentDetailPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                    </div>
+                    </div> */}
                     {/* Feedback Comment */}
                     <div>
-                      <textarea
+                      {/* <textarea
                         value={transitionFeedbackComment}
                         onChange={(e) => setTransitionFeedbackComment(e.target.value)}
                         placeholder={t('incidents.feedbackCommentPlaceholder', 'Add optional feedback comments...')}
                         rows={2}
                         className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                      />
+                      /> */}
+                      <select
+                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                        value={transitionFeedbackComment}
+                        onChange={(e) => setTransitionFeedbackComment(e.target.value)}
+                      >
+                        <option value="Missing Incident Information">Missing Incident Information</option>
+                      </select>
                     </div>
                   </div>
                 </div>
