@@ -360,6 +360,7 @@
     "feedback": "Feedback",
     "rateExperience": "Rate your experience",
     "feedbackCommentPlaceholder": "Add optional feedback comments...",
+    "clone": "Clone",
     "merge": {
       "title": "Merge Incidents",
       "cannotMerge": "Cannot Merge Incidents",
@@ -402,7 +403,8 @@
     "mergedInto": "Merged into {{incidentNumber}}",
     "hasMergedChildren": "This incident has {{count}} merged incident(s)",
     "viewMerged": "View Merged Incidents",
-    "unmerge": "Unmerge"
+    "unmerge": "Unmerge",
+    "bulkUnmerge": "Unmerge All"
   },
   "priorities": {
     "critical": "Critical",

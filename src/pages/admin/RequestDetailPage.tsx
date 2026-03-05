@@ -112,7 +112,7 @@ export const RequestDetailPage: React.FC = () => {
   const downloadAttachment = async (attachmentId: string, fileName: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/incidents/${id}/attachments/${attachmentId}/download`, {
+      const response = await fetch(`${API_URL}/attachments/${attachmentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -140,7 +140,7 @@ export const RequestDetailPage: React.FC = () => {
   // Helper function to get authenticated attachment URL for audio/video
   const getAuthenticatedAttachmentUrl = (attachmentId: string): string => {
     const token = localStorage.getItem('token');
-    return `${API_URL}/incidents/${id}/attachments/${attachmentId}/download?token=${token}`;
+    return `${API_URL}/attachments/${attachmentId}/preview?token=${token}`;
   };
 
   // Helper function to check if file is audio

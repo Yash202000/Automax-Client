@@ -1744,8 +1744,9 @@ export const smsApi = {
 
 // Incident Merge API
 export const incidentMergeApi = {
-  canMerge: async (): Promise<ApiResponse<CanMergeResponse>> => {
-    const response = await apiClient.get<ApiResponse<CanMergeResponse>>('/incidents/merge/can-merge');
+  canMerge: async (workflowId?: string): Promise<ApiResponse<CanMergeResponse>> => {
+    const params = workflowId ? `?workflow_id=${workflowId}` : '';
+    const response = await apiClient.get<ApiResponse<CanMergeResponse>>(`/incidents/merge/can-merge${params}`);
     return response.data;
   },
 

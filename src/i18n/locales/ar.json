@@ -364,7 +364,8 @@
     "feedbackCommentPlaceholder": "أضف تعليقات تقييم اختيارية...",
     "readyToCloseDuration": "مدة الإرجاع التلقائي",
     "readyToCloseDurationHint": "سيتم التراجع عن الحادث تلقائيًا إذا لم يُغلق خلال الفترة المحددة.",
-    "selectDuration": "اختر مدة..."
+    "selectDuration": "اختر مدة...",
+    "clone": "استنساخ"
   },
   "priorities": {
     "critical": "حرج",

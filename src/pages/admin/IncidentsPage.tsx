@@ -25,7 +25,7 @@ import {
   Repeat,
 } from 'lucide-react';
 import { Button, Checkbox } from '../../components/ui';
-import { incidentApi, workflowApi, userApi, departmentApi, classificationApi, locationApi } from '../../api/admin';
+import { incidentApi, workflowApi, userApi, departmentApi, classificationApi, locationApi, incidentMergeApi } from '../../api/admin';
 import type { Incident, IncidentFilter, Workflow, User as UserType, Department, WorkflowState, Classification, Location } from '../../types';
 import { useIncidentListWebSocket } from '../../lib/services/incidentListWebSocket';
 import { cn } from '@/lib/utils';
@@ -101,7 +101,22 @@ export const IncidentsPage: React.FC = () => {
 
   const canViewAllIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
   const canCreateIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
-  const canMergeIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
+
+  // Check if all selected incidents belong to the same workflow
+  const selectedWorkflowId = selectedIncidents?.length >= 2
+    ? selectedIncidents.every((inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id)
+      ? selectedIncidents[0].workflow?.id || null
+      : null
+    : null;
+
+  // Check merge permission for the selected workflow
+  const { data: mergePermissionData } = useQuery({
+    queryKey: ['incidents', 'merge', 'can-merge', selectedWorkflowId],
+    queryFn: () => incidentMergeApi.canMerge(selectedWorkflowId || undefined),
+    enabled: !!selectedWorkflowId,
+  });
+
+  const canMergeIncidents = isSuperAdmin || (selectedWorkflowId && mergePermissionData?.data?.can_merge) || false;
 
   // Get status from URL - users with view permission can access if status filter is applied
   const urlStatusParam = searchParams.get('status');
