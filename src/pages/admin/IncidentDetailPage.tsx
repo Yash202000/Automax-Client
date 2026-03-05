@@ -83,6 +83,7 @@ export const IncidentDetailPage: React.FC = () => {
 
   const canEditIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
   const canViewReports = isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
+  const canMergeIncidents = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_MERGE);
   const canCloneIncident = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
   const [activeTab, setActiveTab] = useState<'activity' | 'comments' | 'attachments' | 'revisions'>('activity');
@@ -234,13 +235,13 @@ export const IncidentDetailPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
 
   // Check merge permission based on incident's workflow
-  const { data: mergePermissionData } = useQuery({
-    queryKey: ['incidents', 'merge', 'can-merge', incident?.workflow?.id],
-    queryFn: () => incidentMergeApi.canMerge(incident?.workflow?.id),
-    enabled: !!incident?.workflow?.id,
-  });
+  // const { data: mergePermissionData } = useQuery({
+  //   queryKey: ['incidents', 'merge', 'can-merge', incident?.workflow?.id],
+  //   queryFn: () => incidentMergeApi.canMerge(incident?.workflow?.id),
+  //   enabled: !!incident?.workflow?.id,
+  // });
 
-  const canMergeIncidents = isSuperAdmin || (incident?.workflow?.id && mergePermissionData?.data?.can_merge) || false;
+  // const canMergeIncidents = isSuperAdmin || (incident?.workflow?.id && mergePermissionData?.data?.can_merge) || false;
 
   // Update merged incidents when data changes
   useEffect(() => {
