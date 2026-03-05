@@ -75,7 +75,7 @@ export const QueryDetailPage: React.FC = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Queries
-  const { data: queryData, isLoading, error, refetch } = useQuery({
+  const { data: queryData, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['query', id],
     queryFn: () => queryApi.getById(id!),
     enabled: !!id,
@@ -384,6 +384,7 @@ export const QueryDetailPage: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={() => refetch()}
+            isLoading={isRefetching}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
             {t('common.refresh', 'Refresh')}

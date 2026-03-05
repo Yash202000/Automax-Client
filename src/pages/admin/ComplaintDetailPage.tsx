@@ -55,7 +55,7 @@ export const ComplaintDetailPage: React.FC = () => {
   const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('');
 
   // Queries
-  const { data: complaintData, isLoading, error, refetch } = useQuery({
+  const { data: complaintData, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['complaint', id],
     queryFn: () => complaintApi.getById(id!),
     enabled: !!id,
@@ -275,6 +275,7 @@ export const ComplaintDetailPage: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => refetch()}
+            isLoading={isRefetching}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
             {t('common.refresh', 'Refresh')}

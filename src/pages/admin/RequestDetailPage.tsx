@@ -66,7 +66,7 @@ export const RequestDetailPage: React.FC = () => {
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
 
   // Queries
-  const { data: requestData, isLoading, error, refetch } = useQuery({
+  const { data: requestData, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['request', id],
     queryFn: () => incidentApi.getById(id!),
     enabled: !!id,
@@ -359,6 +359,7 @@ export const RequestDetailPage: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={() => refetch()}
+            isLoading={isRefetching}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
             {t('common.refresh', 'Refresh')}

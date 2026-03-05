@@ -130,7 +130,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<IncidentAttachment | null>(null);
 
   // Queries
-  const { data: incidentData, isLoading, error, refetch } = useQuery({
+  const { data: incidentData, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['incident', id],
     queryFn: () => incidentApi.getById(id!),
     enabled: !!id,
@@ -954,6 +954,7 @@ export const IncidentDetailPage: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={() => refetch()}
+            isLoading={isRefetching}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
             {t('incidents.refresh')}
