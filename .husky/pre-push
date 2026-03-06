@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+echo "Checking build before push..."
+npm run build
