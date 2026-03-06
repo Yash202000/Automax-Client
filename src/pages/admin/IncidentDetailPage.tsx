@@ -95,7 +95,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionAttachment, setTransitionAttachment] = useState<File | null>(null);
   const [transitionUploading, setTransitionUploading] = useState(false);
   const [transitionFeedbackRating, setTransitionFeedbackRating] = useState<number>(0);
-  const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('');
+  const [transitionFeedbackComment, setTransitionFeedbackComment] = useState('Missing Incident Information');
   const [transitionFieldValues, setTransitionFieldValues] = useState<Record<string, string>>({});
   // Ready-to-Close duration picker state
   const [readyToCloseDuration, setReadyToCloseDuration] = useState<string>('');
@@ -265,7 +265,7 @@ export const IncidentDetailPage: React.FC = () => {
         setTransitionComment('');
         setTransitionAttachment(null);
         setTransitionFeedbackRating(0);
-        setTransitionFeedbackComment('');
+        setTransitionFeedbackComment('Missing Incident Information');
         setReadyToCloseDuration('');
         setDepartmentMatchResult(null);
         setUserMatchResult(null);
@@ -313,6 +313,7 @@ export const IncidentDetailPage: React.FC = () => {
         console.error('Failed to remove presence:', err);
       });
     };
+
   }, [id]);
 
   // Calculate other users (exclude current user)
@@ -360,7 +361,7 @@ export const IncidentDetailPage: React.FC = () => {
         transition_id: transitionId,
         comment,
         attachments,
-        feedback,
+        feedback: { rating: 1, comment: feedback?.comment || 'Missing Incident Information' },
         department_id,
         user_id,
         field_changes,
@@ -376,7 +377,7 @@ export const IncidentDetailPage: React.FC = () => {
       setTransitionComment('');
       setTransitionAttachment(null);
       setTransitionFeedbackRating(0);
-      setTransitionFeedbackComment('');
+      setTransitionFeedbackComment('Missing Incident Information');
       setTransitionFieldValues({});
       setReadyToCloseDuration('');
       setDepartmentMatchResult(null);
@@ -683,9 +684,9 @@ export const IncidentDetailPage: React.FC = () => {
     );
 
     // Check if feedback is required
-    const requiresFeedback = selectedTransition.requirements?.some(
-      r => r.requirement_type === 'feedback' && r.is_mandatory
-    );
+    // const requiresFeedback = selectedTransition.requirements?.some(
+    //   r => r.requirement_type === 'feedback' && r.is_mandatory
+    // );
 
     if (requiresComment && !transitionComment.trim()) {
       alert('A comment is required for this transition');
@@ -697,10 +698,10 @@ export const IncidentDetailPage: React.FC = () => {
       return;
     }
 
-    if (requiresFeedback && transitionFeedbackRating === 0) {
-      alert('Feedback rating is required for this transition');
-      return;
-    }
+    // if (requiresFeedback && transitionFeedbackRating === 0) {
+    //   alert('Feedback rating is required for this transition');
+    //   return;
+    // }
 
     // Validate Ready-to-Close duration when required
     if (isReadyToCloseTransition && !readyToCloseDuration) {
@@ -1908,6 +1909,26 @@ export const IncidentDetailPage: React.FC = () => {
             </div>
           </div>
 
+          {/* feedback view */}
+          {
+            incident.feedback && incident.feedback.length > 0 && (
+              <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('incidents.feedback')}</h3>
+                <div className="space-y-3">
+                  {/* Two-column grid for compact display */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                        <Star className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                        <span className='text-gray-500 whitespace-nowrap'>" {incident.feedback?.[0].comment} "</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           {/* Workflow Info */}
           {incident.workflow && (
             <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
@@ -1943,7 +1964,7 @@ export const IncidentDetailPage: React.FC = () => {
                   setSelectedTransition(null);
                   setTransitionComment('');
                   setTransitionFeedbackRating(0);
-                  setTransitionFeedbackComment('');
+                  setTransitionFeedbackComment('Missing Incident Information');
                   setTransitionFieldValues({});
                 }}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors"
@@ -2180,7 +2201,7 @@ export const IncidentDetailPage: React.FC = () => {
                   </label>
                   <div className="p-2 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
                     {/* Star Rating */}
-                    {/* <div>
+                    <div>
                       <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
                         {t('incidents.rateExperience', 'Rate your experience')}
                       </span>
@@ -2207,23 +2228,23 @@ export const IncidentDetailPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                    </div> */}
+                    </div>
                     {/* Feedback Comment */}
                     <div>
-                      {/* <textarea
+                      <textarea
                         value={transitionFeedbackComment}
                         onChange={(e) => setTransitionFeedbackComment(e.target.value)}
                         placeholder={t('incidents.feedbackCommentPlaceholder', 'Add optional feedback comments...')}
                         rows={2}
                         className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                      /> */}
-                      <select
+                      />
+                      {/* <select
                         className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                         value={transitionFeedbackComment}
                         onChange={(e) => setTransitionFeedbackComment(e.target.value)}
                       >
                         <option value="Missing Incident Information">Missing Incident Information</option>
-                      </select>
+                      </select> */}
                     </div>
                   </div>
                 </div>
@@ -2320,7 +2341,7 @@ export const IncidentDetailPage: React.FC = () => {
                     <span className="text-red-500 ml-1">*</span>
                   </label>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
-                    {t('incidents.readyToCloseDurationHint','The incident will automatically revert if not closed within the selected period.')}
+                    {t('incidents.readyToCloseDurationHint', 'The incident will automatically revert if not closed within the selected period.')}
                   </p>
                   <select
                     value={readyToCloseDuration}
