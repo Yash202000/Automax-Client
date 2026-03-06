@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, AlertTriangle, Info, Zap, Upload, X, Paperclip } from 'lucide-react';
-import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker, LocationPickerModal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '../../components/ui';
 import type { TreeSelectNode, LocationData } from '../../components/ui';
 import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../api/admin';
 import { userApi, departmentApi, locationApi } from '../../api/admin';
@@ -46,6 +46,7 @@ export function IncidentCreatePage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [locationOptions, setLocationOptions] = useState<iLocationOption[]>([]);
   const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
+  const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -419,12 +420,12 @@ export function IncidentCreatePage() {
     if (data.length > 0) {
       if (data.length === 1) {
         const { lat, lon } = data[0];
-        setFormData(prev => ({ ...prev, latitude: lat, longitude: lon }));
+        setFormData(prev => ({ ...prev, latitude: parseFloat(lat), longitude: parseFloat(lon) }));
       } else {
         setLocationOptions(data.map((item: any) => ({
           name: item.display_name,
-          lat: item.lat,
-          lon: item.lon,
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
           type: item.type
         })))
         setShowLocationOption(true);
@@ -802,6 +803,24 @@ export function IncidentCreatePage() {
                         onChange={handleLocationChange}
                         required
                         error={errors.geolocation}
+                        onToggleExpand={() => setShowLocationModal(true)}
+                      />
+
+                      <LocationPickerModal
+                        isOpen={showLocationModal}
+                        onClose={() => setShowLocationModal(false)}
+                        value={formData.latitude !== undefined && formData.longitude !== undefined ? {
+                          latitude: formData.latitude,
+                          longitude: formData.longitude,
+                          address: formData.address,
+                          city: formData.city,
+                          state: formData.state,
+                          country: formData.country,
+                          postal_code: formData.postal_code,
+                        } : undefined}
+                        onChange={(location: LocationData | undefined) => {
+                          handleLocationChange(location);
+                        }}
                       />
                     </div>
                   )}

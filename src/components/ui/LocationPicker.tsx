@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap, ZoomControl } from 'react-leaflet';
 import { LatLng, Icon } from 'leaflet';
-import { MapPin, Loader2, Navigation, X } from 'lucide-react';
+import { MapPin, Loader2, Navigation, X, Search, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
 import { Button } from './Button';
 import 'leaflet/dist/leaflet.css';
 
@@ -32,10 +32,14 @@ interface LocationPickerProps {
   required?: boolean;
   error?: string;
   label?: string;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 interface NominatimResponse {
   display_name: string;
+  lat: string;
+  lon: string;
   address: {
     road?: string;
     house_number?: string;
@@ -102,15 +106,105 @@ async function reverseGeocode(lat: number, lng: number): Promise<Partial<Locatio
   }
 }
 
-export function LocationPicker({ value, onChange, required, error, label }: LocationPickerProps) {
+export function LocationPicker({
+  value,
+  onChange,
+  required,
+  error,
+  label,
+  isExpanded = false,
+  onToggleExpand
+}: LocationPickerProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [geoError, setGeoError] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<NominatimResponse[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(
     value?.latitude && value?.longitude ? [value.latitude, value.longitude] : null
   );
 
-  // Default center (can be customized)
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchTimeout = useRef<any>(null);
+
+  // Default center
   const defaultCenter: [number, number] = [25.276987, 55.296249]; // Dubai as default
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query || query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'Accept-Language': 'en',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data);
+        setShowSuggestions(true);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+
+    if (query.length >= 3) {
+      searchTimeout.current = setTimeout(() => {
+        handleSearch(query);
+      }, 500);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = useCallback((suggestion: NominatimResponse) => {
+    const lat = parseFloat(suggestion.lat);
+    const lon = parseFloat(suggestion.lon);
+
+    const locationData: LocationData = {
+      latitude: lat,
+      longitude: lon,
+      address: suggestion.display_name,
+      city: suggestion.address.city || suggestion.address.town || suggestion.address.village,
+      state: suggestion.address.state,
+      country: suggestion.address.country,
+      postal_code: suggestion.address.postcode,
+    };
+
+    onChange(locationData);
+    setMapCenter([lat, lon]);
+    setSearchQuery(suggestion.display_name);
+    setShowSuggestions(false);
+  }, [onChange]);
 
   const handleGetCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -231,6 +325,7 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
             variant="ghost"
             size="sm"
             onClick={handleClear}
+            className="text-red-500 hover:text-red-600 hover:bg-red-50"
             leftIcon={<X className="w-4 h-4" />}
           >
             Clear
@@ -239,12 +334,13 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
       </div>
 
       {/* Map */}
-      <div className="relative h-64 rounded-lg overflow-hidden border border-gray-200">
+      <div className={`relative ${isExpanded ? 'h-[500px]' : 'h-64'} rounded-lg overflow-hidden border border-gray-200 group transition-all duration-300`}>
         <MapContainer
           center={mapCenter || defaultCenter}
           zoom={mapCenter ? 15 : 10}
           className="h-full w-full"
           style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -252,6 +348,7 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
           />
           <MapClickHandler onLocationSelect={handleMapClick} />
           <MapCenterUpdater center={mapCenter} />
+          <ZoomControl position={isExpanded ? 'bottomleft' : 'topleft'} />
 
           {value?.latitude && value?.longitude && (
             <Marker
@@ -261,15 +358,67 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
           )}
         </MapContainer>
 
+        {/* Search Overlay */}
+        <div className="absolute top-3 left-3 right-3 z-[1000]" ref={searchRef}>
+          <div className="relative shadow-lg max-w-md mx-auto">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={onSearchChange}
+              onFocus={() => searchQuery.length >= 3 && setShowSuggestions(true)}
+              className="block w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+              placeholder="Search for an address..."
+            />
+            {isSearching && (
+              <span className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              </span>
+            )}
+          </div>
+
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-[1001] mt-1 w-full max-w-md left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-60 overflow-y-auto">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(suggestion)}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-50 last:border-0 transition-colors"
+                >
+                  <p className="font-medium text-gray-900 truncate">{suggestion.display_name}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Expand Button Overlay */}
+        {onToggleExpand && (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="absolute bottom-3 right-3 z-[1000] p-1.5 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-md hover:bg-white transition-all text-gray-600 hover:text-blue-600"
+            title={isExpanded ? "Collapse map" : "Expand map"}
+          >
+            {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+          </button>
+        )}
+
         {isLoading && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-[1001] flex items-center justify-center">
+            <div className="bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">Updating...</span>
+            </div>
           </div>
         )}
       </div>
 
-      <p className="text-xs text-gray-500">
-        Click on the map to select a location, or use the "Get Current Location" button
+      <p className="text-[10px] text-gray-400 font-medium italic">
+        * Click map or use search to update coordinates
       </p>
 
       {/* Location Details */}
@@ -316,7 +465,10 @@ export function LocationPicker({ value, onChange, required, error, label }: Loca
 
       {/* Errors */}
       {(error || geoError) && (
-        <p className="text-sm text-red-500">{error || geoError}</p>
+        <div className="flex items-center gap-2 p-2 px-3 bg-red-50 border border-red-100 rounded-lg text-[11px] text-red-600 animate-in fade-in slide-in-from-top-1">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{error || geoError}</span>
+        </div>
       )}
     </div>
   );

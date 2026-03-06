@@ -52,7 +52,7 @@ const Modal = ({
     }
 
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4 sm:p-6">
             <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={closeOnOverlayClick ? onClose : undefined}

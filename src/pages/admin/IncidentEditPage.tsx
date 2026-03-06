@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, AlertTriangle, Info, Zap, Upload, X, Paperclip, Loader2 } from 'lucide-react';
-import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea, TreeSelect, LocationPicker, LocationPickerModal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '../../components/ui';
 import type { TreeSelectNode, LocationData } from '../../components/ui';
 import { workflowApi, classificationApi, incidentApi, lookupApi } from '../../api/admin';
 import { userApi, departmentApi, locationApi } from '../../api/admin';
@@ -42,6 +42,7 @@ export function IncidentEditPage() {
     const [attachments, setAttachments] = useState<File[]>([]);
     const [locationOptions, setLocationOptions] = useState<iLocationOption[]>([]);
     const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
+    const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
     const [initialized, setInitialized] = useState(false);
 
     // Fetch the existing incident
@@ -621,6 +622,24 @@ export function IncidentEditPage() {
                                                 onChange={handleLocationChange}
                                                 required
                                                 error={errors.geolocation}
+                                                onToggleExpand={() => setShowLocationModal(true)}
+                                            />
+
+                                            <LocationPickerModal
+                                                isOpen={showLocationModal}
+                                                onClose={() => setShowLocationModal(false)}
+                                                value={formData.latitude !== undefined && formData.longitude !== undefined ? {
+                                                    latitude: formData.latitude,
+                                                    longitude: formData.longitude,
+                                                    address: formData.address,
+                                                    city: formData.city,
+                                                    state: formData.state,
+                                                    country: formData.country,
+                                                    postal_code: formData.postal_code,
+                                                } : undefined}
+                                                onChange={(location: LocationData | undefined) => {
+                                                    handleLocationChange(location);
+                                                }}
                                             />
                                         </div>
                                     )}

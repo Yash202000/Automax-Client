@@ -7,4 +7,5 @@ export { TreeSelect } from './TreeSelect';
 export type { TreeSelectNode } from './TreeSelect';
 export { LocationPicker } from './LocationPicker';
 export type { LocationData } from './LocationPicker';
+export { LocationPickerModal } from './LocationPickerModal';
 export { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from './Modal';
