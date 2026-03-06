@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useRef, useEffect } from "react";
+import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   LogOut,
@@ -14,14 +14,18 @@ import {
   Phone,
   FileBarChart,
   LayoutTemplate,
-} from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
-import { authApi } from '../../api/auth';
-import { setLoggingOut } from '../../api/client';
-import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
-import { usePermissions } from '../../hooks/usePermissions';
-import { PERMISSIONS } from '../../constants/permissions';
-import SoftPhone from '../sip/Softphone';
+} from "lucide-react";
+import { useAuthStore } from "../../stores/authStore";
+import { authApi } from "../../api/auth";
+import { setLoggingOut } from "../../api/client";
+import {
+  setLanguage,
+  getCurrentLanguage,
+  supportedLanguages,
+} from "../../i18n";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../constants/permissions";
+import SoftPhone from "../sip/Softphone";
 
 export const ReportLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -35,7 +39,8 @@ export const ReportLayout: React.FC = () => {
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin } = usePermissions();
-  const canViewAllReports = hasPermission(PERMISSIONS.REPORTS_VIEW) || isSuperAdmin;
+  const canViewAllReports =
+    hasPermission(PERMISSIONS.REPORTS_VIEW) || isSuperAdmin;
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -54,11 +59,9 @@ export const ReportLayout: React.FC = () => {
         setIsLangOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  
 
   const handleLogout = async () => {
     // Set flag to prevent 401 interceptor from running during logout
@@ -75,26 +78,32 @@ export const ReportLayout: React.FC = () => {
       setLoggingOut(false);
     }
 
-    navigate('/login');
+    navigate("/login");
   };
-
- 
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo Section */}
-      <div className={`h-[70px] flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} border-b border-white/5`}>
+      <div
+        className={`h-[70px] flex items-center ${collapsed ? "justify-center px-2" : "px-5"} border-b border-white/5`}
+      >
         <div className="flex items-center gap-3">
-          <img src="/epm-logo.png" alt="Automax" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
+          <img
+            src="/epm-logo.png"
+            alt="Automax"
+            className={collapsed ? "h-8 w-auto" : "h-10 w-auto"}
+          />
         </div>
       </div>
 
       {/* Collapse Button - Desktop */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`hidden lg:flex absolute top-[75px] ${collapsed ? 'start-[60px]' : 'start-[248px]'} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
+        className={`hidden lg:flex absolute top-[75px] ${collapsed ? "start-[60px]" : "start-[248px]"} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
-        <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'ltr:rotate-180 rtl:rotate-0' : 'ltr:rotate-0 rtl:rotate-180'}`} />
+        <ChevronLeft
+          className={`w-3.5 h-3.5 transition-transform ${collapsed ? "ltr:rotate-180 rtl:rotate-0" : "ltr:rotate-0 rtl:rotate-180"}`}
+        />
       </button>
 
       {/* Navigation */}
@@ -102,7 +111,7 @@ export const ReportLayout: React.FC = () => {
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t('sidebar.actions', 'Actions')}
+            {t("sidebar.actions", "Actions")}
           </p>
         )}
         <div className="space-y-1">
@@ -112,10 +121,10 @@ export const ReportLayout: React.FC = () => {
               end
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`
               }
             >
@@ -125,22 +134,26 @@ export const ReportLayout: React.FC = () => {
                     <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
                   )}
                   <FileBarChart size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('admin.reports', 'All Reports')}</span>}
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("admin.reports", "All Reports")}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
           )}
 
           {canViewAllReports && (
-             <NavLink
+            <NavLink
               to="/report-templates"
               end
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`
               }
             >
@@ -150,20 +163,22 @@ export const ReportLayout: React.FC = () => {
                     <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
                   )}
                   <LayoutTemplate size={20} className="flex-shrink-0" />
-                  {!collapsed && <span className="ms-3 font-medium text-sm">{t('admin.reportTemplates', 'Report Templates')}</span>}
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("admin.reportTemplates", "Report Templates")}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
           )}
-
-         
         </div>
 
         {!collapsed && (
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t('sidebar.quickLinks', 'Quick Links')}
+              {t("sidebar.quickLinks", "Quick Links")}
             </p>
           </>
         )}
@@ -171,10 +186,14 @@ export const ReportLayout: React.FC = () => {
         <NavLink
           to="/dashboard"
           onClick={() => setMobileMenuOpen(false)}
-          className={`group flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
+          className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
         >
           <Home size={20} />
-          {!collapsed && <span className="ms-3 font-medium text-sm">{t('sidebar.backToHome', 'Back to Home')}</span>}
+          {!collapsed && (
+            <span className="ms-3 font-medium text-sm">
+              {t("sidebar.backToHome", "Back to Home")}
+            </span>
+          )}
         </NavLink>
       </nav>
 
@@ -199,7 +218,7 @@ export const ReportLayout: React.FC = () => {
               ) : (
                 <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center ring-2 ring-violet-500/30">
                   <span className="text-white text-sm font-bold">
-                    {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+                    {user?.first_name?.[0] || user?.username?.[0] || "U"}
                   </span>
                 </div>
               )}
@@ -215,7 +234,7 @@ export const ReportLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t('sidebar.signOut', 'Sign Out')}
+              {t("sidebar.signOut", "Sign Out")}
             </button>
           </div>
         )}
@@ -228,7 +247,7 @@ export const ReportLayout: React.FC = () => {
       {/* Desktop Sidebar */}
       <aside
         className={`${
-          collapsed ? 'w-[72px]' : 'w-[264px]'
+          collapsed ? "w-[72px]" : "w-[264px]"
         } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
       >
         <SidebarContent />
@@ -245,7 +264,9 @@ export const ReportLayout: React.FC = () => {
       {/* Mobile Sidebar */}
       <aside
         className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
+          mobileMenuOpen
+            ? "translate-x-0"
+            : "ltr:-translate-x-full rtl:translate-x-full"
         }`}
       >
         <button
@@ -271,11 +292,17 @@ export const ReportLayout: React.FC = () => {
 
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-400">{t('admin.reports', 'Reports')}</span>
+              <span className="text-slate-400">
+                {t("admin.reports", "Reports")}
+              </span>
               <span className="text-slate-300">/</span>
-              <span className="font-semibold text-slate-700">{t('sidebar.management', 'Management')}</span>
+              <span className="font-semibold text-slate-700">
+                {t("sidebar.management", "Management")}
+              </span>
             </div>
-            <h1 className="text-lg font-bold text-slate-800 sm:hidden">{t('admin.reports', 'Reports')}</h1>
+            <h1 className="text-lg font-bold text-slate-800 sm:hidden">
+              {t("admin.reports", "Reports")}
+            </h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -296,10 +323,12 @@ export const ReportLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-violet-50 rounded-xl transition-colors"
-              title={t('sidebar.backToHome', 'Back to Home')}
+              title={t("sidebar.backToHome", "Back to Home")}
             >
               <Home className="w-5 h-5" />
-              <span className="hidden md:inline text-sm font-medium">{t('sidebar.backToHome', 'Back to Home')}</span>
+              <span className="hidden md:inline text-sm font-medium">
+                {t("sidebar.backToHome", "Back to Home")}
+              </span>
             </Link>
 
             {/* Language Switcher */}
@@ -307,16 +336,20 @@ export const ReportLayout: React.FC = () => {
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-1.5 p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                title={t('settings.language', 'Language')}
+                title={t("settings.language", "Language")}
               >
                 <Languages className="w-5 h-5" />
-                <span className="text-xs font-medium uppercase">{currentLang}</span>
+                <span className="text-xs font-medium uppercase">
+                  {currentLang}
+                </span>
               </button>
 
               {isLangOpen && (
                 <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-xs font-medium text-slate-500 uppercase">{t('settings.selectLanguage', 'Select Language')}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase">
+                      {t("settings.selectLanguage", "Select Language")}
+                    </p>
                   </div>
                   {supportedLanguages.map((lang) => (
                     <button
@@ -324,11 +357,13 @@ export const ReportLayout: React.FC = () => {
                       onClick={() => handleLanguageChange(lang.code)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                         currentLang === lang.code
-                          ? 'bg-primary/50 text-primary'
-                          : 'text-slate-700 hover:bg-slate-50'
+                          ? "bg-primary/50 text-primary"
+                          : "text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      <span className="text-lg">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
+                      <span className="text-lg">
+                        {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
+                      </span>
                       <div className="text-start">
                         <p className="font-medium">{lang.nativeName}</p>
                         <p className="text-xs text-slate-500">{lang.name}</p>
@@ -344,8 +379,8 @@ export const ReportLayout: React.FC = () => {
               onClick={() => setShowSoftphone(!showSoftphone)}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                 showSoftphone
-                  ? 'text-emerald-600 bg-emerald-50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                  ? "text-emerald-600 bg-emerald-50"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
               }`}
             >
               <Phone className="w-5 h-5" />
@@ -354,7 +389,10 @@ export const ReportLayout: React.FC = () => {
             <SoftPhone
               showSip={showSoftphone}
               onClose={() => setShowSoftphone(false)}
-              settings={{ domain: "zkff.automaxsw.com", socketURL: "wss://zkff.automaxsw.com:7443" }}
+              settings={{
+                domain: "zkff.automaxsw.com",
+                socketURL: "wss://zkff.automaxsw.com:7443",
+              }}
               auth={{}}
             />
 
@@ -381,7 +419,7 @@ export const ReportLayout: React.FC = () => {
                 ) : (
                   <div className="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center">
                     <span className="text-white text-sm font-bold">
-                      {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+                      {user?.first_name?.[0] || user?.username?.[0] || "U"}
                     </span>
                   </div>
                 )}
@@ -390,11 +428,17 @@ export const ReportLayout: React.FC = () => {
                     {user?.first_name || user?.username}
                   </p>
                   <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
-                    {user?.is_super_admin && <Sparkles className="w-3 h-3 text-primary" />}
-                    {user?.is_super_admin ? t('profile.superAdmin', 'Super Admin') : user?.roles?.[0]?.name || t('sidebar.user', 'User')}
+                    {user?.is_super_admin && (
+                      <Sparkles className="w-3 h-3 text-primary" />
+                    )}
+                    {user?.is_super_admin
+                      ? t("profile.superAdmin", "Super Admin")
+                      : user?.roles?.[0]?.name || t("sidebar.user", "User")}
                   </p>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {/* Dropdown */}
@@ -406,7 +450,9 @@ export const ReportLayout: React.FC = () => {
                   />
                   <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                     <div className="px-4 py-3 border-b border-slate-100">
-                      <p className="text-sm font-medium text-slate-700">{user?.email}</p>
+                      <p className="text-sm font-medium text-slate-700">
+                        {user?.email}
+                      </p>
                     </div>
                     <div className="py-2">
                       <NavLink
@@ -415,7 +461,7 @@ export const ReportLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t('sidebar.backToHome', 'Back to Home')}
+                        {t("sidebar.backToHome", "Back to Home")}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -427,7 +473,7 @@ export const ReportLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t('sidebar.signOut', 'Sign Out')}
+                        {t("sidebar.signOut", "Sign Out")}
                       </button>
                     </div>
                   </div>

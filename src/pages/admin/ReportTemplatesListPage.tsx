@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -15,28 +15,31 @@ import {
   X,
   Calendar,
   Filter,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   listTemplates,
   deleteTemplate,
   duplicateTemplate,
   setDefaultTemplate,
   downloadReport,
-} from '../../services/reportTemplateApi';
-import type { ReportTemplate, GenerateReportRequest } from '../../types/reportTemplate';
-import { Button } from '@/components/ui';
+} from "../../services/reportTemplateApi";
+import type {
+  ReportTemplate,
+  GenerateReportRequest,
+} from "../../types/reportTemplate";
+import { Button } from "@/components/ui";
 
 interface ExportFilters {
   date_from?: string;
   date_to?: string;
   status?: string;
-  format: 'pdf' | 'xlsx';
+  format: "pdf" | "xlsx";
 }
 
 const ReportTemplatesListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,16 +47,17 @@ const ReportTemplatesListPage: React.FC = () => {
 
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<ReportTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ReportTemplate | null>(null);
   const [exportFilters, setExportFilters] = useState<ExportFilters>({
-    format: 'pdf',
+    format: "pdf",
   });
   const [exporting, setExporting] = useState(false);
 
   const limit = 20;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['report-templates', page, search],
+    queryKey: ["report-templates", page, search],
     queryFn: () => listTemplates({ search, page, limit }),
   });
 
@@ -63,12 +67,12 @@ const ReportTemplatesListPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: deleteTemplate,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['report-templates'] });
-      setSuccessMessage('Template deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ["report-templates"] });
+      setSuccessMessage("Template deleted successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError('Failed to delete template');
+      setError("Failed to delete template");
       setTimeout(() => setError(null), 3000);
     },
   });
@@ -76,12 +80,12 @@ const ReportTemplatesListPage: React.FC = () => {
   const duplicateMutation = useMutation({
     mutationFn: duplicateTemplate,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['report-templates'] });
-      setSuccessMessage('Template duplicated successfully');
+      queryClient.invalidateQueries({ queryKey: ["report-templates"] });
+      setSuccessMessage("Template duplicated successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError('Failed to duplicate template');
+      setError("Failed to duplicate template");
       setTimeout(() => setError(null), 3000);
     },
   });
@@ -89,18 +93,19 @@ const ReportTemplatesListPage: React.FC = () => {
   const setDefaultMutation = useMutation({
     mutationFn: setDefaultTemplate,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['report-templates'] });
-      setSuccessMessage('Default template updated');
+      queryClient.invalidateQueries({ queryKey: ["report-templates"] });
+      setSuccessMessage("Default template updated");
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError('Failed to set default template');
+      setError("Failed to set default template");
       setTimeout(() => setError(null), 3000);
     },
   });
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this template?')) return;
+    if (!window.confirm("Are you sure you want to delete this template?"))
+      return;
     deleteMutation.mutate(id);
     setOpenMenuId(null);
   };
@@ -117,7 +122,7 @@ const ReportTemplatesListPage: React.FC = () => {
 
   const openExportModal = (template: ReportTemplate) => {
     setSelectedTemplate(template);
-    setExportFilters({ format: 'pdf' });
+    setExportFilters({ format: "pdf" });
     setShowExportModal(true);
     setOpenMenuId(null);
   };
@@ -127,22 +132,40 @@ const ReportTemplatesListPage: React.FC = () => {
 
     setExporting(true);
     try {
-      const tableElement = selectedTemplate.template.elements.find(e => e.type === 'table');
+      const tableElement = selectedTemplate.template.elements.find(
+        (e) => e.type === "table",
+      );
       const dataSource = tableElement
         ? (tableElement.content as { data_source: string }).data_source
-        : 'incidents';
+        : "incidents";
 
       // Build filters array
-      const filters: Array<{ field: string; operator: string; value: unknown }> = [];
+      const filters: Array<{
+        field: string;
+        operator: string;
+        value: unknown;
+      }> = [];
 
       if (exportFilters.date_from) {
-        filters.push({ field: 'created_at', operator: '>=', value: exportFilters.date_from });
+        filters.push({
+          field: "created_at",
+          operator: ">=",
+          value: exportFilters.date_from,
+        });
       }
       if (exportFilters.date_to) {
-        filters.push({ field: 'created_at', operator: '<=', value: exportFilters.date_to });
+        filters.push({
+          field: "created_at",
+          operator: "<=",
+          value: exportFilters.date_to,
+        });
       }
       if (exportFilters.status) {
-        filters.push({ field: 'status', operator: '=', value: exportFilters.status });
+        filters.push({
+          field: "status",
+          operator: "=",
+          value: exportFilters.status,
+        });
       }
 
       const request: GenerateReportRequest = {
@@ -154,12 +177,12 @@ const ReportTemplatesListPage: React.FC = () => {
       };
 
       await downloadReport(request);
-      setSuccessMessage('Report downloaded successfully');
+      setSuccessMessage("Report downloaded successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
       setShowExportModal(false);
       setSelectedTemplate(null);
     } catch {
-      setError('Failed to export report');
+      setError("Failed to export report");
       setTimeout(() => setError(null), 3000);
     } finally {
       setExporting(false);
@@ -168,21 +191,23 @@ const ReportTemplatesListPage: React.FC = () => {
 
   const handleQuickExport = async (template: ReportTemplate) => {
     try {
-      const tableElement = template.template.elements.find(e => e.type === 'table');
+      const tableElement = template.template.elements.find(
+        (e) => e.type === "table",
+      );
       const dataSource = tableElement
         ? (tableElement.content as { data_source: string }).data_source
-        : 'incidents';
+        : "incidents";
 
       await downloadReport({
         template_id: template.id,
         data_source: dataSource,
-        format: 'pdf',
+        format: "pdf",
         file_name: template.name,
       });
-      setSuccessMessage('Report downloaded');
+      setSuccessMessage("Report downloaded");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
-      setError('Failed to export report');
+      setError("Failed to export report");
       setTimeout(() => setError(null), 3000);
     }
     setOpenMenuId(null);
@@ -209,10 +234,12 @@ const ReportTemplatesListPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Report Templates</h1>
-          <p className="text-gray-500 mt-1">Create and manage customizable report templates</p>
+          <p className="text-gray-500 mt-1">
+            Create and manage customizable report templates
+          </p>
         </div>
         <Button
-          onClick={() => navigate('/reports/templates/new/edit')}
+          onClick={() => navigate("/reports/templates/new/edit")}
           className="flex items-center gap-2 px-4 py-2"
         >
           <Plus className="h-5 w-5" />
@@ -241,20 +268,22 @@ const ReportTemplatesListPage: React.FC = () => {
         {/* Template List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : templates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500">
             <FileText className="h-12 w-12 mb-4" />
             <p className="text-lg font-medium">No templates found</p>
-            <p className="text-sm mt-1">Create your first report template to get started</p>
-            <button
-              onClick={() => navigate('/reports/templates/new/edit')}
-              className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            <p className="text-sm mt-1">
+              Create your first report template to get started
+            </p>
+            <Button
+              className="mt-4"
+              onClick={() => navigate("/reports/templates/new/edit")}
             >
               <Plus className="h-5 w-5" />
               Create Template
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="divide-y">
@@ -283,10 +312,10 @@ const ReportTemplatesListPage: React.FC = () => {
                       )}
                     </div>
                     <p className="text-sm text-gray-500 mt-0.5">
-                      {template.description || 'No description'}
+                      {template.description || "No description"}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Created by {template.created_by?.username || 'Unknown'} on{' '}
+                      Created by {template.created_by?.username || "Unknown"} on{" "}
                       {new Date(template.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -294,7 +323,9 @@ const ReportTemplatesListPage: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => navigate(`/reports/templates/${template.id}/edit`)}
+                    onClick={() =>
+                      navigate(`/reports/templates/${template.id}/edit`)
+                    }
                     className="p-2 hover:bg-gray-200 rounded-lg"
                     title="Edit"
                   >
@@ -309,7 +340,11 @@ const ReportTemplatesListPage: React.FC = () => {
                   </button>
                   <div className="relative">
                     <button
-                      onClick={() => setOpenMenuId(openMenuId === template.id ? null : template.id)}
+                      onClick={() =>
+                        setOpenMenuId(
+                          openMenuId === template.id ? null : template.id,
+                        )
+                      }
                       className="p-2 hover:bg-gray-200 rounded-lg"
                     >
                       <MoreVertical className="h-5 w-5 text-gray-600" />
@@ -322,7 +357,9 @@ const ReportTemplatesListPage: React.FC = () => {
                         />
                         <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-20">
                           <button
-                            onClick={() => navigate(`/reports/templates/${template.id}/edit`)}
+                            onClick={() =>
+                              navigate(`/reports/templates/${template.id}/edit`)
+                            }
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Edit className="h-4 w-4" />
@@ -380,11 +417,12 @@ const ReportTemplatesListPage: React.FC = () => {
         {totalPages > 1 && (
           <div className="p-4 border-t flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} templates
+              Showing {(page - 1) * limit + 1} to{" "}
+              {Math.min(page * limit, total)} of {total} templates
             </p>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -394,7 +432,7 @@ const ReportTemplatesListPage: React.FC = () => {
                 Page {page} of {totalPages}
               </span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -439,8 +477,13 @@ const ReportTemplatesListPage: React.FC = () => {
                   </label>
                   <input
                     type="date"
-                    value={exportFilters.date_from || ''}
-                    onChange={(e) => setExportFilters(prev => ({ ...prev, date_from: e.target.value }))}
+                    value={exportFilters.date_from || ""}
+                    onChange={(e) =>
+                      setExportFilters((prev) => ({
+                        ...prev,
+                        date_from: e.target.value,
+                      }))
+                    }
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -451,8 +494,13 @@ const ReportTemplatesListPage: React.FC = () => {
                   </label>
                   <input
                     type="date"
-                    value={exportFilters.date_to || ''}
-                    onChange={(e) => setExportFilters(prev => ({ ...prev, date_to: e.target.value }))}
+                    value={exportFilters.date_to || ""}
+                    onChange={(e) =>
+                      setExportFilters((prev) => ({
+                        ...prev,
+                        date_to: e.target.value,
+                      }))
+                    }
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -464,8 +512,13 @@ const ReportTemplatesListPage: React.FC = () => {
                   Status (optional)
                 </label>
                 <select
-                  value={exportFilters.status || ''}
-                  onChange={(e) => setExportFilters(prev => ({ ...prev, status: e.target.value || undefined }))}
+                  value={exportFilters.status || ""}
+                  onChange={(e) =>
+                    setExportFilters((prev) => ({
+                      ...prev,
+                      status: e.target.value || undefined,
+                    }))
+                  }
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Statuses</option>
@@ -488,9 +541,11 @@ const ReportTemplatesListPage: React.FC = () => {
                       type="radio"
                       name="format"
                       value="pdf"
-                      checked={exportFilters.format === 'pdf'}
-                      onChange={() => setExportFilters(prev => ({ ...prev, format: 'pdf' }))}
-                      className="text-blue-600"
+                      checked={exportFilters.format === "pdf"}
+                      onChange={() =>
+                        setExportFilters((prev) => ({ ...prev, format: "pdf" }))
+                      }
+                      className="text-primary"
                     />
                     <span className="text-sm">PDF</span>
                   </label>
@@ -499,9 +554,14 @@ const ReportTemplatesListPage: React.FC = () => {
                       type="radio"
                       name="format"
                       value="xlsx"
-                      checked={exportFilters.format === 'xlsx'}
-                      onChange={() => setExportFilters(prev => ({ ...prev, format: 'xlsx' }))}
-                      className="text-blue-600"
+                      checked={exportFilters.format === "xlsx"}
+                      onChange={() =>
+                        setExportFilters((prev) => ({
+                          ...prev,
+                          format: "xlsx",
+                        }))
+                      }
+                      className="text-primary"
                     />
                     <span className="text-sm">Excel</span>
                   </label>
@@ -519,7 +579,7 @@ const ReportTemplatesListPage: React.FC = () => {
               <button
                 onClick={handleExportWithFilters}
                 disabled={exporting}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {exporting ? (
                   <>
