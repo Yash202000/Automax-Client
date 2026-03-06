@@ -338,7 +338,7 @@ export function LocationPicker({
         <MapContainer
           center={mapCenter || defaultCenter}
           zoom={mapCenter ? 15 : 10}
-          className="h-full w-full"
+          className="h-full w-full z-0"
           style={{ height: '100%', width: '100%' }}
           zoomControl={false}
         >
@@ -359,7 +359,7 @@ export function LocationPicker({
         </MapContainer>
 
         {/* Search Overlay */}
-        <div className="absolute top-3 left-3 right-3 z-[1000]" ref={searchRef}>
+        <div className="absolute top-3 left-3 right-3 z-1" ref={searchRef}>
           <div className="relative shadow-lg max-w-md mx-auto">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />

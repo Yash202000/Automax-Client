@@ -1872,7 +1872,7 @@ export const IncidentDetailPage: React.FC = () => {
                       <MapContainer
                         center={[incident.latitude, incident.longitude]}
                         zoom={15}
-                        className="h-full w-full"
+                        className="h-full w-full z-0"
                         style={{ height: '100%', width: '100%' }}
                         scrollWheelZoom={false}
                       >
