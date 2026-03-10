@@ -189,6 +189,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     { field: 'reporter_name', label: 'Reporter Name', description: 'Name of person reporting' },
     { field: 'reporter_email', label: 'Reporter Email', description: 'Email of person reporting' },
     { field: 'attachments', label: 'Attachments', description: 'File attachments for the incident' },
+    { field: 'comment', label: 'Comment', description: 'Comment required when creating the incident' },
   ];
 
   const { data: workflowData, isLoading } = useQuery({

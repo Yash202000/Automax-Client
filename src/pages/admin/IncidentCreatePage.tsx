@@ -508,7 +508,7 @@ export function IncidentCreatePage() {
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = t('incidents.titleRequired');
     if (!formData.workflow_id) newErrors.workflow_id = t('incidents.workflowRequired');
-    if (!comment.trim()) newErrors.comment = t('incidents.fieldRequired', { field: t('incidents.comment', 'Comment') });
+    if (workflowRequiredFields.includes('comment') && !comment.trim()) newErrors.comment = t('incidents.fieldRequired', { field: t('incidents.comment', 'Comment') });
 
     // Always require classification, location, source on web client
     if (!formData.classification_id || !formData.classification_id.trim()) {
@@ -833,7 +833,9 @@ export function IncidentCreatePage() {
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">
                 {t('incidents.comment', 'Comment')}
-                <span className="text-red-500 ml-1">*</span>
+                {workflowRequiredFields.includes('comment') && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </h2>
               <Textarea
                 value={comment}

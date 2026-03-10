@@ -560,6 +560,7 @@ export type IncidentFormField =
   | 'reporter_email'
   | 'attachments'
   | 'attachment'
+  | 'comment'
   | `lookup:${string}`; // Dynamic lookup category required fields
 
 // Workflow types
