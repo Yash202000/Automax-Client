@@ -60,8 +60,8 @@ export const LoginForm: React.FC = () => {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('auth.welcomeBack')}</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold ">{t('auth.welcomeBack')}</h1>
+        <p className="mt-2 text-muted-foreground">
           {t('auth.loginSubtitle')}
         </p>
       </div>
@@ -102,12 +102,13 @@ export const LoginForm: React.FC = () => {
 
         <div className="flex items-center justify-between">
           <Checkbox label={t('auth.rememberMe')} />
-          <Link
+          {/* commented as currenly we don't have forgot password API */}
+          {/* <Link
             to="/forgot-password"
             className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
           >
             {t('auth.forgotPassword')}
-          </Link>
+          </Link> */}
         </div>
 
         <Button

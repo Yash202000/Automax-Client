@@ -50,6 +50,7 @@ import { INCIDENT_SOURCES } from "../../types";
 import { DynamicLookupField } from "../../components/common/DynamicLookupField";
 import { useAuthStore } from "../../stores/authStore";
 import { Modal } from "../../components/ui";
+import { AttachmentPreview } from "@/components/common/AttachmentPreview";
 
 export function IncidentCreatePage() {
   const { t } = useTranslation();
@@ -89,6 +90,7 @@ export function IncidentCreatePage() {
   const [locationOptions, setLocationOptions] = useState<iLocationOption[]>([]);
   const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -1101,11 +1103,14 @@ export function IncidentCreatePage() {
                         {attachments.map((file, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary"
                           >
                             <div className="flex items-center gap-2">
                               <Paperclip className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm text-gray-700 truncate max-w-[250px]">
+                              <span
+                                className="text-sm text-muted-foreground truncate max-w-[250px] hover:underline cursor-pointer"
+                                onClick={() => setPreviewIndex(index)}
+                              >
                                 {file.name}
                               </span>
                               <span className="text-xs text-gray-500">
@@ -1303,6 +1308,13 @@ export function IncidentCreatePage() {
           </Button>
         </ModalFooter>
       </Modal>
+      {previewIndex !== null && (
+        <AttachmentPreview
+          attachments={attachments}
+          initialIndex={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+        />
+      )}
     </div>
   );
 }

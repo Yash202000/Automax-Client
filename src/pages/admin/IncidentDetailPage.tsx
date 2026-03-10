@@ -2716,7 +2716,7 @@ export const IncidentDetailPage: React.FC = () => {
                     ) && <span className="text-red-500 ml-1">*</span>}
                   </label>
                   {transitionAttachment ? (
-                    <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg">
                       <div className="flex items-center gap-2">
                         <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                         <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
