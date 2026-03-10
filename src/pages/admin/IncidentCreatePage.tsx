@@ -39,6 +39,7 @@ export function IncidentCreatePage() {
     due_date: '',
   });
 
+  const [comment, setComment] = useState('');
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoMatchedWorkflow, setAutoMatchedWorkflow] = useState<Workflow | null>(null);
@@ -507,6 +508,7 @@ export function IncidentCreatePage() {
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = t('incidents.titleRequired');
     if (!formData.workflow_id) newErrors.workflow_id = t('incidents.workflowRequired');
+    if (!comment.trim()) newErrors.comment = t('incidents.fieldRequired', { field: t('incidents.comment', 'Comment') });
 
     // Always require classification, location, source on web client
     if (!formData.classification_id || !formData.classification_id.trim()) {
@@ -580,7 +582,7 @@ export function IncidentCreatePage() {
     }
     console.log('Validation passed, creating incident...');
 
-    const submitData: IncidentCreateRequest = { ...formData };
+    const submitData: IncidentCreateRequest = { ...formData, comment: comment.trim() || undefined };
 
     // Ensure empty strings are not sent for optional UUID fields
     if (submitData.assignee_id === '') submitData.assignee_id = undefined;
@@ -827,6 +829,20 @@ export function IncidentCreatePage() {
                 </div>
               </Card>
             )}
+
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {t('incidents.comment', 'Comment')}
+                <span className="text-red-500 ml-1">*</span>
+              </h2>
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={t('incidents.commentPlaceholder', 'Enter a comment...')}
+                rows={3}
+                error={errors.comment}
+              />
+            </Card>
 
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">

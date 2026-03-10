@@ -1027,6 +1027,7 @@ export interface IncidentCreateRequest {
   custom_fields?: string;
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
+  comment?: string;
 }
 
 export interface IncidentUpdateRequest {
