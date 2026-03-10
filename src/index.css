@@ -77,7 +77,7 @@
 
   .dark {
     /* Dark mode - Professional slate theme */
-    --background: 222.2 47.4% 11.2%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
     /* Card components - Slightly lighter than background */
@@ -126,7 +126,7 @@
     --ring: 221.2 83.2% 53.3%;
 
     /* Sidebar - Dark slate */
-    --sidebar-background: 222.2 47.4% 11.2%;
+    --sidebar-background: 222 47% 9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 221.2 83.2% 53.3%;
     --sidebar-primary-foreground: 0 0% 100%;

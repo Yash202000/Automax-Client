@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useCallback, useMemo, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   FileBarChart,
   ChevronDown,
@@ -11,8 +11,8 @@ import {
   Save,
   RotateCcw,
   FolderOpen,
-} from 'lucide-react';
-import { Button } from '../../components/ui';
+} from "lucide-react";
+import { Button } from "../../components/ui";
 import {
   DataSourceSelector,
   ColumnSelector,
@@ -21,13 +21,18 @@ import {
   ReportPreview,
   ExportDialog,
   SaveTemplateDialog,
-} from '../../components/reports';
-import { reportApi, departmentApi, locationApi, classificationApi } from '../../api/admin';
+} from "../../components/reports";
+import {
+  reportApi,
+  departmentApi,
+  locationApi,
+  classificationApi,
+} from "../../api/admin";
 import {
   DATA_SOURCES,
   getFieldsForDataSource,
   getDefaultFieldsForDataSource,
-} from '../../constants/reportFields';
+} from "../../constants/reportFields";
 import type {
   ReportDataSource,
   ReportFilter,
@@ -38,10 +43,14 @@ import type {
   Department,
   Location,
   Classification,
-} from '../../types';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-import { formatCellValue, getNestedValue, toHumanReadable } from '../../components/reports/ReportPreview';
+} from "../../types";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import {
+  formatCellValue,
+  getNestedValue,
+  toHumanReadable,
+} from "../../components/reports/ReportPreview";
 
 // Helper to build hierarchical label with path
 // const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
@@ -58,14 +67,22 @@ import { formatCellValue, getNestedValue, toHumanReadable } from '../../componen
 // };
 
 // Helper to flatten tree structure with hierarchical labels
-const flattenTreeWithLabels = <T extends { id: string; name: string; path?: string; level?: number; children?: T[] }>(
+const flattenTreeWithLabels = <
+  T extends {
+    id: string;
+    name: string;
+    path?: string;
+    level?: number;
+    children?: T[];
+  },
+>(
   items: T[],
-  level: number = 0
+  level: number = 0,
 ): { value: string; label: string }[] => {
   const result: { value: string; label: string }[] = [];
 
   for (const item of items) {
-    const indent = level > 0 ? '│  '.repeat(level - 1) + '├─ ' : '';
+    const indent = level > 0 ? "│  ".repeat(level - 1) + "├─ " : "";
     result.push({
       value: item.id,
       label: indent + item.name,
@@ -111,7 +128,9 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
           )}
           <div className="flex items-center gap-2">
             {icon}
-            <span className="font-medium text-[hsl(var(--foreground))]">{title}</span>
+            <span className="font-medium text-[hsl(var(--foreground))]">
+              {title}
+            </span>
           </div>
         </div>
         {badge}
@@ -144,24 +163,26 @@ export const ReportBuilderPage: React.FC = () => {
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [loadedTemplate, setLoadedTemplate] = useState<ReportTemplate | null>(null);
+  const [loadedTemplate, setLoadedTemplate] = useState<ReportTemplate | null>(
+    null,
+  );
 
   // Ref used to scroll to the preview section after generating
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Fetch hierarchical data for dynamic dropdowns
   const { data: departmentsTree } = useQuery({
-    queryKey: ['admin', 'departments', 'tree'],
+    queryKey: ["admin", "departments", "tree"],
     queryFn: () => departmentApi.getTree(),
   });
 
   const { data: locationsTree } = useQuery({
-    queryKey: ['admin', 'locations', 'tree'],
+    queryKey: ["admin", "locations", "tree"],
     queryFn: () => locationApi.getTree(),
   });
 
   const { data: classificationsTree } = useQuery({
-    queryKey: ['admin', 'classifications', 'tree'],
+    queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
   });
 
@@ -170,15 +191,23 @@ export const ReportBuilderPage: React.FC = () => {
     const map: Record<string, { value: string; label: string }[]> = {};
 
     if (departmentsTree?.data) {
-      map.departments = flattenTreeWithLabels(departmentsTree.data as (Department & { children?: Department[] })[]);
+      map.departments = flattenTreeWithLabels(
+        departmentsTree.data as (Department & { children?: Department[] })[],
+      );
     }
 
     if (locationsTree?.data) {
-      map.locations = flattenTreeWithLabels(locationsTree.data as (Location & { children?: Location[] })[]);
+      map.locations = flattenTreeWithLabels(
+        locationsTree.data as (Location & { children?: Location[] })[],
+      );
     }
 
     if (classificationsTree?.data) {
-      map.classifications = flattenTreeWithLabels(classificationsTree.data as (Classification & { children?: Classification[] })[]);
+      map.classifications = flattenTreeWithLabels(
+        classificationsTree.data as (Classification & {
+          children?: Classification[];
+        })[],
+      );
     }
 
     return map;
@@ -207,7 +236,7 @@ export const ReportBuilderPage: React.FC = () => {
 
   // Fetch template if templateId is provided
   const { data: templateData } = useQuery({
-    queryKey: ['admin', 'reports', 'template', templateId],
+    queryKey: ["admin", "reports", "template", templateId],
     queryFn: () => reportApi.getTemplate(templateId!),
     enabled: !!templateId,
   });
@@ -218,7 +247,9 @@ export const ReportBuilderPage: React.FC = () => {
       const template = templateData.data;
       setDataSource(template.data_source);
       setSelectedColumns(template.config.columns.map((c) => c.field));
-      setFilters(template.config.filters.map((f, i) => ({ ...f, id: `filter_${i}` })));
+      setFilters(
+        template.config.filters.map((f, i) => ({ ...f, id: `filter_${i}` })),
+      );
       setSorting(template.config.sorting);
       setLoadedTemplate(template);
     }
@@ -226,7 +257,7 @@ export const ReportBuilderPage: React.FC = () => {
 
   // Fetch templates list for dropdown
   const { data: templatesData } = useQuery({
-    queryKey: ['admin', 'reports', 'templates'],
+    queryKey: ["admin", "reports", "templates"],
     queryFn: () => reportApi.listTemplates(),
   });
 
@@ -254,7 +285,11 @@ export const ReportBuilderPage: React.FC = () => {
       const request: ReportQueryRequest = {
         data_source: dataSource,
         columns: selectedColumns,
-        filters: filters.map(({ field, operator, value }) => ({ field, operator, value })),
+        filters: filters.map(({ field, operator, value }) => ({
+          field,
+          operator,
+          value,
+        })),
         sorting,
         page: 1,
         limit: recordLimit,
@@ -263,9 +298,16 @@ export const ReportBuilderPage: React.FC = () => {
       const response = await reportApi.query(request);
       setPreviewData(response.data);
       setDbTotalCount(response.total_items);
-      setTimeout(() => previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      setTimeout(
+        () =>
+          previewRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        100,
+      );
     } catch (error) {
-      console.error('Failed to generate report:', error);
+      console.error("Failed to generate report:", error);
     } finally {
       setIsPreviewLoading(false);
     }
@@ -273,11 +315,21 @@ export const ReportBuilderPage: React.FC = () => {
 
   // Export mutation
   const exportMutation = useMutation({
-    mutationFn: async ({ format, options }: { format: 'xlsx' | 'pdf'; options: { title: string; includeFilters: boolean; includeTimestamp: boolean } }) => {
-      if (!dataSource) throw new Error('No data source selected');
+    mutationFn: async ({
+      format,
+      options,
+    }: {
+      format: "xlsx" | "pdf";
+      options: {
+        title: string;
+        includeFilters: boolean;
+        includeTimestamp: boolean;
+      };
+    }) => {
+      if (!dataSource) throw new Error("No data source selected");
 
       // For Excel, use the already-fetched previewData (respects the configured recordLimit)
-      if (format === 'xlsx') {
+      if (format === "xlsx") {
         // Build headers — use field label, fall back to human-readable key
         const headers = selectedColumns.map((col) => {
           const field = fields.find((f) => f.field === col);
@@ -289,7 +341,7 @@ export const ReportBuilderPage: React.FC = () => {
           return selectedColumns.map((col) => {
             const fieldDef = fields.find((f) => f.field === col);
             const value = getNestedValue(row, col);
-            if (!fieldDef) return value == null ? '' : String(value);
+            if (!fieldDef) return value == null ? "" : String(value);
             return formatCellValue(value, fieldDef);
           });
         });
@@ -297,28 +349,32 @@ export const ReportBuilderPage: React.FC = () => {
         // Create worksheet
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Report');
+        XLSX.utils.book_append_sheet(wb, ws, "Report");
 
         // Generate buffer
-        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const blob = new Blob([excelBuffer], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
 
         // Download
-        const filename = `${options.title.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`;
         saveAs(blob, filename);
       } else {
         // PDF - use server-side export
         const blob = await reportApi.export({
           data_source: dataSource,
           columns: selectedColumns,
-          filters: filters.map(({ field, operator, value }) => ({ field, operator, value })),
+          filters: filters.map(({ field, operator, value }) => ({
+            field,
+            operator,
+            value,
+          })),
           sorting,
-          format: 'pdf',
+          format: "pdf",
           options,
         });
-        const filename = `${options.title.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
         saveAs(blob, filename);
       }
     },
@@ -329,15 +385,27 @@ export const ReportBuilderPage: React.FC = () => {
 
   // Save template mutation
   const saveTemplateMutation = useMutation({
-    mutationFn: async ({ name, description, isPublic }: { name: string; description: string; isPublic: boolean }) => {
-      if (!dataSource) throw new Error('No data source selected');
+    mutationFn: async ({
+      name,
+      description,
+      isPublic,
+    }: {
+      name: string;
+      description: string;
+      isPublic: boolean;
+    }) => {
+      if (!dataSource) throw new Error("No data source selected");
 
       const config = {
         columns: selectedColumns.map((col) => {
           const field = fields.find((f) => f.field === col);
           return { field: col, label: field?.label || col };
         }),
-        filters: filters.map(({ field, operator, value }) => ({ field, operator, value })),
+        filters: filters.map(({ field, operator, value }) => ({
+          field,
+          operator,
+          value,
+        })),
         sorting,
       };
 
@@ -361,7 +429,9 @@ export const ReportBuilderPage: React.FC = () => {
       }
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'reports', 'templates'] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "reports", "templates"],
+      });
       setShowSaveDialog(false);
       if (response.data) {
         setLoadedTemplate(response.data);
@@ -379,14 +449,16 @@ export const ReportBuilderPage: React.FC = () => {
     setDbTotalCount(0);
     setDisplayPage(1);
     setLoadedTemplate(null);
-    navigate('/reports/builder');
+    navigate("/reports/builder");
   };
 
   // Load a template
   const loadTemplate = (template: ReportTemplate) => {
     setDataSource(template.data_source);
     setSelectedColumns(template.config.columns.map((c) => c.field));
-    setFilters(template.config.filters.map((f, i) => ({ ...f, id: `filter_${i}` })));
+    setFilters(
+      template.config.filters.map((f, i) => ({ ...f, id: `filter_${i}` })),
+    );
     setSorting(template.config.sorting);
     setLoadedTemplate(template);
     setPreviewData([]);
@@ -399,7 +471,10 @@ export const ReportBuilderPage: React.FC = () => {
 
   // Client-side display pagination over previewData
   const displayTotalPages = Math.ceil(previewData.length / DISPLAY_SIZE);
-  const displayData = previewData.slice((displayPage - 1) * DISPLAY_SIZE, displayPage * DISPLAY_SIZE);
+  const displayData = previewData.slice(
+    (displayPage - 1) * DISPLAY_SIZE,
+    displayPage * DISPLAY_SIZE,
+  );
 
   return (
     <div className="space-y-6">
@@ -407,13 +482,17 @@ export const ReportBuilderPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500">
+            <div className="p-2 rounded-lg bg-linear-to-br from-primary to-accent">
               <FileBarChart className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">{t('reports.reportBuilder')}</h1>
+            <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
+              {t("reports.reportBuilder")}
+            </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ltr:ml-12 rtl:mr-12">
-            {loadedTemplate ? `${t('reports.editing')}: ${loadedTemplate.name}` : t('reports.reportBuilderSubtitle')}
+            {loadedTemplate
+              ? `${t("reports.editing")}: ${loadedTemplate.name}`
+              : t("reports.reportBuilderSubtitle")}
           </p>
         </div>
 
@@ -421,8 +500,11 @@ export const ReportBuilderPage: React.FC = () => {
           {/* Load template dropdown */}
           {templates.length > 0 && (
             <div className="relative group">
-              <Button variant="outline" leftIcon={<FolderOpen className="w-4 h-4" />}>
-                {t('reports.loadTemplate')}
+              <Button
+                variant="outline"
+                leftIcon={<FolderOpen className="w-4 h-4" />}
+              >
+                {t("reports.loadTemplate")}
                 <ChevronDown className="w-4 h-4 ltr:ml-1 rtl:mr-1" />
               </Button>
               <div className="absolute right-0 mt-1 w-64 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
@@ -437,7 +519,11 @@ export const ReportBuilderPage: React.FC = () => {
                         {template.name}
                       </p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {DATA_SOURCES.find((ds) => ds.key === template.data_source)?.label}
+                        {
+                          DATA_SOURCES.find(
+                            (ds) => ds.key === template.data_source,
+                          )?.label
+                        }
                       </p>
                     </button>
                   ))}
@@ -446,8 +532,12 @@ export const ReportBuilderPage: React.FC = () => {
             </div>
           )}
 
-          <Button variant="outline" onClick={resetForm} leftIcon={<RotateCcw className="w-4 h-4" />}>
-            {t('reports.reset')}
+          <Button
+            variant="outline"
+            onClick={resetForm}
+            leftIcon={<RotateCcw className="w-4 h-4" />}
+          >
+            {t("reports.reset")}
           </Button>
         </div>
       </div>
@@ -456,7 +546,7 @@ export const ReportBuilderPage: React.FC = () => {
       <div className="space-y-4">
         {/* Data Source */}
         <CollapsibleSection
-          title={t('reports.dataSource')}
+          title={t("reports.dataSource")}
           icon={<div className="w-2 h-2 rounded-full bg-blue-500" />}
           badge={
             dataSourceDef ? (
@@ -466,17 +556,20 @@ export const ReportBuilderPage: React.FC = () => {
             ) : null
           }
         >
-          <DataSourceSelector value={dataSource} onChange={handleDataSourceChange} />
+          <DataSourceSelector
+            value={dataSource}
+            onChange={handleDataSourceChange}
+          />
         </CollapsibleSection>
 
         {/* Columns */}
         {dataSource && (
           <CollapsibleSection
-            title={t('reports.columns')}
+            title={t("reports.columns")}
             icon={<div className="w-2 h-2 rounded-full bg-green-500" />}
             badge={
               <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                {selectedColumns.length} {t('reports.selected')}
+                {selectedColumns.length} {t("reports.selected")}
               </span>
             }
           >
@@ -491,36 +584,44 @@ export const ReportBuilderPage: React.FC = () => {
         {/* Filters */}
         {dataSource && (
           <CollapsibleSection
-            title={t('reports.filters')}
+            title={t("reports.filters")}
             icon={<div className="w-2 h-2 rounded-full bg-amber-500" />}
             defaultExpanded={filters.length > 0}
             badge={
               filters.length > 0 ? (
                 <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 rounded-full">
-                  {filters.length} {t('reports.active')}
+                  {filters.length} {t("reports.active")}
                 </span>
               ) : null
             }
           >
-            <FilterBuilder fields={fields} filters={filters} onChange={setFilters} />
+            <FilterBuilder
+              fields={fields}
+              filters={filters}
+              onChange={setFilters}
+            />
           </CollapsibleSection>
         )}
 
         {/* Sorting */}
         {dataSource && (
           <CollapsibleSection
-            title={t('reports.sorting')}
+            title={t("reports.sorting")}
             icon={<div className="w-2 h-2 rounded-full bg-purple-500" />}
             defaultExpanded={sorting.length > 0}
             badge={
               sorting.length > 0 ? (
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                  {sorting.length} {t('reports.levels')}
+                  {sorting.length} {t("reports.levels")}
                 </span>
               ) : null
             }
           >
-            <SortingConfig fields={fields} sorting={sorting} onChange={setSorting} />
+            <SortingConfig
+              fields={fields}
+              sorting={sorting}
+              onChange={setSorting}
+            />
           </CollapsibleSection>
         )}
       </div>
@@ -532,9 +633,11 @@ export const ReportBuilderPage: React.FC = () => {
             onClick={generateReport}
             disabled={!canGenerate}
             isLoading={isPreviewLoading}
-            leftIcon={!isPreviewLoading ? <Play className="w-4 h-4" /> : undefined}
+            leftIcon={
+              !isPreviewLoading ? <Play className="w-4 h-4" /> : undefined
+            }
           >
-            {t('reports.generateReport')}
+            {t("reports.generateReport")}
           </Button>
           <Button
             variant="outline"
@@ -542,7 +645,9 @@ export const ReportBuilderPage: React.FC = () => {
             disabled={!canGenerate}
             leftIcon={<Save className="w-4 h-4" />}
           >
-            {loadedTemplate ? t('reports.updateTemplate') : t('reports.saveTemplate')}
+            {loadedTemplate
+              ? t("reports.updateTemplate")
+              : t("reports.saveTemplate")}
           </Button>
           <Button
             variant="outline"
@@ -550,7 +655,7 @@ export const ReportBuilderPage: React.FC = () => {
             disabled={!canExport}
             leftIcon={<Download className="w-4 h-4" />}
           >
-            {t('reports.export')}
+            {t("reports.export")}
           </Button>
 
           {/* Record limit selector */}
@@ -562,7 +667,9 @@ export const ReportBuilderPage: React.FC = () => {
               className="px-2 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
             >
               {[100, 500, 1000, 5000, 10000].map((n) => (
-                <option key={n} value={n}>{n.toLocaleString()} records</option>
+                <option key={n} value={n}>
+                  {n.toLocaleString()} records
+                </option>
               ))}
             </select>
           </div>
@@ -571,15 +678,22 @@ export const ReportBuilderPage: React.FC = () => {
 
       {/* Preview */}
       {dataSource && (previewData.length > 0 || isPreviewLoading) && (
-        <div ref={previewRef} className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+        <div
+          ref={previewRef}
+          className="border border-[hsl(var(--border))] rounded-xl overflow-hidden"
+        >
           <div className="px-4 py-3 bg-[hsl(var(--muted)/0.3)] border-b border-[hsl(var(--border))] flex items-center justify-between gap-4">
-            <h2 className="font-semibold text-[hsl(var(--foreground))]">{t('reports.previewResults')}</h2>
+            <h2 className="font-semibold text-[hsl(var(--foreground))]">
+              {t("reports.previewResults")}
+            </h2>
             {previewData.length > 0 && (
               <span className="text-sm text-[hsl(var(--muted-foreground))]">
                 {previewData.length < dbTotalCount ? (
                   <>
-                    Fetched <strong>{previewData.length.toLocaleString()}</strong> of{' '}
-                    <strong>{dbTotalCount.toLocaleString()}</strong> total records
+                    Fetched{" "}
+                    <strong>{previewData.length.toLocaleString()}</strong> of{" "}
+                    <strong>{dbTotalCount.toLocaleString()}</strong> total
+                    records
                     {previewData.length < dbTotalCount && (
                       <span className="ltr:ml-1 rtl:mr-1 text-amber-600 dark:text-amber-400">
                         — increase limit to fetch more
@@ -587,7 +701,10 @@ export const ReportBuilderPage: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  <>All <strong>{previewData.length.toLocaleString()}</strong> records fetched</>
+                  <>
+                    All <strong>{previewData.length.toLocaleString()}</strong>{" "}
+                    records fetched
+                  </>
                 )}
               </span>
             )}
@@ -612,9 +729,11 @@ export const ReportBuilderPage: React.FC = () => {
       <ExportDialog
         isOpen={showExportDialog}
         onClose={() => setShowExportDialog(false)}
-        onExport={(format, options) => exportMutation.mutateAsync({ format, options })}
+        onExport={(format, options) =>
+          exportMutation.mutateAsync({ format, options })
+        }
         isExporting={exportMutation.isPending}
-        dataSourceLabel={dataSourceDef?.label || ''}
+        dataSourceLabel={dataSourceDef?.label || ""}
         recordCount={previewData.length}
         previewData={previewData}
         columns={selectedColumns}
@@ -626,11 +745,15 @@ export const ReportBuilderPage: React.FC = () => {
         isOpen={showSaveDialog}
         onClose={() => setShowSaveDialog(false)}
         onSave={async (name, description, isPublic) => {
-          await saveTemplateMutation.mutateAsync({ name, description, isPublic });
+          await saveTemplateMutation.mutateAsync({
+            name,
+            description,
+            isPublic,
+          });
         }}
         isSaving={saveTemplateMutation.isPending}
         existingTemplate={loadedTemplate}
-        dataSourceLabel={dataSourceDef?.label || ''}
+        dataSourceLabel={dataSourceDef?.label || ""}
       />
     </div>
   );

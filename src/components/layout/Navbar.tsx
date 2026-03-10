@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LogOut,
   User,
@@ -15,14 +15,18 @@ import {
   Languages,
   Phone,
   CheckCheck,
-} from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
-import { authApi } from '../../api/auth';
-import { emailApi } from '../../api/admin';
-import { setLoggingOut } from '../../api/client';
-import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
-import SoftPhone from '../sip/Softphone';
-import ThemeToggle from '../common/ThemeToggle';
+} from "lucide-react";
+import { useAuthStore } from "../../stores/authStore";
+import { authApi } from "../../api/auth";
+import { emailApi } from "../../api/admin";
+import { setLoggingOut } from "../../api/client";
+import {
+  setLanguage,
+  getCurrentLanguage,
+  supportedLanguages,
+} from "../../i18n";
+import SoftPhone from "../sip/Softphone";
+import ThemeToggle from "../common/ThemeToggle";
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
@@ -42,14 +46,15 @@ export const Navbar: React.FC = () => {
 
   // In-app notifications
   const { data: notifData } = useQuery({
-    queryKey: ['in-app-notifications', user?.id],
-    queryFn: () => emailApi.list({
-      channel: 'notification',
-      category: 'inbox',
-      received_by: user?.id,
-      limit: 15,
-      page: 1,
-    }),
+    queryKey: ["in-app-notifications", user?.id],
+    queryFn: () =>
+      emailApi.list({
+        channel: "notification",
+        category: "inbox",
+        received_by: user?.id,
+        limit: 15,
+        page: 1,
+      }),
     enabled: !!user?.id && isAuthenticated,
     refetchInterval: 60_000,
   });
@@ -59,12 +64,15 @@ export const Navbar: React.FC = () => {
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => emailApi.markAsRead(id, true),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['in-app-notifications', user?.id] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["in-app-notifications", user?.id],
+      }),
   });
 
   // Extract incident number from a notification subject like "Incident AMX1-0042: Ready to Close Expiring Soon"
   const getNotifRoute = (subject: string): string | null => {
-    const match = subject.match(/Incident\s+([A-Z0-9\-]+)\s*:/i);
+    const match = subject.match(/Incident\s+([A-Z0-9-]+)\s*:/i);
     if (!match) return null;
     const num = match[1];
     if (/req/i.test(num)) return `/requests?search=${num}`;
@@ -98,44 +106,52 @@ export const Navbar: React.FC = () => {
       setLoggingOut(false);
     }
 
-    navigate('/login');
+    navigate("/login");
   };
 
   const hasAdminAccess =
     user?.is_super_admin ||
-    user?.permissions?.some((p) =>
-      p.includes(':view') ||
-      p.includes(':create') ||
-      p.includes(':update') ||
-      p.includes(':delete') ||
-      p.includes(':manage')
+    user?.permissions?.some(
+      (p) =>
+        p.includes(":view") ||
+        p.includes(":create") ||
+        p.includes(":update") ||
+        p.includes(":delete") ||
+        p.includes(":manage"),
     );
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
         setIsProfileOpen(false);
       }
       if (langRef.current && !langRef.current.contains(event.target as Node)) {
         setIsLangOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(event.target as Node)
+      ) {
         setIsNotifOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const navLinks = [
-    { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <nav className="bg-white dark:bg-sidebar border-b border-gray-100 dark:border-white/5 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo & Navigation */}
@@ -147,22 +163,24 @@ export const Navbar: React.FC = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-1">
-              {isAuthenticated && navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`
+              {isAuthenticated &&
+                navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className={`
                     flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${isActive(link.href)
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ${
+                      isActive(link.href)
+                        ? "bg-primary/10 text-primary"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }
                   `}
-                >
-                  <link.icon className="w-4 h-4" />
-                  {link.label}
-                </Link>
-              ))}
+                  >
+                    <link.icon className="w-4 h-4" />
+                    {link.label}
+                  </Link>
+                ))}
             </div>
           </div>
 
@@ -184,17 +202,21 @@ export const Navbar: React.FC = () => {
                 <div className="relative" ref={langRef}>
                   <button
                     onClick={() => setIsLangOpen(!isLangOpen)}
-                    className="flex items-center gap-1.5 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors focus:outline-none focus:ring-0"
-                    title={t('settings.language')}
+                    className="flex items-center gap-1.5 p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors focus:outline-none focus:ring-0"
+                    title={t("settings.language")}
                   >
                     <Languages className="w-5 h-5" />
-                    <span className="text-xs font-medium uppercase">{currentLang}</span>
+                    <span className="text-xs font-medium uppercase">
+                      {currentLang}
+                    </span>
                   </button>
 
                   {isLangOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-scale-in origin-top-right">
                       <div className="px-3 py-2 border-b border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 uppercase">{t('settings.selectLanguage')}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase">
+                          {t("settings.selectLanguage")}
+                        </p>
                       </div>
                       {supportedLanguages.map((lang) => (
                         <button
@@ -202,11 +224,13 @@ export const Navbar: React.FC = () => {
                           onClick={() => handleLanguageChange(lang.code)}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-0 ${
                             currentLang === lang.code
-                              ? 'bg-primary/5 text-primary'
-                              : 'text-gray-700 hover:bg-gray-50'
+                              ? "bg-primary/5 text-primary"
+                              : "text-gray-700 hover:bg-gray-50"
                           }`}
                         >
-                          <span className="text-lg">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
+                          <span className="text-lg">
+                            {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
+                          </span>
                           <div className="text-left">
                             <p className="font-medium">{lang.nativeName}</p>
                             <p className="text-xs text-gray-500">{lang.name}</p>
@@ -222,8 +246,8 @@ export const Navbar: React.FC = () => {
                   onClick={() => setShowSoftphone(!showSoftphone)}
                   className={`relative p-2 rounded-xl transition-colors ${
                     showSoftphone
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                   }`}
                 >
                   <Phone className="w-5 h-5" />
@@ -232,12 +256,15 @@ export const Navbar: React.FC = () => {
                 <SoftPhone
                   showSip={showSoftphone}
                   onClose={() => setShowSoftphone(false)}
-                  settings={{"domain": "zkff.automaxsw.com","socketURL": "wss://zkff.automaxsw.com:7443"}}
+                  settings={{
+                    domain: "zkff.automaxsw.com",
+                    socketURL: "wss://zkff.automaxsw.com:7443",
+                  }}
                   auth={{
                     user: {
-                      userID: user?.id || '',
-                      extension: (user as any)?.extension || '',
-                    }
+                      userID: user?.id || "",
+                      extension: (user as any)?.extension || "",
+                    },
                   }}
                 />
 
@@ -245,12 +272,12 @@ export const Navbar: React.FC = () => {
                 <div className="relative" ref={notifRef}>
                   <button
                     onClick={() => setIsNotifOpen(!isNotifOpen)}
-                    className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+                    className="relative p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
                   >
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
                       <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                        {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
                   </button>
@@ -259,9 +286,13 @@ export const Navbar: React.FC = () => {
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 animate-scale-in origin-top-right z-50 overflow-hidden">
                       {/* Header */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                        <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Notifications
+                        </h3>
                         {unreadCount > 0 && (
-                          <span className="text-xs text-gray-500">{unreadCount} unread</span>
+                          <span className="text-xs text-gray-500">
+                            {unreadCount} unread
+                          </span>
                         )}
                       </div>
 
@@ -270,14 +301,17 @@ export const Navbar: React.FC = () => {
                         {notifications.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-10 text-center">
                             <Bell className="w-8 h-8 text-gray-300 mb-2" />
-                            <p className="text-sm text-gray-500">No notifications</p>
+                            <p className="text-sm text-gray-500">
+                              No notifications
+                            </p>
                           </div>
                         ) : (
                           notifications.map((notif) => (
                             <div
                               key={notif.id}
                               onClick={() => {
-                                if (!notif.is_read) markReadMutation.mutate(notif.id);
+                                if (!notif.is_read)
+                                  markReadMutation.mutate(notif.id);
                                 const route = getNotifRoute(notif.subject);
                                 if (route) {
                                   setIsNotifOpen(false);
@@ -285,18 +319,26 @@ export const Navbar: React.FC = () => {
                                 }
                               }}
                               className={`px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${
-                                !notif.is_read ? 'bg-blue-50/50' : ''
+                                !notif.is_read ? "bg-blue-50/50" : ""
                               }`}
                             >
                               <div className="flex items-start gap-3">
-                                <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!notif.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                                <div
+                                  className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!notif.is_read ? "bg-blue-500" : "bg-transparent"}`}
+                                />
                                 <div className="flex-1 min-w-0">
-                                  <p className={`text-sm ${!notif.is_read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'} truncate`}>
+                                  <p
+                                    className={`text-sm ${!notif.is_read ? "font-semibold text-gray-900" : "font-medium text-gray-700"} truncate`}
+                                  >
                                     {notif.subject}
                                   </p>
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                    {notif.body}
+                                  </p>
                                   <p className="text-xs text-gray-400 mt-1">
-                                    {new Date(notif.created_at).toLocaleString()}
+                                    {new Date(
+                                      notif.created_at,
+                                    ).toLocaleString()}
                                   </p>
                                 </div>
                                 {!notif.is_read && (
@@ -310,14 +352,15 @@ export const Navbar: React.FC = () => {
                     </div>
                   )}
                 </div>
-                       <ThemeToggle />
+                <ThemeToggle />
 
+                <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-muted" />
 
                 {/* Profile Dropdown */}
                 <div className="relative" ref={profileRef}>
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center gap-3 p-1.5 pr-3 hover:bg-gray-50 rounded-xl transition-colors"
+                    className="flex items-center gap-3 p-1.5 pr-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group"
                   >
                     {user?.avatar ? (
                       <img
@@ -326,21 +369,25 @@ export const Navbar: React.FC = () => {
                         className="w-8 h-8 rounded-lg object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-linear-to-br from-primary to-accent flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
-                          {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+                          {user?.first_name?.[0] || user?.username?.[0] || "U"}
                         </span>
                       </div>
                     )}
                     <div className="hidden sm:block text-left">
-                      <p className="text-sm font-medium text-gray-900 leading-tight">
+                      <p className="text-sm font-medium group-hover:text-gray-900 leading-tight">
                         {user?.first_name || user?.username}
                       </p>
                       <p className="text-xs text-gray-500 leading-tight">
-                        {user?.is_super_admin ? 'Administrator' : user?.roles?.[0]?.name || 'User'}
+                        {user?.is_super_admin
+                          ? "Administrator"
+                          : user?.roles?.[0]?.name || "User"}
                       </p>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 text-gray-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
 
                   {/* Dropdown Menu */}
@@ -348,9 +395,14 @@ export const Navbar: React.FC = () => {
                     <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-scale-in origin-top-right">
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user?.email}
+                        </p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          {user?.is_super_admin ? 'Super Administrator' : user?.roles?.map(r => r.name).join(', ') || 'User'}
+                          {user?.is_super_admin
+                            ? "Super Administrator"
+                            : user?.roles?.map((r) => r.name).join(", ") ||
+                              "User"}
                         </p>
                       </div>
 
@@ -362,7 +414,7 @@ export const Navbar: React.FC = () => {
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <User className="w-4 h-4 text-gray-400" />
-                          {t('nav.viewProfile')}
+                          {t("nav.viewProfile")}
                         </Link>
                         <Link
                           to="/settings"
@@ -370,7 +422,7 @@ export const Navbar: React.FC = () => {
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Settings className="w-4 h-4 text-gray-400" />
-                          {t('nav.settings')}
+                          {t("nav.settings")}
                         </Link>
                         {hasAdminAccess && (
                           <Link
@@ -379,7 +431,7 @@ export const Navbar: React.FC = () => {
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
                             <Shield className="w-4 h-4 text-gray-400" />
-                            {t('nav.admin')}
+                            {t("nav.admin")}
                           </Link>
                         )}
                       </div>
@@ -394,7 +446,7 @@ export const Navbar: React.FC = () => {
                           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <LogOut className="w-4 h-4" />
-                          {t('auth.logout')}
+                          {t("auth.logout")}
                         </button>
                       </div>
                     </div>
@@ -406,7 +458,11 @@ export const Navbar: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
                 >
-                  {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  {isMobileMenuOpen ? (
+                    <X className="w-5 h-5" />
+                  ) : (
+                    <Menu className="w-5 h-5" />
+                  )}
                 </button>
               </>
             ) : (
@@ -415,13 +471,13 @@ export const Navbar: React.FC = () => {
                   to="/login"
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                 >
-                  {t('auth.signIn')}
+                  {t("auth.signIn")}
                 </Link>
                 <Link
                   to="/register"
                   className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl shadow-lg shadow-blue-500/25 transition-all"
                 >
-                  {t('auth.signUp')}
+                  {t("auth.signUp")}
                 </Link>
               </div>
             )}
@@ -440,9 +496,10 @@ export const Navbar: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                  ${isActive(link.href)
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50'
+                  ${
+                    isActive(link.href)
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-50"
                   }
                 `}
               >
