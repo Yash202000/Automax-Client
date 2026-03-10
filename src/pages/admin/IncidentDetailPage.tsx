@@ -818,6 +818,45 @@ export const IncidentDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Presence Indicator - Show who else is viewing this incident */}
+      {otherUsers.length > 0 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="relative">
+                <Users className="h-6 w-6 text-yellow-600" />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-yellow-500 items-center justify-center text-[10px] text-white font-bold">
+                    {otherUsers.length}
+                  </span>
+                </span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-semibold text-yellow-900">
+                  {otherUsers.length === 1 ? 'Also viewing:' : `${otherUsers.length} users viewing:`}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {otherUsers.map((u, idx) => (
+                    <div key={u.user_id || idx} className="flex items-center gap-1.5 bg-yellow-100 px-2.5 py-1 rounded-full">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium text-yellow-900">
+                        {u.user_name || u.user_email || 'Unknown User'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-yellow-700 mt-1.5 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Live collaboration active - changes may occur in real-time
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
