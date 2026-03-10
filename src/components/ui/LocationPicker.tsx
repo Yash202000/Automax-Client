@@ -1,15 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap, ZoomControl } from 'react-leaflet';
-import { LatLng, Icon } from 'leaflet';
-import { MapPin, Loader2, Navigation, X, Search, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
-import { Button } from './Button';
-import 'leaflet/dist/leaflet.css';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+  ZoomControl,
+} from "react-leaflet";
+import { LatLng, Icon } from "leaflet";
+import {
+  MapPin,
+  Loader2,
+  Navigation,
+  X,
+  Search,
+  Maximize2,
+  Minimize2,
+  AlertTriangle,
+} from "lucide-react";
+import { Button } from "./Button";
+import "leaflet/dist/leaflet.css";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
-  iconUrl: '/images/leaflet/marker-icon.png',
-  iconRetinaUrl: '/images/leaflet/marker-icon-2x.png',
-  shadowUrl: '/images/leaflet/marker-shadow.png',
+  iconUrl: "/images/leaflet/marker-icon.png",
+  iconRetinaUrl: "/images/leaflet/marker-icon-2x.png",
+  shadowUrl: "/images/leaflet/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -54,7 +71,11 @@ interface NominatimResponse {
 }
 
 // Component to handle map clicks
-function MapClickHandler({ onLocationSelect }: { onLocationSelect: (latlng: LatLng) => void }) {
+function MapClickHandler({
+  onLocationSelect,
+}: {
+  onLocationSelect: (latlng: LatLng) => void;
+}) {
   useMapEvents({
     click: (e) => {
       onLocationSelect(e.latlng);
@@ -76,19 +97,22 @@ function MapCenterUpdater({ center }: { center: [number, number] | null }) {
   return null;
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<Partial<LocationData>> {
+async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<Partial<LocationData>> {
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
       {
         headers: {
-          'Accept-Language': 'en',
+          "Accept-Language": "en",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error('Geocoding failed');
+      throw new Error("Geocoding failed");
     }
 
     const data: NominatimResponse = await response.json();
@@ -101,7 +125,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<Partial<Locatio
       postal_code: data.address.postcode,
     };
   } catch (error) {
-    console.error('Reverse geocoding error:', error);
+    console.error("Reverse geocoding error:", error);
     return {};
   }
 }
@@ -113,16 +137,19 @@ export function LocationPicker({
   error,
   label,
   isExpanded = false,
-  onToggleExpand
+  onToggleExpand,
 }: LocationPickerProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [geoError, setGeoError] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [geoError, setGeoError] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<NominatimResponse[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(
-    value?.latitude && value?.longitude ? [value.latitude, value.longitude] : null
+    value?.latitude && value?.longitude
+      ? [value.latitude, value.longitude]
+      : null,
   );
 
   const searchRef = useRef<HTMLDivElement>(null);
@@ -133,12 +160,15 @@ export function LocationPicker({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowSuggestions(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearch = useCallback(async (query: string) => {
@@ -153,9 +183,9 @@ export function LocationPicker({
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
         {
           headers: {
-            'Accept-Language': 'en',
+            "Accept-Language": "en",
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -164,7 +194,7 @@ export function LocationPicker({
         setShowSuggestions(true);
       }
     } catch (err) {
-      console.error('Search error:', err);
+      console.error("Search error:", err);
     } finally {
       setIsSearching(false);
     }
@@ -186,34 +216,40 @@ export function LocationPicker({
     }
   };
 
-  const handleSelectSuggestion = useCallback((suggestion: NominatimResponse) => {
-    const lat = parseFloat(suggestion.lat);
-    const lon = parseFloat(suggestion.lon);
+  const handleSelectSuggestion = useCallback(
+    (suggestion: NominatimResponse) => {
+      const lat = parseFloat(suggestion.lat);
+      const lon = parseFloat(suggestion.lon);
 
-    const locationData: LocationData = {
-      latitude: lat,
-      longitude: lon,
-      address: suggestion.display_name,
-      city: suggestion.address.city || suggestion.address.town || suggestion.address.village,
-      state: suggestion.address.state,
-      country: suggestion.address.country,
-      postal_code: suggestion.address.postcode,
-    };
+      const locationData: LocationData = {
+        latitude: lat,
+        longitude: lon,
+        address: suggestion.display_name,
+        city:
+          suggestion.address.city ||
+          suggestion.address.town ||
+          suggestion.address.village,
+        state: suggestion.address.state,
+        country: suggestion.address.country,
+        postal_code: suggestion.address.postcode,
+      };
 
-    onChange(locationData);
-    setMapCenter([lat, lon]);
-    setSearchQuery(suggestion.display_name);
-    setShowSuggestions(false);
-  }, [onChange]);
+      onChange(locationData);
+      setMapCenter([lat, lon]);
+      setSearchQuery(suggestion.display_name);
+      setShowSuggestions(false);
+    },
+    [onChange],
+  );
 
   const handleGetCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser');
+      setGeoError(t("locationPicker.geolocationNotSupported"));
       return;
     }
 
     setIsLoading(true);
-    setGeoError('');
+    setGeoError("");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -236,37 +272,40 @@ export function LocationPicker({
         setIsLoading(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setGeoError('Location permission denied');
+            setGeoError(t("locationPicker.permissionDenied"));
             break;
           case error.POSITION_UNAVAILABLE:
-            setGeoError('Location unavailable');
+            setGeoError(t("locationPicker.locationUnavailable"));
             break;
           case error.TIMEOUT:
-            setGeoError('Location request timed out');
+            setGeoError(t("locationPicker.locationTimeout"));
             break;
           default:
-            setGeoError('Failed to get location');
+            setGeoError(t("locationPicker.locationFailed"));
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-  }, [onChange]);
+  }, [onChange, t]);
 
-  const handleMapClick = useCallback(async (latlng: LatLng) => {
-    setIsLoading(true);
+  const handleMapClick = useCallback(
+    async (latlng: LatLng) => {
+      setIsLoading(true);
 
-    const addressData = await reverseGeocode(latlng.lat, latlng.lng);
+      const addressData = await reverseGeocode(latlng.lat, latlng.lng);
 
-    const locationData: LocationData = {
-      latitude: latlng.lat,
-      longitude: latlng.lng,
-      ...addressData,
-    };
+      const locationData: LocationData = {
+        latitude: latlng.lat,
+        longitude: latlng.lng,
+        ...addressData,
+      };
 
-    onChange(locationData);
-    setMapCenter([latlng.lat, latlng.lng]);
-    setIsLoading(false);
-  }, [onChange]);
+      onChange(locationData);
+      setMapCenter([latlng.lat, latlng.lng]);
+      setIsLoading(false);
+    },
+    [onChange],
+  );
 
   const handleClear = useCallback(() => {
     onChange(undefined);
@@ -277,7 +316,10 @@ export function LocationPicker({
     if (value?.latitude && value.longitude) {
       setIsLoading(true);
 
-      const addressData = await reverseGeocode(value?.latitude, value?.longitude);
+      const addressData = await reverseGeocode(
+        value?.latitude,
+        value?.longitude,
+      );
 
       const locationData: LocationData = {
         latitude: value.latitude,
@@ -289,13 +331,13 @@ export function LocationPicker({
       setMapCenter([value.latitude, value.longitude]);
       setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (value?.latitude && value.longitude) {
-      reverseAndSetLatLong()
+      reverseAndSetLatLong();
     }
-  }, [value?.latitude, value?.longitude])
+  }, [value?.latitude, value?.longitude]);
 
   return (
     <div className="space-y-3">
@@ -314,9 +356,17 @@ export function LocationPicker({
           size="sm"
           onClick={handleGetCurrentLocation}
           disabled={isLoading}
-          leftIcon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+          leftIcon={
+            isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Navigation className="w-4 h-4" />
+            )
+          }
         >
-          {isLoading ? 'Getting location...' : 'Get Current Location'}
+          {isLoading
+            ? t("locationPicker.gettingLocation")
+            : t("locationPicker.getCurrentLocation")}
         </Button>
 
         {value && (
@@ -328,18 +378,20 @@ export function LocationPicker({
             className="text-red-500 hover:text-red-600 hover:bg-red-50"
             leftIcon={<X className="w-4 h-4" />}
           >
-            Clear
+            {t("locationPicker.clear")}
           </Button>
         )}
       </div>
 
       {/* Map */}
-      <div className={`relative ${isExpanded ? 'h-[500px]' : 'h-64'} rounded-lg overflow-hidden border border-gray-200 group transition-all duration-300`}>
+      <div
+        className={`relative ${isExpanded ? "h-[500px]" : "h-64"} rounded-lg overflow-hidden border border-gray-200 group transition-all duration-300`}
+      >
         <MapContainer
           center={mapCenter || defaultCenter}
           zoom={mapCenter ? 15 : 10}
           className="h-full w-full z-0"
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: "100%", width: "100%" }}
           zoomControl={false}
         >
           <TileLayer
@@ -348,7 +400,7 @@ export function LocationPicker({
           />
           <MapClickHandler onLocationSelect={handleMapClick} />
           <MapCenterUpdater center={mapCenter} />
-          <ZoomControl position={isExpanded ? 'bottomleft' : 'topleft'} />
+          <ZoomControl position={isExpanded ? "bottomleft" : "topleft"} />
 
           {value?.latitude && value?.longitude && (
             <Marker
@@ -368,9 +420,11 @@ export function LocationPicker({
               type="text"
               value={searchQuery}
               onChange={onSearchChange}
-              onFocus={() => searchQuery.length >= 3 && setShowSuggestions(true)}
+              onFocus={() =>
+                searchQuery.length >= 3 && setShowSuggestions(true)
+              }
               className="block w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-              placeholder="Search for an address..."
+              placeholder={t("locationPicker.searchAddress")}
             />
             {isSearching && (
               <span className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -388,7 +442,9 @@ export function LocationPicker({
                   onClick={() => handleSelectSuggestion(suggestion)}
                   className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-50 last:border-0 transition-colors"
                 >
-                  <p className="font-medium text-gray-900 truncate">{suggestion.display_name}</p>
+                  <p className="font-medium text-gray-900 truncate">
+                    {suggestion.display_name}
+                  </p>
                 </button>
               ))}
             </div>
@@ -401,9 +457,17 @@ export function LocationPicker({
             type="button"
             onClick={onToggleExpand}
             className="absolute bottom-3 right-3 z-[1000] p-1.5 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-md hover:bg-white transition-all text-gray-600 hover:text-blue-600"
-            title={isExpanded ? "Collapse map" : "Expand map"}
+            title={
+              isExpanded
+                ? t("locationPicker.collapseMap")
+                : t("locationPicker.expandMap")
+            }
           >
-            {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            {isExpanded ? (
+              <Minimize2 className="w-5 h-5" />
+            ) : (
+              <Maximize2 className="w-5 h-5" />
+            )}
           </button>
         )}
 
@@ -411,14 +475,16 @@ export function LocationPicker({
           <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-[1001] flex items-center justify-center">
             <div className="bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-              <span className="text-sm font-medium text-gray-700">Updating...</span>
+              <span className="text-sm font-medium text-gray-700">
+                {t("locationPicker.updating")}
+              </span>
             </div>
           </div>
         )}
       </div>
 
       <p className="text-[10px] text-gray-400 font-medium italic">
-        * Click map or use search to update coordinates
+        * {t("locationPicker.clickMapHint")}
       </p>
 
       {/* Location Details */}
@@ -431,7 +497,9 @@ export function LocationPicker({
                 {value?.latitude}, {value?.longitude}
               </p>
               {value.address && (
-                <p className="text-sm text-gray-600 mt-1 break-words">{value.address}</p>
+                <p className="text-sm text-gray-600 mt-1 break-words">
+                  {value.address}
+                </p>
               )}
             </div>
           </div>
@@ -440,22 +508,34 @@ export function LocationPicker({
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
               {value.city && (
                 <div>
-                  <span className="font-medium">City:</span> {value.city}
+                  <span className="font-medium">
+                    {t("locationPicker.city")}:
+                  </span>{" "}
+                  {value.city}
                 </div>
               )}
               {value.state && (
                 <div>
-                  <span className="font-medium">State:</span> {value.state}
+                  <span className="font-medium">
+                    {t("locationPicker.state")}:
+                  </span>{" "}
+                  {value.state}
                 </div>
               )}
               {value.country && (
                 <div>
-                  <span className="font-medium">Country:</span> {value.country}
+                  <span className="font-medium">
+                    {t("locationPicker.country")}:
+                  </span>{" "}
+                  {value.country}
                 </div>
               )}
               {value.postal_code && (
                 <div>
-                  <span className="font-medium">Postal Code:</span> {value.postal_code}
+                  <span className="font-medium">
+                    {t("locationPicker.postalCode")}:
+                  </span>{" "}
+                  {value.postal_code}
                 </div>
               )}
             </div>
