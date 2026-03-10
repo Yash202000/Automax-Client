@@ -320,7 +320,7 @@ export const ClassificationsPage: React.FC = () => {
     
     // Validate criticalities - all must have closing time configured
     const hasInvalidCriticality = formData.criticalities.some(
-      c => c.max_closing_hours < 0 || c.max_closing_minutes < 0 || c.max_closing_minutes > 59
+      c => c.max_closing_hours < 0 || c.max_closing_hours > 840 || c.max_closing_minutes < 0 || c.max_closing_minutes > 59
     );
     
     if (hasInvalidCriticality) {
@@ -745,7 +745,7 @@ export const ClassificationsPage: React.FC = () => {
                             </label>
                             <input
                               type="number"
-                              min="0"
+                              min="0" max="840"
                               value={criticality?.max_closing_hours || 0}
                               onChange={(e) => {
                                 const newCriticalities = [...formData.criticalities];
