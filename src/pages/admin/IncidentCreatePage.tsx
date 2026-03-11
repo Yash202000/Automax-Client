@@ -52,6 +52,7 @@ import { DynamicLookupField } from "../../components/common/DynamicLookupField";
 import { useAuthStore } from "../../stores/authStore";
 import { Modal } from "../../components/ui";
 import { AttachmentPreview } from "@/components/common/AttachmentPreview";
+import { toast } from "sonner";
 
 export function IncidentCreatePage() {
   const { t } = useTranslation();
@@ -519,6 +520,7 @@ export function IncidentCreatePage() {
       console.log("Mutation success, navigating...");
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       if (response.data) {
+        toast.success(t("incidents.createdSuccess"));
         navigate(`/incidents/${response.data.id}`);
       } else {
         navigate("/incidents");
