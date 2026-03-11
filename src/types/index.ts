@@ -1210,6 +1210,11 @@ export interface BulkConvertToRequestRequest {
     transition_id?: string;
     transition_comment?: string;
   };
+  existing_request_id?: string;
+  feedback?: {
+    comment: string;
+    rating?: number;
+  };
 }
 
 export interface ConvertToRequestResponse {

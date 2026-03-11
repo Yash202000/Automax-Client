@@ -262,10 +262,19 @@ export const BulkConvertToRequestModal: React.FC<
     enabled: isOpen && currentStep === "workflow",
   });
 
-  const { data: requestsData, isLoading: requestsLoading } = useQuery({
+  const {
+    data: requestsData,
+    isLoading: requestsLoading,
+    error,
+  } = useQuery({
     queryKey: ["requests", requestSearch],
     queryFn: () =>
-      incidentApi.list({ search: requestSearch, record_type: "request" }),
+      incidentApi.list({
+        search: requestSearch,
+        record_type: "request",
+        location_id: incidents?.[0]?.location?.id,
+      }),
+    enabled: requestSearch.length >= 3,
   });
 
   const availableTransitions =
@@ -358,6 +367,7 @@ export const BulkConvertToRequestModal: React.FC<
         incident_ids: incidents.map((i) => i.id),
         classification_id: data.classification_id,
         workflow_id: data.workflow_id,
+        feedback: data.feedback,
       });
     },
     onSuccess: (result) => {
@@ -365,6 +375,9 @@ export const BulkConvertToRequestModal: React.FC<
       if (firstSuccess?.new_request?.id) {
         onSuccess(firstSuccess.new_request.id);
       }
+    },
+    onError: (error) => {
+      console.error("Conversion error:", error);
     },
   });
 
@@ -457,12 +470,19 @@ export const BulkConvertToRequestModal: React.FC<
       return;
     }
 
-    if (!classificationId || !workflowId) return;
+    if (!selectedRequest && (!classificationId || !workflowId)) return;
 
     const request: BulkConvertToRequestRequest = {
       incident_ids: incidents.map((i) => i.id),
-      classification_id: classificationId,
-      workflow_id: workflowId,
+      classification_id:
+        selectedRequest?.classification?.id || classificationId,
+      workflow_id: selectedRequest?.workflow?.id || workflowId,
+      existing_request_id: selectedRequest?.id,
+      feedback: {
+        comment: feedbackComment,
+        // hardcoded as it's not currently captured in the UI, but required by the API
+        rating: 4,
+      },
     };
 
     convertMutation.mutate(request);
@@ -596,8 +616,8 @@ export const BulkConvertToRequestModal: React.FC<
                       }}
                       onFocus={() => setShowRequestSearch(true)}
                       placeholder={t(
-                        "complaints.searchSourceIncident",
-                        "Search for incident/request number or title...",
+                        "incidents.searchRequests",
+                        "Search by request number or title...",
                       )}
                       className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
                     />
@@ -1158,19 +1178,6 @@ export const BulkConvertToRequestModal: React.FC<
                     )}
                   </div>
                 )}
-
-                {/* Step 4: Review */}
-                {/* {currentStep === "review" && (
-                 <ReviewStepContent
-                 incidents={incidents}
-                  feedbackComment={feedbackComment}
-                  setFeedbackComment={setFeedbackComment}
-                  selectedWorkflow={selectedWorkflow}
-                  selectedClassification={selectedClassification}
-                  selectedTransition={selectedTransition}
-
-                 />
-                )} */}
               </div>
             </div>
           )}
@@ -1193,6 +1200,16 @@ export const BulkConvertToRequestModal: React.FC<
               setFeedbackError={setFeedbackError}
             />
           )}
+          {convertMutation?.error ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mt-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertTriangle className="w-5 h-5" />
+                <p className="text-sm">
+                  {JSON.stringify(convertMutation.error?.message)}
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="flex items-center justify-between px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
           <Button
