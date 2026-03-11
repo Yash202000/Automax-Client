@@ -1,6 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Check, ChevronsUpDown, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  ChevronRight,
+  ChevronDown,
+  Check,
+  ChevronsUpDown,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface TreeSelectNode {
   id: string;
@@ -24,7 +31,10 @@ interface TreeSelectProps {
 }
 
 // Helper to find a node by ID in the tree
-const findNodeById = (nodes: TreeSelectNode[], id: string): TreeSelectNode | undefined => {
+const findNodeById = (
+  nodes: TreeSelectNode[],
+  id: string,
+): TreeSelectNode | undefined => {
   for (const node of nodes) {
     if (node.id === id) return node;
     if (node.children && node.children.length > 0) {
@@ -36,7 +46,11 @@ const findNodeById = (nodes: TreeSelectNode[], id: string): TreeSelectNode | und
 };
 
 // Helper to get the path/breadcrumb to a node
-const getNodePath = (nodes: TreeSelectNode[], id: string, path: string[] = []): string[] => {
+const getNodePath = (
+  nodes: TreeSelectNode[],
+  id: string,
+  path: string[] = [],
+): string[] => {
   for (const node of nodes) {
     if (node.id === id) return [...path, node.name];
     if (node.children && node.children.length > 0) {
@@ -89,8 +103,9 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           canSelect
             ? "cursor-pointer hover:bg-[hsl(var(--primary)/0.1)]"
             : "cursor-default",
-          isSelected && "bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))]",
-          !canSelect && !isSelected && "text-[hsl(var(--muted-foreground))]"
+          isSelected &&
+            "bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))]",
+          !canSelect && !isSelected && "text-[hsl(var(--muted-foreground))]",
         )}
         style={{ paddingLeft: `${level * 20 + 12}px` }}
       >
@@ -115,18 +130,18 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         )}
 
         {/* Node name */}
-        <span className={cn(
-          "flex-1 text-sm",
-          isSelected ? "font-medium" : "font-normal",
-          !canSelect && "opacity-60"
-        )}>
+        <span
+          className={cn(
+            "flex-1 text-sm",
+            isSelected ? "font-medium" : "font-normal",
+            !canSelect && "opacity-60",
+          )}
+        >
           {node.name}
         </span>
 
         {/* Selected check */}
-        {isSelected && (
-          <Check className="w-4 h-4 text-[hsl(var(--primary))]" />
-        )}
+        {isSelected && <Check className="w-4 h-4 text-[hsl(var(--primary))]" />}
 
         {/* Children count badge for parents */}
         {hasChildren && leafOnly && (
@@ -162,14 +177,15 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   value,
   onChange,
   label,
-  placeholder = 'Select...',
+  placeholder = "Select...",
   error,
   required,
   disabled,
-  emptyMessage = 'No items available',
-  maxHeight = '300px',
+  emptyMessage = "No items available",
+  maxHeight = "300px",
   leafOnly = true,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -177,13 +193,20 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   // Auto-expand parents of selected value
   useEffect(() => {
     if (value && data.length > 0) {
-      const expandParents = (nodes: TreeSelectNode[], targetId: string, parents: string[] = []): string[] | null => {
+      const expandParents = (
+        nodes: TreeSelectNode[],
+        targetId: string,
+        parents: string[] = [],
+      ): string[] | null => {
         for (const node of nodes) {
           if (node.id === targetId) {
             return parents;
           }
           if (node.children && node.children.length > 0) {
-            const result = expandParents(node.children, targetId, [...parents, node.id]);
+            const result = expandParents(node.children, targetId, [
+              ...parents,
+              node.id,
+            ]);
             if (result) return result;
           }
         }
@@ -192,7 +215,8 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
 
       const parents = expandParents(data, value);
       if (parents && parents.length > 0) {
-        setExpandedIds(prev => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setExpandedIds((prev) => {
           const newExpanded = new Set([...prev, ...parents]);
           return Array.from(newExpanded);
         });
@@ -203,18 +227,21 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const toggleExpand = (id: string) => {
-    setExpandedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    setExpandedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -228,7 +255,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange('', undefined);
+    onChange("", undefined);
   };
 
   const selectedNode = value ? findNodeById(data, value) : null;
@@ -237,7 +264,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   const expandAll = () => {
     const allParentIds: string[] = [];
     const collectParentIds = (nodes: TreeSelectNode[]) => {
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         if (node.children && node.children.length > 0) {
           allParentIds.push(node.id);
           collectParentIds(node.children);
@@ -273,18 +300,23 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
             ? "border-red-500 focus:ring-red-500/20"
             : "border-[hsl(var(--border))] focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]",
           disabled && "opacity-50 cursor-not-allowed bg-[hsl(var(--muted))]",
-          isOpen && "ring-2 ring-[hsl(var(--primary)/0.2)] border-[hsl(var(--primary))]"
+          isOpen &&
+            "ring-2 ring-[hsl(var(--primary)/0.2)] border-[hsl(var(--primary))]",
         )}
       >
-        <span className={cn(
-          "flex-1 truncate",
-          selectedNode ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--muted-foreground))]"
-        )}>
-          {selectedNode ? (
-            selectedPath.length > 1
-              ? selectedPath.join(' > ')
+        <span
+          className={cn(
+            "flex-1 truncate",
+            selectedNode
+              ? "text-[hsl(var(--foreground))]"
+              : "text-[hsl(var(--muted-foreground))]",
+          )}
+        >
+          {selectedNode
+            ? selectedPath.length > 1
+              ? selectedPath.join(" > ")
               : selectedNode.name
-          ) : placeholder}
+            : placeholder}
         </span>
         <div className="flex items-center gap-1 ml-2">
           {value && !disabled && (
@@ -301,9 +333,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
       </button>
 
       {/* Error message */}
-      {error && (
-        <p className="mt-1 text-xs text-red-500">{error}</p>
-      )}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
 
       {/* Dropdown */}
       {isOpen && (
@@ -311,7 +341,9 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
           {/* Header with expand/collapse controls */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
             <span className="text-xs text-[hsl(var(--muted-foreground))]">
-              {leafOnly ? 'Select a leaf item' : 'Select an item'}
+              {leafOnly
+                ? t("treeSelect.selectLeafItem")
+                : t("treeSelect.selectItem")}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -319,23 +351,20 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
                 onClick={expandAll}
                 className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
               >
-                Expand All
+                {t("treeSelect.expandAll")}
               </button>
               <button
                 type="button"
                 onClick={collapseAll}
                 className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
               >
-                Collapse
+                {t("treeSelect.collapse")}
               </button>
             </div>
           </div>
 
           {/* Tree content */}
-          <div
-            className="overflow-y-auto p-2"
-            style={{ maxHeight }}
-          >
+          <div className="overflow-y-auto p-2" style={{ maxHeight }}>
             {data.length === 0 ? (
               <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
                 {emptyMessage}

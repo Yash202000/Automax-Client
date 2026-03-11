@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, useMemo } from "react";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   X,
   CheckCircle2,
@@ -18,9 +19,9 @@ import {
   Calendar,
   Mic,
   Square,
-} from 'lucide-react';
-import { Button, TreeSelect, LocationPicker } from '../ui';
-import type { TreeSelectNode, LocationData } from '../ui';
+} from "lucide-react";
+import { Button, TreeSelect, LocationPicker } from "../ui";
+import type { TreeSelectNode, LocationData } from "../ui";
 import {
   complaintApi,
   classificationApi,
@@ -30,7 +31,7 @@ import {
   incidentApi,
   locationApi,
   lookupApi,
-} from '../../api/admin';
+} from "../../api/admin";
 import type {
   Classification,
   Department,
@@ -38,10 +39,10 @@ import type {
   Incident,
   CreateComplaintRequest,
   IncidentSource,
-} from '../../types';
-import { INCIDENT_SOURCES } from '../../types';
-import { cn } from '@/lib/utils';
-import { useAuthStore } from '../../stores/authStore';
+} from "../../types";
+import { INCIDENT_SOURCES } from "../../types";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "../../stores/authStore";
 
 interface CreateComplaintModalProps {
   isOpen: boolean;
@@ -59,25 +60,30 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   const user = useAuthStore((state) => state.user);
 
   // Form state
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [source, setSource] = useState<IncidentSource | undefined>(undefined);
-  const [channel, setChannel] = useState('');
-  const [classificationId, setClassificationId] = useState('');
-  const [locationId, setLocationId] = useState('');
-  const [workflowId, setWorkflowId] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
-  const [selectedAssignee, setSelectedAssignee] = useState<UserType | null>(null);
+  const [channel, setChannel] = useState("");
+  const [classificationId, setClassificationId] = useState("");
+  const [locationId, setLocationId] = useState("");
+  const [workflowId, setWorkflowId] = useState("");
+  const [selectedDepartment, setSelectedDepartment] =
+    useState<Department | null>(null);
+  const [selectedAssignee, setSelectedAssignee] = useState<UserType | null>(
+    null,
+  );
   const [sourceIncident, setSourceIncident] = useState<Incident | null>(null);
-  const [incidentSearch, setIncidentSearch] = useState('');
+  const [incidentSearch, setIncidentSearch] = useState("");
   const [showIncidentSearch, setShowIncidentSearch] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [lookupValues, setLookupValues] = useState<Record<string, string>>({});
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState("");
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null,
+  );
   const [recordingTime, setRecordingTime] = useState(0);
 
   // Geolocation fields
@@ -93,39 +99,50 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Query for request classifications
-  const { data: classificationsData, isLoading: classificationsLoading } = useQuery({
-    queryKey: ['classifications', 'complaint'],
-    queryFn: async () => {
-      // Get 'complaint', 'both', and 'all' types
-      const [requestRes, bothRes, allRes] = await Promise.all([
-        classificationApi.getTreeByType('complaint'),
-        classificationApi.getTreeByType('both'),
-        classificationApi.getTreeByType('all'),
-      ]);
-      const combined = [...(requestRes.data || []), ...(bothRes.data || []), ...(allRes.data || [])];
-      // Deduplicate by ID
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
-      );
-      return { success: true, data: unique };
-    },
-    enabled: isOpen,
-  });
+  const { data: classificationsData, isLoading: classificationsLoading } =
+    useQuery({
+      queryKey: ["classifications", "complaint"],
+      queryFn: async () => {
+        // Get 'complaint', 'both', and 'all' types
+        const [requestRes, bothRes, allRes] = await Promise.all([
+          classificationApi.getTreeByType("complaint"),
+          classificationApi.getTreeByType("both"),
+          classificationApi.getTreeByType("all"),
+        ]);
+        const combined = [
+          ...(requestRes.data || []),
+          ...(bothRes.data || []),
+          ...(allRes.data || []),
+        ];
+        // Deduplicate by ID
+        const unique = combined.filter(
+          (item, index, self) =>
+            index === self.findIndex((t) => t.id === item.id),
+        );
+        return { success: true, data: unique };
+      },
+      enabled: isOpen,
+    });
 
   // Query for request workflows
   const { data: workflowsData, isLoading: workflowsLoading } = useQuery({
-    queryKey: ['workflows', 'complaint'],
+    queryKey: ["workflows", "complaint"],
     queryFn: async () => {
       // Get 'complaint', 'both', and 'all' types
       const [requestRes, bothRes, allRes] = await Promise.all([
-        workflowApi.listByRecordType('complaint', true),
-        workflowApi.listByRecordType('both', true),
-        workflowApi.listByRecordType('all', true),
+        workflowApi.listByRecordType("complaint", true),
+        workflowApi.listByRecordType("both", true),
+        workflowApi.listByRecordType("all", true),
       ]);
-      const combined = [...(requestRes.data || []), ...(bothRes.data || []), ...(allRes.data || [])];
+      const combined = [
+        ...(requestRes.data || []),
+        ...(bothRes.data || []),
+        ...(allRes.data || []),
+      ];
       // Deduplicate by ID
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
+      const unique = combined.filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.id === item.id),
       );
       return { success: true, data: unique };
     },
@@ -134,50 +151,56 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
   // Query for departments
   const { data: departmentsData } = useQuery({
-    queryKey: ['departments'],
+    queryKey: ["departments"],
     queryFn: () => departmentApi.list(),
     enabled: isOpen,
   });
 
   // Query for users (potential assignees)
   const { data: usersData } = useQuery({
-    queryKey: ['users'],
+    queryKey: ["users"],
     queryFn: () => userApi.list(1, 100),
     enabled: isOpen,
   });
 
   // Query for locations
   const { data: locationsData } = useQuery({
-    queryKey: ['locations', 'tree'],
+    queryKey: ["locations", "tree"],
     queryFn: () => locationApi.getTree(),
     enabled: isOpen,
   });
 
   // Query for lookup categories
   const { data: lookupCategoriesData } = useQuery({
-    queryKey: ['lookups', 'categories'],
+    queryKey: ["lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
     enabled: isOpen,
   });
 
   // Query for incidents created by the current user (for source incident search)
   const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
-    queryKey: ['incidents', 'my-reported', 'search', incidentSearch],
+    queryKey: ["incidents", "my-reported", "search", incidentSearch],
     queryFn: async () => {
       // Get incidents and complaints created by current user
       const [incidentsRes, complaintsRes] = await Promise.all([
-        incidentApi.getMyReported(1, 50, 'incident'),
-        incidentApi.getMyReported(1, 50, 'complaint'),
+        incidentApi.getMyReported(1, 50, "incident"),
+        incidentApi.getMyReported(1, 50, "complaint"),
       ]);
-      const combined = [...(incidentsRes.data || []), ...(complaintsRes.data || [])];
+      const combined = [
+        ...(incidentsRes.data || []),
+        ...(complaintsRes.data || []),
+      ];
       // Filter by search term
       if (incidentSearch) {
         const searchLower = incidentSearch.toLowerCase();
         return {
-          data: combined.filter(i =>
-            i.incident_number.toLowerCase().includes(searchLower) ||
-            i.title.toLowerCase().includes(searchLower)
-          ).slice(0, 10),
+          data: combined
+            .filter(
+              (i) =>
+                i.incident_number.toLowerCase().includes(searchLower) ||
+                i.title.toLowerCase().includes(searchLower),
+            )
+            .slice(0, 10),
         };
       }
       return { data: combined.slice(0, 10) };
@@ -185,19 +208,31 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     enabled: isOpen && incidentSearch.length >= 2,
   });
 
-  const rawClassifications = classificationsData?.data || [];
-  const workflows = workflowsData?.data || [];
+  const rawClassifications = useMemo(
+    () => classificationsData?.data || [],
+    [classificationsData?.data],
+  );
+  const workflows = useMemo(
+    () => workflowsData?.data || [],
+    [workflowsData?.data],
+  );
   const departments = departmentsData?.data || [];
   const users = usersData?.data || [];
-  const rawLocations = locationsData?.data || [];
+  const rawLocations = useMemo(
+    () => locationsData?.data || [],
+    [locationsData?.data],
+  );
   const searchedIncidents = incidentsData?.data || [];
 
   // Filter classifications based on user's assignments (unless super admin)
   const classifications = useMemo(() => {
     if (!user || user.is_super_admin) return rawClassifications;
-    if (!user.classifications || user.classifications.length === 0) return rawClassifications;
+    if (!user.classifications || user.classifications.length === 0)
+      return rawClassifications;
 
-    const userClassificationIds = new Set(user.classifications.map(c => c.id));
+    const userClassificationIds = new Set(
+      user.classifications.map((c) => c.id),
+    );
 
     const hasUserAccess = (node: any): boolean => {
       if (userClassificationIds.has(node.id)) return true;
@@ -209,13 +244,14 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
     const filterByUserAccess = (nodes: any[]): any[] => {
       return nodes
-        .map(node => {
+        .map((node) => {
           if (!hasUserAccess(node)) return null;
           const filteredNode = {
             ...node,
-            children: node.children && node.children.length > 0
-              ? filterByUserAccess(node.children)
-              : undefined,
+            children:
+              node.children && node.children.length > 0
+                ? filterByUserAccess(node.children)
+                : undefined,
           };
           return filteredNode;
         })
@@ -230,7 +266,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     if (!user || user.is_super_admin) return rawLocations;
     if (!user.locations || user.locations.length === 0) return rawLocations;
 
-    const userLocationIds = new Set(user.locations.map(l => l.id));
+    const userLocationIds = new Set(user.locations.map((l) => l.id));
 
     const hasUserAccess = (node: any): boolean => {
       if (userLocationIds.has(node.id)) return true;
@@ -242,13 +278,14 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
     const filterByUserAccess = (nodes: any[]): any[] => {
       return nodes
-        .map(node => {
+        .map((node) => {
           if (!hasUserAccess(node)) return null;
           const filteredNode = {
             ...node,
-            children: node.children && node.children.length > 0
-              ? filterByUserAccess(node.children)
-              : undefined,
+            children:
+              node.children && node.children.length > 0
+                ? filterByUserAccess(node.children)
+                : undefined,
           };
           return filteredNode;
         })
@@ -260,22 +297,23 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
   // Filter lookup categories for request form
   const requestLookupCategories = (lookupCategoriesData?.data || []).filter(
-    (cat) => cat.add_to_incident_form
+    (cat) => cat.add_to_incident_form,
   );
 
   // Get selected workflow and its required fields
-  const selectedWorkflow = workflows.find(w => w.id === workflowId);
+  const selectedWorkflow = workflows.find((w) => w.id === workflowId);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
 
   // Convert classifications to TreeSelectNode format
   const classificationTreeData: TreeSelectNode[] = useMemo(() => {
     const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
-      return items.map(item => ({
+      return items.map((item) => ({
         id: item.id,
         name: item.name,
-        children: item.children && item.children.length > 0
-          ? convertToTreeNode(item.children)
-          : undefined,
+        children:
+          item.children && item.children.length > 0
+            ? convertToTreeNode(item.children)
+            : undefined,
       }));
     };
     return convertToTreeNode(classifications);
@@ -283,18 +321,19 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
   // Filter workflows based on selected classification
   const filteredWorkflows = useMemo(() => {
-    const requestWorkflows = workflows.filter(w => w.is_active);
+    const requestWorkflows = workflows.filter((w) => w.is_active);
 
     if (!classificationId) {
       return requestWorkflows;
     }
 
-    const matching = requestWorkflows.filter(w => {
-      const hasNoClassificationRestriction = !w.classifications || w.classifications.length === 0;
+    const matching = requestWorkflows.filter((w) => {
+      const hasNoClassificationRestriction =
+        !w.classifications || w.classifications.length === 0;
 
       if (hasNoClassificationRestriction) return true;
 
-      return w.classifications?.some(c => c.id === classificationId);
+      return w.classifications?.some((c) => c.id === classificationId);
     });
 
     // If no workflows match the classification, show all workflows as fallback
@@ -304,8 +343,12 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
   // Auto-match workflow when criteria change via backend API
   useEffect(() => {
-    const priorityCategory = requestLookupCategories.find(c => c.code === 'PRIORITY');
-    const priorityLookup = priorityCategory?.values?.find(v => v.id === lookupValues[priorityCategory?.id ?? '']);
+    const priorityCategory = requestLookupCategories.find(
+      (c) => c.code === "PRIORITY",
+    );
+    const priorityLookup = priorityCategory?.values?.find(
+      (v) => v.id === lookupValues[priorityCategory?.id ?? ""],
+    );
     const priority = priorityLookup?.sort_order;
 
     const criteria = {
@@ -315,29 +358,46 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       priority,
     };
 
-    workflowApi.matchWorkflow(criteria).then(result => {
-      if (result.data?.workflow_id) {
-        setWorkflowId(result.data.workflow_id);
-      }
-    }).catch(() => {
-      // Silently fail - let user manually select workflow
-    });
-  }, [classificationId, locationId, source, lookupValues, requestLookupCategories]);
+    workflowApi
+      .matchWorkflow(criteria)
+      .then((result) => {
+        if (result.data?.workflow_id) {
+          setWorkflowId(result.data.workflow_id);
+        }
+      })
+      .catch(() => {
+        // Silently fail - let user manually select workflow
+      });
+  }, [
+    classificationId,
+    locationId,
+    source,
+    lookupValues,
+    requestLookupCategories,
+  ]);
 
   // Create request mutation
   const createMutation = useMutation({
-    mutationFn: async ({ data, files }: { data: CreateComplaintRequest; files: File[] }) => {
+    mutationFn: async ({
+      data,
+      files,
+    }: {
+      data: CreateComplaintRequest;
+      files: File[];
+    }) => {
       const response = await complaintApi.create(data);
       // Upload attachments after request is created
       if (response.data && files.length > 0) {
         await Promise.all(
-          files.map(file => complaintApi.uploadAttachment(response.data!.id, file))
+          files.map((file) =>
+            complaintApi.uploadAttachment(response.data!.id, file),
+          ),
         );
       }
       return response;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+      queryClient.invalidateQueries({ queryKey: ["complaints"] });
       if (result.data?.id) {
         onSuccess(result.data.id);
       }
@@ -348,34 +408,60 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setTitle('');
-      setDescription('');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTitle("");
+
+      setDescription("");
+
       setSource(undefined);
-      setChannel('');
-      setClassificationId('');
-      setLocationId('');
-      setWorkflowId('');
+
+      setChannel("");
+
+      setClassificationId("");
+
+      setLocationId("");
+
+      setWorkflowId("");
+
       setSelectedDepartment(null);
+
       setSelectedAssignee(null);
+
       setSourceIncident(null);
-      setIncidentSearch('');
+
+      setIncidentSearch("");
+
       setShowIncidentSearch(false);
+
       setAttachments([]);
+
       setLookupValues({});
-      setDueDate('');
+
+      setDueDate("");
+
       setLatitude(undefined);
+
       setLongitude(undefined);
+
       setAddress(undefined);
+
       setCity(undefined);
+
       setState(undefined);
+
       setCountry(undefined);
+
       setPostalCode(undefined);
+
       setErrors({});
     }
   }, [isOpen]);
 
   // Flatten department tree for selection
-  const flattenDepartments = (items: Department[], level = 0): (Department & { level: number })[] => {
+  const flattenDepartments = (
+    items: Department[],
+    level = 0,
+  ): (Department & { level: number })[] => {
     const result: (Department & { level: number })[] = [];
     for (const item of items) {
       result.push({ ...item, level });
@@ -390,54 +476,97 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!title.trim()) {
-      newErrors.title = t('complaints.titleRequired', 'Title is required');
+      newErrors.title = t("complaints.titleRequired", "Title is required");
     }
     if (!classificationId) {
-      newErrors.classification = t('complaints.classificationRequired', 'Classification is required');
+      newErrors.classification = t(
+        "complaints.classificationRequired",
+        "Classification is required",
+      );
     }
     if (!workflowId) {
-      newErrors.workflow = t('complaints.workflowRequired', 'Workflow is required');
+      newErrors.workflow = t(
+        "complaints.workflowRequired",
+        "Workflow is required",
+      );
     }
 
     // Check workflow required fields
-    if (workflowRequiredFields.includes('description') && !description.trim()) {
-      newErrors.description = t('complaints.fieldRequired', { field: t('complaints.description', 'Description') });
+    if (workflowRequiredFields.includes("description") && !description.trim()) {
+      newErrors.description = t("complaints.fieldRequired", {
+        field: t("complaints.description", "Description"),
+      });
     }
-    if (workflowRequiredFields.includes('source') && !source) {
-      newErrors.source = t('complaints.fieldRequired', { field: t('complaints.source', 'Source') });
+    if (workflowRequiredFields.includes("source") && !source) {
+      newErrors.source = t("complaints.fieldRequired", {
+        field: t("complaints.source", "Source"),
+      });
     }
-    if (workflowRequiredFields.includes('channel') && !channel.trim()) {
-      newErrors.channel = t('complaints.fieldRequired', { field: t('complaints.channel', 'Channel') });
+    if (workflowRequiredFields.includes("channel") && !channel.trim()) {
+      newErrors.channel = t("complaints.fieldRequired", {
+        field: t("complaints.channel", "Channel"),
+      });
     }
-    if (workflowRequiredFields.includes('location_id') && !locationId) {
-      newErrors.location = t('complaints.fieldRequired', { field: t('complaints.location', 'Location') });
+    if (workflowRequiredFields.includes("location_id") && !locationId) {
+      newErrors.location = t("complaints.fieldRequired", {
+        field: t("complaints.location", "Location"),
+      });
     }
-    if (workflowRequiredFields.includes('department_id') && !selectedDepartment) {
-      newErrors.department = t('complaints.fieldRequired', { field: t('complaints.department', 'Department') });
+    if (
+      workflowRequiredFields.includes("department_id") &&
+      !selectedDepartment
+    ) {
+      newErrors.department = t("complaints.fieldRequired", {
+        field: t("complaints.department", "Department"),
+      });
     }
-    if (workflowRequiredFields.includes('assignee_id') && !selectedAssignee) {
-      newErrors.assignee = t('complaints.fieldRequired', { field: t('complaints.assignee', 'Assignee') });
+    if (workflowRequiredFields.includes("assignee_id") && !selectedAssignee) {
+      newErrors.assignee = t("complaints.fieldRequired", {
+        field: t("complaints.assignee", "Assignee"),
+      });
     }
-    if (workflowRequiredFields.includes('due_date') && !dueDate) {
-      newErrors.due_date = t('complaints.fieldRequired', { field: t('complaints.dueDate', 'Due Date') });
+    if (workflowRequiredFields.includes("due_date") && !dueDate) {
+      newErrors.due_date = t("complaints.fieldRequired", {
+        field: t("complaints.dueDate", "Due Date"),
+      });
     }
-    if (workflowRequiredFields.includes('geolocation') && (latitude === undefined || longitude === undefined)) {
-      newErrors.geolocation = t('complaints.fieldRequired', { field: t('complaints.geolocation', 'Geolocation') });
+    if (
+      workflowRequiredFields.includes("geolocation") &&
+      (latitude === undefined || longitude === undefined)
+    ) {
+      newErrors.geolocation = t("complaints.fieldRequired", {
+        field: t("complaints.geolocation", "Geolocation"),
+      });
     }
-    if ((workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && attachments.length === 0) {
-      newErrors.attachments = t('complaints.fieldRequired', { field: t('complaints.attachments', 'Attachments') });
+    if (
+      (workflowRequiredFields.includes("attachments") ||
+        workflowRequiredFields.includes("attachment")) &&
+      attachments.length === 0
+    ) {
+      newErrors.attachments = t("complaints.fieldRequired", {
+        field: t("complaints.attachments", "Attachments"),
+      });
     }
-    if (workflowRequiredFields.includes('source_incident_id') && !sourceIncident) {
-      newErrors.source_incident_id = t('complaints.fieldRequired', { field: t('complaints.sourceIncident', 'Source Incident') });
+    if (
+      workflowRequiredFields.includes("source_incident_id") &&
+      !sourceIncident
+    ) {
+      newErrors.source_incident_id = t("complaints.fieldRequired", {
+        field: t("complaints.sourceIncident", "Source Incident"),
+      });
     }
 
     // Check lookup field requirements
     for (const field of workflowRequiredFields) {
-      if (field.startsWith('lookup:')) {
-        const categoryCode = field.replace('lookup:', '');
-        const category = requestLookupCategories.find(c => c.code === categoryCode);
+      if (field.startsWith("lookup:")) {
+        const categoryCode = field.replace("lookup:", "");
+        const category = requestLookupCategories.find(
+          (c) => c.code === categoryCode,
+        );
         if (category && !lookupValues[category.id]) {
-          newErrors[field] = t('complaints.fieldRequired', { field: category.name });
+          newErrors[field] = t("complaints.fieldRequired", {
+            field: category.name,
+          });
         }
       }
     }
@@ -458,10 +587,14 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       };
 
       recorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const audioFile = new File([audioBlob], `voice-recording-${Date.now()}.webm`, { type: 'audio/webm' });
-        setAttachments(prev => [...prev, audioFile]);
-        stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        const audioFile = new File(
+          [audioBlob],
+          `voice-recording-${Date.now()}.webm`,
+          { type: "audio/webm" },
+        );
+        setAttachments((prev) => [...prev, audioFile]);
+        stream.getTracks().forEach((track) => track.stop());
         setRecordingTime(0);
       };
 
@@ -469,13 +602,13 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       setMediaRecorder(recorder);
       setIsRecording(true);
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('Unable to access microphone. Please check permissions.');
+      console.error("Error accessing microphone:", error);
+      toast.error("Unable to access microphone. Please check permissions.");
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
       setIsRecording(false);
       setMediaRecorder(null);
@@ -487,7 +620,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     let interval: number;
     if (isRecording) {
       interval = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
     }
     return () => {
@@ -528,11 +661,11 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   const handleSelectIncident = (incident: Incident) => {
     setSourceIncident(incident);
     setShowIncidentSearch(false);
-    setIncidentSearch('');
+    setIncidentSearch("");
   };
 
   const handleLookupChange = (categoryId: string, valueId: string) => {
-    setLookupValues(prev => ({ ...prev, [categoryId]: valueId }));
+    setLookupValues((prev) => ({ ...prev, [categoryId]: valueId }));
   };
 
   const handleLocationChange = (location: LocationData | undefined) => {
@@ -545,7 +678,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       setCountry(location.country);
       setPostalCode(location.postal_code);
       if (errors.geolocation) {
-        setErrors(prev => ({ ...prev, geolocation: '' }));
+        setErrors((prev) => ({ ...prev, geolocation: "" }));
       }
     } else {
       setLatitude(undefined);
@@ -574,10 +707,13 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t('complaints.createComplaint', 'Create Complaint')}
+                {t("complaints.createComplaint", "Create Complaint")}
               </h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t('complaints.createComplaintDescription', 'Create a new request record')}
+                {t(
+                  "complaints.createComplaintDescription",
+                  "Create a new request record",
+                )}
               </p>
             </div>
           </div>
@@ -595,14 +731,15 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
           <div className="space-y-3 p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg border border-[hsl(var(--border))]">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Workflow className="w-4 h-4" />
-              {t('complaints.matchingCriteria', 'Matching Criteria')}
+              {t("complaints.matchingCriteria", "Matching Criteria")}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Classification */}
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <Tags className="w-3 h-3 inline mr-1" />
-                  {t('complaints.classification', 'Classification')} <span className="text-red-500">*</span>
+                  {t("complaints.classification", "Classification")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 {classificationsLoading ? (
                   <div className="flex items-center justify-center py-3">
@@ -613,10 +750,16 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                     data={classificationTreeData}
                     value={classificationId}
                     onChange={(id) => setClassificationId(id)}
-                    placeholder={t('complaints.selectClassification', 'Select classification...')}
+                    placeholder={t(
+                      "complaints.selectClassification",
+                      "Select classification...",
+                    )}
                     error={errors.classification}
                     leafOnly={true}
-                    emptyMessage={t('complaints.noClassifications', 'No complaint classifications found.')}
+                    emptyMessage={t(
+                      "complaints.noClassifications",
+                      "No complaint classifications found.",
+                    )}
                     maxHeight="200px"
                   />
                 )}
@@ -625,55 +768,80 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <MapPin className="w-3 h-3 inline mr-1" />
-                  {t('complaints.location', 'Location')}
+                  {t("complaints.location", "Location")}
                 </label>
                 <TreeSelect
                   data={locationTree}
-                  value={locationId || ''}
+                  value={locationId || ""}
                   onChange={(id) => setLocationId(id)}
-                  placeholder={t('complaints.selectLocation', 'Select location...')}
+                  placeholder={t(
+                    "complaints.selectLocation",
+                    "Select location...",
+                  )}
                   error={errors.location}
                   leafOnly={true}
-                  emptyMessage={t('complaints.noLocations', 'No locations available')}
+                  emptyMessage={t(
+                    "complaints.noLocations",
+                    "No locations available",
+                  )}
                 />
               </div>
               {/* Source */}
               <div className="space-y-2">
-                <label htmlFor="complaint-source-match" className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  {t('complaints.source', 'Source')}
+                <label
+                  htmlFor="complaint-source-match"
+                  className="block text-xs font-medium text-[hsl(var(--muted-foreground))]"
+                >
+                  {t("complaints.source", "Source")}
                 </label>
                 <select
                   id="complaint-source-match"
-                  value={source || ''}
-                  onChange={(e) => setSource((e.target.value as IncidentSource) || undefined)}
+                  value={source || ""}
+                  onChange={(e) =>
+                    setSource((e.target.value as IncidentSource) || undefined)
+                  }
                   className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
-                  <option value="">{t('complaints.selectSource', 'Select source...')}</option>
+                  <option value="">
+                    {t("complaints.selectSource", "Select source...")}
+                  </option>
                   {INCIDENT_SOURCES.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
                   ))}
                 </select>
               </div>
               {/* Priority */}
-              {requestLookupCategories.filter(cat => cat.code === 'PRIORITY').map(category => (
-                <div key={category.id} className="space-y-2">
-                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                    {i18n.language === 'ar' ? category.name_ar || category.name : category.name}
-                  </label>
-                  <select
-                    value={lookupValues[category.id] || ''}
-                    onChange={(e) => handleLookupChange(category.id, e.target.value)}
-                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    <option value="">{t('common.select', 'Select...')}</option>
-                    {(category.values || []).map(v => (
-                      <option key={v.id} value={v.id}>
-                        {i18n.language === 'ar' && v.name_ar ? v.name_ar : v.name}
+              {requestLookupCategories
+                .filter((cat) => cat.code === "PRIORITY")
+                .map((category) => (
+                  <div key={category.id} className="space-y-2">
+                    <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                      {i18n.language === "ar"
+                        ? category.name_ar || category.name
+                        : category.name}
+                    </label>
+                    <select
+                      value={lookupValues[category.id] || ""}
+                      onChange={(e) =>
+                        handleLookupChange(category.id, e.target.value)
+                      }
+                      className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="">
+                        {t("common.select", "Select...")}
                       </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+                      {(category.values || []).map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {i18n.language === "ar" && v.name_ar
+                            ? v.name_ar
+                            : v.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -681,13 +849,17 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {t('complaints.basicInfo', 'Basic Information')}
+              {t("complaints.basicInfo", "Basic Information")}
             </h4>
 
             {/* Title */}
             <div>
-              <label htmlFor="complaint-title" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('complaints.title', 'Title')} <span className="text-red-500">*</span>
+              <label
+                htmlFor="complaint-title"
+                className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
+              >
+                {t("complaints.title", "Title")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 id="complaint-title"
@@ -695,10 +867,15 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={t('complaints.titlePlaceholder', 'Enter request title...')}
+                placeholder={t(
+                  "complaints.titlePlaceholder",
+                  "Enter request title...",
+                )}
                 className={cn(
                   "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                  errors.title ? "border-red-500" : "border-[hsl(var(--border))]"
+                  errors.title
+                    ? "border-red-500"
+                    : "border-[hsl(var(--border))]",
                 )}
               />
               {errors.title && (
@@ -707,280 +884,346 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             </div>
 
             {/* Description */}
-            {workflowRequiredFields.includes('description') && (
-            <div>
-              <label htmlFor="complaint-description" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t('complaints.description', 'Description')}
-                <span className="text-red-500 ml-1">*</span>
-              </label>
-              <textarea
-                id="complaint-description"
-                name="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t('complaints.descriptionPlaceholder', 'Describe the request...')}
-                rows={3}
-                className={cn(
-                  "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none",
-                  errors.description ? "border-red-500" : "border-[hsl(var(--border))]"
+            {workflowRequiredFields.includes("description") && (
+              <div>
+                <label
+                  htmlFor="complaint-description"
+                  className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
+                >
+                  {t("complaints.description", "Description")}
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <textarea
+                  id="complaint-description"
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t(
+                    "complaints.descriptionPlaceholder",
+                    "Describe the request...",
+                  )}
+                  rows={3}
+                  className={cn(
+                    "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none",
+                    errors.description
+                      ? "border-red-500"
+                      : "border-[hsl(var(--border))]",
+                  )}
+                />
+                {errors.description && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.description}
+                  </p>
                 )}
-              />
-              {errors.description && (
-                <p className="text-xs text-red-500 mt-1">{errors.description}</p>
-              )}
-            </div>
+              </div>
             )}
           </div>
 
           {/* Channel */}
-          {workflowRequiredFields.includes('channel') && (
-          <div>
-            <label htmlFor="complaint-channel" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-              <Radio className="w-3 h-3 inline mr-1" />
-              {t('complaints.channel', 'Channel')} <span className="text-red-500 ml-1">*</span>
-            </label>
-            <input
-              id="complaint-channel"
-              name="channel"
-              type="text"
-              value={channel}
-              onChange={(e) => setChannel(e.target.value)}
-              placeholder={t('complaints.channelPlaceholder', 'e.g., Phone, Email, Web')}
-              className={cn(
-                "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                errors.channel ? "border-red-500" : "border-[hsl(var(--border))]"
+          {workflowRequiredFields.includes("channel") && (
+            <div>
+              <label
+                htmlFor="complaint-channel"
+                className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
+              >
+                <Radio className="w-3 h-3 inline mr-1" />
+                {t("complaints.channel", "Channel")}{" "}
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                id="complaint-channel"
+                name="channel"
+                type="text"
+                value={channel}
+                onChange={(e) => setChannel(e.target.value)}
+                placeholder={t(
+                  "complaints.channelPlaceholder",
+                  "e.g., Phone, Email, Web",
+                )}
+                className={cn(
+                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                  errors.channel
+                    ? "border-red-500"
+                    : "border-[hsl(var(--border))]",
+                )}
+              />
+              {errors.channel && (
+                <p className="text-xs text-red-500 mt-1">{errors.channel}</p>
               )}
-            />
-            {errors.channel && (
-              <p className="text-xs text-red-500 mt-1">{errors.channel}</p>
-            )}
-          </div>
+            </div>
           )}
 
           {/* Source Incident */}
-          {workflowRequiredFields.includes('source_incident_id') && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              {t('complaints.sourceIncident', 'Source Incident/Complaint')}
-              {workflowRequiredFields.includes('source_incident_id') ? (
-                <span className="text-xs text-red-500">*</span>
-              ) : (
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                  ({t('common.optional', 'Optional')})
-                </span>
-              )}
-            </h4>
-            {errors.source_incident_id && (
-              <p className="text-xs text-red-500">{errors.source_incident_id}</p>
-            )}
-
-            {sourceIncident ? (
-              <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
-                <div>
-                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                    {sourceIncident?.incident_number}
-                  </p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {sourceIncident?.title}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSourceIncident(null)}
-                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    value={incidentSearch}
-                    onChange={(e) => {
-                      setIncidentSearch(e.target.value);
-                      setShowIncidentSearch(true);
-                    }}
-                    onFocus={() => setShowIncidentSearch(true)}
-                    placeholder={t('complaints.searchSourceIncident', 'Search for incident/request number or title...')}
-                    className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
-                  />
-                </div>
-
-                {/* Search Results Dropdown */}
-                {showIncidentSearch && incidentSearch.length >= 2 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                    {incidentsLoading ? (
-                      <div className="p-4 text-center">
-                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                      </div>
-                    ) : searchedIncidents.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                        {t('complaints.noIncidentsFound', 'No incidents found')}
-                      </div>
-                    ) : (
-                      searchedIncidents.map((incident) => (
-                        <button
-                          key={incident.id}
-                          type="button"
-                          onClick={() => handleSelectIncident(incident)}
-                          className="w-full px-4 py-3 text-left hover:bg-[hsl(var(--muted)/0.5)] transition-colors border-b border-[hsl(var(--border))] last:border-b-0"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                                {incident.incident_number}
-                              </p>
-                              <p className="text-xs text-[hsl(var(--muted-foreground))] truncate max-w-[300px]">
-                                {incident.title}
-                              </p>
-                            </div>
-                            <span
-                              className="px-2 py-0.5 text-xs rounded-full"
-                              style={{
-                                backgroundColor: incident.current_state?.color ? `${incident.current_state.color}20` : 'hsl(var(--muted))',
-                                color: incident.current_state?.color || 'hsl(var(--foreground))',
-                              }}
-                            >
-                              {incident.current_state?.name || incident.record_type}
-                            </span>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
+          {workflowRequiredFields.includes("source_incident_id") && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                {t("complaints.sourceIncident", "Source Incident/Complaint")}
+                {workflowRequiredFields.includes("source_incident_id") ? (
+                  <span className="text-xs text-red-500">*</span>
+                ) : (
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                    ({t("common.optional", "Optional")})
+                  </span>
                 )}
-              </div>
-            )}
-          </div>
+              </h4>
+              {errors.source_incident_id && (
+                <p className="text-xs text-red-500">
+                  {errors.source_incident_id}
+                </p>
+              )}
+
+              {sourceIncident ? (
+                <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
+                  <div>
+                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {sourceIncident?.incident_number}
+                    </p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {sourceIncident?.title}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSourceIncident(null)}
+                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      value={incidentSearch}
+                      onChange={(e) => {
+                        setIncidentSearch(e.target.value);
+                        setShowIncidentSearch(true);
+                      }}
+                      onFocus={() => setShowIncidentSearch(true)}
+                      placeholder={t(
+                        "complaints.searchSourceIncident",
+                        "Search for incident/request number or title...",
+                      )}
+                      className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
+                    />
+                  </div>
+
+                  {/* Search Results Dropdown */}
+                  {showIncidentSearch && incidentSearch.length >= 2 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {incidentsLoading ? (
+                        <div className="p-4 text-center">
+                          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                        </div>
+                      ) : searchedIncidents.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                          {t(
+                            "complaints.noIncidentsFound",
+                            "No incidents found",
+                          )}
+                        </div>
+                      ) : (
+                        searchedIncidents.map((incident) => (
+                          <button
+                            key={incident.id}
+                            type="button"
+                            onClick={() => handleSelectIncident(incident)}
+                            className="w-full px-4 py-3 text-left hover:bg-[hsl(var(--muted)/0.5)] transition-colors border-b border-[hsl(var(--border))] last:border-b-0"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                  {incident.incident_number}
+                                </p>
+                                <p className="text-xs text-[hsl(var(--muted-foreground))] truncate max-w-[300px]">
+                                  {incident.title}
+                                </p>
+                              </div>
+                              <span
+                                className="px-2 py-0.5 text-xs rounded-full"
+                                style={{
+                                  backgroundColor: incident.current_state?.color
+                                    ? `${incident.current_state.color}20`
+                                    : "hsl(var(--muted))",
+                                  color:
+                                    incident.current_state?.color ||
+                                    "hsl(var(--foreground))",
+                                }}
+                              >
+                                {incident.current_state?.name ||
+                                  incident.record_type}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Workflow */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Workflow className="w-4 h-4" />
-              {t('complaints.workflow', 'Workflow')} <span className="text-red-500">*</span>
+              {t("complaints.workflow", "Workflow")}{" "}
+              <span className="text-red-500">*</span>
             </h4>
 
-              {workflowsLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            {workflowsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filteredWorkflows.length === 0 ? (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <AlertTriangle className="w-4 h-4" />
+                  <p className="text-xs">
+                    {t("complaints.noWorkflows", "No request workflows found.")}
+                  </p>
                 </div>
-              ) : filteredWorkflows.length === 0 ? (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-700">
-                    <AlertTriangle className="w-4 h-4" />
-                    <p className="text-xs">
-                      {t('complaints.noWorkflows', 'No request workflows found.')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className={cn(
+              </div>
+            ) : (
+              <div
+                className={cn(
                   "space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2",
-                  errors.workflow ? "border-red-500" : "border-[hsl(var(--border))]"
-                )}>
-                  {filteredWorkflows.map((workflow) => (
-                    <button
-                      key={workflow.id}
-                      type="button"
-                      onClick={() => setWorkflowId(workflow.id)}
-                      className={cn(
-                        "w-full p-2 rounded-lg text-left transition-colors text-sm",
-                        workflowId === workflow.id
-                          ? "bg-primary/10 text-primary border border-primary"
-                          : "hover:bg-[hsl(var(--muted)/0.5)]"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
+                  errors.workflow
+                    ? "border-red-500"
+                    : "border-[hsl(var(--border))]",
+                )}
+              >
+                {filteredWorkflows.map((workflow) => (
+                  <button
+                    key={workflow.id}
+                    type="button"
+                    onClick={() => setWorkflowId(workflow.id)}
+                    className={cn(
+                      "w-full p-2 rounded-lg text-left transition-colors text-sm",
+                      workflowId === workflow.id
+                        ? "bg-primary/10 text-primary border border-primary"
+                        : "hover:bg-[hsl(var(--muted)/0.5)]",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
                           "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0",
                           workflowId === workflow.id
                             ? "border-primary bg-primary"
-                            : "border-[hsl(var(--muted-foreground))]"
-                        )}>
-                          {workflowId === workflow.id && (
-                            <CheckCircle2 className="w-2.5 h-2.5 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="truncate block">{workflow.name}</span>
-                          <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {workflow.code}
-                          </span>
-                        </div>
+                            : "border-[hsl(var(--muted-foreground))]",
+                        )}
+                      >
+                        {workflowId === workflow.id && (
+                          <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                        )}
                       </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {errors.workflow && (
-                <p className="text-xs text-red-500">{errors.workflow}</p>
-              )}
+                      <div className="flex-1 min-w-0">
+                        <span className="truncate block">{workflow.name}</span>
+                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                          {workflow.code}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {errors.workflow && (
+              <p className="text-xs text-red-500">{errors.workflow}</p>
+            )}
           </div>
 
           {/* Additional Details — other workflow-required lookup fields (excluding PRIORITY which is in Matching Criteria) */}
-          {workflowRequiredFields.some(f => f.startsWith('lookup:') && !f.startsWith('lookup:PRIORITY')) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {requestLookupCategories.filter(category => {
-              const lookupFieldKey = `lookup:${category.code}`;
-              return category.code !== 'PRIORITY' && workflowRequiredFields.includes(lookupFieldKey as any);
-            }).map(category => {
-              const lookupFieldKey = `lookup:${category.code}`;
-              const isRequired = workflowRequiredFields.includes(lookupFieldKey as any);
-              return (
-                <div key={category.id} className="space-y-3">
-                  <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                    <Tags className="w-4 h-4" />
-                    {i18n.language === 'ar' ? category.name_ar || category.name : category.name}
-                    {isRequired && <span className="text-red-500 ml-1">*</span>}
-                  </h4>
-                  <select
-                    value={lookupValues[category.id] || ''}
-                    onChange={(e) => handleLookupChange(category.id, e.target.value)}
-                    className={cn(
-                      "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                      errors[lookupFieldKey] ? "border-red-500" : "border-[hsl(var(--border))]"
-                    )}
-                  >
-                    <option value="">{t('common.select', 'Select...')}</option>
-                    {(category.values || []).map(v => (
-                      <option key={v.id} value={v.id}>
-                        {i18n.language === 'ar' && v.name_ar ? v.name_ar : v.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors[lookupFieldKey] && (
-                    <p className="text-xs text-red-500">{errors[lookupFieldKey]}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {workflowRequiredFields.some(
+            (f) => f.startsWith("lookup:") && !f.startsWith("lookup:PRIORITY"),
+          ) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {requestLookupCategories
+                .filter((category) => {
+                  const lookupFieldKey = `lookup:${category.code}`;
+                  return (
+                    category.code !== "PRIORITY" &&
+                    workflowRequiredFields.includes(lookupFieldKey as any)
+                  );
+                })
+                .map((category) => {
+                  const lookupFieldKey = `lookup:${category.code}`;
+                  const isRequired = workflowRequiredFields.includes(
+                    lookupFieldKey as any,
+                  );
+                  return (
+                    <div key={category.id} className="space-y-3">
+                      <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+                        <Tags className="w-4 h-4" />
+                        {i18n.language === "ar"
+                          ? category.name_ar || category.name
+                          : category.name}
+                        {isRequired && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                      </h4>
+                      <select
+                        value={lookupValues[category.id] || ""}
+                        onChange={(e) =>
+                          handleLookupChange(category.id, e.target.value)
+                        }
+                        className={cn(
+                          "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                          errors[lookupFieldKey]
+                            ? "border-red-500"
+                            : "border-[hsl(var(--border))]",
+                        )}
+                      >
+                        <option value="">
+                          {t("common.select", "Select...")}
+                        </option>
+                        {(category.values || []).map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {i18n.language === "ar" && v.name_ar
+                              ? v.name_ar
+                              : v.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors[lookupFieldKey] && (
+                        <p className="text-xs text-red-500">
+                          {errors[lookupFieldKey]}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
           )}
 
           {/* Geolocation - full width if required */}
-          {workflowRequiredFields.includes('geolocation') && (
+          {workflowRequiredFields.includes("geolocation") && (
             <div>
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
-                {t('complaints.geolocation', 'Geolocation')}
+                {t("complaints.geolocation", "Geolocation")}
                 <span className="text-red-500 ml-1">*</span>
               </h4>
               <LocationPicker
-                label={t('complaints.geolocation', 'Geolocation')}
-                value={latitude !== undefined && longitude !== undefined ? {
-                  latitude,
-                  longitude,
-                  address,
-                  city,
-                  state,
-                  country,
-                  postal_code: postalCode,
-                } : undefined}
+                label={t("complaints.geolocation", "Geolocation")}
+                value={
+                  latitude !== undefined && longitude !== undefined
+                    ? {
+                        latitude,
+                        longitude,
+                        address,
+                        city,
+                        state,
+                        country,
+                        postal_code: postalCode,
+                      }
+                    : undefined
+                }
                 onChange={handleLocationChange}
                 required
                 error={errors.geolocation}
@@ -989,218 +1232,247 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
           )}
 
           {/* Assignment */}
-          {(workflowRequiredFields.includes('department_id') || workflowRequiredFields.includes('assignee_id')) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Department */}
-            {workflowRequiredFields.includes('department_id') && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                {t('complaints.department', 'Department')}
-                {workflowRequiredFields.includes('department_id') ? (
-                  <span className="text-red-500 ml-1">*</span>
-                ) : (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                )}
-              </h4>
+          {(workflowRequiredFields.includes("department_id") ||
+            workflowRequiredFields.includes("assignee_id")) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Department */}
+              {workflowRequiredFields.includes("department_id") && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    {t("complaints.department", "Department")}
+                    {workflowRequiredFields.includes("department_id") ? (
+                      <span className="text-red-500 ml-1">*</span>
+                    ) : (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        ({t("common.optional", "Optional")})
+                      </span>
+                    )}
+                  </h4>
 
-              <select
-                value={selectedDepartment?.id || ''}
-                onChange={(e) => {
-                  const dept = departments.find(d => d.id === e.target.value);
-                  setSelectedDepartment(dept || null);
-                }}
-                className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                  errors.department ? "border-red-500" : "border-[hsl(var(--border))]"
-                )}
-              >
-                <option value="">{t('complaints.selectDepartment', 'Select department...')}</option>
-                {flattenDepartments(departments).map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {'—'.repeat(dept.level)} {dept.name}
-                  </option>
-                ))}
-              </select>
-              {errors.department && (
-                <p className="text-xs text-red-500">{errors.department}</p>
+                  <select
+                    value={selectedDepartment?.id || ""}
+                    onChange={(e) => {
+                      const dept = departments.find(
+                        (d) => d.id === e.target.value,
+                      );
+                      setSelectedDepartment(dept || null);
+                    }}
+                    className={cn(
+                      "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                      errors.department
+                        ? "border-red-500"
+                        : "border-[hsl(var(--border))]",
+                    )}
+                  >
+                    <option value="">
+                      {t("complaints.selectDepartment", "Select department...")}
+                    </option>
+                    {flattenDepartments(departments).map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {"—".repeat(dept.level)} {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.department && (
+                    <p className="text-xs text-red-500">{errors.department}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Assignee */}
+              {workflowRequiredFields.includes("assignee_id") && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {t("complaints.assignee", "Assignee")}
+                    {workflowRequiredFields.includes("assignee_id") ? (
+                      <span className="text-red-500 ml-1">*</span>
+                    ) : (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        ({t("common.optional", "Optional")})
+                      </span>
+                    )}
+                  </h4>
+
+                  <select
+                    value={selectedAssignee?.id || ""}
+                    onChange={(e) => {
+                      const user = users.find((u) => u.id === e.target.value);
+                      setSelectedAssignee(user || null);
+                    }}
+                    className={cn(
+                      "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                      errors.assignee
+                        ? "border-red-500"
+                        : "border-[hsl(var(--border))]",
+                    )}
+                  >
+                    <option value="">
+                      {t("complaints.selectAssignee", "Select assignee...")}
+                    </option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name} {user.last_name} ({user.username})
+                      </option>
+                    ))}
+                  </select>
+                  {errors.assignee && (
+                    <p className="text-xs text-red-500">{errors.assignee}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Due Date */}
+              {workflowRequiredFields.includes("due_date") && (
+                <div className="space-y-3">
+                  <label
+                    htmlFor="complaint-due-date"
+                    className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {t("complaints.dueDate", "Due Date")}
+                    {workflowRequiredFields.includes("due_date") ? (
+                      <span className="text-red-500 ml-1">*</span>
+                    ) : (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        ({t("common.optional", "Optional")})
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    id="complaint-due-date"
+                    name="due_date"
+                    type="datetime-local"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className={cn(
+                      "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                      errors.due_date
+                        ? "border-red-500"
+                        : "border-[hsl(var(--border))]",
+                    )}
+                  />
+                  {errors.due_date && (
+                    <p className="text-xs text-red-500">{errors.due_date}</p>
+                  )}
+                </div>
               )}
             </div>
-            )}
-
-            {/* Assignee */}
-            {workflowRequiredFields.includes('assignee_id') && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                <User className="w-4 h-4" />
-                {t('complaints.assignee', 'Assignee')}
-                {workflowRequiredFields.includes('assignee_id') ? (
-                  <span className="text-red-500 ml-1">*</span>
-                ) : (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                )}
-              </h4>
-
-              <select
-                value={selectedAssignee?.id || ''}
-                onChange={(e) => {
-                  const user = users.find(u => u.id === e.target.value);
-                  setSelectedAssignee(user || null);
-                }}
-                className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                  errors.assignee ? "border-red-500" : "border-[hsl(var(--border))]"
-                )}
-              >
-                <option value="">{t('complaints.selectAssignee', 'Select assignee...')}</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name} ({user.username})
-                  </option>
-                ))}
-              </select>
-              {errors.assignee && (
-                <p className="text-xs text-red-500">{errors.assignee}</p>
-              )}
-            </div>
-            )}
-
-            {/* Due Date */}
-            {workflowRequiredFields.includes('due_date') && (
-            <div className="space-y-3">
-              <label htmlFor="complaint-due-date" className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                {t('complaints.dueDate', 'Due Date')}
-                {workflowRequiredFields.includes('due_date') ? (
-                  <span className="text-red-500 ml-1">*</span>
-                ) : (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t('common.optional', 'Optional')})
-                  </span>
-                )}
-              </label>
-              <input
-                id="complaint-due-date"
-                name="due_date"
-                type="datetime-local"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                  errors.due_date ? "border-red-500" : "border-[hsl(var(--border))]"
-                )}
-              />
-              {errors.due_date && (
-                <p className="text-xs text-red-500">{errors.due_date}</p>
-              )}
-            </div>
-            )}
-          </div>
           )}
 
           {/* Attachments */}
-          {(workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
-              <Paperclip className="w-4 h-4" />
-              {t('complaints.attachments', 'Attachments')}
-              {(workflowRequiredFields.includes('attachments') || workflowRequiredFields.includes('attachment')) && (
-                <span className="text-red-500">*</span>
-              )}
-            </h4>
-
+          {(workflowRequiredFields.includes("attachments") ||
+            workflowRequiredFields.includes("attachment")) && (
             <div className="space-y-4">
-              {attachments.length > 0 && (
-                <div className="space-y-2">
-                  {attachments.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[250px]">
-                          {file.name}
-                        </span>
-                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                          ({(file.size / 1024).toFixed(1)} KB)
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
-                        className="p-1 text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors"
+              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
+                <Paperclip className="w-4 h-4" />
+                {t("complaints.attachments", "Attachments")}
+                {(workflowRequiredFields.includes("attachments") ||
+                  workflowRequiredFields.includes("attachment")) && (
+                  <span className="text-red-500">*</span>
+                )}
+              </h4>
+
+              <div className="space-y-4">
+                {attachments.length > 0 && (
+                  <div className="space-y-2">
+                    {attachments.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]"
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <label htmlFor="complaint-attachments" className={cn(
-                "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors",
-                errors.attachments ? "border-red-500" : "border-[hsl(var(--border))]"
-              )}>
-                <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t('complaints.clickToUpload', 'Click to upload files')}
-                </span>
-                <input
-                  id="complaint-attachments"
-                  name="attachments"
-                  type="file"
-                  className="hidden"
-                  multiple
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length > 0) {
-                      setAttachments(prev => [...prev, ...files]);
-                      if (errors.attachments) {
-                        setErrors(prev => ({ ...prev, attachments: '' }));
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                          <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[250px]">
+                            {file.name}
+                          </span>
+                          <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                            ({(file.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAttachments((prev) =>
+                              prev.filter((_, i) => i !== index),
+                            )
+                          }
+                          className="p-1 text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label
+                  htmlFor="complaint-attachments"
+                  className={cn(
+                    "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors",
+                    errors.attachments
+                      ? "border-red-500"
+                      : "border-[hsl(var(--border))]",
+                  )}
+                >
+                  <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                  <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                    {t("complaints.clickToUpload", "Click to upload files")}
+                  </span>
+                  <input
+                    id="complaint-attachments"
+                    name="attachments"
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        setAttachments((prev) => [...prev, ...files]);
+                        if (errors.attachments) {
+                          setErrors((prev) => ({ ...prev, attachments: "" }));
+                        }
                       }
-                    }
-                    e.target.value = '';
-                  }}
-                />
-              </label>
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
 
-              {/* Voice Recording Button */}
-              <button
-                type="button"
-                onClick={isRecording ? stopRecording : startRecording}
-                className={cn(
-                  "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg transition-all",
-                  isRecording
-                    ? "border-red-500 bg-red-50 hover:bg-red-100"
-                    : "border-[hsl(var(--border))] hover:border-primary hover:bg-blue-50"
-                )}
-              >
-                {isRecording ? (
-                  <>
-                    <Square className="w-5 h-5 text-red-500 fill-red-500" />
-                    <span className="text-sm text-red-600 font-medium">
-                      {t('complaints.stopRecording', 'Stop Recording')} ({Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')})
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {t('complaints.recordVoice', 'Record Voice')}
-                    </span>
-                  </>
-                )}
-              </button>
+                {/* Voice Recording Button */}
+                <button
+                  type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={cn(
+                    "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg transition-all",
+                    isRecording
+                      ? "border-red-500 bg-red-50 hover:bg-red-100"
+                      : "border-[hsl(var(--border))] hover:border-primary hover:bg-blue-50",
+                  )}
+                >
+                  {isRecording ? (
+                    <>
+                      <Square className="w-5 h-5 text-red-500 fill-red-500" />
+                      <span className="text-sm text-red-600 font-medium">
+                        {t("complaints.stopRecording", "Stop Recording")} (
+                        {Math.floor(recordingTime / 60)}:
+                        {(recordingTime % 60).toString().padStart(2, "0")})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {t("complaints.recordVoice", "Record Voice")}
+                      </span>
+                    </>
+                  )}
+                </button>
 
-              {errors.attachments && (
-                <p className="text-xs text-red-500">{errors.attachments}</p>
-              )}
+                {errors.attachments && (
+                  <p className="text-xs text-red-500">{errors.attachments}</p>
+                )}
+              </div>
             </div>
-          </div>
           )}
 
           {/* Error Message */}
@@ -1209,7 +1481,8 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               <div className="flex items-center gap-2 text-red-700">
                 <AlertTriangle className="w-4 h-4" />
                 <p className="text-sm">
-                  {(createMutation.error as Error)?.message || t('complaints.createError', 'Failed to create request')}
+                  {(createMutation.error as Error)?.message ||
+                    t("complaints.createError", "Failed to create request")}
                 </p>
               </div>
             </div>
@@ -1223,16 +1496,20 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             onClick={onClose}
             disabled={createMutation.isPending}
           >
-            {t('common.cancel', 'Cancel')}
+            {t("common.cancel", "Cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={createMutation.isPending}
             isLoading={createMutation.isPending}
-            leftIcon={!createMutation.isPending ? <CheckCircle2 className="w-4 h-4" /> : undefined}
+            leftIcon={
+              !createMutation.isPending ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : undefined
+            }
             className="bg-gradient-to-r from-primary to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
           >
-            {t('complaints.create', 'Create Complaint')}
+            {t("complaints.create", "Create Complaint")}
           </Button>
         </div>
       </div>

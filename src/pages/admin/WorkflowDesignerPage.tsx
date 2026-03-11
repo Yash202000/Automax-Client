@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import React, { useState, useCallback, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Plus,
   Edit2,
@@ -25,9 +25,17 @@ import {
   ClipboardList,
   Download,
   PenLine,
-} from 'lucide-react';
-import { workflowApi, roleApi, classificationApi, locationApi, departmentApi, userApi, lookupApi } from '../../api/admin';
-import { HierarchicalCheckboxTree } from '../../components/workflow/HierarchicalCheckboxTree';
+} from "lucide-react";
+import {
+  workflowApi,
+  roleApi,
+  classificationApi,
+  locationApi,
+  departmentApi,
+  userApi,
+  lookupApi,
+} from "../../api/admin";
+import { HierarchicalCheckboxTree } from "../../components/workflow/HierarchicalCheckboxTree";
 import type {
   WorkflowState,
   WorkflowTransition,
@@ -46,19 +54,24 @@ import type {
   IncidentSource,
   IncidentFormField,
   LookupCategory,
-} from '../../types';
-import { INCIDENT_SOURCES, EMAIL_RECIPIENTS, type EmailRecipientType, type TransitionEmailConfig } from '../../types';
-import { cn } from '@/lib/utils';
-import { Button } from '../../components/ui';
-import { WorkflowCanvas } from '../../components/workflow';
+} from "../../types";
+import {
+  INCIDENT_SOURCES,
+  EMAIL_RECIPIENTS,
+  type EmailRecipientType,
+  type TransitionEmailConfig,
+} from "../../types";
+import { cn } from "@/lib/utils";
+import { Button } from "../../components/ui";
+import { WorkflowCanvas } from "../../components/workflow";
 
-type TabType = 'visual' | 'states' | 'transitions' | 'matching' | 'fields';
+type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
 
 interface StateFormData {
   name: string;
   code: string;
   description: string;
-  state_type: 'initial' | 'normal' | 'terminal';
+  state_type: "initial" | "normal" | "terminal";
   color: string;
   sla_hours: number | undefined;
   is_mergable: boolean;
@@ -77,7 +90,7 @@ interface TransitionFormData {
   // Department Assignment
   assign_department_id: string;
   auto_detect_department: boolean;
-  department_type_filter: '' | 'internal' | 'external';
+  department_type_filter: "" | "internal" | "external";
   // User Assignment
   assign_user_id: string;
   assignment_role_id: string;
@@ -86,46 +99,111 @@ interface TransitionFormData {
 }
 
 const initialStateFormData: StateFormData = {
-  name: '',
-  code: '',
-  description: '',
-  state_type: 'normal',
-  color: '#6366f1',
+  name: "",
+  code: "",
+  description: "",
+  state_type: "normal",
+  color: "#6366f1",
   sla_hours: undefined,
   is_mergable: false,
   is_ready_to_close: false,
-  duration_options: '',
+  duration_options: "",
   viewable_role_ids: [],
 };
 
 const initialTransitionFormData: TransitionFormData = {
-  name: '',
-  code: '',
-  description: '',
-  from_state_id: '',
-  to_state_id: '',
+  name: "",
+  code: "",
+  description: "",
+  from_state_id: "",
+  to_state_id: "",
   role_ids: [],
   // Department Assignment
-  assign_department_id: '',
+  assign_department_id: "",
   auto_detect_department: false,
-  department_type_filter: '',
+  department_type_filter: "",
   // User Assignment
-  assign_user_id: '',
-  assignment_role_id: '',
+  assign_user_id: "",
+  assignment_role_id: "",
   auto_match_user: false,
   manual_select_user: false,
 };
 
 const STATE_COLORS = [
-  { name: 'Purple', value: '#6366f1' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Cyan', value: '#06b6d4' },
-  { name: 'Green', value: '#10b981' },
-  { name: 'Yellow', value: '#f59e0b' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Pink', value: '#ec4899' },
-  { name: 'Gray', value: '#6b7280' },
+  { name: "Purple", value: "#6366f1" },
+  { name: "Blue", value: "#3b82f6" },
+  { name: "Cyan", value: "#06b6d4" },
+  { name: "Green", value: "#10b981" },
+  { name: "Yellow", value: "#f59e0b" },
+  { name: "Orange", value: "#f97316" },
+  { name: "Red", value: "#ef4444" },
+  { name: "Pink", value: "#ec4899" },
+  { name: "Gray", value: "#6b7280" },
+];
+
+// Static constant moved outside component to avoid unstable reference in useMemo deps
+const baseFormFields: {
+  field: IncidentFormField;
+  label: string;
+  description: string;
+}[] = [
+  {
+    field: "description",
+    label: "Description",
+    description: "Detailed incident description",
+  },
+  {
+    field: "classification_id",
+    label: "Classification",
+    description: "Incident category/type",
+  },
+  {
+    field: "source",
+    label: "Source",
+    description: "Where the incident originated",
+  },
+  {
+    field: "source_incident_id",
+    label: "Source Incident Reference",
+    description: "Link to related incident/complaint/query",
+  },
+  {
+    field: "assignee_id",
+    label: "Assignee",
+    description: "User assigned to handle",
+  },
+  {
+    field: "department_id",
+    label: "Department",
+    description: "Responsible department",
+  },
+  { field: "location_id", label: "Location", description: "Physical location" },
+  {
+    field: "geolocation",
+    label: "Geolocation",
+    description: "GPS coordinates (latitude & longitude)",
+  },
+  { field: "due_date", label: "Due Date", description: "Resolution deadline" },
+  {
+    field: "reporter_name",
+    label: "Reporter Name",
+    description: "Name of person reporting",
+  },
+  {
+    field: "reporter_email",
+    label: "Reporter Email",
+    description: "Email of person reporting",
+  },
+  {
+    field: "attachments",
+    label: "Attachments",
+    description: "File attachments for the incident",
+  },
+  {
+    field: "comment",
+    label: "Comment",
+    description: "Comment required when creating the incident",
+  },
 ];
 
 export const WorkflowDesignerPage: React.FC = () => {
@@ -134,22 +212,34 @@ export const WorkflowDesignerPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<TabType>('visual');
+  const [activeTab, setActiveTab] = useState<TabType>("visual");
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
   const [isTransitionModalOpen, setIsTransitionModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [editingState, setEditingState] = useState<WorkflowState | null>(null);
-  const [editingTransition, setEditingTransition] = useState<WorkflowTransition | null>(null);
-  const [configuringTransition, setConfiguringTransition] = useState<WorkflowTransition | null>(null);
-  const [stateFormData, setStateFormData] = useState<StateFormData>(initialStateFormData);
-  const [transitionFormData, setTransitionFormData] = useState<TransitionFormData>(initialTransitionFormData);
-  const [deleteStateConfirm, setDeleteStateConfirm] = useState<string | null>(null);
-  const [deleteTransitionConfirm, setDeleteTransitionConfirm] = useState<string | null>(null);
+  const [editingTransition, setEditingTransition] =
+    useState<WorkflowTransition | null>(null);
+  const [configuringTransition, setConfiguringTransition] =
+    useState<WorkflowTransition | null>(null);
+  const [stateFormData, setStateFormData] =
+    useState<StateFormData>(initialStateFormData);
+  const [transitionFormData, setTransitionFormData] =
+    useState<TransitionFormData>(initialTransitionFormData);
+  const [deleteStateConfirm, setDeleteStateConfirm] = useState<string | null>(
+    null,
+  );
+  const [deleteTransitionConfirm, setDeleteTransitionConfirm] = useState<
+    string | null
+  >(null);
 
   // Requirements, Actions & Field Changes config
-  const [requirements, setRequirements] = useState<TransitionRequirementRequest[]>([]);
+  const [requirements, setRequirements] = useState<
+    TransitionRequirementRequest[]
+  >([]);
   const [actions, setActions] = useState<TransitionActionRequest[]>([]);
-  const [fieldChanges, setFieldChanges] = useState<TransitionFieldChangeRequest[]>([]);
+  const [fieldChanges, setFieldChanges] = useState<
+    TransitionFieldChangeRequest[]
+  >([]);
 
   // Matching configuration
   const [matchingConfig, setMatchingConfig] = useState<{
@@ -157,88 +247,79 @@ export const WorkflowDesignerPage: React.FC = () => {
     location_ids: string[];
     sources: IncidentSource[];
     priorities: number[];
-    record_type: 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all';
+    record_type:
+      | "incident"
+      | "request"
+      | "complaint"
+      | "query"
+      | "both"
+      | "all";
   }>({
     classification_ids: [],
     location_ids: [],
     sources: [],
     priorities: [],
-    record_type: 'incident',
+    record_type: "incident",
   });
 
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
 
   // Convert to request role IDs
-  const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<string[]>([]);
+  const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<
+    string[]
+  >([]);
 
   // Merge allowed role IDs
   const [mergeAllowedRoleIds, setMergeAllowedRoleIds] = useState<string[]>([]);
 
-  // Base form fields that can be made required
-  const baseFormFields: { field: IncidentFormField; label: string; description: string }[] = [
-    { field: 'description', label: 'Description', description: 'Detailed incident description' },
-    { field: 'classification_id', label: 'Classification', description: 'Incident category/type' },
-    { field: 'source', label: 'Source', description: 'Where the incident originated' },
-    { field: 'source_incident_id', label: 'Source Incident Reference', description: 'Link to related incident/complaint/query' },
-    { field: 'assignee_id', label: 'Assignee', description: 'User assigned to handle' },
-    { field: 'department_id', label: 'Department', description: 'Responsible department' },
-    { field: 'location_id', label: 'Location', description: 'Physical location' },
-    { field: 'geolocation', label: 'Geolocation', description: 'GPS coordinates (latitude & longitude)' },
-    { field: 'due_date', label: 'Due Date', description: 'Resolution deadline' },
-    { field: 'reporter_name', label: 'Reporter Name', description: 'Name of person reporting' },
-    { field: 'reporter_email', label: 'Reporter Email', description: 'Email of person reporting' },
-    { field: 'attachments', label: 'Attachments', description: 'File attachments for the incident' },
-    { field: 'comment', label: 'Comment', description: 'Comment required when creating the incident' },
-  ];
-
   const { data: workflowData, isLoading } = useQuery({
-    queryKey: ['admin', 'workflow', id],
+    queryKey: ["admin", "workflow", id],
     queryFn: () => workflowApi.getById(id!),
     enabled: !!id,
   });
 
   const { data: statesData } = useQuery({
-    queryKey: ['admin', 'workflow', id, 'states'],
+    queryKey: ["admin", "workflow", id, "states"],
     queryFn: () => workflowApi.listStates(id!),
     enabled: !!id,
   });
 
   const { data: transitionsData } = useQuery({
-    queryKey: ['admin', 'workflow', id, 'transitions'],
+    queryKey: ["admin", "workflow", id, "transitions"],
     queryFn: () => workflowApi.listTransitions(id!),
     enabled: !!id,
   });
 
   const { data: rolesData } = useQuery({
-    queryKey: ['admin', 'roles'],
+    queryKey: ["admin", "roles"],
     queryFn: () => roleApi.list(),
   });
 
   // Fetch classifications based on selected record type
   const { data: classificationsData } = useQuery({
-    queryKey: ['admin', 'classifications', 'tree', matchingConfig.record_type],
+    queryKey: ["admin", "classifications", "tree", matchingConfig.record_type],
     queryFn: () => classificationApi.getTree(matchingConfig.record_type),
     enabled: !!matchingConfig.record_type,
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ['admin', 'locations', 'tree'],
+    queryKey: ["admin", "locations", "tree"],
     queryFn: () => locationApi.getTree(),
   });
 
   const { data: departmentsData } = useQuery({
-    queryKey: ['admin', 'departments'],
+    queryKey: ["admin", "departments"],
     queryFn: () => departmentApi.list(),
   });
 
   const { data: usersData } = useQuery({
-    queryKey: ['admin', 'users'],
+    queryKey: ["admin", "users"],
     queryFn: () => userApi.list(1, 1000), // Get all users
   });
 
   const { data: lookupCategoriesData } = useQuery({
-    queryKey: ['admin', 'lookups', 'categories'],
+    queryKey: ["admin", "lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
   });
 
@@ -250,14 +331,19 @@ export const WorkflowDesignerPage: React.FC = () => {
   const states = statesData?.data || [];
   const transitions = transitionsData?.data || [];
   const roles = rolesData?.data || [];
-  const lookupCategories: LookupCategory[] = (lookupCategoriesData?.data || []).filter(
-    (cat) => cat.add_to_incident_form
-  );
+  const lookupCategories: LookupCategory[] = (
+    lookupCategoriesData?.data || []
+  ).filter((cat) => cat.add_to_incident_form);
 
   // Get Priority and Severity categories for matching rules
-  const allLookupCategories: LookupCategory[] = lookupCategoriesData?.data || [];
-  const priorityCategory = allLookupCategories.find(c => c.code === 'PRIORITY');
-  const priorityValues = (priorityCategory?.values || []).sort((a, b) => a.sort_order - b.sort_order);
+  const allLookupCategories: LookupCategory[] =
+    lookupCategoriesData?.data || [];
+  const priorityCategory = allLookupCategories.find(
+    (c) => c.code === "PRIORITY",
+  );
+  const priorityValues = (priorityCategory?.values || []).sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
 
   // Available form fields including dynamic lookup categories
   const availableFormFields = React.useMemo(() => {
@@ -272,124 +358,170 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Initialize matching config and required fields from workflow data
   useEffect(() => {
     if (workflow) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMatchingConfig({
-        classification_ids: workflow.classifications?.map(c => c.id) || [],
-        location_ids: workflow.locations?.map(l => l.id) || [],
+        classification_ids: workflow.classifications?.map((c) => c.id) || [],
+        location_ids: workflow.locations?.map((l) => l.id) || [],
         sources: workflow.sources || [],
         priorities: workflow.priorities || [],
-        record_type: (workflow.record_type as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all') || 'incident',
+        record_type:
+          (workflow.record_type as
+            | "incident"
+            | "request"
+            | "complaint"
+            | "query"
+            | "both"
+            | "all") || "incident",
       });
+
       setRequiredFields(workflow.required_fields || []);
-      setConvertToRequestRoleIds(workflow.convert_to_request_roles?.map(r => r.id) || []);
-      setMergeAllowedRoleIds(workflow.merge_allowed_roles?.map(r => r.id) || []);
+
+      setConvertToRequestRoleIds(
+        workflow.convert_to_request_roles?.map((r) => r.id) || [],
+      );
+
+      setMergeAllowedRoleIds(
+        workflow.merge_allowed_roles?.map((r) => r.id) || [],
+      );
     }
   }, [workflow]);
 
   // Matching config mutation
   const updateMatchingMutation = useMutation({
-    mutationFn: (config: typeof matchingConfig) => workflowApi.update(id!, {
-      classification_ids: config.classification_ids,
-      location_ids: config.location_ids,
-      sources: config.sources,
-      priorities: config.priorities,
-      record_type: config.record_type,
-    }),
+    mutationFn: (config: typeof matchingConfig) =>
+      workflowApi.update(id!, {
+        classification_ids: config.classification_ids,
+        location_ids: config.location_ids,
+        sources: config.sources,
+        priorities: config.priorities,
+        record_type: config.record_type,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      toast.success('Matching rules updated successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      toast.success("Matching rules updated successfully");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update matching rules';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update matching rules";
 
       // Check if it's a duplicate workflow conflict
-      if (errorMessage.includes('workflow rules conflict')) {
-        toast.error('Duplicate Workflow Rules', {
+      if (errorMessage.includes("workflow rules conflict")) {
+        toast.error("Duplicate Workflow Rules", {
           description: errorMessage,
           duration: 6000,
         });
       } else {
-        toast.error('Failed to update matching rules', {
+        toast.error("Failed to update matching rules", {
           description: errorMessage,
           duration: 5000,
         });
       }
-      console.error('Update matching rules error:', error);
+      console.error("Update matching rules error:", error);
     },
   });
 
   // Required fields mutation
   const updateRequiredFieldsMutation = useMutation({
-    mutationFn: (fields: IncidentFormField[]) => workflowApi.update(id!, {
-      required_fields: fields,
-    }),
+    mutationFn: (fields: IncidentFormField[]) =>
+      workflowApi.update(id!, {
+        required_fields: fields,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
     },
   });
 
   // Convert to request roles mutation
   const updateConvertToRequestRolesMutation = useMutation({
-    mutationFn: (roleIds: string[]) => workflowApi.update(id!, {
-      convert_to_request_role_ids: roleIds,
-    }),
+    mutationFn: (roleIds: string[]) =>
+      workflowApi.update(id!, {
+        convert_to_request_role_ids: roleIds,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
     },
   });
 
   // Merge allowed roles mutation
   const updateMergeAllowedRolesMutation = useMutation({
-    mutationFn: (roleIds: string[]) => workflowApi.update(id!, {
-      merge_allowed_role_ids: roleIds,
-    }),
+    mutationFn: (roleIds: string[]) =>
+      workflowApi.update(id!, {
+        merge_allowed_role_ids: roleIds,
+      }),
     onSuccess: (data) => {
       // Update local state with saved roles
       if (data.data) {
-        setMergeAllowedRoleIds(data.data.merge_allowed_roles?.map(r => r.id) || []);
+        setMergeAllowedRoleIds(
+          data.data.merge_allowed_roles?.map((r) => r.id) || [],
+        );
       }
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      toast.success('Merge permissions updated successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      toast.success("Merge permissions updated successfully");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update merge permissions';
-      toast.error('Failed to update merge permissions', {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update merge permissions";
+      toast.error("Failed to update merge permissions", {
         description: errorMessage,
         duration: 5000,
       });
-      console.error('Update merge permissions error:', error);
+      console.error("Update merge permissions error:", error);
     },
   });
 
   // Canvas layout mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id: workflowId, data }: { id: string; data: WorkflowUpdateRequest }) =>
-      workflowApi.update(workflowId, data),
+    mutationFn: ({
+      id: workflowId,
+      data,
+    }: {
+      id: string;
+      data: WorkflowUpdateRequest;
+    }) => workflowApi.update(workflowId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
     },
   });
 
   // State mutations
   const createStateMutation = useMutation({
-    mutationFn: (data: WorkflowStateCreateRequest) => workflowApi.createState(id!, data),
+    mutationFn: (data: WorkflowStateCreateRequest) =>
+      workflowApi.createState(id!, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'states'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "states"],
+      });
       closeStateModal();
     },
   });
 
   const updateStateMutation = useMutation({
-    mutationFn: ({ workflowId, stateId, data }: { workflowId?: string; stateId: string; data: WorkflowStateUpdateRequest }) =>
-      workflowApi.updateState(workflowId || id!, stateId, data),
+    mutationFn: ({
+      workflowId,
+      stateId,
+      data,
+    }: {
+      workflowId?: string;
+      stateId: string;
+      data: WorkflowStateUpdateRequest;
+    }) => workflowApi.updateState(workflowId || id!, stateId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'states'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "states"],
+      });
       closeStateModal();
     },
   });
@@ -397,63 +529,99 @@ export const WorkflowDesignerPage: React.FC = () => {
   const deleteStateMutation = useMutation({
     mutationFn: (stateId: string) => workflowApi.deleteState(id!, stateId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'states'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "states"],
+      });
       setDeleteStateConfirm(null);
     },
   });
 
   // Transition mutations
   const createTransitionMutation = useMutation({
-    mutationFn: (data: WorkflowTransitionCreateRequest) => workflowApi.createTransition(id!, data),
+    mutationFn: (data: WorkflowTransitionCreateRequest) =>
+      workflowApi.createTransition(id!, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "transitions"],
+      });
       closeTransitionModal();
     },
   });
 
   const updateTransitionMutation = useMutation({
-    mutationFn: ({ transitionId, data }: { transitionId: string; data: WorkflowTransitionUpdateRequest }) =>
-      workflowApi.updateTransition(id!, transitionId, data),
+    mutationFn: ({
+      transitionId,
+      data,
+    }: {
+      transitionId: string;
+      data: WorkflowTransitionUpdateRequest;
+    }) => workflowApi.updateTransition(id!, transitionId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "transitions"],
+      });
       closeTransitionModal();
     },
   });
 
   const deleteTransitionMutation = useMutation({
-    mutationFn: (transitionId: string) => workflowApi.deleteTransition(id!, transitionId),
+    mutationFn: (transitionId: string) =>
+      workflowApi.deleteTransition(id!, transitionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "transitions"],
+      });
       setDeleteTransitionConfirm(null);
     },
   });
 
   // Config mutations
   const setRequirementsMutation = useMutation({
-    mutationFn: ({ transitionId, reqs }: { transitionId: string; reqs: TransitionRequirementRequest[] }) =>
-      workflowApi.setTransitionRequirements(transitionId, reqs),
+    mutationFn: ({
+      transitionId,
+      reqs,
+    }: {
+      transitionId: string;
+      reqs: TransitionRequirementRequest[];
+    }) => workflowApi.setTransitionRequirements(transitionId, reqs),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "transitions"],
+      });
     },
   });
 
   const setActionsMutation = useMutation({
-    mutationFn: ({ transitionId, acts }: { transitionId: string; acts: TransitionActionRequest[] }) =>
-      workflowApi.setTransitionActions(transitionId, acts),
+    mutationFn: ({
+      transitionId,
+      acts,
+    }: {
+      transitionId: string;
+      acts: TransitionActionRequest[];
+    }) => workflowApi.setTransitionActions(transitionId, acts),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "transitions"],
+      });
     },
   });
 
   const setFieldChangesMutation = useMutation({
-    mutationFn: ({ transitionId, changes }: { transitionId: string; changes: TransitionFieldChangeRequest[] }) =>
-      workflowApi.setTransitionFieldChanges(transitionId, changes),
+    mutationFn: ({
+      transitionId,
+      changes,
+    }: {
+      transitionId: string;
+      changes: TransitionFieldChangeRequest[];
+    }) => workflowApi.setTransitionFieldChanges(transitionId, changes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflow', id, 'transitions'] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflow", id, "transitions"],
+      });
     },
   });
 
@@ -470,12 +638,12 @@ export const WorkflowDesignerPage: React.FC = () => {
       name: state.name,
       code: state.code,
       description: state.description,
-      state_type: state.state_type as 'initial' | 'normal' | 'terminal',
+      state_type: state.state_type as "initial" | "normal" | "terminal",
       color: state.color,
       sla_hours: state.sla_hours || undefined,
       is_mergable: state.is_mergable || false,
       is_ready_to_close: state.is_ready_to_close || false,
-      duration_options: (state.duration_options || []).join(', '),
+      duration_options: (state.duration_options || []).join(", "),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
     });
     setIsStateModalOpen(true);
@@ -504,12 +672,14 @@ export const WorkflowDesignerPage: React.FC = () => {
       to_state_id: transition.to_state_id,
       role_ids: transition.allowed_roles?.map((r) => r.id) || [],
       // Department Assignment
-      assign_department_id: transition.assign_department_id || '',
+      assign_department_id: transition.assign_department_id || "",
       auto_detect_department: transition.auto_detect_department || false,
-      department_type_filter: (transition.department_type_filter as '' | 'internal' | 'external') || '',
+      department_type_filter:
+        (transition.department_type_filter as "" | "internal" | "external") ||
+        "",
       // User Assignment
-      assign_user_id: transition.assign_user_id || '',
-      assignment_role_id: transition.assignment_role_id || '',
+      assign_user_id: transition.assign_user_id || "",
+      assignment_role_id: transition.assignment_role_id || "",
       auto_match_user: transition.auto_match_user || false,
       manual_select_user: transition.manual_select_user || false,
     });
@@ -532,7 +702,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         field_value: r.field_value,
         is_mandatory: r.is_mandatory,
         error_message: r.error_message,
-      })) || []
+      })) || [],
     );
     setActions(
       transition.actions?.map((a) => ({
@@ -543,16 +713,16 @@ export const WorkflowDesignerPage: React.FC = () => {
         execution_order: a.execution_order,
         is_async: a.is_async,
         is_active: a.is_active,
-      })) || []
+      })) || [],
     );
     setFieldChanges(
       transition.field_changes?.map((f) => ({
         field_name: f.field_name,
         label: f.label,
         is_required: f.is_required,
-        department_type_filter: f.department_type_filter || '',
+        department_type_filter: f.department_type_filter || "",
         sort_order: f.sort_order,
-      })) || []
+      })) || [],
     );
     setIsConfigModalOpen(true);
   };
@@ -577,7 +747,10 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_mergable: stateFormData.is_mergable,
       is_ready_to_close: stateFormData.is_ready_to_close,
       duration_options: stateFormData.duration_options
-        ? stateFormData.duration_options.split(',').map((s) => s.trim()).filter(Boolean)
+        ? stateFormData.duration_options
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [],
       viewable_role_ids: stateFormData.viewable_role_ids,
     };
@@ -599,9 +772,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       to_state_id: transitionFormData.to_state_id,
       role_ids: transitionFormData.role_ids,
       // Department Assignment
-      assign_department_id: transitionFormData.assign_department_id || undefined,
+      assign_department_id:
+        transitionFormData.assign_department_id || undefined,
       auto_detect_department: transitionFormData.auto_detect_department,
-      department_type_filter: transitionFormData.department_type_filter || undefined,
+      department_type_filter:
+        transitionFormData.department_type_filter || undefined,
       // User Assignment
       assign_user_id: transitionFormData.assign_user_id || undefined,
       assignment_role_id: transitionFormData.assignment_role_id || undefined,
@@ -610,7 +785,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     };
 
     if (editingTransition) {
-      updateTransitionMutation.mutate({ transitionId: editingTransition.id, data });
+      updateTransitionMutation.mutate({
+        transitionId: editingTransition.id,
+        data,
+      });
     } else {
       createTransitionMutation.mutate(data);
     }
@@ -637,7 +815,12 @@ export const WorkflowDesignerPage: React.FC = () => {
   const addFieldChange = () => {
     setFieldChanges([
       ...fieldChanges,
-      { field_name: 'priority', label: '', is_required: false, sort_order: fieldChanges.length },
+      {
+        field_name: "priority",
+        label: "",
+        is_required: false,
+        sort_order: fieldChanges.length,
+      },
     ]);
   };
 
@@ -654,7 +837,7 @@ export const WorkflowDesignerPage: React.FC = () => {
   const addRequirement = () => {
     setRequirements([
       ...requirements,
-      { requirement_type: 'comment', is_mandatory: true },
+      { requirement_type: "comment", is_mandatory: true },
     ]);
   };
 
@@ -672,8 +855,8 @@ export const WorkflowDesignerPage: React.FC = () => {
     setActions([
       ...actions,
       {
-        action_type: 'notification',
-        name: '',
+        action_type: "notification",
+        name: "",
         is_async: false,
         is_active: true,
         execution_order: actions.length + 1,
@@ -711,19 +894,19 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   const getStateName = (stateId: string) => {
     const state = states.find((s) => s.id === stateId);
-    return state?.name || 'Unknown';
+    return state?.name || "Unknown";
   };
 
   const getStateColor = (stateId: string) => {
     const state = states.find((s) => s.id === stateId);
-    return state?.color || '#6b7280';
+    return state?.color || "#6b7280";
   };
 
   const getStateTypeIcon = (stateType: string) => {
     switch (stateType) {
-      case 'initial':
+      case "initial":
         return <Circle className="w-4 h-4 fill-emerald-500 text-emerald-500" />;
-      case 'terminal':
+      case "terminal":
         return <Circle className="w-4 h-4 fill-rose-500 text-rose-500" />;
       default:
         return <Circle className="w-4 h-4 fill-blue-500 text-blue-500" />;
@@ -731,14 +914,17 @@ export const WorkflowDesignerPage: React.FC = () => {
   };
 
   // Canvas handlers
-  const handleCanvasTransitionAdd = useCallback((fromStateId: string, toStateId: string) => {
-    setTransitionFormData({
-      ...initialTransitionFormData,
-      from_state_id: fromStateId,
-      to_state_id: toStateId,
-    });
-    setIsTransitionModalOpen(true);
-  }, []);
+  const handleCanvasTransitionAdd = useCallback(
+    (fromStateId: string, toStateId: string) => {
+      setTransitionFormData({
+        ...initialTransitionFormData,
+        from_state_id: fromStateId,
+        to_state_id: toStateId,
+      });
+      setIsTransitionModalOpen(true);
+    },
+    [],
+  );
 
   const handleCanvasStateDelete = useCallback((stateId: string) => {
     setDeleteStateConfirm(stateId);
@@ -758,10 +944,10 @@ export const WorkflowDesignerPage: React.FC = () => {
           data: { canvas_layout: layout },
         });
       } catch (error) {
-        console.error('Failed to save layout:', error);
+        console.error("Failed to save layout:", error);
       }
     },
-    [workflow, updateMutation]
+    [workflow, updateMutation],
   );
 
   const handleExport = async () => {
@@ -772,7 +958,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       const filename = `workflow_${workflow.code}_${Date.now()}.json`;
 
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
@@ -780,7 +966,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error("Export failed:", error);
     }
   };
 
@@ -796,10 +982,17 @@ export const WorkflowDesignerPage: React.FC = () => {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 text-center">
         <AlertTriangle className="w-12 h-12 text-[hsl(var(--destructive))] mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('errors.notFound')}</h3>
-        <p className="text-[hsl(var(--muted-foreground))] mb-6">{t('workflows.noWorkflowsDesc')}</p>
-        <Button onClick={() => navigate('/workflows')} leftIcon={<ArrowLeft className="w-4 h-4" />}>
-          {t('workflows.allWorkflows')}
+        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+          {t("errors.notFound")}
+        </h3>
+        <p className="text-[hsl(var(--muted-foreground))] mb-6">
+          {t("workflows.noWorkflowsDesc")}
+        </p>
+        <Button
+          onClick={() => navigate("/workflows")}
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+        >
+          {t("workflows.allWorkflows")}
         </Button>
       </div>
     );
@@ -812,7 +1005,7 @@ export const WorkflowDesignerPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <button
-              onClick={() => navigate('/workflows')}
+              onClick={() => navigate("/workflows")}
               className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
@@ -821,8 +1014,12 @@ export const WorkflowDesignerPage: React.FC = () => {
               <GitBranch className="w-5 h-5 text-[hsl(var(--primary))]" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">{workflow.name}</h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">{workflow.code}</p>
+              <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
+                {workflow.name}
+              </h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
+                {workflow.code}
+              </p>
             </div>
           </div>
         </div>
@@ -839,71 +1036,71 @@ export const WorkflowDesignerPage: React.FC = () => {
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden">
         <div className="flex border-b border-[hsl(var(--border))]">
           <button
-            onClick={() => setActiveTab('visual')}
+            onClick={() => setActiveTab("visual")}
             className={cn(
               "flex-1 px-6 py-4 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-              activeTab === 'visual'
+              activeTab === "visual"
                 ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
             )}
           >
             <Layout className="w-4 h-4" />
-            {t('workflows.visualDesigner')}
+            {t("workflows.visualDesigner")}
           </button>
           <button
-            onClick={() => setActiveTab('states')}
+            onClick={() => setActiveTab("states")}
             className={cn(
               "flex-1 px-6 py-4 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-              activeTab === 'states'
+              activeTab === "states"
                 ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
             )}
           >
             <Circle className="w-4 h-4" />
-            {t('workflows.statesTab')} ({states.length})
+            {t("workflows.statesTab")} ({states.length})
           </button>
           <button
-            onClick={() => setActiveTab('transitions')}
+            onClick={() => setActiveTab("transitions")}
             className={cn(
               "flex-1 px-6 py-4 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-              activeTab === 'transitions'
+              activeTab === "transitions"
                 ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
             )}
           >
             <ArrowRight className="w-4 h-4" />
-            {t('workflows.transitionsTab')} ({transitions.length})
+            {t("workflows.transitionsTab")} ({transitions.length})
           </button>
           <button
-            onClick={() => setActiveTab('matching')}
+            onClick={() => setActiveTab("matching")}
             className={cn(
               "flex-1 px-6 py-4 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-              activeTab === 'matching'
+              activeTab === "matching"
                 ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
             )}
           >
             <Settings className="w-4 h-4" />
-            {t('workflows.matchingRules')}
+            {t("workflows.matchingRules")}
           </button>
           <button
-            onClick={() => setActiveTab('fields')}
+            onClick={() => setActiveTab("fields")}
             className={cn(
               "flex-1 px-6 py-4 text-sm font-medium transition-colors flex items-center justify-center gap-2",
-              activeTab === 'fields'
+              activeTab === "fields"
                 ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
             )}
           >
             <ClipboardList className="w-4 h-4" />
-            {t('workflows.requiredFields')}
+            {t("workflows.requiredFields")}
           </button>
         </div>
 
         {/* Tab Content */}
         <div className="p-6">
           {/* Visual Designer Tab */}
-          {activeTab === 'visual' && (
+          {activeTab === "visual" && (
             <WorkflowCanvas
               workflowId={id!}
               states={states}
@@ -920,21 +1117,31 @@ export const WorkflowDesignerPage: React.FC = () => {
             />
           )}
 
-          {activeTab === 'states' && (
+          {activeTab === "states" && (
             <div className="space-y-4">
               <div className="flex justify-end">
-                <Button onClick={openCreateStateModal} leftIcon={<Plus className="w-4 h-4" />}>
-                  {t('workflows.addState')}
+                <Button
+                  onClick={openCreateStateModal}
+                  leftIcon={<Plus className="w-4 h-4" />}
+                >
+                  {t("workflows.addState")}
                 </Button>
               </div>
 
               {states.length === 0 ? (
                 <div className="text-center py-12">
                   <Circle className="w-12 h-12 text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('workflows.noStates')}</h3>
-                  <p className="text-[hsl(var(--muted-foreground))] mb-4">{t('workflows.noStatesDesc')}</p>
-                  <Button onClick={openCreateStateModal} leftIcon={<Plus className="w-4 h-4" />}>
-                    {t('workflows.addState')}
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.noStates")}
+                  </h3>
+                  <p className="text-[hsl(var(--muted-foreground))] mb-4">
+                    {t("workflows.noStatesDesc")}
+                  </p>
+                  <Button
+                    onClick={openCreateStateModal}
+                    leftIcon={<Plus className="w-4 h-4" />}
+                  >
+                    {t("workflows.addState")}
                   </Button>
                 </div>
               ) : (
@@ -942,39 +1149,62 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-[hsl(var(--border))]">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">State</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Code</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Type</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">SLA Hours</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Mergable</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Viewable Roles</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Actions</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          State
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Code
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Type
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          SLA Hours
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Mergable
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Viewable Roles
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {states.map((state) => (
-                        <tr key={state.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]">
+                        <tr
+                          key={state.id}
+                          className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                        >
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
                               <div
                                 className="w-4 h-4 rounded-full"
                                 style={{ backgroundColor: state.color }}
                               />
-                              <span className="font-medium text-[hsl(var(--foreground))]">{state.name}</span>
+                              <span className="font-medium text-[hsl(var(--foreground))]">
+                                {state.name}
+                              </span>
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="text-sm font-mono text-[hsl(var(--muted-foreground))]">{state.code}</span>
+                            <span className="text-sm font-mono text-[hsl(var(--muted-foreground))]">
+                              {state.code}
+                            </span>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
                               {getStateTypeIcon(state.state_type)}
-                              <span className="text-sm text-[hsl(var(--foreground))] capitalize">{state.state_type}</span>
+                              <span className="text-sm text-[hsl(var(--foreground))] capitalize">
+                                {state.state_type}
+                              </span>
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                              {state.sla_hours ? `${state.sla_hours}h` : '-'}
+                              {state.sla_hours ? `${state.sla_hours}h` : "-"}
                             </span>
                           </td>
                           <td className="py-3 px-4">
@@ -985,24 +1215,31 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   Mergable
                                 </span>
                               ) : (
-                                <span className="text-xs text-[hsl(var(--muted-foreground))]">-</span>
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  -
+                                </span>
                               )}
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex flex-wrap gap-1">
-                              {!state.viewable_roles || state.viewable_roles.length === 0 ? (
-                                <span className="text-xs text-[hsl(var(--muted-foreground))]">All roles</span>
+                              {!state.viewable_roles ||
+                              state.viewable_roles.length === 0 ? (
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  All roles
+                                </span>
                               ) : (
                                 <>
-                                  {state.viewable_roles.slice(0, 2).map((role) => (
-                                    <span
-                                      key={role.id}
-                                      className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded"
-                                    >
-                                      {role.name}
-                                    </span>
-                                  ))}
+                                  {state.viewable_roles
+                                    .slice(0, 2)
+                                    .map((role) => (
+                                      <span
+                                        key={role.id}
+                                        className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded"
+                                      >
+                                        {role.name}
+                                      </span>
+                                    ))}
                                   {state.viewable_roles.length > 2 && (
                                     <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded">
                                       +{state.viewable_roles.length - 2}
@@ -1037,7 +1274,7 @@ export const WorkflowDesignerPage: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'transitions' && (
+          {activeTab === "transitions" && (
             <div className="space-y-4">
               <div className="flex justify-end">
                 <Button
@@ -1045,55 +1282,84 @@ export const WorkflowDesignerPage: React.FC = () => {
                   leftIcon={<Plus className="w-4 h-4" />}
                   disabled={states.length < 2}
                 >
-                  {t('workflows.addTransition')}
+                  {t("workflows.addTransition")}
                 </Button>
               </div>
 
               {states.length < 2 && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-sm text-amber-600">
-                  {t('workflows.noStatesDesc')}
+                  {t("workflows.noStatesDesc")}
                 </div>
               )}
 
               {transitions.length === 0 ? (
                 <div className="text-center py-12">
                   <ArrowRight className="w-12 h-12 text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('workflows.noTransitions')}</h3>
-                  <p className="text-[hsl(var(--muted-foreground))] mb-4">{t('workflows.noTransitionsDesc')}</p>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.noTransitions")}
+                  </h3>
+                  <p className="text-[hsl(var(--muted-foreground))] mb-4">
+                    {t("workflows.noTransitionsDesc")}
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-[hsl(var(--border))]">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Transition</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">From → To</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Roles</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Config</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">Actions</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Transition
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          From → To
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Roles
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Config
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {transitions.map((transition) => (
-                        <tr key={transition.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]">
+                        <tr
+                          key={transition.id}
+                          className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                        >
                           <td className="py-3 px-4">
                             <div>
-                              <span className="font-medium text-[hsl(var(--foreground))]">{transition.name}</span>
-                              <p className="text-xs font-mono text-[hsl(var(--muted-foreground))]">{transition.code}</p>
+                              <span className="font-medium text-[hsl(var(--foreground))]">
+                                {transition.name}
+                              </span>
+                              <p className="text-xs font-mono text-[hsl(var(--muted-foreground))]">
+                                {transition.code}
+                              </p>
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
                               <span
                                 className="px-2 py-1 text-xs font-medium rounded-lg text-white"
-                                style={{ backgroundColor: getStateColor(transition.from_state_id) }}
+                                style={{
+                                  backgroundColor: getStateColor(
+                                    transition.from_state_id,
+                                  ),
+                                }}
                               >
                                 {getStateName(transition.from_state_id)}
                               </span>
                               <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                               <span
                                 className="px-2 py-1 text-xs font-medium rounded-lg text-white"
-                                style={{ backgroundColor: getStateColor(transition.to_state_id) }}
+                                style={{
+                                  backgroundColor: getStateColor(
+                                    transition.to_state_id,
+                                  ),
+                                }}
                               >
                                 {getStateName(transition.to_state_id)}
                               </span>
@@ -1102,16 +1368,20 @@ export const WorkflowDesignerPage: React.FC = () => {
                           <td className="py-3 px-4">
                             <div className="flex flex-wrap gap-1">
                               {transition.allowed_roles?.length === 0 && (
-                                <span className="text-xs text-[hsl(var(--muted-foreground))]">All roles</span>
-                              )}
-                              {transition.allowed_roles?.slice(0, 2).map((role) => (
-                                <span
-                                  key={role.id}
-                                  className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded"
-                                >
-                                  {role.name}
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  All roles
                                 </span>
-                              ))}
+                              )}
+                              {transition.allowed_roles
+                                ?.slice(0, 2)
+                                .map((role) => (
+                                  <span
+                                    key={role.id}
+                                    className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded"
+                                  >
+                                    {role.name}
+                                  </span>
+                                ))}
                               {(transition.allowed_roles?.length || 0) > 2 && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded">
                                   +{transition.allowed_roles!.length - 2}
@@ -1145,13 +1415,17 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 <Settings className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => openEditTransitionModal(transition)}
+                                onClick={() =>
+                                  openEditTransitionModal(transition)
+                                }
                                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => setDeleteTransitionConfirm(transition.id)}
+                                onClick={() =>
+                                  setDeleteTransitionConfirm(transition.id)
+                                }
                                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1168,221 +1442,325 @@ export const WorkflowDesignerPage: React.FC = () => {
           )}
 
           {/* Matching Rules Tab */}
-          {activeTab === 'matching' && (
+          {activeTab === "matching" && (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-blue-800 mb-1">Auto-Workflow Matching Rules</h3>
+                <h3 className="text-sm font-medium text-blue-800 mb-1">
+                  Auto-Workflow Matching Rules
+                </h3>
                 <p className="text-xs text-blue-700 mb-2">
-                  Configure which incidents should automatically use this workflow based on sources, priorities, classifications, and locations.
+                  Configure which incidents should automatically use this
+                  workflow based on sources, priorities, classifications, and
+                  locations.
                 </p>
                 <p className="text-xs text-blue-700">
-                  <strong>Tip:</strong> Leave a category empty to match ALL items in that category (generic/fallback). For example, empty sources = matches all sources.
+                  <strong>Tip:</strong> Leave a category empty to match ALL
+                  items in that category (generic/fallback). For example, empty
+                  sources = matches all sources.
                 </p>
               </div>
 
               {/* Record Type Selection */}
               <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-5">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">Record Type</h4>
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
+                  Record Type
+                </h4>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                   Specify which record types this workflow applies to.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <label className={cn(
-                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    matchingConfig.record_type === 'incident'
-                      ? "border-blue-500 bg-blue-500/20"
-                      : "border-[hsl(var(--border))] hover:border-blue-300"
-                  )}>
+                  <label
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      matchingConfig.record_type === "incident"
+                        ? "border-blue-500 bg-blue-500/20"
+                        : "border-[hsl(var(--border))] hover:border-blue-300",
+                    )}
+                  >
                     <input
                       type="radio"
                       name="record_type"
                       value="incident"
-                      checked={matchingConfig.record_type === 'incident'}
-                      onChange={(e) => setMatchingConfig(prev => ({
-                        ...prev,
-                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
-                        classification_ids: [] // Clear classifications when record type changes
-                      }))}
+                      checked={matchingConfig.record_type === "incident"}
+                      onChange={(e) =>
+                        setMatchingConfig((prev) => ({
+                          ...prev,
+                          record_type: e.target.value as
+                            | "incident"
+                            | "request"
+                            | "complaint"
+                            | "query"
+                            | "both"
+                            | "all",
+                          classification_ids: [], // Clear classifications when record type changes
+                        }))
+                      }
                       className="sr-only"
                     />
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      matchingConfig.record_type === 'incident'
-                        ? "border-blue-500 bg-blue-500"
-                        : "border-[hsl(var(--muted-foreground))]"
-                    )}>
-                      {matchingConfig.record_type === 'incident' && (
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                        matchingConfig.record_type === "incident"
+                          ? "border-blue-500 bg-blue-500"
+                          : "border-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {matchingConfig.record_type === "incident" && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeIncident')}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeIncidentDesc')}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("workflows.recordTypeIncident")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.recordTypeIncidentDesc")}
+                      </p>
                     </div>
                   </label>
-                  <label className={cn(
-                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    matchingConfig.record_type === 'request'
-                      ? "border-emerald-500 bg-emerald-500/20"
-                      : "border-[hsl(var(--border))] hover:border-emerald-300"
-                  )}>
+                  <label
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      matchingConfig.record_type === "request"
+                        ? "border-emerald-500 bg-emerald-500/20"
+                        : "border-[hsl(var(--border))] hover:border-emerald-300",
+                    )}
+                  >
                     <input
                       type="radio"
                       name="record_type"
                       value="request"
-                      checked={matchingConfig.record_type === 'request'}
-                      onChange={(e) => setMatchingConfig(prev => ({
-                        ...prev,
-                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
-                        classification_ids: [] // Clear classifications when record type changes
-                      }))}
+                      checked={matchingConfig.record_type === "request"}
+                      onChange={(e) =>
+                        setMatchingConfig((prev) => ({
+                          ...prev,
+                          record_type: e.target.value as
+                            | "incident"
+                            | "request"
+                            | "complaint"
+                            | "query"
+                            | "both"
+                            | "all",
+                          classification_ids: [], // Clear classifications when record type changes
+                        }))
+                      }
                       className="sr-only"
                     />
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      matchingConfig.record_type === 'request'
-                        ? "border-emerald-500 bg-emerald-500"
-                        : "border-[hsl(var(--muted-foreground))]"
-                    )}>
-                      {matchingConfig.record_type === 'request' && (
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                        matchingConfig.record_type === "request"
+                          ? "border-emerald-500 bg-emerald-500"
+                          : "border-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {matchingConfig.record_type === "request" && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeRequest')}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeRequestDesc')}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("workflows.recordTypeRequest")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.recordTypeRequestDesc")}
+                      </p>
                     </div>
                   </label>
-                  <label className={cn(
-                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    matchingConfig.record_type === 'both'
-                      ? "border-purple-500 bg-purple-500/20"
-                      : "border-[hsl(var(--border))] hover:border-purple-300"
-                  )}>
+                  <label
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      matchingConfig.record_type === "both"
+                        ? "border-purple-500 bg-purple-500/20"
+                        : "border-[hsl(var(--border))] hover:border-purple-300",
+                    )}
+                  >
                     <input
                       type="radio"
                       name="record_type"
                       value="both"
-                      checked={matchingConfig.record_type === 'both'}
-                      onChange={(e) => setMatchingConfig(prev => ({
-                        ...prev,
-                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
-                        classification_ids: [] // Clear classifications when record type changes
-                      }))}
+                      checked={matchingConfig.record_type === "both"}
+                      onChange={(e) =>
+                        setMatchingConfig((prev) => ({
+                          ...prev,
+                          record_type: e.target.value as
+                            | "incident"
+                            | "request"
+                            | "complaint"
+                            | "query"
+                            | "both"
+                            | "all",
+                          classification_ids: [], // Clear classifications when record type changes
+                        }))
+                      }
                       className="sr-only"
                     />
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      matchingConfig.record_type === 'both'
-                        ? "border-purple-500 bg-purple-500"
-                        : "border-[hsl(var(--muted-foreground))]"
-                    )}>
-                      {matchingConfig.record_type === 'both' && (
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                        matchingConfig.record_type === "both"
+                          ? "border-purple-500 bg-purple-500"
+                          : "border-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {matchingConfig.record_type === "both" && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeBoth')}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeBothDesc')}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("workflows.recordTypeBoth")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.recordTypeBothDesc")}
+                      </p>
                     </div>
                   </label>
-                  <label className={cn(
-                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    matchingConfig.record_type === 'complaint'
-                      ? "border-amber-500 bg-amber-500/20"
-                      : "border-[hsl(var(--border))] hover:border-amber-300"
-                  )}>
+                  <label
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      matchingConfig.record_type === "complaint"
+                        ? "border-amber-500 bg-amber-500/20"
+                        : "border-[hsl(var(--border))] hover:border-amber-300",
+                    )}
+                  >
                     <input
                       type="radio"
                       name="record_type"
                       value="complaint"
-                      checked={matchingConfig.record_type === 'complaint'}
-                      onChange={(e) => setMatchingConfig(prev => ({
-                        ...prev,
-                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
-                        classification_ids: [] // Clear classifications when record type changes
-                      }))}
+                      checked={matchingConfig.record_type === "complaint"}
+                      onChange={(e) =>
+                        setMatchingConfig((prev) => ({
+                          ...prev,
+                          record_type: e.target.value as
+                            | "incident"
+                            | "request"
+                            | "complaint"
+                            | "query"
+                            | "both"
+                            | "all",
+                          classification_ids: [], // Clear classifications when record type changes
+                        }))
+                      }
                       className="sr-only"
                     />
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      matchingConfig.record_type === 'complaint'
-                        ? "border-amber-500 bg-amber-500"
-                        : "border-[hsl(var(--muted-foreground))]"
-                    )}>
-                      {matchingConfig.record_type === 'complaint' && (
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                        matchingConfig.record_type === "complaint"
+                          ? "border-amber-500 bg-amber-500"
+                          : "border-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {matchingConfig.record_type === "complaint" && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeComplaint')}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeComplaintDesc')}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("workflows.recordTypeComplaint")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.recordTypeComplaintDesc")}
+                      </p>
                     </div>
                   </label>
-                  <label className={cn(
-                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    matchingConfig.record_type === 'query'
-                      ? "border-indigo-500 bg-indigo-50"
-                      : "border-[hsl(var(--border))] hover:border-indigo-300"
-                  )}>
+                  <label
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      matchingConfig.record_type === "query"
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-[hsl(var(--border))] hover:border-indigo-300",
+                    )}
+                  >
                     <input
                       type="radio"
                       name="record_type"
                       value="query"
-                      checked={matchingConfig.record_type === 'query'}
-                      onChange={(e) => setMatchingConfig(prev => ({
-                        ...prev,
-                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
-                        classification_ids: [] // Clear classifications when record type changes
-                      }))}
+                      checked={matchingConfig.record_type === "query"}
+                      onChange={(e) =>
+                        setMatchingConfig((prev) => ({
+                          ...prev,
+                          record_type: e.target.value as
+                            | "incident"
+                            | "request"
+                            | "complaint"
+                            | "query"
+                            | "both"
+                            | "all",
+                          classification_ids: [], // Clear classifications when record type changes
+                        }))
+                      }
                       className="sr-only"
                     />
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      matchingConfig.record_type === 'query'
-                        ? "border-indigo-500 bg-indigo-500"
-                        : "border-[hsl(var(--muted-foreground))]"
-                    )}>
-                      {matchingConfig.record_type === 'query' && (
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                        matchingConfig.record_type === "query"
+                          ? "border-indigo-500 bg-indigo-500"
+                          : "border-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {matchingConfig.record_type === "query" && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeQuery')}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeQueryDesc')}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("workflows.recordTypeQuery")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.recordTypeQueryDesc")}
+                      </p>
                     </div>
                   </label>
-                  <label className={cn(
-                    "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                    matchingConfig.record_type === 'all'
-                      ? "border-gray-500 bg-gray-500/20"
-                      : "border-[hsl(var(--border))] hover:border-gray-300"
-                  )}>
+                  <label
+                    className={cn(
+                      "flex-1 flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                      matchingConfig.record_type === "all"
+                        ? "border-gray-500 bg-gray-500/20"
+                        : "border-[hsl(var(--border))] hover:border-gray-300",
+                    )}
+                  >
                     <input
                       type="radio"
                       name="record_type"
                       value="all"
-                      checked={matchingConfig.record_type === 'all'}
-                      onChange={(e) => setMatchingConfig(prev => ({
-                        ...prev,
-                        record_type: e.target.value as 'incident' | 'request' | 'complaint' | 'query' | 'both' | 'all',
-                        classification_ids: [] // Clear classifications when record type changes
-                      }))}
+                      checked={matchingConfig.record_type === "all"}
+                      onChange={(e) =>
+                        setMatchingConfig((prev) => ({
+                          ...prev,
+                          record_type: e.target.value as
+                            | "incident"
+                            | "request"
+                            | "complaint"
+                            | "query"
+                            | "both"
+                            | "all",
+                          classification_ids: [], // Clear classifications when record type changes
+                        }))
+                      }
                       className="sr-only"
                     />
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                      matchingConfig.record_type === 'all'
-                        ? "border-gray-500 bg-gray-500"
-                        : "border-[hsl(var(--muted-foreground))]"
-                    )}>
-                      {matchingConfig.record_type === 'all' && (
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                        matchingConfig.record_type === "all"
+                          ? "border-gray-500 bg-gray-500"
+                          : "border-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {matchingConfig.record_type === "all" && (
                         <div className="w-2 h-2 rounded-full bg-white" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.recordTypeAll')}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.recordTypeAllDesc')}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("workflows.recordTypeAll")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.recordTypeAllDesc")}
+                      </p>
                     </div>
                   </label>
                 </div>
@@ -1391,15 +1769,18 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Classifications */}
                 <div>
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Classifications</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    Classifications
+                  </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which classifications this workflow applies to. Leave empty for all classifications.
+                    Select which classifications this workflow applies to. Leave
+                    empty for all classifications.
                   </p>
                   <HierarchicalCheckboxTree
                     data={classifications as any}
                     selectedIds={matchingConfig.classification_ids}
                     onSelectionChange={(selectedIds) => {
-                      setMatchingConfig(prev => ({
+                      setMatchingConfig((prev) => ({
                         ...prev,
                         classification_ids: selectedIds,
                       }));
@@ -1411,15 +1792,18 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 {/* Locations */}
                 <div>
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Locations</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    Locations
+                  </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which locations this workflow applies to. Leave empty for all locations.
+                    Select which locations this workflow applies to. Leave empty
+                    for all locations.
                   </p>
                   <HierarchicalCheckboxTree
                     data={locations as any}
                     selectedIds={matchingConfig.location_ids}
                     onSelectionChange={(selectedIds) => {
-                      setMatchingConfig(prev => ({
+                      setMatchingConfig((prev) => ({
                         ...prev,
                         location_ids: selectedIds,
                       }));
@@ -1431,38 +1815,51 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 {/* Sources */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Sources</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
+                    Sources
+                  </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which incident sources this workflow applies to. Leave empty for all sources.
+                    Select which incident sources this workflow applies to.
+                    Leave empty for all sources.
                   </p>
                   <div className="space-y-2">
                     {INCIDENT_SOURCES.map((source) => (
-                      <label key={source.value} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
+                      <label
+                        key={source.value}
+                        className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer"
+                      >
                         <input
                           type="checkbox"
-                          checked={matchingConfig.sources.includes(source.value)}
+                          checked={matchingConfig.sources.includes(
+                            source.value,
+                          )}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setMatchingConfig(prev => ({
+                              setMatchingConfig((prev) => ({
                                 ...prev,
                                 sources: [...prev.sources, source.value],
                               }));
                             } else {
-                              setMatchingConfig(prev => ({
+                              setMatchingConfig((prev) => ({
                                 ...prev,
-                                sources: prev.sources.filter(s => s !== source.value),
+                                sources: prev.sources.filter(
+                                  (s) => s !== source.value,
+                                ),
                               }));
                             }
                           }}
                           className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                         />
-                        <span className="text-sm text-[hsl(var(--foreground))]">{source.label}</span>
+                        <span className="text-sm text-[hsl(var(--foreground))]">
+                          {source.label}
+                        </span>
                       </label>
                     ))}
 
                     {matchingConfig.sources.length === 0 && (
                       <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
-                        <strong>No selection</strong> - This workflow will match <strong>all sources</strong> (generic/fallback behavior)
+                        <strong>No selection</strong> - This workflow will match{" "}
+                        <strong>all sources</strong> (generic/fallback behavior)
                       </div>
                     )}
                   </div>
@@ -1470,63 +1867,90 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 {/* Priorities */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Priorities</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
+                    Priorities
+                  </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which priorities this workflow applies to. Leave empty for all priorities.
+                    Select which priorities this workflow applies to. Leave
+                    empty for all priorities.
                   </p>
                   <div className="space-y-2">
                     {priorityValues.map((priority) => (
-                      <label key={priority.id} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
+                      <label
+                        key={priority.id}
+                        className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer"
+                      >
                         <input
                           type="checkbox"
-                          checked={matchingConfig.priorities.includes(priority.sort_order)}
+                          checked={matchingConfig.priorities.includes(
+                            priority.sort_order,
+                          )}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setMatchingConfig(prev => ({
+                              setMatchingConfig((prev) => ({
                                 ...prev,
-                                priorities: [...prev.priorities, priority.sort_order],
+                                priorities: [
+                                  ...prev.priorities,
+                                  priority.sort_order,
+                                ],
                               }));
                             } else {
-                              setMatchingConfig(prev => ({
+                              setMatchingConfig((prev) => ({
                                 ...prev,
-                                priorities: prev.priorities.filter(p => p !== priority.sort_order),
+                                priorities: prev.priorities.filter(
+                                  (p) => p !== priority.sort_order,
+                                ),
                               }));
                             }
                           }}
                           className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                         />
-                        <span className="text-sm text-[hsl(var(--foreground))]">{priority.name}</span>
+                        <span className="text-sm text-[hsl(var(--foreground))]">
+                          {priority.name}
+                        </span>
                       </label>
                     ))}
                     {priorityValues.length === 0 && (
                       <>
                         {[
-                          { value: 1, label: '1 - Critical' },
-                          { value: 2, label: '2 - High' },
-                          { value: 3, label: '3 - Medium' },
-                          { value: 4, label: '4 - Low' },
-                          { value: 5, label: '5 - Very Low' },
+                          { value: 1, label: "1 - Critical" },
+                          { value: 2, label: "2 - High" },
+                          { value: 3, label: "3 - Medium" },
+                          { value: 4, label: "4 - Low" },
+                          { value: 5, label: "5 - Very Low" },
                         ].map((priority) => (
-                          <label key={priority.value} className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer">
+                          <label
+                            key={priority.value}
+                            className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer"
+                          >
                             <input
                               type="checkbox"
-                              checked={matchingConfig.priorities.includes(priority.value)}
+                              checked={matchingConfig.priorities.includes(
+                                priority.value,
+                              )}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setMatchingConfig(prev => ({
+                                  setMatchingConfig((prev) => ({
                                     ...prev,
-                                    priorities: [...prev.priorities, priority.value],
+                                    priorities: [
+                                      ...prev.priorities,
+                                      priority.value,
+                                    ],
                                   }));
                                 } else {
-                                  setMatchingConfig(prev => ({
+                                  setMatchingConfig((prev) => ({
                                     ...prev,
-                                    priorities: prev.priorities.filter(p => p !== priority.value),
+                                    priorities: prev.priorities.filter(
+                                      (p) => p !== priority.value,
+                                    ),
                                   }));
                                 }
                               }}
                               className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                             />
-                            <span className="text-sm text-[hsl(var(--foreground))]">{priority.label}</span>
+                            <span className="text-sm text-[hsl(var(--foreground))]">
+                              {priority.label}
+                            </span>
                           </label>
                         ))}
                       </>
@@ -1534,7 +1958,9 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                     {matchingConfig.priorities.length === 0 && (
                       <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
-                        <strong>No selection</strong> - This workflow will match <strong>all priorities</strong> (generic/fallback behavior)
+                        <strong>No selection</strong> - This workflow will match{" "}
+                        <strong>all priorities</strong> (generic/fallback
+                        behavior)
                       </div>
                     )}
                   </div>
@@ -1548,14 +1974,25 @@ export const WorkflowDesignerPage: React.FC = () => {
                 matchingConfig.location_ids.length === 0 && (
                   <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
                     <h3 className="text-sm font-semibold text-amber-900 mb-1 flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       Fully Generic Workflow
                     </h3>
                     <p className="text-xs text-amber-800">
-                      This workflow has NO matching rules configured. It will match <strong>ALL incidents</strong> and may conflict with other workflows.
-                      Consider adding at least one rule (source, priority, classification, or location) to make it more specific.
+                      This workflow has NO matching rules configured. It will
+                      match <strong>ALL incidents</strong> and may conflict with
+                      other workflows. Consider adding at least one rule
+                      (source, priority, classification, or location) to make it
+                      more specific.
                     </p>
                   </div>
                 )}
@@ -1574,17 +2011,22 @@ export const WorkflowDesignerPage: React.FC = () => {
           )}
 
           {/* Form Fields Tab */}
-          {activeTab === 'fields' && (
+          {activeTab === "fields" && (
             <div className="space-y-6">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-amber-800 mb-1">Required Form Fields</h3>
+                <h3 className="text-sm font-medium text-amber-800 mb-1">
+                  Required Form Fields
+                </h3>
                 <p className="text-xs text-amber-700">
-                  Configure which fields are mandatory when creating incidents using this workflow. Title and Workflow are always required.
+                  Configure which fields are mandatory when creating incidents
+                  using this workflow. Title and Workflow are always required.
                 </p>
               </div>
 
               <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">Select Required Fields</h4>
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
+                  Select Required Fields
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {availableFormFields.map((item) => (
                     <label
@@ -1593,7 +2035,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                         "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
                         requiredFields.includes(item.field)
                           ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
-                          : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                          : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
                       )}
                     >
                       <input
@@ -1601,16 +2043,22 @@ export const WorkflowDesignerPage: React.FC = () => {
                         checked={requiredFields.includes(item.field)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setRequiredFields(prev => [...prev, item.field]);
+                            setRequiredFields((prev) => [...prev, item.field]);
                           } else {
-                            setRequiredFields(prev => prev.filter(f => f !== item.field));
+                            setRequiredFields((prev) =>
+                              prev.filter((f) => f !== item.field),
+                            );
                           }
                         }}
                         className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                       />
                       <div>
-                        <span className="text-sm font-medium text-[hsl(var(--foreground))]">{item.label}</span>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{item.description}</p>
+                        <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                          {item.label}
+                        </span>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                          {item.description}
+                        </p>
                       </div>
                     </label>
                   ))}
@@ -1619,7 +2067,9 @@ export const WorkflowDesignerPage: React.FC = () => {
 
               {/* Summary */}
               <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Required Fields Summary</h4>
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                  Required Fields Summary
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
                     Title (always)
@@ -1627,8 +2077,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
                     Workflow (always)
                   </span>
-                  {requiredFields.map(field => {
-                    const fieldConfig = availableFormFields.find(f => f.field === field);
+                  {requiredFields.map((field) => {
+                    const fieldConfig = availableFormFields.find(
+                      (f) => f.field === field,
+                    );
                     return (
                       <span
                         key={field}
@@ -1639,7 +2091,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                     );
                   })}
                   {requiredFields.length === 0 && (
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">No additional required fields</span>
+                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                      No additional required fields
+                    </span>
                   )}
                 </div>
               </div>
@@ -1647,7 +2101,9 @@ export const WorkflowDesignerPage: React.FC = () => {
               {/* Save Button */}
               <div className="flex justify-end">
                 <Button
-                  onClick={() => updateRequiredFieldsMutation.mutate(requiredFields)}
+                  onClick={() =>
+                    updateRequiredFieldsMutation.mutate(requiredFields)
+                  }
                   isLoading={updateRequiredFieldsMutation.isPending}
                   leftIcon={<Check className="w-4 h-4" />}
                 >
@@ -1658,14 +2114,19 @@ export const WorkflowDesignerPage: React.FC = () => {
               {/* Convert to Request Permissions Section */}
               <div className="mt-8 pt-8 border-t border-[hsl(var(--border))]">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Convert to Request Permissions</h3>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    Convert to Request Permissions
+                  </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    Configure which roles can convert incidents to requests. If no roles are selected, all users will be able to convert.
+                    Configure which roles can convert incidents to requests. If
+                    no roles are selected, all users will be able to convert.
                   </p>
                 </div>
 
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">Allowed Roles</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
+                    Allowed Roles
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {roles.map((role) => (
                       <label
@@ -1674,7 +2135,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                           "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
                           convertToRequestRoleIds.includes(role.id)
                             ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
-                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
                         )}
                       >
                         <input
@@ -1682,17 +2143,26 @@ export const WorkflowDesignerPage: React.FC = () => {
                           checked={convertToRequestRoleIds.includes(role.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setConvertToRequestRoleIds(prev => [...prev, role.id]);
+                              setConvertToRequestRoleIds((prev) => [
+                                ...prev,
+                                role.id,
+                              ]);
                             } else {
-                              setConvertToRequestRoleIds(prev => prev.filter(id => id !== role.id));
+                              setConvertToRequestRoleIds((prev) =>
+                                prev.filter((id) => id !== role.id),
+                              );
                             }
                           }}
                           className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                         />
                         <div>
-                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">{role.name}</span>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {role.name}
+                          </span>
                           {role.description && (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{role.description}</p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                              {role.description}
+                            </p>
                           )}
                         </div>
                       </label>
@@ -1702,13 +2172,17 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 {/* Summary */}
                 <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 mt-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Selected Roles</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    Selected Roles
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {convertToRequestRoleIds.length === 0 ? (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">No roles selected - All users can convert incidents</span>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        No roles selected - All users can convert incidents
+                      </span>
                     ) : (
-                      convertToRequestRoleIds.map(roleId => {
-                        const role = roles.find(r => r.id === roleId);
+                      convertToRequestRoleIds.map((roleId) => {
+                        const role = roles.find((r) => r.id === roleId);
                         return (
                           <span
                             key={roleId}
@@ -1725,7 +2199,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Save Button */}
                 <div className="flex justify-end mt-4">
                   <Button
-                    onClick={() => updateConvertToRequestRolesMutation.mutate(convertToRequestRoleIds)}
+                    onClick={() =>
+                      updateConvertToRequestRolesMutation.mutate(
+                        convertToRequestRoleIds,
+                      )
+                    }
                     isLoading={updateConvertToRequestRolesMutation.isPending}
                     leftIcon={<Check className="w-4 h-4" />}
                   >
@@ -1737,14 +2215,19 @@ export const WorkflowDesignerPage: React.FC = () => {
               {/* Merge Permissions Section */}
               <div className="mt-8 pt-8 border-t border-[hsl(var(--border))]">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Merge Incident Permissions</h3>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    Merge Incident Permissions
+                  </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    Configure which roles can merge incidents. If no roles are selected, all users will be able to merge.
+                    Configure which roles can merge incidents. If no roles are
+                    selected, all users will be able to merge.
                   </p>
                 </div>
 
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">Allowed Roles</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
+                    Allowed Roles
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {roles.map((role) => (
                       <label
@@ -1753,7 +2236,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                           "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
                           mergeAllowedRoleIds.includes(role.id)
                             ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
-                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]"
+                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
                         )}
                       >
                         <input
@@ -1761,17 +2244,26 @@ export const WorkflowDesignerPage: React.FC = () => {
                           checked={mergeAllowedRoleIds.includes(role.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setMergeAllowedRoleIds(prev => [...prev, role.id]);
+                              setMergeAllowedRoleIds((prev) => [
+                                ...prev,
+                                role.id,
+                              ]);
                             } else {
-                              setMergeAllowedRoleIds(prev => prev.filter(id => id !== role.id));
+                              setMergeAllowedRoleIds((prev) =>
+                                prev.filter((id) => id !== role.id),
+                              );
                             }
                           }}
                           className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                         />
                         <div>
-                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">{role.name}</span>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {role.name}
+                          </span>
                           {role.description && (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{role.description}</p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                              {role.description}
+                            </p>
                           )}
                         </div>
                       </label>
@@ -1781,13 +2273,17 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 {/* Summary */}
                 <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 mt-4">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">Selected Roles</h4>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    Selected Roles
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {mergeAllowedRoleIds.length === 0 ? (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">No roles selected - All users can merge incidents</span>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        No roles selected - All users can merge incidents
+                      </span>
                     ) : (
-                      mergeAllowedRoleIds.map(roleId => {
-                        const role = roles.find(r => r.id === roleId);
+                      mergeAllowedRoleIds.map((roleId) => {
+                        const role = roles.find((r) => r.id === roleId);
                         return (
                           <span
                             key={roleId}
@@ -1804,7 +2300,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Save Button */}
                 <div className="flex justify-end mt-4">
                   <Button
-                    onClick={() => updateMergeAllowedRolesMutation.mutate(mergeAllowedRoleIds)}
+                    onClick={() =>
+                      updateMergeAllowedRolesMutation.mutate(
+                        mergeAllowedRoleIds,
+                      )
+                    }
                     isLoading={updateMergeAllowedRolesMutation.isPending}
                     leftIcon={<Check className="w-4 h-4" />}
                   >
@@ -1828,7 +2328,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {editingState ? 'Edit State' : 'Add State'}
+                    {editingState ? "Edit State" : "Add State"}
                   </h3>
                 </div>
               </div>
@@ -1840,45 +2340,77 @@ export const WorkflowDesignerPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleStateSubmit} className="overflow-y-auto max-h-[calc(90vh-140px)]">
+            <form
+              onSubmit={handleStateSubmit}
+              className="overflow-y-auto max-h-[calc(90vh-140px)]"
+              noValidate
+            >
               <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Name</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={stateFormData.name}
-                    onChange={(e) => setStateFormData({ ...stateFormData, name: e.target.value })}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        name: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Code</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Code
+                  </label>
                   <input
                     type="text"
                     value={stateFormData.code}
-                    onChange={(e) => setStateFormData({ ...stateFormData, code: e.target.value })}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        code: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Description</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Description
+                  </label>
                   <textarea
                     value={stateFormData.description}
-                    onChange={(e) => setStateFormData({ ...stateFormData, description: e.target.value })}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        description: e.target.value,
+                      })
+                    }
                     rows={2}
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">State Type</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    State Type
+                  </label>
                   <select
                     value={stateFormData.state_type}
-                    onChange={(e) => setStateFormData({ ...stateFormData, state_type: e.target.value as any })}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        state_type: e.target.value as any,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                   >
                     <option value="initial">Initial (Starting state)</option>
@@ -1888,18 +2420,25 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Color</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Color
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {STATE_COLORS.map((color) => (
                       <button
                         key={color.value}
                         type="button"
-                        onClick={() => setStateFormData({ ...stateFormData, color: color.value })}
+                        onClick={() =>
+                          setStateFormData({
+                            ...stateFormData,
+                            color: color.value,
+                          })
+                        }
                         className={cn(
                           "w-8 h-8 rounded-lg transition-all",
                           stateFormData.color === color.value
                             ? "ring-2 ring-offset-2 ring-[hsl(var(--primary))]"
-                            : "hover:scale-110"
+                            : "hover:scale-110",
                         )}
                         style={{ backgroundColor: color.value }}
                         title={color.name}
@@ -1909,11 +2448,20 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">SLA Hours (optional)</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    SLA Hours (optional)
+                  </label>
                   <input
                     type="number"
-                    value={stateFormData.sla_hours || ''}
-                    onChange={(e) => setStateFormData({ ...stateFormData, sla_hours: e.target.value ? parseInt(e.target.value) : undefined })}
+                    value={stateFormData.sla_hours || ""}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        sla_hours: e.target.value
+                          ? parseInt(e.target.value)
+                          : undefined,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     min="0"
                   />
@@ -1927,7 +2475,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={stateFormData.is_mergable}
-                      onChange={(e) => setStateFormData({ ...stateFormData, is_mergable: e.target.checked })}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          is_mergable: e.target.checked,
+                        })
+                      }
                       className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                     />
                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
@@ -1945,7 +2498,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={stateFormData.is_ready_to_close}
-                      onChange={(e) => setStateFormData({ ...stateFormData, is_ready_to_close: e.target.checked })}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          is_ready_to_close: e.target.checked,
+                        })
+                      }
                       className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                     />
                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
@@ -1953,7 +2511,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </span>
                   </label>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
-                    Requires a duration selection when entering this state. Incident reverts automatically if not closed in time.
+                    Requires a duration selection when entering this state.
+                    Incident reverts automatically if not closed in time.
                   </p>
                 </div>
 
@@ -1961,12 +2520,19 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <div className="ml-7">
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                       Duration Options
-                      <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">(comma-separated, leave empty to use global defaults)</span>
+                      <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
+                        (comma-separated, leave empty to use global defaults)
+                      </span>
                     </label>
                     <input
                       type="text"
                       value={stateFormData.duration_options}
-                      onChange={(e) => setStateFormData({ ...stateFormData, duration_options: e.target.value })}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          duration_options: e.target.value,
+                        })
+                      }
                       placeholder="e.g. 1 Day, 2 Days, 1 Week, 2 Weeks"
                       className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     />
@@ -1989,17 +2555,21 @@ export const WorkflowDesignerPage: React.FC = () => {
                           "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
                           stateFormData.viewable_role_ids.includes(role.id)
                             ? "bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.3)]"
-                            : "hover:bg-[hsl(var(--muted)/0.5)]"
+                            : "hover:bg-[hsl(var(--muted)/0.5)]",
                         )}
                       >
                         <input
                           type="checkbox"
-                          checked={stateFormData.viewable_role_ids.includes(role.id)}
+                          checked={stateFormData.viewable_role_ids.includes(
+                            role.id,
+                          )}
                           onChange={() => toggleStateRole(role.id)}
                           className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                         />
                         <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span className="text-sm text-[hsl(var(--foreground))]">{role.name}</span>
+                        <span className="text-sm text-[hsl(var(--foreground))]">
+                          {role.name}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -2012,10 +2582,20 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </Button>
                 <Button
                   type="submit"
-                  isLoading={createStateMutation.isPending || updateStateMutation.isPending}
-                  leftIcon={!(createStateMutation.isPending || updateStateMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
+                  isLoading={
+                    createStateMutation.isPending ||
+                    updateStateMutation.isPending
+                  }
+                  leftIcon={
+                    !(
+                      createStateMutation.isPending ||
+                      updateStateMutation.isPending
+                    ) ? (
+                      <Check className="w-4 h-4" />
+                    ) : undefined
+                  }
                 >
-                  {editingState ? 'Update State' : 'Add State'}
+                  {editingState ? "Update State" : "Add State"}
                 </Button>
               </div>
             </form>
@@ -2034,7 +2614,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {editingTransition ? 'Edit Transition' : 'Add Transition'}
+                    {editingTransition ? "Edit Transition" : "Add Transition"}
                   </h3>
                 </div>
               </div>
@@ -2046,14 +2626,25 @@ export const WorkflowDesignerPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleTransitionSubmit} className="overflow-y-auto max-h-[calc(90vh-140px)]">
+            <form
+              onSubmit={handleTransitionSubmit}
+              className="overflow-y-auto max-h-[calc(90vh-140px)]"
+              noValidate
+            >
               <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Name</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={transitionFormData.name}
-                    onChange={(e) => setTransitionFormData({ ...transitionFormData, name: e.target.value })}
+                    onChange={(e) =>
+                      setTransitionFormData({
+                        ...transitionFormData,
+                        name: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     placeholder="e.g., Start Working"
                     required
@@ -2061,11 +2652,18 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Code</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Code
+                  </label>
                   <input
                     type="text"
                     value={transitionFormData.code}
-                    onChange={(e) => setTransitionFormData({ ...transitionFormData, code: e.target.value })}
+                    onChange={(e) =>
+                      setTransitionFormData({
+                        ...transitionFormData,
+                        code: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     placeholder="e.g., start_working"
                     required
@@ -2073,10 +2671,17 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Description</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Description
+                  </label>
                   <textarea
                     value={transitionFormData.description}
-                    onChange={(e) => setTransitionFormData({ ...transitionFormData, description: e.target.value })}
+                    onChange={(e) =>
+                      setTransitionFormData({
+                        ...transitionFormData,
+                        description: e.target.value,
+                      })
+                    }
                     rows={2}
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                   />
@@ -2084,30 +2689,48 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">From State</label>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      From State
+                    </label>
                     <select
                       value={transitionFormData.from_state_id}
-                      onChange={(e) => setTransitionFormData({ ...transitionFormData, from_state_id: e.target.value })}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          from_state_id: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       required
                     >
                       <option value="">Select state...</option>
                       {states.map((state) => (
-                        <option key={state.id} value={state.id}>{state.name}</option>
+                        <option key={state.id} value={state.id}>
+                          {state.name}
+                        </option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">To State</label>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      To State
+                    </label>
                     <select
                       value={transitionFormData.to_state_id}
-                      onChange={(e) => setTransitionFormData({ ...transitionFormData, to_state_id: e.target.value })}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          to_state_id: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       required
                     >
                       <option value="">Select state...</option>
                       {states.map((state) => (
-                        <option key={state.id} value={state.id}>{state.name}</option>
+                        <option key={state.id} value={state.id}>
+                          {state.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -2129,17 +2752,21 @@ export const WorkflowDesignerPage: React.FC = () => {
                           "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
                           transitionFormData.role_ids.includes(role.id)
                             ? "bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.3)]"
-                            : "hover:bg-[hsl(var(--muted)/0.5)]"
+                            : "hover:bg-[hsl(var(--muted)/0.5)]",
                         )}
                       >
                         <input
                           type="checkbox"
-                          checked={transitionFormData.role_ids.includes(role.id)}
+                          checked={transitionFormData.role_ids.includes(
+                            role.id,
+                          )}
                           onChange={() => toggleRole(role.id)}
                           className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                         />
                         <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span className="text-sm text-[hsl(var(--foreground))]">{role.name}</span>
+                        <span className="text-sm text-[hsl(var(--foreground))]">
+                          {role.name}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -2160,7 +2787,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                           setTransitionFormData({
                             ...transitionFormData,
                             auto_detect_department: e.target.checked,
-                            assign_department_id: e.target.checked ? '' : transitionFormData.assign_department_id,
+                            assign_department_id: e.target.checked
+                              ? ""
+                              : transitionFormData.assign_department_id,
                           });
                         }}
                         className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
@@ -2170,7 +2799,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                           Auto-detect based on classification & location
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          If one match: auto-assign. If multiple: prompt user during transition
+                          If one match: auto-assign. If multiple: prompt user
+                          during transition
                         </p>
                       </div>
                     </label>
@@ -2181,17 +2811,29 @@ export const WorkflowDesignerPage: React.FC = () => {
                           Department type to show:
                         </label>
                         <div className="flex gap-2">
-                          {([['', 'All Types'], ['internal', 'Internal Only'], ['external', 'External Only']] as const).map(([val, label]) => (
+                          {(
+                            [
+                              ["", "All Types"],
+                              ["internal", "Internal Only"],
+                              ["external", "External Only"],
+                            ] as const
+                          ).map(([val, label]) => (
                             <button
                               key={val}
                               type="button"
-                              onClick={() => setTransitionFormData({ ...transitionFormData, department_type_filter: val })}
+                              onClick={() =>
+                                setTransitionFormData({
+                                  ...transitionFormData,
+                                  department_type_filter: val,
+                                })
+                              }
                               className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                transitionFormData.department_type_filter === val
-                                  ? val === 'external'
-                                    ? 'bg-amber-500 text-white border-amber-500'
-                                    : 'bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]'
-                                  : 'bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]'
+                                transitionFormData.department_type_filter ===
+                                val
+                                  ? val === "external"
+                                    ? "bg-amber-500 text-white border-amber-500"
+                                    : "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]"
+                                  : "bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
                               }`}
                             >
                               {label}
@@ -2208,12 +2850,19 @@ export const WorkflowDesignerPage: React.FC = () => {
                         </label>
                         <select
                           value={transitionFormData.assign_department_id}
-                          onChange={(e) => setTransitionFormData({ ...transitionFormData, assign_department_id: e.target.value })}
+                          onChange={(e) =>
+                            setTransitionFormData({
+                              ...transitionFormData,
+                              assign_department_id: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                         >
                           <option value="">No department assignment</option>
                           {departments.map((dept) => (
-                            <option key={dept.id} value={dept.id}>{dept.name} ({dept.type || 'internal'})</option>
+                            <option key={dept.id} value={dept.id}>
+                              {dept.name} ({dept.type || "internal"})
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -2233,14 +2882,18 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <input
                         type="radio"
                         name="user_assignment_mode"
-                        checked={!transitionFormData.auto_match_user && !transitionFormData.manual_select_user && !transitionFormData.assign_user_id}
+                        checked={
+                          !transitionFormData.auto_match_user &&
+                          !transitionFormData.manual_select_user &&
+                          !transitionFormData.assign_user_id
+                        }
                         onChange={() => {
                           setTransitionFormData({
                             ...transitionFormData,
                             auto_match_user: false,
                             manual_select_user: false,
-                            assign_user_id: '',
-                            assignment_role_id: '',
+                            assign_user_id: "",
+                            assignment_role_id: "",
                           });
                         }}
                         className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
@@ -2260,13 +2913,16 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <input
                         type="radio"
                         name="user_assignment_mode"
-                        checked={transitionFormData.auto_match_user && !transitionFormData.manual_select_user}
+                        checked={
+                          transitionFormData.auto_match_user &&
+                          !transitionFormData.manual_select_user
+                        }
                         onChange={() => {
                           setTransitionFormData({
                             ...transitionFormData,
                             auto_match_user: true,
                             manual_select_user: false,
-                            assign_user_id: '',
+                            assign_user_id: "",
                           });
                         }}
                         className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
@@ -2276,7 +2932,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                           Auto-assign all matching users
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          Automatically assigns ALL users matching role + incident criteria
+                          Automatically assigns ALL users matching role +
+                          incident criteria
                         </p>
                       </div>
                     </label>
@@ -2292,7 +2949,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             ...transitionFormData,
                             auto_match_user: false,
                             manual_select_user: true,
-                            assign_user_id: '',
+                            assign_user_id: "",
                           });
                         }}
                         className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
@@ -2302,7 +2959,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                           Manual selection during transition
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          Performer selects from matching users when executing transition
+                          Performer selects from matching users when executing
+                          transition
                         </p>
                       </div>
                     </label>
@@ -2312,13 +2970,17 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <input
                         type="radio"
                         name="user_assignment_mode"
-                        checked={!transitionFormData.auto_match_user && !transitionFormData.manual_select_user && !!transitionFormData.assign_user_id}
+                        checked={
+                          !transitionFormData.auto_match_user &&
+                          !transitionFormData.manual_select_user &&
+                          !!transitionFormData.assign_user_id
+                        }
                         onChange={() => {
                           setTransitionFormData({
                             ...transitionFormData,
                             auto_match_user: false,
                             manual_select_user: false,
-                            assignment_role_id: '',
+                            assignment_role_id: "",
                           });
                         }}
                         className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
@@ -2334,58 +2996,87 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </label>
 
                     {/* Role selector for auto-match or manual selection */}
-                    {(transitionFormData.auto_match_user || transitionFormData.manual_select_user) && (
+                    {(transitionFormData.auto_match_user ||
+                      transitionFormData.manual_select_user) && (
                       <div className="ml-7">
                         <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                           Role to match (required):
                         </label>
                         <select
                           value={transitionFormData.assignment_role_id}
-                          onChange={(e) => setTransitionFormData({ ...transitionFormData, assignment_role_id: e.target.value })}
+                          onChange={(e) =>
+                            setTransitionFormData({
+                              ...transitionFormData,
+                              assignment_role_id: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                         >
                           <option value="">Select a role...</option>
                           {roles.map((role) => (
-                            <option key={role.id} value={role.id}>{role.name}</option>
+                            <option key={role.id} value={role.id}>
+                              {role.name}
+                            </option>
                           ))}
                         </select>
                       </div>
                     )}
 
                     {/* User selector for specific user assignment */}
-                    {!transitionFormData.auto_match_user && !transitionFormData.manual_select_user && (
-                      <div className="ml-7">
-                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                          Select user:
-                        </label>
-                        <select
-                          value={transitionFormData.assign_user_id}
-                          onChange={(e) => setTransitionFormData({ ...transitionFormData, assign_user_id: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                        >
-                          <option value="">No user assignment</option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.first_name} {user.last_name} ({user.email})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    {!transitionFormData.auto_match_user &&
+                      !transitionFormData.manual_select_user && (
+                        <div className="ml-7">
+                          <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                            Select user:
+                          </label>
+                          <select
+                            value={transitionFormData.assign_user_id}
+                            onChange={(e) =>
+                              setTransitionFormData({
+                                ...transitionFormData,
+                                assign_user_id: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                          >
+                            <option value="">No user assignment</option>
+                            {users.map((user) => (
+                              <option key={user.id} value={user.id}>
+                                {user.first_name} {user.last_name} ({user.email}
+                                )
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
-                <Button variant="ghost" type="button" onClick={closeTransitionModal}>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={closeTransitionModal}
+                >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  isLoading={createTransitionMutation.isPending || updateTransitionMutation.isPending}
-                  leftIcon={!(createTransitionMutation.isPending || updateTransitionMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
+                  isLoading={
+                    createTransitionMutation.isPending ||
+                    updateTransitionMutation.isPending
+                  }
+                  leftIcon={
+                    !(
+                      createTransitionMutation.isPending ||
+                      updateTransitionMutation.isPending
+                    ) ? (
+                      <Check className="w-4 h-4" />
+                    ) : undefined
+                  }
                 >
-                  {editingTransition ? 'Update Transition' : 'Add Transition'}
+                  {editingTransition ? "Update Transition" : "Add Transition"}
                 </Button>
               </div>
             </form>
@@ -2406,7 +3097,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
                     Configure Transition
                   </h3>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">{configuringTransition.name}</p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    {configuringTransition.name}
+                  </p>
                 </div>
               </div>
               <button
@@ -2424,28 +3117,52 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <FileText className="w-5 h-5 text-blue-500" />
-                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">Requirements</label>
+                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        Requirements
+                      </label>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={addRequirement} leftIcon={<Plus className="w-4 h-4" />}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={addRequirement}
+                      leftIcon={<Plus className="w-4 h-4" />}
+                    >
                       Add
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {requirements.length === 0 ? (
-                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">No requirements configured</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
+                        No requirements configured
+                      </p>
                     ) : (
                       requirements.map((req, index) => (
-                        <div key={index} className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3">
+                        <div
+                          key={index}
+                          className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3"
+                        >
                           <div className="flex items-center justify-between">
                             <select
                               value={req.requirement_type}
-                              onChange={(e) => updateRequirement(index, 'requirement_type', e.target.value)}
+                              onChange={(e) =>
+                                updateRequirement(
+                                  index,
+                                  "requirement_type",
+                                  e.target.value,
+                                )
+                              }
                               className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                             >
                               <option value="comment">Comment Required</option>
-                              <option value="attachment">Attachment Required</option>
-                              <option value="feedback">Feedback Required</option>
-                              <option value="field_value">Field Value Required</option>
+                              <option value="attachment">
+                                Attachment Required
+                              </option>
+                              <option value="feedback">
+                                Feedback Required
+                              </option>
+                              <option value="field_value">
+                                Field Value Required
+                              </option>
                             </select>
                             <button
                               onClick={() => removeRequirement(index)}
@@ -2459,17 +3176,31 @@ export const WorkflowDesignerPage: React.FC = () => {
                               <input
                                 type="checkbox"
                                 checked={req.is_mandatory}
-                                onChange={(e) => updateRequirement(index, 'is_mandatory', e.target.checked)}
+                                onChange={(e) =>
+                                  updateRequirement(
+                                    index,
+                                    "is_mandatory",
+                                    e.target.checked,
+                                  )
+                                }
                                 className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                               />
-                              <span className="text-sm text-[hsl(var(--foreground))]">Mandatory</span>
+                              <span className="text-sm text-[hsl(var(--foreground))]">
+                                Mandatory
+                              </span>
                             </label>
                           </div>
                           <input
                             type="text"
                             placeholder="Error message (optional)"
-                            value={req.error_message || ''}
-                            onChange={(e) => updateRequirement(index, 'error_message', e.target.value)}
+                            value={req.error_message || ""}
+                            onChange={(e) =>
+                              updateRequirement(
+                                index,
+                                "error_message",
+                                e.target.value,
+                              )
+                            }
                             className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                           />
                         </div>
@@ -2483,31 +3214,45 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <PenLine className="w-5 h-5 text-violet-500" />
-                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">Field Changes</label>
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">— fields the user can edit during this transition</span>
+                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        Field Changes
+                      </label>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        — fields the user can edit during this transition
+                      </span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={addFieldChange} leftIcon={<Plus className="w-4 h-4" />}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={addFieldChange}
+                      leftIcon={<Plus className="w-4 h-4" />}
+                    >
                       Add
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {fieldChanges.length === 0 ? (
-                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">No field changes configured</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
+                        No field changes configured
+                      </p>
                     ) : (
                       fieldChanges.map((fc, index) => (
-                        <div key={index} className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3">
+                        <div
+                          key={index}
+                          className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3"
+                        >
                           <div className="flex items-center justify-between gap-3">
                             <select
                               value={fc.field_name}
                               onChange={(e) => {
                                 const field = e.target.value;
                                 const defaultLabels: Record<string, string> = {
-                                  priority: 'Priority',
-                                  department_id: 'Department',
-                                  location_id: 'Location',
-                                  classification_id: 'Classification',
-                                  title: 'Title',
-                                  description: 'Description',
+                                  priority: "Priority",
+                                  department_id: "Department",
+                                  location_id: "Location",
+                                  classification_id: "Classification",
+                                  title: "Title",
+                                  description: "Description",
                                 };
                                 // Update both field_name and auto-label in one atomic state write
                                 // to avoid the second setFieldChanges overwriting the first.
@@ -2515,7 +3260,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 updated[index] = {
                                   ...updated[index],
                                   field_name: field,
-                                  label: updated[index].label || defaultLabels[field] || field,
+                                  label:
+                                    updated[index].label ||
+                                    defaultLabels[field] ||
+                                    field,
                                 };
                                 setFieldChanges(updated);
                               }}
@@ -2524,7 +3272,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                               <option value="priority">Priority</option>
                               <option value="department_id">Department</option>
                               <option value="location_id">Location</option>
-                              <option value="classification_id">Classification</option>
+                              <option value="classification_id">
+                                Classification
+                              </option>
                               <option value="title">Title</option>
                               <option value="description">Description</option>
                             </select>
@@ -2538,36 +3288,58 @@ export const WorkflowDesignerPage: React.FC = () => {
                           <input
                             type="text"
                             placeholder="Label (e.g. 'Select Department')"
-                            value={fc.label || ''}
-                            onChange={(e) => updateFieldChange(index, 'label', e.target.value)}
+                            value={fc.label || ""}
+                            onChange={(e) =>
+                              updateFieldChange(index, "label", e.target.value)
+                            }
                             className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                           />
                           <label className="flex items-center gap-2">
                             <input
                               type="checkbox"
                               checked={fc.is_required}
-                              onChange={(e) => updateFieldChange(index, 'is_required', e.target.checked)}
+                              onChange={(e) =>
+                                updateFieldChange(
+                                  index,
+                                  "is_required",
+                                  e.target.checked,
+                                )
+                              }
                               className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                             />
-                            <span className="text-sm text-[hsl(var(--foreground))]">Required</span>
+                            <span className="text-sm text-[hsl(var(--foreground))]">
+                              Required
+                            </span>
                           </label>
-                          {fc.field_name === 'department_id' && (
+                          {fc.field_name === "department_id" && (
                             <div>
                               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                                 Department type to show:
                               </label>
                               <div className="flex gap-2">
-                                {([['', 'All Types'], ['internal', 'Internal Only'], ['external', 'External Only']] as const).map(([val, label]) => (
+                                {(
+                                  [
+                                    ["", "All Types"],
+                                    ["internal", "Internal Only"],
+                                    ["external", "External Only"],
+                                  ] as const
+                                ).map(([val, label]) => (
                                   <button
                                     key={val}
                                     type="button"
-                                    onClick={() => updateFieldChange(index, 'department_type_filter', val)}
+                                    onClick={() =>
+                                      updateFieldChange(
+                                        index,
+                                        "department_type_filter",
+                                        val,
+                                      )
+                                    }
                                     className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                      (fc.department_type_filter || '') === val
-                                        ? val === 'external'
-                                          ? 'bg-amber-500 text-white border-amber-500'
-                                          : 'bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]'
-                                        : 'bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]'
+                                      (fc.department_type_filter || "") === val
+                                        ? val === "external"
+                                          ? "bg-amber-500 text-white border-amber-500"
+                                          : "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))]"
+                                        : "bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
                                     }`}
                                   >
                                     {label}
@@ -2587,37 +3359,48 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Zap className="w-5 h-5 text-emerald-500" />
-                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">Automation Actions</label>
+                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        Automation Actions
+                      </label>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={addAction} leftIcon={<Plus className="w-4 h-4" />}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={addAction}
+                      leftIcon={<Plus className="w-4 h-4" />}
+                    >
                       Add
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {actions.length === 0 ? (
-                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">No actions configured</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
+                        No actions configured
+                      </p>
                     ) : (
                       actions.map((action, index) => {
                         // Parse email config if action type is email
                         const getEmailConfig = (): TransitionEmailConfig => {
                           try {
-                            return action.config ? JSON.parse(action.config) : {
-                              enabled: true,
-                              recipients: [],
-                              custom_emails: [],
-                              subject_template: '',
-                              body_template: '',
-                              include_incident_details: true,
-                              include_transition_info: true,
-                              include_comments: false,
-                            };
+                            return action.config
+                              ? JSON.parse(action.config)
+                              : {
+                                  enabled: true,
+                                  recipients: [],
+                                  custom_emails: [],
+                                  subject_template: "",
+                                  body_template: "",
+                                  include_incident_details: true,
+                                  include_transition_info: true,
+                                  include_comments: false,
+                                };
                           } catch {
                             return {
                               enabled: true,
                               recipients: [],
                               custom_emails: [],
-                              subject_template: '',
-                              body_template: '',
+                              subject_template: "",
+                              body_template: "",
                               include_incident_details: true,
                               include_transition_info: true,
                               include_comments: false,
@@ -2625,229 +3408,346 @@ export const WorkflowDesignerPage: React.FC = () => {
                           }
                         };
 
-                        const updateEmailConfig = (updates: Partial<TransitionEmailConfig>) => {
+                        const updateEmailConfig = (
+                          updates: Partial<TransitionEmailConfig>,
+                        ) => {
                           const current = getEmailConfig();
                           const updated = { ...current, ...updates };
-                          updateAction(index, 'config', JSON.stringify(updated));
+                          updateAction(
+                            index,
+                            "config",
+                            JSON.stringify(updated),
+                          );
                         };
 
-                        const toggleRecipient = (recipient: EmailRecipientType) => {
+                        const toggleRecipient = (
+                          recipient: EmailRecipientType,
+                        ) => {
                           const config = getEmailConfig();
                           const recipients = config.recipients || [];
                           if (recipients.includes(recipient)) {
-                            updateEmailConfig({ recipients: recipients.filter(r => r !== recipient) });
+                            updateEmailConfig({
+                              recipients: recipients.filter(
+                                (r) => r !== recipient,
+                              ),
+                            });
                           } else {
-                            updateEmailConfig({ recipients: [...recipients, recipient] });
+                            updateEmailConfig({
+                              recipients: [...recipients, recipient],
+                            });
                           }
                         };
 
                         const emailConfig = getEmailConfig();
 
                         return (
-                        <div key={index} className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
-                            <select
-                              value={action.action_type}
-                              onChange={(e) => updateAction(index, 'action_type', e.target.value)}
-                              className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                            >
-                              <option value="notification">Send Notification</option>
-                              <option value="email">Send Email</option>
-                              <option value="webhook">Call Webhook</option>
-                              <option value="field_update">Update Field</option>
-                            </select>
-                            <button
-                              onClick={() => removeAction(index)}
-                              className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <input
-                            type="text"
-                            placeholder="Action name"
-                            value={action.name}
-                            onChange={(e) => updateAction(index, 'name', e.target.value)}
-                            className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                          />
+                          <div
+                            key={index}
+                            className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <select
+                                value={action.action_type}
+                                onChange={(e) =>
+                                  updateAction(
+                                    index,
+                                    "action_type",
+                                    e.target.value,
+                                  )
+                                }
+                                className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                              >
+                                <option value="notification">
+                                  Send Notification
+                                </option>
+                                <option value="email">Send Email</option>
+                                <option value="webhook">Call Webhook</option>
+                                <option value="field_update">
+                                  Update Field
+                                </option>
+                              </select>
+                              <button
+                                onClick={() => removeAction(index)}
+                                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Action name"
+                              value={action.name}
+                              onChange={(e) =>
+                                updateAction(index, "name", e.target.value)
+                              }
+                              className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                            />
 
-                          {/* Email-specific configuration */}
-                          {action.action_type === 'email' ? (
-                            <div className="space-y-4 pt-2">
-                              <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
-                                <Mail className="w-4 h-4" />
-                                Email Notification Settings
-                              </div>
-
-                              {/* Recipients */}
-                              <div>
-                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
-                                  Email Recipients
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {EMAIL_RECIPIENTS.map((recipient) => (
-                                    <label
-                                      key={recipient.value}
-                                      className={cn(
-                                        "flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-all border",
-                                        emailConfig.recipients?.includes(recipient.value)
-                                          ? "bg-blue-50 border-blue-200"
-                                          : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:border-blue-200"
-                                      )}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={emailConfig.recipients?.includes(recipient.value) || false}
-                                        onChange={() => toggleRecipient(recipient.value)}
-                                        className="w-4 h-4 mt-0.5 text-blue-600 border-[hsl(var(--border))] rounded"
-                                      />
-                                      <div>
-                                        <span className="text-xs font-medium text-[hsl(var(--foreground))]">
-                                          {recipient.label}
-                                        </span>
-                                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-tight">
-                                          {recipient.description}
-                                        </p>
-                                      </div>
-                                    </label>
-                                  ))}
+                            {/* Email-specific configuration */}
+                            {action.action_type === "email" ? (
+                              <div className="space-y-4 pt-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+                                  <Mail className="w-4 h-4" />
+                                  Email Notification Settings
                                 </div>
-                              </div>
 
-                              {/* Custom emails input (shown when 'custom' is selected) */}
-                              {emailConfig.recipients?.includes('custom') && (
+                                {/* Recipients */}
+                                <div>
+                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
+                                    Email Recipients
+                                  </label>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {EMAIL_RECIPIENTS.map((recipient) => (
+                                      <label
+                                        key={recipient.value}
+                                        className={cn(
+                                          "flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-all border",
+                                          emailConfig.recipients?.includes(
+                                            recipient.value,
+                                          )
+                                            ? "bg-blue-50 border-blue-200"
+                                            : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:border-blue-200",
+                                        )}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            emailConfig.recipients?.includes(
+                                              recipient.value,
+                                            ) || false
+                                          }
+                                          onChange={() =>
+                                            toggleRecipient(recipient.value)
+                                          }
+                                          className="w-4 h-4 mt-0.5 text-blue-600 border-[hsl(var(--border))] rounded"
+                                        />
+                                        <div>
+                                          <span className="text-xs font-medium text-[hsl(var(--foreground))]">
+                                            {recipient.label}
+                                          </span>
+                                          <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-tight">
+                                            {recipient.description}
+                                          </p>
+                                        </div>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Custom emails input (shown when 'custom' is selected) */}
+                                {emailConfig.recipients?.includes("custom") && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                                      Custom Email Addresses
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder="email1@example.com, email2@example.com"
+                                      value={
+                                        emailConfig.custom_emails?.join(", ") ||
+                                        ""
+                                      }
+                                      onChange={(e) =>
+                                        updateEmailConfig({
+                                          custom_emails: e.target.value
+                                            .split(",")
+                                            .map((s) => s.trim())
+                                            .filter(Boolean),
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                                    />
+                                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
+                                      Separate multiple emails with commas
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Subject template */}
                                 <div>
                                   <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                    Custom Email Addresses
+                                    Subject Template
                                   </label>
                                   <input
                                     type="text"
-                                    placeholder="email1@example.com, email2@example.com"
-                                    value={emailConfig.custom_emails?.join(', ') || ''}
-                                    onChange={(e) => updateEmailConfig({
-                                      custom_emails: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                    })}
+                                    placeholder="e.g., [{{incident_number}}] Status changed to {{new_state}}"
+                                    value={emailConfig.subject_template || ""}
+                                    onChange={(e) =>
+                                      updateEmailConfig({
+                                        subject_template: e.target.value,
+                                      })
+                                    }
                                     className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                                   />
                                   <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
-                                    Separate multiple emails with commas
+                                    Use {"{{incident_number}}"}, {"{{title}}"},{" "}
+                                    {"{{new_state}}"}, {"{{old_state}}"}
                                   </p>
                                 </div>
-                              )}
 
-                              {/* Subject template */}
-                              <div>
-                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                  Subject Template
-                                </label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g., [{{incident_number}}] Status changed to {{new_state}}"
-                                  value={emailConfig.subject_template || ''}
-                                  onChange={(e) => updateEmailConfig({ subject_template: e.target.value })}
-                                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                                />
-                                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
-                                  Use {'{{incident_number}}'}, {'{{title}}'}, {'{{new_state}}'}, {'{{old_state}}'}
-                                </p>
-                              </div>
+                                {/* Body template */}
+                                <div>
+                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                                    Body Template (optional)
+                                  </label>
+                                  <textarea
+                                    placeholder="Custom email body template..."
+                                    value={emailConfig.body_template || ""}
+                                    onChange={(e) =>
+                                      updateEmailConfig({
+                                        body_template: e.target.value,
+                                      })
+                                    }
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
+                                  />
+                                </div>
 
-                              {/* Body template */}
-                              <div>
-                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                  Body Template (optional)
-                                </label>
-                                <textarea
-                                  placeholder="Custom email body template..."
-                                  value={emailConfig.body_template || ''}
-                                  onChange={(e) => updateEmailConfig({ body_template: e.target.value })}
-                                  rows={3}
-                                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
-                                />
-                              </div>
-
-                              {/* Include options */}
-                              <div>
-                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
-                                  Include in Email
-                                </label>
-                                <div className="flex flex-wrap gap-3">
-                                  <label className="flex items-center gap-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={emailConfig.include_incident_details ?? true}
-                                      onChange={(e) => updateEmailConfig({ include_incident_details: e.target.checked })}
-                                      className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
-                                    />
-                                    <span className="text-xs text-[hsl(var(--foreground))]">Incident Details</span>
+                                {/* Include options */}
+                                <div>
+                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
+                                    Include in Email
                                   </label>
-                                  <label className="flex items-center gap-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={emailConfig.include_transition_info ?? true}
-                                      onChange={(e) => updateEmailConfig({ include_transition_info: e.target.checked })}
-                                      className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
-                                    />
-                                    <span className="text-xs text-[hsl(var(--foreground))]">Transition Info</span>
-                                  </label>
-                                  <label className="flex items-center gap-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={emailConfig.include_comments ?? false}
-                                      onChange={(e) => updateEmailConfig({ include_comments: e.target.checked })}
-                                      className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
-                                    />
-                                    <span className="text-xs text-[hsl(var(--foreground))]">Comments</span>
-                                  </label>
+                                  <div className="flex flex-wrap gap-3">
+                                    <label className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          emailConfig.include_incident_details ??
+                                          true
+                                        }
+                                        onChange={(e) =>
+                                          updateEmailConfig({
+                                            include_incident_details:
+                                              e.target.checked,
+                                          })
+                                        }
+                                        className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
+                                      />
+                                      <span className="text-xs text-[hsl(var(--foreground))]">
+                                        Incident Details
+                                      </span>
+                                    </label>
+                                    <label className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          emailConfig.include_transition_info ??
+                                          true
+                                        }
+                                        onChange={(e) =>
+                                          updateEmailConfig({
+                                            include_transition_info:
+                                              e.target.checked,
+                                          })
+                                        }
+                                        className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
+                                      />
+                                      <span className="text-xs text-[hsl(var(--foreground))]">
+                                        Transition Info
+                                      </span>
+                                    </label>
+                                    <label className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          emailConfig.include_comments ?? false
+                                        }
+                                        onChange={(e) =>
+                                          updateEmailConfig({
+                                            include_comments: e.target.checked,
+                                          })
+                                        }
+                                        className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
+                                      />
+                                      <span className="text-xs text-[hsl(var(--foreground))]">
+                                        Comments
+                                      </span>
+                                    </label>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            /* Non-email actions get the generic config textarea */
-                            <textarea
-                              placeholder="Configuration (JSON)"
-                              value={action.config || ''}
-                              onChange={(e) => updateAction(index, 'config', e.target.value)}
-                              rows={2}
-                              className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm font-mono resize-none"
-                            />
-                          )}
+                            ) : (
+                              /* Non-email actions get the generic config textarea */
+                              <textarea
+                                placeholder="Configuration (JSON)"
+                                value={action.config || ""}
+                                onChange={(e) =>
+                                  updateAction(index, "config", e.target.value)
+                                }
+                                rows={2}
+                                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm font-mono resize-none"
+                              />
+                            )}
 
-                          <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={action.is_async}
-                                onChange={(e) => updateAction(index, 'is_async', e.target.checked)}
-                                className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
-                              />
-                              <span className="text-sm text-[hsl(var(--foreground))]">Run Async</span>
-                            </label>
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={action.is_active}
-                                onChange={(e) => updateAction(index, 'is_active', e.target.checked)}
-                                className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
-                              />
-                              <span className="text-sm text-[hsl(var(--foreground))]">Active</span>
-                            </label>
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={action.is_async}
+                                  onChange={(e) =>
+                                    updateAction(
+                                      index,
+                                      "is_async",
+                                      e.target.checked,
+                                    )
+                                  }
+                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                />
+                                <span className="text-sm text-[hsl(var(--foreground))]">
+                                  Run Async
+                                </span>
+                              </label>
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={action.is_active}
+                                  onChange={(e) =>
+                                    updateAction(
+                                      index,
+                                      "is_active",
+                                      e.target.checked,
+                                    )
+                                  }
+                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                />
+                                <span className="text-sm text-[hsl(var(--foreground))]">
+                                  Active
+                                </span>
+                              </label>
+                            </div>
                           </div>
-                        </div>
-                      );})
+                        );
+                      })
                     )}
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
-                <Button variant="ghost" type="button" onClick={closeConfigModal}>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={closeConfigModal}
+                >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveConfig}
-                  isLoading={setRequirementsMutation.isPending || setActionsMutation.isPending || setFieldChangesMutation.isPending}
-                  leftIcon={!(setRequirementsMutation.isPending || setActionsMutation.isPending || setFieldChangesMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
+                  isLoading={
+                    setRequirementsMutation.isPending ||
+                    setActionsMutation.isPending ||
+                    setFieldChangesMutation.isPending
+                  }
+                  leftIcon={
+                    !(
+                      setRequirementsMutation.isPending ||
+                      setActionsMutation.isPending ||
+                      setFieldChangesMutation.isPending
+                    ) ? (
+                      <Check className="w-4 h-4" />
+                    ) : undefined
+                  }
                 >
                   Save Configuration
                 </Button>
@@ -2867,14 +3767,22 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <AlertTriangle className="w-6 h-6 text-[hsl(var(--destructive))]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Delete State</h3>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    Delete State
+                  </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    This will also delete all transitions connected to this state.
+                    This will also delete all transitions connected to this
+                    state.
                   </p>
                 </div>
               </div>
               <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setDeleteStateConfirm(null)}>Cancel</Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteStateConfirm(null)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   variant="destructive"
                   onClick={() => deleteStateMutation.mutate(deleteStateConfirm)}
@@ -2898,17 +3806,26 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <AlertTriangle className="w-6 h-6 text-[hsl(var(--destructive))]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Delete Transition</h3>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    Delete Transition
+                  </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
                     Are you sure you want to delete this transition?
                   </p>
                 </div>
               </div>
               <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setDeleteTransitionConfirm(null)}>Cancel</Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteTransitionConfirm(null)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => deleteTransitionMutation.mutate(deleteTransitionConfirm)}
+                  onClick={() =>
+                    deleteTransitionMutation.mutate(deleteTransitionConfirm)
+                  }
                   isLoading={deleteTransitionMutation.isPending}
                 >
                   Delete Transition

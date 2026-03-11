@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -440,7 +441,7 @@ export const ClassificationsPage: React.FC = () => {
     );
 
     if (hasInvalidCriticality) {
-      alert(t("classifications.criticalityRequired"));
+      toast.error(t("classifications.criticalityRequired"));
       return;
     }
 

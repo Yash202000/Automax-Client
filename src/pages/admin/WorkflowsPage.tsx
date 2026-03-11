@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Plus,
   Edit2,
@@ -23,13 +23,18 @@ import {
   ChevronUp,
   Download,
   Upload,
-} from 'lucide-react';
-import { workflowApi, classificationApi } from '../../api/admin';
-import type { Workflow, Classification, WorkflowCreateRequest, WorkflowUpdateRequest } from '../../types';
-import { cn } from '@/lib/utils';
-import { Button } from '../../components/ui';
-import { usePermissions } from '../../hooks/usePermissions';
-import { PERMISSIONS } from '../../constants/permissions';
+} from "lucide-react";
+import { workflowApi, classificationApi } from "../../api/admin";
+import type {
+  Workflow,
+  Classification,
+  WorkflowCreateRequest,
+  WorkflowUpdateRequest,
+} from "../../types";
+import { cn } from "@/lib/utils";
+import { Button } from "../../components/ui";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../constants/permissions";
 
 interface WorkflowFormData {
   name: string;
@@ -40,9 +45,9 @@ interface WorkflowFormData {
 }
 
 const initialFormData: WorkflowFormData = {
-  name: '',
-  code: '',
-  description: '',
+  name: "",
+  code: "",
+  description: "",
   is_default: false,
   classification_ids: [],
 };
@@ -55,27 +60,30 @@ export const WorkflowsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
 
-  const canCreateWorkflow = isSuperAdmin || hasPermission(PERMISSIONS.WORKFLOWS_CREATE);
+  const canCreateWorkflow =
+    isSuperAdmin || hasPermission(PERMISSIONS.WORKFLOWS_CREATE);
   const [formData, setFormData] = useState<WorkflowFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [permanentDeleteConfirm, setPermanentDeleteConfirm] = useState<string | null>(null);
+  const [permanentDeleteConfirm, setPermanentDeleteConfirm] = useState<
+    string | null
+  >(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
 
   const { data: workflowsData, isLoading } = useQuery({
-    queryKey: ['admin', 'workflows'],
+    queryKey: ["admin", "workflows"],
     queryFn: () => workflowApi.list(),
   });
 
   const { data: classificationsData } = useQuery({
-    queryKey: ['admin', 'classifications', 'tree'],
+    queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
   });
 
   const { data: deletedWorkflowsData, isLoading: isLoadingDeleted } = useQuery({
-    queryKey: ['admin', 'workflows', 'deleted'],
+    queryKey: ["admin", "workflows", "deleted"],
     queryFn: () => workflowApi.listDeleted(),
     enabled: showDeleted,
   });
@@ -83,97 +91,126 @@ export const WorkflowsPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: WorkflowCreateRequest) => workflowApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      toast.success('Workflow created successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      toast.success("Workflow created successfully");
       closeModal();
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to create workflow';
-      toast.error('Failed to create workflow', {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create workflow";
+      toast.error("Failed to create workflow", {
         description: errorMessage,
         duration: 5000,
       });
-      console.error('Create workflow error:', error);
+      console.error("Create workflow error:", error);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: WorkflowUpdateRequest }) => workflowApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: WorkflowUpdateRequest }) =>
+      workflowApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      toast.success('Workflow updated successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      toast.success("Workflow updated successfully");
       closeModal();
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update workflow';
-      toast.error('Failed to update workflow', {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update workflow";
+      toast.error("Failed to update workflow", {
         description: errorMessage,
         duration: 5000,
       });
-      console.error('Update workflow error:', error);
+      console.error("Update workflow error:", error);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => workflowApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      toast.success('Workflow deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      toast.success("Workflow deleted successfully");
       setDeleteConfirm(null);
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete workflow';
-      toast.error('Failed to delete workflow', { description: errorMessage });
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to delete workflow";
+      toast.error("Failed to delete workflow", { description: errorMessage });
     },
   });
 
   const duplicateMutation = useMutation({
     mutationFn: (id: string) => workflowApi.duplicate(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      toast.success('Workflow duplicated successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      toast.success("Workflow duplicated successfully");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to duplicate workflow';
-      toast.error('Failed to duplicate workflow', { description: errorMessage });
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to duplicate workflow";
+      toast.error("Failed to duplicate workflow", {
+        description: errorMessage,
+      });
     },
   });
 
   const restoreMutation = useMutation({
     mutationFn: (id: string) => workflowApi.restore(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows', 'deleted'] });
-      toast.success('Workflow restored successfully');
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflows", "deleted"],
+      });
+      toast.success("Workflow restored successfully");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to restore workflow';
-      toast.error('Failed to restore workflow', { description: errorMessage });
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to restore workflow";
+      toast.error("Failed to restore workflow", { description: errorMessage });
     },
   });
 
   const permanentDeleteMutation = useMutation({
     mutationFn: (id: string) => workflowApi.permanentDelete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows', 'deleted'] });
-      toast.success('Workflow permanently deleted');
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "workflows", "deleted"],
+      });
+      toast.success("Workflow permanently deleted");
       setPermanentDeleteConfirm(null);
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to permanently delete workflow';
-      toast.error('Failed to permanently delete workflow', { description: errorMessage });
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to permanently delete workflow";
+      toast.error("Failed to permanently delete workflow", {
+        description: errorMessage,
+      });
     },
   });
 
   const exportMutation = useMutation({
     mutationFn: async (id: string) => {
       const blob = await workflowApi.export(id);
-      const workflow = workflowsData?.data?.find(w => w.id === id);
+      const workflow = workflowsData?.data?.find((w) => w.id === id);
       const filename = `workflow_${workflow?.code}_${Date.now()}.json`;
 
       // Trigger browser download
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
@@ -186,7 +223,7 @@ export const WorkflowsPage: React.FC = () => {
   const importMutation = useMutation({
     mutationFn: (file: File) => workflowApi.import(file),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'workflows'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "workflows"] });
       setIsImportModalOpen(false);
       setImportFile(null);
 
@@ -252,7 +289,9 @@ export const WorkflowsPage: React.FC = () => {
     }));
   };
 
-  const flattenClassifications = (classifications: Classification[]): Classification[] => {
+  const flattenClassifications = (
+    classifications: Classification[],
+  ): Classification[] => {
     const result: Classification[] = [];
     const flatten = (items: Classification[], level = 0) => {
       for (const item of items) {
@@ -266,16 +305,18 @@ export const WorkflowsPage: React.FC = () => {
     return result;
   };
 
-  const flatClassifications = classificationsData?.data ? flattenClassifications(classificationsData.data) : [];
+  const flatClassifications = classificationsData?.data
+    ? flattenClassifications(classificationsData.data)
+    : [];
 
   const getWorkflowGradient = (workflow: Workflow) => {
-    if (workflow.is_default) return 'from-amber-500 to-orange-500';
+    if (workflow.is_default) return "from-amber-500 to-orange-500";
     const gradients = [
-      'from-violet-500 to-purple-500',
-      'from-blue-500 to-cyan-500',
-      'from-emerald-500 to-teal-500',
-      'from-rose-500 to-pink-500',
-      'from-indigo-500 to-blue-500',
+      "from-violet-500 to-purple-500",
+      "from-blue-500 to-cyan-500",
+      "from-emerald-500 to-teal-500",
+      "from-rose-500 to-pink-500",
+      "from-indigo-500 to-blue-500",
     ];
     const index = workflow.name.charCodeAt(0) % gradients.length;
     return gradients[index];
@@ -290,17 +331,28 @@ export const WorkflowsPage: React.FC = () => {
             <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
               <GitBranch className="w-5 h-5 text-[hsl(var(--primary))]" />
             </div>
-            <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">{t('workflows.title')}</h2>
+            <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
+              {t("workflows.title")}
+            </h2>
           </div>
-          <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">{t('workflows.subtitle')}</p>
+          <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
+            {t("workflows.subtitle")}
+          </p>
         </div>
         {canCreateWorkflow && (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsImportModalOpen(true)} leftIcon={<Upload className="w-4 h-4" />}>
+            <Button
+              variant="outline"
+              onClick={() => setIsImportModalOpen(true)}
+              leftIcon={<Upload className="w-4 h-4" />}
+            >
               Import
             </Button>
-            <Button onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
-              {t('workflows.addWorkflow')}
+            <Button
+              onClick={openCreateModal}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              {t("workflows.addWorkflow")}
             </Button>
           </div>
         )}
@@ -310,7 +362,10 @@ export const WorkflowsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {isLoading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 animate-pulse"
+              >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-[hsl(var(--muted))] rounded-xl" />
                   <div className="flex-1">
@@ -330,23 +385,31 @@ export const WorkflowsPage: React.FC = () => {
                 className="group relative bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 hover:shadow-xl hover:shadow-[hsl(var(--foreground)/0.05)] hover:border-[hsl(var(--border))] transition-all duration-300"
               >
                 {/* Gradient decoration */}
-                <div className={cn(
-                  "absolute top-0 right-0 w-24 h-24 bg-gradient-to-br opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity",
-                  getWorkflowGradient(workflow)
-                )} />
+                <div
+                  className={cn(
+                    "absolute top-0 right-0 w-24 h-24 bg-gradient-to-br opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity",
+                    getWorkflowGradient(workflow),
+                  )}
+                />
 
                 <div className="relative">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-lg",
-                        getWorkflowGradient(workflow)
-                      )}>
+                      <div
+                        className={cn(
+                          "w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-lg",
+                          getWorkflowGradient(workflow),
+                        )}
+                      >
                         <GitBranch className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{workflow.name}</h3>
-                        <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">{workflow.code}</p>
+                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                          {workflow.name}
+                        </h3>
+                        <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
+                          {workflow.code}
+                        </p>
                       </div>
                     </div>
 
@@ -354,21 +417,21 @@ export const WorkflowsPage: React.FC = () => {
                       <button
                         onClick={() => navigate(`/workflows/${workflow.id}`)}
                         className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
-                        title={t('workflows.designWorkflow')}
+                        title={t("workflows.designWorkflow")}
                       >
                         <Settings2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openEditModal(workflow)}
                         className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
-                        title={t('common.edit')}
+                        title={t("common.edit")}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => duplicateMutation.mutate(workflow.id)}
                         className="p-2 text-[hsl(var(--muted-foreground))] hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                        title={t('workflows.duplicateWorkflow')}
+                        title={t("workflows.duplicateWorkflow")}
                       >
                         <Copy className="w-4 h-4" />
                       </button>
@@ -385,7 +448,7 @@ export const WorkflowsPage: React.FC = () => {
                       <button
                         onClick={() => setDeleteConfirm(workflow.id)}
                         className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
-                        title={t('common.delete')}
+                        title={t("common.delete")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -393,7 +456,7 @@ export const WorkflowsPage: React.FC = () => {
                   </div>
 
                   <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
-                    {workflow.description || t('workflows.noDescription')}
+                    {workflow.description || t("workflows.noDescription")}
                   </p>
 
                   {/* Stats */}
@@ -401,13 +464,14 @@ export const WorkflowsPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Circle className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {workflow.states_count || 0} {t('workflows.states')}
+                        {workflow.states_count || 0} {t("workflows.states")}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {workflow.transitions_count || 0} {t('workflows.transitions')}
+                        {workflow.transitions_count || 0}{" "}
+                        {t("workflows.transitions")}
                       </span>
                     </div>
                   </div>
@@ -417,21 +481,26 @@ export const WorkflowsPage: React.FC = () => {
                     <div className="flex items-center gap-2 mb-3">
                       <Tag className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                        {workflow.classifications?.length || 0} {t('workflows.classifications')}
+                        {workflow.classifications?.length || 0}{" "}
+                        {t("workflows.classifications")}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {workflow.classifications?.slice(0, 3).map((classification) => (
-                        <span
-                          key={classification.id}
-                          className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg"
-                        >
-                          {classification.name}
-                        </span>
-                      ))}
+                      {workflow.classifications
+                        ?.slice(0, 3)
+                        .map((classification) => (
+                          <span
+                            key={classification.id}
+                            className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg"
+                          >
+                            {classification.name}
+                          </span>
+                        ))}
                       {(workflow.classifications?.length || 0) > 3 && (
                         <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
-                          {t('workflows.moreClassifications', { count: workflow.classifications!.length - 3 })}
+                          {t("workflows.moreClassifications", {
+                            count: workflow.classifications!.length - 3,
+                          })}
                         </span>
                       )}
                     </div>
@@ -442,12 +511,12 @@ export const WorkflowsPage: React.FC = () => {
                     {workflow.is_default && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg shadow-sm">
                         <Sparkles className="w-3 h-3" />
-                        {t('workflows.default')}
+                        {t("workflows.default")}
                       </span>
                     )}
                     {!workflow.is_active && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg">
-                        {t('workflows.inactive')}
+                        {t("workflows.inactive")}
                       </span>
                     )}
                   </div>
@@ -462,11 +531,18 @@ export const WorkflowsPage: React.FC = () => {
           <div className="w-16 h-16 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[hsl(var(--primary)/0.25)]">
             <GitBranch className="w-8 h-8 text-white" />
           </div>
-          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">{t('workflows.noWorkflows')}</h3>
-          <p className="text-[hsl(var(--muted-foreground))] mb-6">{t('workflows.noWorkflowsDesc')}</p>
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+            {t("workflows.noWorkflows")}
+          </h3>
+          <p className="text-[hsl(var(--muted-foreground))] mb-6">
+            {t("workflows.noWorkflowsDesc")}
+          </p>
           {canCreateWorkflow && (
-            <Button onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
-              {t('workflows.createWorkflow')}
+            <Button
+              onClick={openCreateModal}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              {t("workflows.createWorkflow")}
             </Button>
           )}
         </div>
@@ -479,13 +555,18 @@ export const WorkflowsPage: React.FC = () => {
           className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           <Archive className="w-4 h-4" />
-          {t('workflows.deletedWorkflows', 'Deleted Workflows')}
-          {showDeleted ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          {deletedWorkflowsData?.data && deletedWorkflowsData.data.length > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-[hsl(var(--muted))] rounded-full">
-              {deletedWorkflowsData.data.length}
-            </span>
+          {t("workflows.deletedWorkflows", "Deleted Workflows")}
+          {showDeleted ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
           )}
+          {deletedWorkflowsData?.data &&
+            deletedWorkflowsData.data.length > 0 && (
+              <span className="px-2 py-0.5 text-xs bg-[hsl(var(--muted))] rounded-full">
+                {deletedWorkflowsData.data.length}
+              </span>
+            )}
         </button>
 
         {showDeleted && (
@@ -498,7 +579,7 @@ export const WorkflowsPage: React.FC = () => {
               <div className="bg-[hsl(var(--muted)/0.3)] rounded-xl p-6 text-center">
                 <Archive className="w-8 h-8 text-[hsl(var(--muted-foreground))] mx-auto mb-2" />
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t('workflows.noDeletedWorkflows', 'No deleted workflows')}
+                  {t("workflows.noDeletedWorkflows", "No deleted workflows")}
                 </p>
               </div>
             ) : (
@@ -509,7 +590,7 @@ export const WorkflowsPage: React.FC = () => {
                     className="relative bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 opacity-75"
                   >
                     <div className="absolute top-3 right-3 px-2 py-1 text-xs font-medium bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))] rounded-lg">
-                      {t('workflows.deleted', 'Deleted')}
+                      {t("workflows.deleted", "Deleted")}
                     </div>
 
                     <div className="flex items-start gap-3 mb-4">
@@ -517,13 +598,17 @@ export const WorkflowsPage: React.FC = () => {
                         <GitBranch className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{workflow.name}</h3>
-                        <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">{workflow.code}</p>
+                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                          {workflow.name}
+                        </h3>
+                        <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
+                          {workflow.code}
+                        </p>
                       </div>
                     </div>
 
                     <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
-                      {workflow.description || t('workflows.noDescription')}
+                      {workflow.description || t("workflows.noDescription")}
                     </p>
 
                     <div className="flex items-center gap-2 pt-4 border-t border-[hsl(var(--border))]">
@@ -535,7 +620,7 @@ export const WorkflowsPage: React.FC = () => {
                         leftIcon={<RotateCcw className="w-4 h-4" />}
                         className="flex-1"
                       >
-                        {t('workflows.restore', 'Restore')}
+                        {t("workflows.restore", "Restore")}
                       </Button>
                       <Button
                         size="sm"
@@ -544,7 +629,7 @@ export const WorkflowsPage: React.FC = () => {
                         leftIcon={<Trash2 className="w-4 h-4" />}
                         className="flex-1"
                       >
-                        {t('workflows.permanentDelete', 'Delete Forever')}
+                        {t("workflows.permanentDelete", "Delete Forever")}
                       </Button>
                     </div>
                   </div>
@@ -565,22 +650,29 @@ export const WorkflowsPage: React.FC = () => {
                   <Archive className="w-6 h-6 text-amber-500" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{t('workflows.deleteWorkflow')}</h3>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    {t("workflows.deleteWorkflow")}
+                  </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    {t('workflows.softDeleteMessage', 'This workflow will be moved to the deleted section. You can restore it later or permanently delete it.')}
+                    {t(
+                      "workflows.softDeleteMessage",
+                      "This workflow will be moved to the deleted section. You can restore it later or permanently delete it.",
+                    )}
                   </p>
                 </div>
               </div>
               <div className="flex justify-end gap-3">
                 <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
-                  {t('common.cancel')}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={() => deleteMutation.mutate(deleteConfirm)}
                   isLoading={deleteMutation.isPending}
                 >
-                  {deleteMutation.isPending ? t('workflows.deleting') : t('workflows.deleteWorkflow')}
+                  {deleteMutation.isPending
+                    ? t("workflows.deleting")
+                    : t("workflows.deleteWorkflow")}
                 </Button>
               </div>
             </div>
@@ -599,23 +691,36 @@ export const WorkflowsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {t('workflows.permanentDeleteTitle', 'Permanently Delete Workflow')}
+                    {t(
+                      "workflows.permanentDeleteTitle",
+                      "Permanently Delete Workflow",
+                    )}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    {t('workflows.permanentDeleteMessage', 'This action cannot be undone. The workflow and all its states, transitions, and configurations will be permanently removed from the database.')}
+                    {t(
+                      "workflows.permanentDeleteMessage",
+                      "This action cannot be undone. The workflow and all its states, transitions, and configurations will be permanently removed from the database.",
+                    )}
                   </p>
                 </div>
               </div>
               <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setPermanentDeleteConfirm(null)}>
-                  {t('common.cancel')}
+                <Button
+                  variant="ghost"
+                  onClick={() => setPermanentDeleteConfirm(null)}
+                >
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => permanentDeleteMutation.mutate(permanentDeleteConfirm)}
+                  onClick={() =>
+                    permanentDeleteMutation.mutate(permanentDeleteConfirm)
+                  }
                   isLoading={permanentDeleteMutation.isPending}
                 >
-                  {permanentDeleteMutation.isPending ? t('workflows.deleting') : t('workflows.permanentDelete', 'Delete Forever')}
+                  {permanentDeleteMutation.isPending
+                    ? t("workflows.deleting")
+                    : t("workflows.permanentDelete", "Delete Forever")}
                 </Button>
               </div>
             </div>
@@ -635,10 +740,14 @@ export const WorkflowsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {editingWorkflow ? t('workflows.editWorkflow') : t('workflows.createWorkflow')}
+                    {editingWorkflow
+                      ? t("workflows.editWorkflow")
+                      : t("workflows.createWorkflow")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {editingWorkflow ? t('workflows.updateDetails') : t('workflows.addTemplate')}
+                    {editingWorkflow
+                      ? t("workflows.updateDetails")
+                      : t("workflows.addTemplate")}
                   </p>
                 </div>
               </div>
@@ -651,39 +760,57 @@ export const WorkflowsPage: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-140px)]">
+            <form
+              onSubmit={handleSubmit}
+              className="overflow-y-auto max-h-[calc(90vh-140px)]"
+              noValidate
+            >
               <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">{t('workflows.workflowName')}</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.workflowName")}
+                  </label>
                   <input
                     type="text"
-                    placeholder={t('workflows.workflowNamePlaceholder')}
+                    placeholder={t("workflows.workflowNamePlaceholder")}
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">{t('workflows.workflowCode')}</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.workflowCode")}
+                  </label>
                   <input
                     type="text"
-                    placeholder={t('workflows.workflowCodePlaceholder')}
+                    placeholder={t("workflows.workflowCodePlaceholder")}
                     value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                     required
                   />
-                  <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">{t('workflows.codeHint')}</p>
+                  <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+                    {t("workflows.codeHint")}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">{t('workflows.description')}</label>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.description")}
+                  </label>
                   <textarea
-                    placeholder={t('workflows.descriptionPlaceholder')}
+                    placeholder={t("workflows.descriptionPlaceholder")}
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     rows={3}
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
                   />
@@ -698,7 +825,9 @@ export const WorkflowsPage: React.FC = () => {
                         Configure Later
                       </p>
                       <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
-                        After creating the workflow, you can configure matching rules (classifications, locations), states, transitions, and required fields in the Workflow Designer.
+                        After creating the workflow, you can configure matching
+                        rules (classifications, locations), states, transitions,
+                        and required fields in the Workflow Designer.
                       </p>
                     </div>
                   </div>
@@ -711,30 +840,41 @@ export const WorkflowsPage: React.FC = () => {
                         type="checkbox"
                         id="is_default"
                         checked={formData.is_default}
-                        onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_default: e.target.checked,
+                          })
+                        }
                         className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
                       />
-                      <label htmlFor="is_default" className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {t('workflows.setAsDefault')}
+                      <label
+                        htmlFor="is_default"
+                        className="text-sm font-medium text-[hsl(var(--foreground))]"
+                      >
+                        {t("workflows.setAsDefault")}
                       </label>
                     </div>
 
                     {/* Classifications Section - Only shown in edit mode */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-medium text-[hsl(var(--foreground))]">{t('workflows.classificationsLabel')}</label>
+                        <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                          {t("workflows.classificationsLabel")}
+                        </label>
                         <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
-                          {formData.classification_ids.length} {t('workflows.selected')}
+                          {formData.classification_ids.length}{" "}
+                          {t("workflows.selected")}
                         </span>
                       </div>
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                        {t('workflows.assignClassifications')}
+                        {t("workflows.assignClassifications")}
                       </p>
 
                       <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                         {flatClassifications.length === 0 ? (
                           <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
-                            {t('workflows.noClassifications')}
+                            {t("workflows.noClassifications")}
                           </div>
                         ) : (
                           <div className="p-3 space-y-2">
@@ -743,16 +883,24 @@ export const WorkflowsPage: React.FC = () => {
                                 key={classification.id}
                                 className={cn(
                                   "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
-                                  formData.classification_ids.includes(classification.id)
+                                  formData.classification_ids.includes(
+                                    classification.id,
+                                  )
                                     ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
-                                    : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]"
+                                    : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]",
                                 )}
-                                style={{ paddingLeft: `${(classification.level || 0) * 16 + 12}px` }}
+                                style={{
+                                  paddingLeft: `${(classification.level || 0) * 16 + 12}px`,
+                                }}
                               >
                                 <input
                                   type="checkbox"
-                                  checked={formData.classification_ids.includes(classification.id)}
-                                  onChange={() => toggleClassification(classification.id)}
+                                  checked={formData.classification_ids.includes(
+                                    classification.id,
+                                  )}
+                                  onChange={() =>
+                                    toggleClassification(classification.id)
+                                  }
                                   className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
                                 />
                                 <div className="flex-1 min-w-0">
@@ -760,7 +908,9 @@ export const WorkflowsPage: React.FC = () => {
                                     {classification.name}
                                   </span>
                                   {classification.description && (
-                                    <span className="text-xs text-[hsl(var(--muted-foreground))]">{classification.description}</span>
+                                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                      {classification.description}
+                                    </span>
                                   )}
                                 </div>
                               </label>
@@ -776,18 +926,24 @@ export const WorkflowsPage: React.FC = () => {
               {/* Modal Footer */}
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
                 <Button variant="ghost" type="button" onClick={closeModal}>
-                  {t('common.cancel')}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
-                  isLoading={createMutation.isPending || updateMutation.isPending}
-                  leftIcon={!(createMutation.isPending || updateMutation.isPending) ? <Check className="w-4 h-4" /> : undefined}
+                  isLoading={
+                    createMutation.isPending || updateMutation.isPending
+                  }
+                  leftIcon={
+                    !(createMutation.isPending || updateMutation.isPending) ? (
+                      <Check className="w-4 h-4" />
+                    ) : undefined
+                  }
                 >
                   {createMutation.isPending || updateMutation.isPending
-                    ? t('workflows.saving')
+                    ? t("workflows.saving")
                     : editingWorkflow
-                    ? t('workflows.updateWorkflow')
-                    : t('workflows.createWorkflow')}
+                      ? t("workflows.updateWorkflow")
+                      : t("workflows.createWorkflow")}
                 </Button>
               </div>
             </form>
@@ -837,7 +993,8 @@ export const WorkflowsPage: React.FC = () => {
                 />
                 {importFile && (
                   <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-                    Selected: {importFile.name} ({(importFile.size / 1024).toFixed(2)} KB)
+                    Selected: {importFile.name} (
+                    {(importFile.size / 1024).toFixed(2)} KB)
                   </p>
                 )}
               </div>
@@ -846,12 +1003,18 @@ export const WorkflowsPage: React.FC = () => {
                 <div className="flex gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                    <p className="font-medium text-[hsl(var(--foreground))] mb-1">Import Notes:</p>
+                    <p className="font-medium text-[hsl(var(--foreground))] mb-1">
+                      Import Notes:
+                    </p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>File must be a valid JSON workflow export</li>
                       <li>Max file size: 10MB</li>
-                      <li>Duplicate workflow codes will be renamed automatically</li>
-                      <li>Missing roles or classifications will show warnings</li>
+                      <li>
+                        Duplicate workflow codes will be renamed automatically
+                      </li>
+                      <li>
+                        Missing roles or classifications will show warnings
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -876,9 +1039,13 @@ export const WorkflowsPage: React.FC = () => {
                 }}
                 disabled={!importFile}
                 isLoading={importMutation.isPending}
-                leftIcon={!importMutation.isPending ? <Upload className="w-4 h-4" /> : undefined}
+                leftIcon={
+                  !importMutation.isPending ? (
+                    <Upload className="w-4 h-4" />
+                  ) : undefined
+                }
               >
-                {importMutation.isPending ? 'Importing...' : 'Import Workflow'}
+                {importMutation.isPending ? "Importing..." : "Import Workflow"}
               </Button>
             </div>
           </div>
@@ -913,17 +1080,20 @@ export const WorkflowsPage: React.FC = () => {
 
             <div className="p-6 space-y-3">
               {importWarnings.map((warning, index) => (
-                <div key={index} className="flex gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <div
+                  key={index}
+                  className="flex gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl"
+                >
                   <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-[hsl(var(--foreground))]">{warning}</p>
+                  <p className="text-sm text-[hsl(var(--foreground))]">
+                    {warning}
+                  </p>
                 </div>
               ))}
             </div>
 
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
-              <Button onClick={() => setImportWarnings([])}>
-                Close
-              </Button>
+              <Button onClick={() => setImportWarnings([])}>Close</Button>
             </div>
           </div>
         </div>

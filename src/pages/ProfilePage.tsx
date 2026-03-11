@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import {
   Camera,
   User,
@@ -18,13 +18,13 @@ import {
   Phone,
   MapPin,
   Tag,
-} from 'lucide-react';
-import { Button, Input, Card } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
-import { authApi } from '../api/auth';
+} from "lucide-react";
+import { Button, Input, Card } from "../components/ui";
+import { useAuthStore } from "../stores/authStore";
+import { authApi } from "../api/auth";
 
 const profileSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
+  username: z.string().min(3, "Username must be at least 3 characters").max(50),
   first_name: z.string().max(100).optional(),
   last_name: z.string().max(100).optional(),
   phone: z.string().optional(),
@@ -36,8 +36,8 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export const ProfilePage: React.FC = () => {
   const { t } = useTranslation();
   const { user, setUser } = useAuthStore();
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -51,31 +51,32 @@ export const ProfilePage: React.FC = () => {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      username: user?.username || '',
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
-      phone: user?.phone || '',
-      extension: (user as any)?.extension || '',
+      username: user?.username || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      phone: user?.phone || "",
+      extension: (user as any)?.extension || "",
     },
   });
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     try {
       const response = await authApi.updateProfile(data);
       if (response.success && response.data) {
         setUser(response.data);
-        setSuccess(t('profile.profileUpdated'));
+        setSuccess(t("profile.profileUpdated"));
         setIsEditing(false);
       } else {
-        setError(response.error || 'Failed to update profile');
+        setError(response.error || "Failed to update profile");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      if (typeof err === 'object' && err !== null && 'response' in err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setError(axiosError.response?.data?.error || errorMessage);
       } else {
@@ -88,48 +89,55 @@ export const ProfilePage: React.FC = () => {
 
   const handleCancel = () => {
     reset({
-      username: user?.username || '',
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
-      phone: user?.phone || '',
-      extension: (user as any)?.extension || '',
+      username: user?.username || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      phone: user?.phone || "",
+      extension: (user as any)?.extension || "",
     });
     setIsEditing(false);
-    setError('');
+    setError("");
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setError(t('profile.fileSizeError'));
+      setError(t("profile.fileSizeError"));
       return;
     }
 
-    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-      setError(t('profile.fileTypeError'));
+    if (
+      !["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
+        file.type,
+      )
+    ) {
+      setError(t("profile.fileTypeError"));
       return;
     }
 
     setAvatarLoading(true);
-    setError('');
+    setError("");
 
     try {
       const response = await authApi.uploadAvatar(file);
       if (response.success && response.data) {
         setUser(response.data);
-        setSuccess(t('profile.avatarUpdated'));
+        setSuccess(t("profile.avatarUpdated"));
       } else {
-        setError(response.error || 'Failed to upload avatar');
+        setError(response.error || "Failed to upload avatar");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      if (typeof err === 'object' && err !== null && 'response' in err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setError(axiosError.response?.data?.error || errorMessage);
       } else {
@@ -149,8 +157,10 @@ export const ProfilePage: React.FC = () => {
             <User className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">{t('profile.title')}</h1>
-            <p className="mt-1 text-slate-600">{t('profile.subtitle')}</p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              {t("profile.title")}
+            </h1>
+            <p className="mt-1 text-slate-600">{t("profile.subtitle")}</p>
           </div>
         </div>
       </div>
@@ -205,7 +215,7 @@ export const ProfilePage: React.FC = () => {
                   ) : (
                     <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center border-4 border-white shadow-xl ring-4 ring-slate-100">
                       <span className="text-white text-4xl font-bold">
-                        {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+                        {user?.first_name?.[0] || user?.username?.[0] || "U"}
                       </span>
                     </div>
                   )}
@@ -243,7 +253,7 @@ export const ProfilePage: React.FC = () => {
                 {user?.is_super_admin && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-500 to-red-600 text-white text-xs font-bold rounded-lg shadow-md">
                     <Shield className="w-3 h-3" />
-                    {t('profile.superAdmin')}
+                    {t("profile.superAdmin")}
                   </span>
                 )}
                 {user?.roles?.slice(0, 3).map((role) => (
@@ -267,14 +277,18 @@ export const ProfilePage: React.FC = () => {
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                     <Mail className="w-4 h-4 text-blue-600" />
                   </div>
-                  <span className="text-gray-700 truncate font-medium">{user?.email}</span>
+                  <span className="text-gray-700 truncate font-medium">
+                    {user?.email}
+                  </span>
                 </div>
                 {user?.phone && (
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
                       <Phone className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <span className="text-gray-700 font-medium">{user.phone}</span>
+                    <span className="text-gray-700 font-medium">
+                      {user.phone}
+                    </span>
                   </div>
                 )}
                 {(user as any)?.extension && (
@@ -284,7 +298,9 @@ export const ProfilePage: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-gray-500 text-xs">Extension</span>
-                      <p className="text-gray-700 font-semibold">Ext. {(user as any).extension}</p>
+                      <p className="text-gray-700 font-semibold">
+                        Ext. {(user as any).extension}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -293,7 +309,9 @@ export const ProfilePage: React.FC = () => {
                     <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
                       <Building2 className="w-4 h-4 text-amber-600" />
                     </div>
-                    <span className="text-gray-700 font-medium">{user.department.name}</span>
+                    <span className="text-gray-700 font-medium">
+                      {user.department.name}
+                    </span>
                   </div>
                 )}
                 {user?.location && (
@@ -301,7 +319,9 @@ export const ProfilePage: React.FC = () => {
                     <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0">
                       <MapPin className="w-4 h-4 text-rose-600" />
                     </div>
-                    <span className="text-gray-700 font-medium">{user.location.name}</span>
+                    <span className="text-gray-700 font-medium">
+                      {user.location.name}
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center gap-3 text-sm pt-3 border-t border-gray-100">
@@ -311,7 +331,12 @@ export const ProfilePage: React.FC = () => {
                   <div>
                     <span className="text-gray-500 text-xs">Member since</span>
                     <p className="text-gray-700 font-medium">
-                      {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                      {user?.created_at
+                        ? new Date(user.created_at).toLocaleDateString(
+                            "en-US",
+                            { month: "short", year: "numeric" },
+                          )
+                        : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -319,7 +344,7 @@ export const ProfilePage: React.FC = () => {
 
               {/* Upload Hint */}
               <p className="text-xs text-slate-400 text-center bg-slate-50 py-2 rounded-lg">
-                {t('profile.clickCameraToChange')}
+                {t("profile.clickCameraToChange")}
               </p>
             </div>
           </Card>
@@ -335,9 +360,11 @@ export const ProfilePage: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  {t('profile.personalInfo')}
+                  {t("profile.personalInfo")}
                 </h3>
-                <p className="text-sm text-slate-500 mt-1 ml-10">{t('profile.personalInfoDesc')}</p>
+                <p className="text-sm text-slate-500 mt-1 ml-10">
+                  {t("profile.personalInfoDesc")}
+                </p>
               </div>
               {!isEditing && (
                 <Button
@@ -347,42 +374,46 @@ export const ProfilePage: React.FC = () => {
                   onClick={() => setIsEditing(true)}
                   className="shrink-0"
                 >
-                  {t('common.edit')}
+                  {t("common.edit")}
                 </Button>
               )}
             </div>
 
             {isEditing ? (
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-5"
+                noValidate
+              >
                 <Input
-                  label={t('profile.email')}
+                  label={t("profile.email")}
                   type="email"
-                  value={user?.email || ''}
+                  value={user?.email || ""}
                   disabled
-                  hint={t('profile.emailCannotChange')}
+                  hint={t("profile.emailCannotChange")}
                   leftIcon={<Mail className="w-5 h-5" />}
                 />
 
                 <Input
-                  label={t('profile.username')}
+                  label={t("profile.username")}
                   placeholder="johndoe"
                   error={errors.username?.message}
                   leftIcon={<User className="w-5 h-5" />}
-                  {...register('username')}
+                  {...register("username")}
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label={t('profile.firstName')}
+                    label={t("profile.firstName")}
                     placeholder="John"
                     error={errors.first_name?.message}
-                    {...register('first_name')}
+                    {...register("first_name")}
                   />
                   <Input
-                    label={t('profile.lastName')}
+                    label={t("profile.lastName")}
                     placeholder="Doe"
                     error={errors.last_name?.message}
-                    {...register('last_name')}
+                    {...register("last_name")}
                   />
                 </div>
 
@@ -392,7 +423,7 @@ export const ProfilePage: React.FC = () => {
                     placeholder="+1 (555) 123-4567"
                     error={errors.phone?.message}
                     leftIcon={<Phone className="w-5 h-5" />}
-                    {...register('phone')}
+                    {...register("phone")}
                   />
                   <Input
                     label="Extension"
@@ -400,7 +431,7 @@ export const ProfilePage: React.FC = () => {
                     error={errors.extension?.message}
                     leftIcon={<Tag className="w-5 h-5" />}
                     hint="Your SIP extension number"
-                    {...register('extension')}
+                    {...register("extension")}
                   />
                 </div>
 
@@ -410,7 +441,7 @@ export const ProfilePage: React.FC = () => {
                     isLoading={isLoading}
                     leftIcon={!isLoading && <Save className="w-4 h-4" />}
                   >
-                    {t('profile.saveChanges')}
+                    {t("profile.saveChanges")}
                   </Button>
                   <Button
                     type="button"
@@ -418,7 +449,7 @@ export const ProfilePage: React.FC = () => {
                     onClick={handleCancel}
                     disabled={isLoading}
                   >
-                    {t('common.cancel')}
+                    {t("common.cancel")}
                   </Button>
                 </div>
               </form>
@@ -428,35 +459,45 @@ export const ProfilePage: React.FC = () => {
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5" />
-                      {t('profile.email')}
+                      {t("profile.email")}
                     </label>
-                    <p className="mt-2 text-gray-900 font-medium">{user?.email}</p>
+                    <p className="mt-2 text-gray-900 font-medium">
+                      {user?.email}
+                    </p>
                   </div>
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                       <User className="w-3.5 h-3.5" />
-                      {t('profile.username')}
+                      {t("profile.username")}
                     </label>
-                    <p className="mt-2 text-gray-900 font-medium">@{user?.username}</p>
+                    <p className="mt-2 text-gray-900 font-medium">
+                      @{user?.username}
+                    </p>
                   </div>
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      {t('profile.firstName')}
+                      {t("profile.firstName")}
                     </label>
-                    <p className="mt-2 text-gray-900 font-medium">{user?.first_name || '—'}</p>
+                    <p className="mt-2 text-gray-900 font-medium">
+                      {user?.first_name || "—"}
+                    </p>
                   </div>
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      {t('profile.lastName')}
+                      {t("profile.lastName")}
                     </label>
-                    <p className="mt-2 text-gray-900 font-medium">{user?.last_name || '—'}</p>
+                    <p className="mt-2 text-gray-900 font-medium">
+                      {user?.last_name || "—"}
+                    </p>
                   </div>
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5" />
                       Phone Number
                     </label>
-                    <p className="mt-2 text-gray-900 font-medium">{user?.phone || '—'}</p>
+                    <p className="mt-2 text-gray-900 font-medium">
+                      {user?.phone || "—"}
+                    </p>
                   </div>
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -484,9 +525,11 @@ export const ProfilePage: React.FC = () => {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-white" />
                 </div>
-                {t('profile.accountDetails')}
+                {t("profile.accountDetails")}
               </h3>
-              <p className="text-sm text-slate-500 mt-1 ml-10">{t('profile.accountDetailsDesc')}</p>
+              <p className="text-sm text-slate-500 mt-1 ml-10">
+                {t("profile.accountDetailsDesc")}
+              </p>
             </div>
 
             <div className="space-y-6">
@@ -497,12 +540,16 @@ export const ProfilePage: React.FC = () => {
                     <Check className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900">{t('profile.accountStatus')}</p>
-                    <p className="text-xs text-slate-600">{t('profile.accountActive')}</p>
+                    <p className="text-sm font-bold text-slate-900">
+                      {t("profile.accountStatus")}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {t("profile.accountActive")}
+                    </p>
                   </div>
                 </div>
                 <span className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md">
-                  {t('profile.active')}
+                  {t("profile.active")}
                 </span>
               </div>
 
@@ -513,7 +560,9 @@ export const ProfilePage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
                       <Briefcase className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-sm font-bold text-slate-900">{t('profile.assignedRoles')}</span>
+                    <span className="text-sm font-bold text-slate-900">
+                      {t("profile.assignedRoles")}
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {user.roles.map((role) => (
@@ -535,7 +584,9 @@ export const ProfilePage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-slate-600 flex items-center justify-center">
                       <Shield className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-sm font-bold text-slate-900">{t('profile.permissions')}</span>
+                    <span className="text-sm font-bold text-slate-900">
+                      {t("profile.permissions")}
+                    </span>
                     <span className="ml-auto px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-md">
                       {user.permissions.length}
                     </span>
@@ -551,7 +602,7 @@ export const ProfilePage: React.FC = () => {
                     ))}
                     {user.permissions.length > 12 && (
                       <span className="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">
-                        +{user.permissions.length - 12} {t('profile.more')}
+                        +{user.permissions.length - 12} {t("profile.more")}
                       </span>
                     )}
                   </div>

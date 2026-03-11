@@ -1,9 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, Navigate, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../stores/authStore';
-import { Zap, Languages } from 'lucide-react';
-import { setLanguage, getCurrentLanguage, supportedLanguages } from '../../i18n';
+import React, { useState, useRef, useEffect } from "react";
+import { Outlet, Navigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuthStore } from "../../stores/authStore";
+import { Zap, Languages } from "lucide-react";
+import {
+  setLanguage,
+  getCurrentLanguage,
+  supportedLanguages,
+} from "../../i18n";
 
 export const AuthLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -29,8 +33,8 @@ export const AuthLayout: React.FC = () => {
         setIsLangOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   if (isAuthenticated) {
@@ -62,26 +66,38 @@ export const AuthLayout: React.FC = () => {
           <div className="space-y-8">
             <div>
               <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-                Streamline your<br />
+                Streamline your
+                <br />
                 <span className="text-blue-200">workflow automation</span>
               </h1>
               <p className="mt-6 text-lg text-blue-100 max-w-md leading-relaxed">
                 The complete platform for managing your business operations,
-                user access, and organizational structure with enterprise-grade security.
+                user access, and organizational structure with enterprise-grade
+                security.
               </p>
             </div>
 
             {/* Features */}
             <div className="space-y-4">
               {[
-                'Role-based access control',
-                'Hierarchical organization management',
-                'Real-time analytics dashboard',
+                "Role-based access control",
+                "Hierarchical organization management",
+                "Real-time analytics dashboard",
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-3.5 h-3.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
                   <span className="text-blue-100">{feature}</span>
@@ -111,22 +127,25 @@ export const AuthLayout: React.FC = () => {
             </Link>
           </div>
           <div className="hidden lg:block" /> {/* Spacer for desktop */}
-
           {/* Language Switcher */}
           <div className="relative" ref={langRef}>
             <button
               onClick={() => setIsLangOpen(!isLangOpen)}
               className="flex items-center gap-1.5 px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-              title={t('settings.language')}
+              title={t("settings.language")}
             >
               <Languages className="w-5 h-5" />
-              <span className="text-sm font-medium uppercase">{currentLang}</span>
+              <span className="text-sm font-medium uppercase">
+                {currentLang}
+              </span>
             </button>
 
             {isLangOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 animate-scale-in origin-top-right">
+              <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 animate-scale-in origin-top-right">
                 <div className="px-3 py-2 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-500 uppercase">{t('settings.selectLanguage')}</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase">
+                    {t("settings.selectLanguage")}
+                  </p>
                 </div>
                 {supportedLanguages.map((lang) => (
                   <button
@@ -134,11 +153,13 @@ export const AuthLayout: React.FC = () => {
                     onClick={() => handleLanguageChange(lang.code)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                       currentLang === lang.code
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
-                    <span className="text-lg">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
+                    <span className="text-lg">
+                      {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
+                    </span>
                     <div className="text-left">
                       <p className="font-medium">{lang.nativeName}</p>
                       <p className="text-xs text-gray-500">{lang.name}</p>

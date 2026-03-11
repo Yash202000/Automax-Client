@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { settingsApi } from '../../api/settings';
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { settingsApi } from "../../api/settings";
 import {
   Save,
   Settings as SettingsIcon,
@@ -12,40 +12,40 @@ import {
   Mail,
   Phone,
   Upload,
-} from 'lucide-react';
-import { Button } from '@/components/ui';
+} from "lucide-react";
+import { Button } from "@/components/ui";
 
 export const SettingsManagementPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
-    app_name: '',
-    app_tagline: '',
-    app_description: '',
-    logo_url: '',
-    logo_small_url: '',
-    favicon_url: '',
-    logo_alt_text: '',
-    primary_color: '',
-    secondary_color: '',
-    accent_color: '',
-    copyright_text: '',
-    contact_email: '',
-    contact_phone: '',
-    feature1_title: '',
-    feature1_description: '',
-    feature2_title: '',
-    feature2_description: '',
-    feature3_title: '',
-    feature3_description: '',
-    date_format: '',
-    time_format: '',
-    default_language: '',
+    app_name: "",
+    app_tagline: "",
+    app_description: "",
+    logo_url: "",
+    logo_small_url: "",
+    favicon_url: "",
+    logo_alt_text: "",
+    primary_color: "",
+    secondary_color: "",
+    accent_color: "",
+    copyright_text: "",
+    contact_email: "",
+    contact_phone: "",
+    feature1_title: "",
+    feature1_description: "",
+    feature2_title: "",
+    feature2_description: "",
+    feature3_title: "",
+    feature3_description: "",
+    date_format: "",
+    time_format: "",
+    default_language: "",
   });
 
   // Fetch settings
   const { data: settingsResponse, isLoading } = useQuery({
-    queryKey: ['settings'],
+    queryKey: ["settings"],
     queryFn: () => settingsApi.get(),
   });
 
@@ -54,28 +54,28 @@ export const SettingsManagementPage: React.FC = () => {
     if (settingsResponse?.data) {
       const data = settingsResponse.data;
       setFormData({
-        app_name: data.app_name || '',
-        app_tagline: data.app_tagline || '',
-        app_description: data.app_description || '',
-        logo_url: data.logo_url || '',
-        logo_small_url: data.logo_small_url || '',
-        favicon_url: data.favicon_url || '',
-        logo_alt_text: data.logo_alt_text || '',
-        primary_color: data.primary_color || '',
-        secondary_color: data.secondary_color || '',
-        accent_color: data.accent_color || '',
-        copyright_text: data.copyright_text || '',
-        contact_email: data.contact_email || '',
-        contact_phone: data.contact_phone || '',
-        feature1_title: data.feature1_title || '',
-        feature1_description: data.feature1_description || '',
-        feature2_title: data.feature2_title || '',
-        feature2_description: data.feature2_description || '',
-        feature3_title: data.feature3_title || '',
-        feature3_description: data.feature3_description || '',
-        date_format: data.date_format || '',
-        time_format: data.time_format || '',
-        default_language: data.default_language || '',
+        app_name: data.app_name || "",
+        app_tagline: data.app_tagline || "",
+        app_description: data.app_description || "",
+        logo_url: data.logo_url || "",
+        logo_small_url: data.logo_small_url || "",
+        favicon_url: data.favicon_url || "",
+        logo_alt_text: data.logo_alt_text || "",
+        primary_color: data.primary_color || "",
+        secondary_color: data.secondary_color || "",
+        accent_color: data.accent_color || "",
+        copyright_text: data.copyright_text || "",
+        contact_email: data.contact_email || "",
+        contact_phone: data.contact_phone || "",
+        feature1_title: data.feature1_title || "",
+        feature1_description: data.feature1_description || "",
+        feature2_title: data.feature2_title || "",
+        feature2_description: data.feature2_description || "",
+        feature3_title: data.feature3_title || "",
+        feature3_description: data.feature3_description || "",
+        date_format: data.date_format || "",
+        time_format: data.time_format || "",
+        default_language: data.default_language || "",
       });
     }
   }, [settingsResponse]);
@@ -84,11 +84,11 @@ export const SettingsManagementPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: settingsApi.update,
     onSuccess: () => {
-      toast.success('Settings updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success("Settings updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to update settings');
+      toast.error(error.response?.data?.error || "Failed to update settings");
     },
   });
 
@@ -97,7 +97,11 @@ export const SettingsManagementPage: React.FC = () => {
     updateMutation.mutate(formData);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -107,7 +111,9 @@ export const SettingsManagementPage: React.FC = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[hsl(var(--muted-foreground))]">Loading settings...</p>
+          <p className="text-[hsl(var(--muted-foreground))]">
+            Loading settings...
+          </p>
         </div>
       </div>
     );
@@ -122,7 +128,9 @@ export const SettingsManagementPage: React.FC = () => {
             <SettingsIcon className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">System Settings</h1>
+            <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">
+              System Settings
+            </h1>
             <p className="text-[hsl(var(--muted-foreground))]">
               Configure application branding, logos, and system preferences
             </p>
@@ -130,12 +138,14 @@ export const SettingsManagementPage: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8" noValidate>
         {/* Application Branding Section */}
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
             <FileText className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Application Branding</h2>
+            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+              Application Branding
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,7 +198,9 @@ export const SettingsManagementPage: React.FC = () => {
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
             <Image className="w-5 h-5 text-blue-600" />
-            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Logo Configuration</h2>
+            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+              Logo Configuration
+            </h2>
           </div>
 
           <div className="space-y-4">
@@ -215,7 +227,11 @@ export const SettingsManagementPage: React.FC = () => {
               </div>
               {formData.logo_url && (
                 <div className="mt-2">
-                  <img src={formData.logo_url} alt="Logo preview" className="h-16 object-contain" />
+                  <img
+                    src={formData.logo_url}
+                    alt="Logo preview"
+                    className="h-16 object-contain"
+                  />
                 </div>
               )}
             </div>
@@ -268,7 +284,9 @@ export const SettingsManagementPage: React.FC = () => {
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
             <Palette className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Theme Colors</h2>
+            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+              Theme Colors
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -287,7 +305,9 @@ export const SettingsManagementPage: React.FC = () => {
                 <input
                   type="text"
                   value={formData.primary_color}
-                  onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primary_color: e.target.value })
+                  }
                   className="flex-1 px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="#2563eb"
                 />
@@ -309,7 +329,12 @@ export const SettingsManagementPage: React.FC = () => {
                 <input
                   type="text"
                   value={formData.secondary_color}
-                  onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      secondary_color: e.target.value,
+                    })
+                  }
                   className="flex-1 px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="#7c3aed"
                 />
@@ -331,7 +356,9 @@ export const SettingsManagementPage: React.FC = () => {
                 <input
                   type="text"
                   value={formData.accent_color}
-                  onChange={(e) => setFormData({ ...formData, accent_color: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, accent_color: e.target.value })
+                  }
                   className="flex-1 px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="#059669"
                 />
@@ -344,7 +371,9 @@ export const SettingsManagementPage: React.FC = () => {
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
             <Globe className="w-5 h-5 text-amber-600" />
-            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Contact Information</h2>
+            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+              Contact Information
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -406,7 +435,9 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="space-y-6">
             {[1, 2, 3].map((num) => (
               <div key={num} className="p-4 bg-[hsl(var(--muted))] rounded-lg">
-                <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">Feature {num}</h3>
+                <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
+                  Feature {num}
+                </h3>
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
@@ -415,7 +446,9 @@ export const SettingsManagementPage: React.FC = () => {
                     <input
                       type="text"
                       name={`feature${num}_title`}
-                      value={formData[`feature${num}_title` as keyof typeof formData]}
+                      value={
+                        formData[`feature${num}_title` as keyof typeof formData]
+                      }
                       onChange={handleChange}
                       className="w-full px-3 py-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] text-sm"
                       placeholder="Feature title"
@@ -427,7 +460,11 @@ export const SettingsManagementPage: React.FC = () => {
                     </label>
                     <textarea
                       name={`feature${num}_description`}
-                      value={formData[`feature${num}_description` as keyof typeof formData]}
+                      value={
+                        formData[
+                          `feature${num}_description` as keyof typeof formData
+                        ]
+                      }
                       onChange={handleChange}
                       rows={2}
                       className="w-full px-3 py-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] text-sm"
@@ -444,7 +481,9 @@ export const SettingsManagementPage: React.FC = () => {
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
             <SettingsIcon className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">System Configuration</h2>
+            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+              System Configuration
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -501,7 +540,7 @@ export const SettingsManagementPage: React.FC = () => {
             className="px-6 py-3 bg-gradient-to-r from-primary to-accent text-white rounded-lg hover:from-accent hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-violet-500/30"
           >
             <Save className="w-5 h-5" />
-            {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
+            {updateMutation.isPending ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </form>

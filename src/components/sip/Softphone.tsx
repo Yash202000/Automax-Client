@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import sipService from "../../lib/services/sipService";
 import ringtone from "./phone_ring.mp3";
@@ -42,7 +43,13 @@ interface SoftPhoneProps {
   findByID?: (id: string) => User | undefined;
 }
 
-type CallStatus = "idle" | "dialing" | "ringing" | "incoming" | "connected" | "ended";
+type CallStatus =
+  | "idle"
+  | "dialing"
+  | "ringing"
+  | "incoming"
+  | "connected"
+  | "ended";
 
 /* -------------------- Audio -------------------- */
 
@@ -53,9 +60,9 @@ ring.loop = true;
 let remoteAudioElement: HTMLAudioElement | null = null;
 const getRemoteAudioElement = (): HTMLAudioElement => {
   if (!remoteAudioElement) {
-    remoteAudioElement = document.createElement('audio');
+    remoteAudioElement = document.createElement("audio");
     remoteAudioElement.autoplay = true;
-    remoteAudioElement.id = 'softphone-remote-audio';
+    remoteAudioElement.id = "softphone-remote-audio";
     document.body.appendChild(remoteAudioElement);
   }
   return remoteAudioElement;
@@ -101,7 +108,7 @@ export default function SoftPhone({
   const [callDuration, setCallDuration] = useState<number>(0);
 
   const [incomingCall, setIncomingCall] = useState<any>(null);
-  const [_activeCall, setActiveCall] = useState<any>(null);
+  const [, setActiveCall] = useState<any>(null);
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true);
@@ -135,7 +142,9 @@ export default function SoftPhone({
     const extension = auth?.user?.extension;
 
     if (!extension) {
-      alert('No extension configured for your account. Please contact your administrator to set up your extension.');
+      toast.error(
+        "No extension configured for your account. Please contact your administrator to set up your extension.",
+      );
       if (onClose) onClose();
       return;
     }
@@ -197,7 +206,7 @@ export default function SoftPhone({
         audioEl.srcObject = stream;
         audioEl.volume = 1;
         audioEl.muted = false;
-        audioEl.play().catch(() => { });
+        audioEl.play().catch(() => {});
       }
     };
 
@@ -206,7 +215,7 @@ export default function SoftPhone({
       if (ce.detail && ce.detail.number) {
         setDialedNumber(ce.detail.number);
         // Optional: auto-dial if desired
-        // makeCall(); 
+        // makeCall();
       }
     };
 
@@ -215,18 +224,34 @@ export default function SoftPhone({
     window.addEventListener("sip-registration-failed", failedHandler);
     window.addEventListener("call-connected", callConnectedHandler);
     window.addEventListener("call-ended", callEndedHandler);
-    window.addEventListener("remote-stream", remoteStreamHandler as EventListener);
-    window.addEventListener("initiate-call", initiateCallHandler as EventListener);
+    window.addEventListener(
+      "remote-stream",
+      remoteStreamHandler as EventListener,
+    );
+    window.addEventListener(
+      "initiate-call",
+      initiateCallHandler as EventListener,
+    );
 
     return () => {
-      window.removeEventListener("incoming-call", incomingHandler as EventListener);
+      window.removeEventListener(
+        "incoming-call",
+        incomingHandler as EventListener,
+      );
       window.removeEventListener("sip-registered", registeredHandler);
       window.removeEventListener("sip-registration-failed", failedHandler);
       window.removeEventListener("call-connected", callConnectedHandler);
       window.removeEventListener("call-ended", callEndedHandler);
-      window.removeEventListener("remote-stream", remoteStreamHandler as EventListener);
-      window.removeEventListener("initiate-call", initiateCallHandler as EventListener);
+      window.removeEventListener(
+        "remote-stream",
+        remoteStreamHandler as EventListener,
+      );
+      window.removeEventListener(
+        "initiate-call",
+        initiateCallHandler as EventListener,
+      );
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---------------- TIMER ---------------- */
@@ -350,16 +375,19 @@ export default function SoftPhone({
 
   /* ---------------- DRAG HANDLERS ---------------- */
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
-    if (!dragRef.current) return;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>): void => {
+      if (!dragRef.current) return;
 
-    const rect = dragRef.current.getBoundingClientRect();
-    setDragging(true);
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  }, []);
+      const rect = dragRef.current.getBoundingClientRect();
+      setDragging(true);
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent): void => {
@@ -396,7 +424,10 @@ export default function SoftPhone({
 
   if (!showSip) return null;
 
-  const isInCall = callStatus === "connected" || callStatus === "dialing" || callStatus === "ringing";
+  const isInCall =
+    callStatus === "connected" ||
+    callStatus === "dialing" ||
+    callStatus === "ringing";
   const isIncomingCall = callStatus === "incoming";
 
   return (
@@ -416,7 +447,9 @@ export default function SoftPhone({
       >
         <div className="flex items-center gap-2">
           <Phone className="w-5 h-5 text-white" />
-          <span className="font-semibold text-white">{t('softphone.title')}</span>
+          <span className="font-semibold text-white">
+            {t("softphone.title")}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <GripHorizontal className="w-5 h-5 text-white/70" />
@@ -434,19 +467,20 @@ export default function SoftPhone({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <div
-              className={`w-2 h-2 rounded-full ${sipConnected
+              className={`w-2 h-2 rounded-full ${
+                sipConnected
                   ? "bg-green-500"
                   : isConnecting
                     ? "bg-yellow-500 animate-pulse"
                     : "bg-red-500"
-                }`}
+              }`}
             />
             <span className="text-xs text-gray-600">
               {sipConnected
-                ? t('softphone.connected')
+                ? t("softphone.connected")
                 : isConnecting
-                  ? t('softphone.connecting')
-                  : t('softphone.disconnected')}
+                  ? t("softphone.connecting")
+                  : t("softphone.disconnected")}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -462,7 +496,7 @@ export default function SoftPhone({
                 onClick={tryConnect}
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium"
               >
-                {t('softphone.reconnect')}
+                {t("softphone.reconnect")}
               </button>
             )}
           </div>
@@ -474,9 +508,7 @@ export default function SoftPhone({
               Ext. {auth.user.extension}
             </span>
             <span className="text-xs text-gray-400 mx-1">•</span>
-            <span className="text-xs text-gray-400">
-              Default password
-            </span>
+            <span className="text-xs text-gray-400">Default password</span>
           </div>
         )}
       </div>
@@ -487,7 +519,9 @@ export default function SoftPhone({
         {isIncomingCall && (
           <div className="text-center mb-4">
             <PhoneIncoming className="w-12 h-12 text-green-500 mx-auto mb-2 animate-bounce" />
-            <p className="text-sm text-gray-500">{t('softphone.incomingCallFrom')}</p>
+            <p className="text-sm text-gray-500">
+              {t("softphone.incomingCallFrom")}
+            </p>
             <p className="text-2xl font-bold text-gray-900">{dialedNumber}</p>
           </div>
         )}
@@ -496,7 +530,11 @@ export default function SoftPhone({
           <div className="text-center mb-4">
             <PhoneOutgoing className="w-12 h-12 text-blue-500 mx-auto mb-2" />
             <p className="text-sm text-gray-500">
-              {callStatus === "dialing" ? t('softphone.calling') : callStatus === "connected" ? t('softphone.connected') : t('softphone.ringing')}
+              {callStatus === "dialing"
+                ? t("softphone.calling")
+                : callStatus === "connected"
+                  ? t("softphone.connected")
+                  : t("softphone.ringing")}
             </p>
             <p className="text-2xl font-bold text-gray-900">{dialedNumber}</p>
             {callStatus === "connected" && (
@@ -515,7 +553,7 @@ export default function SoftPhone({
                 type="text"
                 value={dialedNumber}
                 onChange={(e) => setDialedNumber(e.target.value)}
-                placeholder={t('softphone.enterNumber')}
+                placeholder={t("softphone.enterNumber")}
                 className="text-2xl font-semibold text-gray-900 w-full outline-none bg-transparent focus:outline-none focus:ring-0 border-none"
               />
               {dialedNumber && (
@@ -535,21 +573,31 @@ export default function SoftPhone({
           <div className="flex justify-center gap-4 mb-4">
             <button
               onClick={toggleMute}
-              className={`p-3 rounded-full transition-colors ${isMuted
+              className={`p-3 rounded-full transition-colors ${
+                isMuted
                   ? "bg-red-100 text-red-600"
                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                }`}
+              }`}
             >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              {isMuted ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
             </button>
             <button
               onClick={toggleSpeaker}
-              className={`p-3 rounded-full transition-colors ${!isSpeakerOn
+              className={`p-3 rounded-full transition-colors ${
+                !isSpeakerOn
                   ? "bg-red-100 text-red-600"
                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                }`}
+              }`}
             >
-              {isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              {isSpeakerOn ? (
+                <Volume2 className="w-5 h-5" />
+              ) : (
+                <VolumeX className="w-5 h-5" />
+              )}
             </button>
           </div>
         )}
@@ -565,9 +613,13 @@ export default function SoftPhone({
                 onClick={() => handleDialpadPress(key.digit)}
                 className="flex flex-col items-center justify-center py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors active:scale-95"
               >
-                <span className="text-xl font-semibold text-gray-900">{key.digit}</span>
+                <span className="text-xl font-semibold text-gray-900">
+                  {key.digit}
+                </span>
                 {key.letters && (
-                  <span className="text-[10px] text-gray-500 tracking-wider">{key.letters}</span>
+                  <span className="text-[10px] text-gray-500 tracking-wider">
+                    {key.letters}
+                  </span>
                 )}
               </button>
             ))}
@@ -585,14 +637,14 @@ export default function SoftPhone({
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
             >
               <PhoneOff className="w-5 h-5" />
-              {t('softphone.decline')}
+              {t("softphone.decline")}
             </button>
             <button
               onClick={answerCall}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
             >
               <Phone className="w-5 h-5" />
-              {t('softphone.answer')}
+              {t("softphone.answer")}
             </button>
           </div>
         )}
@@ -604,7 +656,7 @@ export default function SoftPhone({
             className="w-full flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
           >
             <PhoneOff className="w-5 h-5" />
-            {t('softphone.endCall')}
+            {t("softphone.endCall")}
           </button>
         )}
 
@@ -613,13 +665,14 @@ export default function SoftPhone({
           <button
             onClick={makeCall}
             disabled={!dialedNumber.trim() || !sipConnected}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors ${dialedNumber.trim() && sipConnected
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors ${
+              dialedNumber.trim() && sipConnected
                 ? "bg-green-500 hover:bg-green-600 text-white"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
+            }`}
           >
             <Phone className="w-5 h-5" />
-            {t('softphone.call')}
+            {t("softphone.call")}
           </button>
         )}
       </div>
@@ -633,14 +686,21 @@ export default function SoftPhone({
                 <Settings className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">SIP Password Settings</h3>
-                <p className="text-sm text-gray-500">Extension: {auth?.user?.extension}</p>
+                <h3 className="text-lg font-bold text-gray-900">
+                  SIP Password Settings
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Extension: {auth?.user?.extension}
+                </p>
               </div>
             </div>
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs font-medium text-blue-900 mb-1">Default Password</p>
+              <p className="text-xs font-medium text-blue-900 mb-1">
+                Default Password
+              </p>
               <p className="text-sm text-blue-700">
-                Using default password: <span className="font-mono font-bold">51234</span>
+                Using default password:{" "}
+                <span className="font-mono font-bold">51234</span>
               </p>
             </div>
             <p className="text-sm text-gray-600 mb-3">
@@ -651,7 +711,7 @@ export default function SoftPhone({
               value={sipPassword}
               onChange={(e) => setSipPassword(e.target.value)}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   setShowPasswordPrompt(false);
                 }
               }}

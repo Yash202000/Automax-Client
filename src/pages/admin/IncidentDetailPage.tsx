@@ -131,6 +131,9 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionFieldValues, setTransitionFieldValues] = useState<
     Record<string, string>
   >({});
+  const [transitionErrors, setTransitionErrors] = useState<
+    Record<string, string>
+  >({});
   // Ready-to-Close duration picker state
   const [readyToCloseDuration, setReadyToCloseDuration] = useState<string>("");
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -827,26 +830,26 @@ export const IncidentDetailPage: React.FC = () => {
     //   r => r.requirement_type === 'feedback' && r.is_mandatory
     // );
 
-    if (requiresComment && !transitionComment.trim()) {
-      alert("A comment is required for this transition");
-      return;
-    }
+    const newTransitionErrors: Record<string, string> = {};
 
-    if (requiresAttachment && !transitionAttachment) {
-      alert("An attachment is required for this transition");
-      return;
-    }
+    if (requiresComment && !transitionComment.trim())
+      newTransitionErrors.comment = t(
+        "incidents.commentRequired",
+        "Comment is required",
+      );
 
-    // if (requiresFeedback && transitionFeedbackRating === 0) {
-    //   alert('Feedback rating is required for this transition');
-    //   return;
-    // }
+    if (requiresAttachment && !transitionAttachment)
+      newTransitionErrors.attachment = t(
+        "incidents.attachmentRequired",
+        "Attachment is required",
+      );
 
     // Validate Ready-to-Close duration when required
-    if (isReadyToCloseTransition && !readyToCloseDuration) {
-      alert("Please select a duration for the Ready to Close state");
-      return;
-    }
+    if (isReadyToCloseTransition && !readyToCloseDuration)
+      newTransitionErrors.duration = t(
+        "incidents.durationRequired",
+        "Please select a duration",
+      );
 
     // Validate required field changes
     const requiredFieldChanges =
@@ -854,11 +857,19 @@ export const IncidentDetailPage: React.FC = () => {
         (f) => f.is_required,
       ) || [];
     for (const fc of requiredFieldChanges) {
-      if (!transitionFieldValues[fc.field_name]) {
-        alert(`${fc.label || fc.field_name} is required for this transition`);
-        return;
-      }
+      if (!transitionFieldValues[fc.field_name])
+        newTransitionErrors[fc.field_name] = t(
+          "incidents.fieldRequired",
+          "{{field}} is required",
+          { field: fc.label || fc.field_name },
+        );
     }
+
+    if (Object.keys(newTransitionErrors).length > 0) {
+      setTransitionErrors(newTransitionErrors);
+      return;
+    }
+    setTransitionErrors({});
 
     try {
       let attachmentIds: string[] | undefined;
@@ -923,7 +934,12 @@ export const IncidentDetailPage: React.FC = () => {
       });
     } catch {
       setTransitionUploading(false);
-      alert("Failed to upload attachment. Please try again.");
+      toast.error(
+        t(
+          "incidents.attachmentUploadFailed",
+          "Failed to upload attachment. Please try again.",
+        ),
+      );
     }
   };
 
@@ -2716,7 +2732,7 @@ export const IncidentDetailPage: React.FC = () => {
                     ) && <span className="text-red-500 ml-1">*</span>}
                   </label>
                   {transitionAttachment ? (
-                    <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg">
                       <div className="flex items-center gap-2">
                         <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                         <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
@@ -2735,7 +2751,9 @@ export const IncidentDetailPage: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                    <label
+                      className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors ${transitionErrors.attachment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                    >
                       <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-sm text-[hsl(var(--muted-foreground))]">
                         {t("incidents.clickToUpload")}
@@ -2747,10 +2765,20 @@ export const IncidentDetailPage: React.FC = () => {
                           const file = e.target.files?.[0];
                           if (file) {
                             setTransitionAttachment(file);
+                            if (transitionErrors.attachment)
+                              setTransitionErrors((prev) => ({
+                                ...prev,
+                                attachment: "",
+                              }));
                           }
                         }}
                       />
                     </label>
+                  )}
+                  {transitionErrors.attachment && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {transitionErrors.attachment}
+                    </p>
                   )}
                 </div>
               )}
@@ -2844,23 +2872,35 @@ export const IncidentDetailPage: React.FC = () => {
                           )}
                         </label>
                         {fc.field_name === "priority" && (
-                          <select
-                            value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(e) =>
-                              setTransitionFieldValues((prev) => ({
-                                ...prev,
-                                [fc.field_name]: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                          >
-                            <option value="">Select priority...</option>
-                            <option value="1">Low</option>
-                            <option value="2">Medium</option>
-                            <option value="3">High</option>
-                            <option value="4">Urgent</option>
-                            <option value="5">Critical</option>
-                          </select>
+                          <>
+                            <select
+                              value={transitionFieldValues[fc.field_name] || ""}
+                              onChange={(e) => {
+                                setTransitionFieldValues((prev) => ({
+                                  ...prev,
+                                  [fc.field_name]: e.target.value,
+                                }));
+                                if (transitionErrors[fc.field_name])
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    [fc.field_name]: "",
+                                  }));
+                              }}
+                              className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                            >
+                              <option value="">Select priority...</option>
+                              <option value="1">Low</option>
+                              <option value="2">Medium</option>
+                              <option value="3">High</option>
+                              <option value="4">Urgent</option>
+                              <option value="5">Critical</option>
+                            </select>
+                            {transitionErrors[fc.field_name] && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {transitionErrors[fc.field_name]}
+                              </p>
+                            )}
+                          </>
                         )}
                         {fc.field_name === "department_id" && (
                           <TreeSelect
@@ -2877,16 +2917,22 @@ export const IncidentDetailPage: React.FC = () => {
                               return filtered as unknown as TreeSelectNode[];
                             })()}
                             value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(id) =>
+                            onChange={(id) => {
                               setTransitionFieldValues((prev) => ({
                                 ...prev,
                                 [fc.field_name]: id,
-                              }))
-                            }
+                              }));
+                              if (transitionErrors[fc.field_name])
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  [fc.field_name]: "",
+                                }));
+                            }}
                             placeholder={`Select ${fc.department_type_filter || ""} department...`
                               .replace("  ", " ")
                               .trim()}
                             leafOnly={false}
+                            error={transitionErrors[fc.field_name]}
                             maxHeight="240px"
                           />
                         )}
@@ -2897,15 +2943,21 @@ export const IncidentDetailPage: React.FC = () => {
                               []
                             }
                             value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(id) =>
+                            onChange={(id) => {
                               setTransitionFieldValues((prev) => ({
                                 ...prev,
                                 [fc.field_name]: id,
-                              }))
-                            }
+                              }));
+                              if (transitionErrors[fc.field_name])
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  [fc.field_name]: "",
+                                }));
+                            }}
                             placeholder="Select location..."
                             leafOnly={false}
                             maxHeight="240px"
+                            error={transitionErrors[fc.field_name]}
                           />
                         )}
                         {fc.field_name === "classification_id" && (
@@ -2915,44 +2967,74 @@ export const IncidentDetailPage: React.FC = () => {
                               []
                             }
                             value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(id) =>
+                            onChange={(id) => {
                               setTransitionFieldValues((prev) => ({
                                 ...prev,
                                 [fc.field_name]: id,
-                              }))
-                            }
+                              }));
+                              if (transitionErrors[fc.field_name])
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  [fc.field_name]: "",
+                                }));
+                            }}
                             placeholder="Select classification..."
                             leafOnly={false}
                             maxHeight="240px"
+                            error={transitionErrors[fc.field_name]}
                           />
                         )}
                         {fc.field_name === "title" && (
-                          <input
-                            type="text"
-                            value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(e) =>
-                              setTransitionFieldValues((prev) => ({
-                                ...prev,
-                                [fc.field_name]: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter title..."
-                            className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                          />
+                          <>
+                            <input
+                              type="text"
+                              value={transitionFieldValues[fc.field_name] || ""}
+                              onChange={(e) => {
+                                setTransitionFieldValues((prev) => ({
+                                  ...prev,
+                                  [fc.field_name]: e.target.value,
+                                }));
+                                if (transitionErrors[fc.field_name])
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    [fc.field_name]: "",
+                                  }));
+                              }}
+                              placeholder="Enter title..."
+                              className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                            />
+                            {transitionErrors[fc.field_name] && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {transitionErrors[fc.field_name]}
+                              </p>
+                            )}
+                          </>
                         )}
                         {fc.field_name === "description" && (
-                          <textarea
-                            value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(e) =>
-                              setTransitionFieldValues((prev) => ({
-                                ...prev,
-                                [fc.field_name]: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter description..."
-                            rows={3}
-                            className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                          />
+                          <>
+                            <textarea
+                              value={transitionFieldValues[fc.field_name] || ""}
+                              onChange={(e) => {
+                                setTransitionFieldValues((prev) => ({
+                                  ...prev,
+                                  [fc.field_name]: e.target.value,
+                                }));
+                                if (transitionErrors[fc.field_name])
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    [fc.field_name]: "",
+                                  }));
+                              }}
+                              placeholder="Enter description..."
+                              rows={3}
+                              className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                            />
+                            {transitionErrors[fc.field_name] && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {transitionErrors[fc.field_name]}
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}
@@ -2977,8 +3059,15 @@ export const IncidentDetailPage: React.FC = () => {
                   </p>
                   <select
                     value={readyToCloseDuration}
-                    onChange={(e) => setReadyToCloseDuration(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                    onChange={(e) => {
+                      setReadyToCloseDuration(e.target.value);
+                      if (transitionErrors.duration)
+                        setTransitionErrors((prev) => ({
+                          ...prev,
+                          duration: "",
+                        }));
+                    }}
+                    className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors.duration ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                   >
                     <option value="">
                       {t("incidents.selectDuration", "Select a duration...")}
@@ -2989,6 +3078,11 @@ export const IncidentDetailPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  {transitionErrors.duration && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {transitionErrors.duration}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -3002,11 +3096,20 @@ export const IncidentDetailPage: React.FC = () => {
                 </label>
                 <textarea
                   value={transitionComment}
-                  onChange={(e) => setTransitionComment(e.target.value)}
+                  onChange={(e) => {
+                    setTransitionComment(e.target.value);
+                    if (transitionErrors.comment)
+                      setTransitionErrors((prev) => ({ ...prev, comment: "" }));
+                  }}
                   placeholder={t("incidents.addCommentForTransition")}
                   rows={3}
-                  className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                  className={`w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors.comment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                 />
+                {transitionErrors.comment && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {transitionErrors.comment}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
@@ -3021,6 +3124,7 @@ export const IncidentDetailPage: React.FC = () => {
                   setTransitionFeedbackComment("");
                   setTransitionFieldValues({});
                   setReadyToCloseDuration("");
+                  setTransitionErrors({});
                 }}
               >
                 {t("incidents.cancel")}

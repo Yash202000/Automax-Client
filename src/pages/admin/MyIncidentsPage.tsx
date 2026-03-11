@@ -50,10 +50,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const isAssigned = type === "assigned";
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
-  const pageTitle = isAssigned ? "Assigned to Me" : "Created by Me";
+  const pageTitle = isAssigned
+    ? t("incidents.assignedToMe")
+    : t("incidents.createdByMe");
   const pageDescription = isAssigned
-    ? "Incidents that are currently assigned to you"
-    : "Incidents that you have reported or created";
+    ? t("incidents.assignedToMeDesc")
+    : t("incidents.createdByMeDesc");
   const PageIcon = isAssigned ? UserCheck : PenLine;
 
   // Check if all selected incidents belong to the same workflow
@@ -189,16 +191,16 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            Failed to Load Incidents
+            {t("incidents.failedToLoad")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            There was an error loading your incidents. Please try again.
+            {t("incidents.errorLoadingMine")}
           </p>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            Try Again
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -262,14 +264,14 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
             }
           >
-            Refresh
+            {t("common.refresh")}
           </Button>
           {canCreateIncident && (
             <Button
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => navigate("/incidents/new")}
             >
-              Create Incident
+              {t("incidents.createIncident")}
             </Button>
           )}
         </div>
@@ -287,7 +289,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 {stats?.total || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Total
+                {t("common.total")}
               </p>
             </div>
           </div>
@@ -302,7 +304,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 {stats?.open || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Open
+                {t("incidents.open")}
               </p>
             </div>
           </div>
@@ -317,7 +319,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 {stats?.resolved || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Resolved
+                {t("incidents.resolved")}
               </p>
             </div>
           </div>
@@ -332,7 +334,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 {stats?.sla_breached || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                SLA Breached
+                {t("common.sla")} {t("common.breached")}
               </p>
             </div>
           </div>
@@ -345,7 +347,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by title or incident number..."
+            placeholder={t("incidents.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
@@ -361,7 +363,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Loading incidents...
+              {t("incidents.loadingIncidents")}
             </p>
           </div>
         ) : filteredIncidents.length === 0 ? (
@@ -370,25 +372,25 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               <PageIcon className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-              No Incidents Found
+              {t("incidents.noIncidents")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {searchTerm
-                ? "No incidents match your search"
+                ? t("incidents.noIncidentsMatch")
                 : isAssigned
-                  ? "No incidents are currently assigned to you"
-                  : "You have not created any incidents yet"}
+                  ? t("incidents.noAssignedIncidents")
+                  : t("incidents.noCreatedIncidents")}
             </p>
             {searchTerm ? (
               <Button variant="outline" onClick={() => setSearchTerm("")}>
-                Clear Search
+                {t("incidents.clearSearch")}
               </Button>
             ) : canCreateIncident ? (
               <Button
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => navigate("/incidents/new")}
               >
-                Create Incident
+                {t("incidents.createIncident")}
               </Button>
             ) : null}
           </div>
@@ -411,37 +413,39 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Incident
+                        {t("incidents.incident")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        State
+                        {t("common.state")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Priority
+                        {t("common.priority")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        {isAssigned ? "Department" : "Assignee"}
+                        {isAssigned
+                          ? t("common.department")
+                          : t("common.assignee")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Due Date
+                        {t("common.dueDate")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        SLA
+                        {t("common.sla")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-right">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Actions
+                        {t("common.actions")}
                       </span>
                     </th>
                   </tr>
@@ -577,7 +581,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                               <User className="w-4 h-4" />
-                              Unassigned
+                              {t("common.unassigned")}
                             </span>
                           )}
                         </td>
@@ -591,12 +595,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                           {incident.sla_breached ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
                               <AlertTriangle className="w-3 h-3" />
-                              Breached
+                              {t("common.breached")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-600">
                               <CheckCircle2 className="w-3 h-3" />
-                              On Track
+                              {t("common.onTrack")}
                             </span>
                           )}
                         </td>
@@ -610,7 +614,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                               navigate(`/incidents/${incident.id}`);
                             }}
                           >
-                            View
+                            {t("common.view")}
                           </Button>
                         </td>
                       </tr>
@@ -624,19 +628,11 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
             {totalPages > 1 && (
               <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Showing{" "}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">
-                    {(page - 1) * limit + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">
-                    {Math.min(page * limit, totalItems)}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">
-                    {totalItems}
-                  </span>{" "}
-                  incidents
+                  {t("incidents.showingResults", {
+                    from: (page - 1) * limit + 1,
+                    to: Math.min(page * limit, totalItems),
+                    total: totalItems,
+                  })}
                 </p>
 
                 <div className="flex items-center gap-2">

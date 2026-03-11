@@ -29,16 +29,18 @@ interface MyRequestsPageProps {
 
 export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
 
   const isAssigned = type === "assigned";
-  const pageTitle = isAssigned ? "Assigned to Me" : "Created by Me";
+  const pageTitle = isAssigned
+    ? t("requests.assignedToMe")
+    : t("requests.createdByMe");
   const pageDescription = isAssigned
-    ? "Requests that are currently assigned to you"
-    : "Requests that you have created";
+    ? t("requests.assignedToMeDesc")
+    : t("requests.createdByMeDesc");
   const PageIcon = isAssigned ? UserCheck : PenLine;
 
   const {
@@ -109,16 +111,16 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            Failed to Load Requests
+            {t("requests.failedToLoad")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            There was an error loading your requests. Please try again.
+            {t("requests.errorLoadingMine")}
           </p>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            Try Again
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -152,7 +154,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
               !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
             }
           >
-            Refresh
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -169,7 +171,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
                 {stats?.total || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Total
+                {t("common.total")}
               </p>
             </div>
           </div>
@@ -184,7 +186,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
                 {stats?.open || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Open
+                {t("requests.open")}
               </p>
             </div>
           </div>
@@ -199,7 +201,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
                 {stats?.resolved || 0}
               </p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Completed
+                {t("requests.completed")}
               </p>
             </div>
           </div>
@@ -212,7 +214,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by title or request number..."
+            placeholder={t("requests.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
@@ -228,7 +230,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Loading requests...
+              {t("requests.loadingRequests")}
             </p>
           </div>
         ) : filteredRequests.length === 0 ? (
@@ -237,18 +239,18 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
               <PageIcon className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-              No Requests Found
+              {t("requests.noRequests")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {searchTerm
-                ? "No requests match your search"
+                ? t("requests.noRequestsMatch")
                 : isAssigned
-                  ? "No requests are currently assigned to you"
-                  : "You have not created any requests yet"}
+                  ? t("requests.noAssignedRequests")
+                  : t("requests.noCreatedRequests")}
             </p>
             {searchTerm && (
               <Button variant="outline" onClick={() => setSearchTerm("")}>
-                Clear Search
+                {t("requests.clearSearch")}
               </Button>
             )}
           </div>
@@ -260,32 +262,34 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
                   <tr className="border-b border-[hsl(var(--border))]">
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Request
+                        {t("requests.request")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        State
+                        {t("common.state")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Priority
+                        {t("common.priority")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        {isAssigned ? "Department" : "Assignee"}
+                        {isAssigned
+                          ? t("common.department")
+                          : t("common.assignee")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-left">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Created Date
+                        {t("common.created")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-right">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Actions
+                        {t("common.actions")}
                       </span>
                     </th>
                   </tr>
@@ -383,7 +387,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                               <User className="w-4 h-4" />
-                              Unassigned
+                              {t("common.unassigned")}
                             </span>
                           )}
                         </td>
@@ -403,7 +407,7 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
                               navigate(`/requests/${request.id}`);
                             }}
                           >
-                            View
+                            {t("common.view")}
                           </Button>
                         </td>
                       </tr>
@@ -417,19 +421,11 @@ export const MyRequestsPage: React.FC<MyRequestsPageProps> = ({ type }) => {
             {totalPages > 1 && (
               <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Showing{" "}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">
-                    {(page - 1) * limit + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">
-                    {Math.min(page * limit, totalItems)}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-semibold text-[hsl(var(--foreground))]">
-                    {totalItems}
-                  </span>{" "}
-                  requests
+                  {t("requests.showingResults", {
+                    from: (page - 1) * limit + 1,
+                    to: Math.min(page * limit, totalItems),
+                    total: totalItems,
+                  })}
                 </p>
 
                 <div className="flex items-center gap-2">

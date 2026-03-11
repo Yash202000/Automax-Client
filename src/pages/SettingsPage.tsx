@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Lock,
   Shield,
@@ -17,37 +17,40 @@ import {
   Check,
   X,
   Languages,
-} from 'lucide-react';
-import { Button, Input, Card } from '../components/ui';
-import { useAuthStore } from '../stores/authStore';
-import { authApi } from '../api/auth';
-import { setLanguage, getCurrentLanguage, supportedLanguages } from '../i18n';
+} from "lucide-react";
+import { Button, Input, Card } from "../components/ui";
+import { useAuthStore } from "../stores/authStore";
+import { authApi } from "../api/auth";
+import { setLanguage, getCurrentLanguage, supportedLanguages } from "../i18n";
 
-const passwordSchema = z.object({
-  old_password: z.string().min(1, 'Current password is required'),
-  new_password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirm_password: z.string(),
-}).refine((data) => data.new_password === data.confirm_password, {
-  message: "Passwords don't match",
-  path: ['confirm_password'],
-});
+const passwordSchema = z
+  .object({
+    old_password: z.string().min(1, "Current password is required"),
+    new_password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ["confirm_password"],
+  });
 
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
+  const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const [languageSuccess, setLanguageSuccess] = useState('');
+  const [languageSuccess, setLanguageSuccess] = useState("");
 
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -57,10 +60,10 @@ export const SettingsPage: React.FC = () => {
 
     await setLanguage(langCode);
     setCurrentLang(langCode);
-    setLanguageSuccess(t('settings.languageChanged'));
+    setLanguageSuccess(t("settings.languageChanged"));
 
     // Clear success message after 3 seconds
-    setTimeout(() => setLanguageSuccess(''), 3000);
+    setTimeout(() => setLanguageSuccess(""), 3000);
   };
 
   const {
@@ -73,7 +76,7 @@ export const SettingsPage: React.FC = () => {
     resolver: zodResolver(passwordSchema),
   });
 
-  const newPassword = watch('new_password', '');
+  const newPassword = watch("new_password", "");
 
   const getPasswordStrength = (pwd: string) => {
     let strength = 0;
@@ -86,12 +89,18 @@ export const SettingsPage: React.FC = () => {
   };
 
   const passwordStrength = getPasswordStrength(newPassword);
-  const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-lime-500', 'bg-emerald-500'];
+  const strengthColors = [
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-lime-500",
+    "bg-emerald-500",
+  ];
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
     setIsPasswordLoading(true);
-    setPasswordError('');
-    setPasswordSuccess('');
+    setPasswordError("");
+    setPasswordSuccess("");
 
     try {
       const response = await authApi.changePassword({
@@ -99,14 +108,15 @@ export const SettingsPage: React.FC = () => {
         new_password: data.new_password,
       });
       if (response.success) {
-        setPasswordSuccess('Password changed successfully');
+        setPasswordSuccess("Password changed successfully");
         reset();
       } else {
-        setPasswordError(response.error || 'Failed to change password');
+        setPasswordError(response.error || "Failed to change password");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      if (typeof err === 'object' && err !== null && 'response' in err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setPasswordError(axiosError.response?.data?.error || errorMessage);
       } else {
@@ -119,19 +129,20 @@ export const SettingsPage: React.FC = () => {
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
-    setDeleteError('');
+    setDeleteError("");
 
     try {
       const response = await authApi.deleteAccount();
       if (response.success) {
         logout();
-        navigate('/login');
+        navigate("/login");
       } else {
-        setDeleteError(response.error || 'Failed to delete account');
+        setDeleteError(response.error || "Failed to delete account");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      if (typeof err === 'object' && err !== null && 'response' in err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setDeleteError(axiosError.response?.data?.error || errorMessage);
       } else {
@@ -144,31 +155,59 @@ export const SettingsPage: React.FC = () => {
 
   const settingsGroups = [
     {
-      title: t('settings.notifications'),
+      title: t("settings.notifications"),
       icon: Bell,
-      description: t('settings.notificationsDesc'),
+      description: t("settings.notificationsDesc"),
       items: [
-        { label: t('settings.emailNotifications'), description: t('settings.emailNotificationsDesc'), enabled: true },
-        { label: t('settings.pushNotifications'), description: t('settings.pushNotificationsDesc'), enabled: false },
-        { label: t('settings.weeklyDigest'), description: t('settings.weeklyDigestDesc'), enabled: true },
+        {
+          label: t("settings.emailNotifications"),
+          description: t("settings.emailNotificationsDesc"),
+          enabled: true,
+        },
+        {
+          label: t("settings.pushNotifications"),
+          description: t("settings.pushNotificationsDesc"),
+          enabled: false,
+        },
+        {
+          label: t("settings.weeklyDigest"),
+          description: t("settings.weeklyDigestDesc"),
+          enabled: true,
+        },
       ],
     },
     {
-      title: t('settings.appearance'),
+      title: t("settings.appearance"),
       icon: Moon,
-      description: t('settings.appearanceDesc'),
+      description: t("settings.appearanceDesc"),
       items: [
-        { label: t('settings.darkMode'), description: t('settings.darkModeDesc'), enabled: false },
-        { label: t('settings.compactView'), description: t('settings.compactViewDesc'), enabled: false },
+        {
+          label: t("settings.darkMode"),
+          description: t("settings.darkModeDesc"),
+          enabled: false,
+        },
+        {
+          label: t("settings.compactView"),
+          description: t("settings.compactViewDesc"),
+          enabled: false,
+        },
       ],
     },
     {
-      title: t('settings.privacy'),
+      title: t("settings.privacy"),
       icon: Eye,
-      description: t('settings.privacyDesc'),
+      description: t("settings.privacyDesc"),
       items: [
-        { label: t('settings.profileVisibility'), description: t('settings.profileVisibilityDesc'), enabled: true },
-        { label: t('settings.activityStatus'), description: t('settings.activityStatusDesc'), enabled: true },
+        {
+          label: t("settings.profileVisibility"),
+          description: t("settings.profileVisibilityDesc"),
+          enabled: true,
+        },
+        {
+          label: t("settings.activityStatus"),
+          description: t("settings.activityStatusDesc"),
+          enabled: true,
+        },
       ],
     },
   ];
@@ -177,8 +216,10 @@ export const SettingsPage: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">{t('settings.title')}</h1>
-        <p className="mt-2 text-gray-500">{t('settings.subtitle')}</p>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {t("settings.title")}
+        </h1>
+        <p className="mt-2 text-gray-500">{t("settings.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -191,35 +232,35 @@ export const SettingsPage: React.FC = () => {
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-xl"
               >
                 <Shield className="w-5 h-5" />
-                {t('settings.security')}
+                {t("settings.security")}
               </a>
               <a
                 href="#notifications"
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
               >
                 <Bell className="w-5 h-5" />
-                {t('settings.notifications')}
+                {t("settings.notifications")}
               </a>
               <a
                 href="#appearance"
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
               >
                 <Moon className="w-5 h-5" />
-                {t('settings.appearance')}
+                {t("settings.appearance")}
               </a>
               <a
                 href="#privacy"
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
               >
                 <Eye className="w-5 h-5" />
-                {t('settings.privacy')}
+                {t("settings.privacy")}
               </a>
               <a
                 href="#language"
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
               >
                 <Globe className="w-5 h-5" />
-                {t('settings.language')}
+                {t("settings.language")}
               </a>
               <div className="border-t border-gray-100 my-2" />
               <a
@@ -227,7 +268,7 @@ export const SettingsPage: React.FC = () => {
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
               >
                 <AlertTriangle className="w-5 h-5" />
-                {t('settings.dangerZone')}
+                {t("settings.dangerZone")}
               </a>
             </nav>
           </Card>
@@ -242,8 +283,12 @@ export const SettingsPage: React.FC = () => {
                 <Shield className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{t('settings.security')}</h3>
-                <p className="text-sm text-gray-500">{t('settings.securityDesc')}</p>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {t("settings.security")}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {t("settings.securityDesc")}
+                </p>
               </div>
             </div>
 
@@ -252,7 +297,9 @@ export const SettingsPage: React.FC = () => {
               <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl animate-fade-in">
                 <div className="flex items-start gap-3">
                   <X className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  <p className="text-sm font-medium text-red-800">{passwordError}</p>
+                  <p className="text-sm font-medium text-red-800">
+                    {passwordError}
+                  </p>
                 </div>
               </div>
             )}
@@ -260,29 +307,35 @@ export const SettingsPage: React.FC = () => {
               <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl animate-fade-in">
                 <div className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  <p className="text-sm font-medium text-emerald-800">{passwordSuccess}</p>
+                  <p className="text-sm font-medium text-emerald-800">
+                    {passwordSuccess}
+                  </p>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onPasswordSubmit)} className="space-y-5">
+            <form
+              onSubmit={handleSubmit(onPasswordSubmit)}
+              className="space-y-5"
+              noValidate
+            >
               <Input
-                label={t('settings.currentPassword')}
+                label={t("settings.currentPassword")}
                 type="password"
-                placeholder={t('settings.enterCurrentPassword')}
+                placeholder={t("settings.enterCurrentPassword")}
                 error={errors.old_password?.message}
                 leftIcon={<Key className="w-5 h-5" />}
-                {...register('old_password')}
+                {...register("old_password")}
               />
 
               <div>
                 <Input
-                  label={t('settings.newPassword')}
+                  label={t("settings.newPassword")}
                   type="password"
-                  placeholder={t('settings.createStrongPassword')}
+                  placeholder={t("settings.createStrongPassword")}
                   error={errors.new_password?.message}
                   leftIcon={<Lock className="w-5 h-5" />}
-                  {...register('new_password')}
+                  {...register("new_password")}
                 />
                 {newPassword && (
                   <div className="mt-3">
@@ -293,25 +346,25 @@ export const SettingsPage: React.FC = () => {
                           className={`h-1.5 flex-1 rounded-full transition-colors ${
                             index < passwordStrength
                               ? strengthColors[passwordStrength - 1]
-                              : 'bg-gray-200'
+                              : "bg-gray-200"
                           }`}
                         />
                       ))}
                     </div>
                     <p className="text-xs text-gray-500">
-                      {t('settings.passwordHint')}
+                      {t("settings.passwordHint")}
                     </p>
                   </div>
                 )}
               </div>
 
               <Input
-                label={t('settings.confirmNewPassword')}
+                label={t("settings.confirmNewPassword")}
                 type="password"
-                placeholder={t('settings.confirmYourPassword')}
+                placeholder={t("settings.confirmYourPassword")}
                 error={errors.confirm_password?.message}
                 leftIcon={<Lock className="w-5 h-5" />}
-                {...register('confirm_password')}
+                {...register("confirm_password")}
               />
 
               <Button
@@ -319,7 +372,7 @@ export const SettingsPage: React.FC = () => {
                 isLoading={isPasswordLoading}
                 leftIcon={!isPasswordLoading && <Key className="w-4 h-4" />}
               >
-                {t('settings.changePassword')}
+                {t("settings.changePassword")}
               </Button>
             </form>
           </Card>
@@ -332,7 +385,9 @@ export const SettingsPage: React.FC = () => {
                   <group.icon className="w-6 h-6 text-gray-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{group.title}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {group.title}
+                  </h3>
                   <p className="text-sm text-gray-500">{group.description}</p>
                 </div>
               </div>
@@ -344,18 +399,22 @@ export const SettingsPage: React.FC = () => {
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                      <p className="text-xs text-gray-500">{item.description}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {item.label}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {item.description}
+                      </p>
                     </div>
                     <button
                       type="button"
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        item.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                        item.enabled ? "bg-blue-600" : "bg-gray-300"
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-                          item.enabled ? 'translate-x-6' : 'translate-x-1'
+                          item.enabled ? "translate-x-6" : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -372,8 +431,12 @@ export const SettingsPage: React.FC = () => {
                 <Languages className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{t('settings.language')}</h3>
-                <p className="text-sm text-gray-500">{t('settings.selectLanguage')}</p>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {t("settings.language")}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {t("settings.selectLanguage")}
+                </p>
               </div>
             </div>
 
@@ -381,7 +444,9 @@ export const SettingsPage: React.FC = () => {
               <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl animate-fade-in">
                 <div className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  <p className="text-sm font-medium text-emerald-800">{languageSuccess}</p>
+                  <p className="text-sm font-medium text-emerald-800">
+                    {languageSuccess}
+                  </p>
                 </div>
               </div>
             )}
@@ -394,16 +459,22 @@ export const SettingsPage: React.FC = () => {
                   onClick={() => handleLanguageChange(lang.code)}
                   className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
                     currentLang === lang.code
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{lang.code === 'en' ? '🇺🇸' : '🇸🇦'}</span>
+                    <span className="text-2xl">
+                      {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
+                    </span>
                     <div className="text-left">
-                      <p className={`text-sm font-medium ${
-                        currentLang === lang.code ? 'text-blue-700' : 'text-gray-900'
-                      }`}>
+                      <p
+                        className={`text-sm font-medium ${
+                          currentLang === lang.code
+                            ? "text-blue-700"
+                            : "text-gray-900"
+                        }`}
+                      >
                         {lang.nativeName}
                       </p>
                       <p className="text-xs text-gray-500">{lang.name}</p>
@@ -426,8 +497,12 @@ export const SettingsPage: React.FC = () => {
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-red-600">{t('settings.dangerZone')}</h3>
-                <p className="text-sm text-gray-500">{t('settings.dangerZoneDesc')}</p>
+                <h3 className="text-lg font-bold text-red-600">
+                  {t("settings.dangerZone")}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {t("settings.dangerZoneDesc")}
+                </p>
               </div>
             </div>
 
@@ -435,7 +510,9 @@ export const SettingsPage: React.FC = () => {
               <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl animate-fade-in">
                 <div className="flex items-start gap-3">
                   <X className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  <p className="text-sm font-medium text-red-800">{deleteError}</p>
+                  <p className="text-sm font-medium text-red-800">
+                    {deleteError}
+                  </p>
                 </div>
               </div>
             )}
@@ -446,9 +523,11 @@ export const SettingsPage: React.FC = () => {
                   <Trash2 className="w-5 h-5 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-gray-900">{t('settings.deleteAccount')}</h4>
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    {t("settings.deleteAccount")}
+                  </h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    {t('settings.deleteAccountDesc')}
+                    {t("settings.deleteAccountDesc")}
                   </p>
 
                   {!showDeleteConfirm ? (
@@ -459,12 +538,12 @@ export const SettingsPage: React.FC = () => {
                       onClick={() => setShowDeleteConfirm(true)}
                       leftIcon={<Trash2 className="w-4 h-4" />}
                     >
-                      {t('settings.deleteAccount')}
+                      {t("settings.deleteAccount")}
                     </Button>
                   ) : (
                     <div className="mt-4 p-4 bg-white rounded-xl border border-red-200">
                       <p className="text-sm text-red-700 font-medium mb-4">
-                        {t('settings.deleteConfirmation')}{' '}
+                        {t("settings.deleteConfirmation")}{" "}
                         <span className="font-bold">{user?.email}</span>.
                       </p>
                       <div className="flex gap-3">
@@ -474,7 +553,7 @@ export const SettingsPage: React.FC = () => {
                           onClick={handleDeleteAccount}
                           isLoading={isDeleting}
                         >
-                          {t('settings.yesDeleteAccount')}
+                          {t("settings.yesDeleteAccount")}
                         </Button>
                         <Button
                           variant="outline"
@@ -482,7 +561,7 @@ export const SettingsPage: React.FC = () => {
                           onClick={() => setShowDeleteConfirm(false)}
                           disabled={isDeleting}
                         >
-                          {t('common.cancel')}
+                          {t("common.cancel")}
                         </Button>
                       </div>
                     </div>

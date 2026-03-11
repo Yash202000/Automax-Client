@@ -1,24 +1,37 @@
-import * as React from 'react'
-import { forwardRef, useState } from 'react'
-import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from "react";
+import { forwardRef, useState, useId } from "react";
+import { Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-  hint?: string
-  success?: boolean
-  leftIcon?: React.ReactNode
-  rightIcon?: React.ReactNode
+  label?: string;
+  error?: string;
+  hint?: string;
+  success?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, success, leftIcon, rightIcon, className, type, ...props }, ref) => {
-    const [showPassword, setShowPassword] = useState(false)
-    const isPassword = type === 'password'
-    const inputType = isPassword && showPassword ? 'text' : type
-
-    const inputId = props.id || props.name || `input-${Math.random().toString(36).substr(2, 9)}`
+  (
+    {
+      label,
+      error,
+      hint,
+      success,
+      leftIcon,
+      rightIcon,
+      className,
+      type,
+      ...props
+    },
+    ref,
+  ) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const isPassword = type === "password";
+    const inputType = isPassword && showPassword ? "text" : type;
+    const generatedId = useId();
+    const inputId = props.id || props.name || generatedId;
 
     return (
       <div className="w-full">
@@ -28,13 +41,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2"
           >
             {label}
-            {props.required && <span className="text-[hsl(var(--destructive))] ml-1">*</span>}
+            {props.required && (
+              <span className="text-[hsl(var(--destructive))] ml-1">*</span>
+            )}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <span className="text-[hsl(var(--muted-foreground))] w-5 h-5">{leftIcon}</span>
+              <span className="text-[hsl(var(--muted-foreground))] w-5 h-5">
+                {leftIcon}
+              </span>
             </div>
           )}
           <input
@@ -50,7 +67,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 : success
                   ? "border-[hsl(var(--success)/0.5)] focus:border-[hsl(var(--success))] focus:ring-4 focus:ring-[hsl(var(--success)/0.1)]"
                   : "border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)] focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/0.1)]",
-              className
+              className,
             )}
             {...props}
           />
@@ -74,36 +91,43 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               ) : success ? (
                 <CheckCircle2 className="w-5 h-5 text-[hsl(var(--success))]" />
               ) : rightIcon ? (
-                <span className="text-[hsl(var(--muted-foreground))] w-5 h-5">{rightIcon}</span>
+                <span className="text-[hsl(var(--muted-foreground))] w-5 h-5">
+                  {rightIcon}
+                </span>
               ) : null}
             </div>
           )}
         </div>
         {(error || hint) && (
-          <p className={cn(
-            "mt-2 text-sm",
-            error ? "text-[hsl(var(--destructive))]" : "text-[hsl(var(--muted-foreground))]"
-          )}>
+          <p
+            className={cn(
+              "mt-2 text-sm",
+              error
+                ? "text-[hsl(var(--destructive))]"
+                : "text-[hsl(var(--muted-foreground))]",
+            )}
+          >
             {error || hint}
           </p>
         )}
       </div>
-    )
-  }
-)
+    );
+  },
+);
 
-Input.displayName = 'Input'
+Input.displayName = "Input";
 
 // Textarea Component
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label?: string
-  error?: string
-  hint?: string
+  label?: string;
+  error?: string;
+  hint?: string;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, hint, className, ...props }, ref) => {
-    const textareaId = props.id || props.name || `textarea-${Math.random().toString(36).substr(2, 9)}`
+    const generatedId = useId();
+    const textareaId = props.id || props.name || generatedId;
 
     return (
       <div className="w-full">
@@ -113,7 +137,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2"
           >
             {label}
-            {props.required && <span className="text-[hsl(var(--destructive))] ml-1">*</span>}
+            {props.required && (
+              <span className="text-[hsl(var(--destructive))] ml-1">*</span>
+            )}
           </label>
         )}
         <textarea
@@ -124,37 +150,42 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             error
               ? "border-[hsl(var(--destructive)/0.5)] focus:border-[hsl(var(--destructive))] focus:ring-4 focus:ring-[hsl(var(--destructive)/0.1)]"
               : "border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)] focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/0.1)]",
-            className
+            className,
           )}
           {...props}
         />
         {(error || hint) && (
-          <p className={cn(
-            "mt-2 text-sm",
-            error ? "text-[hsl(var(--destructive))]" : "text-[hsl(var(--muted-foreground))]"
-          )}>
+          <p
+            className={cn(
+              "mt-2 text-sm",
+              error
+                ? "text-[hsl(var(--destructive))]"
+                : "text-[hsl(var(--muted-foreground))]",
+            )}
+          >
             {error || hint}
           </p>
         )}
       </div>
-    )
-  }
-)
+    );
+  },
+);
 
-Textarea.displayName = 'Textarea'
+Textarea.displayName = "Textarea";
 
 // Select Component
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string
-  error?: string
-  hint?: string
-  options: { value: string; label: string }[]
-  placeholder?: string
+  label?: string;
+  error?: string;
+  hint?: string;
+  options: { value: string; label: string }[];
+  placeholder?: string;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, options, placeholder, className, ...props }, ref) => {
-    const selectId = props.id || props.name || `select-${Math.random().toString(36).substr(2, 9)}`
+    const generatedId = useId();
+    const selectId = props.id || props.name || generatedId;
 
     return (
       <div className="w-full">
@@ -164,7 +195,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2"
           >
             {label}
-            {props.required && <span className="text-[hsl(var(--destructive))] ms-1">*</span>}
+            {props.required && (
+              <span className="text-[hsl(var(--destructive))] ms-1">*</span>
+            )}
           </label>
         )}
         <select
@@ -177,7 +210,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               ? "border-[hsl(var(--destructive)/0.5)] focus:border-[hsl(var(--destructive))] focus:ring-4 focus:ring-[hsl(var(--destructive)/0.1)]"
               : "border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)] focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/0.1)]",
             "disabled:bg-[hsl(var(--muted))] disabled:text-[hsl(var(--muted-foreground))] disabled:cursor-not-allowed",
-            className
+            className,
           )}
           {...props}
         >
@@ -187,35 +220,47 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           )}
           {options.map((option) => (
-            <option className='text-black' key={option.value} value={option.value}>
+            <option
+              className="text-black"
+              key={option.value}
+              value={option.value}
+            >
               {option.label}
             </option>
           ))}
         </select>
         {(error || hint) && (
-          <p className={cn(
-            "mt-2 text-sm",
-            error ? "text-[hsl(var(--destructive))]" : "text-[hsl(var(--muted-foreground))]"
-          )}>
+          <p
+            className={cn(
+              "mt-2 text-sm",
+              error
+                ? "text-[hsl(var(--destructive))]"
+                : "text-[hsl(var(--muted-foreground))]",
+            )}
+          >
             {error || hint}
           </p>
         )}
       </div>
-    )
-  }
-)
+    );
+  },
+);
 
-Select.displayName = 'Select'
+Select.displayName = "Select";
 
 // Checkbox Component
-interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
-  label?: string
-  description?: React.ReactNode
+interface CheckboxProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "type"
+> {
+  label?: string;
+  description?: React.ReactNode;
 }
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ label, description, className, ...props }, ref) => {
-    const checkboxId = props.id || props.name || `checkbox-${Math.random().toString(36).substr(2, 9)}`
+    const generatedId = useId();
+    const checkboxId = props.id || props.name || generatedId;
 
     return (
       <div className="flex items-start">
@@ -229,13 +274,13 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               "focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:ring-offset-0 focus:border-[hsl(var(--primary))]",
               "checked:bg-[hsl(var(--primary))] checked:border-[hsl(var(--primary))] checked:text-[hsl(var(--primary-foreground))]",
               "hover:border-[hsl(var(--muted-foreground)/0.5)]",
-              className
+              className,
             )}
             {...props}
           />
         </div>
         {(label || description) && (
-          <div className="ml-3">
+          <div className="ms-3">
             {label && (
               <label
                 htmlFor={checkboxId}
@@ -245,13 +290,15 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               </label>
             )}
             {description && (
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">{description}</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                {description}
+              </p>
             )}
           </div>
         )}
       </div>
-    )
-  }
-)
+    );
+  },
+);
 
-Checkbox.displayName = 'Checkbox'
+Checkbox.displayName = "Checkbox";

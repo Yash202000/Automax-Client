@@ -274,7 +274,7 @@ const ApplicationLinksPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
             {editingId ? "Edit Application Link" : "Create Application Link"}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
