@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, useMemo } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   X,
   ChevronRight,
@@ -15,17 +15,20 @@ import {
   Paperclip,
   Upload,
   ArrowRight,
-} from 'lucide-react';
-import { Button, TreeSelect } from '../ui';
-import type { TreeSelectNode } from '../ui';
-import { incidentApi, classificationApi, workflowApi } from '../../api/admin';
+  PlusCircle,
+  Link,
+  Search,
+} from "lucide-react";
+import { Button, TreeSelect } from "../ui";
+import type { TreeSelectNode } from "../ui";
+import { incidentApi, classificationApi, workflowApi } from "../../api/admin";
 import type {
   IncidentDetail,
   AvailableTransition,
   Classification,
   BulkConvertToRequestRequest,
-} from '../../types';
-import { cn } from '@/lib/utils';
+} from "../../types";
+import { cn } from "@/lib/utils";
 
 interface BulkConvertToRequestModalProps {
   incidents: IncidentDetail[];
@@ -34,101 +37,268 @@ interface BulkConvertToRequestModalProps {
   onSuccess: (newRequestId: string) => void;
 }
 
-type Step = 'transition' | 'classification' | 'workflow' | 'review';
+type Step = "transition" | "classification" | "workflow" | "review";
 
-export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps> = ({
+const ReviewStepContent: React.FC<{
+  incidents: IncidentDetail[];
+  selectedTransition: AvailableTransition | null;
+  selectedClassification: any;
+  selectedWorkflow?: any;
+  feedbackComment: string;
+  feedbackError?: string;
+  setFeedbackError: (error: string) => void;
+  setFeedbackComment: (comment: string) => void;
+  isExisting: boolean;
+}> = ({
   incidents,
-  isOpen,
-  onClose,
-  onSuccess,
+  selectedTransition,
+  selectedClassification,
+  selectedWorkflow,
+  feedbackComment,
+  setFeedbackComment,
+  isExisting,
+  feedbackError,
+  setFeedbackError,
 }) => {
   const { t } = useTranslation();
 
+  return (
+    <div className="space-y-6 px-6">
+      <div>
+        <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+          {t("requests.reviewConversion", "Review Conversion")}
+        </h4>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+          {t(
+            "requests.reviewDescription",
+            "Review the details before creating the request.",
+          )}
+        </p>
+      </div>
+
+      {/* Summary */}
+      <div className="bg-[hsl(var(--muted)/0.3)] rounded-lg p-4 space-y-4">
+        <div>
+          <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+            {t("requests.sourceIncidents", "Source Incidents")}
+          </span>
+          {incidents.map((incident, idx) => (
+            <p
+              key={idx}
+              className="text-sm text-[hsl(var(--foreground))] font-medium"
+            >
+              {incident.incident_number} - {incident.title}
+            </p>
+          ))}
+        </div>
+
+        {selectedTransition && (
+          <div>
+            <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+              {t("requests.transition", "Transition")}
+            </span>
+            <p className="text-sm text-[hsl(var(--foreground))]">
+              {selectedTransition.transition.name}:{" "}
+              {selectedTransition.transition.from_state?.name} →{" "}
+              {selectedTransition.transition.to_state?.name}
+            </p>
+          </div>
+        )}
+
+        <div>
+          <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+            {t("requests.classification", "Classification")}
+          </span>
+          <p className="text-sm text-[hsl(var(--foreground))]">
+            {selectedClassification?.name}
+          </p>
+        </div>
+
+        <div>
+          <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+            {t("requests.workflow", "Workflow")}
+          </span>
+          <p className="text-sm text-[hsl(var(--foreground))]">
+            {selectedWorkflow?.name} ({selectedWorkflow?.code})
+          </p>
+        </div>
+      </div>
+
+      {/* Optional Overrides */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium space-x-2 text-muted-foreground mb-1">
+            {t("requests.feedback", "Feedback")}{" "}
+            <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={feedbackComment}
+            onChange={(e) => {
+              setFeedbackComment(e.target.value);
+              if (e.target.value.trim()) setFeedbackError("");
+            }}
+            placeholder={t("requests.enterFeedback", "Enter Feedback")}
+            rows={3}
+            className={cn(
+              "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 resize-none",
+              feedbackError
+                ? "border-red-500 focus:ring-red-200"
+                : "border-[hsl(var(--border))] focus:ring-[hsl(var(--primary)/0.2)]",
+            )}
+          />
+          {feedbackError && (
+            <p className="text-xs text-red-500 mt-1">{feedbackError}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Warning */}
+      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-700">
+            <p className="font-medium">
+              {isExisting
+                ? t(
+                    "",
+                    "This action will link the incident to the selected existing request.",
+                  )
+                : t(
+                    "requests.conversionWarning",
+                    "This action will create a new request record.",
+                  )}
+            </p>
+            <p className="mt-1">
+              {t(
+                "requests.conversionWarningDetails",
+                "The original incident will remain unchanged and will be linked to the new request.",
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const BulkConvertToRequestModal: React.FC<
+  BulkConvertToRequestModalProps
+> = ({ incidents, isOpen, onClose, onSuccess }) => {
+  const { t } = useTranslation();
+
   // Step state
-  const [currentStep, setCurrentStep] = useState<Step>('transition');
+  const [currentStep, setCurrentStep] = useState<Step>("transition");
 
   // Transition state
-  const [selectedTransition, setSelectedTransition] = useState<AvailableTransition | null>(null);
-  const [transitionComment, setTransitionComment] = useState('');
-  const [transitionAttachment, setTransitionAttachment] = useState<File | null>(null);
+  const [selectedTransition, setSelectedTransition] =
+    useState<AvailableTransition | null>(null);
+  const [transitionComment, setTransitionComment] = useState("");
+  const [transitionAttachment, setTransitionAttachment] = useState<File | null>(
+    null,
+  );
   const [feedbackRating, setFeedbackRating] = useState<number>(0);
-  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackComment, setFeedbackComment] = useState("");
 
   // Classification state
-  const [classificationId, setClassificationId] = useState('');
+  const [classificationId, setClassificationId] = useState("");
 
   // Workflow state
-  const [workflowId, setWorkflowId] = useState('');
+  const [workflowId, setWorkflowId] = useState("");
 
   // Optional overrides
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [convertType, setConvertType] = useState("existing");
+  const [requestSearch, setRequestSearch] = useState("");
+  const [showRequestSearch, setShowRequestSearch] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<IncidentDetail | null>(
+    null,
+  );
+  const [feedbackError, setFeedbackError] = useState("");
 
   // Query for available transitions
   const { data: transitionsData } = useQuery({
-    queryKey: ['incident', incidents?.[0]?.id, 'transitions'],
+    queryKey: ["incident", incidents?.[0]?.id, "transitions"],
     queryFn: () => incidentApi.getAvailableTransitions(incidents?.[0]?.id),
     enabled: isOpen,
   });
 
   // Query for request classifications
-  const { data: classificationsData, isLoading: classificationsLoading } = useQuery({
-    queryKey: ['classifications', 'request'],
-    queryFn: async () => {
-      // Get both 'request' and 'both' types
-      const [requestRes, bothRes] = await Promise.all([
-        classificationApi.getTreeByType('request'),
-        classificationApi.getTreeByType('both'),
-      ]);
-      const combined = [...(requestRes.data || []), ...(bothRes.data || [])];
-      // Deduplicate by ID
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
-      );
-      return { success: true, data: unique };
-    },
-    enabled: isOpen && currentStep === 'classification',
-  });
+  const { data: classificationsData, isLoading: classificationsLoading } =
+    useQuery({
+      queryKey: ["classifications", "request"],
+      queryFn: async () => {
+        // Get both 'request' and 'both' types
+        const [requestRes, bothRes] = await Promise.all([
+          classificationApi.getTreeByType("request"),
+          classificationApi.getTreeByType("both"),
+        ]);
+        const combined = [...(requestRes.data || []), ...(bothRes.data || [])];
+        // Deduplicate by ID
+        const unique = combined.filter(
+          (item, index, self) =>
+            index === self.findIndex((t) => t.id === item.id),
+        );
+        return { success: true, data: unique };
+      },
+      enabled: isOpen && currentStep === "classification",
+    });
 
   // Query for request workflows
   const { data: workflowsData, isLoading: workflowsLoading } = useQuery({
-    queryKey: ['workflows', 'request'],
+    queryKey: ["workflows", "request"],
     queryFn: async () => {
       // Get both 'request' and 'both' types
       const [requestRes, bothRes] = await Promise.all([
-        workflowApi.listByRecordType('request', true),
-        workflowApi.listByRecordType('both', true),
+        workflowApi.listByRecordType("request", true),
+        workflowApi.listByRecordType("both", true),
       ]);
       const combined = [...(requestRes.data || []), ...(bothRes.data || [])];
       // Deduplicate by ID
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
+      const unique = combined.filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.id === item.id),
       );
       return { success: true, data: unique };
     },
-    enabled: isOpen && currentStep === 'workflow',
+    enabled: isOpen && currentStep === "workflow",
   });
 
-  const availableTransitions = transitionsData?.data?.filter(t => t.can_execute) || [];
+  const { data: requestsData, isLoading: requestsLoading } = useQuery({
+    queryKey: ["requests", requestSearch],
+    queryFn: () =>
+      incidentApi.list({
+        search: requestSearch,
+        record_type: "request",
+        location_id: incidents?.[0]?.location?.id,
+      }),
+    enabled: requestSearch.length >= 3,
+  });
+
+  const availableTransitions =
+    transitionsData?.data?.filter((t) => t.can_execute) || [];
   const classifications = classificationsData?.data || [];
   const workflows = workflowsData?.data || [];
+  const searchedRequests = requestsData?.data || [];
 
   // Convert classifications to TreeSelectNode format
   const classificationTreeData: TreeSelectNode[] = useMemo(() => {
     const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
-      return items.map(item => ({
+      return items.map((item) => ({
         id: item.id,
         name: item.name,
-        children: item.children && item.children.length > 0
-          ? convertToTreeNode(item.children)
-          : undefined,
+        children:
+          item.children && item.children.length > 0
+            ? convertToTreeNode(item.children)
+            : undefined,
       }));
     };
     return convertToTreeNode(classifications);
   }, [classifications]);
 
   // Helper to find classification by ID
-  const findClassificationById = (items: Classification[], id: string): Classification | undefined => {
+  const findClassificationById = (
+    items: Classification[],
+    id: string,
+  ): Classification | undefined => {
     for (const item of items) {
       if (item.id === id) return item;
       if (item.children && item.children.length > 0) {
@@ -139,23 +309,28 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
     return undefined;
   };
 
-  const selectedClassification = classificationId ? findClassificationById(classifications, classificationId) : null;
-  const selectedWorkflow = workflowId ? workflows.find(w => w.id === workflowId) : null;
+  const selectedClassification = classificationId
+    ? findClassificationById(classifications, classificationId)
+    : null;
+  const selectedWorkflow = workflowId
+    ? workflows.find((w) => w.id === workflowId)
+    : null;
 
   // Filter workflows based on selected classification
   const filteredWorkflows = useMemo(() => {
-    const requestWorkflows = workflows.filter(w => w.is_active);
+    const requestWorkflows = workflows.filter((w) => w.is_active);
 
     if (!classificationId) {
       return requestWorkflows;
     }
 
-    const matching = requestWorkflows.filter(w => {
-      const hasNoClassificationRestriction = !w.classifications || w.classifications.length === 0;
+    const matching = requestWorkflows.filter((w) => {
+      const hasNoClassificationRestriction =
+        !w.classifications || w.classifications.length === 0;
 
       if (hasNoClassificationRestriction) return true;
 
-      return w.classifications?.some(c => c.id === classificationId);
+      return w.classifications?.some((c) => c.id === classificationId);
     });
 
     // If no workflows match the classification, show all workflows as fallback
@@ -167,9 +342,12 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
   useEffect(() => {
     if (filteredWorkflows.length === 1 && !workflowId) {
       setWorkflowId(filteredWorkflows[0].id);
-    } else if (workflowId && !filteredWorkflows.find(w => w.id === workflowId)) {
+    } else if (
+      workflowId &&
+      !filteredWorkflows.find((w) => w.id === workflowId)
+    ) {
       // Clear workflow if it's no longer in the filtered list
-      setWorkflowId('');
+      setWorkflowId("");
     }
   }, [filteredWorkflows, workflowId]);
 
@@ -177,74 +355,92 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
   const convertMutation = useMutation({
     mutationFn: async (data: BulkConvertToRequestRequest) => {
       // If attachment, upload first
-    //   if (transitionAttachment && selectedTransition) {
-    //     await incidentApi.uploadAttachment(incidents?.[0]?.id, transitionAttachment);
-    //   }
+      //   if (transitionAttachment && selectedTransition) {
+      //     await incidentApi.uploadAttachment(incidents?.[0]?.id, transitionAttachment);
+      //   }
 
       return incidentApi.bulkConvertToRequest({
-        incident_ids: incidents.map(i => i.id),
+        incident_ids: incidents.map((i) => i.id),
         classification_id: data.classification_id,
         workflow_id: data.workflow_id,
+        feedback: data.feedback,
       });
     },
     onSuccess: (result) => {
-      const firstSuccess = result.data?.results?.find((r:any) => r.success);
-          if (firstSuccess?.new_request?.id) {
-          onSuccess(firstSuccess.new_request.id);
-        }
-      },
-    });
+      const firstSuccess = result.data?.results?.find((r: any) => r.success);
+      if (firstSuccess?.new_request?.id) {
+        onSuccess(firstSuccess.new_request.id);
+      }
+    },
+    onError: (error) => {
+      console.error("Conversion error:", error);
+    },
+  });
 
   // Reset state when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setCurrentStep('transition');
+    if (isOpen && convertType) {
+      setCurrentStep(convertType === "new" ? "transition" : "review");
       setSelectedTransition(null);
-      setTransitionComment('');
+      setTransitionComment("");
       setTransitionAttachment(null);
       setFeedbackRating(0);
-      setFeedbackComment('');
-      setClassificationId('');
-      setWorkflowId('');
-      setTitle('');
-      setDescription('');
+      setFeedbackComment("");
+      setClassificationId("");
+      setWorkflowId("");
     }
-  }, [isOpen]);
+  }, [isOpen, convertType]);
 
   const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
-    { key: 'transition', label: t('requests.stepTransition', 'Transition'), icon: <Play className="w-4 h-4" /> },
-    { key: 'classification', label: t('requests.stepClassification', 'Classification'), icon: <Tags className="w-4 h-4" /> },
-    { key: 'workflow', label: t('requests.stepWorkflow', 'Workflow'), icon: <Workflow className="w-4 h-4" /> },
-    { key: 'review', label: t('requests.stepReview', 'Review'), icon: <FileText className="w-4 h-4" /> },
+    {
+      key: "transition",
+      label: t("requests.stepTransition", "Transition"),
+      icon: <Play className="w-4 h-4" />,
+    },
+    {
+      key: "classification",
+      label: t("requests.stepClassification", "Classification"),
+      icon: <Tags className="w-4 h-4" />,
+    },
+    {
+      key: "workflow",
+      label: t("requests.stepWorkflow", "Workflow"),
+      icon: <Workflow className="w-4 h-4" />,
+    },
+    {
+      key: "review",
+      label: t("requests.stepReview", "Review"),
+      icon: <FileText className="w-4 h-4" />,
+    },
   ];
 
-  const currentStepIndex = steps.findIndex(s => s.key === currentStep);
+  const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
   const canProceed = () => {
     switch (currentStep) {
-      case 'transition':
+      case "transition":
         // Transition is optional, but if selected, validate requirements
         if (selectedTransition) {
           const requiresComment = selectedTransition.requirements?.some(
-            r => r.requirement_type === 'comment' && r.is_mandatory
+            (r) => r.requirement_type === "comment" && r.is_mandatory,
           );
           const requiresAttachment = selectedTransition.requirements?.some(
-            r => r.requirement_type === 'attachment' && r.is_mandatory
+            (r) => r.requirement_type === "attachment" && r.is_mandatory,
           );
           const requiresFeedback = selectedTransition.requirements?.some(
-            r => r.requirement_type === 'feedback' && r.is_mandatory
+            (r) => r.requirement_type === "feedback" && r.is_mandatory,
           );
           if (requiresComment && !transitionComment.trim()) return false;
           if (requiresAttachment && !transitionAttachment) return false;
           if (requiresFeedback && feedbackRating === 0) return false;
         }
         return true;
-      case 'classification':
+      case "classification":
         return !!classificationId;
-      case 'workflow':
+      case "workflow":
         return !!workflowId;
-      case 'review':
-        return true;
+      case "review":
+        return isExisting ? !!selectedRequest : true;
       default:
         return false;
     }
@@ -265,15 +461,41 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
   };
 
   const handleConvert = () => {
-    if (!classificationId || !workflowId) return;
+    if (!feedbackComment.trim()) {
+      setFeedbackError("Please enter the feedback");
+      return;
+    }
+
+    if (!selectedRequest && (!classificationId || !workflowId)) return;
 
     const request: BulkConvertToRequestRequest = {
-      incident_ids: incidents.map(i => i.id),
-      classification_id: classificationId,
-      workflow_id: workflowId,
+      incident_ids: incidents.map((i) => i.id),
+      classification_id:
+        selectedRequest?.classification?.id || classificationId,
+      workflow_id: selectedRequest?.workflow?.id || workflowId,
+      existing_request_id: selectedRequest?.id,
+      feedback: {
+        comment: feedbackComment,
+        // hardcoded as it's not currently captured in the UI, but required by the API
+        rating: 4,
+      },
     };
 
     convertMutation.mutate(request);
+  };
+
+  const isExisting = convertType === "existing";
+
+  const handleSelectRequest = (request: IncidentDetail) => {
+    setSelectedRequest(request);
+  };
+
+  const handleClose = () => {
+    setConvertType("existing");
+    setSelectedRequest(null);
+    onClose();
+    setShowRequestSearch(false);
+    setRequestSearch("");
   };
 
   if (!isOpen) return null;
@@ -285,529 +507,735 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-              {t('requests.convertToRequest', 'Convert to Request')}
+              {t("requests.convertToRequest", "Convert to Request")}
             </h3>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
               {/* {incident.incident_number} - {incident.title} */}
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Step Indicator */}
-        <div className="px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <React.Fragment key={step.key}>
-                <div
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-                    currentStep === step.key
-                      ? "bg-[hsl(var(--primary))] text-white"
-                      : index < currentStepIndex
-                      ? "bg-green-100 text-green-700"
-                      : "text-[hsl(var(--muted-foreground))]"
-                  )}
-                >
-                  {index < currentStepIndex ? (
-                    <CheckCircle2 className="w-4 h-4" />
-                  ) : (
-                    step.icon
-                  )}
-                  <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
-                </div>
-                {index < steps.length - 1 && (
-                  <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+        <div className="px-6 flex items-center gap-3 py-4 border-b border-border ">
+          <label className="relative w-full cursor-pointer">
+            <input
+              type="radio"
+              name="convertRequest"
+              value="existing"
+              className="peer hidden"
+              checked={convertType === "existing"}
+              onChange={(e) => setConvertType(e.target.value)}
+            />
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Step 1: Transition */}
-          {currentStep === 'transition' && (
-            <div className="space-y-4">
+            <div
+              className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
+    peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 hover:border-primary"
+            >
+              <Link className="w-5 h-5 text-muted-foreground mt-0.5" />
+
               <div>
-                <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t('requests.selectTransition', 'Select Transition (Optional)')}
-                </h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t('requests.transitionDescription', 'Optionally execute a transition before converting to request.')}
+                <p className="font-medium">Existing Request</p>
+                <p className="text-xs text-muted-foreground">
+                  Link incident to an existing request
                 </p>
               </div>
+            </div>
+          </label>
 
-              {availableTransitions.length === 0 ? (
-                <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg text-center">
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t('requests.noTransitionsAvailable', 'No transitions available. You can proceed without transitioning.')}
-                  </p>
+          <label className="relative w-full cursor-pointer">
+            <input
+              type="radio"
+              name="convertRequest"
+              value="new"
+              className="peer hidden"
+              checked={convertType === "new"}
+              onChange={(e) => setConvertType(e.target.value)}
+            />
+
+            <div
+              className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
+    peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 hover:border-primary"
+            >
+              <PlusCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
+
+              <div>
+                <p className="font-medium">New Request</p>
+                <p className="text-xs text-muted-foreground">
+                  Create a new request
+                </p>
+              </div>
+            </div>
+          </label>
+        </div>
+        <div className="min-h-0 overflow-y-auto">
+          {isExisting ? (
+            <div className="px-6 py-4">
+              {selectedRequest ? (
+                <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
+                  <div>
+                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {selectedRequest?.incident_number}
+                    </p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {selectedRequest?.title}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRequest(null)}
+                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {/* No transition option */}
-                  <button
-                    onClick={() => setSelectedTransition(null)}
-                    className={cn(
-                      "w-full p-4 rounded-lg border-2 text-left transition-colors",
-                      !selectedTransition
-                        ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                        : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
-                    )}
+                <div>
+                  <label
+                    htmlFor="requestSearch"
+                    className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                        !selectedTransition ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]" : "border-[hsl(var(--muted-foreground))]"
-                      )}>
-                        {!selectedTransition && <CheckCircle2 className="w-3 h-3 text-white" />}
-                      </div>
-                      <span className="font-medium text-[hsl(var(--foreground))]">
-                        {t('requests.skipTransition', 'Skip transition')}
-                      </span>
-                    </div>
-                  </button>
-
-                  {availableTransitions.map((transition) => (
-                    <button
-                      key={transition.transition.id}
-                      onClick={() => setSelectedTransition(transition)}
-                      className={cn(
-                        "w-full p-4 rounded-lg border-2 text-left transition-colors",
-                        selectedTransition?.transition.id === transition.transition.id
-                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                          : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
+                    Select Request
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      value={requestSearch}
+                      onChange={(e) => {
+                        setRequestSearch(e.target.value);
+                        setShowRequestSearch(true);
+                      }}
+                      onFocus={() => setShowRequestSearch(true)}
+                      placeholder={t(
+                        "incidents.searchRequests",
+                        "Search by request number or title...",
                       )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                            selectedTransition?.transition.id === transition.transition.id
-                              ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
-                              : "border-[hsl(var(--muted-foreground))]"
-                          )}>
-                            {selectedTransition?.transition.id === transition.transition.id && (
-                              <CheckCircle2 className="w-3 h-3 text-white" />
-                            )}
-                          </div>
-                          <span className="font-medium text-[hsl(var(--foreground))]">
-                            {transition.transition.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span
-                            className="px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{
-                              backgroundColor: transition.transition.from_state?.color ? `${transition.transition.from_state.color}20` : 'hsl(var(--muted))',
-                              color: transition.transition.from_state?.color || 'hsl(var(--foreground))',
-                            }}
-                          >
-                            {transition.transition.from_state?.name}
-                          </span>
-                          <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                          <span
-                            className="px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{
-                              backgroundColor: transition.transition.to_state?.color ? `${transition.transition.to_state.color}20` : 'hsl(var(--muted))',
-                              color: transition.transition.to_state?.color || 'hsl(var(--foreground))',
-                            }}
-                          >
-                            {transition.transition.to_state?.name}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                      className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
+                    />
+                  </div>
 
-              {/* Transition Requirements */}
-              {selectedTransition && selectedTransition.requirements && selectedTransition.requirements.length > 0 && (
-                <div className="space-y-4 mt-4 pt-4 border-t border-[hsl(var(--border))]">
-                  {/* Feedback */}
-                  {selectedTransition.requirements.some(r => r.requirement_type === 'feedback') && (
-                    <div>
-                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                        {t('incidents.feedback', 'Feedback')}
-                        {selectedTransition.requirements.some(r => r.requirement_type === 'feedback' && r.is_mandatory) && (
-                          <span className="text-red-500 ml-1">*</span>
-                        )}
-                      </label>
-                      <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
-                        <div>
-                          <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                            {t('incidents.rateExperience', 'Rate your experience')}
-                          </span>
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() => setFeedbackRating(star)}
-                                className={`p-1 transition-colors ${
-                                  star <= feedbackRating
-                                    ? 'text-yellow-400'
-                                    : 'text-[hsl(var(--muted-foreground))] hover:text-yellow-300'
-                                }`}
-                              >
-                                <Star
-                                  className="w-6 h-6"
-                                  fill={star <= feedbackRating ? 'currentColor' : 'none'}
-                                />
-                              </button>
-                            ))}
-                            {feedbackRating > 0 && (
-                              <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))] self-center">
-                                {feedbackRating}/5
-                              </span>
-                            )}
-                          </div>
+                  {/* Search Results Dropdown */}
+                  {showRequestSearch && requestSearch.length ? (
+                    <div className=" top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {requestsLoading ? (
+                        <div className="p-4 text-center">
+                          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                         </div>
-                        <textarea
-                          value={feedbackComment}
-                          onChange={(e) => setFeedbackComment(e.target.value)}
-                          placeholder={t('incidents.feedbackCommentPlaceholder', 'Add optional feedback comments...')}
-                          rows={2}
-                          className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Attachment */}
-                  {selectedTransition.requirements.some(r => r.requirement_type === 'attachment') && (
-                    <div>
-                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                        {t('incidents.attachment', 'Attachment')}
-                        {selectedTransition.requirements.some(r => r.requirement_type === 'attachment' && r.is_mandatory) && (
-                          <span className="text-red-500 ml-1">*</span>
-                        )}
-                      </label>
-                      {transitionAttachment ? (
-                        <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                            <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
-                              {transitionAttachment.name}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setTransitionAttachment(null)}
-                            className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                      ) : searchedRequests.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                          {t(
+                            "complaints.noIncidentsFound",
+                            "No incidents found",
+                          )}
                         </div>
                       ) : (
-                        <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
-                          <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                            {t('incidents.clickToUpload', 'Click to upload')}
-                          </span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) setTransitionAttachment(file);
-                            }}
-                          />
-                        </label>
+                        searchedRequests.map((request) => (
+                          <button
+                            key={request.id}
+                            type="button"
+                            onClick={() => handleSelectRequest(request)}
+                            className="w-full px-4 py-3 text-left hover:bg-[hsl(var(--muted)/0.5)] transition-colors border-b border-[hsl(var(--border))] last:border-b-0"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                  {request.incident_number}
+                                </p>
+                                <p className="text-xs text-[hsl(var(--muted-foreground))] truncate max-w-[300px]">
+                                  {request.title}
+                                </p>
+                              </div>
+                              <span
+                                className="px-2 py-0.5 text-xs rounded-full"
+                                style={{
+                                  backgroundColor: request.current_state?.color
+                                    ? `${request.current_state.color}20`
+                                    : "hsl(var(--muted))",
+                                  color:
+                                    request.current_state?.color ||
+                                    "hsl(var(--foreground))",
+                                }}
+                              >
+                                {request.current_state?.name ||
+                                  request.record_type}
+                              </span>
+                            </div>
+                          </button>
+                        ))
                       )}
                     </div>
-                  )}
-
-                  {/* Comment */}
-                  {selectedTransition.requirements.some(r => r.requirement_type === 'comment') && (
-                    <div>
-                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                        {t('incidents.comment', 'Comment')}
-                        {selectedTransition.requirements.some(r => r.requirement_type === 'comment' && r.is_mandatory) && (
-                          <span className="text-red-500 ml-1">*</span>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              {/* Step Indicator */}
+              <div className="px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
+                <div className="flex items-center justify-between">
+                  {steps.map((step, index) => (
+                    <React.Fragment key={step.key}>
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                          currentStep === step.key
+                            ? "bg-[hsl(var(--primary))] text-white"
+                            : index < currentStepIndex
+                              ? "bg-green-100 text-green-700"
+                              : "text-[hsl(var(--muted-foreground))]",
                         )}
-                      </label>
-                      <textarea
-                        value={transitionComment}
-                        onChange={(e) => setTransitionComment(e.target.value)}
-                        placeholder={t('incidents.addCommentForTransition', 'Add a comment for this transition...')}
-                        rows={3}
-                        className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Classification */}
-          {currentStep === 'classification' && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t('requests.selectClassification', 'Select Request Classification')}
-                </h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t('requests.classificationDescription', 'Choose a classification for the new request.')}
-                </p>
-              </div>
-
-              {classificationsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : classifications.length === 0 ? (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <AlertTriangle className="w-5 h-5" />
-                    <p className="text-sm">
-                      {t('requests.noRequestClassifications', 'No request classifications found. Please create classifications with type "request" or "both".')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <TreeSelect
-                  data={classificationTreeData}
-                  value={classificationId}
-                  onChange={(id) => setClassificationId(id)}
-                  placeholder={t('requests.selectClassificationPlaceholder', 'Select classification...')}
-                  leafOnly={true}
-                  emptyMessage={t('requests.noRequestClassifications', 'No request classifications found.')}
-                  maxHeight="350px"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Workflow */}
-          {currentStep === 'workflow' && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t('requests.selectWorkflow', 'Select Request Workflow')}
-                </h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t('requests.workflowDescription', 'Choose a workflow for the new request.')}
-                </p>
-              </div>
-
-              {workflowsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : filteredWorkflows.length === 0 ? (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <AlertTriangle className="w-5 h-5" />
-                    <p className="text-sm">
-                      {t('requests.noRequestWorkflows', 'No request workflows found. Please create workflows with record_type "request" or "both".')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {filteredWorkflows.map((workflow) => (
-                    <button
-                      key={workflow.id}
-                      onClick={() => setWorkflowId(workflow.id)}
-                      className={cn(
-                        "w-full p-4 rounded-lg border-2 text-left transition-colors",
-                        workflowId === workflow.id
-                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
-                          : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
+                      >
+                        {index < currentStepIndex ? (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ) : (
+                          step.icon
+                        )}
+                        <span className="text-sm font-medium hidden sm:inline">
+                          {step.label}
+                        </span>
+                      </div>
+                      {index < steps.length - 1 && (
+                        <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                       )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                          workflowId === workflow.id
-                            ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
-                            : "border-[hsl(var(--muted-foreground))]"
-                        )}>
-                          {workflowId === workflow.id && (
-                            <CheckCircle2 className="w-3 h-3 text-white" />
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+                {/* Step 1: Transition */}
+                {currentStep === "transition" && (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                        {t(
+                          "requests.selectTransition",
+                          "Select Transition (Optional)",
+                        )}
+                      </h4>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                        {t(
+                          "requests.transitionDescription",
+                          "Optionally execute a transition before converting to request.",
+                        )}
+                      </p>
+                    </div>
+
+                    {availableTransitions.length === 0 ? (
+                      <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg text-center">
+                        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                          {t(
+                            "requests.noTransitionsAvailable",
+                            "No transitions available. You can proceed without transitioning.",
                           )}
-                        </div>
-                        <div className="flex-1">
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {/* No transition option */}
+                        <button
+                          onClick={() => setSelectedTransition(null)}
+                          className={cn(
+                            "w-full p-4 rounded-lg border-2 text-left transition-colors",
+                            !selectedTransition
+                              ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                              : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]",
+                          )}
+                        >
                           <div className="flex items-center gap-2">
+                            <div
+                              className={cn(
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                                !selectedTransition
+                                  ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
+                                  : "border-[hsl(var(--muted-foreground))]",
+                              )}
+                            >
+                              {!selectedTransition && (
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                              )}
+                            </div>
                             <span className="font-medium text-[hsl(var(--foreground))]">
-                              {workflow.name}
-                            </span>
-                            <span className="px-2 py-0.5 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
-                              {workflow.code}
-                            </span>
-                            <span className="px-2 py-0.5 text-xs rounded bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]">
-                              {workflow.record_type}
+                              {t("requests.skipTransition", "Skip transition")}
                             </span>
                           </div>
-                          {workflow.description && (
-                            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                              {workflow.description}
-                            </p>
-                          )}
-                          {workflow.states && workflow.states.length > 0 && (
-                            <div className="flex items-center gap-1 mt-2 flex-wrap">
-                              {workflow.states.slice(0, 5).map((state, idx) => (
-                                <React.Fragment key={state.id}>
-                                  <span
-                                    className="px-2 py-0.5 text-xs rounded"
-                                    style={{
-                                      backgroundColor: state.color ? `${state.color}20` : 'hsl(var(--muted))',
-                                      color: state.color || 'hsl(var(--foreground))',
-                                    }}
-                                  >
-                                    {state.name}
-                                  </span>
-                                  {idx < Math.min(workflow.states!.length, 5) - 1 && (
-                                    <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                        </button>
+
+                        {availableTransitions.map((transition) => (
+                          <button
+                            key={transition.transition.id}
+                            onClick={() => setSelectedTransition(transition)}
+                            className={cn(
+                              "w-full p-4 rounded-lg border-2 text-left transition-colors",
+                              selectedTransition?.transition.id ===
+                                transition.transition.id
+                                ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                                : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]",
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={cn(
+                                    "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                                    selectedTransition?.transition.id ===
+                                      transition.transition.id
+                                      ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
+                                      : "border-[hsl(var(--muted-foreground))]",
                                   )}
-                                </React.Fragment>
-                              ))}
-                              {workflow.states.length > 5 && (
-                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  +{workflow.states.length - 5} more
+                                >
+                                  {selectedTransition?.transition.id ===
+                                    transition.transition.id && (
+                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                  )}
+                                </div>
+                                <span className="font-medium text-[hsl(var(--foreground))]">
+                                  {transition.transition.name}
                                 </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span
+                                  className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{
+                                    backgroundColor: transition.transition
+                                      .from_state?.color
+                                      ? `${transition.transition.from_state.color}20`
+                                      : "hsl(var(--muted))",
+                                    color:
+                                      transition.transition.from_state?.color ||
+                                      "hsl(var(--foreground))",
+                                  }}
+                                >
+                                  {transition.transition.from_state?.name}
+                                </span>
+                                <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                                <span
+                                  className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{
+                                    backgroundColor: transition.transition
+                                      .to_state?.color
+                                      ? `${transition.transition.to_state.color}20`
+                                      : "hsl(var(--muted))",
+                                    color:
+                                      transition.transition.to_state?.color ||
+                                      "hsl(var(--foreground))",
+                                  }}
+                                >
+                                  {transition.transition.to_state?.name}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Transition Requirements */}
+                    {selectedTransition &&
+                      selectedTransition.requirements &&
+                      selectedTransition.requirements.length > 0 && (
+                        <div className="space-y-4 mt-4 pt-4 border-t border-[hsl(var(--border))]">
+                          {/* Feedback */}
+                          {selectedTransition.requirements.some(
+                            (r) => r.requirement_type === "feedback",
+                          ) && (
+                            <div>
+                              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                                {t("incidents.feedback", "Feedback")}
+                                {selectedTransition.requirements.some(
+                                  (r) =>
+                                    r.requirement_type === "feedback" &&
+                                    r.is_mandatory,
+                                ) && (
+                                  <span className="text-red-500 ml-1">*</span>
+                                )}
+                              </label>
+                              <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
+                                <div>
+                                  <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
+                                    {t(
+                                      "incidents.rateExperience",
+                                      "Rate your experience",
+                                    )}
+                                  </span>
+                                  <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() => setFeedbackRating(star)}
+                                        className={`p-1 transition-colors ${
+                                          star <= feedbackRating
+                                            ? "text-yellow-400"
+                                            : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
+                                        }`}
+                                      >
+                                        <Star
+                                          className="w-6 h-6"
+                                          fill={
+                                            star <= feedbackRating
+                                              ? "currentColor"
+                                              : "none"
+                                          }
+                                        />
+                                      </button>
+                                    ))}
+                                    {feedbackRating > 0 && (
+                                      <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))] self-center">
+                                        {feedbackRating}/5
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <textarea
+                                  value={feedbackComment}
+                                  onChange={(e) =>
+                                    setFeedbackComment(e.target.value)
+                                  }
+                                  placeholder={t(
+                                    "incidents.feedbackCommentPlaceholder",
+                                    "Add optional feedback comments...",
+                                  )}
+                                  rows={2}
+                                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Attachment */}
+                          {selectedTransition.requirements.some(
+                            (r) => r.requirement_type === "attachment",
+                          ) && (
+                            <div>
+                              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                                {t("incidents.attachment", "Attachment")}
+                                {selectedTransition.requirements.some(
+                                  (r) =>
+                                    r.requirement_type === "attachment" &&
+                                    r.is_mandatory,
+                                ) && (
+                                  <span className="text-red-500 ml-1">*</span>
+                                )}
+                              </label>
+                              {transitionAttachment ? (
+                                <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                                    <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
+                                      {transitionAttachment.name}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setTransitionAttachment(null)
+                                    }
+                                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                                  <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                                  <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                    {t(
+                                      "incidents.clickToUpload",
+                                      "Click to upload",
+                                    )}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) setTransitionAttachment(file);
+                                    }}
+                                  />
+                                </label>
                               )}
                             </div>
                           )}
+
+                          {/* Comment */}
+                          {selectedTransition.requirements.some(
+                            (r) => r.requirement_type === "comment",
+                          ) && (
+                            <div>
+                              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                                {t("incidents.comment", "Comment")}
+                                {selectedTransition.requirements.some(
+                                  (r) =>
+                                    r.requirement_type === "comment" &&
+                                    r.is_mandatory,
+                                ) && (
+                                  <span className="text-red-500 ml-1">*</span>
+                                )}
+                              </label>
+                              <textarea
+                                value={transitionComment}
+                                onChange={(e) =>
+                                  setTransitionComment(e.target.value)
+                                }
+                                placeholder={t(
+                                  "incidents.addCommentForTransition",
+                                  "Add a comment for this transition...",
+                                )}
+                                rows={3}
+                                className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                              />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 4: Review */}
-          {currentStep === 'review' && (
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t('requests.reviewConversion', 'Review Conversion')}
-                </h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t('requests.reviewDescription', 'Review the details before creating the request.')}
-                </p>
-              </div>
-
-              {/* Summary */}
-              <div className="bg-[hsl(var(--muted)/0.3)] rounded-lg p-4 space-y-4">
-                <div>
-                  <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                    {t('requests.sourceIncidents', 'Source Incidents')}
-                  </span>
-                 {incidents.map((incident, idx) => (
-                  <p key={idx} className="text-sm text-[hsl(var(--foreground))] font-medium">
-                    {incident.incident_number} - {incident.title}
-                  </p>))}
-                </div>
-
-                {selectedTransition && (
-                  <div>
-                    <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                      {t('requests.transition', 'Transition')}
-                    </span>
-                    <p className="text-sm text-[hsl(var(--foreground))]">
-                      {selectedTransition.transition.name}: {selectedTransition.transition.from_state?.name} → {selectedTransition.transition.to_state?.name}
-                    </p>
+                      )}
                   </div>
                 )}
 
-                <div>
-                  <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                    {t('requests.classification', 'Classification')}
-                  </span>
-                  <p className="text-sm text-[hsl(var(--foreground))]">
-                    {selectedClassification?.name}
-                  </p>
-                </div>
+                {/* Step 2: Classification */}
+                {currentStep === "classification" && (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                        {t(
+                          "requests.selectClassification",
+                          "Select Request Classification",
+                        )}
+                      </h4>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                        {t(
+                          "requests.classificationDescription",
+                          "Choose a classification for the new request.",
+                        )}
+                      </p>
+                    </div>
 
-                <div>
-                  <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                    {t('requests.workflow', 'Workflow')}
-                  </span>
-                  <p className="text-sm text-[hsl(var(--foreground))]">
-                    {selectedWorkflow?.name} ({selectedWorkflow?.code})
-                  </p>
-                </div>
-              </div>
-
-              {/* Optional Overrides */}
-              <div className="space-y-4">
-                <h5 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                  {t('requests.optionalOverrides', 'Optional Overrides')}
-                </h5>
-
-                <div>
-                  <label className="block text-sm text-[hsl(var(--muted-foreground))] mb-1">
-                    {t('requests.newTitle', 'New Title')} ({t('common.optional', 'optional')})
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    // placeholder={incident?.title}
-                    className="w-full px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-[hsl(var(--muted-foreground))] mb-1">
-                    {t('requests.newDescription', 'New Description')} ({t('common.optional', 'optional')})
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    // placeholder={incident.description || t('requests.noDescription', 'No description')}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Warning */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-700">
-                    <p className="font-medium">{t('requests.conversionWarning', 'This action will create a new request record.')}</p>
-                    <p className="mt-1">
-                      {t('requests.conversionWarningDetails', 'The original incident will remain unchanged and will be linked to the new request.')}
-                    </p>
+                    {classificationsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : classifications.length === 0 ? (
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-amber-700">
+                          <AlertTriangle className="w-5 h-5" />
+                          <p className="text-sm">
+                            {t(
+                              "requests.noRequestClassifications",
+                              'No request classifications found. Please create classifications with type "request" or "both".',
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <TreeSelect
+                        data={classificationTreeData}
+                        value={classificationId}
+                        onChange={(id) => setClassificationId(id)}
+                        placeholder={t(
+                          "requests.selectClassificationPlaceholder",
+                          "Select classification...",
+                        )}
+                        leafOnly={true}
+                        emptyMessage={t(
+                          "requests.noRequestClassifications",
+                          "No request classifications found.",
+                        )}
+                        maxHeight="350px"
+                      />
+                    )}
                   </div>
-                </div>
+                )}
+
+                {/* Step 3: Workflow */}
+                {currentStep === "workflow" && (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                        {t(
+                          "requests.selectWorkflow",
+                          "Select Request Workflow",
+                        )}
+                      </h4>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                        {t(
+                          "requests.workflowDescription",
+                          "Choose a workflow for the new request.",
+                        )}
+                      </p>
+                    </div>
+
+                    {workflowsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : filteredWorkflows.length === 0 ? (
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-amber-700">
+                          <AlertTriangle className="w-5 h-5" />
+                          <p className="text-sm">
+                            {t(
+                              "requests.noRequestWorkflows",
+                              'No request workflows found. Please create workflows with record_type "request" or "both".',
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                        {filteredWorkflows.map((workflow) => (
+                          <button
+                            key={workflow.id}
+                            onClick={() => setWorkflowId(workflow.id)}
+                            className={cn(
+                              "w-full p-4 rounded-lg border-2 text-left transition-colors",
+                              workflowId === workflow.id
+                                ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                                : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]",
+                            )}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={cn(
+                                  "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                                  workflowId === workflow.id
+                                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]"
+                                    : "border-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {workflowId === workflow.id && (
+                                  <CheckCircle2 className="w-3 h-3 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-[hsl(var(--foreground))]">
+                                    {workflow.name}
+                                  </span>
+                                  <span className="px-2 py-0.5 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
+                                    {workflow.code}
+                                  </span>
+                                  <span className="px-2 py-0.5 text-xs rounded bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]">
+                                    {workflow.record_type}
+                                  </span>
+                                </div>
+                                {workflow.description && (
+                                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                                    {workflow.description}
+                                  </p>
+                                )}
+                                {workflow.states &&
+                                  workflow.states.length > 0 && (
+                                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                                      {workflow.states
+                                        .slice(0, 5)
+                                        .map((state, idx) => (
+                                          <React.Fragment key={state.id}>
+                                            <span
+                                              className="px-2 py-0.5 text-xs rounded"
+                                              style={{
+                                                backgroundColor: state.color
+                                                  ? `${state.color}20`
+                                                  : "hsl(var(--muted))",
+                                                color:
+                                                  state.color ||
+                                                  "hsl(var(--foreground))",
+                                              }}
+                                            >
+                                              {state.name}
+                                            </span>
+                                            {idx <
+                                              Math.min(
+                                                workflow.states!.length,
+                                                5,
+                                              ) -
+                                                1 && (
+                                              <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                            )}
+                                          </React.Fragment>
+                                        ))}
+                                      {workflow.states.length > 5 && (
+                                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                          +{workflow.states.length - 5} more
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
+          {(isExisting ? selectedRequest : currentStep === "review") && (
+            <ReviewStepContent
+              incidents={incidents}
+              feedbackComment={feedbackComment}
+              setFeedbackComment={setFeedbackComment}
+              selectedWorkflow={
+                isExisting ? selectedRequest?.workflow : selectedWorkflow
+              }
+              selectedClassification={
+                isExisting
+                  ? selectedRequest?.classification
+                  : selectedClassification
+              }
+              selectedTransition={selectedTransition}
+              isExisting={isExisting}
+              feedbackError={feedbackError}
+              setFeedbackError={setFeedbackError}
+            />
+          )}
+          {convertMutation?.error ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mt-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertTriangle className="w-5 h-5" />
+                <p className="text-sm">
+                  {JSON.stringify(convertMutation.error?.message)}
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
-
-        {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
           <Button
             variant="ghost"
-            onClick={currentStepIndex === 0 ? onClose : handleBack}
-            leftIcon={currentStepIndex > 0 ? <ChevronLeft className="w-4 h-4" /> : undefined}
+            onClick={
+              currentStepIndex === 0 || isExisting ? handleClose : handleBack
+            }
+            leftIcon={
+              currentStepIndex > 0 ? (
+                <ChevronLeft className="w-4 h-4" />
+              ) : undefined
+            }
           >
-            {currentStepIndex === 0 ? t('common.cancel', 'Cancel') : t('common.back', 'Back')}
+            {currentStepIndex === 0 || isExisting
+              ? t("common.cancel", "Cancel")
+              : t("common.back", "Back")}
           </Button>
 
-          {currentStep === 'review' ? (
+          {currentStep === "review" ? (
             <Button
               onClick={handleConvert}
               disabled={!canProceed() || convertMutation.isPending}
               isLoading={convertMutation.isPending}
-              leftIcon={!convertMutation.isPending ? <CheckCircle2 className="w-4 h-4" /> : undefined}
+              leftIcon={
+                !convertMutation.isPending ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : undefined
+              }
             >
-              {t('requests.createRequest', 'Create Request')}
+              {t("requests.createRequest", "Create Request")}
             </Button>
           ) : (
             <Button
@@ -815,7 +1243,7 @@ export const BulkConvertToRequestModal: React.FC<BulkConvertToRequestModalProps>
               disabled={!canProceed()}
               rightIcon={<ChevronRight className="w-4 h-4" />}
             >
-              {t('common.next', 'Next')}
+              {t("common.next", "Next")}
             </Button>
           )}
         </div>

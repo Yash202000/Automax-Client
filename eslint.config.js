@@ -20,7 +20,30 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      /* ---------------- */
+      /* WARNINGS (safe)  */
+      /* ---------------- */
+
+      "no-console": "warn",
+      "no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+
+      /* ---------------- */
+      /* ERRORS (critical) */
+      /* ---------------- */
+
+      "no-undef": "error",
+      "no-unreachable": "error",
+      "no-redeclare": "error",
+      "valid-typeof": "error",
+
+      /* ---------------- */
+      /* Custom overrides */
+      /* ---------------- */
+
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 ]);
