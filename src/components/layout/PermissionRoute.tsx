@@ -1,6 +1,6 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { usePermissions } from '../../hooks/usePermissions';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { usePermissions } from "../../hooks/usePermissions";
 
 interface PermissionRouteProps {
   requiredPermissions: string[];
@@ -11,9 +11,10 @@ interface PermissionRouteProps {
 export const PermissionRoute: React.FC<PermissionRouteProps> = ({
   requiredPermissions,
   requireAll = false,
-  redirectTo = '/admin',
+  redirectTo = "/dashboard",
 }) => {
-  const { hasAnyPermission, hasAllPermissions, isSuperAdmin } = usePermissions();
+  const { hasAnyPermission, hasAllPermissions, isSuperAdmin } =
+    usePermissions();
 
   // Super admin has access to everything
   if (isSuperAdmin) {

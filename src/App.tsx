@@ -272,14 +272,6 @@ function App() {
                 >
                   <Route path="/incidents" element={<IncidentsPage />} />
                   <Route
-                    path="/incidents/my-assigned"
-                    element={<MyIncidentsPage type="assigned" />}
-                  />
-                  <Route
-                    path="/incidents/my-created"
-                    element={<MyIncidentsPage type="created" />}
-                  />
-                  <Route
                     path="/incidents/:id"
                     element={<IncidentDetailPage />}
                   />
@@ -288,7 +280,18 @@ function App() {
                     element={<IncidentEditPage />}
                   />
                 </Route>
-                {/* Create incident - requires create permission */}
+                <Route
+                  element={
+                    <PermissionRoute
+                      requiredPermissions={[PERMISSIONS.INCIDENTS_TRANSITION]}
+                    />
+                  }
+                >
+                  <Route
+                    path="/incidents/my-assigned"
+                    element={<MyIncidentsPage type="assigned" />}
+                  />
+                </Route>
                 <Route
                   element={
                     <PermissionRoute
@@ -296,6 +299,10 @@ function App() {
                     />
                   }
                 >
+                  <Route
+                    path="/incidents/my-created"
+                    element={<MyIncidentsPage type="created" />}
+                  />
                   <Route
                     path="/incidents/new"
                     element={<IncidentCreatePage />}
@@ -320,15 +327,31 @@ function App() {
                   }
                 >
                   <Route path="/requests" element={<RequestsPage />} />
+                  <Route path="/requests/:id" element={<RequestDetailPage />} />
+                </Route>
+                <Route
+                  element={
+                    <PermissionRoute
+                      requiredPermissions={[PERMISSIONS.REQUESTS_TRANSITION]}
+                    />
+                  }
+                >
                   <Route
                     path="/requests/my-assigned"
                     element={<MyRequestsPage type="assigned" />}
                   />
+                </Route>
+                <Route
+                  element={
+                    <PermissionRoute
+                      requiredPermissions={[PERMISSIONS.REQUESTS_CREATE]}
+                    />
+                  }
+                >
                   <Route
                     path="/requests/my-created"
                     element={<MyRequestsPage type="created" />}
                   />
-                  <Route path="/requests/:id" element={<RequestDetailPage />} />
                 </Route>
               </Route>
             </Route>

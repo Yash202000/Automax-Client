@@ -139,6 +139,8 @@ export const IncidentsPage: React.FC = () => {
 
   const canViewAllIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
+  const canTransitionIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
@@ -169,12 +171,22 @@ export const IncidentsPage: React.FC = () => {
   const urlSlaBreachedParam = searchParams.get("sla_breached");
   const hasUrlFilter = !!urlStatusParam || urlSlaBreachedParam === "true";
 
-  // Redirect to my-assigned if user doesn't have view_all permission AND no status filter is applied
+  // Redirect if user doesn't have view_all permission AND no status filter is applied
   useEffect(() => {
     if (!canViewAllIncidents && !hasUrlFilter) {
-      navigate("/incidents/my-assigned", { replace: true });
+      if (canTransitionIncident) {
+        navigate("/incidents/my-assigned", { replace: true });
+      } else if (canCreateIncident) {
+        navigate("/incidents/my-created", { replace: true });
+      }
     }
-  }, [canViewAllIncidents, hasUrlFilter, navigate]);
+  }, [
+    canViewAllIncidents,
+    canTransitionIncident,
+    canCreateIncident,
+    hasUrlFilter,
+    navigate,
+  ]);
 
   // Handle click outside column config dropdown
   useEffect(() => {
