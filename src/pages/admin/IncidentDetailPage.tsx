@@ -165,6 +165,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [collapsedUserGroups, setCollapsedUserGroups] = useState<Set<string>>(
     new Set(),
   );
+  const [transitionStep, setTransitionStep] = useState(0);
 
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -677,9 +678,163 @@ export const IncidentDetailPage: React.FC = () => {
     }
   };
 
+  type TransitionStepKey =
+    | "department"
+    | "user"
+    | "field_changes"
+    | "duration"
+    | "attachment"
+    | "feedback"
+    | "comment";
+
+  // Compute ordered step list from the selected transition config
+  const transitionSteps = useMemo((): TransitionStepKey[] => {
+    if (!selectedTransition) return [];
+    const trans = selectedTransition.transition;
+    const steps: TransitionStepKey[] = [];
+    if (trans.assign_department_id || trans.auto_detect_department)
+      steps.push("department");
+    if (
+      trans.assign_user_id ||
+      ((trans.auto_match_user || trans.manual_select_user) &&
+        trans.assignment_roles &&
+        trans.assignment_roles.length > 0)
+    )
+      steps.push("user");
+    if (trans.field_changes && trans.field_changes.length > 0)
+      steps.push("field_changes");
+    if (trans.to_state?.is_ready_to_close) steps.push("duration");
+    if (
+      selectedTransition.requirements?.some(
+        (r) => r.requirement_type === "attachment",
+      )
+    )
+      steps.push("attachment");
+    if (
+      selectedTransition.requirements?.some(
+        (r) => r.requirement_type === "feedback",
+      )
+    )
+      steps.push("feedback");
+    steps.push("comment");
+    return steps;
+  }, [selectedTransition]);
+
+  const closeTransitionModal = () => {
+    setTransitionModalOpen(false);
+    setSelectedTransition(null);
+    setTransitionComment("");
+    setTransitionAttachment(null);
+    setTransitionFeedbackRating(0);
+    setTransitionFeedbackComment("");
+    setTransitionFieldValues({});
+    setReadyToCloseDuration("");
+    setTransitionErrors({});
+    setTransitionStep(0);
+  };
+
+  const validateCurrentStep = (): boolean => {
+    if (!selectedTransition || transitionSteps.length === 0) return true;
+    const stepKey = transitionSteps[transitionStep];
+    const trans = selectedTransition.transition;
+    const newErrors: Record<string, string> = {};
+
+    if (stepKey === "department") {
+      if (
+        trans.auto_detect_department &&
+        !trans.assign_department_id &&
+        !selectedDepartmentId
+      )
+        newErrors.department = t(
+          "incidents.departmentSelectionRequired",
+          "Please select a department",
+        );
+    } else if (stepKey === "user") {
+      if (
+        trans.manual_select_user &&
+        trans.assignment_roles &&
+        trans.assignment_roles.length > 0 &&
+        !trans.assign_user_id &&
+        selectedUserIds.length === 0
+      )
+        newErrors.user = t(
+          "incidents.userSelectionRequired",
+          "Please select a user to assign",
+        );
+    } else if (stepKey === "field_changes") {
+      const required = trans.field_changes?.filter((f) => f.is_required) || [];
+      for (const fc of required) {
+        if (!transitionFieldValues[fc.field_name])
+          newErrors[fc.field_name] = t(
+            "incidents.fieldRequired",
+            "{{field}} is required",
+            { field: fc.label || fc.field_name },
+          );
+      }
+    } else if (stepKey === "duration") {
+      if (!readyToCloseDuration)
+        newErrors.duration = t(
+          "incidents.durationRequired",
+          "Please select a duration",
+        );
+    } else if (stepKey === "attachment") {
+      if (
+        selectedTransition.requirements?.some(
+          (r) => r.requirement_type === "attachment" && r.is_mandatory,
+        ) &&
+        !transitionAttachment
+      )
+        newErrors.attachment = t(
+          "incidents.attachmentRequired",
+          "Attachment is required",
+        );
+    } else if (stepKey === "feedback") {
+      if (
+        selectedTransition.requirements?.some(
+          (r) => r.requirement_type === "feedback" && r.is_mandatory,
+        ) &&
+        transitionFeedbackRating === 0
+      )
+        newErrors.feedback = t(
+          "incidents.feedbackRequired",
+          "Please provide a rating",
+        );
+    } else if (stepKey === "comment") {
+      if (
+        selectedTransition.requirements?.some(
+          (r) => r.requirement_type === "comment" && r.is_mandatory,
+        ) &&
+        !transitionComment.trim()
+      )
+        newErrors.comment = t(
+          "incidents.commentRequired",
+          "Comment is required",
+        );
+    }
+
+    setTransitionErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleStepNext = () => {
+    if (!validateCurrentStep()) return;
+    setTransitionErrors({});
+    if (transitionStep < transitionSteps.length - 1) {
+      setTransitionStep((prev) => prev + 1);
+    } else {
+      executeTransition();
+    }
+  };
+
+  const handleStepBack = () => {
+    setTransitionErrors({});
+    setTransitionStep((prev) => Math.max(0, prev - 1));
+  };
+
   const handleTransitionClick = async (transition: AvailableTransition) => {
     setSelectedTransition(transition);
     setTransitionModalOpen(true);
+    setTransitionStep(0);
     setDepartmentMatchResult(null);
     setUserMatchResult(null);
     setSelectedDepartmentId("");
@@ -880,14 +1035,12 @@ export const IncidentDetailPage: React.FC = () => {
         );
     }
 
-    // Validate department selection when auto-detect is on and multiple matches exist
+    // Validate department selection when auto-detect is on: block if no department selected
+    // (covers: 0 results found, multiple results but none chosen, or result still loading)
     const trans = selectedTransition.transition;
     if (
       trans.auto_detect_department &&
       !trans.assign_department_id &&
-      departmentMatchResult &&
-      departmentMatchResult.departments.length > 0 &&
-      !departmentMatchResult.single_match &&
       !selectedDepartmentId
     ) {
       newTransitionErrors.department = t(
@@ -896,13 +1049,13 @@ export const IncidentDetailPage: React.FC = () => {
       );
     }
 
-    // Validate user selection when manual_select_user is on and users are available
+    // Validate user selection when manual_select_user is on: block if no user selected
+    // (covers: 0 users found, multiple but none chosen, or result still loading)
     if (
       trans.manual_select_user &&
       trans.assignment_roles &&
       trans.assignment_roles.length > 0 &&
-      userMatchResult &&
-      userMatchResult.users.length > 0 &&
+      !trans.assign_user_id &&
       selectedUserIds.length === 0
     ) {
       newTransitionErrors.user = t(
@@ -2474,295 +2627,536 @@ export const IncidentDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Transition Modal */}
-      {transitionModalOpen && selectedTransition && (
-        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
-              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t("incidents.executeTransition")}
-              </h3>
-              <button
-                onClick={() => {
-                  setTransitionModalOpen(false);
-                  setSelectedTransition(null);
-                  setTransitionComment("");
-                  setTransitionFeedbackRating(0);
-                  setTransitionFeedbackComment("Missing Incident Information");
-                  setTransitionFieldValues({});
-                }}
-                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-center gap-3 text-sm">
-                <span
-                  className="px-3 py-1 rounded-full font-medium"
-                  style={{
-                    backgroundColor: selectedTransition.transition.from_state
-                      ?.color
-                      ? `${selectedTransition.transition.from_state.color}20`
-                      : "hsl(var(--muted))",
-                    color:
-                      selectedTransition.transition.from_state?.color ||
-                      "hsl(var(--foreground))",
-                  }}
-                >
-                  {selectedTransition.transition.from_state?.name ||
-                    t("incidents.current")}
-                </span>
-                <ChevronRight className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                <span
-                  className="px-3 py-1 rounded-full font-medium"
-                  style={{
-                    backgroundColor: selectedTransition.transition.to_state
-                      ?.color
-                      ? `${selectedTransition.transition.to_state.color}20`
-                      : "hsl(var(--muted))",
-                    color:
-                      selectedTransition.transition.to_state?.color ||
-                      "hsl(var(--foreground))",
-                  }}
-                >
-                  {selectedTransition.transition.to_state?.name ||
-                    t("incidents.next")}
-                </span>
-              </div>
-
-              {/* Requirements */}
-              {selectedTransition.requirements &&
-                selectedTransition.requirements.length > 0 && (
-                  <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
-                    <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase mb-2">
-                      {t("incidents.requirements")}
+      {/* Transition Modal — step-by-step wizard */}
+      {transitionModalOpen &&
+        selectedTransition &&
+        (() => {
+          const isLastStep = transitionStep === transitionSteps.length - 1;
+          const trans = selectedTransition.transition;
+          const currentStepKey = transitionSteps[transitionStep];
+          const stepTitles: Record<string, string> = {
+            department: t("incidents.departmentAssignment"),
+            user: t("incidents.userAssignment"),
+            field_changes: "Field Changes",
+            duration: t(
+              "incidents.readyToCloseDuration",
+              "Auto-Revert Duration",
+            ),
+            attachment: t("incidents.attachment"),
+            feedback: t("incidents.feedback", "Feedback"),
+            comment: t("incidents.comment"),
+          };
+          const isMandatory =
+            (currentStepKey === "comment" &&
+              selectedTransition.requirements?.some(
+                (r) => r.requirement_type === "comment" && r.is_mandatory,
+              )) ||
+            (currentStepKey === "attachment" &&
+              selectedTransition.requirements?.some(
+                (r) => r.requirement_type === "attachment" && r.is_mandatory,
+              )) ||
+            (currentStepKey === "feedback" &&
+              selectedTransition.requirements?.some(
+                (r) => r.requirement_type === "feedback" && r.is_mandatory,
+              )) ||
+            (currentStepKey === "department" &&
+              trans.auto_detect_department &&
+              !trans.assign_department_id) ||
+            (currentStepKey === "user" &&
+              trans.manual_select_user &&
+              !trans.assign_user_id) ||
+            currentStepKey === "duration";
+          return (
+            <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in flex flex-col max-h-[90vh]">
+                {/* Header */}
+                <div className="flex items-start justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                      {t("incidents.executeTransition")}
+                    </h3>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      {t("incidents.stepOf", "Step {{current}} of {{total}}", {
+                        current: transitionStep + 1,
+                        total: transitionSteps.length,
+                      })}
                     </p>
-                    <ul className="space-y-1">
-                      {selectedTransition.requirements.map((req, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-center gap-2 text-sm text-[hsl(var(--foreground))]"
-                        >
-                          {req.is_mandatory ? (
-                            <AlertTriangle className="w-4 h-4 text-amber-500" />
-                          ) : (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          )}
-                          {req.requirement_type === "comment" &&
-                            t("incidents.comment")}
-                          {req.requirement_type === "attachment" &&
-                            t("incidents.attachment")}
-                          {req.requirement_type === "field_value" &&
-                            t("incidents.fieldValue")}
-                          {req.is_mandatory && (
-                            <span className="text-xs text-amber-500">
-                              ({t("incidents.required")})
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                )}
+                  <button
+                    onClick={closeTransitionModal}
+                    className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors mt-0.5"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-              {/* Assignment Section */}
-              {matchLoading ? (
-                <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-                    <div className="w-4 h-4 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
-                    {t("incidents.loadingAssignmentOptions")}
+                {/* Fixed info: from→to state + step progress dots */}
+                <div className="px-6 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
+                  <div className="flex items-center justify-center gap-3 text-sm">
+                    <span
+                      className="px-3 py-1 rounded-full font-medium"
+                      style={{
+                        backgroundColor: trans.from_state?.color
+                          ? `${trans.from_state.color}20`
+                          : "hsl(var(--muted))",
+                        color:
+                          trans.from_state?.color || "hsl(var(--foreground))",
+                      }}
+                    >
+                      {trans.from_state?.name || t("incidents.current")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    <span
+                      className="px-3 py-1 rounded-full font-medium"
+                      style={{
+                        backgroundColor: trans.to_state?.color
+                          ? `${trans.to_state.color}20`
+                          : "hsl(var(--muted))",
+                        color:
+                          trans.to_state?.color || "hsl(var(--foreground))",
+                      }}
+                    >
+                      {trans.to_state?.name || t("incidents.next")}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 mt-2">
+                    {transitionSteps.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`rounded-full transition-all duration-200 ${
+                          idx === transitionStep
+                            ? "w-4 h-2 bg-[hsl(var(--primary))]"
+                            : idx < transitionStep
+                              ? "w-2 h-2 bg-[hsl(var(--primary)/0.4)]"
+                              : "w-2 h-2 bg-[hsl(var(--border))]"
+                        }`}
+                      />
+                    ))}
                   </div>
                 </div>
-              ) : (
-                <>
-                  {/* Department Assignment */}
-                  {(selectedTransition.transition.assign_department_id ||
-                    selectedTransition.transition.auto_detect_department) && (
-                    <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
-                      <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase mb-2 flex items-center gap-1">
-                        <Building2 className="w-3 h-3" />
-                        {t("incidents.departmentAssignment")}
-                        {selectedTransition.transition.auto_detect_department &&
-                          !selectedTransition.transition
-                            .assign_department_id && (
-                            <span className="text-red-500 font-bold">*</span>
-                          )}
+
+                {/* Step content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {/* Step label */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                      {stepTitles[currentStepKey]}
+                    </span>
+                    {isMandatory ? (
+                      <span className="text-red-500 font-bold">*</span>
+                    ) : (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        ({t("incidents.optional", "optional")})
+                      </span>
+                    )}
+                  </div>
+
+                  {/* ── DEPARTMENT STEP ── */}
+                  {currentStepKey === "department" &&
+                    (matchLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+                        <div className="w-4 h-4 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+                        {t("incidents.loadingAssignmentOptions")}
+                      </div>
+                    ) : trans.assign_department_id ? (
+                      <p className="text-sm text-[hsl(var(--foreground))]">
+                        {t("incidents.willAssignTo")}{" "}
+                        <span className="font-medium">
+                          {trans.assign_department?.name ||
+                            t("incidents.department")}
+                        </span>
                       </p>
-                      {selectedTransition.transition.assign_department_id ? (
+                    ) : departmentMatchResult ? (
+                      departmentMatchResult.departments.length === 0 ? (
+                        <p className="text-sm text-amber-600">
+                          {t("incidents.noMatchingDepartments")}
+                        </p>
+                      ) : departmentMatchResult.single_match ? (
                         <p className="text-sm text-[hsl(var(--foreground))]">
                           {t("incidents.willAssignTo")}{" "}
                           <span className="font-medium">
-                            {selectedTransition.transition.assign_department
-                              ?.name || t("incidents.department")}
+                            {departmentMatchResult.departments[0]?.name}
                           </span>
                         </p>
-                      ) : departmentMatchResult ? (
-                        departmentMatchResult.departments.length === 0 ? (
-                          <p className="text-sm text-amber-600">
-                            {t("incidents.noMatchingDepartments")}
-                          </p>
-                        ) : departmentMatchResult.single_match ? (
-                          <p className="text-sm text-[hsl(var(--foreground))]">
-                            {t("incidents.willAssignTo")}{" "}
-                            <span className="font-medium">
-                              {departmentMatchResult.departments[0]?.name}
-                            </span>
-                          </p>
-                        ) : (
-                          (() => {
-                            const allDepts = departmentMatchResult.departments;
-                            // IDs present in the result set
-                            const deptIdSet = new Set(
-                              allDepts.map((d) => d.id),
-                            );
-                            // A dept is a parent if any other dept in the list has parent_id === dept.id
-                            const parentIds = new Set(
-                              allDepts
-                                .map((d) => d.parent_id)
-                                .filter(
-                                  (pid): pid is string =>
-                                    pid !== null && deptIdSet.has(pid),
-                                ),
-                            );
-                            const isLeaf = (id: string) => !parentIds.has(id);
-
-                            // Build tree from flat list
-                            const childrenMap = new Map<
-                              string | null,
-                              Department[]
-                            >();
-                            allDepts.forEach((d) => {
-                              const key =
-                                d.parent_id && deptIdSet.has(d.parent_id)
-                                  ? d.parent_id
-                                  : null;
-                              if (!childrenMap.has(key))
-                                childrenMap.set(key, []);
-                              childrenMap.get(key)!.push(d);
+                      ) : (
+                        (() => {
+                          const allDepts = departmentMatchResult.departments;
+                          const deptIdSet = new Set(allDepts.map((d) => d.id));
+                          const parentIds = new Set(
+                            allDepts
+                              .map((d) => d.parent_id)
+                              .filter(
+                                (pid): pid is string =>
+                                  pid !== null && deptIdSet.has(pid),
+                              ),
+                          );
+                          const isLeaf = (id: string) => !parentIds.has(id);
+                          const childrenMap = new Map<
+                            string | null,
+                            Department[]
+                          >();
+                          allDepts.forEach((d) => {
+                            const key =
+                              d.parent_id && deptIdSet.has(d.parent_id)
+                                ? d.parent_id
+                                : null;
+                            if (!childrenMap.has(key)) childrenMap.set(key, []);
+                            childrenMap.get(key)!.push(d);
+                          });
+                          const searchActive =
+                            deptSearchQuery.trim().length > 0;
+                          const filteredFlat = searchActive
+                            ? allDepts.filter((d) =>
+                                d.name
+                                  .toLowerCase()
+                                  .includes(deptSearchQuery.toLowerCase()),
+                              )
+                            : [];
+                          const toggleDept = (id: string) =>
+                            setCollapsedDeptIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(id)) next.delete(id);
+                              else next.add(id);
+                              return next;
                             });
-
-                            // Search: flat filtered list ignoring hierarchy
-                            const searchActive =
-                              deptSearchQuery.trim().length > 0;
-                            const filteredFlat = searchActive
-                              ? allDepts.filter((d) =>
-                                  d.name
-                                    .toLowerCase()
-                                    .includes(deptSearchQuery.toLowerCase()),
-                                )
-                              : [];
-
-                            const toggleDept = (id: string) =>
-                              setCollapsedDeptIds((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(id)) next.delete(id);
-                                else next.add(id);
-                                return next;
-                              });
-
-                            const renderDeptRow = (
-                              dept: Department,
-                              depth: number,
-                            ) => {
-                              const selectable = isLeaf(dept.id);
-                              const isSelected =
-                                selectedDepartmentId === dept.id;
-                              const children = childrenMap.get(dept.id) ?? [];
-                              const isCollapsed = collapsedDeptIds.has(dept.id);
-                              return (
-                                <React.Fragment key={dept.id}>
-                                  {selectable ? (
-                                    <label
-                                      className={`flex items-center gap-2 py-2 pr-3 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] select-none border-b border-[hsl(var(--border))] last:border-0 ${isSelected ? "bg-[hsl(var(--primary)/0.04)]" : ""}`}
-                                      style={{
-                                        paddingLeft: `${12 + depth * 16}px`,
-                                      }}
-                                    >
-                                      <input
-                                        type="radio"
-                                        name="dept-selection"
-                                        value={dept.id}
-                                        checked={isSelected}
-                                        onChange={() => {
-                                          setSelectedDepartmentId(dept.id);
-                                          if (transitionErrors.department)
-                                            setTransitionErrors((prev) => ({
-                                              ...prev,
-                                              department: "",
-                                            }));
-                                        }}
-                                        className="accent-[hsl(var(--primary))] flex-shrink-0"
-                                      />
-                                      <span className="text-sm text-[hsl(var(--foreground))] truncate">
-                                        {dept.name}
-                                      </span>
-                                    </label>
-                                  ) : (
+                          const renderDeptRow = (
+                            dept: Department,
+                            indent = 0,
+                          ): React.ReactNode => {
+                            const hasChildren = childrenMap.has(dept.id);
+                            const isCollapsed = collapsedDeptIds.has(dept.id);
+                            const isSelected = selectedDepartmentId === dept.id;
+                            const isSelectableLeaf = isLeaf(dept.id);
+                            return (
+                              <React.Fragment key={dept.id}>
+                                <div
+                                  className={`flex items-center gap-1 px-3 py-2 transition-colors ${isSelectableLeaf ? "cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]" : "cursor-default"} ${isSelected ? "bg-[hsl(var(--primary)/0.1)]" : ""}`}
+                                  style={{
+                                    paddingLeft: `${12 + indent * 16}px`,
+                                  }}
+                                  onClick={() => {
+                                    if (!isSelectableLeaf) return;
+                                    setSelectedDepartmentId(dept.id);
+                                    if (transitionErrors.department)
+                                      setTransitionErrors((prev) => ({
+                                        ...prev,
+                                        department: "",
+                                      }));
+                                  }}
+                                >
+                                  {hasChildren ? (
                                     <button
                                       type="button"
-                                      onClick={() => toggleDept(dept.id)}
-                                      className="w-full flex items-center gap-1.5 py-2 pr-3 border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
-                                      style={{
-                                        paddingLeft: `${12 + depth * 16}px`,
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDept(dept.id);
                                       }}
+                                      className="p-0.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                                     >
-                                      {isCollapsed ? (
-                                        <ChevronRight className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                                      ) : (
-                                        <ChevronDown className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                                      )}
-                                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide truncate">
-                                        {dept.name}
-                                      </span>
-                                      <span className="ml-auto text-xs text-[hsl(var(--muted-foreground))] flex-shrink-0">
-                                        {children.length}
-                                      </span>
+                                      <ChevronDown
+                                        className={`w-3 h-3 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                                      />
                                     </button>
+                                  ) : (
+                                    <span className="w-4" />
                                   )}
-                                  {!isCollapsed &&
-                                    children.map((child) =>
-                                      renderDeptRow(child, depth + 1),
-                                    )}
-                                </React.Fragment>
+                                  <span
+                                    className={`text-sm flex-1 truncate ${isSelected ? "text-[hsl(var(--primary))] font-medium" : "text-[hsl(var(--foreground))]"} ${!isSelectableLeaf ? "opacity-60" : ""}`}
+                                  >
+                                    {dept.name}
+                                  </span>
+                                  {isSelected && (
+                                    <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))] flex-shrink-0" />
+                                  )}
+                                </div>
+                                {hasChildren &&
+                                  !isCollapsed &&
+                                  (childrenMap.get(dept.id) || []).map(
+                                    (child) => renderDeptRow(child, indent + 1),
+                                  )}
+                              </React.Fragment>
+                            );
+                          };
+                          return (
+                            <>
+                              <div className="relative mb-2">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                                <input
+                                  type="text"
+                                  value={deptSearchQuery}
+                                  onChange={(e) =>
+                                    setDeptSearchQuery(e.target.value)
+                                  }
+                                  placeholder={t(
+                                    "incidents.searchDepartments",
+                                    "Search departments...",
+                                  )}
+                                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+                                />
+                              </div>
+                              <div
+                                className={`border rounded-md overflow-y-auto max-h-52 bg-[hsl(var(--background))] ${transitionErrors.department ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                              >
+                                {searchActive ? (
+                                  filteredFlat.length === 0 ? (
+                                    <p className="text-sm text-[hsl(var(--muted-foreground))] px-3 py-2">
+                                      {t("common.noResults", "No results")}
+                                    </p>
+                                  ) : (
+                                    filteredFlat
+                                      .filter((d) => isLeaf(d.id))
+                                      .map((dept) => {
+                                        const isSel =
+                                          selectedDepartmentId === dept.id;
+                                        return (
+                                          <div
+                                            key={dept.id}
+                                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] transition-colors ${isSel ? "bg-[hsl(var(--primary)/0.1)]" : ""}`}
+                                            onClick={() => {
+                                              setSelectedDepartmentId(dept.id);
+                                              if (transitionErrors.department)
+                                                setTransitionErrors((prev) => ({
+                                                  ...prev,
+                                                  department: "",
+                                                }));
+                                            }}
+                                          >
+                                            <span
+                                              className={`text-sm flex-1 truncate ${isSel ? "text-[hsl(var(--primary))] font-medium" : "text-[hsl(var(--foreground))]"}`}
+                                            >
+                                              {dept.name}
+                                            </span>
+                                            {isSel && (
+                                              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))] flex-shrink-0" />
+                                            )}
+                                          </div>
+                                        );
+                                      })
+                                  )
+                                ) : (
+                                  (childrenMap.get(null) || []).map((dept) =>
+                                    renderDeptRow(dept, 0),
+                                  )
+                                )}
+                              </div>
+                              {transitionErrors.department && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  {transitionErrors.department}
+                                </p>
+                              )}
+                            </>
+                          );
+                        })()
+                      )
+                    ) : (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {t(
+                          "incidents.loadingDepartments",
+                          "Loading departments...",
+                        )}
+                      </p>
+                    ))}
+
+                  {/* ── USER STEP ── */}
+                  {currentStepKey === "user" &&
+                    (matchLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+                        <div className="w-4 h-4 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+                        {t("incidents.loadingAssignmentOptions")}
+                      </div>
+                    ) : trans.assign_user_id ? (
+                      <p className="text-sm text-[hsl(var(--foreground))]">
+                        {t("incidents.willAssignTo")}{" "}
+                        <span className="font-medium">
+                          {trans.assign_user?.first_name ||
+                            trans.assign_user?.username ||
+                            t("incidents.assignee")}
+                        </span>
+                      </p>
+                    ) : trans.manual_select_user ? (
+                      userMatchResult ? (
+                        userMatchResult.users.length === 0 ? (
+                          <>
+                            <p className="text-sm text-amber-600">
+                              {t("incidents.noUsersWithRole")}
+                            </p>
+                            {transitionErrors.user && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {transitionErrors.user}
+                              </p>
+                            )}
+                          </>
+                        ) : userMatchResult.single_match ? (
+                          <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.2)] rounded-md">
+                            <User className="w-4 h-4 text-[hsl(var(--primary))]" />
+                            <span className="text-sm text-[hsl(var(--foreground))] font-medium">
+                              {userMatchResult.users[0].first_name
+                                ? `${userMatchResult.users[0].first_name} ${userMatchResult.users[0].last_name || ""}`
+                                : userMatchResult.users[0].username}
+                            </span>
+                            <span className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">
+                              Auto-selected
+                            </span>
+                          </div>
+                        ) : (
+                          (() => {
+                            const allUsers = userMatchResult.users;
+                            const assignmentRoles =
+                              selectedTransition.transition.assignment_roles ??
+                              [];
+                            const searchActive =
+                              userSearchQuery.trim().length > 0;
+                            const filteredUsers = searchActive
+                              ? allUsers.filter((u) =>
+                                  `${u.first_name || ""} ${u.last_name || ""} ${u.username} ${u.email}`
+                                    .toLowerCase()
+                                    .includes(userSearchQuery.toLowerCase()),
+                                )
+                              : allUsers;
+                            const roleGroups: Array<{
+                              role: (typeof assignmentRoles)[0];
+                              users: typeof allUsers;
+                            }> = assignmentRoles.map((role) => ({
+                              role,
+                              users: allUsers.filter((u) =>
+                                u.roles?.some((r) => r.id === role.id),
+                              ),
+                            }));
+                            const allGroupKeys = roleGroups.map(
+                              (g) => g.role.id,
+                            );
+                            const allCollapsed =
+                              allGroupKeys.length > 0 &&
+                              allGroupKeys.every((k) =>
+                                collapsedUserGroups.has(k),
+                              );
+                            const allUsersSelected =
+                              allUsers.length > 0 &&
+                              allUsers.every((u) =>
+                                selectedUserIds.includes(u.id),
+                              );
+                            const someSelected = selectedUserIds.length > 0;
+                            const allFilteredSelected =
+                              filteredUsers.length > 0 &&
+                              filteredUsers.every((u) =>
+                                selectedUserIds.includes(u.id),
+                              );
+                            const someFilteredSelected = filteredUsers.some(
+                              (u) => selectedUserIds.includes(u.id),
+                            );
+                            const toggleSelectUser = (
+                              userId: string,
+                              isChecked: boolean,
+                            ) => {
+                              setSelectedUserIds((prev) =>
+                                isChecked
+                                  ? prev.filter((id) => id !== userId)
+                                  : [...prev, userId],
+                              );
+                              if (transitionErrors.user)
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  user: "",
+                                }));
+                            };
+                            const renderUserRow = (
+                              user: UserType,
+                              indent = false,
+                            ) => {
+                              const isChecked = selectedUserIds.includes(
+                                user.id,
+                              );
+                              return (
+                                <label
+                                  key={user.id}
+                                  className={`flex items-center gap-2 py-2 pr-3 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] select-none border-b border-[hsl(var(--border))] last:border-0 ${isChecked ? "bg-[hsl(var(--primary)/0.04)]" : ""}`}
+                                  style={{
+                                    paddingLeft: indent ? "28px" : "12px",
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() =>
+                                      toggleSelectUser(user.id, isChecked)
+                                    }
+                                    className="rounded flex-shrink-0"
+                                  />
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-sm text-[hsl(var(--foreground))] font-medium truncate">
+                                      {user.first_name
+                                        ? `${user.first_name} ${user.last_name || ""}`.trim()
+                                        : user.username}
+                                    </span>
+                                    <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                                      {user.email}
+                                    </span>
+                                  </div>
+                                </label>
                               );
                             };
-
-                            const roots = childrenMap.get(null) ?? [];
-
                             return (
                               <>
-                                {/* Search + expand/collapse controls */}
+                                {selectedUserIds.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mb-2">
+                                    {selectedUserIds.map((id) => {
+                                      const u = allUsers.find(
+                                        (x) => x.id === id,
+                                      );
+                                      if (!u) return null;
+                                      return (
+                                        <span
+                                          key={id}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)]"
+                                        >
+                                          {u.first_name
+                                            ? `${u.first_name} ${u.last_name || ""}`.trim()
+                                            : u.username}
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setSelectedUserIds((prev) =>
+                                                prev.filter((x) => x !== id),
+                                              )
+                                            }
+                                            className="hover:text-red-500 leading-none"
+                                          >
+                                            ×
+                                          </button>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="relative flex-1">
                                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                                     <input
                                       type="text"
-                                      value={deptSearchQuery}
+                                      value={userSearchQuery}
                                       onChange={(e) =>
-                                        setDeptSearchQuery(e.target.value)
+                                        setUserSearchQuery(e.target.value)
                                       }
                                       placeholder={t(
-                                        "incidents.searchDepartments",
-                                        "Search departments...",
+                                        "incidents.searchUsers",
+                                        "Search users...",
                                       )}
                                       className="w-full pl-8 pr-3 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                                     />
                                   </div>
-                                  {parentIds.size > 0 && !searchActive && (
+                                  {!searchActive && roleGroups.length > 1 && (
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        setCollapsedDeptIds(
-                                          collapsedDeptIds.size ===
-                                            parentIds.size
+                                        setCollapsedUserGroups(
+                                          allCollapsed
                                             ? new Set()
-                                            : new Set(parentIds),
+                                            : new Set(allGroupKeys),
                                         )
                                       }
                                       className="flex-shrink-0 text-xs text-[hsl(var(--primary))] hover:underline whitespace-nowrap"
                                     >
-                                      {collapsedDeptIds.size === parentIds.size
+                                      {allCollapsed
                                         ? t("common.expandAll", "Expand all")
                                         : t(
                                             "common.collapseAll",
@@ -2772,10 +3166,72 @@ export const IncidentDetailPage: React.FC = () => {
                                   )}
                                 </div>
                                 <div
-                                  className={`border rounded-md overflow-y-auto max-h-52 bg-[hsl(var(--background))] ${transitionErrors.department ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                                  className={`border rounded-md overflow-y-auto max-h-52 bg-[hsl(var(--background))] ${transitionErrors.user ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 >
+                                  <label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] select-none sticky top-0 bg-[hsl(var(--background))] z-10">
+                                    <input
+                                      type="checkbox"
+                                      checked={
+                                        searchActive
+                                          ? allFilteredSelected
+                                          : allUsersSelected
+                                      }
+                                      ref={(el) => {
+                                        if (el)
+                                          el.indeterminate = searchActive
+                                            ? !allFilteredSelected &&
+                                              someFilteredSelected
+                                            : !allUsersSelected && someSelected;
+                                      }}
+                                      onChange={() => {
+                                        const targets = searchActive
+                                          ? filteredUsers
+                                          : allUsers;
+                                        const allSel = targets.every((u) =>
+                                          selectedUserIds.includes(u.id),
+                                        );
+                                        if (allSel) {
+                                          setSelectedUserIds((prev) =>
+                                            prev.filter(
+                                              (id) =>
+                                                !targets.some(
+                                                  (u) => u.id === id,
+                                                ),
+                                            ),
+                                          );
+                                        } else {
+                                          setSelectedUserIds((prev) => [
+                                            ...prev,
+                                            ...targets
+                                              .filter(
+                                                (u) => !prev.includes(u.id),
+                                              )
+                                              .map((u) => u.id),
+                                          ]);
+                                        }
+                                        if (transitionErrors.user)
+                                          setTransitionErrors((prev) => ({
+                                            ...prev,
+                                            user: "",
+                                          }));
+                                      }}
+                                      className="rounded"
+                                    />
+                                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                      {searchActive
+                                        ? t(
+                                            "common.selectAllFiltered",
+                                            "Select all filtered",
+                                          )
+                                        : t("common.selectAll", "Select All")}
+                                    </span>
+                                    <span className="ml-auto text-xs text-[hsl(var(--muted-foreground))]">
+                                      {selectedUserIds.length}/{allUsers.length}{" "}
+                                      {t("common.selected", "selected")}
+                                    </span>
+                                  </label>
                                   {searchActive ? (
-                                    filteredFlat.length === 0 ? (
+                                    filteredUsers.length === 0 ? (
                                       <p className="px-3 py-3 text-sm text-[hsl(var(--muted-foreground))] text-center">
                                         {t(
                                           "common.noResults",
@@ -2783,76 +3239,121 @@ export const IncidentDetailPage: React.FC = () => {
                                         )}
                                       </p>
                                     ) : (
-                                      filteredFlat.map((dept) => {
-                                        const selectable = isLeaf(dept.id);
-                                        const isSelected =
-                                          selectedDepartmentId === dept.id;
-                                        return selectable ? (
-                                          <label
-                                            key={dept.id}
-                                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] select-none border-b border-[hsl(var(--border))] last:border-0 ${isSelected ? "bg-[hsl(var(--primary)/0.04)]" : ""}`}
-                                          >
-                                            <input
-                                              type="radio"
-                                              name="dept-selection"
-                                              value={dept.id}
-                                              checked={isSelected}
-                                              onChange={() => {
-                                                setSelectedDepartmentId(
-                                                  dept.id,
-                                                );
-                                                if (transitionErrors.department)
-                                                  setTransitionErrors(
-                                                    (prev) => ({
-                                                      ...prev,
-                                                      department: "",
-                                                    }),
-                                                  );
-                                              }}
-                                              className="accent-[hsl(var(--primary))]"
-                                            />
-                                            <div className="flex flex-col min-w-0">
-                                              <span className="text-sm text-[hsl(var(--foreground))] truncate">
-                                                {dept.name}
-                                              </span>
-                                              {dept.parent_id &&
-                                                deptIdSet.has(
-                                                  dept.parent_id,
-                                                ) && (
-                                                  <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">
-                                                    {
-                                                      allDepts.find(
-                                                        (d) =>
-                                                          d.id ===
-                                                          dept.parent_id,
-                                                      )?.name
-                                                    }
-                                                  </span>
-                                                )}
-                                            </div>
-                                          </label>
-                                        ) : (
-                                          <div
-                                            key={dept.id}
-                                            className="flex items-center gap-1.5 px-3 py-2 border-b border-[hsl(var(--border))] last:border-0 opacity-50"
-                                          >
-                                            <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wide">
-                                              {dept.name}
-                                            </span>
-                                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                              ({t("common.group", "group")})
-                                            </span>
-                                          </div>
-                                        );
-                                      })
+                                      filteredUsers.map((u) =>
+                                        renderUserRow(u, false),
+                                      )
                                     )
                                   ) : (
-                                    roots.map((d) => renderDeptRow(d, 0))
+                                    roleGroups.map(({ role, users }) => {
+                                      const isCollapsed =
+                                        collapsedUserGroups.has(role.id);
+                                      const groupAllSelected =
+                                        users.length > 0 &&
+                                        users.every((u) =>
+                                          selectedUserIds.includes(u.id),
+                                        );
+                                      const groupSomeSelected = users.some(
+                                        (u) => selectedUserIds.includes(u.id),
+                                      );
+                                      return (
+                                        <React.Fragment key={role.id}>
+                                          <div className="flex items-center border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setCollapsedUserGroups(
+                                                  (prev) => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(role.id))
+                                                      next.delete(role.id);
+                                                    else next.add(role.id);
+                                                    return next;
+                                                  },
+                                                )
+                                              }
+                                              className="flex items-center gap-1.5 px-3 py-1.5 flex-1 hover:bg-[hsl(var(--muted)/0.5)] transition-colors min-w-0"
+                                            >
+                                              {isCollapsed ? (
+                                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                                              ) : (
+                                                <ChevronDown className="w-3 h-3 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                                              )}
+                                              <span className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">
+                                                {role.name}
+                                              </span>
+                                              <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1 flex-shrink-0">
+                                                ({users.length})
+                                              </span>
+                                            </button>
+                                            <label className="flex items-center pr-3 cursor-pointer select-none flex-shrink-0">
+                                              <input
+                                                type="checkbox"
+                                                checked={groupAllSelected}
+                                                disabled={users.length === 0}
+                                                ref={(el) => {
+                                                  if (el)
+                                                    el.indeterminate =
+                                                      !groupAllSelected &&
+                                                      groupSomeSelected;
+                                                }}
+                                                onChange={() => {
+                                                  if (groupAllSelected) {
+                                                    setSelectedUserIds((prev) =>
+                                                      prev.filter(
+                                                        (id) =>
+                                                          !users.some(
+                                                            (u) => u.id === id,
+                                                          ),
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    setSelectedUserIds(
+                                                      (prev) => [
+                                                        ...prev,
+                                                        ...users
+                                                          .filter(
+                                                            (u) =>
+                                                              !prev.includes(
+                                                                u.id,
+                                                              ),
+                                                          )
+                                                          .map((u) => u.id),
+                                                      ],
+                                                    );
+                                                  }
+                                                  if (transitionErrors.user)
+                                                    setTransitionErrors(
+                                                      (prev) => ({
+                                                        ...prev,
+                                                        user: "",
+                                                      }),
+                                                    );
+                                                }}
+                                                className="rounded"
+                                              />
+                                            </label>
+                                          </div>
+                                          {!isCollapsed &&
+                                            (users.length === 0 ? (
+                                              <p className="px-6 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+                                                {t(
+                                                  "incidents.noUsersWithRole",
+                                                  "No users with this role",
+                                                )}
+                                              </p>
+                                            ) : (
+                                              users.map((u) =>
+                                                renderUserRow(u, true),
+                                              )
+                                            ))}
+                                        </React.Fragment>
+                                      );
+                                    })
                                   )}
                                 </div>
-                                {transitionErrors.department && (
+                                {transitionErrors.user && (
                                   <p className="text-xs text-red-500 mt-1">
-                                    {transitionErrors.department}
+                                    {transitionErrors.user}
                                   </p>
                                 )}
                               </>
@@ -2861,947 +3362,481 @@ export const IncidentDetailPage: React.FC = () => {
                         )
                       ) : (
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                          {t("incidents.autoDetectDeptLocation")}
+                          {t("incidents.loadingUsers")}
                         </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* User Assignment */}
-                  {(selectedTransition.transition.assign_user_id ||
-                    ((selectedTransition.transition.auto_match_user ||
-                      selectedTransition.transition.manual_select_user) &&
-                      selectedTransition.transition.assignment_roles &&
-                      selectedTransition.transition.assignment_roles.length >
-                        0)) && (
-                    <div className="bg-[hsl(var(--muted)/0.5)] rounded-lg p-3">
-                      <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase mb-2 flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {t("incidents.userAssignment")}
-                        {selectedTransition.transition.manual_select_user && (
-                          <span className="text-red-500 font-bold">*</span>
-                        )}
-                        {selectedTransition.transition.manual_select_user && (
-                          <span className="text-amber-500">
-                            ({t("incidents.manualSelectionRequired")})
-                          </span>
-                        )}
-                        {selectedTransition.transition.auto_match_user &&
-                          !selectedTransition.transition.manual_select_user && (
-                            <span className="text-green-500">
-                              ({t("incidents.autoAssignAllMatched")})
-                            </span>
-                          )}
-                        {selectedTransition.transition.assignment_roles &&
-                          selectedTransition.transition.assignment_roles
-                            .length > 0 && (
-                            <span className="text-[hsl(var(--primary))] ml-1">
-                              {t("incidents.role")}:{" "}
-                              {selectedTransition.transition.assignment_roles
-                                .map((r) => r.name)
-                                .join(", ")}
-                            </span>
-                          )}
-                      </p>
-                      {selectedTransition.transition.assign_user_id ? (
-                        <p className="text-sm text-[hsl(var(--foreground))]">
-                          {t("incidents.willAssignTo")}{" "}
-                          <span className="font-medium">
-                            {selectedTransition.transition.assign_user
-                              ?.first_name ||
-                              selectedTransition.transition.assign_user
-                                ?.username ||
-                              t("incidents.assignee")}
-                          </span>
-                        </p>
-                      ) : selectedTransition.transition.manual_select_user ? (
-                        // Manual select mode: single match → auto-assign, multiple → dropdown
-                        userMatchResult ? (
-                          userMatchResult.users.length === 0 ? (
-                            <p className="text-sm text-amber-600">
-                              {t("incidents.noUsersWithRole")}
-                            </p>
-                          ) : userMatchResult.single_match ? (
-                            // Single match — auto-assigned, just show who
-                            <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.2)] rounded-md">
-                              <User className="w-4 h-4 text-[hsl(var(--primary))]" />
-                              <span className="text-sm text-[hsl(var(--foreground))] font-medium">
-                                {userMatchResult.users[0].first_name
-                                  ? `${userMatchResult.users[0].first_name} ${userMatchResult.users[0].last_name || ""}`
-                                  : userMatchResult.users[0].username}
-                              </span>
-                              <span className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">
-                                Auto-selected
-                              </span>
-                            </div>
-                          ) : (
-                            // Multiple matches — grouped by role checkbox list
-                            (() => {
-                              const allUsers = userMatchResult.users;
-                              const assignmentRoles =
-                                selectedTransition.transition
-                                  .assignment_roles ?? [];
-                              const searchActive =
-                                userSearchQuery.trim().length > 0;
-                              const filteredUsers = searchActive
-                                ? allUsers.filter((u) =>
-                                    `${u.first_name || ""} ${u.last_name || ""} ${u.username} ${u.email}`
-                                      .toLowerCase()
-                                      .includes(userSearchQuery.toLowerCase()),
-                                  )
-                                : allUsers;
-
-                              // Group users by assignment role (user may appear in multiple groups)
-                              const roleGroups: Array<{
-                                role: (typeof assignmentRoles)[0];
-                                users: typeof allUsers;
-                              }> = assignmentRoles.map((role) => ({
-                                role,
-                                users: allUsers.filter((u) =>
-                                  u.roles?.some((r) => r.id === role.id),
-                                ),
-                              }));
-
-                              const allGroupKeys = roleGroups.map(
-                                (g) => g.role.id,
-                              );
-                              const allCollapsed =
-                                allGroupKeys.length > 0 &&
-                                allGroupKeys.every((k) =>
-                                  collapsedUserGroups.has(k),
-                                );
-
-                              const allUsersSelected =
-                                allUsers.length > 0 &&
-                                allUsers.every((u) =>
-                                  selectedUserIds.includes(u.id),
-                                );
-                              const someSelected = selectedUserIds.length > 0;
-                              const allFilteredSelected =
-                                filteredUsers.length > 0 &&
-                                filteredUsers.every((u) =>
-                                  selectedUserIds.includes(u.id),
-                                );
-                              const someFilteredSelected = filteredUsers.some(
-                                (u) => selectedUserIds.includes(u.id),
-                              );
-
-                              const toggleSelectUser = (
-                                userId: string,
-                                isChecked: boolean,
-                              ) => {
-                                setSelectedUserIds((prev) =>
-                                  isChecked
-                                    ? prev.filter((id) => id !== userId)
-                                    : [...prev, userId],
-                                );
-                                if (transitionErrors.user)
-                                  setTransitionErrors((prev) => ({
-                                    ...prev,
-                                    user: "",
-                                  }));
-                              };
-
-                              const renderUserRow = (
-                                user: UserType,
-                                indent = false,
-                              ) => {
-                                const isChecked = selectedUserIds.includes(
-                                  user.id,
-                                );
-                                return (
-                                  <label
-                                    key={user.id}
-                                    className={`flex items-center gap-2 py-2 pr-3 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] select-none border-b border-[hsl(var(--border))] last:border-0 ${isChecked ? "bg-[hsl(var(--primary)/0.04)]" : ""}`}
-                                    style={{
-                                      paddingLeft: indent ? "28px" : "12px",
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() =>
-                                        toggleSelectUser(user.id, isChecked)
-                                      }
-                                      className="rounded flex-shrink-0"
-                                    />
-                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-sm text-[hsl(var(--foreground))] font-medium truncate">
-                                        {user.first_name
-                                          ? `${user.first_name} ${user.last_name || ""}`.trim()
-                                          : user.username}
-                                      </span>
-                                      <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">
-                                        {user.email}
-                                      </span>
-                                    </div>
-                                  </label>
-                                );
-                              };
-
-                              return (
-                                <>
-                                  {/* Selected summary chips */}
-                                  {selectedUserIds.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mb-2">
-                                      {selectedUserIds.map((id) => {
-                                        const u = allUsers.find(
-                                          (x) => x.id === id,
-                                        );
-                                        if (!u) return null;
-                                        return (
-                                          <span
-                                            key={id}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)]"
-                                          >
-                                            {u.first_name
-                                              ? `${u.first_name} ${u.last_name || ""}`.trim()
-                                              : u.username}
-                                            <button
-                                              type="button"
-                                              onClick={() =>
-                                                setSelectedUserIds((prev) =>
-                                                  prev.filter((x) => x !== id),
-                                                )
-                                              }
-                                              className="hover:text-red-500 leading-none"
-                                            >
-                                              ×
-                                            </button>
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                  {/* Search + collapse controls */}
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <div className="relative flex-1">
-                                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                                      <input
-                                        type="text"
-                                        value={userSearchQuery}
-                                        onChange={(e) =>
-                                          setUserSearchQuery(e.target.value)
-                                        }
-                                        placeholder={t(
-                                          "incidents.searchUsers",
-                                          "Search users...",
-                                        )}
-                                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                                      />
-                                    </div>
-                                    {!searchActive && roleGroups.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setCollapsedUserGroups(
-                                            allCollapsed
-                                              ? new Set()
-                                              : new Set(allGroupKeys),
-                                          )
-                                        }
-                                        className="flex-shrink-0 text-xs text-[hsl(var(--primary))] hover:underline whitespace-nowrap"
-                                      >
-                                        {allCollapsed
-                                          ? t("common.expandAll", "Expand all")
-                                          : t(
-                                              "common.collapseAll",
-                                              "Collapse all",
-                                            )}
-                                      </button>
-                                    )}
-                                  </div>
-                                  {/* List */}
-                                  <div
-                                    className={`border rounded-md overflow-y-auto max-h-52 bg-[hsl(var(--background))] ${transitionErrors.user ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                                  >
-                                    {/* Sticky Select All header */}
-                                    <label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] select-none sticky top-0 bg-[hsl(var(--background))] z-10">
-                                      <input
-                                        type="checkbox"
-                                        checked={
-                                          searchActive
-                                            ? allFilteredSelected
-                                            : allUsersSelected
-                                        }
-                                        ref={(el) => {
-                                          if (el)
-                                            el.indeterminate = searchActive
-                                              ? !allFilteredSelected &&
-                                                someFilteredSelected
-                                              : !allUsersSelected &&
-                                                someSelected;
-                                        }}
-                                        onChange={() => {
-                                          const targets = searchActive
-                                            ? filteredUsers
-                                            : allUsers;
-                                          const allSel = targets.every((u) =>
-                                            selectedUserIds.includes(u.id),
-                                          );
-                                          if (allSel) {
-                                            setSelectedUserIds((prev) =>
-                                              prev.filter(
-                                                (id) =>
-                                                  !targets.some(
-                                                    (u) => u.id === id,
-                                                  ),
-                                              ),
-                                            );
-                                          } else {
-                                            setSelectedUserIds((prev) => [
-                                              ...prev,
-                                              ...targets
-                                                .filter(
-                                                  (u) => !prev.includes(u.id),
-                                                )
-                                                .map((u) => u.id),
-                                            ]);
-                                          }
-                                          if (transitionErrors.user)
-                                            setTransitionErrors((prev) => ({
-                                              ...prev,
-                                              user: "",
-                                            }));
-                                        }}
-                                        className="rounded"
-                                      />
-                                      <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                                        {searchActive
-                                          ? t(
-                                              "common.selectAllFiltered",
-                                              "Select all filtered",
-                                            )
-                                          : t("common.selectAll", "Select All")}
-                                      </span>
-                                      <span className="ml-auto text-xs text-[hsl(var(--muted-foreground))]">
-                                        {selectedUserIds.length}/
-                                        {allUsers.length}{" "}
-                                        {t("common.selected", "selected")}
-                                      </span>
-                                    </label>
-                                    {/* Search results — flat */}
-                                    {searchActive ? (
-                                      filteredUsers.length === 0 ? (
-                                        <p className="px-3 py-3 text-sm text-[hsl(var(--muted-foreground))] text-center">
-                                          {t(
-                                            "common.noResults",
-                                            "No results found",
-                                          )}
-                                        </p>
-                                      ) : (
-                                        filteredUsers.map((u) =>
-                                          renderUserRow(u, false),
-                                        )
-                                      )
-                                    ) : (
-                                      /* Grouped by role */
-                                      roleGroups.map(({ role, users }) => {
-                                        const isCollapsed =
-                                          collapsedUserGroups.has(role.id);
-                                        const groupAllSelected =
-                                          users.length > 0 &&
-                                          users.every((u) =>
-                                            selectedUserIds.includes(u.id),
-                                          );
-                                        const groupSomeSelected = users.some(
-                                          (u) => selectedUserIds.includes(u.id),
-                                        );
-                                        return (
-                                          <React.Fragment key={role.id}>
-                                            {/* Role group header */}
-                                            <div className="flex items-center border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  setCollapsedUserGroups(
-                                                    (prev) => {
-                                                      const next = new Set(
-                                                        prev,
-                                                      );
-                                                      if (next.has(role.id))
-                                                        next.delete(role.id);
-                                                      else next.add(role.id);
-                                                      return next;
-                                                    },
-                                                  )
-                                                }
-                                                className="flex items-center gap-1.5 px-3 py-1.5 flex-1 hover:bg-[hsl(var(--muted)/0.5)] transition-colors min-w-0"
-                                              >
-                                                {isCollapsed ? (
-                                                  <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                                                ) : (
-                                                  <ChevronDown className="w-3 h-3 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                                                )}
-                                                <span className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">
-                                                  {role.name}
-                                                </span>
-                                                <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1 flex-shrink-0">
-                                                  ({users.length})
-                                                </span>
-                                              </button>
-                                              {/* Group select-all checkbox */}
-                                              <label className="flex items-center pr-3 cursor-pointer select-none flex-shrink-0">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={groupAllSelected}
-                                                  disabled={users.length === 0}
-                                                  ref={(el) => {
-                                                    if (el)
-                                                      el.indeterminate =
-                                                        !groupAllSelected &&
-                                                        groupSomeSelected;
-                                                  }}
-                                                  onChange={() => {
-                                                    if (groupAllSelected) {
-                                                      setSelectedUserIds(
-                                                        (prev) =>
-                                                          prev.filter(
-                                                            (id) =>
-                                                              !users.some(
-                                                                (u) =>
-                                                                  u.id === id,
-                                                              ),
-                                                          ),
-                                                      );
-                                                    } else {
-                                                      setSelectedUserIds(
-                                                        (prev) => [
-                                                          ...prev,
-                                                          ...users
-                                                            .filter(
-                                                              (u) =>
-                                                                !prev.includes(
-                                                                  u.id,
-                                                                ),
-                                                            )
-                                                            .map((u) => u.id),
-                                                        ],
-                                                      );
-                                                    }
-                                                    if (transitionErrors.user)
-                                                      setTransitionErrors(
-                                                        (prev) => ({
-                                                          ...prev,
-                                                          user: "",
-                                                        }),
-                                                      );
-                                                  }}
-                                                  className="rounded"
-                                                />
-                                              </label>
-                                            </div>
-                                            {/* Users in this role */}
-                                            {!isCollapsed &&
-                                              (users.length === 0 ? (
-                                                <p className="px-6 py-2 text-xs text-[hsl(var(--muted-foreground))]">
-                                                  {t(
-                                                    "incidents.noUsersWithRole",
-                                                    "No users with this role",
-                                                  )}
-                                                </p>
-                                              ) : (
-                                                users.map((u) =>
-                                                  renderUserRow(u, true),
-                                                )
-                                              ))}
-                                          </React.Fragment>
-                                        );
-                                      })
-                                    )}
-                                  </div>
-                                  {transitionErrors.user && (
-                                    <p className="text-xs text-red-500 mt-1">
-                                      {transitionErrors.user}
-                                    </p>
-                                  )}
-                                </>
-                              );
-                            })()
-                          )
-                        ) : (
-                          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                            {t("incidents.loadingUsers")}
+                      )
+                    ) : trans.auto_match_user ? (
+                      userMatchResult ? (
+                        userMatchResult.users.length === 0 ? (
+                          <p className="text-sm text-amber-600">
+                            {t("incidents.noMatchingUsers")}
                           </p>
-                        )
-                      ) : selectedTransition.transition.auto_match_user ? (
-                        // Auto-match mode - assign to ALL matched users
-                        userMatchResult ? (
-                          userMatchResult.users.length === 0 ? (
-                            <p className="text-sm text-amber-600">
-                              {t("incidents.noMatchingUsers")}
-                            </p>
-                          ) : (
-                            <div>
-                              <p className="text-sm text-[hsl(var(--foreground))] mb-2">
-                                {t("incidents.willAssignToUsers", {
-                                  count: userMatchResult.users.length,
-                                })}
-                              </p>
-                              <div className="border border-[hsl(var(--border))] rounded-md overflow-y-auto max-h-40 divide-y divide-[hsl(var(--border))]">
-                                {userMatchResult.users.map((user) => (
-                                  <div
-                                    key={user.id}
-                                    className="flex items-center gap-2 px-3 py-2"
-                                  >
-                                    <User className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-sm text-[hsl(var(--foreground))] font-medium truncate">
-                                        {user.first_name
-                                          ? `${user.first_name} ${user.last_name || ""}`.trim()
-                                          : user.username}
-                                      </span>
-                                      <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">
-                                        {user.email}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )
                         ) : (
-                          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                            {t("incidents.autoAssignRoleCriteria")}
-                          </p>
+                          <div>
+                            <p className="text-sm text-[hsl(var(--foreground))] mb-2">
+                              {t("incidents.willAssignToUsers", {
+                                count: userMatchResult.users.length,
+                              })}
+                            </p>
+                            <div className="border border-[hsl(var(--border))] rounded-md overflow-y-auto max-h-40 divide-y divide-[hsl(var(--border))]">
+                              {userMatchResult.users.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center gap-2 px-3 py-2"
+                                >
+                                  <User className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-sm text-[hsl(var(--foreground))] font-medium truncate">
+                                      {user.first_name
+                                        ? `${user.first_name} ${user.last_name || ""}`.trim()
+                                        : user.username}
+                                    </span>
+                                    <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                                      {user.email}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )
                       ) : (
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                          {t("incidents.noAssignmentConfigured")}
+                          {t("incidents.autoAssignRoleCriteria")}
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {t("incidents.noAssignmentConfigured")}
+                      </p>
+                    ))}
+
+                  {/* Attachment */}
+                  {currentStepKey === "attachment" && (
+                    <div>
+                      {transitionAttachment ? (
+                        <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                            <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
+                              {transitionAttachment.name}
+                            </span>
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              ({(transitionAttachment.size / 1024).toFixed(1)}{" "}
+                              KB)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTransitionAttachment(null)}
+                            className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors ${transitionErrors.attachment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                        >
+                          <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                            {t("incidents.clickToUpload")}
+                          </span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setTransitionAttachment(file);
+                                if (transitionErrors.attachment)
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    attachment: "",
+                                  }));
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                      {transitionErrors.attachment && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {transitionErrors.attachment}
                         </p>
                       )}
                     </div>
                   )}
-                </>
-              )}
 
-              {/* Attachment */}
-              {selectedTransition.requirements?.some(
-                (r) => r.requirement_type === "attachment",
-              ) && (
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("incidents.attachment")}
-                    {selectedTransition.requirements?.some(
-                      (r) =>
-                        r.requirement_type === "attachment" && r.is_mandatory,
-                    ) && <span className="text-red-500 ml-1">*</span>}
-                  </label>
-                  {transitionAttachment ? (
-                    <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
-                          {transitionAttachment.name}
-                        </span>
-                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                          ({(transitionAttachment.size / 1024).toFixed(1)} KB)
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setTransitionAttachment(null)}
-                        className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label
-                      className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors ${transitionErrors.attachment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                    >
-                      <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("incidents.clickToUpload")}
-                      </span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setTransitionAttachment(file);
-                            if (transitionErrors.attachment)
-                              setTransitionErrors((prev) => ({
-                                ...prev,
-                                attachment: "",
-                              }));
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
-                  {transitionErrors.attachment && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {transitionErrors.attachment}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Feedback */}
-              {selectedTransition.requirements?.some(
-                (r) => r.requirement_type === "feedback",
-              ) && (
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("incidents.feedback", "Feedback")}
-                    {selectedTransition.requirements?.some(
-                      (r) =>
-                        r.requirement_type === "feedback" && r.is_mandatory,
-                    ) && <span className="text-red-500 ml-1">*</span>}
-                  </label>
-                  <div className="p-2 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
-                    {/* Star Rating */}
+                  {/* Feedback */}
+                  {currentStepKey === "feedback" && (
                     <div>
-                      <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                        {t("incidents.rateExperience", "Rate your experience")}
-                      </span>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setTransitionFeedbackRating(star)}
-                            className={`p-1 transition-colors ${
-                              star <= transitionFeedbackRating
-                                ? "text-yellow-400"
-                                : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
-                            }`}
-                          >
-                            <Star
-                              className="w-6 h-6"
-                              fill={
-                                star <= transitionFeedbackRating
-                                  ? "currentColor"
-                                  : "none"
-                              }
-                            />
-                          </button>
-                        ))}
-                        {transitionFeedbackRating > 0 && (
-                          <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))] self-center">
-                            {transitionFeedbackRating}/5
+                      <div className="p-2 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
+                        {/* Star Rating */}
+                        <div>
+                          <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
+                            {t(
+                              "incidents.rateExperience",
+                              "Rate your experience",
+                            )}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                    {/* Feedback Comment */}
-                    <div>
-                      <textarea
-                        value={transitionFeedbackComment}
-                        onChange={(e) =>
-                          setTransitionFeedbackComment(e.target.value)
-                        }
-                        placeholder={t(
-                          "incidents.feedbackCommentPlaceholder",
-                          "Add optional feedback comments...",
-                        )}
-                        rows={2}
-                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                      />
-                      {/* <select
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() =>
+                                  setTransitionFeedbackRating(star)
+                                }
+                                className={`p-1 transition-colors ${
+                                  star <= transitionFeedbackRating
+                                    ? "text-yellow-400"
+                                    : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
+                                }`}
+                              >
+                                <Star
+                                  className="w-6 h-6"
+                                  fill={
+                                    star <= transitionFeedbackRating
+                                      ? "currentColor"
+                                      : "none"
+                                  }
+                                />
+                              </button>
+                            ))}
+                            {transitionFeedbackRating > 0 && (
+                              <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))] self-center">
+                                {transitionFeedbackRating}/5
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Feedback Comment */}
+                        <div>
+                          <textarea
+                            value={transitionFeedbackComment}
+                            onChange={(e) =>
+                              setTransitionFeedbackComment(e.target.value)
+                            }
+                            placeholder={t(
+                              "incidents.feedbackCommentPlaceholder",
+                              "Add optional feedback comments...",
+                            )}
+                            rows={2}
+                            className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                          />
+                          {/* <select
                         className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                         value={transitionFeedbackComment}
                         onChange={(e) => setTransitionFeedbackComment(e.target.value)}
                       >
                         <option value="Missing Incident Information">Missing Incident Information</option>
                       </select> */}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* Field Changes */}
-              {selectedTransition.transition.field_changes &&
-                selectedTransition.transition.field_changes.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                      Field Changes
-                    </p>
-                    {selectedTransition.transition.field_changes.map((fc) => (
-                      <div key={fc.id}>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
-                          {fc.label || fc.field_name}
-                          {fc.is_required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </label>
-                        {fc.field_name === "priority" && (
-                          <>
-                            <select
-                              value={transitionFieldValues[fc.field_name] || ""}
-                              onChange={(e) => {
-                                setTransitionFieldValues((prev) => ({
-                                  ...prev,
-                                  [fc.field_name]: e.target.value,
-                                }));
-                                if (transitionErrors[fc.field_name])
-                                  setTransitionErrors((prev) => ({
-                                    ...prev,
-                                    [fc.field_name]: "",
-                                  }));
-                              }}
-                              className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                            >
-                              <option value="">Select priority...</option>
-                              <option value="1">Low</option>
-                              <option value="2">Medium</option>
-                              <option value="3">High</option>
-                              <option value="4">Urgent</option>
-                              <option value="5">Critical</option>
-                            </select>
-                            {transitionErrors[fc.field_name] && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {transitionErrors[fc.field_name]}
-                              </p>
-                            )}
-                          </>
-                        )}
-                        {fc.field_name === "department_id" && (
-                          <TreeSelect
-                            data={(() => {
-                              const allDepts =
-                                (fcDepartmentsData?.data as unknown as Department[]) ||
-                                [];
-                              const filtered = fc.department_type_filter
-                                ? filterDeptTree(
-                                    allDepts,
-                                    fc.department_type_filter,
-                                  )
-                                : allDepts;
-                              return filtered as unknown as TreeSelectNode[];
-                            })()}
-                            value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(id) => {
-                              setTransitionFieldValues((prev) => ({
-                                ...prev,
-                                [fc.field_name]: id,
-                              }));
-                              if (transitionErrors[fc.field_name])
-                                setTransitionErrors((prev) => ({
-                                  ...prev,
-                                  [fc.field_name]: "",
-                                }));
-                            }}
-                            placeholder={`Select ${fc.department_type_filter || ""} department...`
-                              .replace("  ", " ")
-                              .trim()}
-                            leafOnly={false}
-                            error={transitionErrors[fc.field_name]}
-                            maxHeight="240px"
-                          />
-                        )}
-                        {fc.field_name === "location_id" && (
-                          <TreeSelect
-                            data={
-                              (fcLocationsData?.data as unknown as TreeSelectNode[]) ||
-                              []
-                            }
-                            value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(id) => {
-                              setTransitionFieldValues((prev) => ({
-                                ...prev,
-                                [fc.field_name]: id,
-                              }));
-                              if (transitionErrors[fc.field_name])
-                                setTransitionErrors((prev) => ({
-                                  ...prev,
-                                  [fc.field_name]: "",
-                                }));
-                            }}
-                            placeholder="Select location..."
-                            leafOnly={false}
-                            maxHeight="240px"
-                            error={transitionErrors[fc.field_name]}
-                          />
-                        )}
-                        {fc.field_name === "classification_id" && (
-                          <TreeSelect
-                            data={
-                              (fcClassificationsData?.data as unknown as TreeSelectNode[]) ||
-                              []
-                            }
-                            value={transitionFieldValues[fc.field_name] || ""}
-                            onChange={(id) => {
-                              setTransitionFieldValues((prev) => ({
-                                ...prev,
-                                [fc.field_name]: id,
-                              }));
-                              if (transitionErrors[fc.field_name])
-                                setTransitionErrors((prev) => ({
-                                  ...prev,
-                                  [fc.field_name]: "",
-                                }));
-                            }}
-                            placeholder="Select classification..."
-                            leafOnly={false}
-                            maxHeight="240px"
-                            error={transitionErrors[fc.field_name]}
-                          />
-                        )}
-                        {fc.field_name === "title" && (
-                          <>
-                            <input
-                              type="text"
-                              value={transitionFieldValues[fc.field_name] || ""}
-                              onChange={(e) => {
-                                setTransitionFieldValues((prev) => ({
-                                  ...prev,
-                                  [fc.field_name]: e.target.value,
-                                }));
-                                if (transitionErrors[fc.field_name])
-                                  setTransitionErrors((prev) => ({
-                                    ...prev,
-                                    [fc.field_name]: "",
-                                  }));
-                              }}
-                              placeholder="Enter title..."
-                              className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                            />
-                            {transitionErrors[fc.field_name] && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {transitionErrors[fc.field_name]}
-                              </p>
-                            )}
-                          </>
-                        )}
-                        {fc.field_name === "description" && (
-                          <>
-                            <textarea
-                              value={transitionFieldValues[fc.field_name] || ""}
-                              onChange={(e) => {
-                                setTransitionFieldValues((prev) => ({
-                                  ...prev,
-                                  [fc.field_name]: e.target.value,
-                                }));
-                                if (transitionErrors[fc.field_name])
-                                  setTransitionErrors((prev) => ({
-                                    ...prev,
-                                    [fc.field_name]: "",
-                                  }));
-                              }}
-                              placeholder="Enter description..."
-                              rows={3}
-                              className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                            />
-                            {transitionErrors[fc.field_name] && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {transitionErrors[fc.field_name]}
-                              </p>
-                            )}
-                          </>
+                  {/* Field Changes */}
+                  {currentStepKey === "field_changes" &&
+                    trans.field_changes &&
+                    trans.field_changes.length > 0 && (
+                      <div className="space-y-3">
+                        {selectedTransition.transition.field_changes.map(
+                          (fc) => (
+                            <div key={fc.id}>
+                              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
+                                {fc.label || fc.field_name}
+                                {fc.is_required && (
+                                  <span className="text-red-500 ml-1">*</span>
+                                )}
+                              </label>
+                              {fc.field_name === "priority" && (
+                                <>
+                                  <select
+                                    value={
+                                      transitionFieldValues[fc.field_name] || ""
+                                    }
+                                    onChange={(e) => {
+                                      setTransitionFieldValues((prev) => ({
+                                        ...prev,
+                                        [fc.field_name]: e.target.value,
+                                      }));
+                                      if (transitionErrors[fc.field_name])
+                                        setTransitionErrors((prev) => ({
+                                          ...prev,
+                                          [fc.field_name]: "",
+                                        }));
+                                    }}
+                                    className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                                  >
+                                    <option value="">Select priority...</option>
+                                    <option value="1">Low</option>
+                                    <option value="2">Medium</option>
+                                    <option value="3">High</option>
+                                    <option value="4">Urgent</option>
+                                    <option value="5">Critical</option>
+                                  </select>
+                                  {transitionErrors[fc.field_name] && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                      {transitionErrors[fc.field_name]}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                              {fc.field_name === "department_id" && (
+                                <TreeSelect
+                                  data={(() => {
+                                    const allDepts =
+                                      (fcDepartmentsData?.data as unknown as Department[]) ||
+                                      [];
+                                    const filtered = fc.department_type_filter
+                                      ? filterDeptTree(
+                                          allDepts,
+                                          fc.department_type_filter,
+                                        )
+                                      : allDepts;
+                                    return filtered as unknown as TreeSelectNode[];
+                                  })()}
+                                  value={
+                                    transitionFieldValues[fc.field_name] || ""
+                                  }
+                                  onChange={(id) => {
+                                    setTransitionFieldValues((prev) => ({
+                                      ...prev,
+                                      [fc.field_name]: id,
+                                    }));
+                                    if (transitionErrors[fc.field_name])
+                                      setTransitionErrors((prev) => ({
+                                        ...prev,
+                                        [fc.field_name]: "",
+                                      }));
+                                  }}
+                                  placeholder={`Select ${fc.department_type_filter || ""} department...`
+                                    .replace("  ", " ")
+                                    .trim()}
+                                  leafOnly={false}
+                                  error={transitionErrors[fc.field_name]}
+                                  maxHeight="240px"
+                                />
+                              )}
+                              {fc.field_name === "location_id" && (
+                                <TreeSelect
+                                  data={
+                                    (fcLocationsData?.data as unknown as TreeSelectNode[]) ||
+                                    []
+                                  }
+                                  value={
+                                    transitionFieldValues[fc.field_name] || ""
+                                  }
+                                  onChange={(id) => {
+                                    setTransitionFieldValues((prev) => ({
+                                      ...prev,
+                                      [fc.field_name]: id,
+                                    }));
+                                    if (transitionErrors[fc.field_name])
+                                      setTransitionErrors((prev) => ({
+                                        ...prev,
+                                        [fc.field_name]: "",
+                                      }));
+                                  }}
+                                  placeholder="Select location..."
+                                  leafOnly={false}
+                                  maxHeight="240px"
+                                  error={transitionErrors[fc.field_name]}
+                                />
+                              )}
+                              {fc.field_name === "classification_id" && (
+                                <TreeSelect
+                                  data={
+                                    (fcClassificationsData?.data as unknown as TreeSelectNode[]) ||
+                                    []
+                                  }
+                                  value={
+                                    transitionFieldValues[fc.field_name] || ""
+                                  }
+                                  onChange={(id) => {
+                                    setTransitionFieldValues((prev) => ({
+                                      ...prev,
+                                      [fc.field_name]: id,
+                                    }));
+                                    if (transitionErrors[fc.field_name])
+                                      setTransitionErrors((prev) => ({
+                                        ...prev,
+                                        [fc.field_name]: "",
+                                      }));
+                                  }}
+                                  placeholder="Select classification..."
+                                  leafOnly={false}
+                                  maxHeight="240px"
+                                  error={transitionErrors[fc.field_name]}
+                                />
+                              )}
+                              {fc.field_name === "title" && (
+                                <>
+                                  <input
+                                    type="text"
+                                    value={
+                                      transitionFieldValues[fc.field_name] || ""
+                                    }
+                                    onChange={(e) => {
+                                      setTransitionFieldValues((prev) => ({
+                                        ...prev,
+                                        [fc.field_name]: e.target.value,
+                                      }));
+                                      if (transitionErrors[fc.field_name])
+                                        setTransitionErrors((prev) => ({
+                                          ...prev,
+                                          [fc.field_name]: "",
+                                        }));
+                                    }}
+                                    placeholder="Enter title..."
+                                    className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                                  />
+                                  {transitionErrors[fc.field_name] && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                      {transitionErrors[fc.field_name]}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                              {fc.field_name === "description" && (
+                                <>
+                                  <textarea
+                                    value={
+                                      transitionFieldValues[fc.field_name] || ""
+                                    }
+                                    onChange={(e) => {
+                                      setTransitionFieldValues((prev) => ({
+                                        ...prev,
+                                        [fc.field_name]: e.target.value,
+                                      }));
+                                      if (transitionErrors[fc.field_name])
+                                        setTransitionErrors((prev) => ({
+                                          ...prev,
+                                          [fc.field_name]: "",
+                                        }));
+                                    }}
+                                    placeholder="Enter description..."
+                                    rows={3}
+                                    className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                                  />
+                                  {transitionErrors[fc.field_name] && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                      {transitionErrors[fc.field_name]}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          ),
                         )}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    )}
 
-              {/* Ready-to-Close Duration Picker */}
-              {isReadyToCloseTransition && (
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t(
-                      "incidents.readyToCloseDuration",
-                      "Auto-Revert Duration",
-                    )}
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
-                    {t(
-                      "incidents.readyToCloseDurationHint",
-                      "The incident will automatically revert if not closed within the selected period.",
-                    )}
-                  </p>
-                  <select
-                    value={readyToCloseDuration}
-                    onChange={(e) => {
-                      setReadyToCloseDuration(e.target.value);
-                      if (transitionErrors.duration)
-                        setTransitionErrors((prev) => ({
-                          ...prev,
-                          duration: "",
-                        }));
-                    }}
-                    className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors.duration ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                  >
-                    <option value="">
-                      {t("incidents.selectDuration", "Select a duration...")}
-                    </option>
-                    {readyToCloseDurationOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  {transitionErrors.duration && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {transitionErrors.duration}
-                    </p>
+                  {/* Ready-to-Close Duration Picker */}
+                  {currentStepKey === "duration" && (
+                    <div>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+                        {t(
+                          "incidents.readyToCloseDurationHint",
+                          "The incident will automatically revert if not closed within the selected period.",
+                        )}
+                      </p>
+                      <select
+                        value={readyToCloseDuration}
+                        onChange={(e) => {
+                          setReadyToCloseDuration(e.target.value);
+                          if (transitionErrors.duration)
+                            setTransitionErrors((prev) => ({
+                              ...prev,
+                              duration: "",
+                            }));
+                        }}
+                        className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors.duration ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                      >
+                        <option value="">
+                          {t(
+                            "incidents.selectDuration",
+                            "Select a duration...",
+                          )}
+                        </option>
+                        {readyToCloseDurationOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      {transitionErrors.duration && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {transitionErrors.duration}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Comment */}
+                  {currentStepKey === "comment" && (
+                    <>
+                      <textarea
+                        value={transitionComment}
+                        onChange={(e) => {
+                          setTransitionComment(e.target.value);
+                          if (transitionErrors.comment)
+                            setTransitionErrors((prev) => ({
+                              ...prev,
+                              comment: "",
+                            }));
+                        }}
+                        placeholder={t("incidents.addCommentForTransition")}
+                        rows={3}
+                        className={`w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors.comment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
+                      />
+                      {transitionErrors.comment && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {transitionErrors.comment}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
-              )}
-
-              {/* Comment */}
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("incidents.comment")}
-                  {selectedTransition.requirements?.some(
-                    (r) => r.requirement_type === "comment" && r.is_mandatory,
-                  ) && <span className="text-red-500 ml-1">*</span>}
-                </label>
-                <textarea
-                  value={transitionComment}
-                  onChange={(e) => {
-                    setTransitionComment(e.target.value);
-                    if (transitionErrors.comment)
-                      setTransitionErrors((prev) => ({ ...prev, comment: "" }));
-                  }}
-                  placeholder={t("incidents.addCommentForTransition")}
-                  rows={3}
-                  className={`w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors.comment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                />
-                {transitionErrors.comment && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {transitionErrors.comment}
-                  </p>
-                )}
+                {/* Wizard footer */}
+                <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
+                  <Button variant="ghost" onClick={closeTransitionModal}>
+                    {t("incidents.cancel")}
+                  </Button>
+                  <div className="flex gap-2">
+                    {transitionStep > 0 && (
+                      <Button variant="outline" onClick={handleStepBack}>
+                        {t("common.back", "Back")}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleStepNext}
+                      isLoading={
+                        isLastStep &&
+                        (transitionMutation.isPending || transitionUploading)
+                      }
+                      leftIcon={
+                        isLastStep &&
+                        !(
+                          transitionMutation.isPending || transitionUploading
+                        ) ? (
+                          <Play className="w-4 h-4" />
+                        ) : undefined
+                      }
+                    >
+                      {isLastStep
+                        ? transitionUploading
+                          ? t("incidents.uploading")
+                          : t("incidents.execute")
+                        : t("common.next", "Next")}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setTransitionModalOpen(false);
-                  setSelectedTransition(null);
-                  setTransitionComment("");
-                  setTransitionAttachment(null);
-                  setTransitionFeedbackRating(0);
-                  setTransitionFeedbackComment("");
-                  setTransitionFieldValues({});
-                  setReadyToCloseDuration("");
-                  setTransitionErrors({});
-                }}
-              >
-                {t("incidents.cancel")}
-              </Button>
-              <Button
-                onClick={executeTransition}
-                isLoading={transitionMutation.isPending || transitionUploading}
-                leftIcon={
-                  !(transitionMutation.isPending || transitionUploading) ? (
-                    <Play className="w-4 h-4" />
-                  ) : undefined
-                }
-              >
-                {transitionUploading
-                  ? t("incidents.uploading")
-                  : t("incidents.execute")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       {/* Assign Modal */}
       {assignModalOpen && (
