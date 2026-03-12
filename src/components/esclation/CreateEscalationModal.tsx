@@ -8,7 +8,6 @@ import {
   Tags,
   User,
   Radio,
-  MapPin,
   Calendar,
 } from "lucide-react";
 import { Button, TreeSelect } from "../ui";
@@ -43,7 +42,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   onSuccess,
   editData,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
 
@@ -344,7 +343,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
     }
   };
 
-  const locationTree = locations as unknown as TreeSelectNode[];
+  // const locationTree = locations as unknown as TreeSelectNode[];
 
   if (!isOpen) return null;
 

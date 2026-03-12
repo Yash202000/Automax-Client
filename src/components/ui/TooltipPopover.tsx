@@ -119,7 +119,7 @@ function useFloatingPosition(
 
 // ─── Arrow ────────────────────────────────────────────────────────────────────
 
-const ARROW_SIZE = 6;
+// const ARROW_SIZE = 6;
 
 const Arrow = ({ placement }: { placement: Placement }) => {
   const base =

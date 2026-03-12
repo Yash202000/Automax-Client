@@ -1,12 +1,6 @@
 import * as React from "react";
 import { forwardRef, useState, useId } from "react";
-import {
-  Eye,
-  EyeOff,
-  AlertCircle,
-  CheckCircle2,
-  ChevronDown,
-} from "lucide-react";
+import { Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
