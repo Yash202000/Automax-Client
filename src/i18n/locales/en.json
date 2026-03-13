@@ -2,6 +2,9 @@
   "common": {
     "loading": "Loading...",
     "error": "Error",
+    "hide": "Hide",
+    "from": "From",
+    "to": "To",
     "retry": "Retry",
     "cancel": "Cancel",
     "save": "Save",
@@ -864,7 +867,9 @@
     "deleteConfirm": "Are you sure you want to delete",
     "dataSources": {
       "incidents": "Incidents",
+      "requests": "Requests",
       "incidentsDesc": "Incident tracking data",
+      "requestsDesc": "Request tracking data",
       "actionLogs": "Action Logs",
       "actionLogsDesc": "Audit trail & activity",
       "users": "Users",

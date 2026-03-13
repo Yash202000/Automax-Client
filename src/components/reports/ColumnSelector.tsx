@@ -4,6 +4,7 @@ import { Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ReportFieldDefinition } from '../../types';
 import { groupFieldsByCategory } from '../../constants/reportFields';
+import { Info } from 'lucide-react';
 
 interface ColumnSelectorProps {
   fields: ReportFieldDefinition[];
@@ -130,8 +131,18 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       </div>
 
       {/* Selected count */}
-      <div className="text-xs text-[hsl(var(--muted-foreground))]">
-        {selectedColumns.length} {t('reports.columnSelector.columnsSelected', { total: fields.length })}
+      <div className="flex items-center justify-between">
+        <span className='text-xs text-[hsl(var(--muted-foreground))]'>
+          {selectedColumns.length} {t('reports.columnSelector.columnsSelected', { total: fields.length })}
+        </span>
+        {
+          selectedColumns.length > 10 && (
+            <span className="text-red-500 text-xs flex gap-1 items-center">
+              <Info className='w-4 h-4' />
+              Please Note that if you select more than 10 columns, PDF will be disabled
+            </span>
+          )
+        }
       </div>
 
       {/* Column list grouped by category */}

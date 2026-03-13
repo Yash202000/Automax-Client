@@ -13,6 +13,7 @@ import type { ReportTemplate, ReportDataSource, Department, Classification, Loca
 import { ReportTemplateCard } from '@/components/reports';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
+import { useAuthStore } from '@/stores/authStore';
 
 const dataSourceInfo: Record<ReportDataSource, { labelKey: string; color: string }> = {
   incidents: { labelKey: 'reports.dataSources.incidents', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
@@ -30,6 +31,7 @@ export const ReportTemplatesPage: React.FC = () => {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [filterSource, setFilterSource] = useState<ReportDataSource | ''>('');
   const [dynamicOptionsMap, setDynamicOptionsMap] = useState<Record<string, { value: string; label: string }[]>>({});
+  const user = useAuthStore((state) => state.user);
 
   const canCreateReport = isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_CREATE);
 
@@ -55,7 +57,7 @@ export const ReportTemplatesPage: React.FC = () => {
     queryFn: () => reportApi.listTemplates(filterSource || undefined),
   });
 
-  const templates = templatesData?.data || [];
+  const templates = templatesData?.data?.filter((template) => (template.created_by?.id === user?.id || template.is_public)) || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

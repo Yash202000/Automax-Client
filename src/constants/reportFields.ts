@@ -266,6 +266,18 @@ export const incidentFields: ReportFieldDefinition[] = [
 
 ];
 
+export const requestFields: ReportFieldDefinition[] = [
+  // Core
+  { field: 'request_number', label: 'Request Number', type: 'string', category: 'Core', sortable: true, filterable: true },
+  { field: 'created_by_mobile', label: 'Created By Mobile', type: 'string', category: 'Core', sortable: true, filterable: true },
+  { field: 'reporter_first_name', label: 'Reporter First Name', type: 'string', category: 'Core', sortable: true, filterable: true },
+  { field: 'reporter_last_name', label: 'Reporter Last Name', type: 'string', category: 'Core', sortable: true, filterable: true },
+  { field: 'classification_name', label: 'Classification Name', type: 'string', category: 'Core', sortable: true, filterable: true },
+  { field: 'location_name', label: 'Location Name', type: 'string', category: 'Core', sortable: true, filterable: true },
+  { field: 'title', label: 'Title', type: 'string', category: 'Core', sortable: true, filterable: true, defaultSelected: true },
+  { field: 'created_at', label: 'Created At', type: 'datetime', category: 'Core', sortable: true, filterable: true },
+];
+
 // Action Logs Data Source Fields
 export const actionLogFields: ReportFieldDefinition[] = [
   // Core
@@ -295,12 +307,10 @@ export const actionLogFields: ReportFieldDefinition[] = [
   { field: 'duration', label: 'Duration (ms)', type: 'number', category: 'Status', sortable: true, filterable: true },
 
   // User
-  { field: 'user.username', label: 'Username', type: 'string', category: 'User', sortable: true, filterable: true, defaultSelected: true, relationField: 'user' },
-  { field: 'user.email', label: 'User Email', type: 'string', category: 'User', sortable: true, filterable: true, relationField: 'user' },
-
-  // Request Info
-  { field: 'ip_address', label: 'IP Address', type: 'string', category: 'Request', sortable: true, filterable: true },
-  { field: 'user_agent', label: 'User Agent', type: 'string', category: 'Request', sortable: false, filterable: true },
+  { field: 'user_username', label: 'Username', type: 'string', category: 'User', sortable: true, filterable: true, defaultSelected: true, relationField: 'user' },
+  { field: 'user_email', label: 'User Email', type: 'string', category: 'User', sortable: true, filterable: true, relationField: 'user' },
+  { field: 'user_first_name', label: 'User First Name', type: 'string', category: 'User', sortable: true, filterable: true, relationField: 'user' },
+  { field: 'user_last_name', label: 'User Last Name', type: 'string', category: 'User', sortable: true, filterable: true, relationField: 'user' },
 
   // Timestamps
   { field: 'created_at', label: 'Timestamp', type: 'datetime', category: 'Timestamps', sortable: true, filterable: true, defaultSelected: true },
@@ -414,6 +424,13 @@ export const DATA_SOURCES: DataSourceDefinition[] = [
     description: 'Incident tracking and management data',
     icon: 'AlertCircle',
     fields: incidentFields,
+  },
+  {
+    key: 'requests',
+    label: 'Requests',
+    description: 'Request tracking and management data',
+    icon: 'FileText',
+    fields: requestFields,
   },
   {
     key: 'action_logs',

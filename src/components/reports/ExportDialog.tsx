@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Download, FileSpreadsheet, FileText, Eye } from 'lucide-react';
+import { X, Download, FileSpreadsheet, FileText, Eye, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui';
 import type { ReportFieldDefinition } from '../../types';
@@ -110,6 +110,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t('reports.exportDialog.exportFormat')}
                   </label>
+                  {
+                    columns.length > 10 && (
+                      <span className="text-red-500 text-xs flex gap-1 items-center my-2">
+                        <Info className='w-6 h-6' />
+                        Please Note that if you select more than 10 columns, PDF will be disabled
+                      </span>
+                    )
+                  }
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -135,10 +143,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                       </div>
                     </button>
                     <button
+                      disabled={columns.length > 10}
                       type="button"
                       onClick={() => setFormat('pdf')}
                       className={cn(
-                        "flex items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                        "flex items-center gap-2 p-3 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
                         format === 'pdf'
                           ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]"
                           : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
@@ -245,7 +254,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                             className={rowIndex % 2 === 0 ? '' : 'bg-[hsl(var(--muted)/0.15)]'}
                           >
                             {columnDefs.map((col) => {
-                              const value = getNestedValue(row, col.field);
+                              const value = getNestedValue(row, col.label);
                               return (
                                 <td
                                   key={col.field}

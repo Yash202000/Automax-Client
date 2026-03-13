@@ -52,6 +52,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 const dataSourceInfo: Record<ReportDataSource, { labelKey: string; icon: string; color: string }> = {
     incidents: { labelKey: 'reports.dataSources.incidents', icon: 'AlertCircle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
+    requests: { labelKey: 'reports.dataSources.requests', icon: 'FileText', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
     action_logs: { labelKey: 'reports.dataSources.actionLogs', icon: 'FileText', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
     users: { labelKey: 'reports.dataSources.users', icon: 'Users', color: 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' },
     departments: { labelKey: 'reports.dataSources.departments', icon: 'Building2', color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400' },
@@ -390,7 +391,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
 
                     <Button
                         onClick={() => setShowExportDialog(true)}
-                        disabled={!canExport || isGenerating}
+                        disabled={isGenerating}
                         variant="outline"
                         isLoading={isGenerating}
                         className="flex-1 h-11 rounded-xl font-bold hover:bg-[hsl(var(--muted))] transition-all active:scale-[0.98]"

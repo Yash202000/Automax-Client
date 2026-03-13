@@ -27,6 +27,7 @@ import {
   departmentApi,
   locationApi,
   classificationApi,
+  userApi,
 } from "../../api/admin";
 import {
   DATA_SOURCES,
@@ -186,6 +187,11 @@ export const ReportBuilderPage: React.FC = () => {
     queryFn: () => classificationApi.getTree(),
   });
 
+  const { data: userOptions } = useQuery({
+    queryKey: ["admin", "users", "options"],
+    queryFn: () => userApi.list(),
+  });
+
   // Build hierarchical options from tree data
   const dynamicOptionsMap = useMemo(() => {
     const map: Record<string, { value: string; label: string }[]> = {};
@@ -208,6 +214,13 @@ export const ReportBuilderPage: React.FC = () => {
           children?: Classification[];
         })[],
       );
+    }
+
+    if (userOptions?.data) {
+      map.users = userOptions.data.map((user) => ({
+        value: user.id,
+        label: user.first_name + " " + user.last_name,
+      }));
     }
 
     return map;
@@ -395,7 +408,6 @@ export const ReportBuilderPage: React.FC = () => {
       isPublic: boolean;
     }) => {
       if (!dataSource) throw new Error("No data source selected");
-      console.log(selectedColumns)
 
       const config = {
         columns: selectedColumns.map((col) => {

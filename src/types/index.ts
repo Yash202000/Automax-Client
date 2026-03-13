@@ -1297,6 +1297,7 @@ export interface CreateRequestRequest {
 // Report Data Sources
 export type ReportDataSource =
   | "incidents"
+  | "requests"
   | "action_logs"
   | "users"
   | "departments"

@@ -195,28 +195,32 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
   };
 
   return (
-    <div className="flex items-start gap-2 p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+    <div className="flex items-center gap-2 p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
       {/* Field selector */}
-      <select
-        value={filter.field}
-        onChange={(e) => handleFieldChange(e.target.value)}
-        className="w-40 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
-      >
-        <option value="">{t('reports.filterBuilder.selectField')}</option>
-        {fields
-          .filter((f) => f.filterable)
-          .map((f) => (
-            <option key={f.field} value={f.field}>
-              {f.label}
-            </option>
-          ))}
-      </select>
+      {
+        enableAddFilter ?
+          <select
+            value={filter.field}
+            onChange={(e) => handleFieldChange(e.target.value)}
+            className="w-40 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+          >
+            <option value="">{t('reports.filterBuilder.selectField')}</option>
+            {fields
+              .filter((f) => f.filterable)
+              .map((f) => (
+                <option key={f.field} value={f.field}>
+                  {f.label}
+                </option>
+              ))}
+          </select> :
+          <span className="text-sm text-[hsl(var(--muted-foreground))] flex-1">{fields.find((f) => f.field === filter.field)?.label}</span>
+      }
 
       {/* Operator selector */}
       <select
         value={filter.operator}
         onChange={(e) => handleOperatorChange(e.target.value as FilterOperator)}
-        className="w-36 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+        className={`w-36 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]`}
       >
         {operators.map((op) => (
           <option key={op.value} value={op.value}>
