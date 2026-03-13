@@ -219,12 +219,12 @@ export const ReportBuilderPage: React.FC = () => {
     if (userOptions?.data) {
       map.users = userOptions.data.map((user) => ({
         value: user.id,
-        label: user.first_name + " " + user.last_name,
+        label: (user.first_name && user.last_name ? user.first_name + ' ' + user.last_name : user.username || user.email),
       }));
     }
 
     return map;
-  }, [departmentsTree, locationsTree, classificationsTree]);
+  }, [departmentsTree, locationsTree, classificationsTree, userOptions]);
 
   // Get fields for current data source with dynamic options enhanced
   const fields = useMemo(() => {

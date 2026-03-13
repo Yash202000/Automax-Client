@@ -8,8 +8,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
-import { classificationApi, departmentApi, locationApi, reportApi } from '../../api/admin';
-import type { ReportTemplate, ReportDataSource, Department, Classification, Location } from '../../types';
+import { classificationApi, departmentApi, locationApi, reportApi, userApi } from '../../api/admin';
+import type { ReportTemplate, ReportDataSource, Department, Classification, Location, User } from '../../types';
 import { ReportTemplateCard } from '@/components/reports';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PERMISSIONS } from '../../constants/permissions';
@@ -49,6 +49,11 @@ export const ReportTemplatesPage: React.FC = () => {
   const { data: classificationsTree } = useQuery({
     queryKey: ['admin', 'classifications', 'tree'],
     queryFn: () => classificationApi.getTree(),
+  });
+
+  const { data: userOptions } = useQuery({
+    queryKey: ['admin', 'users', 'options'],
+    queryFn: () => userApi.list(),
   });
 
   // Fetch templates
@@ -125,8 +130,12 @@ export const ReportTemplatesPage: React.FC = () => {
       map.classifications = flattenTreeWithLabels(classificationsTree.data as (Classification & { children?: Classification[] })[]);
     }
 
+    if (userOptions?.data) {
+      map.users = userOptions.data.map((user) => ({ value: user.id, label: (user.first_name && user.last_name ? user.first_name + ' ' + user.last_name : user.username || user.email) })) as { value: string; label: string }[];
+    }
+
     setDynamicOptionsMap(map);
-  }, [departmentsTree, locationsTree, classificationsTree]);
+  }, [departmentsTree, locationsTree, classificationsTree, userOptions]);
 
   return (
     <div className="space-y-6">
