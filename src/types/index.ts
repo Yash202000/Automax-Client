@@ -1709,3 +1709,13 @@ export interface iLocationOption {
   lon: number;
   type: string;
 }
+
+export interface CreateEscalationRequest {
+  name: string;
+  classification_id: string;
+  channel: string;
+  location_id: string;
+  frequency: string;
+  is_active: boolean;
+  user_ids: string[];
+}

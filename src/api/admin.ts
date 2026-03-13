@@ -94,6 +94,7 @@ import type {
   IncidentBulkUnmergeResponse,
   CanMergeResponse,
   BulkConvertToRequestRequest,
+  CreateEscalationRequest,
 } from "../types";
 
 // User Management
@@ -2670,6 +2671,33 @@ export const incidentMergeApi = {
     const response = await apiClient.get<ApiResponse<Incident[]>>(
       `/incidents/merge/${masterIncidentId}/merged`,
     );
+    return response.data;
+  },
+};
+
+export const escalationApi = {
+  list: async (): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(
+      "/admin/escalation-groups",
+    );
+    return response.data;
+  },
+  create: async (data: CreateEscalationRequest): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/admin/escalation-groups",
+      data,
+    );
+    return response.data;
+  },
+  update: async (id: string, data: any): Promise<ApiResponse<any>> => {
+    const response = await apiClient.put<ApiResponse<any>>(
+      `/admin/escalation-groups/${id}`,
+      data,
+    );
+    return response.data;
+  },
+  delete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete(`/admin/escalation-groups/${id}`);
     return response.data;
   },
 };

@@ -110,7 +110,9 @@
     "sla": "SLA",
     "slaStatus": "حالة SLA",
     "breached": "تم التجاوز",
-    "onTrack": "في الموعد"
+    "onTrack": "في الموعد",
+    "clearSearch": "مسح البحث",
+    "showingResults": "عرض {{from}} إلى {{to}} من أصل {{total}} عنصر"
   },
   "tabs": {
     "activity": "النشاط",
@@ -525,7 +527,8 @@
     "quickLinks": "روابط سريعة",
     "backToApp": "العودة للتطبيق",
     "administrator": "مدير",
-    "loggedInAsAdmin": "مسجل كمدير"
+    "loggedInAsAdmin": "مسجل كمدير",
+    "escalationGroups": "مجموعات التصعيد"
   },
   "users": {
     "title": "المستخدمون",
@@ -1472,5 +1475,48 @@
     "evaluate": "تقييم",
     "details": "تفاصيل الاستفسار",
     "viewIncident": "عرض الحادثة"
+  },
+  "escalation": {
+    "pageTitle": "مجموعة التصعيد",
+    "pageDescription": "إدارة محفزات التصعيد للحوادث.",
+    "addNew": "إضافة مجموعة تصعيد",
+    "searchPlaceholder": "البحث بالاسم…",
+    "loading": "جارٍ تحميل مجموعات التصعيد…",
+    "noGroups": "لا توجد مجموعات تصعيد",
+    "noMatch": "لا توجد مجموعات تطابق بحثك.",
+    "noGroupsHint": "ابدأ بإضافة أول مجموعة تصعيد.",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "failedToLoad": "فشل التحميل",
+    "deleteTitle": "حذف مجموعة التصعيد",
+    "deleteDescription": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "name": "الاسم",
+    "users": "المستخدمون",
+    "classification": "التصنيف",
+    "channel": "القناة",
+    "clearSearch": "مسح البحث",
+    "edit": "تعديل مجموعة التصعيد",
+    "create": "إنشاء مجموعة التصعيد",
+    "editDescription": "تحديث تفاصيل مجموعة التصعيد",
+    "createDescription": "إعداد مجموعة تصعيد جديدة",
+    "title": "عنوان التصعيد",
+    "titlePlaceholder": "أدخل عنوان التصعيد...",
+    "updatedSuccess": "تم تحديث التصعيد بنجاح",
+    "updateError": "فشل تحديث التصعيد",
+    "reportFrequency": "تكرار التقرير",
+    "daily": "يومي",
+    "weekly": "أسبوعي",
+    "channelPlaceholder": "اختر قناة",
+    "userPlaceholder": "اختر المستخدمين...",
+    "titleRequired": "العنوان مطلوب",
+    "fieldRequired": "{{field}} مطلوب",
+    "updatedAt": "تاريخ التحديث",
+    "createError": "فشل إنشاء التصعيد",
+    "createdSuccess": "تم إنشاء التصعيد بنجاح",
+    "selectClassification": "اختر التصنيف...",
+    "noClassifications": "لا توجد تصنيفات",
+    "deletedSuccess": "تم حذف التصعيد بنجاح",
+    "deleteError": "فشل حذف التصعيد",
+    "update": "تحديث مجموعة التصعيد"
   }
 }

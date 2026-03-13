@@ -61,6 +61,7 @@ import {
   EmailPage,
   SMSPage,
 } from "./pages";
+import EscalationConfigPage from "./pages/admin/EsclationPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -230,6 +231,18 @@ function App() {
                   <Route
                     path="/admin/settings"
                     element={<SettingsManagementPage />}
+                  />
+                </Route>
+                <Route
+                  element={
+                    <PermissionRoute
+                      requiredPermissions={[PERMISSIONS.SETTINGS_UPDATE]}
+                    />
+                  }
+                >
+                  <Route
+                    path="/admin/escalation-groups"
+                    element={<EscalationConfigPage />}
                   />
                 </Route>
               </Route>

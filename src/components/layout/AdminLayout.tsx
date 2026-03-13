@@ -27,6 +27,7 @@ import {
   Phone,
   Link2,
   Settings,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -38,6 +39,7 @@ import {
 } from "../../i18n";
 import SoftPhone from "../sip/Softphone";
 import ThemeToggle from "../common/ThemeToggle";
+import { PERMISSIONS } from "@/constants/permissions";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -125,6 +127,12 @@ const sidebarSectionsConfig: SidebarSection[] = [
         labelKey: "admin.actionLogs",
         path: "/admin/action-logs",
         permission: "action-logs:view",
+      },
+      {
+        icon: AlertTriangle,
+        labelKey: "admin.escalationGroups",
+        path: "/admin/escalation-groups",
+        permission: PERMISSIONS.ESCALATION_GROUPS_VIEW,
       },
     ],
   },

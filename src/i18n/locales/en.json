@@ -109,7 +109,9 @@
     "sla": "SLA",
     "slaStatus": "SLA Status",
     "breached": "Breached",
-    "onTrack": "On Track"
+    "onTrack": "On Track",
+    "clearSearch": "Clear Search",
+    "showingResults": "Showing {{from}} to {{to}} of {{total}} items"
   },
   "tabs": {
     "activity": "Activity",
@@ -565,7 +567,8 @@
     "quickLinks": "Quick Links",
     "backToApp": "Back to App",
     "administrator": "Administrator",
-    "loggedInAsAdmin": "Logged in as admin"
+    "loggedInAsAdmin": "Logged in as admin",
+    "escalationGroups": "Escalation Groups"
   },
   "users": {
     "title": "Users",
@@ -1509,5 +1512,48 @@
     "evaluate": "Evaluate",
     "details": "Query Details",
     "viewIncident": "View Incident"
+  },
+  "escalation": {
+    "pageTitle": "Escalation Group",
+    "pageDescription": "Manage escalation triggers for incidents.",
+    "addNew": "Add Escalation Group",
+    "searchPlaceholder": "Search by name…",
+    "loading": "Loading escalation groups…",
+    "noGroups": "No Escalation Groups",
+    "noMatch": "No groups match your search.",
+    "noGroupsHint": "Get started by adding your first escalation group.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "failedToLoad": "Failed to Load",
+    "deleteTitle": "Delete Escalation Group",
+    "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "name": "Name",
+    "users": "Users",
+    "classification": "Classification",
+    "channel": "Channel",
+    "clearSearch": "Clear Search",
+    "edit": "Edit Escalation Group",
+    "create": "Create Escalation Group",
+    "editDescription": "Update the details of this escalation group",
+    "createDescription": "Set up a new escalation group",
+    "title": "Escalation Title",
+    "titlePlaceholder": "Enter escalation title...",
+    "updatedSuccess": "Escalation updated successfully",
+    "updateError": "Failed to update escalation",
+    "reportFrequency": "Report Frequency",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "channelPlaceholder": "Choose a channel",
+    "userPlaceholder": "Select Users...",
+    "titleRequired": "Title is required",
+    "fieldRequired": "{{field}} is required",
+    "updatedAt": "Updated At",
+    "createError": "Failed to create escalation",
+    "createdSuccess": "Escalation created successfully",
+    "selectClassification": "Select classification...",
+    "noClassifications": "No classifications found.",
+    "deletedSuccess": "Escalation deleted successfully",
+    "deleteError": "Failed to delete escalation",
+    "update": "Update Escalation Group"
   }
 }
