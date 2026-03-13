@@ -110,7 +110,7 @@ export const DashboardPage: React.FC = () => {
       description: t("dashboard.usersRolesPermissions"),
       href: "/admin",
       icon: Settings,
-      gradient: "from-[#A7B1BA] to-[#777E84]",
+      gradient: "from-[#7C3AED] to-[#A855F7]",
       shadowColor: "shadow-violet-500/20",
       permissions: [PERMISSIONS.DASHBOARD_ADMIN],
     },
