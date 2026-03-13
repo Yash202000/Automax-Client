@@ -686,12 +686,12 @@ export const IncidentsPage: React.FC = () => {
                 onClick={() => setShowColumnConfig(!showColumnConfig)}
               >
                 {t("common.columns")}
-                <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="ms-1 text-xs text-[hsl(var(--muted-foreground))]">
                   ({visibleColumnCount})
                 </span>
               </Button>
               {showColumnConfig && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-xl z-50 overflow-hidden">
+                <div className="absolute end-0 top-full mt-2 w-56 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
                     <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
                       {t("common.configureColumns")}
