@@ -27,6 +27,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 const dataSources: { key: ReportDataSource; labelKey: string; descKey: string; icon: string }[] = [
   { key: 'incidents', labelKey: 'reports.dataSources.incidents', descKey: 'reports.dataSources.incidentsDesc', icon: 'AlertCircle' },
+  { key: 'requests', labelKey: 'reports.dataSources.requests', descKey: 'reports.dataSources.requestsDesc', icon: 'FileText' },
   { key: 'action_logs', labelKey: 'reports.dataSources.actionLogs', descKey: 'reports.dataSources.actionLogsDesc', icon: 'FileText' },
   { key: 'users', labelKey: 'reports.dataSources.users', descKey: 'reports.dataSources.usersDesc', icon: 'Users' },
   { key: 'departments', labelKey: 'reports.dataSources.departments', descKey: 'reports.dataSources.departmentsDesc', icon: 'Building2' },
@@ -38,7 +39,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({ value, o
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
       {dataSources.map((source) => {
         const Icon = iconMap[source.icon] || AlertCircle;
         const isSelected = value === source.key;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,7 @@ import {
   departmentApi,
   locationApi,
   classificationApi,
+  userApi,
 } from "../../api/admin";
 import {
   DATA_SOURCES,
@@ -150,7 +151,7 @@ export const ReportBuilderPage: React.FC = () => {
 
   // State
   const [dataSource, setDataSource] = useState<ReportDataSource | null>(null);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const [selectedColumns, setSelectedColumns] = useState<{ field: string, label: string }[]>([]);
   const [filters, setFilters] = useState<ReportFilter[]>([]);
   const [sorting, setSorting] = useState<ReportSort[]>([]);
   // recordLimit — how many rows the query should return (sent as the API limit)
@@ -186,6 +187,11 @@ export const ReportBuilderPage: React.FC = () => {
     queryFn: () => classificationApi.getTree(),
   });
 
+  const { data: userOptions } = useQuery({
+    queryKey: ["admin", "users", "options"],
+    queryFn: () => userApi.list(),
+  });
+
   // Build hierarchical options from tree data
   const dynamicOptionsMap = useMemo(() => {
     const map: Record<string, { value: string; label: string }[]> = {};
@@ -210,8 +216,15 @@ export const ReportBuilderPage: React.FC = () => {
       );
     }
 
+    if (userOptions?.data) {
+      map.users = userOptions.data.map((user) => ({
+        value: user.id,
+        label: (user.first_name && user.last_name ? user.first_name + ' ' + user.last_name : user.username || user.email),
+      }));
+    }
+
     return map;
-  }, [departmentsTree, locationsTree, classificationsTree]);
+  }, [departmentsTree, locationsTree, classificationsTree, userOptions]);
 
   // Get fields for current data source with dynamic options enhanced
   const fields = useMemo(() => {
@@ -246,7 +259,7 @@ export const ReportBuilderPage: React.FC = () => {
     if (templateData?.data) {
       const template = templateData.data;
       setDataSource(template.data_source);
-      setSelectedColumns(template.config.columns.map((c) => c.field));
+      setSelectedColumns(template.config.columns.map((c) => ({ field: c.field, label: c.label })));
       setFilters(
         template.config.filters.map((f, i) => ({ ...f, id: `filter_${i}` })),
       );
@@ -332,15 +345,15 @@ export const ReportBuilderPage: React.FC = () => {
       if (format === "xlsx") {
         // Build headers — use field label, fall back to human-readable key
         const headers = selectedColumns.map((col) => {
-          const field = fields.find((f) => f.field === col);
-          return field?.label || toHumanReadable(col);
+          const field = fields.find((f) => f.field === col.field);
+          return field?.label || toHumanReadable(col.field);
         });
 
         // Build rows from previewData
         const rows = previewData.map((row) => {
           return selectedColumns.map((col) => {
-            const fieldDef = fields.find((f) => f.field === col);
-            const value = getNestedValue(row, col);
+            const fieldDef = fields.find((f) => f.field === col.field);
+            const value = getNestedValue(row, col.field);
             if (!fieldDef) return value == null ? "" : String(value);
             return formatCellValue(value, fieldDef);
           });
@@ -398,8 +411,7 @@ export const ReportBuilderPage: React.FC = () => {
 
       const config = {
         columns: selectedColumns.map((col) => {
-          const field = fields.find((f) => f.field === col);
-          return { field: col, label: field?.label || col };
+          return { field: col.field, label: col.label };
         }),
         filters: filters.map(({ field, operator, value }) => ({
           field,
@@ -408,6 +420,8 @@ export const ReportBuilderPage: React.FC = () => {
         })),
         sorting,
       };
+
+      console.log(config)
 
       if (loadedTemplate) {
         // Update existing
@@ -455,7 +469,7 @@ export const ReportBuilderPage: React.FC = () => {
   // Load a template
   const loadTemplate = (template: ReportTemplate) => {
     setDataSource(template.data_source);
-    setSelectedColumns(template.config.columns.map((c) => c.field));
+    setSelectedColumns(template.config.columns);
     setFilters(
       template.config.filters.map((f, i) => ({ ...f, id: `filter_${i}` })),
     );

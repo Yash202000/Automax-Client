@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 interface ModalProps {
     isOpen: boolean
     onClose: () => void
+    onOpenChange?: (open: boolean) => void
     children: React.ReactNode
     className?: string
     showCloseButton?: boolean
@@ -15,15 +16,21 @@ interface ModalProps {
 const Modal = ({
     isOpen,
     onClose,
+    onOpenChange,
     children,
     className,
     showCloseButton = true,
     closeOnOverlayClick = true,
     size = 'md'
 }: ModalProps) => {
+    const handleClose = React.useCallback(() => {
+        onClose()
+        onOpenChange?.(false)
+    }, [onClose, onOpenChange])
+
     React.useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose()
+            if (e.key === 'Escape') handleClose()
         }
 
         if (isOpen) {
@@ -35,7 +42,7 @@ const Modal = ({
             document.removeEventListener('keydown', handleEscape)
             document.body.style.overflow = 'unset'
         }
-    }, [isOpen, onClose])
+    }, [isOpen, handleClose])
 
     if (!isOpen) return null
 
@@ -55,7 +62,7 @@ const Modal = ({
         <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4 sm:p-6">
             <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-                onClick={closeOnOverlayClick ? onClose : undefined}
+                onClick={closeOnOverlayClick ? handleClose : undefined}
             />
             <div
                 className={cn(
@@ -66,7 +73,7 @@ const Modal = ({
             >
                 {showCloseButton && (
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="absolute top-4 right-4 p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors z-10"
                     >
                         <X className="w-5 h-5" />

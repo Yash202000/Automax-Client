@@ -3,6 +3,9 @@
     "loading": "جاري التحميل...",
     "error": "خطأ",
     "retry": "إعادة المحاولة",
+    "hide": "إخفاء",
+    "from": "من",
+    "to": "إلى",
     "cancel": "إلغاء",
     "save": "حفظ",
     "delete": "حذف",
@@ -826,7 +829,9 @@
     "deleteConfirm": "هل أنت متأكد من حذف",
     "dataSources": {
       "incidents": "الحوادث",
+      "requests": "الطلبات",
       "incidentsDesc": "بيانات تتبع الحوادث",
+      "requestsDesc": "بيانات تتبع الطلبات",
       "actionLogs": "سجلات العمليات",
       "actionLogsDesc": "سجل المراجعة والنشاط",
       "users": "المستخدمون",
@@ -848,6 +853,7 @@
     "filterBuilder": {
       "noFilterableFields": "لا توجد حقول قابلة للتصفية",
       "noFiltersAdded": "لم تُضف فلاتر. انقر \"إضافة فلتر\" لإضافة واحد.",
+      "clickAddFilter": "Click \"Add Filter\" to add one.",
       "addFilter": "إضافة فلتر",
       "clearAll": "مسح الكل",
       "selectField": "اختر الحقل...",

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Download, FileSpreadsheet, FileText, Eye } from 'lucide-react';
+import { X, Download, FileSpreadsheet, FileText, Eye, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui';
 import type { ReportFieldDefinition } from '../../types';
@@ -15,7 +15,7 @@ interface ExportDialogProps {
   recordCount: number;
   // Preview data
   previewData?: Record<string, unknown>[];
-  columns?: string[];
+  columns?: { field: string, label: string }[];
   fields?: ReportFieldDefinition[];
 }
 
@@ -52,9 +52,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
   // Build column definitions — always produce a label, never drop a column
   const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
-    const found = fields.find((f) => f.field === col);
+    const found = fields.find((f) => f.field === col.field);
     if (found) return found;
-    return { field: col, label: toHumanReadable(col), type: 'string' } as ReportFieldDefinition;
+    return { field: col.field, label: toHumanReadable(col.field), type: 'string' } as ReportFieldDefinition;
   });
 
   const previewRows = previewData.slice(0, PREVIEW_ROWS);
@@ -71,23 +71,28 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         hasPreview ? "max-w-5xl max-h-[90vh]" : "max-w-md"
       )}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
-              <Download className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <div className="flex items-center justify-between px-8 py-5 border-b border-[hsl(var(--border))] shrink-0 bg-gradient-to-r from-[hsl(var(--primary)/0.05)] to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-[hsl(var(--primary)/0.1)] shadow-sm">
+              <Download className="w-6 h-6 text-[hsl(var(--primary))]" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+              <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">
                 {t('reports.exportDialog.title')}
               </h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {recordCount.toLocaleString()} {t('reports.exportDialog.records')}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs font-bold text-[hsl(var(--primary))] uppercase tracking-wider">
+                  {recordCount.toLocaleString()}
+                </span>
+                <span className="text-xs text-[hsl(var(--muted-foreground))] font-medium uppercase tracking-wider">
+                  {t('reports.exportDialog.records')}
+                </span>
+              </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+            className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-all duration-200"
           >
             <X className="w-5 h-5" />
           </button>
@@ -105,6 +110,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t('reports.exportDialog.exportFormat')}
                   </label>
+                  {
+                    columns.length > 10 && (
+                      <span className="text-red-500 text-xs flex gap-1 items-center my-2">
+                        <Info className='w-6 h-6' />
+                        Please Note that if you select more than 10 columns, PDF will be disabled
+                      </span>
+                    )
+                  }
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -130,10 +143,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                       </div>
                     </button>
                     <button
+                      disabled={columns.length > 10}
                       type="button"
                       onClick={() => setFormat('pdf')}
                       className={cn(
-                        "flex items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                        "flex items-center gap-2 p-3 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
                         format === 'pdf'
                           ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]"
                           : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.5)]"
@@ -240,7 +254,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                             className={rowIndex % 2 === 0 ? '' : 'bg-[hsl(var(--muted)/0.15)]'}
                           >
                             {columnDefs.map((col) => {
-                              const value = getNestedValue(row, col.field);
+                              const value = getNestedValue(row, col.label);
                               return (
                                 <td
                                   key={col.field}

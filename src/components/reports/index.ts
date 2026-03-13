@@ -5,3 +5,5 @@ export { SortingConfig } from './SortingConfig';
 export { ReportPreview } from './ReportPreview';
 export { ExportDialog } from './ExportDialog';
 export { SaveTemplateDialog } from './SaveTemplateDialog';
+export { ReportTemplateCard } from './ReportTemplateCard';
+

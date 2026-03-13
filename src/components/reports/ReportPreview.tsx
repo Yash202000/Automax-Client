@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { ReportFieldDefinition } from '../../types';
 
 interface ReportPreviewProps {
   data: Record<string, unknown>[];
-  columns: string[];
+  columns: { field: string, label: string }[];
   fields: ReportFieldDefinition[];
   isLoading: boolean;
   page: number;
@@ -35,10 +35,10 @@ export const toHumanReadable = (key: string): string =>
 
 const PRIORITY_CONFIG: Record<number, { label: string; bg: string; text: string }> = {
   1: { label: 'Critical', bg: '#fee2e2', text: '#dc2626' },
-  2: { label: 'High',     bg: '#ffedd5', text: '#ea580c' },
-  3: { label: 'Medium',   bg: '#fef9c3', text: '#ca8a04' },
-  4: { label: 'Low',      bg: '#dbeafe', text: '#2563eb' },
-  5: { label: 'Minimal',  bg: '#f3f4f6', text: '#6b7280' },
+  2: { label: 'High', bg: '#ffedd5', text: '#ea580c' },
+  3: { label: 'Medium', bg: '#fef9c3', text: '#ca8a04' },
+  4: { label: 'Low', bg: '#dbeafe', text: '#2563eb' },
+  5: { label: 'Minimal', bg: '#f3f4f6', text: '#6b7280' },
 };
 
 const Badge: React.FC<{ label: string; bg: string; text: string }> = ({ label, bg, text }) => (
@@ -71,19 +71,19 @@ export const renderStyledCell = (value: unknown, field: ReportFieldDefinition): 
     }
     if (field.field === 'is_active') {
       return bool
-        ? <Badge label="Active"   bg="#d1fae5" text="#059669" />
+        ? <Badge label="Active" bg="#d1fae5" text="#059669" />
         : <Badge label="Inactive" bg="#f3f4f6" text="#6b7280" />;
     }
     return bool
       ? <Badge label="Yes" bg="#d1fae5" text="#059669" />
-      : <Badge label="No"  bg="#f3f4f6" text="#6b7280" />;
+      : <Badge label="No" bg="#f3f4f6" text="#6b7280" />;
   }
 
   // State type
   if (field.field === 'current_state.state_type') {
     const STATE_COLORS: Record<string, { bg: string; text: string }> = {
-      initial:  { bg: '#dbeafe', text: '#2563eb' },
-      normal:   { bg: '#f3f4f6', text: '#374151' },
+      initial: { bg: '#dbeafe', text: '#2563eb' },
+      normal: { bg: '#f3f4f6', text: '#374151' },
       terminal: { bg: '#d1fae5', text: '#059669' },
     };
     const colors = STATE_COLORS[String(value)] || { bg: '#f3f4f6', text: '#374151' };
@@ -141,7 +141,7 @@ export const formatCellValue = (value: unknown, field: ReportFieldDefinition): s
   if (field.type === 'boolean') {
     const bool = value === true || value === 'true' || value === 1;
     if (field.field === 'sla_breached') return bool ? 'Breached' : 'On Track';
-    if (field.field === 'is_active')    return bool ? 'Active'   : 'Inactive';
+    if (field.field === 'is_active') return bool ? 'Active' : 'Inactive';
     return bool ? 'Yes' : 'No';
   }
 
@@ -199,9 +199,9 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
   // Never drop a column — fall back to a human-readable label if the field
   // definition is not found (e.g. relation fields returned differently by API)
   const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
-    const found = fields.find((f) => f.field === col);
-    if (found) return found;
-    return { field: col, label: toHumanReadable(col), type: 'string' } as ReportFieldDefinition;
+    const found = fields.find((f) => f.field === col.field);
+    if (found) return { ...found, label: toHumanReadable(col.label) };
+    return { field: col.field, label: toHumanReadable(col.label), type: 'string' } as ReportFieldDefinition;
   });
 
   if (isLoading) {
@@ -234,15 +234,15 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
       </div>
 
       {/* Table */}
-      <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))]">
+              <tr className="bg-[hsl(var(--muted)/0.4)] border-b border-[hsl(var(--border))]">
                 {columnDefs.map((col) => (
                   <th
                     key={col.field}
-                    className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider whitespace-nowrap"
+                    className="px-5 py-4 text-left text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-[0.1em] whitespace-nowrap"
                   >
                     {col.label}
                   </th>
@@ -253,14 +253,14 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
               {data.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
+                  className="hover:bg-[hsl(var(--primary)/0.02)] transition-colors group/row"
                 >
                   {columnDefs.map((col) => {
-                    const value = getNestedValue(row, col.field);
+                    const value = getNestedValue(row, col.label);
                     return (
                       <td
                         key={col.field}
-                        className="px-4 py-3 text-sm text-[hsl(var(--foreground))] whitespace-nowrap"
+                        className="px-5 py-4 text-sm text-[hsl(var(--foreground))] whitespace-nowrap transition-colors group-hover/row:text-[hsl(var(--primary))] font-medium"
                       >
                         {renderStyledCell(value, col)}
                       </td>
@@ -307,11 +307,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                     key={pageNum}
                     type="button"
                     onClick={() => onPageChange(pageNum)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                      pageNum === page
-                        ? 'bg-[hsl(var(--primary))] text-white'
-                        : 'hover:bg-[hsl(var(--muted))]'
-                    }`}
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${pageNum === page
+                      ? 'bg-[hsl(var(--primary))] text-white'
+                      : 'hover:bg-[hsl(var(--muted))]'
+                      }`}
                   >
                     {pageNum}
                   </button>

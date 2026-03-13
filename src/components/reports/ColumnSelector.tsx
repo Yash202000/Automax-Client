@@ -4,11 +4,12 @@ import { Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ReportFieldDefinition } from '../../types';
 import { groupFieldsByCategory } from '../../constants/reportFields';
+import { Info } from 'lucide-react';
 
 interface ColumnSelectorProps {
   fields: ReportFieldDefinition[];
-  selectedColumns: string[];
-  onChange: (columns: string[]) => void;
+  selectedColumns: { field: string, label: string }[];
+  onChange: (columns: { field: string, label: string }[]) => void;
 }
 
 export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
@@ -56,15 +57,16 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   };
 
   const toggleColumn = (field: string) => {
-    if (selectedColumns.includes(field)) {
-      onChange(selectedColumns.filter((c) => c !== field));
+    const found = selectedColumns.findIndex((c) => c.field === field)
+    if (found !== -1) {
+      onChange(selectedColumns.filter((c) => c.field !== field));
     } else {
-      onChange([...selectedColumns, field]);
+      onChange([...selectedColumns, { field: field, label: field }]);
     }
   };
 
   const selectAll = () => {
-    onChange(fields.map((f) => f.field));
+    onChange(fields.map((f) => ({ field: f.field, label: f.label })));
   };
 
   const selectNone = () => {
@@ -72,7 +74,14 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   };
 
   const selectDefaults = () => {
-    onChange(fields.filter((f) => f.defaultSelected).map((f) => f.field));
+    onChange(fields.filter((f) => f.defaultSelected).map((f) => ({ field: f.field, label: f.label })));
+  };
+
+  const updateLabel = (field: string, label: string) => {
+    const updatedColumns = selectedColumns.map((c) =>
+      c.field === field ? { ...c, label } : c
+    );
+    onChange(updatedColumns);
   };
 
   // Auto-expand all categories when searching
@@ -122,8 +131,18 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       </div>
 
       {/* Selected count */}
-      <div className="text-xs text-[hsl(var(--muted-foreground))]">
-        {selectedColumns.length} {t('reports.columnSelector.columnsSelected', { total: fields.length })}
+      <div className="flex items-center justify-between">
+        <span className='text-xs text-[hsl(var(--muted-foreground))]'>
+          {selectedColumns.length} {t('reports.columnSelector.columnsSelected', { total: fields.length })}
+        </span>
+        {
+          selectedColumns.length > 10 && (
+            <span className="text-red-500 text-xs flex gap-1 items-center">
+              <Info className='w-4 h-4' />
+              Please Note that if you select more than 10 columns, PDF will be disabled
+            </span>
+          )
+        }
       </div>
 
       {/* Column list grouped by category */}
@@ -134,7 +153,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
 
           const isExpanded = expandedCategories.has(category) || search.trim();
           const selectedInCategory = categoryFields.filter((f) =>
-            selectedColumns.includes(f.field)
+            selectedColumns.findIndex((c) => c.field === f.field) !== -1
           ).length;
 
           return (
@@ -164,7 +183,8 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
               {isExpanded && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1 p-2 bg-[hsl(var(--card))]">
                   {categoryFields.map((field) => {
-                    const isSelected = selectedColumns.includes(field.field);
+                    const isSelected = selectedColumns.findIndex((c) => c.field === field.field) !== -1;
+                    const labelVal = selectedColumns.find((c) => c.field === field.field);
                     return (
                       <label
                         key={field.field}
@@ -185,15 +205,20 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                         >
                           {isSelected && <Check className="w-3 h-3 text-white" />}
                         </div>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleColumn(field.field)}
-                          className="sr-only"
-                        />
-                        <span className="text-sm truncate" title={field.label}>
-                          {field.label}
-                        </span>
+                        <div className='flex flex-col gap-2'>
+                          <div className='flex gap-2 items-center'>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleColumn(field.field)}
+                              className="sr-only"
+                            />
+                            <span className="text-sm truncate" title={field.label}>
+                              {field.label}
+                            </span>
+                          </div>
+                          <input type="text" value={labelVal?.label} onChange={(e) => updateLabel(field.field, e.target.value)} placeholder='Label Name' disabled={!isSelected} className='border border-gray-300 text-gray-700 rounded-sm text-sm px-2 py-2 w-full' />
+                        </div>
                       </label>
                     );
                   })}

@@ -339,38 +339,38 @@ const ReportTemplateBuilderPage: React.FC = () => {
     });
   };
 
-   const handleCanvasMouseUp = () => {
+  const handleCanvasMouseUp = () => {
     setIsDragging(false);
   };
 
   // header elements
   const updateHeaderElement = (elementId: string, updates: Partial<TemplateElement>) => {
-  setHeader(prev => ({
-    ...prev,
-    elements: prev.elements.map(el =>
-      el.id === elementId ? { ...el, ...updates } : el
-    ),
-  }));
-};
+    setHeader(prev => ({
+      ...prev,
+      elements: prev.elements.map(el =>
+        el.id === elementId ? { ...el, ...updates } : el
+      ),
+    }));
+  };
 
-const updateHeaderElementContent = (elementId: string, content: TemplateElement['content']) => {
-  setHeader(prev => ({
-    ...prev,
-    elements: prev.elements.map(el =>
-      el.id === elementId ? { ...el, content } : el
-    ),
-  }));
-};
+  const updateHeaderElementContent = (elementId: string, content: TemplateElement['content']) => {
+    setHeader(prev => ({
+      ...prev,
+      elements: prev.elements.map(el =>
+        el.id === elementId ? { ...el, content } : el
+      ),
+    }));
+  };
 
-const deleteHeaderElement = (elementId: string) => {
-  setHeader(prev => ({
-    ...prev,
-    elements: prev.elements.filter(el => el.id !== elementId),
-  }));
-  setSelectedHeaderElementId(null);
-};
+  const deleteHeaderElement = (elementId: string) => {
+    setHeader(prev => ({
+      ...prev,
+      elements: prev.elements.filter(el => el.id !== elementId),
+    }));
+    setSelectedHeaderElementId(null);
+  };
 
- 
+
 
   const selectedElement = elements.find(el => el.id === selectedElementId);
 
@@ -482,11 +482,10 @@ const deleteHeaderElement = (elementId: string) => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 px-3 py-2 text-xs font-medium capitalize ${
-                  activeTab === tab
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-gray-500  hover:text-gray-700  dark:text-gray-300  dark:hover:text-gray-400'
-                }`}
+                className={`flex-1 px-3 py-2 text-xs font-medium capitalize ${activeTab === tab
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-gray-500  hover:text-gray-700  dark:text-gray-300  dark:hover:text-gray-400'
+                  }`}
               >
                 {tab}
               </button>
@@ -519,11 +518,10 @@ const deleteHeaderElement = (elementId: string) => {
                         setSelectedElementId(element.id);
                         setActiveTab('properties');
                       }}
-                      className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
-                        selectedElementId === element.id
-                          ? 'bg-blue-50 dark:bg-white/5 border border-blue-200'
-                          : 'hover:bg-gray-50 dark:hover:bg-white/5'
-                      }`}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer ${selectedElementId === element.id
+                        ? 'bg-blue-50 dark:bg-white/5 border border-blue-200'
+                        : 'hover:bg-gray-50 dark:hover:bg-white/5'
+                        }`}
                     >
                       <GripVertical className="h-4 w-4 text-gray-400" />
                       <span className="flex-1 text-sm truncate capitalize ">
@@ -673,34 +671,34 @@ const deleteHeaderElement = (elementId: string) => {
                     </label>
                     <div className='space-y-2'>
                       <button
-                      onClick={() => {
-                        const titleElement = createDefaultTextElement(60, 10);
-                        (titleElement.content as TextContent).text = templateName;
-                        (titleElement.content as TextContent).font.size = 16;
-                        (titleElement.content as TextContent).font.weight = 'bold';
-                        setHeader(prev => ({
-                          ...prev,
-                          elements: [...prev.elements, titleElement],
-                        }));
-                      }}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm cursor-pointer"
-                    >
-                      <Plus className="h-4 w-4" />
-                     Add Title
-                    </button>
-                    <button
-                      onClick={() => {
-                        const logoElement = createDefaultImageElement(5, 5);
-                        setHeader(prev => ({
-                          ...prev,
-                          elements: [...prev.elements, logoElement],
-                        }));
-                      }}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm cursor-pointer"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Logo/Image
-                    </button>
+                        onClick={() => {
+                          const titleElement = createDefaultTextElement(60, 10);
+                          (titleElement.content as TextContent).text = templateName;
+                          (titleElement.content as TextContent).font.size = 16;
+                          (titleElement.content as TextContent).font.weight = 'bold';
+                          setHeader(prev => ({
+                            ...prev,
+                            elements: [...prev.elements, titleElement],
+                          }));
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm cursor-pointer"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Title
+                      </button>
+                      <button
+                        onClick={() => {
+                          const logoElement = createDefaultImageElement(5, 5);
+                          setHeader(prev => ({
+                            ...prev,
+                            elements: [...prev.elements, logoElement],
+                          }));
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm cursor-pointer"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Logo/Image
+                      </button>
                     </div>
                     {header.elements.length > 0 && (
                       <div className="border-t pt-4">
@@ -712,27 +710,26 @@ const deleteHeaderElement = (elementId: string) => {
                           {header.elements.map((el) => (
                             <div
                               key={el.id}
-                               onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedHeaderElementId(el.id);
-                                  setSelectedElementId(null);
-                                  setActiveTab('properties');
-                                }}
-                              className={`p-2 rounded cursor-pointer text-sm flex items-center justify-between ${
-                                selectedHeaderElementId === el.id
-                                  ? "bg-blue-50 border border-blue-200"
-                                  : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedHeaderElementId(el.id);
+                                setSelectedElementId(null);
+                                setActiveTab('properties');
+                              }}
+                              className={`p-2 rounded cursor-pointer text-sm flex items-center justify-between ${selectedHeaderElementId === el.id
+                                ? "bg-blue-50 border border-blue-200"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                                }`}
                             >
                               {el.type === "text" &&
                                 (el.content as TextContent).text?.slice(0, 25)}
 
                               {el.type === "image" && "Logo Image"}
-                               <button
+                              <button
                                 onClick={(e) => { e.stopPropagation(); deleteHeaderElement(el.id); }}
                                 className="p-1 hover:bg-red-100 rounded text-red-500" >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
+                                <Trash2 className="h-3 w-3" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -803,31 +800,31 @@ const deleteHeaderElement = (elementId: string) => {
               </div>
             )}
 
-           {activeTab === 'properties' && (
-                <>
-                  {selectedElement && (
-                    <ElementPropertiesPanel
-                      element={selectedElement}
-                      onUpdate={(updates) => updateElement(selectedElement.id, updates)}
-                      onUpdateContent={(content) => updateElementContent(selectedElement.id, content)}
-                      onDelete={() => deleteElement(selectedElement.id)}
-                      onDuplicate={() => duplicateElement(selectedElement.id)}
-                      availableFields={availableFields}
-                    />
-                  )}
+            {activeTab === 'properties' && (
+              <>
+                {selectedElement && (
+                  <ElementPropertiesPanel
+                    element={selectedElement}
+                    onUpdate={(updates) => updateElement(selectedElement.id, updates)}
+                    onUpdateContent={(content) => updateElementContent(selectedElement.id, content)}
+                    onDelete={() => deleteElement(selectedElement.id)}
+                    onDuplicate={() => duplicateElement(selectedElement.id)}
+                    availableFields={availableFields}
+                  />
+                )}
 
-                  {selectedHeaderElementId && (
-                    <ElementPropertiesPanel
-                      element={header.elements.find(el => el.id === selectedHeaderElementId)!}
-                      onUpdate={(updates) => updateHeaderElement(selectedHeaderElementId, updates)}
-                      onUpdateContent={(content) => updateHeaderElementContent(selectedHeaderElementId, content)}
-                      onDelete={() => deleteHeaderElement(selectedHeaderElementId)}
-                      onDuplicate={() => {}}
-                      availableFields={availableFields}
-                    />
-                  )}
-                </>
-              )}
+                {selectedHeaderElementId && (
+                  <ElementPropertiesPanel
+                    element={header.elements.find(el => el.id === selectedHeaderElementId)!}
+                    onUpdate={(updates) => updateHeaderElement(selectedHeaderElementId, updates)}
+                    onUpdateContent={(content) => updateHeaderElementContent(selectedHeaderElementId, content)}
+                    onDelete={() => deleteHeaderElement(selectedHeaderElementId)}
+                    onDuplicate={() => { }}
+                    availableFields={availableFields}
+                  />
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -860,61 +857,60 @@ const deleteHeaderElement = (elementId: string) => {
               >
                 <div className="text-xs text-gray-400 mb-1">Header Area</div>
                 {header.elements.map(el => (
-                <div
-                  key={el.id}
-                  className={`absolute ${
-                    selectedHeaderElementId === el.id
+                  <div
+                    key={el.id}
+                    className={`absolute ${selectedHeaderElementId === el.id
                       ? 'ring-2 ring-blue-500'
                       : 'hover:ring-1 hover:ring-gray-300'
-                  } ${el.locked ? 'opacity-75' : ''}`}
-                  style={{
-                    left: el.position.relative ? undefined : `${el.position.x}mm`,
-                    top: el.position.relative ? undefined : `${el.position.y}mm`,
-                    width: el.size.width > 0 ? `${el.size.width}mm` : 'auto',
-                    height: el.size.auto_height ? 'auto' : `${el.size.height}mm`,
-                    zIndex: el.z_index,
-                    backgroundColor: el.style.background_color,
-                    borderWidth: el.style.border_width,
-                    borderColor: el.style.border_color,
-                    borderStyle: el.style.border_style,
-                    borderRadius: el.style.border_radius,
-                    opacity: el.style.opacity ?? 1,
-                    position: el.position.relative ? 'relative' : 'absolute',
-                  }}
-                  onClick={() => {
-                    setSelectedHeaderElementId(el.id);
-                    setActiveTab('properties');
-                    setSelectedElementId(null);
-                  }}
-                >
-                  {el.type === 'text' && (
-                    <div
-                      style={{
-                        fontFamily: (el.content as TextContent).font.family,
-                        fontSize: `${(el.content as TextContent).font.size}pt`,
-                        fontWeight: (el.content as TextContent).font.weight,
-                        fontStyle: (el.content as TextContent).font.style,
-                        color: (el.content as TextContent).font.color,
-                        textAlign: (el.content as TextContent).alignment,
-                      }}
-                    >
-                      {(el.content as TextContent).text || 'Enter text...'}
-                    </div>
-                  )}
+                      } ${el.locked ? 'opacity-75' : ''}`}
+                    style={{
+                      left: el.position.relative ? undefined : `${el.position.x}mm`,
+                      top: el.position.relative ? undefined : `${el.position.y}mm`,
+                      width: el.size.width > 0 ? `${el.size.width}mm` : 'auto',
+                      height: el.size.auto_height ? 'auto' : `${el.size.height}mm`,
+                      zIndex: el.z_index,
+                      backgroundColor: el.style.background_color,
+                      borderWidth: el.style.border_width,
+                      borderColor: el.style.border_color,
+                      borderStyle: el.style.border_style,
+                      borderRadius: el.style.border_radius,
+                      opacity: el.style.opacity ?? 1,
+                      position: el.position.relative ? 'relative' : 'absolute',
+                    }}
+                    onClick={() => {
+                      setSelectedHeaderElementId(el.id);
+                      setActiveTab('properties');
+                      setSelectedElementId(null);
+                    }}
+                  >
+                    {el.type === 'text' && (
+                      <div
+                        style={{
+                          fontFamily: (el.content as TextContent).font.family,
+                          fontSize: `${(el.content as TextContent).font.size}pt`,
+                          fontWeight: (el.content as TextContent).font.weight,
+                          fontStyle: (el.content as TextContent).font.style,
+                          color: (el.content as TextContent).font.color,
+                          textAlign: (el.content as TextContent).alignment,
+                        }}
+                      >
+                        {(el.content as TextContent).text || 'Enter text...'}
+                      </div>
+                    )}
 
-                  {el.type === 'image' && (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
-                      {(el.content as ImageContent).source ? (
-                        <img
-                          src={(el.content as ImageContent).source}
-                          alt={(el.content as ImageContent).alt || ''}
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      ) : (
-                        <Image className="h-8 w-8 text-gray-400" />
-                      )}
-                    </div>
-                  )}
+                    {el.type === 'image' && (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
+                        {(el.content as ImageContent).source ? (
+                          <img
+                            src={(el.content as ImageContent).source}
+                            alt={(el.content as ImageContent).alt || ''}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        ) : (
+                          <Image className="h-8 w-8 text-gray-400" />
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -931,11 +927,10 @@ const deleteHeaderElement = (elementId: string) => {
               {elements.map((element) => (
                 <div
                   key={element.id}
-                  className={`absolute cursor-move ${
-                    selectedElementId === element.id
-                      ? 'ring-2 ring-blue-500'
-                      : 'hover:ring-1 hover:ring-gray-300'
-                  } ${element.locked ? 'cursor-not-allowed opacity-75' : ''}`}
+                  className={`absolute cursor-move ${selectedElementId === element.id
+                    ? 'ring-2 ring-blue-500'
+                    : 'hover:ring-1 hover:ring-gray-300'
+                    } ${element.locked ? 'cursor-not-allowed opacity-75' : ''}`}
                   style={{
                     left: element.position.relative ? undefined : `${element.position.x}mm`,
                     top: element.position.relative ? undefined : `${element.position.y}mm`,
