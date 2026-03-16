@@ -113,6 +113,7 @@ export const PERMISSIONS = {
   APPLICATION_LINKS_CREATE: "application-links:create",
   APPLICATION_LINKS_UPDATE: "application-links:update",
   APPLICATION_LINKS_DELETE: "application-links:delete",
+  APPLICATION_LINKS_DASHBOARD: "application-links:dashboard",
 
   // Settings permissions
   SETTINGS_VIEW: "settings:view",

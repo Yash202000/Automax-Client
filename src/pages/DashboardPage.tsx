@@ -1,4 +1,5 @@
 import React from "react";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -33,6 +34,13 @@ interface NavigationCard {
   shadowColor: string;
   permissions: string[];
 }
+
+// Normalize stored image paths: "application-links/x.jpg" → "/application-links/x.jpg"
+const resolveImageUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("/")) return url;
+  return `/${url}`;
+};
 
 // Helper to get Lucide icon component by name
 const getIconComponent = (iconName: string): React.ElementType => {
@@ -95,13 +103,19 @@ export const DashboardPage: React.FC = () => {
       ? "/queries"
       : "/queries/my-created";
 
-  // Fetch active application links
+  const canAccessAppLinks =
+    isSuperAdmin || hasPermission(PERMISSIONS.APPLICATION_LINKS_DASHBOARD);
+
+  // Fetch active application links — only if the user has dashboard permission
   const { data: appLinksResponse } = useQuery({
     queryKey: ["application-links"],
     queryFn: () => applicationLinkApi.listActive(),
+    enabled: canAccessAppLinks,
   });
 
-  const applicationLinks = appLinksResponse?.data || [];
+  const applicationLinks = canAccessAppLinks
+    ? appLinksResponse?.data || []
+    : [];
 
   const navigationCards: NavigationCard[] = [
     {
@@ -206,6 +220,12 @@ export const DashboardPage: React.FC = () => {
 
   const handleAppLinkClick = async (appLink: ApplicationLink) => {
     if (appLink.sso_enabled) {
+      if (!appLink.sso_callback_url) {
+        toast.warning(
+          `"${appLink.name}" has SSO enabled but no callback URL is configured. Please contact your administrator.`,
+        );
+        return;
+      }
       // Open blank tab immediately (before async call) to avoid popup blockers
       const newTab = window.open("", "_blank");
       try {
@@ -316,7 +336,7 @@ export const DashboardPage: React.FC = () => {
                 <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
                   {hasImage ? (
                     <img
-                      src={appLink.image_url}
+                      src={resolveImageUrl(appLink.image_url)}
                       alt=""
                       className="w-full h-full object-contain"
                     />
@@ -335,7 +355,7 @@ export const DashboardPage: React.FC = () => {
                   <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl w-fit mb-3">
                     {hasImage ? (
                       <img
-                        src={appLink.image_url}
+                        src={resolveImageUrl(appLink.image_url)}
                         alt={appLink.name}
                         className="w-6 h-6 object-contain"
                       />

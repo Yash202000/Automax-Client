@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { applicationLinkApi } from "../../api/applicationLinks";
 import type {
@@ -6,8 +6,22 @@ import type {
   ApplicationLinkCreateRequest,
   ApplicationLinkUpdateRequest,
 } from "../../types";
-import { Plus, ExternalLink, Edit2, Trash2, Save, X } from "lucide-react";
+import {
+  Plus,
+  ExternalLink,
+  Edit2,
+  Trash2,
+  Save,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
+
+const resolveImageUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("/")) return url;
+  return `/${url}`;
+};
 
 const AVAILABLE_ICONS = [
   "ExternalLink",
@@ -52,6 +66,8 @@ const ApplicationLinksPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<ApplicationLinkCreateRequest>({
     name: "",
     description: "",
@@ -143,17 +159,23 @@ const ApplicationLinksPage: React.FC = () => {
         queryKey: ["admin", "application-links"],
       });
       queryClient.invalidateQueries({ queryKey: ["application-links"] });
-      toast.success("Logo uploaded successfully");
-      // Update form data with the new image URL
       if (response?.data?.link) {
+        setImageLoadError(false);
         setFormData((prev) => ({
           ...prev,
           image_url: response.data?.link.image_url || "",
         }));
+        toast.success("Logo uploaded successfully");
       }
+      // Reset file input so same file can be re-selected after an error
+      if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    onError: (error: any) => {
+    onError: (
+      error: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any,
+    ) => {
       toast.error(error.response?.data?.error || "Failed to upload logo");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     },
   });
 
@@ -186,6 +208,7 @@ const ApplicationLinksPage: React.FC = () => {
   };
 
   const resetForm = () => {
+    setImageLoadError(false);
     setFormData({
       name: "",
       description: "",
@@ -201,6 +224,7 @@ const ApplicationLinksPage: React.FC = () => {
   };
 
   const handleEdit = (link: ApplicationLink) => {
+    setImageLoadError(false);
     setEditingId(link.id);
     setFormData({
       name: link.name,
@@ -224,6 +248,10 @@ const ApplicationLinksPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.sso_enabled && !formData.sso_callback_url?.trim()) {
+      toast.error("SSO Callback URL is required when SSO is enabled.");
+      return;
+    }
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: formData });
     } else {
@@ -324,39 +352,78 @@ const ApplicationLinksPage: React.FC = () => {
               />
             </div>
 
-            {editingId && (
-              <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  Logo Image (Optional)
-                </label>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                  Upload a custom logo image. Max 5MB. Supports JPG, PNG, GIF,
-                  WebP, SVG.
-                </p>
-                {formData.image_url && (
-                  <div className="mb-3 flex items-center gap-3">
-                    <img
-                      src={formData.image_url}
-                      alt="Logo preview"
-                      className="w-16 h-16 object-contain bg-white rounded border border-[hsl(var(--border))]"
-                    />
-                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      Current logo
-                    </span>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-                  onChange={handleImageUpload}
-                  className="block w-full text-sm text-[hsl(var(--foreground))]
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-medium
-                    file:bg-[hsl(var(--primary))] file:text-white
-                    hover:file:opacity-90 file:cursor-pointer"
-                />
+            {isCreating && !editingId ? (
+              <div className="bg-[hsl(var(--muted))] p-4 rounded-lg text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                Save the link first, then edit it to upload a logo image.
               </div>
+            ) : (
+              editingId && (
+                <div className="bg-[hsl(var(--muted))] p-4 rounded-lg space-y-3">
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
+                    Logo Image (Optional)
+                  </label>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    Upload a custom logo image. Max 5MB. Supports JPG, PNG, GIF,
+                    WebP, SVG.
+                  </p>
+
+                  {/* Preview */}
+                  {formData.image_url && (
+                    <div className="flex items-center gap-3">
+                      {imageLoadError ? (
+                        <div className="w-16 h-16 flex items-center justify-center bg-red-50 border border-red-200 rounded text-center">
+                          <AlertTriangle className="w-6 h-6 text-red-400" />
+                        </div>
+                      ) : (
+                        <img
+                          src={resolveImageUrl(formData.image_url || "")}
+                          alt="Logo preview"
+                          className="w-16 h-16 object-contain bg-white rounded border border-[hsl(var(--border))]"
+                          onError={() => setImageLoadError(true)}
+                          onLoad={() => setImageLoadError(false)}
+                        />
+                      )}
+                      <div>
+                        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                          {imageLoadError ? (
+                            <span className="text-red-500 font-medium">
+                              Logo uploaded but cannot be previewed — the
+                              storage URL may not be publicly accessible. The
+                              logo will still be saved.
+                            </span>
+                          ) : (
+                            "Current logo"
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload input */}
+                  <div className="relative">
+                    {uploadImageMutation.isPending && (
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2 animate-pulse">
+                        Uploading…
+                      </p>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                      onChange={handleImageUpload}
+                      disabled={uploadImageMutation.isPending}
+                      className="block w-full text-sm text-[hsl(var(--foreground))]
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-medium
+                      file:bg-[hsl(var(--primary))] file:text-white
+                      hover:file:opacity-90 file:cursor-pointer
+                      disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+              )
             )}
 
             <div className="grid grid-cols-3 gap-4">
@@ -404,13 +471,18 @@ const ApplicationLinksPage: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.sort_order}
+                  min={0}
+                  value={formData.sort_order === 0 ? "" : formData.sort_order}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      sort_order: parseInt(e.target.value) || 0,
+                      sort_order:
+                        e.target.value === ""
+                          ? 0
+                          : parseInt(e.target.value, 10) || 0,
                     })
                   }
+                  placeholder="0"
                   className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                 />
               </div>
@@ -456,7 +528,7 @@ const ApplicationLinksPage: React.FC = () => {
               {formData.sso_enabled && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                    SSO Callback URL
+                    SSO Callback URL <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="url"
@@ -467,13 +539,24 @@ const ApplicationLinksPage: React.FC = () => {
                         sso_callback_url: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                    className={`w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] ${
+                      !formData.sso_callback_url?.trim()
+                        ? "border-red-400 focus:ring-red-300"
+                        : "border-[hsl(var(--border))]"
+                    }`}
                     placeholder="https://target.app/sso/callback"
                   />
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                    The URL on the target application that receives the SSO JWT
-                    token.
-                  </p>
+                  {!formData.sso_callback_url?.trim() ? (
+                    <p className="text-xs text-red-500 mt-1">
+                      Callback URL is required — without it, users clicking this
+                      app will see no redirection.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                      The URL on the target application that receives the SSO
+                      JWT token.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -580,15 +663,23 @@ const ApplicationLinksPage: React.FC = () => {
                       {link.sort_order}
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          link.is_active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {link.is_active ? "Active" : "Inactive"}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span
+                          className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                            link.is_active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {link.is_active ? "Active" : "Inactive"}
+                        </span>
+                        {link.sso_enabled && !link.sso_callback_url && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            <AlertTriangle className="w-3 h-3" />
+                            SSO: No callback URL
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
