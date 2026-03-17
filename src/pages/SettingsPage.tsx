@@ -216,53 +216,51 @@ export const SettingsPage: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          {t("settings.title")}
-        </h1>
+        <h1 className="text-3xl font-bold ">{t("settings.title")}</h1>
         <p className="mt-2 text-gray-500">{t("settings.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Settings Navigation */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-24">
+          <Card className="sticky top-24 p-2">
             <nav className="space-y-1">
               <a
                 href="#security"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-xl"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary bg-primary/10 rounded-xl"
               >
                 <Shield className="w-5 h-5" />
                 {t("settings.security")}
               </a>
               <a
                 href="#notifications"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-muted-foreground  hover:bg-muted rounded-xl transition-colors"
               >
                 <Bell className="w-5 h-5" />
                 {t("settings.notifications")}
               </a>
               <a
                 href="#appearance"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-muted-foreground hover:bg-muted rounded-xl transition-colors"
               >
                 <Moon className="w-5 h-5" />
                 {t("settings.appearance")}
               </a>
               <a
                 href="#privacy"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-muted-foreground hover:bg-muted rounded-xl transition-colors"
               >
                 <Eye className="w-5 h-5" />
                 {t("settings.privacy")}
               </a>
               <a
                 href="#language"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-muted-foreground hover:bg-muted rounded-xl transition-colors"
               >
                 <Globe className="w-5 h-5" />
                 {t("settings.language")}
               </a>
-              <div className="border-t border-gray-100 my-2" />
+              <div className="border-t border-border my-2" />
               <a
                 href="#danger"
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
@@ -277,15 +275,13 @@ export const SettingsPage: React.FC = () => {
         {/* Settings Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Security Section */}
-          <Card id="security">
+          <Card id="security" className="p-4 scroll-mt-28">
             <div className="flex items-start gap-4 mb-6">
               <div className="p-3 bg-blue-50 rounded-xl">
-                <Shield className="w-6 h-6 text-blue-600" />
+                <Shield className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  {t("settings.security")}
-                </h3>
+                <h3 className="text-lg font-bold ">{t("settings.security")}</h3>
                 <p className="text-sm text-gray-500">
                   {t("settings.securityDesc")}
                 </p>
@@ -379,15 +375,17 @@ export const SettingsPage: React.FC = () => {
 
           {/* Dynamic Settings Groups */}
           {settingsGroups.map((group) => (
-            <Card key={group.title} id={group.title.toLowerCase()}>
+            <Card
+              key={group.title}
+              id={group.title.toLowerCase()}
+              className="p-4 scroll-mt-28"
+            >
               <div className="flex items-start gap-4 mb-6">
                 <div className="p-3 bg-gray-50 rounded-xl">
                   <group.icon className="w-6 h-6 text-gray-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {group.title}
-                  </h3>
+                  <h3 className="text-lg font-bold ">{group.title}</h3>
                   <p className="text-sm text-gray-500">{group.description}</p>
                 </div>
               </div>
@@ -396,12 +394,10 @@ export const SettingsPage: React.FC = () => {
                 {group.items.map((item, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                    className="flex items-center justify-between p-4 bg-background rounded-xl"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {item.label}
-                      </p>
+                      <p className="text-sm font-medium ">{item.label}</p>
                       <p className="text-xs text-gray-500">
                         {item.description}
                       </p>
@@ -425,15 +421,13 @@ export const SettingsPage: React.FC = () => {
           ))}
 
           {/* Language Section */}
-          <Card id="language">
+          <Card id="language" className="p-4">
             <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 bg-purple-50 rounded-xl">
-                <Languages className="w-6 h-6 text-purple-600" />
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Languages className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  {t("settings.language")}
-                </h3>
+                <h3 className="text-lg font-bold ">{t("settings.language")}</h3>
                 <p className="text-sm text-gray-500">
                   {t("settings.selectLanguage")}
                 </p>
@@ -459,8 +453,8 @@ export const SettingsPage: React.FC = () => {
                   onClick={() => handleLanguageChange(lang.code)}
                   className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
                     currentLang === lang.code
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-border hover:bg-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -470,9 +464,7 @@ export const SettingsPage: React.FC = () => {
                     <div className="text-left">
                       <p
                         className={`text-sm font-medium ${
-                          currentLang === lang.code
-                            ? "text-blue-700"
-                            : "text-gray-900"
+                          currentLang === lang.code ? "text-primary" : ""
                         }`}
                       >
                         {lang.nativeName}
@@ -491,9 +483,9 @@ export const SettingsPage: React.FC = () => {
           </Card>
 
           {/* Danger Zone */}
-          <Card id="danger" className="border-red-200">
+          <Card id="danger" className="border-red-200 p-4">
             <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 bg-red-50 rounded-xl">
+              <div className="p-3 bg-red-500/10 rounded-xl">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
