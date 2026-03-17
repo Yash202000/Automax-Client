@@ -378,9 +378,9 @@ export const EmailPage: React.FC = () => {
     ];
 
   return (
-    <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+    <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-border overflow-hidden shadow-sm">
       {/* Sidebar */}
-      <div className="w-64 bg-card border-r border-slate-200 flex flex-col hidden md:flex">
+      <div className="w-64 bg-card border-r border-border flex flex-col hidden md:flex">
         <div className="p-4">
           <Button
             onClick={() => {
@@ -415,9 +415,9 @@ export const EmailPage: React.FC = () => {
 
       {/* Email List */}
       <div
-        className={`${selectedEmail ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-96 border-r border-slate-200 bg-card`}
+        className={`${selectedEmail ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-96 border-r border-border bg-card`}
       >
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-border">
           <div className="md:hidden mb-4 flex gap-2">
             <button
               onClick={() => {
@@ -434,7 +434,7 @@ export const EmailPage: React.FC = () => {
                 setCurrentFolder(e.target.value as Folder);
                 setSelectedEmail(null);
               }}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2 text-sm"
+              className="bg-slate-50 border border-border rounded-lg px-2 text-sm"
             >
               <option value="inbox">Inbox</option>
               <option value="sent">Sent</option>
@@ -450,7 +450,7 @@ export const EmailPage: React.FC = () => {
               placeholder="Search mail..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         </div>
@@ -550,7 +550,7 @@ export const EmailPage: React.FC = () => {
         {selectedEmail ? (
           <>
             {/* Header */}
-            <div className="p-6 border-b border-slate-200 flex items-start justify-between bg-white">
+            <div className="p-6 border-b border-border flex items-start justify-between bg-white">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-4 mb-4">
                   <button
@@ -593,7 +593,7 @@ export const EmailPage: React.FC = () => {
                     <span className="text-xs">
                       {new Date(selectedEmail.created_at).toLocaleString()}
                     </span>
-                    <div className="flex items-center border-l border-slate-200 pl-2 ml-2 gap-1">
+                    <div className="flex items-center border-l border-border pl-2 ml-2 gap-1">
                       <button
                         onClick={handleReply}
                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
@@ -630,7 +630,7 @@ export const EmailPage: React.FC = () => {
 
               {selectedEmail.attachments &&
                 selectedEmail.attachments.length > 0 && (
-                  <div className="mt-8 pt-6 border-t border-slate-200">
+                  <div className="mt-8 pt-6 border-t border-border">
                     <h4 className="text-sm font-medium text-slate-900 mb-3 flex items-center gap-2">
                       <Paperclip className="w-4 h-4" />
                       Attachments ({selectedEmail.attachments.length})
@@ -639,7 +639,7 @@ export const EmailPage: React.FC = () => {
                       {selectedEmail.attachments.map((attachment) => (
                         <div
                           key={attachment.id}
-                          className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3"
+                          className="p-3 bg-slate-50 border border-border rounded-lg flex items-center gap-3"
                         >
                           <div className="p-2 bg-white rounded-lg border border-slate-100">
                             <Paperclip className="w-4 h-4 text-primary" />
@@ -683,7 +683,7 @@ export const EmailPage: React.FC = () => {
       {isComposeOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-slate-50">
               <h3 className="font-semibold text-slate-900">
                 {editingDraftId ? "Edit Draft" : "New Message"}
               </h3>
@@ -776,7 +776,7 @@ export const EmailPage: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between gap-3">
+              <div className="px-6 py-4 border-t border-border bg-slate-50 flex justify-between gap-3">
                 {/* Save as Draft button */}
                 <button
                   type="button"

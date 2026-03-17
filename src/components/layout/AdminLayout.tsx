@@ -236,7 +236,7 @@ export const AdminLayout: React.FC = () => {
         className={`hidden lg:flex absolute top-[75px] ${collapsed ? "start-[60px]" : "start-[248px]"} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
       >
         <ChevronLeft
-          className={`w-3.5 h-3.5 transition-transform ${collapsed ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 transition-transform ${collapsed ? "rotate-180 rtl:rotate-0" : "rtl:-rotate-180"}`}
         />
       </button>
 

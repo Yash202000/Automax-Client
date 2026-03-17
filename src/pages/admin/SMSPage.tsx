@@ -94,9 +94,9 @@ export const SMSPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+    <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-border overflow-hidden shadow-sm">
       {/* Sidebar */}
-      <div className="w-64 bg-card border-r border-slate-200 flex flex-col hidden md:flex">
+      <div className="w-64 bg-card border-r border-border flex flex-col hidden md:flex">
         <div className="p-4">
           <Button onClick={() => setIsComposeOpen(true)} className="w-full">
             <Plus className="w-5 h-5" />
@@ -144,9 +144,9 @@ export const SMSPage: React.FC = () => {
 
       {/* SMS List */}
       <div
-        className={`${selectedSMS ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-96 border-r border-slate-200 bg-card`}
+        className={`${selectedSMS ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-96 border-r border-border bg-card`}
       >
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-border">
           <div className="md:hidden mb-4 flex gap-2">
             <button
               onClick={() => setIsComposeOpen(true)}
@@ -160,7 +160,7 @@ export const SMSPage: React.FC = () => {
                 setCurrentFolder(e.target.value as any);
                 setSelectedSMS(null);
               }}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2 text-sm"
+              className="bg-slate-50 border border-border rounded-lg px-2 text-sm"
             >
               <option value="inbox">Inbox</option>
               <option value="sent">Sent</option>
@@ -175,7 +175,7 @@ export const SMSPage: React.FC = () => {
               placeholder="Search messages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         </div>
@@ -225,7 +225,7 @@ export const SMSPage: React.FC = () => {
       >
         {selectedSMS ? (
           <>
-            <div className="p-6 border-b border-slate-200 flex items-start justify-between bg-white">
+            <div className="p-6 border-b border-border flex items-start justify-between bg-white">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-4 mb-4">
                   <button
@@ -283,7 +283,7 @@ export const SMSPage: React.FC = () => {
       {isComposeOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-slate-50">
               <h3 className="font-semibold text-slate-900">New SMS</h3>
               <button
                 onClick={() => setIsComposeOpen(false)}
@@ -326,7 +326,7 @@ export const SMSPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 bg-slate-50">
+              <div className="px-6 py-4 border-t border-border flex justify-end gap-3 bg-slate-50">
                 <button
                   type="button"
                   onClick={() => setIsComposeOpen(false)}
