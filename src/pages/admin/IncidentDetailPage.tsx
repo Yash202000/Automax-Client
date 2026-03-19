@@ -992,6 +992,16 @@ export const IncidentDetailPage: React.FC = () => {
     }
   };
 
+  const canEdit = useMemo(() => {
+    if (!incident) return false;
+    const roles = incident.current_state?.editable_roles ?? [];
+    const userRoles = user?.roles?.map((role) => role?.id) ?? [];
+
+    return (
+      roles.length === 0 || roles.some((r: any) => userRoles.includes(r.id))
+    );
+  }, [incident, user]);
+
   const executeTransition = async () => {
     if (!selectedTransition) return;
 
@@ -1376,7 +1386,7 @@ export const IncidentDetailPage: React.FC = () => {
           >
             {t("incidents.refresh")}
           </Button>
-          {canEditIncident && (
+          {canEditIncident && canEdit && (
             <Button
               variant="ghost"
               size="sm"

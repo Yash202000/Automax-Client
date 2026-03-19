@@ -78,6 +78,7 @@ interface StateFormData {
   is_ready_to_close: boolean;
   duration_options: string; // comma-separated input string
   viewable_role_ids: string[];
+  editable_role_ids: string[];
 }
 
 interface TransitionFormData {
@@ -109,6 +110,7 @@ const initialStateFormData: StateFormData = {
   is_ready_to_close: false,
   duration_options: "",
   viewable_role_ids: [],
+  editable_role_ids: [],
 };
 
 const initialTransitionFormData: TransitionFormData = {
@@ -645,6 +647,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ready_to_close: state.is_ready_to_close || false,
       duration_options: (state.duration_options || []).join(", "),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
+      editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
     });
     setIsStateModalOpen(true);
   };
@@ -753,6 +756,7 @@ export const WorkflowDesignerPage: React.FC = () => {
             .filter(Boolean)
         : [],
       viewable_role_ids: stateFormData.viewable_role_ids,
+      editable_role_ids: stateFormData.editable_role_ids,
     };
 
     if (editingState) {
@@ -889,6 +893,15 @@ export const WorkflowDesignerPage: React.FC = () => {
       viewable_role_ids: prev.viewable_role_ids.includes(roleId)
         ? prev.viewable_role_ids.filter((id) => id !== roleId)
         : [...prev.viewable_role_ids, roleId],
+    }));
+  };
+
+  const toggleEditableStateRole = (roleId: string) => {
+    setStateFormData((prev) => ({
+      ...prev,
+      editable_role_ids: prev.editable_role_ids.includes(roleId)
+        ? prev.editable_role_ids.filter((id) => id !== roleId)
+        : [...prev.editable_role_ids, roleId],
     }));
   };
 
@@ -1167,6 +1180,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
                           Viewable Roles
                         </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                          Editable Roles
+                        </th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
                           Actions
                         </th>
@@ -1243,6 +1259,34 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   {state.viewable_roles.length > 2 && (
                                     <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded">
                                       +{state.viewable_roles.length - 2}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-1">
+                              {!state.editable_roles ||
+                              state.editable_roles.length === 0 ? (
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  All roles
+                                </span>
+                              ) : (
+                                <>
+                                  {state.editable_roles
+                                    .slice(0, 2)
+                                    .map((role) => (
+                                      <span
+                                        key={role.id}
+                                        className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded"
+                                      >
+                                        {role.name}
+                                      </span>
+                                    ))}
+                                  {state.editable_roles.length > 2 && (
+                                    <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded">
+                                      +{state.editable_roles.length - 2}
                                     </span>
                                   )}
                                 </>
@@ -2363,7 +2407,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     Code
@@ -2381,7 +2424,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     Description
@@ -2398,7 +2440,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     State Type
@@ -2418,7 +2459,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <option value="terminal">Terminal (End state)</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     Color
@@ -2446,7 +2486,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     SLA Hours (optional)
@@ -2469,7 +2508,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     Maximum time an incident should remain in this state
                   </p>
                 </div>
-
                 <div>
                   <label className="flex items-center gap-3">
                     <input
@@ -2491,7 +2529,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     Allow incidents in this status to be merged together
                   </p>
                 </div>
-
                 {/* Ready to Close */}
                 <div>
                   <label className="flex items-center gap-3">
@@ -2515,7 +2552,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     Incident reverts automatically if not closed in time.
                   </p>
                 </div>
-
                 {stateFormData.is_ready_to_close && (
                   <div className="ml-7">
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
@@ -2538,7 +2574,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     />
                   </div>
                 )}
-
                 {/* Viewable Roles */}
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2564,6 +2599,42 @@ export const WorkflowDesignerPage: React.FC = () => {
                             role.id,
                           )}
                           onChange={() => toggleStateRole(role.id)}
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                        />
+                        <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                        <span className="text-sm text-[hsl(var(--foreground))]">
+                          {role.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Editable Roles */}
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Editable Roles
+                    <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
+                      (leave empty to allow all roles to edit)
+                    </span>
+                  </label>
+                  <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
+                    {roles.map((role) => (
+                      <label
+                        key={role.id}
+                        className={cn(
+                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
+                          stateFormData.editable_role_ids.includes(role.id)
+                            ? "bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.3)]"
+                            : "hover:bg-[hsl(var(--muted)/0.5)]",
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={stateFormData.editable_role_ids.includes(
+                            role.id,
+                          )}
+                          onChange={() => toggleEditableStateRole(role.id)}
                           className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                         />
                         <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
