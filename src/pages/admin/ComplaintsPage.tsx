@@ -466,7 +466,7 @@ export const ComplaintsPage: React.FC = () => {
                         </div>
                         <span
                           className={cn(
-                            "flex-1 text-left",
+                            "flex-1 text-start",
                             col.visible
                               ? "text-[hsl(var(--foreground))]"
                               : "text-[hsl(var(--muted-foreground))]",
@@ -719,70 +719,70 @@ export const ComplaintsPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
                     {isColumnVisible("complaint") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("complaints.complaint", "Complaint")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("channel") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.channel", "Channel")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_by") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("complaints.createdBy", "Created By")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("source") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("complaints.sourceIncident", "Source Incident")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("state") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.state", "State")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("assignee") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.assignee", "Assignee")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("department") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.department", "Department")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_at") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.created", "Created")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("evaluation") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("complaints.evaluations", "Evaluations")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("actions") && (
-                      <th className="px-6 py-4 text-right">
+                      <th className="px-6 py-4 text-end">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.actions", "Actions")}
                         </span>
@@ -962,7 +962,7 @@ export const ComplaintsPage: React.FC = () => {
                         </td>
                       )}
                       {isColumnVisible("actions") && (
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-end">
                           <Button
                             variant="ghost"
                             size="sm"

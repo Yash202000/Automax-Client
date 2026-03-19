@@ -411,34 +411,34 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                         }
                       />
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("incidents.incident")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.state")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.priority")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {isAssigned
                           ? t("common.department")
                           : t("common.assignee")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.dueDate")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.sla")}
                       </span>

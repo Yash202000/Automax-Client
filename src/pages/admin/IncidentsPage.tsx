@@ -734,7 +734,7 @@ export const IncidentsPage: React.FC = () => {
                         </div>
                         <span
                           className={cn(
-                            "flex-1 text-left",
+                            "flex-1 text-start",
                             col.visible
                               ? "text-[hsl(var(--foreground))]"
                               : "text-[hsl(var(--muted-foreground))]",
@@ -1001,63 +1001,63 @@ export const IncidentsPage: React.FC = () => {
                       />
                     </th>
                     {isColumnVisible("incident") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("incidents.title")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("state") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.state")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("priority") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.priority")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("assignee") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.assignee")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("department") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.department")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("due_date") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.dueDate")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_at") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.created")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("sla") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.sla")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("actions") && (
-                      <th className="px-6 py-4 text-right">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.actions")}
                         </span>
@@ -1261,7 +1261,7 @@ export const IncidentsPage: React.FC = () => {
                           </td>
                         )}
                         {isColumnVisible("actions") && (
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-start">
                             <Button
                               variant="ghost"
                               size="sm"
