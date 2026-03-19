@@ -159,6 +159,23 @@ const ApplicationLinksPage: React.FC = () => {
     },
   });
 
+  // Image remove mutation
+  const removeImageMutation = useMutation({
+    mutationFn: (id: string) => applicationLinkApi.removeImage(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "application-links"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["application-links"] });
+      setImageLoadError(false);
+      setFormData((prev) => ({ ...prev, image_url: "" }));
+      toast.success("Logo removed successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to remove logo");
+    },
+  });
+
   // Image upload mutation
   const uploadImageMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
@@ -393,7 +410,7 @@ const ApplicationLinksPage: React.FC = () => {
                           onLoad={() => setImageLoadError(false)}
                         />
                       )}
-                      <div>
+                      <div className="flex flex-col gap-1">
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">
                           {imageLoadError ? (
                             <span className="text-red-500 font-medium">
@@ -405,6 +422,19 @@ const ApplicationLinksPage: React.FC = () => {
                             "Current logo"
                           )}
                         </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            editingId && removeImageMutation.mutate(editingId)
+                          }
+                          disabled={removeImageMutation.isPending}
+                          className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 disabled:opacity-50 w-fit"
+                        >
+                          <X className="w-3 h-3" />
+                          {removeImageMutation.isPending
+                            ? "Removing…"
+                            : "Remove logo"}
+                        </button>
                       </div>
                     </div>
                   )}

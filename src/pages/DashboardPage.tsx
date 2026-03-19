@@ -77,6 +77,11 @@ export const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { hasAnyPermission, hasPermission, isSuperAdmin } = usePermissions();
+  const [brokenImages, setBrokenImages] = React.useState<Set<string>>(
+    new Set(),
+  );
+  const handleImageError = (id: string) =>
+    setBrokenImages((prev) => new Set(prev).add(id));
 
   // Smart entry-point hrefs based on permissions
   const incidentsHref =
@@ -316,7 +321,8 @@ export const DashboardPage: React.FC = () => {
             const AppIcon = getIconComponent(appLink.icon);
             const gradient = getGradientClasses(appLink.color);
             const shadowColor = getShadowColor(appLink.color);
-            const hasImage = Boolean(appLink.image_url);
+            const hasImage =
+              Boolean(appLink.image_url) && !brokenImages.has(appLink.id);
 
             return (
               <button
@@ -339,6 +345,7 @@ export const DashboardPage: React.FC = () => {
                       src={resolveImageUrl(appLink.image_url)}
                       alt=""
                       className="w-full h-full object-contain"
+                      onError={() => handleImageError(appLink.id)}
                     />
                   ) : (
                     <AppIcon className="w-full h-full" strokeWidth={0.5} />
@@ -358,6 +365,7 @@ export const DashboardPage: React.FC = () => {
                         src={resolveImageUrl(appLink.image_url)}
                         alt={appLink.name}
                         className="w-6 h-6 object-contain"
+                        onError={() => handleImageError(appLink.id)}
                       />
                     ) : (
                       <AppIcon className="w-6 h-6 text-white" />

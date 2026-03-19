@@ -22,6 +22,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "../../components/ui";
+import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
 import {
   complaintApi,
   workflowApi,
@@ -35,10 +36,7 @@ import type {
   IncidentFilter,
   Workflow,
   User as UserType,
-  Department,
   WorkflowState,
-  Classification,
-  Location,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { CreateComplaintModal } from "@/components/complaints/CreateComplaintModal";
@@ -246,29 +244,18 @@ export const ComplaintsPage: React.FC = () => {
   });
 
   const { data: departmentsData } = useQuery({
-    queryKey: ["admin", "departments", "list"],
-    queryFn: () => departmentApi.list(),
+    queryKey: ["admin", "departments", "tree"],
+    queryFn: () => departmentApi.getTree(),
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ["admin", "locations", "list"],
-    queryFn: () => locationApi.list(),
+    queryKey: ["admin", "locations", "tree"],
+    queryFn: () => locationApi.getTree(),
   });
 
   const { data: classificationsData } = useQuery({
-    queryKey: ["admin", "classifications", "complaint"],
-    queryFn: async () => {
-      const [complaintRes, allRes] = await Promise.all([
-        classificationApi.listByType("complaint"),
-        classificationApi.listByType("all"),
-      ]);
-      const combined = [...(complaintRes.data || []), ...(allRes.data || [])];
-      const unique = combined.filter(
-        (item, index, self) =>
-          index === self.findIndex((t) => t.id === item.id),
-      );
-      return { success: true, data: unique };
-    },
+    queryKey: ["admin", "classifications", "tree"],
+    queryFn: () => classificationApi.getTree(),
   });
 
   const complaints = complaintsData?.data || [];
@@ -300,10 +287,10 @@ export const ComplaintsPage: React.FC = () => {
     filter.search ||
     filter.workflow_id ||
     filter.current_state_id ||
-    filter.classification_id ||
+    (filter.classification_ids && filter.classification_ids.length > 0) ||
     filter.channel ||
     filter.assignee_id ||
-    filter.department_id
+    (filter.department_ids && filter.department_ids.length > 0)
   );
 
   const formatDate = (dateStr?: string) => {
@@ -609,77 +596,48 @@ export const ComplaintsPage: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.department", "Department")}
-              </label>
-              <select
-                value={filter.department_id || ""}
-                onChange={(e) =>
-                  handleFilterChange(
-                    "department_id",
-                    e.target.value || undefined,
-                  )
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-              >
-                <option value="">
-                  {t("common.allDepartments", "All Departments")}
-                </option>
-                {departmentsData?.data?.map((dept: Department) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.classification", "Classification")}
-              </label>
-              <select
-                value={filter.classification_id || ""}
-                onChange={(e) =>
-                  handleFilterChange(
-                    "classification_id",
-                    e.target.value || undefined,
-                  )
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-              >
-                <option value="">
-                  {t("common.allClassifications", "All Classifications")}
-                </option>
-                {classificationsData?.data?.map(
-                  (classification: Classification) => (
-                    <option key={classification.id} value={classification.id}>
-                      {classification.name}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.location", "Location")}
-              </label>
-              <select
-                value={filter.location_id || ""}
-                onChange={(e) =>
-                  handleFilterChange("location_id", e.target.value || undefined)
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-              >
-                <option value="">
-                  {t("common.allLocations", "All Locations")}
-                </option>
-                {locationsData?.data?.map((location: Location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <MultiTreeSelect
+              data={departmentsData?.data || []}
+              selectedIds={filter.department_ids || []}
+              onSelectionChange={(ids) =>
+                setFilter((prev) => ({
+                  ...prev,
+                  department_ids: ids.length ? ids : undefined,
+                  page: 1,
+                }))
+              }
+              label={t("common.department")}
+              placeholder={t("common.allDepartments")}
+              leafOnly
+            />
+            <MultiTreeSelect
+              data={classificationsData?.data || []}
+              selectedIds={filter.classification_ids || []}
+              onSelectionChange={(ids) =>
+                setFilter((prev) => ({
+                  ...prev,
+                  classification_ids: ids.length ? ids : undefined,
+                  page: 1,
+                }))
+              }
+              label={t("common.classification")}
+              placeholder={t("common.allClassifications")}
+              leafOnly
+            />
+            <MultiTreeSelect
+              data={locationsData?.data || []}
+              selectedIds={filter.location_ids || []}
+              onSelectionChange={(ids) =>
+                setFilter((prev) => ({
+                  ...prev,
+                  location_ids: ids.length ? ids : undefined,
+                  page: 1,
+                }))
+              }
+              label={t("common.location")}
+              placeholder={t("common.allLocations")}
+              leafOnly
+            />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                 {t("common.priority", "Priority")}

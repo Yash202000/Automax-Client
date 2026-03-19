@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { ChevronRight, ChevronDown, Check, Minus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState, useCallback, useMemo } from "react";
+import { ChevronRight, ChevronDown, Check, Minus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface TreeNode {
   id: string;
@@ -17,7 +17,8 @@ interface HierarchicalTreeSelectProps {
   icon?: React.ReactNode;
   emptyMessage?: string;
   maxHeight?: string;
-  colorScheme?: 'primary' | 'success' | 'warning' | 'accent';
+  colorScheme?: "primary" | "success" | "warning" | "accent";
+  leafOnly?: boolean; // Only allow selecting leaf nodes (no children)
 }
 
 // Helper to get all descendant IDs
@@ -41,19 +42,29 @@ const flattenTree = (nodes: TreeNode[]): string[] => {
 };
 
 // Helper to check if all children are selected
-const areAllChildrenSelected = (node: TreeNode, selectedIds: string[]): boolean => {
+const areAllChildrenSelected = (
+  node: TreeNode,
+  selectedIds: string[],
+): boolean => {
   if (!node.children || node.children.length === 0) {
     return selectedIds.includes(node.id);
   }
-  return node.children.every((child) => areAllChildrenSelected(child, selectedIds));
+  return node.children.every((child) =>
+    areAllChildrenSelected(child, selectedIds),
+  );
 };
 
 // Helper to check if some children are selected
-const areSomeChildrenSelected = (node: TreeNode, selectedIds: string[]): boolean => {
+const areSomeChildrenSelected = (
+  node: TreeNode,
+  selectedIds: string[],
+): boolean => {
   if (!node.children || node.children.length === 0) {
     return selectedIds.includes(node.id);
   }
-  return node.children.some((child) => areSomeChildrenSelected(child, selectedIds));
+  return node.children.some((child) =>
+    areSomeChildrenSelected(child, selectedIds),
+  );
 };
 
 interface TreeNodeItemProps {
@@ -63,7 +74,8 @@ interface TreeNodeItemProps {
   expandedIds: string[];
   onToggleExpand: (id: string) => void;
   onToggleSelect: (node: TreeNode) => void;
-  colorScheme: 'primary' | 'success' | 'warning' | 'accent';
+  colorScheme: "primary" | "success" | "warning" | "accent";
+  leafOnly: boolean;
 }
 
 const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
@@ -74,30 +86,41 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   onToggleExpand,
   onToggleSelect,
   colorScheme,
+  leafOnly,
 }) => {
   const hasChildren = node.children && node.children.length > 0;
   const isExpanded = expandedIds.includes(node.id);
   const isSelected = selectedIds.includes(node.id);
-  const allChildrenSelected = hasChildren ? areAllChildrenSelected(node, selectedIds) : false;
-  const someChildrenSelected = hasChildren ? areSomeChildrenSelected(node, selectedIds) : false;
+  const allChildrenSelected = hasChildren
+    ? areAllChildrenSelected(node, selectedIds)
+    : false;
+  const someChildrenSelected = hasChildren
+    ? areSomeChildrenSelected(node, selectedIds)
+    : false;
   const isIndeterminate = someChildrenSelected && !allChildrenSelected;
+  // In leafOnly mode, parents are not selectable
+  const isSelectable = !leafOnly || !hasChildren;
 
   const colorClasses = {
     primary: {
-      selected: 'bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)]',
-      checkbox: 'bg-[hsl(var(--primary))] border-[hsl(var(--primary))]',
+      selected:
+        "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)]",
+      checkbox: "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]",
     },
     success: {
-      selected: 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.3)]',
-      checkbox: 'bg-[hsl(var(--success))] border-[hsl(var(--success))]',
+      selected:
+        "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.3)]",
+      checkbox: "bg-[hsl(var(--success))] border-[hsl(var(--success))]",
     },
     warning: {
-      selected: 'bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.3)]',
-      checkbox: 'bg-[hsl(var(--warning))] border-[hsl(var(--warning))]',
+      selected:
+        "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.3)]",
+      checkbox: "bg-[hsl(var(--warning))] border-[hsl(var(--warning))]",
     },
     accent: {
-      selected: 'bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))] border-[hsl(var(--accent)/0.3)]',
-      checkbox: 'bg-[hsl(var(--accent))] border-[hsl(var(--accent))]',
+      selected:
+        "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))] border-[hsl(var(--accent)/0.3)]",
+      checkbox: "bg-[hsl(var(--accent))] border-[hsl(var(--accent))]",
     },
   };
 
@@ -105,8 +128,13 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
     <div>
       <div
         className={cn(
-          "flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer transition-all hover:bg-[hsl(var(--muted)/0.5)]",
-          (isSelected || allChildrenSelected) && colorClasses[colorScheme].selected
+          "flex items-center gap-2 py-1.5 px-2 rounded-lg transition-all",
+          isSelectable
+            ? "cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]"
+            : "cursor-default hover:bg-[hsl(var(--muted)/0.3)]",
+          isSelectable &&
+            (isSelected || allChildrenSelected) &&
+            colorClasses[colorScheme].selected,
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
       >
@@ -130,35 +158,54 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           <span className="w-5" />
         )}
 
-        {/* Checkbox */}
-        <button
-          type="button"
-          onClick={() => onToggleSelect(node)}
-          className={cn(
-            "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
-            isSelected || allChildrenSelected
-              ? colorClasses[colorScheme].checkbox
-              : isIndeterminate
-              ? colorClasses[colorScheme].checkbox
-              : 'border-[hsl(var(--border))] bg-[hsl(var(--background))]'
-          )}
-        >
-          {(isSelected || allChildrenSelected) && (
-            <Check className="w-3 h-3 text-white" />
-          )}
-          {isIndeterminate && !isSelected && !allChildrenSelected && (
-            <Minus className="w-3 h-3 text-white" />
-          )}
-        </button>
+        {/* Checkbox — hidden for non-selectable parents in leafOnly mode */}
+        {isSelectable ? (
+          <button
+            type="button"
+            onClick={() => onToggleSelect(node)}
+            className={cn(
+              "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
+              isSelected || allChildrenSelected
+                ? colorClasses[colorScheme].checkbox
+                : isIndeterminate
+                  ? colorClasses[colorScheme].checkbox
+                  : "border-[hsl(var(--border))] bg-[hsl(var(--background))]",
+            )}
+          >
+            {(isSelected || allChildrenSelected) && (
+              <Check className="w-3 h-3 text-white" />
+            )}
+            {isIndeterminate && !isSelected && !allChildrenSelected && (
+              <Minus className="w-3 h-3 text-white" />
+            )}
+          </button>
+        ) : (
+          /* In leafOnly mode, show an indeterminate dot when some children selected */
+          <span
+            className={cn(
+              "w-4 h-4 rounded border-2 flex items-center justify-center",
+              someChildrenSelected
+                ? colorClasses[colorScheme].checkbox
+                : "border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]",
+            )}
+          >
+            {someChildrenSelected && <Minus className="w-3 h-3 text-white" />}
+          </span>
+        )}
 
         {/* Label */}
         <span
-          onClick={() => onToggleSelect(node)}
+          onClick={() => {
+            if (isSelectable) onToggleSelect(node);
+            else if (hasChildren) onToggleExpand(node.id);
+          }}
           className={cn(
             "text-sm font-medium flex-1",
-            (isSelected || allChildrenSelected)
-              ? 'text-[hsl(var(--foreground))]'
-              : 'text-[hsl(var(--muted-foreground))]'
+            isSelectable
+              ? isSelected || allChildrenSelected
+                ? "text-[hsl(var(--foreground))]"
+                : "text-[hsl(var(--muted-foreground))]"
+              : "text-[hsl(var(--foreground))] opacity-70",
           )}
         >
           {node.name}
@@ -185,6 +232,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               onToggleExpand={onToggleExpand}
               onToggleSelect={onToggleSelect}
               colorScheme={colorScheme}
+              leafOnly={leafOnly}
             />
           ))}
         </div>
@@ -199,9 +247,10 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   onSelectionChange,
   label,
   icon,
-  emptyMessage = 'No items available',
-  maxHeight = '200px',
-  colorScheme = 'primary',
+  emptyMessage = "No items available",
+  maxHeight = "200px",
+  colorScheme = "primary",
+  leafOnly = false,
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>(() => {
     // Auto-expand nodes that have selected children
@@ -222,34 +271,56 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   }, []);
 
   const toggleSelect = useCallback(
     (node: TreeNode) => {
+      const hasChildren = node.children && node.children.length > 0;
+      // In leafOnly mode, parents are not selectable
+      if (leafOnly && hasChildren) return;
+
       const allIds = getAllDescendantIds(node);
-      const isCurrentlyFullySelected = allIds.every((id) => selectedIds.includes(id));
+      const idsToToggle = leafOnly ? [node.id] : allIds;
+      const isCurrentlyFullySelected = idsToToggle.every((id) =>
+        selectedIds.includes(id),
+      );
 
       if (isCurrentlyFullySelected) {
-        // Deselect all descendants
-        onSelectionChange(selectedIds.filter((id) => !allIds.includes(id)));
+        onSelectionChange(
+          selectedIds.filter((id) => !idsToToggle.includes(id)),
+        );
       } else {
-        // Select all descendants
-        const newSelection = new Set([...selectedIds, ...allIds]);
+        const newSelection = new Set([...selectedIds, ...idsToToggle]);
         onSelectionChange(Array.from(newSelection));
       }
 
-      // Auto-expand when selecting a parent with children
-      if (node.children && node.children.length > 0 && !expandedIds.includes(node.id)) {
+      // Auto-expand when clicking a parent with children
+      if (hasChildren && !expandedIds.includes(node.id)) {
         setExpandedIds((prev) => [...prev, node.id]);
       }
     },
-    [selectedIds, onSelectionChange, expandedIds]
+    [selectedIds, onSelectionChange, expandedIds, leafOnly],
   );
 
+  const allLeafIds = useMemo(() => {
+    const collect = (nodes: TreeNode[]): string[] => {
+      const ids: string[] = [];
+      nodes.forEach((n) => {
+        if (n.children && n.children.length > 0)
+          ids.push(...collect(n.children));
+        else ids.push(n.id);
+      });
+      return ids;
+    };
+    return collect(data);
+  }, [data]);
   const allIds = useMemo(() => flattenTree(data), [data]);
-  const selectedCount = selectedIds.filter((id) => allIds.includes(id)).length;
+  const selectableIds = leafOnly ? allLeafIds : allIds;
+  const selectedCount = selectedIds.filter((id) =>
+    selectableIds.includes(id),
+  ).length;
 
   const expandAll = () => {
     const allNodeIds: string[] = [];
@@ -270,7 +341,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   };
 
   const selectAll = () => {
-    onSelectionChange(allIds);
+    onSelectionChange(selectableIds);
   };
 
   const deselectAll = () => {
@@ -278,10 +349,10 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   };
 
   const colorBadgeClasses = {
-    primary: 'bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]',
-    success: 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]',
-    warning: 'bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))]',
-    accent: 'bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))]',
+    primary: "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]",
+    success: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
+    warning: "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))]",
+    accent: "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))]",
   };
 
   return (
@@ -295,7 +366,12 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
               {label}
             </label>
           )}
-          <span className={cn("px-2 py-0.5 text-xs font-medium rounded-md", colorBadgeClasses[colorScheme])}>
+          <span
+            className={cn(
+              "px-2 py-0.5 text-xs font-medium rounded-md",
+              colorBadgeClasses[colorScheme],
+            )}
+          >
             {selectedCount} selected
           </span>
         </div>
@@ -352,6 +428,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
               onToggleExpand={toggleExpand}
               onToggleSelect={toggleSelect}
               colorScheme={colorScheme}
+              leafOnly={leafOnly}
             />
           ))
         )}

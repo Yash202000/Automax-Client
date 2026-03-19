@@ -1169,15 +1169,16 @@ export interface IncidentFilter {
   search?: string;
   workflow_id?: string;
   current_state_id?: string;
-  classification_id?: string;
+  classification_ids?: string[];
   priority?: number;
   assignee_id?: string;
-  department_id?: string;
-  location_id?: string;
+  department_ids?: string[];
+  location_ids?: string[];
   reporter_id?: string;
   sla_breached?: boolean;
   record_type?: RecordType;
   channel?: string; // For complaints
+  source?: string;
   start_date?: string;
   end_date?: string;
   page?: number;

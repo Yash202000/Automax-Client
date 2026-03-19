@@ -25,6 +25,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
+import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
 import {
   incidentApi,
   workflowApi,
@@ -39,10 +40,7 @@ import type {
   IncidentFilter,
   Workflow,
   User as UserType,
-  Department,
   WorkflowState,
-  Classification,
-  Location,
 } from "../../types";
 import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSocket";
 import { cn } from "@/lib/utils";
@@ -355,6 +353,14 @@ export const IncidentsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, uniqueStates, statsData]);
 
+  // Skip the API call when search is 1-2 chars — wait for 3+ before fetching
+  const isShortSearch = !!(
+    filter.search &&
+    filter.search.length > 0 &&
+    filter.search.length < 3
+  );
+  const queryFilter = isShortSearch ? { ...filter, search: undefined } : filter;
+
   const {
     data: incidentsData,
     isLoading,
@@ -362,8 +368,9 @@ export const IncidentsPage: React.FC = () => {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["incidents", filter],
-    queryFn: () => incidentApi.list(filter),
+    queryKey: ["incidents", queryFilter],
+    queryFn: () => incidentApi.list(queryFilter),
+    enabled: !isShortSearch,
   });
 
   // Real-time viewer count updates via WebSocket (no polling!)
@@ -375,18 +382,18 @@ export const IncidentsPage: React.FC = () => {
   });
 
   const { data: departmentsData } = useQuery({
-    queryKey: ["admin", "departments", "list"],
-    queryFn: () => departmentApi.list(),
+    queryKey: ["admin", "departments", "tree"],
+    queryFn: () => departmentApi.getTree(),
   });
 
   const { data: classificationsData } = useQuery({
-    queryKey: ["admin", "classifications", "list"],
-    queryFn: () => classificationApi.list(),
+    queryKey: ["admin", "classifications", "tree"],
+    queryFn: () => classificationApi.getTree(),
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ["admin", "locations", "list"],
-    queryFn: () => locationApi.list(),
+    queryKey: ["admin", "locations", "tree"],
+    queryFn: () => locationApi.getTree(),
   });
 
   const stats = statsData?.data;
@@ -418,10 +425,10 @@ export const IncidentsPage: React.FC = () => {
     filter.search ||
     filter.workflow_id ||
     filter.current_state_id ||
-    filter.classification_id ||
-    filter.location_id ||
+    (filter.classification_ids && filter.classification_ids.length > 0) ||
+    (filter.location_ids && filter.location_ids.length > 0) ||
     filter.assignee_id ||
-    filter.department_id ||
+    (filter.department_ids && filter.department_ids.length > 0) ||
     filter.sla_breached !== undefined
   );
 
@@ -828,71 +835,48 @@ export const IncidentsPage: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.department")}
-              </label>
-              <select
-                value={filter.department_id || ""}
-                onChange={(e) =>
-                  handleFilterChange(
-                    "department_id",
-                    e.target.value || undefined,
-                  )
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-              >
-                <option value="">{t("common.allDepartments")}</option>
-                {departmentsData?.data?.map((dept: Department) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.classification")}
-              </label>
-              <select
-                value={filter.classification_id || ""}
-                onChange={(e) =>
-                  handleFilterChange(
-                    "classification_id",
-                    e.target.value || undefined,
-                  )
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-              >
-                <option value="">{t("common.allClassifications")}</option>
-                {classificationsData?.data?.map(
-                  (classification: Classification) => (
-                    <option key={classification.id} value={classification.id}>
-                      {classification.name}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.location")}
-              </label>
-              <select
-                value={filter.location_id || ""}
-                onChange={(e) =>
-                  handleFilterChange("location_id", e.target.value || undefined)
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-              >
-                <option value="">{t("common.allLocations")}</option>
-                {locationsData?.data?.map((location: Location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <MultiTreeSelect
+              data={departmentsData?.data || []}
+              selectedIds={filter.department_ids || []}
+              onSelectionChange={(ids) =>
+                setFilter((prev) => ({
+                  ...prev,
+                  department_ids: ids.length ? ids : undefined,
+                  page: 1,
+                }))
+              }
+              label={t("common.department")}
+              placeholder={t("common.allDepartments")}
+              leafOnly
+            />
+            <MultiTreeSelect
+              data={classificationsData?.data || []}
+              selectedIds={filter.classification_ids || []}
+              onSelectionChange={(ids) =>
+                setFilter((prev) => ({
+                  ...prev,
+                  classification_ids: ids.length ? ids : undefined,
+                  page: 1,
+                }))
+              }
+              label={t("common.classification")}
+              placeholder={t("common.allClassifications")}
+              leafOnly
+            />
+            <MultiTreeSelect
+              data={locationsData?.data || []}
+              selectedIds={filter.location_ids || []}
+              onSelectionChange={(ids) =>
+                setFilter((prev) => ({
+                  ...prev,
+                  location_ids: ids.length ? ids : undefined,
+                  page: 1,
+                }))
+              }
+              label={t("common.location")}
+              placeholder={t("common.allLocations")}
+              leafOnly
+            />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                 {t("common.priority", "Priority")}
@@ -965,24 +949,31 @@ export const IncidentsPage: React.FC = () => {
               {t("incidents.loadingIncidents")}
             </p>
           </div>
-        ) : incidents.length === 0 ? (
+        ) : isShortSearch || incidents.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--muted))] rounded-2xl mb-4">
               <AlertTriangle className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-              {t("incidents.noIncidents")}
+              {isShortSearch
+                ? t("search.minCharsTitle", "Keep Typing…")
+                : t("incidents.noIncidents")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
-              {hasActiveFilters
-                ? t("incidents.adjustFilters")
-                : t("incidents.noIncidentsDesc")}
+              {isShortSearch
+                ? t(
+                    "search.minCharsDesc",
+                    "Enter at least 3 characters to search",
+                  )
+                : hasActiveFilters
+                  ? t("incidents.adjustFilters")
+                  : t("incidents.noIncidentsDesc")}
             </p>
-            {hasActiveFilters ? (
+            {!isShortSearch && hasActiveFilters ? (
               <Button variant="outline" onClick={clearFilters}>
                 {t("common.clearFilters")}
               </Button>
-            ) : canCreateIncident ? (
+            ) : !isShortSearch && canCreateIncident ? (
               <Button
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => navigate("/incidents/new")}

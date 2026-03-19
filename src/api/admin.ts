@@ -1142,13 +1142,14 @@ export const incidentApi = {
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
-    if (filter.classification_id)
-      params.append("classification_id", filter.classification_id);
+    filter.classification_ids?.forEach((id) =>
+      params.append("classification_id", id),
+    );
     if (filter.priority) params.append("priority", String(filter.priority));
     if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
-    if (filter.department_id)
-      params.append("department_id", filter.department_id);
-    if (filter.location_id) params.append("location_id", filter.location_id);
+    filter.department_ids?.forEach((id) => params.append("department_id", id));
+    filter.location_ids?.forEach((id) => params.append("location_id", id));
+    if (filter.source) params.append("source", filter.source);
     if (filter.sla_breached !== undefined)
       params.append("sla_breached", String(filter.sla_breached));
     if (filter.record_type) params.append("record_type", filter.record_type);

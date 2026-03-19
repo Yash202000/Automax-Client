@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useAuthStore } from "../../stores/authStore";
 
 interface ViewerUpdateMessage {
   incident_id: string;
@@ -52,9 +53,9 @@ export function useIncidentListWebSocket() {
             ws.onclose = null;
 
             if (ws.readyState === WebSocket.OPEN) {
-              ws.close(1000, 'No more subscribers');
+              ws.close(1000, "No more subscribers");
             } else if (ws.readyState === WebSocket.CONNECTING) {
-              ws.onopen = () => ws.close(1000, 'No more subscribers');
+              ws.onopen = () => ws.close(1000, "No more subscribers");
             }
           }
         }
@@ -69,9 +70,9 @@ export function useIncidentListWebSocket() {
       };
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      console.warn('[IncidentList WS] No auth token found');
+      console.warn("[IncidentList WS] No auth token found");
       return;
     }
 
@@ -79,20 +80,25 @@ export function useIncidentListWebSocket() {
       if (isConnecting || broadcastWs) return;
       isConnecting = true;
 
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       // Use runtime config (Docker) if available, otherwise use build-time config
-      const wsHost = (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
+      const wsHost =
+        (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
 
       if (!wsHost) {
-        console.error('[IncidentList WS] No WebSocket URL configured. Please set VITE_WS_URL in .env file');
+        console.error(
+          "[IncidentList WS] No WebSocket URL configured. Please set VITE_WS_URL in .env file",
+        );
         isConnecting = false;
         return;
       }
 
-      const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', '')).replace(/\/$/, '');
+      const wsUrl = wsHost
+        .replace(/^https?:/, wsProtocol.replace(":", ""))
+        .replace(/\/$/, "");
 
       const params = new URLSearchParams({
-        channel: 'incident_list',
+        channel: "incident_list",
         token: token,
       });
 
@@ -111,129 +117,150 @@ export function useIncidentListWebSocket() {
         try {
           message = JSON.parse(event.data);
         } catch (error) {
-          console.error('[IncidentList WS] Failed to parse message:', error);
+          console.error("[IncidentList WS] Failed to parse message:", error);
           return;
         }
 
         try {
           // Handle viewer count updates
-          if (message.type === 'viewer_count_update') {
+          if (message.type === "viewer_count_update") {
             const data = message.data as ViewerUpdateMessage;
 
             // Update ALL registered query clients
             queryClients.forEach((qc) => {
-              qc.setQueriesData(
-                { queryKey: ['incidents'] },
-                (oldData: any) => {
-                  if (!oldData) return oldData;
+              qc.setQueriesData({ queryKey: ["incidents"] }, (oldData: any) => {
+                if (!oldData) return oldData;
 
-                  // Handle different data structures
-                  let incidents: any[] = [];
+                // Handle different data structures
+                let incidents: any[] = [];
 
-                  if (Array.isArray(oldData)) {
-                    incidents = oldData;
-                  } else if (Array.isArray(oldData.data)) {
-                    incidents = oldData.data;
-                  } else {
-                    return oldData;
-                  }
-
-                  // Update the viewer count for the matching incident
-                  const updatedIncidents = incidents.map((incident: any) =>
-                    incident.id === data.incident_id
-                      ? { ...incident, active_viewers: data.active_viewers }
-                      : incident
-                  );
-
-                  // Return in the same structure as input
-                  if (Array.isArray(oldData)) {
-                    return updatedIncidents;
-                  } else {
-                    return {
-                      ...oldData,
-                      data: updatedIncidents,
-                    };
-                  }
+                if (Array.isArray(oldData)) {
+                  incidents = oldData;
+                } else if (Array.isArray(oldData.data)) {
+                  incidents = oldData.data;
+                } else {
+                  return oldData;
                 }
-              );
+
+                // Update the viewer count for the matching incident
+                const updatedIncidents = incidents.map((incident: any) =>
+                  incident.id === data.incident_id
+                    ? { ...incident, active_viewers: data.active_viewers }
+                    : incident,
+                );
+
+                // Return in the same structure as input
+                if (Array.isArray(oldData)) {
+                  return updatedIncidents;
+                } else {
+                  return {
+                    ...oldData,
+                    data: updatedIncidents,
+                  };
+                }
+              });
             });
           }
 
           // Handle incident creation
-          if (message.type === 'incident_created') {
+          if (message.type === "incident_created") {
             const newIncident = message.data.incident;
+            const transitionRoleIds: string[] =
+              message.data.transition_role_ids || [];
 
-            // Show notification
-            toast.success('New Incident Created', {
-              description: `${newIncident.incident_number || 'Incident'} - ${newIncident.title}`,
-              duration: 5000,
-            });
+            // Only show toast to users who can act on the new incident:
+            // - superadmins always see it
+            // - users whose role is in the initial-state transition allowed roles
+            // - if no roles are configured on the transition, everyone sees it
+            const currentUser = useAuthStore.getState().user;
+            const userRoleIds = (currentUser?.roles || []).map(
+              (r: { id: string }) => r.id,
+            );
+            const canAct =
+              !transitionRoleIds.length ||
+              currentUser?.is_super_admin ||
+              userRoleIds.some((id: string) => transitionRoleIds.includes(id));
 
-            // Invalidate and refetch incident list
+            if (canAct) {
+              toast.success("New Incident Created", {
+                description: `${newIncident.incident_number || "Incident"} - ${newIncident.title}`,
+                duration: 5000,
+              });
+            }
+
+            // Invalidate and refetch incident list for everyone
             queryClients.forEach((qc) => {
-              qc.invalidateQueries({ queryKey: ['incidents'] });
+              qc.invalidateQueries({ queryKey: ["incidents"] });
             });
           }
 
           // Handle incident updates (including assignee changes)
-          if (message.type === 'incident_updated' || message.type === 'assignee_changed') {
+          if (
+            message.type === "incident_updated" ||
+            message.type === "assignee_changed"
+          ) {
             const updatedIncident = message.data.incident;
 
-            // Show notification for assignee changes
-            if (message.type === 'assignee_changed') {
-              const assigneeName = updatedIncident.assignee
-                ? `${updatedIncident.assignee.first_name} ${updatedIncident.assignee.last_name}`
-                : 'Unassigned';
-
-              toast.info('Incident Reassigned', {
-                description: `${updatedIncident.incident_number} assigned to ${assigneeName}`,
-                duration: 4000,
-              });
+            // Only show toast to the user who was just assigned
+            if (message.type === "assignee_changed") {
+              const currentUser = useAuthStore.getState().user;
+              if (
+                currentUser &&
+                updatedIncident.assignee?.id === currentUser.id
+              ) {
+                toast.info("You have been assigned an incident", {
+                  description: `${updatedIncident.incident_number}: ${updatedIncident.title}`,
+                  duration: 4000,
+                });
+              }
             }
 
             // Update the specific incident in the cache
             queryClients.forEach((qc) => {
-              qc.setQueriesData(
-                { queryKey: ['incidents'] },
-                (oldData: any) => {
-                  if (!oldData) return oldData;
+              qc.setQueriesData({ queryKey: ["incidents"] }, (oldData: any) => {
+                if (!oldData) return oldData;
 
-                  // Handle different data structures
-                  let incidents: any[] = [];
+                // Handle different data structures
+                let incidents: any[] = [];
 
-                  if (Array.isArray(oldData)) {
-                    incidents = oldData;
-                  } else if (Array.isArray(oldData.data)) {
-                    incidents = oldData.data;
-                  } else {
-                    return oldData;
-                  }
-
-                  // Update the specific incident
-                  const updatedIncidents = incidents.map((incident: any) =>
-                    incident.id === updatedIncident.id ? updatedIncident : incident
-                  );
-
-                  // Return in the same structure as input
-                  if (Array.isArray(oldData)) {
-                    return updatedIncidents;
-                  } else {
-                    return {
-                      ...oldData,
-                      data: updatedIncidents,
-                    };
-                  }
+                if (Array.isArray(oldData)) {
+                  incidents = oldData;
+                } else if (Array.isArray(oldData.data)) {
+                  incidents = oldData.data;
+                } else {
+                  return oldData;
                 }
-              );
+
+                // Update the specific incident
+                const updatedIncidents = incidents.map((incident: any) =>
+                  incident.id === updatedIncident.id
+                    ? updatedIncident
+                    : incident,
+                );
+
+                // Return in the same structure as input
+                if (Array.isArray(oldData)) {
+                  return updatedIncidents;
+                } else {
+                  return {
+                    ...oldData,
+                    data: updatedIncidents,
+                  };
+                }
+              });
             });
           }
         } catch (error) {
-          console.error('[IncidentList WS] Failed to handle message:', error, message);
+          console.error(
+            "[IncidentList WS] Failed to handle message:",
+            error,
+            message,
+          );
         }
       };
 
       ws.onerror = (error) => {
-        console.error('[IncidentList WS] Error:', error);
+        console.error("[IncidentList WS] Error:", error);
         isConnecting = false;
         // Don't show error toast here - wait for onclose to determine if it's a real error
       };
@@ -243,7 +270,8 @@ export function useIncidentListWebSocket() {
         isConnecting = false;
 
         // Normal closures or when no more subscribers
-        const isExpectedClosure = event.code === 1000 || event.code === 1001 || subscriberCount === 0;
+        const isExpectedClosure =
+          event.code === 1000 || event.code === 1001 || subscriberCount === 0;
 
         if (isExpectedClosure) {
           // Clean disconnect - no action needed
@@ -288,9 +316,9 @@ export function useIncidentListWebSocket() {
           ws.onclose = null;
 
           if (ws.readyState === WebSocket.OPEN) {
-            ws.close(1000, 'No more subscribers');
+            ws.close(1000, "No more subscribers");
           } else if (ws.readyState === WebSocket.CONNECTING) {
-            ws.onopen = () => ws.close(1000, 'No more subscribers');
+            ws.onopen = () => ws.close(1000, "No more subscribers");
           }
         }
       }
