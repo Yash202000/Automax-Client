@@ -1500,13 +1500,13 @@ export const complaintApi = {
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
-    if (filter.classification_id)
-      params.append("classification_id", filter.classification_id);
+    filter.classification_ids?.forEach((id) =>
+      params.append("classification_id", id),
+    );
     if (filter.priority) params.append("priority", String(filter.priority));
     if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
-    if (filter.department_id)
-      params.append("department_id", filter.department_id);
-    if (filter.location_id) params.append("location_id", filter.location_id);
+    filter.department_ids?.forEach((id) => params.append("department_id", id));
+    filter.location_ids?.forEach((id) => params.append("location_id", id));
     if (filter.channel) params.append("channel", filter.channel);
     if (filter.start_date) params.append("start_date", filter.start_date);
     if (filter.end_date) params.append("end_date", filter.end_date);
@@ -1693,13 +1693,13 @@ export const queryApi = {
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
-    if (filter.classification_id)
-      params.append("classification_id", filter.classification_id);
+    filter.classification_ids?.forEach((id) =>
+      params.append("classification_id", id),
+    );
     if (filter.priority) params.append("priority", String(filter.priority));
     if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
-    if (filter.department_id)
-      params.append("department_id", filter.department_id);
-    if (filter.location_id) params.append("location_id", filter.location_id);
+    filter.department_ids?.forEach((id) => params.append("department_id", id));
+    filter.location_ids?.forEach((id) => params.append("location_id", id));
     if (filter.channel) params.append("channel", filter.channel);
     if (filter.start_date) params.append("start_date", filter.start_date);
     if (filter.end_date) params.append("end_date", filter.end_date);
@@ -1891,11 +1891,11 @@ export const requestApi = {
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
-    if (filter.classification_id)
-      params.append("classification_id", filter.classification_id);
+    filter.classification_ids?.forEach((id) =>
+      params.append("classification_id", id),
+    );
     if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
-    if (filter.department_id)
-      params.append("department_id", filter.department_id);
+    filter.department_ids?.forEach((id) => params.append("department_id", id));
     if (filter.channel) params.append("channel", filter.channel);
     if (filter.start_date) params.append("start_date", filter.start_date);
     if (filter.end_date) params.append("end_date", filter.end_date);

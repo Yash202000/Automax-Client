@@ -6,7 +6,6 @@ export interface TreeNode {
   id: string;
   name: string;
   children?: TreeNode[];
-  [key: string]: unknown;
 }
 
 interface HierarchicalTreeSelectProps {

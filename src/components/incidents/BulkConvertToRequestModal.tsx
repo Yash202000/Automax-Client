@@ -268,7 +268,9 @@ export const BulkConvertToRequestModal: React.FC<
       incidentApi.list({
         search: requestSearch,
         record_type: "request",
-        location_id: incidents?.[0]?.location?.id,
+        location_ids: incidents?.[0]?.location?.id
+          ? [incidents[0].location!.id]
+          : undefined,
       }),
     enabled: requestSearch.length >= 3,
   });
