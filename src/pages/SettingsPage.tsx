@@ -108,8 +108,17 @@ export const SettingsPage: React.FC = () => {
         new_password: data.new_password,
       });
       if (response.success) {
-        setPasswordSuccess("Password changed successfully");
+        setPasswordSuccess("Password changed successfully. Logging you out...");
         reset();
+        setTimeout(async () => {
+          try {
+            await authApi.logout();
+          } catch {
+            // ignore logout errors — session already invalidated server-side
+          }
+          logout();
+          navigate("/login");
+        }, 1500);
       } else {
         setPasswordError(response.error || "Failed to change password");
       }
@@ -117,8 +126,15 @@ export const SettingsPage: React.FC = () => {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred";
       if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosError = err as { response?: { data?: { error?: string } } };
-        setPasswordError(axiosError.response?.data?.error || errorMessage);
+        const axiosError = err as {
+          response?: {
+            data?: { error?: string; errors?: Array<{ message: string }> };
+          };
+        };
+        const serverError =
+          axiosError.response?.data?.error ||
+          axiosError.response?.data?.errors?.[0]?.message;
+        setPasswordError(serverError || errorMessage);
       } else {
         setPasswordError(errorMessage);
       }
