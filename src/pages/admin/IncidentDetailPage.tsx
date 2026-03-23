@@ -151,6 +151,11 @@ export const IncidentDetailPage: React.FC = () => {
   );
   const [bulkUnmergeModalOpen, setBulkUnmergeModalOpen] = useState(false);
 
+  // Inline edit for closed incident description
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState("");
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
+
   // Assignment matching state
   const [matchLoading, setMatchLoading] = useState(false);
   const [departmentMatchResult, setDepartmentMatchResult] =
@@ -570,6 +575,30 @@ export const IncidentDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
       setAssignModalOpen(false);
       setSelectedAssignee("");
+    },
+  });
+
+  // Update closed incident summary (requires 'incidents:edit-closed' permission)
+  const updateClosedSummaryMutation = useMutation({
+    mutationFn: (description: string) =>
+      incidentApi.updateClosedSummary(id!, {
+        description,
+        reason: "Updated via IMS interface",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incident", id] });
+      toast.success("Incident summary updated successfully");
+      setIsEditingDescription(false);
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to update summary";
+      toast.error("Error", {
+        description: errorMessage,
+      });
+      setIsSavingDescription(false);
     },
   });
 
@@ -1466,12 +1495,60 @@ export const IncidentDetailPage: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Description */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-              {t("incidents.description")}
-            </h3>
-            <p className="text-[hsl(var(--foreground))] whitespace-pre-wrap">
-              {incident.description || t("incidents.noDescription")}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                {t("incidents.description")}
+              </h3>
+              {/* Edit button for closed incidents (requires permission) */}
+              {incident.current_state?.state_type === "terminal" &&
+                hasPermission(PERMISSIONS.INCIDENTS_EDIT_CLOSED) && (
+                  <button
+                    onClick={() => {
+                      setEditedDescription(incident.description || "");
+                      setIsEditingDescription(true);
+                    }}
+                    className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+                    title="Edit description"
+                    disabled={isSavingDescription}
+                  >
+                    <Edit2 className="w-4 h-4 text-[hsl(var(--foreground))]" />
+                  </button>
+                )}
+            </div>
+            {isEditingDescription ? (
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                onBlur={() => {
+                  if (editedDescription !== incident.description) {
+                    setIsSavingDescription(true);
+                    updateClosedSummaryMutation.mutate(editedDescription);
+                  } else {
+                    setIsEditingDescription(false);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setEditedDescription(incident.description || "");
+                    setIsEditingDescription(false);
+                  }
+                }}
+                autoFocus
+                disabled={isSavingDescription}
+                className="w-full min-h-[120px] p-3 border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] resize-none"
+                placeholder="Enter description..."
+              />
+            ) : (
+              <p className="text-[hsl(var(--foreground))] whitespace-pre-wrap">
+                {incident.description || t("incidents.noDescription")}
+              </p>
+            )}
+            {isSavingDescription && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-[hsl(var(--muted-foreground))]">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Saving...
+              </div>
+            )}
           </div>
 
           {/* Merged Incidents Section */}

@@ -1475,6 +1475,18 @@ export const incidentApi = {
     );
     return response.data;
   },
+
+  // Closed incident editing (requires 'incidents:edit-closed' permission)
+  updateClosedSummary: async (
+    incidentId: string,
+    data: { description: string; reason?: string },
+  ): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.patch<ApiResponse<Incident>>(
+      `/incidents/${incidentId}/closed-summary`,
+      data,
+    );
+    return response.data;
+  },
 };
 
 // Complaint API

@@ -60,6 +60,7 @@ export const PERMISSIONS = {
   INCIDENTS_COMMENT: "incidents:comment",
   INCIDENTS_MANAGE_SLA: "incidents:manage_sla",
   INCIDENTS_MERGE: "incidents:merge",
+  INCIDENTS_EDIT_CLOSED: "incidents:edit-closed",
 
   // Request permissions
   REQUESTS_VIEW: "requests:view",
