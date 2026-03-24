@@ -1726,3 +1726,10 @@ export interface CreateEscalationRequest {
   is_active: boolean;
   user_ids: string[];
 }
+
+export interface CallerFeedBackRequest {
+  callee_id: string;
+  call_uuid: string;
+  sentiment: number;
+  feedback: string;
+}

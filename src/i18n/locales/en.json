@@ -1451,7 +1451,24 @@
     "decline": "Decline",
     "answer": "Answer",
     "endCall": "End Call",
-    "call": "Call"
+    "call": "Call",
+    "callEnded": "Call ended",
+    "sentimentTitle": "How was the caller's sentiment?",
+    "sentimentSubtitle": "Rate the caller's mood during this call",
+    "skip": "Skip",
+    "submit": "Submit",
+    "sentiment": {
+      "angry": "Angry",
+      "angrySub": "Caller was hostile or aggressive",
+      "upset": "Upset",
+      "upsetSub": "Caller was frustrated or unhappy",
+      "normal": "Normal",
+      "normalSub": "Neutral tone throughout",
+      "satisfied": "Satisfied",
+      "satisfiedSub": "Issue resolved, caller pleased",
+      "verySatisfied": "Very Satisfied",
+      "verySatisfiedSub": "Caller was delighted"
+    }
   },
   "queries": {
     "title": "Queries",

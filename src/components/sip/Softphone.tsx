@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import sipService from "../../lib/services/sipService";
@@ -16,7 +16,10 @@ import {
   VolumeX,
   Delete,
   Settings,
+  Clock,
 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { callerFeedbackApi } from "@/api/admin";
 
 /* -------------------- Types -------------------- */
 
@@ -30,7 +33,7 @@ interface Auth {
   accessToken?: string;
 }
 
-interface Settings {
+interface Setting {
   socketURL?: string;
   domain?: string;
 }
@@ -38,7 +41,7 @@ interface Settings {
 interface SoftPhoneProps {
   showSip: boolean;
   onClose?: () => void;
-  settings: Settings;
+  settings: Setting;
   auth: Auth;
   findByID?: (id: string) => User | undefined;
 }
@@ -89,6 +92,19 @@ const dialpadKeys = [
   { digit: "#", letters: "" },
 ];
 
+const SENTIMENTS = (t: any) =>
+  [
+    { key: 0, emoji: "😡", labelKey: t("softphone.sentiment.angry") },
+    { key: 1, emoji: "😠", labelKey: t("softphone.sentiment.upset") },
+    { key: 2, emoji: "😐", labelKey: t("softphone.sentiment.normal") },
+    { key: 3, emoji: "😊", labelKey: t("softphone.sentiment.satisfied") },
+    {
+      key: 4,
+      emoji: "😄",
+      labelKey: t("softphone.sentiment.verySatisfied"),
+    },
+  ] as const;
+
 /* -------------------- Component -------------------- */
 
 export default function SoftPhone({
@@ -122,6 +138,21 @@ export default function SoftPhone({
   const [sipPassword, setSipPassword] = useState<string>("51234");
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<boolean>(false);
 
+  const [showSentimentModal, setShowSentimentModal] = useState<boolean>(false);
+  const [callSummary, setCallSummary] = useState<{
+    number: string;
+    duration: number;
+    calleeId: string;
+    callUuid: string;
+  } | null>({
+    number: "2322434",
+    duration: 2344,
+    calleeId: "645646464gfff",
+    callUuid: "840073d8-1299-48fa-abec-7bfea0b66666",
+  });
+
+  const [selectedSentiment, setSelectedSentiment] = useState<any | null>(null);
+
   /* ---------------- SIP CONNECTION ---------------- */
 
   // Initialize persistent audio element on mount
@@ -133,6 +164,7 @@ export default function SoftPhone({
     if (showSip && !sipConnected && !isConnecting) {
       tryConnect();
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSip, settings]);
 
@@ -194,7 +226,7 @@ export default function SoftPhone({
 
     const callEndedHandler = () => {
       setCallStatus("ended");
-      cleanup();
+      cleanup(true);
     };
 
     const remoteStreamHandler = (e: Event) => {
@@ -311,10 +343,29 @@ export default function SoftPhone({
 
   const hangup = (): void => {
     sipService.hangup();
-    cleanup();
+    cleanup(true);
   };
 
-  const cleanup = (): void => {
+  const cleanup = (showFeedback = false): void => {
+    stopRingtone();
+    stopTimer();
+
+    if (showFeedback) {
+      setCallSummary({
+        number: dialedNumber,
+        duration: callDuration,
+        calleeId: dialedNumber,
+        callUuid: sipService.getSession(),
+      });
+      setShowSentimentModal(true);
+      // Don't reset state yet — wait for submit/skip
+      return;
+    }
+
+    resetCallState();
+  };
+
+  const resetCallState = (): void => {
     setCallStatus("idle");
     setDialedNumber("");
     setIncomingCall(null);
@@ -322,8 +373,7 @@ export default function SoftPhone({
     setCallDuration(0);
     setIsMuted(false);
     setIsSpeakerOn(true);
-    stopRingtone();
-    stopTimer();
+    setSelectedSentiment(null);
 
     const audioEl = getRemoteAudioElement();
     audioEl.srcObject = null;
@@ -420,6 +470,34 @@ export default function SoftPhone({
     };
   }, [dragging, dragOffset]);
 
+  const handleSentimentSubmit = (sentiment: any | null): void => {
+    if (!sentiment) {
+      setShowSentimentModal(false);
+      setCallSummary(null);
+      resetCallState();
+      return;
+    }
+    feedbackMutation.mutate();
+  };
+
+  const feedbackMutation = useMutation({
+    mutationFn: () => {
+      return callerFeedbackApi.create({
+        callee_id: callSummary!.callUuid,
+        call_uuid: callSummary!.calleeId,
+        sentiment: selectedSentiment?.key,
+        feedback: selectedSentiment?.labelKey,
+      });
+    },
+    onSuccess: () => {
+      setShowSentimentModal(false);
+      setCallSummary(null);
+      resetCallState();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
   /* ---------------- RENDER ---------------- */
 
   if (!showSip) return null;
@@ -740,6 +818,74 @@ export default function SoftPhone({
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {!showSentimentModal && callSummary && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl w-[300px] overflow-hidden p-4">
+            {/* Sentiment header row */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {t("softphone.sentimentTitle")}
+                </p>
+
+                <p className="text-xs text-gray-400 flex items-center gap-2">
+                  <Phone className="w-3 h-3" />
+                  <span>{callSummary.number}</span>
+                  <Clock className="w-3 h-3" />
+                  <span>{formatDuration(callSummary.duration)}</span>
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleSentimentSubmit(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Emoji row */}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              {SENTIMENTS(t).map((item) => (
+                <button
+                  key={item?.key}
+                  onClick={() => setSelectedSentiment(item)}
+                  title={t(item?.labelKey)}
+                  className={`text-2xl leading-none p-2 rounded-xl border transition-all duration-150 ${
+                    selectedSentiment?.key === item?.key
+                      ? "scale-110 bg-blue-50 border-primary opacity-100"
+                      : "bg-transparent hover:bg-muted border-transparent "
+                  }`}
+                >
+                  {item?.emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Selected label */}
+            <div
+              className={`text-center text-xs font-medium text-blue-600 capitalize h-4 mb-4 transition-opacity duration-200 ${
+                selectedSentiment ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {t(selectedSentiment?.labelKey)}
+            </div>
+
+            {/* Submit */}
+            <button
+              onClick={() => handleSentimentSubmit(selectedSentiment)}
+              disabled={!selectedSentiment}
+              className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                selectedSentiment
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {t("softphone.submit")}
+            </button>
           </div>
         </div>
       )}
