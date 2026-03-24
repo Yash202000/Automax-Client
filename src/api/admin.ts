@@ -253,6 +253,13 @@ export const userApi = {
     });
     return response.data;
   },
+
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/admin/users/${id}`,
+    );
+    return response.data;
+  },
 };
 
 // Classification API
