@@ -862,18 +862,30 @@ export const ActionLogsPage: React.FC = () => {
 
             {/* Modal Body */}
             <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-6">
-              {/* User Info */}
-              <div className="flex items-center gap-4 p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center">
+              {/* User Info - Who performed the action */}
+              <div className="flex items-center gap-4 p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl border border-[hsl(var(--border))]">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center shadow-lg">
                   <User className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <p className="font-semibold text-[hsl(var(--foreground))]">
-                    {selectedLog.user?.first_name} {selectedLog.user?.last_name}
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                    Action Performed By
                   </p>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {selectedLog.user?.email}
+                  <p className="font-semibold text-[hsl(var(--foreground))] text-lg">
+                    {selectedLog.user?.first_name && selectedLog.user?.last_name
+                      ? `${selectedLog.user.first_name} ${selectedLog.user.last_name}`
+                      : selectedLog.user?.username || "Unknown User"}
                   </p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      {selectedLog.user?.email || "N/A"}
+                    </p>
+                    {selectedLog.user?.username && (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        @{selectedLog.user.username}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
