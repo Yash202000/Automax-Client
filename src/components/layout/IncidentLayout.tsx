@@ -95,14 +95,29 @@ export const IncidentLayout: React.FC = () => {
       }),
   });
 
-  const getNotifRoute = (subject: string): string | null => {
-    const match = subject.match(/Incident\s+([A-Z0-9-]+)\s*:/i);
-    if (!match) return null;
+  const navigateToNotif = async (subject: string) => {
+    const match = subject.match(/Incident\s+([A-Z0-9-]+)/i);
+    if (!match) return;
     const num = match[1];
-    if (/req/i.test(num)) return `/requests?search=${num}`;
-    if (/com/i.test(num)) return `/complaints?search=${num}`;
-    if (/qry/i.test(num)) return `/queries?search=${num}`;
-    return `/incidents?search=${num}`;
+    if (/req/i.test(num)) {
+      navigate(`/requests?search=${num}`);
+      return;
+    }
+    if (/com/i.test(num)) {
+      navigate(`/complaints?search=${num}`);
+      return;
+    }
+    if (/qry/i.test(num)) {
+      navigate(`/queries?search=${num}`);
+      return;
+    }
+    try {
+      const res = await incidentApi.list({ search: num, limit: 1, page: 1 });
+      if (res.data?.length) navigate(`/incidents/${res.data[0].id}`);
+      else navigate(`/incidents?search=${num}`);
+    } catch {
+      navigate(`/incidents?search=${num}`);
+    }
   };
 
   const handleLanguageChange = async (langCode: string) => {
@@ -720,14 +735,11 @@ export const IncidentLayout: React.FC = () => {
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
-                          onClick={() => {
+                          onClick={async () => {
                             if (!notif.is_read)
                               markReadMutation.mutate(notif.id);
-                            const route = getNotifRoute(notif.subject);
-                            if (route) {
-                              setIsNotifOpen(false);
-                              navigate(route);
-                            }
+                            setIsNotifOpen(false);
+                            await navigateToNotif(notif.subject);
                           }}
                           className={`px-4 py-3 cursor-pointer transition-colors hover:bg-slate-50 ${
                             !notif.is_read ? "bg-blue-50/50" : ""
@@ -739,11 +751,11 @@ export const IncidentLayout: React.FC = () => {
                             />
                             <div className="flex-1 min-w-0">
                               <p
-                                className={`text-sm ${!notif.is_read ? "font-semibold text-slate-900" : "font-medium text-slate-700"} truncate`}
+                                className={`text-sm ${!notif.is_read ? "font-semibold text-slate-900" : "font-medium text-slate-700"}`}
                               >
                                 {notif.subject}
                               </p>
-                              <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                              <p className="text-xs text-slate-500 mt-0.5">
                                 {notif.body}
                               </p>
                               <p className="text-xs text-slate-400 mt-1">
