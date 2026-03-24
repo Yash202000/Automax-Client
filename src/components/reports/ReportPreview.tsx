@@ -368,11 +368,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                     key={pageNum}
                     type="button"
                     onClick={() => onPageChange(pageNum)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                      pageNum === page
-                        ? "bg-[hsl(var(--primary))] text-white"
-                        : "hover:bg-[hsl(var(--muted))]"
-                    }`}
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${pageNum === page
+                      ? "bg-[hsl(var(--primary))] text-white"
+                      : "hover:bg-[hsl(var(--muted))]"
+                      }`}
                   >
                     {pageNum}
                   </button>

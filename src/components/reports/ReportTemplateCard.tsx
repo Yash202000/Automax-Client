@@ -41,6 +41,7 @@ import ReportPreview, {
 } from "./ReportPreview";
 import ExportDialog from "./ExportDialog";
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface ReportTemplateCardProps {
   template: ReportTemplate;
@@ -182,9 +183,16 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     setDisplayPage(1);
     try {
       const response = await fetchReportData();
-      setShowPreview(true);
-      setPreviewData(response.data);
-      setDbTotalCount(response.total_items);
+      if (response && response.data) {
+        setShowPreview(true);
+        setPreviewData(response.data || []);
+        setDbTotalCount(response.total_items || 0);
+      } else {
+        toast.error("No data found for the selected filters");
+        setShowPreview(false);
+        setPreviewData([]);
+        setDbTotalCount(0);
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Failed to generate report:", error);
