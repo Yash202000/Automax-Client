@@ -62,6 +62,7 @@ import {
   SMSPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
+import { CitizenIncidentUpdate } from "./pages/CitizenIncidentUpdate";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -455,6 +456,7 @@ function App() {
 
             {/* 404 redirect */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/citizen/update" element={<CitizenIncidentUpdate />} />
           </Routes>
         </BrowserRouter>
       </SettingsProvider>
