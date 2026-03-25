@@ -1365,6 +1365,20 @@ export const incidentApi = {
     return response.data;
   },
 
+  getStatsV2: async (
+    recordType?: string,
+    assignType?: string,
+  ): Promise<ApiResponse<IncidentStats>> => {
+    const params = new URLSearchParams();
+    if (recordType) params.append("record_type", recordType);
+    if (assignType) params.append("type", assignType);
+    const url = params.toString()
+      ? `/incidents/stats/v2?${params.toString()}`
+      : "/incidents/stats/v2";
+    const response = await apiClient.get<ApiResponse<IncidentStats>>(url);
+    return response.data;
+  },
+
   getMyAssigned: async (
     page = 1,
     limit = 20,

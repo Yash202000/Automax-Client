@@ -271,21 +271,25 @@ export const IncidentsPage: React.FC = () => {
   });
 
   // Get all states from incident workflows for filter
-  const allStates =
-    workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
-  const uniqueStates = allStates.reduce(
-    (acc: WorkflowState[], state: WorkflowState) => {
-      if (!acc.find((s) => s.name === state.name)) {
-        acc.push(state);
-      }
-      return acc;
-    },
-    [],
+  const allStates = useMemo(
+    () => workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [],
+    [workflowsData],
+  );
+
+  const uniqueStates = useMemo(
+    () =>
+      allStates.reduce((acc: WorkflowState[], state: WorkflowState) => {
+        if (!acc.find((s) => s.name === state.name)) {
+          acc.push(state);
+        }
+        return acc;
+      }, []),
+    [allStates],
   );
 
   const { data: statsData } = useQuery({
     queryKey: ["incidents", "stats", "incident"],
-    queryFn: () => incidentApi.getStats("incident"),
+    queryFn: () => incidentApi.getStatsV2("incident"),
   });
 
   // Read status and sla_breached from URL and sync with filter
