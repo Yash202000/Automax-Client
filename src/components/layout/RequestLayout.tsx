@@ -87,7 +87,7 @@ export const RequestLayout: React.FC = () => {
   // Fetch request stats
   const { data: statsData } = useQuery({
     queryKey: ["requests", "stats"],
-    queryFn: () => incidentApi.getStatsV2("request"),
+    queryFn: () => incidentApi.getStats("request"),
   });
 
   const handleLogout = async () => {
