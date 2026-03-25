@@ -127,6 +127,15 @@ export const PERMISSIONS = {
   ESCALATION_GROUPS_DELETE: "escalation-groups:delete",
   ESCALATION_GROUPS_ASSIGN_USERS: "escalation-groups:assign_users",
   ESCALATION_GROUPS_MANAGE_RULES: "escalation-groups:manage_rules",
+
+  // Goal permissions
+  GOALS_VIEW: "goals:view",
+  GOALS_CREATE: "goals:create",
+  GOALS_UPDATE: "goals:update",
+  GOALS_DELETE: "goals:delete",
+  GOALS_ASSIGN: "goals:assign",
+  GOALS_APPROVE: "goals:approve",
+  DASHBOARD_GOALS: "dashboard:goals",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

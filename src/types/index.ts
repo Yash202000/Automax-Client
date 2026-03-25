@@ -5,6 +5,7 @@ export type ClassificationType =
   | "request"
   | "complaint"
   | "query"
+  | "evidence"
   | "both"
   | "all";
 
@@ -1542,6 +1543,9 @@ export interface SettingsUpdateRequest {
 
 // Re-export report template builder types
 export * from "./reportTemplate";
+
+// Re-export goal management types
+export * from "./goal";
 
 // Communication types
 export interface EmailRecipient {
