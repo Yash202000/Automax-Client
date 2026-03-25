@@ -53,8 +53,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   // Build column definitions — always produce a label, never drop a column
   const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
     const found = fields.find((f) => f.field === col.field);
-    if (found) return found;
-    return { field: col.field, label: toHumanReadable(col.field), type: 'string' } as ReportFieldDefinition;
+    if (found) return { ...found, label: col.label };
+    return { field: col.field, label: col.label, type: 'string' } as ReportFieldDefinition;
   });
 
   const previewRows = previewData.slice(0, PREVIEW_ROWS);

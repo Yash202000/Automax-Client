@@ -250,10 +250,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
   // definition is not found (e.g. relation fields returned differently by API)
   const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
     const found = fields.find((f) => f.field === col.field);
-    if (found) return { ...found, label: toHumanReadable(col.label) };
+    if (found) return { ...found, label: col.label };
     return {
       field: col.field,
-      label: toHumanReadable(col.label),
+      label: col.label,
       type: "string",
     } as ReportFieldDefinition;
   });
@@ -317,6 +317,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                 >
                   {columnDefs.map((col) => {
                     const value = getNestedValue(row, col.label);
+                    console.log(col.label, col.field)
                     return (
                       <td
                         key={col.field}
