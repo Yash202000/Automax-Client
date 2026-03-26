@@ -250,7 +250,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
 // Users Data Source Fields
 export const userFields: ReportFieldDefinition[] = [
   // Identity
-  { field: 'id', label: 'User ID', type: 'string', category: 'Identity', sortable: true, filterable: true },
+  { field: 'id', label: 'User ID', type: 'enum', category: 'Identity', sortable: true, filterable: true, dynamicOptions: 'users' },
   { field: 'username', label: 'Username', type: 'string', category: 'Identity', sortable: true, filterable: true, defaultSelected: true },
   { field: 'email', label: 'Email', type: 'string', category: 'Identity', sortable: true, filterable: true, defaultSelected: true },
   { field: 'first_name', label: 'First Name', type: 'string', category: 'Identity', sortable: true, filterable: true, defaultSelected: true },
