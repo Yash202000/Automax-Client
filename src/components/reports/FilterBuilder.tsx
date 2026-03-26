@@ -114,6 +114,7 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
       // Single select dropdown
       return (
         <select
+          style={enableAddFilter ? { width: '100%' } : { width: '25%' }}
           value={String(filter.value ?? '')}
           onChange={(e) => {
             const opt = selectedField.options?.find((o) => String(o.value) === e.target.value);
@@ -186,6 +187,7 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
     return (
       <input
         type="text"
+        style={enableAddFilter ? { width: '100%' } : { width: '25%' }}
         value={String(filter.value ?? '')}
         onChange={(e) => handleValueChange(e.target.value)}
         placeholder={t('reports.filterBuilder.enterValue')}

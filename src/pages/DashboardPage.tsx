@@ -21,6 +21,7 @@ import {
   HelpCircle,
   PhoneCallIcon,
   ExternalLink,
+  Target,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 
@@ -44,7 +45,7 @@ const resolveImageUrl = (url: string) => {
 
 // Helper to get Lucide icon component by name
 const getIconComponent = (iconName: string): React.ElementType => {
-  const Icons = LucideIcons as any;
+  const Icons = LucideIcons as unknown as Record<string, React.ElementType>;
   return Icons[iconName] || ExternalLink;
 };
 
@@ -211,6 +212,16 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#EF5C39] to-[#9D3A22]",
       shadowColor: "shadow-orange-500/20",
       permissions: [],
+    },
+    {
+      title: "Goal Management",
+      subtitle: "Track & Achieve",
+      description: "Set goals, track metrics, manage approvals",
+      href: "/goals",
+      icon: Target,
+      gradient: "from-[#0EA5E9] to-[#0369A1]",
+      shadowColor: "shadow-sky-500/20",
+      permissions: [PERMISSIONS.DASHBOARD_GOALS],
     },
   ];
 

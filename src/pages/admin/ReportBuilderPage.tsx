@@ -366,7 +366,7 @@ export const ReportBuilderPage: React.FC = () => {
             const fieldDef = fields.find((f) => f.field === col.field);
             const value = getNestedValue(row, col.field);
             if (!fieldDef) return value == null ? "" : String(value);
-            return formatCellValue(value, fieldDef);
+            return formatCellValue(value, fieldDef, t);
           });
         });
 
@@ -686,7 +686,7 @@ export const ReportBuilderPage: React.FC = () => {
 
           {/* Record limit selector */}
           <div className="flex items-center gap-2 ltr:ml-auto rtl:mr-auto text-sm text-[hsl(var(--muted-foreground))]">
-            <span>Limit</span>
+            <span>{t("reports.limit")}</span>
             <select
               value={recordLimit}
               onChange={(e) => setRecordLimit(Number(e.target.value))}
@@ -694,7 +694,7 @@ export const ReportBuilderPage: React.FC = () => {
             >
               {[100, 500, 1000, 5000, 10000].map((n) => (
                 <option key={n} value={n}>
-                  {n.toLocaleString()} records
+                  {n.toLocaleString()} {t("reports.records")}
                 </option>
               ))}
             </select>
@@ -716,20 +716,19 @@ export const ReportBuilderPage: React.FC = () => {
               <span className="text-sm text-[hsl(var(--muted-foreground))]">
                 {previewData.length < dbTotalCount ? (
                   <>
-                    Fetched{" "}
-                    <strong>{previewData.length.toLocaleString()}</strong> of{" "}
-                    <strong>{dbTotalCount.toLocaleString()}</strong> total
-                    records
+                    {t("reports.fetched")}{" "}
+                    {t("reports.of")}{" "}
+                    <strong>{dbTotalCount.toLocaleString()}</strong> {t("reports.totalRecords")}
                     {previewData.length < dbTotalCount && (
                       <span className="ltr:ml-1 rtl:mr-1 text-amber-600 dark:text-amber-400">
-                        — increase limit to fetch more
+                        — {t("reports.increaseLimitHint")}
                       </span>
                     )}
                   </>
                 ) : (
                   <>
-                    All <strong>{previewData.length.toLocaleString()}</strong>{" "}
-                    records fetched
+                    {t("reports.all")} <strong>{previewData.length.toLocaleString()}</strong>{" "}
+                    {t("reports.recordsFetched")}
                   </>
                 )}
               </span>

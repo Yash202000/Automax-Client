@@ -35,16 +35,16 @@ export const toHumanReadable = (key: string): string =>
 
 // ── Styled cell helpers ──────────────────────────────────────────────────────
 
-const PRIORITY_CONFIG: Record<
+const getPriorityConfig = (t: any): Record<
   number,
   { label: string; bg: string; text: string }
-> = {
-  1: { label: "Critical", bg: "#fee2e2", text: "#dc2626" },
-  2: { label: "High", bg: "#ffedd5", text: "#ea580c" },
-  3: { label: "Medium", bg: "#fef9c3", text: "#ca8a04" },
-  4: { label: "Low", bg: "#dbeafe", text: "#2563eb" },
-  5: { label: "Minimal", bg: "#f3f4f6", text: "#6b7280" },
-};
+> => ({
+  1: { label: t("priorities.critical"), bg: "#fee2e2", text: "#dc2626" },
+  2: { label: t("priorities.high"), bg: "#ffedd5", text: "#ea580c" },
+  3: { label: t("priorities.medium"), bg: "#fef9c3", text: "#ca8a04" },
+  4: { label: t("priorities.low"), bg: "#dbeafe", text: "#2563eb" },
+  5: { label: t("priorities.minimal"), bg: "#f3f4f6", text: "#6b7280" },
+});
 
 const Badge: React.FC<{ label: string; bg: string; text: string }> = ({
   label,
@@ -62,7 +62,9 @@ const Badge: React.FC<{ label: string; bg: string; text: string }> = ({
 export const renderStyledCell = (
   value: unknown,
   field: ReportFieldDefinition,
+  t: any,
 ): React.ReactNode => {
+  const PRIORITY_CONFIG = getPriorityConfig(t);
   if (value === null || value === undefined || value === "") {
     return <span className="text-[hsl(var(--muted-foreground))]">—</span>;
   }
@@ -78,22 +80,22 @@ export const renderStyledCell = (
     const bool = value === true || value === "true" || value === 1;
     if (field.field === "sla_breached") {
       return bool ? (
-        <Badge label="Breached" bg="#fee2e2" text="#dc2626" />
+        <Badge label={t("incidents.breached")} bg="#fee2e2" text="#dc2626" />
       ) : (
-        <Badge label="On Track" bg="#d1fae5" text="#059669" />
+        <Badge label={t("incidents.onTrack")} bg="#d1fae5" text="#059669" />
       );
     }
     if (field.field === "is_active") {
       return bool ? (
-        <Badge label="Active" bg="#d1fae5" text="#059669" />
+        <Badge label={t("common.active")} bg="#d1fae5" text="#059669" />
       ) : (
-        <Badge label="Inactive" bg="#f3f4f6" text="#6b7280" />
+        <Badge label={t("common.inactive")} bg="#f3f4f6" text="#6b7280" />
       );
     }
     return bool ? (
-      <Badge label="Yes" bg="#d1fae5" text="#059669" />
+      <Badge label={t("common.yes")} bg="#d1fae5" text="#059669" />
     ) : (
-      <Badge label="No" bg="#f3f4f6" text="#6b7280" />
+      <Badge label={t("common.no")} bg="#f3f4f6" text="#6b7280" />
     );
   }
 
@@ -172,7 +174,9 @@ export const renderStyledCell = (
 export const formatCellValue = (
   value: unknown,
   field: ReportFieldDefinition,
+  t: any,
 ): string => {
+  const PRIORITY_CONFIG = getPriorityConfig(t);
   if (value === null || value === undefined || value === "") return "";
 
   if (field.field === "priority") {
@@ -182,9 +186,9 @@ export const formatCellValue = (
 
   if (field.type === "boolean") {
     const bool = value === true || value === "true" || value === 1;
-    if (field.field === "sla_breached") return bool ? "Breached" : "On Track";
-    if (field.field === "is_active") return bool ? "Active" : "Inactive";
-    return bool ? "Yes" : "No";
+    if (field.field === "sla_breached") return bool ? t("incidents.breached") : t("incidents.onTrack");
+    if (field.field === "is_active") return bool ? t("common.active") : t("common.inactive");
+    return bool ? t("common.yes") : t("common.no");
   }
 
   if (field.type === "enum" && field.options) {
@@ -323,7 +327,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                         key={col.field}
                         className="px-5 py-4 text-sm text-[hsl(var(--foreground))] whitespace-nowrap transition-colors group-hover/row:text-[hsl(var(--primary))] font-medium"
                       >
-                        {renderStyledCell(value, col)}
+                        {renderStyledCell(value, col, t)}
                       </td>
                     );
                   })}

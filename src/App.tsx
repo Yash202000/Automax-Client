@@ -15,6 +15,7 @@ import {
   QueryLayout,
   CallCentreLayout,
   ReportsLayout,
+  GoalLayout,
 } from "./components/layout";
 import { PERMISSIONS } from "./constants/permissions";
 import { SettingsProvider } from "./contexts/SettingsContext";
@@ -60,6 +61,11 @@ import {
   CallHistory,
   EmailPage,
   SMSPage,
+  GoalsPage,
+  GoalDetailPage,
+  GoalCreatePage,
+  GoalEditPage,
+  GoalApprovalsPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
 
@@ -447,6 +453,28 @@ function App() {
                 <Route path="/call-centre/email" element={<EmailPage />} />
                 <Route path="/call-centre/sms" element={<SMSPage />} />
                 {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+              </Route>
+            </Route>
+
+            {/* Goal Management routes - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<GoalLayout />}>
+                <Route
+                  element={
+                    <PermissionRoute
+                      requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
+                    />
+                  }
+                >
+                  <Route path="/goals" element={<GoalsPage />} />
+                  <Route path="/goals/new" element={<GoalCreatePage />} />
+                  <Route
+                    path="/goals/approvals"
+                    element={<GoalApprovalsPage />}
+                  />
+                  <Route path="/goals/:id" element={<GoalDetailPage />} />
+                  <Route path="/goals/:id/edit" element={<GoalEditPage />} />
+                </Route>
               </Route>
             </Route>
 

@@ -123,13 +123,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t("reports.exportDialog.exportFormat")}
                   </label>
-                  {columns.length > 10 && (
-                    <span className="text-red-500 text-xs flex gap-1 items-center my-2">
-                      <Info className="w-6 h-6" />
-                      Please Note that if you select more than 10 columns, PDF
-                      will be disabled
-                    </span>
-                  )}
+                  {
+                    columns.length > 10 && (
+                      <span className="text-red-500 text-xs flex gap-1 items-center my-2">
+                        <Info className='w-6 h-6' />
+                        {t('reports.exportDialog.pdfLimitWarning')}
+                      </span>
+                    )
+                  }
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -247,11 +248,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 <div className="flex items-center gap-2 mb-3">
                   <Eye className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                   <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                    Data Preview
+                    {t('reports.exportDialog.dataPreview')}
                   </span>
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    — first {previewRows.length} of{" "}
-                    {recordCount.toLocaleString()} records
+                    {t('reports.exportDialog.previewInfo', {
+                      count: previewRows.length,
+                      total: recordCount,
+                    })}
                   </span>
                 </div>
 
@@ -287,7 +290,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                   key={col.field}
                                   className="px-3 py-2 text-[hsl(var(--foreground))] whitespace-nowrap"
                                 >
-                                  {renderStyledCell(value, col)}
+                                  {renderStyledCell(value, col, t)}
                                 </td>
                               );
                             })}
@@ -300,8 +303,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
                 {recordCount > PREVIEW_ROWS && (
                   <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
-                    + {(recordCount - PREVIEW_ROWS).toLocaleString()} more
-                    records will be included in the download.
+                    {t('reports.exportDialog.moreRecordsInfo', {
+                      count: recordCount - PREVIEW_ROWS,
+                    })}
                   </p>
                 )}
               </div>
@@ -438,8 +442,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             }
           >
             {isExporting
-              ? t("reports.exportDialog.exporting")
-              : `Download ${format.toUpperCase()}`}
+              ? t('reports.exportDialog.exporting')
+              : t('reports.exportDialog.downloadFormat', {
+                format: format.toUpperCase(),
+              })}
           </Button>
         </div>
       </div>

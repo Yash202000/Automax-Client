@@ -275,7 +275,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             );
             const value = getNestedValue(row, col.field);
             if (!fieldDef) return value == null ? "" : String(value);
-            return formatCellValue(value, fieldDef);
+            return formatCellValue(value, fieldDef, t);
           });
         });
 
