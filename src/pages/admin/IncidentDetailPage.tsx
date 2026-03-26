@@ -605,6 +605,7 @@ export const IncidentDetailPage: React.FC = () => {
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
   const comments = commentsData?.data || [];
+
   const attachments = attachmentsData?.data || [];
   const fullWorkflow = fullWorkflowData?.data;
 

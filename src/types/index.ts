@@ -1046,6 +1046,12 @@ export interface StateStatDetail {
   state_type?: string;
 }
 
+export interface WorkflowStats {
+  workflow_id: string;
+  workflow_name: string;
+  by_state: Record<string, number>;
+  by_state_details: StateStatDetail[];
+}
 export interface IncidentStats {
   total: number;
   open: number;
@@ -1055,6 +1061,7 @@ export interface IncidentStats {
   sla_breached: number;
   by_state: Record<string, number>;
   by_state_details?: StateStatDetail[];
+  workflow_stats?: WorkflowStats[];
 }
 
 // Incident request types

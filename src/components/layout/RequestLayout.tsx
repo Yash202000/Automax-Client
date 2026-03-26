@@ -109,12 +109,15 @@ export const RequestLayout: React.FC = () => {
   };
 
   // Build sidebar items from stats
-  const statusItems = statsData?.data?.by_state
-    ? Object.entries(statsData.data.by_state).map(([stateName, count]) => ({
-        name: stateName,
-        count: count as number,
-      }))
-    : [];
+  // const statusItems = statsData?.data?.by_state
+  //   ? Object.entries(statsData.data.by_state).map(([stateName, count]) => ({
+  //       name: stateName,
+  //       count: count as number,
+  //     }))
+  //   : [];
+
+  const workflowStats = statsData?.data?.workflow_stats || [];
+  const isSingleWorkflow = (workflowStats || []).length === 1;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -277,7 +280,7 @@ export const RequestLayout: React.FC = () => {
         </div>
 
         {/* Status Filters */}
-        {canViewRequests && statusItems.length > 0 && (
+        {canViewRequests && workflowStats.length > 0 && (
           <>
             {!collapsed && (
               <>
@@ -288,25 +291,41 @@ export const RequestLayout: React.FC = () => {
               </>
             )}
             <div className="space-y-1">
-              {statusItems.map((status) => (
-                <NavLink
-                  key={status.name}
-                  to={`/requests?status=${encodeURIComponent(status.name)}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
-                >
-                  <Circle size={8} className="flex-shrink-0 fill-current" />
-                  {!collapsed && (
-                    <>
-                      <span className="ms-3 font-medium text-sm flex-1">
-                        {status.name}
-                      </span>
-                      <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
-                        {status.count}
-                      </span>
-                    </>
+              {workflowStats.map((workflow) => (
+                <div key={workflow.workflow_id}>
+                  {!isSingleWorkflow && (
+                    <div className="px-3 mt-3 mb-1 text-xs text-slate-500 uppercase">
+                      {workflow.workflow_name}
+                    </div>
                   )}
-                </NavLink>
+
+                  {Object.entries(workflow.by_state || {}).map(
+                    ([stateName, count]) => (
+                      <NavLink
+                        key={stateName}
+                        to={`/requests?status=${encodeURIComponent(stateName)}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                      >
+                        <Circle
+                          size={8}
+                          className="flex-shrink-0 fill-current"
+                        />
+
+                        {!collapsed && (
+                          <>
+                            <span className="ms-3 font-medium text-sm flex-1">
+                              {stateName}
+                            </span>
+                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
+                              {count as number}
+                            </span>
+                          </>
+                        )}
+                      </NavLink>
+                    ),
+                  )}
+                </div>
               ))}
             </div>
           </>

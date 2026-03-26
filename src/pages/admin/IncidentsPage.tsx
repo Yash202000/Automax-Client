@@ -48,6 +48,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { MergeIncidentsModal } from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
+import { useAuthStore } from "@/stores/authStore";
 
 // Column configuration
 interface ColumnConfig {
@@ -134,6 +135,7 @@ export const IncidentsPage: React.FC = () => {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
+  const { user } = useAuthStore();
 
   const canViewAllIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
@@ -271,17 +273,35 @@ export const IncidentsPage: React.FC = () => {
   });
 
   // Get all states from incident workflows for filter
-  const allStates =
-    workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
-  const uniqueStates = allStates.reduce(
-    (acc: WorkflowState[], state: WorkflowState) => {
-      if (!acc.find((s) => s.name === state.name)) {
-        acc.push(state);
-      }
-      return acc;
-    },
-    [],
+  const allStates = useMemo(
+    () => workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [],
+    [workflowsData],
   );
+
+  const uniqueStates = useMemo(
+    () =>
+      allStates.reduce((acc: WorkflowState[], state: WorkflowState) => {
+        if (!acc.find((s) => s.name === state.name)) {
+          acc.push(state);
+        }
+        return acc;
+      }, []),
+    [allStates],
+  );
+
+  const canConvertToRequest = useMemo(() => {
+    if (isSuperAdmin) return true;
+    const allowedRoleIds =
+      workflowsData?.data
+        ?.flatMap((wf) => wf?.convert_to_request_roles || [])
+        ?.map((role: any) => role.id) || [];
+
+    const userRoleIds = user?.roles?.map((role: any) => role.id) || [];
+
+    return userRoleIds.some((roleId: string) =>
+      allowedRoleIds.includes(roleId),
+    );
+  }, [user, workflowsData?.data, isSuperAdmin]);
 
   const { data: statsData } = useQuery({
     queryKey: ["incidents", "stats", "incident"],
@@ -553,7 +573,9 @@ export const IncidentsPage: React.FC = () => {
               </Button>
             </>
           )}
-          {selectedIncidents?.length > 1 && allSameState ? (
+          {canConvertToRequest &&
+          selectedIncidents?.length > 1 &&
+          allSameState ? (
             <Button
               leftIcon={<Repeat className="w-4 h-4" />}
               onClick={() => setShowConvertModal(true)}
