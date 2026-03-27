@@ -68,14 +68,14 @@ export const ReportLayout: React.FC = () => {
     // Set flag to prevent 401 interceptor from running during logout
     setLoggingOut(true);
 
-    // Clear auth state first to prevent any race conditions
-    logout();
-
     try {
+      // Call logout API FIRST while token is still in localStorage
       await authApi.logout();
     } catch {
       // Continue with logout even if API call fails
     } finally {
+      // Clear auth state after API call
+      logout();
       setLoggingOut(false);
     }
 
