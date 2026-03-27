@@ -31,7 +31,7 @@ const actionColors: Record<string, string> = {
   create: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
   update: "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]",
   delete: "bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]",
-  login: "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))]",
+  login: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
   logout: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
   view: "bg-[hsl(var(--secondary)/0.1)] text-[hsl(var(--secondary-foreground))]",
   status_change: "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]",
