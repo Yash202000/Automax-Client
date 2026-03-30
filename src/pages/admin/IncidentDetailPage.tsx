@@ -85,6 +85,7 @@ import {
 } from "../../utils/customFields";
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
+import { useAppSelector } from "../../hooks/redux";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -103,6 +104,7 @@ export const IncidentDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const { users } = useAppSelector((state) => state.users);
 
   const canEditIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
@@ -1762,6 +1764,24 @@ export const IncidentDetailPage: React.FC = () => {
                                     item.performed_by?.username ||
                                     t("incidents.system")}
                                 </span>
+                                {item.performed_by && (
+                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
+                                    (
+                                    {(() => {
+                                      const u = users.find(
+                                        (user) => user.id === item.performed_by?.id,
+                                      );
+                                      return (
+                                        u?.department?.name ||
+                                        u?.departments?.[0]?.name ||
+                                        item.performed_by?.department?.name ||
+                                        item.performed_by?.departments?.[0]?.name ||
+                                        "-"
+                                      );
+                                    })()}
+                                    )
+                                  </span>
+                                )}
                               </div>
                               <span className="text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(item.transitioned_at)}
