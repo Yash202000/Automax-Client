@@ -36,6 +36,7 @@ import {
   lookupApi,
 } from "../../api/admin";
 import { userApi, departmentApi, locationApi } from "../../api/admin";
+import { API_URL } from "../../api/client";
 import type {
   IncidentCreateRequest,
   User,
@@ -240,29 +241,92 @@ export function IncidentCreatePage() {
     [lookupCategoriesData?.data],
   );
 
-  const fetchIncidentById = async (id: string) => {
-    const d = await incidentApi.getById(id);
-    if (d && d.data) {
-      setFormData({
-        title: d.data.title,
-        description: d.data.description,
-        workflow_id: d.data.workflow?.id,
-        classification_id: d.data.classification?.id,
-        source: d.data.source,
-        assignee_id: d.data.assignee?.id,
-        department_id: d.data.department?.id,
-        location_id: d.data.location?.id,
-        latitude: d.data.latitude,
-        longitude: d.data.longitude,
-        address: d.data.address,
-        city: d.data.city,
-        state: d.data.state,
-        country: d.data.country,
-        postal_code: d.data.postal_code,
-        due_date: d.data.due_date,
-      });
+  const fetchIncidentById = useCallback(
+    async (id: string) => {
+      const d = await incidentApi.getById(id);
+      if (d && d.data) {
+        setFormData({
+          title: d.data.title,
+          description: d.data.description,
+          workflow_id: d.data.workflow?.id,
+          classification_id: d.data.classification?.id,
+          source: d.data.source,
+          assignee_id: d.data.assignee?.id,
+          department_id: d.data.department?.id,
+          location_id: d.data.location?.id,
+          latitude: d.data.latitude,
+          longitude: d.data.longitude,
+          address: d.data.address,
+          city: d.data.city,
+          state: d.data.state,
+          country: d.data.country,
+          postal_code: d.data.postal_code,
+          due_date: d.data.due_date,
+        });
+
+        // Clone lookup values
+        if (d.data.lookup_values) {
+          const values: Record<string, any> = {};
+          d.data.lookup_values.forEach((v) => {
+            if (v.category_id) {
+              const category = incidentLookupCategories.find(
+                (c) => c.id === v.category_id,
+              );
+              if (category?.field_type === "multiselect") {
+                if (!values[v.category_id]) values[v.category_id] = [];
+                values[v.category_id].push(v.id);
+              } else {
+                values[v.category_id] = v.id;
+              }
+            }
+          });
+          setLookupValues(values);
+        }
+
+        // Clone custom fields if they exist
+        if (d.data.custom_fields) {
+          try {
+            const customFields = JSON.parse(d.data.custom_fields);
+            Object.entries(customFields).forEach(([key, value]) => {
+              const category = incidentLookupCategories.find(
+                (c) => c.id === key || c.code === key,
+              );
+              if (category) {
+                setLookupValues((prev) => ({ ...prev, [category.id]: value }));
+              }
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error("Failed to parse custom fields:", e);
+          }
+        }
+      }
+    },
+    [incidentLookupCategories],
+  );
+
+  const fetchOriginalAttachments = useCallback(async (incidentId: string) => {
+    try {
+      const response = await incidentApi.listAttachments(incidentId);
+      if (response.data && response.data.length > 0) {
+        const token = localStorage.getItem("token");
+        const filePromises = response.data.map(async (attachment) => {
+          const url = `${API_URL}/attachments/${attachment.id}/preview?token=${token}`;
+          const res = await fetch(url);
+          const blob = await res.blob();
+          return new File([blob], attachment.file_name, {
+            type: attachment.mime_type,
+          });
+        });
+        const files = await Promise.all(filePromises);
+        // Overwrite attachments instead of appending to avoid duplicates on re-runs
+        setAttachments(files);
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to fetch original attachments:", error);
     }
-  };
+  }, []);
 
   const getLookupValueFromState = useCallback(
     (categoryCode: string): LookupValue | undefined => {
@@ -407,6 +471,7 @@ export function IncidentCreatePage() {
   useEffect(() => {
     if (id) {
       fetchIncidentById(id);
+      fetchOriginalAttachments(id);
     } else {
       setFormData({
         title: "",
@@ -423,8 +488,10 @@ export function IncidentCreatePage() {
         postal_code: "",
         due_date: "",
       });
+      setLookupValues({});
+      setAttachments([]);
     }
-  }, [id]);
+  }, [id, fetchIncidentById, fetchOriginalAttachments]);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
@@ -1010,63 +1077,63 @@ export function IncidentCreatePage() {
                 workflowRequiredFields.includes(`lookup:${cat.code}` as any),
             ) ||
               workflowRequiredFields.includes("geolocation")) && (
-              <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  {t("incidents.additionalDetails")}
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {incidentLookupCategories
-                    .filter(
-                      (category) =>
-                        category.code !== "PRIORITY" &&
-                        workflowRequiredFields.includes(
-                          `lookup:${category.code}` as any,
-                        ),
-                    )
-                    .map((category) => {
-                      const lookupFieldKey = `lookup:${category.code}`;
-                      return (
-                        <DynamicLookupField
-                          key={category.id}
-                          category={category}
-                          value={lookupValues[category.id]}
-                          onChange={handleLookupChange}
+                <Card className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    {t("incidents.additionalDetails")}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {incidentLookupCategories
+                      .filter(
+                        (category) =>
+                          category.code !== "PRIORITY" &&
+                          workflowRequiredFields.includes(
+                            `lookup:${category.code}` as any,
+                          ),
+                      )
+                      .map((category) => {
+                        const lookupFieldKey = `lookup:${category.code}`;
+                        return (
+                          <DynamicLookupField
+                            key={category.id}
+                            category={category}
+                            value={lookupValues[category.id]}
+                            onChange={handleLookupChange}
+                            required
+                            error={errors[lookupFieldKey]}
+                          />
+                        );
+                      })}
+                    {workflowRequiredFields.includes("geolocation") && (
+                      <div className="col-span-2">
+                        <LocationPicker
+                          label={t("incidents.geolocation")}
+                          value={
+                            formData.latitude !== undefined &&
+                              formData.longitude !== undefined
+                              ? {
+                                latitude: formData.latitude,
+                                longitude: formData.longitude,
+                                address: formData.address,
+                                city: formData.city,
+                                state: formData.state,
+                                country: formData.country,
+                                postal_code: formData.postal_code,
+                              }
+                              : undefined
+                          }
+                          onChange={handleLocationChange}
                           required
-                          error={errors[lookupFieldKey]}
+                          error={errors.geolocation}
+                          onToggleExpand={() => setShowLocationModal(true)}
                         />
-                      );
-                    })}
-                  {workflowRequiredFields.includes("geolocation") && (
-                    <div className="col-span-2">
-                      <LocationPicker
-                        label={t("incidents.geolocation")}
-                        value={
-                          formData.latitude !== undefined &&
-                          formData.longitude !== undefined
-                            ? {
-                                latitude: formData.latitude,
-                                longitude: formData.longitude,
-                                address: formData.address,
-                                city: formData.city,
-                                state: formData.state,
-                                country: formData.country,
-                                postal_code: formData.postal_code,
-                              }
-                            : undefined
-                        }
-                        onChange={handleLocationChange}
-                        required
-                        error={errors.geolocation}
-                        onToggleExpand={() => setShowLocationModal(true)}
-                      />
 
-                      <LocationPickerModal
-                        isOpen={showLocationModal}
-                        onClose={() => setShowLocationModal(false)}
-                        value={
-                          formData.latitude !== undefined &&
-                          formData.longitude !== undefined
-                            ? {
+                        <LocationPickerModal
+                          isOpen={showLocationModal}
+                          onClose={() => setShowLocationModal(false)}
+                          value={
+                            formData.latitude !== undefined &&
+                              formData.longitude !== undefined
+                              ? {
                                 latitude: formData.latitude,
                                 longitude: formData.longitude,
                                 address: formData.address,
@@ -1075,17 +1142,17 @@ export function IncidentCreatePage() {
                                 country: formData.country,
                                 postal_code: formData.postal_code,
                               }
-                            : undefined
-                        }
-                        onChange={(location: LocationData | undefined) => {
-                          handleLocationChange(location);
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
+                              : undefined
+                          }
+                          onChange={(location: LocationData | undefined) => {
+                            handleLocationChange(location);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
 
             {workflowRequiredFields.includes("comment") && (
               <Card className="p-6">
@@ -1207,48 +1274,48 @@ export function IncidentCreatePage() {
             {(workflowRequiredFields.includes("assignee_id") ||
               workflowRequiredFields.includes("department_id") ||
               workflowRequiredFields.includes("due_date")) && (
-              <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  {t("incidents.assignment")}
-                </h2>
-                <div className="space-y-4">
-                  {workflowRequiredFields.includes("assignee_id") && (
-                    <Select
-                      label={t("incidents.assignee")}
-                      value={formData.assignee_id || ""}
-                      onChange={(e) =>
-                        handleChange("assignee_id", e.target.value)
-                      }
-                      options={userOptions}
-                      required
-                      error={errors.assignee_id}
-                    />
-                  )}
-                  {workflowRequiredFields.includes("department_id") && (
-                    <Select
-                      label={t("incidents.department")}
-                      value={formData.department_id || ""}
-                      onChange={(e) =>
-                        handleChange("department_id", e.target.value)
-                      }
-                      options={departmentOptions}
-                      required
-                      error={errors.department_id}
-                    />
-                  )}
-                  {workflowRequiredFields.includes("due_date") && (
-                    <Input
-                      label={t("incidents.dueDate")}
-                      type="datetime-local"
-                      value={formData.due_date || ""}
-                      onChange={(e) => handleChange("due_date", e.target.value)}
-                      required
-                      error={errors.due_date}
-                    />
-                  )}
-                </div>
-              </Card>
-            )}
+                <Card className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    {t("incidents.assignment")}
+                  </h2>
+                  <div className="space-y-4">
+                    {workflowRequiredFields.includes("assignee_id") && (
+                      <Select
+                        label={t("incidents.assignee")}
+                        value={formData.assignee_id || ""}
+                        onChange={(e) =>
+                          handleChange("assignee_id", e.target.value)
+                        }
+                        options={userOptions}
+                        required
+                        error={errors.assignee_id}
+                      />
+                    )}
+                    {workflowRequiredFields.includes("department_id") && (
+                      <Select
+                        label={t("incidents.department")}
+                        value={formData.department_id || ""}
+                        onChange={(e) =>
+                          handleChange("department_id", e.target.value)
+                        }
+                        options={departmentOptions}
+                        required
+                        error={errors.department_id}
+                      />
+                    )}
+                    {workflowRequiredFields.includes("due_date") && (
+                      <Input
+                        label={t("incidents.dueDate")}
+                        type="datetime-local"
+                        value={formData.due_date || ""}
+                        onChange={(e) => handleChange("due_date", e.target.value)}
+                        required
+                        error={errors.due_date}
+                      />
+                    )}
+                  </div>
+                </Card>
+              )}
 
             <Card className="p-6">
               {errors.submit && (
@@ -1283,7 +1350,7 @@ export function IncidentCreatePage() {
       <Modal
         isOpen={showLocationOption}
         showCloseButton={false}
-        onClose={() => {}}
+        onClose={() => { }}
       >
         <ModalHeader>
           <ModalTitle>{t("incidents.selectLocationModal")}</ModalTitle>

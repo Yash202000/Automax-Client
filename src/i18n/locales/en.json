@@ -3,8 +3,6 @@
     "loading": "Loading...",
     "error": "Error",
     "hide": "Hide",
-    "from": "From",
-    "to": "To",
     "retry": "Retry",
     "cancel": "Cancel",
     "save": "Save",
@@ -113,6 +111,8 @@
     "slaStatus": "SLA Status",
     "breached": "Breached",
     "onTrack": "On Track",
+    "active": "Active",
+    "inactive": "Inactive",
     "clearSearch": "Clear Search",
     "showingResults": "Showing {{from}} to {{to}} of {{total}} items"
   },
@@ -224,6 +224,7 @@
     "createIncident": "Create Incident",
     "createIncidentSubtitle": "Create a new incident to track and manage",
     "editIncident": "Edit Incident",
+    "editIncidentSubtitle": "Update incident",
     "incidentDetails": "Incident Details",
     "incidentNumber": "Incident Number",
     "incidentTitle": "Title",
@@ -407,7 +408,11 @@
     "selectLocationModal": "Select Location",
     "selectLocationModalDesc": "Please select a location",
     "searchRequests": "Search by request number or title...",
-    "createdSuccess": "Incident created successfully"
+    "createdSuccess": "Incident created successfully",
+    "selectPriority": "Select priority...",
+    "enterTitle": "Enter title...",
+    "enterDescription": "Enter description...",
+    "selectDepartmentPlaceholder": "Select {{type}} department..."
   },
   "incidentMerge": {
     "title": "Merge Incidents",
@@ -444,7 +449,8 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low",
-    "veryLow": "Very Low"
+    "veryLow": "Very Low",
+    "urgent": "Urgent"
   },
   "severities": {
     "critical": "Critical",
@@ -886,6 +892,14 @@
       "workflows": "Workflows",
       "workflowsDesc": "Workflow definitions"
     },
+    "limit": "limit",
+    "records": "records",
+    "fetched": "Fetched",
+    "of": "of",
+    "all": "All",
+    "totalRecords": "total records",
+    "increaseLimitHint": "increase limit to fetch more",
+    "recordsFetched": "records fetched",
     "columnSelector": {
       "searchColumns": "Search columns...",
       "all": "All",
@@ -956,7 +970,12 @@
       "includeTimestamp": "Include timestamp",
       "includeTimestampDesc": "Add generation date/time to the report",
       "cancel": "Cancel",
-      "exporting": "Exporting..."
+      "exporting": "Exporting...",
+      "pdfLimitWarning": "Please note that if you select more than 10 columns, PDF will be disabled",
+      "dataPreview": "Data Preview",
+      "previewInfo": "— first {{count}} of {{total}} records",
+      "moreRecordsInfo": "+ {{count}} more records will be included in the download.",
+      "downloadFormat": "Download {{format}}"
     },
     "saveDialog": {
       "saveAsTemplate": "Save as Template",

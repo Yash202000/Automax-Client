@@ -95,14 +95,29 @@ export const IncidentLayout: React.FC = () => {
       }),
   });
 
-  const getNotifRoute = (subject: string): string | null => {
-    const match = subject.match(/Incident\s+([A-Z0-9-]+)\s*:/i);
-    if (!match) return null;
+  const navigateToNotif = async (subject: string) => {
+    const match = subject.match(/Incident\s+([A-Z0-9-]+)/i);
+    if (!match) return;
     const num = match[1];
-    if (/req/i.test(num)) return `/requests?search=${num}`;
-    if (/com/i.test(num)) return `/complaints?search=${num}`;
-    if (/qry/i.test(num)) return `/queries?search=${num}`;
-    return `/incidents?search=${num}`;
+    if (/req/i.test(num)) {
+      navigate(`/requests?search=${num}`);
+      return;
+    }
+    if (/com/i.test(num)) {
+      navigate(`/complaints?search=${num}`);
+      return;
+    }
+    if (/qry/i.test(num)) {
+      navigate(`/queries?search=${num}`);
+      return;
+    }
+    try {
+      const res = await incidentApi.list({ search: num, limit: 1, page: 1 });
+      if (res.data?.length) navigate(`/incidents/${res.data[0].id}`);
+      else navigate(`/incidents?search=${num}`);
+    } catch {
+      navigate(`/incidents?search=${num}`);
+    }
   };
 
   const handleLanguageChange = async (langCode: string) => {
@@ -142,27 +157,28 @@ export const IncidentLayout: React.FC = () => {
     // Set flag to prevent 401 interceptor from running during logout
     setLoggingOut(true);
 
-    // Clear auth state first to prevent any race conditions
-    logout();
-
     try {
+      // Call logout API FIRST while token is still in localStorage
       await authApi.logout();
     } catch {
       // Continue with logout even if API call fails
     } finally {
+      // Clear auth state after API call
+      logout();
       setLoggingOut(false);
     }
 
     navigate("/login");
   };
-
   // Build sidebar items from stats
-  const statusItems = statsData?.data?.by_state
-    ? Object.entries(statsData.data.by_state).map(([stateName, count]) => ({
-        name: stateName,
-        count: count as number,
-      }))
-    : [];
+  // const statusItems = statsData?.data?.by_state
+  //   ? Object.entries(statsData.data.by_state).map(([stateName, count]) => ({
+  //       name: stateName,
+  //       count: count as number,
+  //     }))
+  //   : [];
+  const workflowStats = statsData?.data?.workflow_stats || [];
+  const isSingleWorkflow = (workflowStats || []).length === 1;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -366,7 +382,7 @@ export const IncidentLayout: React.FC = () => {
         </div>
 
         {/* Status Filters */}
-        {canViewIncidents && statusItems.length > 0 && (
+        {canViewIncidents && workflowStats.length > 0 && (
           <>
             {!collapsed && (
               <>
@@ -377,25 +393,41 @@ export const IncidentLayout: React.FC = () => {
               </>
             )}
             <div className="space-y-1">
-              {statusItems.map((status) => (
-                <NavLink
-                  key={status.name}
-                  to={`/incidents?status=${encodeURIComponent(status.name)}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
-                >
-                  <Circle size={8} className="flex-shrink-0 fill-current" />
-                  {!collapsed && (
-                    <>
-                      <span className="ms-3 font-medium text-sm flex-1">
-                        {status.name}
-                      </span>
-                      <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
-                        {status.count}
-                      </span>
-                    </>
+              {workflowStats.map((workflow) => (
+                <div key={workflow.workflow_id}>
+                  {!isSingleWorkflow && (
+                    <div className="px-3 mt-3 mb-1 text-xs text-slate-500 uppercase">
+                      {workflow.workflow_name}
+                    </div>
                   )}
-                </NavLink>
+
+                  {Object.entries(workflow.by_state || {}).map(
+                    ([stateName, count]) => (
+                      <NavLink
+                        key={stateName}
+                        to={`/incidents?status=${encodeURIComponent(stateName)}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                      >
+                        <Circle
+                          size={8}
+                          className="flex-shrink-0 fill-current"
+                        />
+
+                        {!collapsed && (
+                          <>
+                            <span className="ms-3 font-medium text-sm flex-1">
+                              {stateName}
+                            </span>
+                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
+                              {count as number}
+                            </span>
+                          </>
+                        )}
+                      </NavLink>
+                    ),
+                  )}
+                </div>
               ))}
             </div>
           </>
@@ -720,14 +752,11 @@ export const IncidentLayout: React.FC = () => {
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
-                          onClick={() => {
+                          onClick={async () => {
                             if (!notif.is_read)
                               markReadMutation.mutate(notif.id);
-                            const route = getNotifRoute(notif.subject);
-                            if (route) {
-                              setIsNotifOpen(false);
-                              navigate(route);
-                            }
+                            setIsNotifOpen(false);
+                            await navigateToNotif(notif.subject);
                           }}
                           className={`px-4 py-3 cursor-pointer transition-colors hover:bg-slate-50 ${
                             !notif.is_read ? "bg-blue-50/50" : ""
@@ -739,11 +768,11 @@ export const IncidentLayout: React.FC = () => {
                             />
                             <div className="flex-1 min-w-0">
                               <p
-                                className={`text-sm ${!notif.is_read ? "font-semibold text-slate-900" : "font-medium text-slate-700"} truncate`}
+                                className={`text-sm ${!notif.is_read ? "font-semibold text-slate-900" : "font-medium text-slate-700"}`}
                               >
                                 {notif.subject}
                               </p>
-                              <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                              <p className="text-xs text-slate-500 mt-0.5">
                                 {notif.body}
                               </p>
                               <p className="text-xs text-slate-400 mt-1">

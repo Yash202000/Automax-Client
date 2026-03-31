@@ -85,6 +85,7 @@ import {
 } from "../../utils/customFields";
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
+import { useAppSelector } from "../../hooks/redux";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -103,6 +104,7 @@ export const IncidentDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const { users } = useAppSelector((state) => state.users);
 
   const canEditIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
@@ -605,6 +607,7 @@ export const IncidentDetailPage: React.FC = () => {
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
   const comments = commentsData?.data || [];
+
   const attachments = attachmentsData?.data || [];
   const fullWorkflow = fullWorkflowData?.data;
 
@@ -901,10 +904,10 @@ export const IncidentDetailPage: React.FC = () => {
             location_id: incident.location?.id,
             ...(trans.department_type_filter
               ? {
-                  department_type: trans.department_type_filter as
-                    | "internal"
-                    | "external",
-                }
+                department_type: trans.department_type_filter as
+                  | "internal"
+                  | "external",
+              }
               : {}),
           });
           if (deptResult.success && deptResult.data) {
@@ -1150,7 +1153,7 @@ export const IncidentDetailPage: React.FC = () => {
       // User assignment — static assign_user_id is handled server-side from transition config
       const userIds =
         (trans.manual_select_user || trans.auto_match_user) &&
-        selectedUserIds.length > 0
+          selectedUserIds.length > 0
           ? selectedUserIds
           : undefined;
 
@@ -1161,9 +1164,9 @@ export const IncidentDetailPage: React.FC = () => {
         feedback:
           transitionFeedbackRating > 0
             ? {
-                rating: transitionFeedbackRating,
-                comment: transitionFeedbackComment || undefined,
-              }
+              rating: transitionFeedbackRating,
+              comment: transitionFeedbackComment || undefined,
+            }
             : undefined,
         department_id: departmentId,
         user_ids: userIds,
@@ -1761,6 +1764,24 @@ export const IncidentDetailPage: React.FC = () => {
                                     item.performed_by?.username ||
                                     t("incidents.system")}
                                 </span>
+                                {item.performed_by && (
+                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
+                                    (
+                                    {(() => {
+                                      const u = users.find(
+                                        (user) => user.id === item.performed_by?.id,
+                                      );
+                                      return (
+                                        u?.department?.name ||
+                                        u?.departments?.[0]?.name ||
+                                        item.performed_by?.department?.name ||
+                                        item.performed_by?.departments?.[0]?.name ||
+                                        "-"
+                                      );
+                                    })()}
+                                    )
+                                  </span>
+                                )}
                               </div>
                               <span className="text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(item.transitioned_at)}
@@ -1955,148 +1976,254 @@ export const IncidentDetailPage: React.FC = () => {
                         {attachments.filter((a: IncidentAttachment) =>
                           isImageAttachment(a.mime_type),
                         ).length > 0 && (
-                          <>
-                            {/* Compare Mode Controls */}
-                            {attachments.filter((a: IncidentAttachment) =>
-                              isImageAttachment(a.mime_type),
-                            ).length >= 2 && (
-                              <div className="flex items-center justify-between mb-3 p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
-                                <div className="flex items-center gap-3">
-                                  <button
-                                    onClick={() => {
-                                      if (compareMode) {
-                                        exitCompareMode();
-                                      } else {
-                                        setCompareMode(true);
-                                      }
-                                    }}
-                                    className={cn(
-                                      "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                                      compareMode
-                                        ? "bg-[hsl(var(--primary))] text-white"
-                                        : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]",
-                                    )}
-                                  >
-                                    {compareMode
-                                      ? t("incidents.exitCompare")
-                                      : t("incidents.compareImages")}
-                                  </button>
-                                  {compareMode && (
-                                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                      {t("incidents.selectImagesToCompare")} (
-                                      {selectedForCompare.length}/2)
-                                    </span>
-                                  )}
-                                </div>
-                                {compareMode &&
-                                  selectedForCompare.length === 2 && (
-                                    <button
-                                      onClick={openCompareModal}
-                                      className="px-4 py-1.5 bg-[hsl(var(--primary))] text-white rounded-lg text-sm font-medium hover:bg-[hsl(var(--primary)/0.9)] transition-colors"
-                                    >
-                                      {t("incidents.compareNow")}
-                                    </button>
-                                  )}
-                              </div>
-                            )}
+                            <>
+                              {/* Compare Mode Controls */}
+                              {attachments.filter((a: IncidentAttachment) =>
+                                isImageAttachment(a.mime_type),
+                              ).length >= 2 && (
+                                  <div className="flex items-center justify-between mb-3 p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                      <button
+                                        onClick={() => {
+                                          if (compareMode) {
+                                            exitCompareMode();
+                                          } else {
+                                            setCompareMode(true);
+                                          }
+                                        }}
+                                        className={cn(
+                                          "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                                          compareMode
+                                            ? "bg-[hsl(var(--primary))] text-white"
+                                            : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]",
+                                        )}
+                                      >
+                                        {compareMode
+                                          ? t("incidents.exitCompare")
+                                          : t("incidents.compareImages")}
+                                      </button>
+                                      {compareMode && (
+                                        <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                          {t("incidents.selectImagesToCompare")} (
+                                          {selectedForCompare.length}/2)
+                                        </span>
+                                      )}
+                                    </div>
+                                    {compareMode &&
+                                      selectedForCompare.length === 2 && (
+                                        <button
+                                          onClick={openCompareModal}
+                                          className="px-4 py-1.5 bg-[hsl(var(--primary))] text-white rounded-lg text-sm font-medium hover:bg-[hsl(var(--primary)/0.9)] transition-colors"
+                                        >
+                                          {t("incidents.compareNow")}
+                                        </button>
+                                      )}
+                                  </div>
+                                )}
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                                {attachments
+                                  .filter((a: IncidentAttachment) =>
+                                    isImageAttachment(a.mime_type),
+                                  )
+                                  .map((attachment: IncidentAttachment) => (
+                                    <div
+                                      key={attachment.id}
+                                      className={cn(
+                                        "relative group rounded-lg overflow-hidden border-2 bg-[hsl(var(--muted)/0.3)] transition-all",
+                                        compareMode &&
+                                          isSelectedForCompare(attachment.id)
+                                          ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary)/0.3)]"
+                                          : "border-[hsl(var(--border))]",
+                                      )}
+                                    >
+                                      {/* Selection checkbox for compare mode */}
+                                      {compareMode && (
+                                        <div
+                                          className="absolute top-2 left-2 z-10 cursor-pointer"
+                                          onClick={() =>
+                                            toggleCompareSelection(attachment)
+                                          }
+                                        >
+                                          <div
+                                            className={cn(
+                                              "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                              isSelectedForCompare(attachment.id)
+                                                ? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
+                                                : "bg-white/90 border-gray-400 hover:border-[hsl(var(--primary))]",
+                                            )}
+                                          >
+                                            {isSelectedForCompare(
+                                              attachment.id,
+                                            ) && (
+                                                <CheckCircle2 className="w-4 h-4 text-white" />
+                                              )}
+                                            {!isSelectedForCompare(
+                                              attachment.id,
+                                            ) &&
+                                              selectedForCompare.length < 2 && (
+                                                <span className="text-xs text-gray-500">
+                                                  {selectedForCompare.length + 1}
+                                                </span>
+                                              )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      <img
+                                        src={getAttachmentPreviewUrl(
+                                          attachment.id,
+                                        )}
+                                        alt={attachment.file_name}
+                                        className={cn(
+                                          "w-full h-32 object-cover transition-opacity",
+                                          compareMode
+                                            ? "cursor-pointer"
+                                            : "cursor-pointer hover:opacity-90",
+                                        )}
+                                        onClick={() => {
+                                          if (compareMode) {
+                                            toggleCompareSelection(attachment);
+                                          } else {
+                                            openLightbox(attachment);
+                                          }
+                                        }}
+                                      />
+                                      {!compareMode && (
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
+                                          <button
+                                            onClick={() =>
+                                              openLightbox(attachment)
+                                            }
+                                            className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors"
+                                          >
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              className="w-5 h-5"
+                                              fill="none"
+                                              viewBox="0 0 24 24"
+                                              stroke="currentColor"
+                                            >
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                                              />
+                                            </svg>
+                                          </button>
+                                          <a
+                                            href={getAttachmentUrl(attachment.id)}
+                                            download={attachment.file_name}
+                                            className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors"
+                                          >
+                                            <Download className="w-5 h-5" />
+                                          </a>
+                                          <button
+                                            onClick={() =>
+                                              deleteAttachmentMutation.mutate(
+                                                attachment.id,
+                                              )
+                                            }
+                                            className="p-2 bg-white/90 rounded-full text-red-600 hover:bg-white transition-colors"
+                                          >
+                                            <Trash2 className="w-5 h-5" />
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setOpenImageEditor(true);
+                                              setSelectedImage(attachment);
+                                            }}
+                                            className="p-2 bg-white/90 rounded-full text-red-600 hover:bg-white transition-colors"
+                                          >
+                                            <Edit2 className="w-5 h-5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2">
+                                        <p className="truncate">
+                                          {attachment.file_name}
+                                        </p>
+                                        {attachment.uploaded_by && (
+                                          <p className="truncate text-white/70 mt-0.5">
+                                            {attachment.uploaded_by.first_name}{" "}
+                                            {attachment.uploaded_by.last_name}
+                                            <span className="ml-1 opacity-60">
+                                              ·{" "}
+                                              {attachment.uploaded_by.roles?.[0]
+                                                ?.name || "No Role"}
+                                            </span>
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </>
+                          )}
+
+                        {/* Audio Files */}
+                        {attachments.filter((a: IncidentAttachment) =>
+                          isAudioAttachment(a.mime_type),
+                        ).length > 0 && (
+                            <div className="space-y-2 mb-4">
                               {attachments
                                 .filter((a: IncidentAttachment) =>
-                                  isImageAttachment(a.mime_type),
+                                  isAudioAttachment(a.mime_type),
                                 )
                                 .map((attachment: IncidentAttachment) => (
                                   <div
                                     key={attachment.id}
-                                    className={cn(
-                                      "relative group rounded-lg overflow-hidden border-2 bg-[hsl(var(--muted)/0.3)] transition-all",
-                                      compareMode &&
-                                        isSelectedForCompare(attachment.id)
-                                        ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary)/0.3)]"
-                                        : "border-[hsl(var(--border))]",
-                                    )}
+                                    className="p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg"
                                   >
-                                    {/* Selection checkbox for compare mode */}
-                                    {compareMode && (
-                                      <div
-                                        className="absolute top-2 left-2 z-10 cursor-pointer"
-                                        onClick={() =>
-                                          toggleCompareSelection(attachment)
-                                        }
-                                      >
-                                        <div
-                                          className={cn(
-                                            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                            isSelectedForCompare(attachment.id)
-                                              ? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
-                                              : "bg-white/90 border-gray-400 hover:border-[hsl(var(--primary))]",
-                                          )}
-                                        >
-                                          {isSelectedForCompare(
-                                            attachment.id,
-                                          ) && (
-                                            <CheckCircle2 className="w-4 h-4 text-white" />
-                                          )}
-                                          {!isSelectedForCompare(
-                                            attachment.id,
-                                          ) &&
-                                            selectedForCompare.length < 2 && (
-                                              <span className="text-xs text-gray-500">
-                                                {selectedForCompare.length + 1}
-                                              </span>
-                                            )}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    <img
-                                      src={getAttachmentPreviewUrl(
-                                        attachment.id,
-                                      )}
-                                      alt={attachment.file_name}
-                                      className={cn(
-                                        "w-full h-32 object-cover transition-opacity",
-                                        compareMode
-                                          ? "cursor-pointer"
-                                          : "cursor-pointer hover:opacity-90",
-                                      )}
-                                      onClick={() => {
-                                        if (compareMode) {
-                                          toggleCompareSelection(attachment);
-                                        } else {
-                                          openLightbox(attachment);
-                                        }
-                                      }}
-                                    />
-                                    {!compareMode && (
-                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
-                                        <button
-                                          onClick={() =>
-                                            openLightbox(attachment)
-                                          }
-                                          className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors"
-                                        >
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-[hsl(var(--background))] rounded-lg">
                                           <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-5 h-5"
+                                            className="w-5 h-5 text-[hsl(var(--primary))]"
                                             fill="none"
-                                            viewBox="0 0 24 24"
                                             stroke="currentColor"
+                                            viewBox="0 0 24 24"
                                           >
                                             <path
                                               strokeLinecap="round"
                                               strokeLinejoin="round"
                                               strokeWidth={2}
-                                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                                              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
                                             />
                                           </svg>
-                                        </button>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                            {attachment.file_name}
+                                          </p>
+                                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                            {formatFileSize(attachment.file_size)}{" "}
+                                            •{" "}
+                                            {formatDateTime(
+                                              attachment.created_at,
+                                            )}
+                                          </p>
+                                          {attachment.uploaded_by && (
+                                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                                              {attachment.uploaded_by.first_name}{" "}
+                                              {attachment.uploaded_by.last_name}
+                                              <span className="ml-1 opacity-60">
+                                                ·{" "}
+                                                {attachment.uploaded_by.roles?.[0]
+                                                  ?.name || "No Role"}
+                                              </span>
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
                                         <a
                                           href={getAttachmentUrl(attachment.id)}
                                           download={attachment.file_name}
-                                          className="p-2 bg-white/90 rounded-full text-gray-700 hover:bg-white transition-colors"
+                                          className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
                                         >
-                                          <Download className="w-5 h-5" />
+                                          <Download className="w-4 h-4" />
                                         </a>
                                         <button
                                           onClick={() =>
@@ -2104,84 +2231,55 @@ export const IncidentDetailPage: React.FC = () => {
                                               attachment.id,
                                             )
                                           }
-                                          className="p-2 bg-white/90 rounded-full text-red-600 hover:bg-white transition-colors"
+                                          className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                                         >
-                                          <Trash2 className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            setOpenImageEditor(true);
-                                            setSelectedImage(attachment);
-                                          }}
-                                          className="p-2 bg-white/90 rounded-full text-red-600 hover:bg-white transition-colors"
-                                        >
-                                          <Edit2 className="w-5 h-5" />
+                                          <Trash2 className="w-4 h-4" />
                                         </button>
                                       </div>
-                                    )}
-                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2">
-                                      <p className="truncate">
-                                        {attachment.file_name}
-                                      </p>
-                                      {attachment.uploaded_by && (
-                                        <p className="truncate text-white/70 mt-0.5">
-                                          {attachment.uploaded_by.first_name}{" "}
-                                          {attachment.uploaded_by.last_name}
-                                          <span className="ml-1 opacity-60">
-                                            ·{" "}
-                                            {attachment.uploaded_by.roles?.[0]
-                                              ?.name || "No Role"}
-                                          </span>
-                                        </p>
-                                      )}
                                     </div>
+                                    <audio
+                                      controls
+                                      className="w-full h-10"
+                                      src={getAttachmentPreviewUrl(attachment.id)}
+                                      preload="metadata"
+                                    >
+                                      Your browser does not support the audio
+                                      element.
+                                    </audio>
                                   </div>
                                 ))}
                             </div>
-                          </>
-                        )}
+                          )}
 
-                        {/* Audio Files */}
-                        {attachments.filter((a: IncidentAttachment) =>
-                          isAudioAttachment(a.mime_type),
+                        {/* Other Non-Image Files List */}
+                        {attachments.filter(
+                          (a: IncidentAttachment) =>
+                            !isImageAttachment(a.mime_type) &&
+                            !isAudioAttachment(a.mime_type),
                         ).length > 0 && (
-                          <div className="space-y-2 mb-4">
-                            {attachments
-                              .filter((a: IncidentAttachment) =>
-                                isAudioAttachment(a.mime_type),
-                              )
-                              .map((attachment: IncidentAttachment) => (
-                                <div
-                                  key={attachment.id}
-                                  className="p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg"
-                                >
-                                  <div className="flex items-center justify-between mb-2">
+                            <div className="space-y-2">
+                              {attachments
+                                .filter(
+                                  (a: IncidentAttachment) =>
+                                    !isImageAttachment(a.mime_type) &&
+                                    !isAudioAttachment(a.mime_type),
+                                )
+                                .map((attachment: IncidentAttachment) => (
+                                  <div
+                                    key={attachment.id}
+                                    className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg"
+                                  >
                                     <div className="flex items-center gap-3">
                                       <div className="p-2 bg-[hsl(var(--background))] rounded-lg">
-                                        <svg
-                                          className="w-5 h-5 text-[hsl(var(--primary))]"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-                                          />
-                                        </svg>
+                                        <FileText className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                                       </div>
                                       <div>
                                         <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                                           {attachment.file_name}
                                         </p>
                                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                          {formatFileSize(attachment.file_size)}{" "}
-                                          •{" "}
-                                          {formatDateTime(
-                                            attachment.created_at,
-                                          )}
+                                          {formatFileSize(attachment.file_size)} •{" "}
+                                          {formatDateTime(attachment.created_at)}
                                         </p>
                                         {attachment.uploaded_by && (
                                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
@@ -2216,86 +2314,9 @@ export const IncidentDetailPage: React.FC = () => {
                                       </button>
                                     </div>
                                   </div>
-                                  <audio
-                                    controls
-                                    className="w-full h-10"
-                                    src={getAttachmentPreviewUrl(attachment.id)}
-                                    preload="metadata"
-                                  >
-                                    Your browser does not support the audio
-                                    element.
-                                  </audio>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-
-                        {/* Other Non-Image Files List */}
-                        {attachments.filter(
-                          (a: IncidentAttachment) =>
-                            !isImageAttachment(a.mime_type) &&
-                            !isAudioAttachment(a.mime_type),
-                        ).length > 0 && (
-                          <div className="space-y-2">
-                            {attachments
-                              .filter(
-                                (a: IncidentAttachment) =>
-                                  !isImageAttachment(a.mime_type) &&
-                                  !isAudioAttachment(a.mime_type),
-                              )
-                              .map((attachment: IncidentAttachment) => (
-                                <div
-                                  key={attachment.id}
-                                  className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-[hsl(var(--background))] rounded-lg">
-                                      <FileText className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                                        {attachment.file_name}
-                                      </p>
-                                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                        {formatFileSize(attachment.file_size)} •{" "}
-                                        {formatDateTime(attachment.created_at)}
-                                      </p>
-                                      {attachment.uploaded_by && (
-                                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                                          {attachment.uploaded_by.first_name}{" "}
-                                          {attachment.uploaded_by.last_name}
-                                          <span className="ml-1 opacity-60">
-                                            ·{" "}
-                                            {attachment.uploaded_by.roles?.[0]
-                                              ?.name || "No Role"}
-                                          </span>
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <a
-                                      href={getAttachmentUrl(attachment.id)}
-                                      download={attachment.file_name}
-                                      className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </a>
-                                    <button
-                                      onClick={() =>
-                                        deleteAttachmentMutation.mutate(
-                                          attachment.id,
-                                        )
-                                      }
-                                      className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
+                                ))}
+                            </div>
+                          )}
                       </>
                     )}
                   </div>
@@ -2569,8 +2590,8 @@ export const IncidentDetailPage: React.FC = () => {
                     {incident.reporter?.first_name
                       ? `${incident.reporter.first_name} ${incident.reporter.last_name || ""}`
                       : incident.reporter?.username ||
-                        incident.reporter_name ||
-                        "Unknown"}
+                      incident.reporter_name ||
+                      "Unknown"}
                   </span>
                   {(incident.reporter_email || incident.reporter?.email) && (
                     <a
@@ -2661,17 +2682,17 @@ export const IncidentDetailPage: React.FC = () => {
                         {(incident.city ||
                           incident.state ||
                           incident.country) && (
-                          <p className="pl-5">
-                            {[
-                              incident.city,
-                              incident.state,
-                              incident.country,
-                              incident.postal_code,
-                            ]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </p>
-                        )}
+                            <p className="pl-5">
+                              {[
+                                incident.city,
+                                incident.state,
+                                incident.country,
+                                incident.postal_code,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </p>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -2824,13 +2845,12 @@ export const IncidentDetailPage: React.FC = () => {
                     {transitionSteps.map((_, idx) => (
                       <div
                         key={idx}
-                        className={`rounded-full transition-all duration-200 ${
-                          idx === transitionStep
-                            ? "w-4 h-2 bg-[hsl(var(--primary))]"
-                            : idx < transitionStep
-                              ? "w-2 h-2 bg-[hsl(var(--primary)/0.4)]"
-                              : "w-2 h-2 bg-[hsl(var(--border))]"
-                        }`}
+                        className={`rounded-full transition-all duration-200 ${idx === transitionStep
+                          ? "w-4 h-2 bg-[hsl(var(--primary))]"
+                          : idx < transitionStep
+                            ? "w-2 h-2 bg-[hsl(var(--primary)/0.4)]"
+                            : "w-2 h-2 bg-[hsl(var(--border))]"
+                          }`}
                       />
                     ))}
                   </div>
@@ -2908,10 +2928,10 @@ export const IncidentDetailPage: React.FC = () => {
                             deptSearchQuery.trim().length > 0;
                           const filteredFlat = searchActive
                             ? allDepts.filter((d) =>
-                                d.name
-                                  .toLowerCase()
-                                  .includes(deptSearchQuery.toLowerCase()),
-                              )
+                              d.name
+                                .toLowerCase()
+                                .includes(deptSearchQuery.toLowerCase()),
+                            )
                             : [];
                           const toggleDept = (id: string) =>
                             setCollapsedDeptIds((prev) => {
@@ -3109,10 +3129,10 @@ export const IncidentDetailPage: React.FC = () => {
                               userSearchQuery.trim().length > 0;
                             const filteredUsers = searchActive
                               ? allUsers.filter((u) =>
-                                  `${u.first_name || ""} ${u.last_name || ""} ${u.username} ${u.email}`
-                                    .toLowerCase()
-                                    .includes(userSearchQuery.toLowerCase()),
-                                )
+                                `${u.first_name || ""} ${u.last_name || ""} ${u.username} ${u.email}`
+                                  .toLowerCase()
+                                  .includes(userSearchQuery.toLowerCase()),
+                              )
                               : allUsers;
                             const roleGroups: Array<{
                               role: (typeof assignmentRoles)[0];
@@ -3260,9 +3280,9 @@ export const IncidentDetailPage: React.FC = () => {
                                       {allCollapsed
                                         ? t("common.expandAll", "Expand all")
                                         : t(
-                                            "common.collapseAll",
-                                            "Collapse all",
-                                          )}
+                                          "common.collapseAll",
+                                          "Collapse all",
+                                        )}
                                     </button>
                                   )}
                                 </div>
@@ -3281,7 +3301,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         if (el)
                                           el.indeterminate = searchActive
                                             ? !allFilteredSelected &&
-                                              someFilteredSelected
+                                            someFilteredSelected
                                             : !allUsersSelected && someSelected;
                                       }}
                                       onChange={() => {
@@ -3321,9 +3341,9 @@ export const IncidentDetailPage: React.FC = () => {
                                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
                                       {searchActive
                                         ? t(
-                                            "common.selectAllFiltered",
-                                            "Select all filtered",
-                                          )
+                                          "common.selectAllFiltered",
+                                          "Select all filtered",
+                                        )
                                         : t("common.selectAll", "Select All")}
                                     </span>
                                     <span className="ml-auto text-xs text-[hsl(var(--muted-foreground))]">
@@ -3439,7 +3459,6 @@ export const IncidentDetailPage: React.FC = () => {
                                               <p className="px-6 py-2 text-xs text-[hsl(var(--muted-foreground))]">
                                                 {t(
                                                   "incidents.noUsersWithRole",
-                                                  "No users with this role",
                                                 )}
                                               </p>
                                             ) : (
@@ -3577,7 +3596,6 @@ export const IncidentDetailPage: React.FC = () => {
                           <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
                             {t(
                               "incidents.rateExperience",
-                              "Rate your experience",
                             )}
                           </span>
                           <div className="flex gap-1">
@@ -3588,11 +3606,10 @@ export const IncidentDetailPage: React.FC = () => {
                                 onClick={() =>
                                   setTransitionFeedbackRating(star)
                                 }
-                                className={`p-1 transition-colors ${
-                                  star <= transitionFeedbackRating
-                                    ? "text-yellow-400"
-                                    : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
-                                }`}
+                                className={`p-1 transition-colors ${star <= transitionFeedbackRating
+                                  ? "text-yellow-400"
+                                  : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
+                                  }`}
                               >
                                 <Star
                                   className="w-6 h-6"
@@ -3620,7 +3637,6 @@ export const IncidentDetailPage: React.FC = () => {
                             }
                             placeholder={t(
                               "incidents.feedbackCommentPlaceholder",
-                              "Add optional feedback comments...",
                             )}
                             rows={2}
                             className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
@@ -3669,12 +3685,12 @@ export const IncidentDetailPage: React.FC = () => {
                                   }}
                                   className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 >
-                                  <option value="">Select priority...</option>
-                                  <option value="1">Low</option>
-                                  <option value="2">Medium</option>
-                                  <option value="3">High</option>
-                                  <option value="4">Urgent</option>
-                                  <option value="5">Critical</option>
+                                  <option value="">{t("incidents.selectPriority")}</option>
+                                  <option value="1">{t("priorities.low")}</option>
+                                  <option value="2">{t("priorities.medium")}</option>
+                                  <option value="3">{t("priorities.high")}</option>
+                                  <option value="4">{t("priorities.urgent")}</option>
+                                  <option value="5">{t("priorities.critical")}</option>
                                 </select>
                                 {transitionErrors[fc.field_name] && (
                                   <p className="text-xs text-red-500 mt-1">
@@ -3691,9 +3707,9 @@ export const IncidentDetailPage: React.FC = () => {
                                     [];
                                   const filtered = fc.department_type_filter
                                     ? filterDeptTree(
-                                        allDepts,
-                                        fc.department_type_filter,
-                                      )
+                                      allDepts,
+                                      fc.department_type_filter,
+                                    )
                                     : allDepts;
                                   return filtered as unknown as TreeSelectNode[];
                                 })()}
@@ -3711,9 +3727,9 @@ export const IncidentDetailPage: React.FC = () => {
                                       [fc.field_name]: "",
                                     }));
                                 }}
-                                placeholder={`Select ${fc.department_type_filter || ""} department...`
-                                  .replace("  ", " ")
-                                  .trim()}
+                                placeholder={t("incidents.selectDepartmentPlaceholder", {
+                                  type: fc.department_type_filter || "",
+                                })}
                                 leafOnly={false}
                                 error={transitionErrors[fc.field_name]}
                                 maxHeight="240px"
@@ -3739,7 +3755,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       [fc.field_name]: "",
                                     }));
                                 }}
-                                placeholder="Select location..."
+                                placeholder={t("incidents.selectLocation")}
                                 leafOnly={false}
                                 maxHeight="240px"
                                 error={transitionErrors[fc.field_name]}
@@ -3765,7 +3781,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       [fc.field_name]: "",
                                     }));
                                 }}
-                                placeholder="Select classification..."
+                                placeholder={t("incidents.selectClassification")}
                                 leafOnly={false}
                                 maxHeight="240px"
                                 error={transitionErrors[fc.field_name]}
@@ -3789,7 +3805,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         [fc.field_name]: "",
                                       }));
                                   }}
-                                  placeholder="Enter title..."
+                                  placeholder={t("incidents.enterTitle")}
                                   className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 />
                                 {transitionErrors[fc.field_name] && (
@@ -3816,7 +3832,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         [fc.field_name]: "",
                                       }));
                                   }}
-                                  placeholder="Enter description..."
+                                  placeholder={t("incidents.enterDescription")}
                                   rows={3}
                                   className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 />
@@ -3838,7 +3854,6 @@ export const IncidentDetailPage: React.FC = () => {
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
                         {t(
                           "incidents.readyToCloseDurationHint",
-                          "The incident will automatically revert if not closed within the selected period.",
                         )}
                       </p>
                       <select
@@ -3917,9 +3932,9 @@ export const IncidentDetailPage: React.FC = () => {
                       }
                       leftIcon={
                         isLastStep &&
-                        !(
-                          transitionMutation.isPending || transitionUploading
-                        ) ? (
+                          !(
+                            transitionMutation.isPending || transitionUploading
+                          ) ? (
                           <Play className="w-4 h-4" />
                         ) : undefined
                       }

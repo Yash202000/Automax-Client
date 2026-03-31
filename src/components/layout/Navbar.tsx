@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
-import { emailApi } from "../../api/admin";
+import { emailApi, incidentApi } from "../../api/admin";
 import { setLoggingOut } from "../../api/client";
 import {
   setLanguage,
@@ -71,15 +71,29 @@ export const Navbar: React.FC = () => {
       }),
   });
 
-  // Extract incident number from a notification subject like "Incident AMX1-0042: Ready to Close Expiring Soon"
-  const getNotifRoute = (subject: string): string | null => {
-    const match = subject.match(/Incident\s+([A-Z0-9-]+)\s*:/i);
-    if (!match) return null;
+  const navigateToNotif = async (subject: string) => {
+    const match = subject.match(/Incident\s+([A-Z0-9-]+)/i);
+    if (!match) return;
     const num = match[1];
-    if (/req/i.test(num)) return `/requests?search=${num}`;
-    if (/com/i.test(num)) return `/complaints?search=${num}`;
-    if (/qry/i.test(num)) return `/queries?search=${num}`;
-    return `/incidents?search=${num}`;
+    if (/req/i.test(num)) {
+      navigate(`/requests?search=${num}`);
+      return;
+    }
+    if (/com/i.test(num)) {
+      navigate(`/complaints?search=${num}`);
+      return;
+    }
+    if (/qry/i.test(num)) {
+      navigate(`/queries?search=${num}`);
+      return;
+    }
+    try {
+      const res = await incidentApi.list({ search: num, limit: 1, page: 1 });
+      if (res.data?.length) navigate(`/incidents/${res.data[0].id}`);
+      else navigate(`/incidents?search=${num}`);
+    } catch {
+      navigate(`/incidents?search=${num}`);
+    }
   };
 
   const handleLanguageChange = async (langCode: string) => {
@@ -96,14 +110,14 @@ export const Navbar: React.FC = () => {
     // Set flag to prevent 401 interceptor from running during logout
     setLoggingOut(true);
 
-    // Clear auth state first to prevent any race conditions
-    logout();
-
     try {
+      // Call logout API FIRST while token is still in localStorage
       await authApi.logout();
     } catch {
       // Continue with logout even if API call fails
     } finally {
+      // Clear auth state after API call
+      logout();
       setLoggingOut(false);
     }
 
@@ -315,14 +329,11 @@ export const Navbar: React.FC = () => {
                           notifications.map((notif) => (
                             <div
                               key={notif.id}
-                              onClick={() => {
+                              onClick={async () => {
                                 if (!notif.is_read)
                                   markReadMutation.mutate(notif.id);
-                                const route = getNotifRoute(notif.subject);
-                                if (route) {
-                                  setIsNotifOpen(false);
-                                  navigate(route);
-                                }
+                                setIsNotifOpen(false);
+                                await navigateToNotif(notif.subject);
                               }}
                               className={`px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${
                                 !notif.is_read ? "bg-blue-50/50" : ""
@@ -334,11 +345,11 @@ export const Navbar: React.FC = () => {
                                 />
                                 <div className="flex-1 min-w-0">
                                   <p
-                                    className={`text-sm ${!notif.is_read ? "font-semibold text-gray-900" : "font-medium text-gray-700"} truncate`}
+                                    className={`text-sm ${!notif.is_read ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}
                                   >
                                     {notif.subject}
                                   </p>
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                  <p className="text-xs text-gray-500 mt-0.5">
                                     {notif.body}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-1">

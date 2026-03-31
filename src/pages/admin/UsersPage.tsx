@@ -467,7 +467,7 @@ export const UsersPage: React.FC = () => {
       last_name: formData.last_name,
       username: formData.username,
       phone: formData.phone,
-      extension: formData.extension || undefined,
+      extension: formData.extension || "",
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,
       department_ids: formData.department_ids,

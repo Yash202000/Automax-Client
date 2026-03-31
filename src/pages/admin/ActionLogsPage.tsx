@@ -31,7 +31,7 @@ const actionColors: Record<string, string> = {
   create: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
   update: "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]",
   delete: "bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]",
-  login: "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))]",
+  login: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
   logout: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
   view: "bg-[hsl(var(--secondary)/0.1)] text-[hsl(var(--secondary-foreground))]",
   status_change: "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]",
@@ -105,7 +105,6 @@ const exportToCSV = (logs: ActionLog[]) => {
     "Old Value",
     "New Value",
     "Status",
-    "Duration (ms)",
     "IP Address",
   ];
 
@@ -123,7 +122,6 @@ const exportToCSV = (logs: ActionLog[]) => {
       ? getChangedValues(log.old_value, log.new_value).newText
       : "",
     log?.status,
-    log?.duration,
     log?.ip_address,
   ]);
 
@@ -163,7 +161,6 @@ const exportToExcel = (logs: ActionLog[]) => {
       ? getChangedValues(log.old_value, log.new_value).newText
       : "",
     Status: log?.status,
-    Duration: log?.duration,
     "IP Address": log?.ip_address,
   }));
 
@@ -179,7 +176,6 @@ const exportToExcel = (logs: ActionLog[]) => {
     { wch: 40 },
     { wch: 40 },
     { wch: 14 },
-    { wch: 12 },
     { wch: 20 },
   ];
 
@@ -282,11 +278,6 @@ export const ActionLogsPage: React.FC = () => {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleString();
-  };
-
-  const formatDuration = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(2)}s`;
   };
 
   if (error) {
@@ -648,11 +639,6 @@ export const ActionLogsPage: React.FC = () => {
                         Status
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
-                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Duration
-                      </span>
-                    </th>
                     <th className="px-6 py-4 text-right">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         Actions
@@ -728,11 +714,6 @@ export const ActionLogsPage: React.FC = () => {
                             <XCircle className="w-3.5 h-3.5" />
                           )}
                           {log.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                          {formatDuration(log.duration)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -882,7 +863,7 @@ export const ActionLogsPage: React.FC = () => {
                     </p>
                     {selectedLog.user?.username && (
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        @{selectedLog.user.username}
+                        {/* {selectedLog.user.username} */}
                       </p>
                     )}
                   </div>
@@ -930,14 +911,6 @@ export const ActionLogsPage: React.FC = () => {
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))] capitalize">
                     {selectedLog.module}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    Duration
-                  </p>
-                  <p className="text-sm text-[hsl(var(--foreground))]">
-                    {formatDuration(selectedLog.duration)}
                   </p>
                 </div>
               </div>

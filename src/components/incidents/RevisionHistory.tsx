@@ -20,6 +20,7 @@ import { incidentApi } from "../../api/admin";
 import type { IncidentRevisionActionType } from "../../types";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useAppSelector } from "../../hooks/redux";
 
 interface RevisionHistoryProps {
   incidentId: string;
@@ -36,6 +37,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
   const [filterType, setFilterType] = useState<IncidentRevisionActionType | "">(
     "",
   );
+  const { users } = useAppSelector((state) => state.users);
 
   const actionTypeLabels: Record<IncidentRevisionActionType, string> = {
     field_change: t("revisionHistory.actionTypes.fieldChange"),
@@ -63,6 +65,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
   const revisions = data?.data || [];
   const totalPages = data?.total_pages || 1;
   const totalItems = data?.total_items || 0;
+
 
   const toggleExpand = (revisionId: string) => {
     const newExpanded = new Set(expandedRevisions);
@@ -102,6 +105,8 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
         ? `${rev.performed_by.first_name || ""} ${rev.performed_by.last_name || ""}`.trim() ||
         rev.performed_by.username
         : "System",
+      Department: (users.find(u => u.id === rev.performed_by_id) || rev.performed_by)?.department?.name ||
+        (users.find(u => u.id === rev.performed_by_id) || rev.performed_by)?.departments?.[0]?.name || "-",
       Role: rev.performed_by_roles?.join(", ") || "",
       Mobile: rev.performed_by_phone || rev.performed_by?.phone || "",
     }));
@@ -221,6 +226,9 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                   {t("revisionHistory.actionTakenBy")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                  {t("common.department", "Department")}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("revisionHistory.role")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -277,6 +285,14 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                       </div>
                     </td>
                     <td className="px-4 py-3">
+                      <span className="text-sm text-[hsl(var(--foreground))]">
+                        {(() => {
+                          const user = users.find(u => u.id === revision.performed_by_id) || revision.performed_by;
+                          return user?.department?.name || user?.departments?.[0]?.name || "-";
+                        })()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {revision.performed_by?.roles?.map((role, idx) => (
                           <span
@@ -331,7 +347,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     revision.changes.length > 0 && (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-4 py-3 bg-[hsl(var(--muted)/0.2)]"
                         >
                           <div className="pl-8 space-y-2">

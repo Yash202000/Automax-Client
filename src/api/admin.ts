@@ -1360,8 +1360,8 @@ export const incidentApi = {
     if (recordType) params.append("record_type", recordType);
     if (assignType) params.append("type", assignType);
     const url = params.toString()
-      ? `/incidents/stats?${params.toString()}`
-      : "/incidents/stats";
+      ? `/incidents/stats/v2?${params.toString()}`
+      : "/incidents/stats/v2";
     const response = await apiClient.get<ApiResponse<IncidentStats>>(url);
     return response.data;
   },
