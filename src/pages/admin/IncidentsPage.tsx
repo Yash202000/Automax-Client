@@ -41,6 +41,7 @@ import type {
   Workflow,
   User as UserType,
   WorkflowState,
+  IncidentMergeOption,
 } from "../../types";
 import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSocket";
 import { cn } from "@/lib/utils";
@@ -61,7 +62,12 @@ interface ColumnConfig {
 const COLUMN_STORAGE_KEY = "incident_columns_config";
 
 const defaultColumns: ColumnConfig[] = [
-  { id: "incident", label: "incidents.incident", visible: true, required: true },
+  {
+    id: "incident",
+    label: "incidents.incident",
+    visible: true,
+    required: true,
+  },
   { id: "state", label: "incidents.status", visible: true },
   { id: "priority", label: "incidents.priority", visible: true },
   { id: "assignee", label: "incidents.assignee", visible: true },
@@ -136,6 +142,13 @@ export const IncidentsPage: React.FC = () => {
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
   const { user } = useAuthStore();
+  const [isValidationLoading, setIsValidationLoading] =
+    useState<boolean>(false);
+  const [validationResult, setValidationResult] = useState<{
+    canMerge: boolean;
+    errors: string[];
+    masterOptions: IncidentMergeOption[];
+  } | null>(null);
 
   const canViewAllIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
@@ -148,8 +161,8 @@ export const IncidentsPage: React.FC = () => {
   const selectedWorkflowId =
     selectedIncidents?.length >= 2
       ? selectedIncidents.every(
-        (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
-      )
+          (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
+        )
         ? selectedIncidents[0].workflow?.id || null
         : null
       : null;
@@ -160,6 +173,26 @@ export const IncidentsPage: React.FC = () => {
     queryFn: () => incidentMergeApi.canMerge(selectedWorkflowId || undefined),
     enabled: !!selectedWorkflowId,
   });
+
+  const validateMerge = async () => {
+    setIsValidationLoading(true);
+    try {
+      const incidentIds = selectedIncidents.map((inc) => inc.id);
+      const response = await incidentMergeApi.validateMerge(incidentIds);
+      const data = response.data;
+      setValidationResult({
+        canMerge: data?.can_merge ?? false,
+        errors: data?.errors || [],
+        masterOptions: data?.master_options || [],
+      });
+    } catch (err: any) {
+      console.error(
+        err.response?.data?.error || t("incidentMerge.validationFailed"),
+      );
+    } finally {
+      setIsValidationLoading(false);
+    }
+  };
 
   const canMergeIncidents =
     isSuperAdmin ||
@@ -488,14 +521,27 @@ export const IncidentsPage: React.FC = () => {
     selectedIncidents.every(
       (incident) =>
         incident?.current_state?.name ===
-        selectedIncidents[0]?.current_state?.name &&
+          selectedIncidents[0]?.current_state?.name &&
         incident?.location?.id === selectedIncidents[0]?.location?.id &&
         incident?.classification?.id ===
-        selectedIncidents[0]?.classification?.id,
+          selectedIncidents[0]?.classification?.id,
     );
 
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
+
+  useEffect(() => {
+    if (selectedIncidents.length >= 2) {
+      validateMerge();
+    } else {
+      setValidationResult(null);
+    }
+  }, [selectedIncidents]);
+
+  const isMergeDisabled =
+    isValidationLoading ||
+    !validationResult?.canMerge ||
+    (validationResult?.errors?.length ?? 0) > 0;
 
   if (error) {
     return (
@@ -568,6 +614,7 @@ export const IncidentsPage: React.FC = () => {
                 variant="default"
                 onClick={() => setShowMergeModal(true)}
                 leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                disabled={isMergeDisabled}
               >
                 {t("incidentMerge.title")}
               </Button>
@@ -824,8 +871,8 @@ export const IncidentsPage: React.FC = () => {
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
                   !canViewAllIncidents &&
-                  hasUrlFilter &&
-                  "opacity-60 cursor-not-allowed",
+                    hasUrlFilter &&
+                    "opacity-60 cursor-not-allowed",
                 )}
               >
                 <option value="">{t("common.allStates")}</option>
@@ -947,8 +994,8 @@ export const IncidentsPage: React.FC = () => {
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
                   !canViewAllIncidents &&
-                  hasUrlFilter &&
-                  "opacity-60 cursor-not-allowed",
+                    hasUrlFilter &&
+                    "opacity-60 cursor-not-allowed",
                 )}
               >
                 <option value="">{t("common.all")}</option>
@@ -984,9 +1031,9 @@ export const IncidentsPage: React.FC = () => {
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {isShortSearch
                 ? t(
-                  "search.minCharsDesc",
-                  "Enter at least 3 characters to search",
-                )
+                    "search.minCharsDesc",
+                    "Enter at least 3 characters to search",
+                  )
                 : hasActiveFilters
                   ? t("incidents.adjustFilters")
                   : t("incidents.noIncidentsDesc")}
@@ -1098,7 +1145,7 @@ export const IncidentsPage: React.FC = () => {
                         className={cn(
                           "hover:bg-[hsl(var(--muted)/0.5)] transition-colors",
                           isExpiringSoon &&
-                          "bg-amber-50/40 border-l-2 border-l-amber-400",
+                            "bg-amber-50/40 border-l-2 border-l-amber-400",
                         )}
                       >
                         <td
