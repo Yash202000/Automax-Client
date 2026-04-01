@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { incidentApi, incidentMergeApi } from "../../api/admin";
-import type { Incident } from "../../types";
+import type { Incident, IncidentMergeOption } from "../../types";
 import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSocket";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -46,6 +46,14 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
   const [showMergeModal, setShowMergeModal] = useState(false);
+
+  const [isValidationLoading, setIsValidationLoading] =
+    useState<boolean>(false);
+  const [validationResult, setValidationResult] = useState<{
+    canMerge: boolean;
+    errors: string[];
+    masterOptions: IncidentMergeOption[];
+  } | null>(null);
 
   const isAssigned = type === "assigned";
   const canCreateIncident =
@@ -74,6 +82,26 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     queryFn: () => incidentMergeApi.canMerge(selectedWorkflowId || undefined),
     enabled: !!selectedWorkflowId,
   });
+
+  const validateMerge = async () => {
+    setIsValidationLoading(true);
+    try {
+      const incidentIds = selectedIncidents.map((inc) => inc.id);
+      const response = await incidentMergeApi.validateMerge(incidentIds);
+      const data = response.data;
+      setValidationResult({
+        canMerge: data?.can_merge ?? false,
+        errors: data?.errors || [],
+        masterOptions: data?.master_options || [],
+      });
+    } catch (err: any) {
+      console.error(
+        err.response?.data?.error || t("incidentMerge.validationFailed"),
+      );
+    } finally {
+      setIsValidationLoading(false);
+    }
+  };
 
   const canMergeIncidents =
     isSuperAdmin ||
@@ -183,6 +211,19 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
 
+  useEffect(() => {
+    if (selectedIncidents.length >= 2) {
+      validateMerge();
+    } else {
+      setValidationResult(null);
+    }
+  }, [selectedIncidents]);
+
+  const isMergeDisabled =
+    isValidationLoading ||
+    !validationResult?.canMerge ||
+    (validationResult?.errors?.length ?? 0) > 0;
+
   if (error) {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
@@ -242,6 +283,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 variant="default"
                 onClick={() => setShowMergeModal(true)}
                 leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                disabled={isMergeDisabled}
               >
                 {t("incidentMerge.title")}
               </Button>
