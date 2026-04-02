@@ -36,6 +36,7 @@ import {
   Copy,
   Search,
   ChevronDown,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
@@ -1187,6 +1188,10 @@ export const IncidentDetailPage: React.FC = () => {
     }
   };
 
+  const getHistoryById = (id: string) => {
+    return history.find((h: any) => h.id === id);
+  }
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -2021,7 +2026,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   </div>
                                 )}
 
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-3 mb-4">
                                 {attachments
                                   .filter((a: IncidentAttachment) =>
                                     isImageAttachment(a.mime_type),
@@ -2076,7 +2081,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         )}
                                         alt={attachment.file_name}
                                         className={cn(
-                                          "w-full h-32 object-cover transition-opacity",
+                                          "w-full h-48 object-cover transition-opacity",
                                           compareMode
                                             ? "cursor-pointer"
                                             : "cursor-pointer hover:opacity-90",
@@ -2090,7 +2095,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         }}
                                       />
                                       {!compareMode && (
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
+                                        <div className="absolute mb-3 inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
                                           <button
                                             onClick={() =>
                                               openLightbox(attachment)
@@ -2144,6 +2149,10 @@ export const IncidentDetailPage: React.FC = () => {
                                         <p className="truncate">
                                           {attachment.file_name}
                                         </p>
+                                        <p className="text-xs text-white/70 mt-0.5">
+                                          {formatFileSize(attachment.file_size)} •{" "}
+                                          {formatDateTime(attachment.created_at)}
+                                        </p>
                                         {attachment.uploaded_by && (
                                           <p className="truncate text-white/70 mt-0.5">
                                             {attachment.uploaded_by.first_name}{" "}
@@ -2153,8 +2162,23 @@ export const IncidentDetailPage: React.FC = () => {
                                               {attachment.uploaded_by.roles?.[0]
                                                 ?.name || "No Role"}
                                             </span>
+                                            <span className="ml-1">
+                                              ·{" "}
+                                              {users.find((user: any) => user.id === attachment.uploaded_by?.id)?.departments?.map((department: any) => department.name).join(', ') || 'No Department'}
+                                            </span>
                                           </p>
                                         )}
+
+                                        {/* transition */}
+                                        {
+                                          getHistoryById(attachment.transition_history_id || '') && (
+                                            <div className="flex justify-start items-center gap-2">
+                                              <span className={"text-xs  mt-0.5" + getHistoryById(attachment.transition_history_id || '')?.from_state?.color}>{getHistoryById(attachment.transition_history_id || '')?.from_state?.name}</span>
+                                              <ArrowRight className="w-4 h-4" />
+                                              <span className={"text-xs  mt-0.5" + getHistoryById(attachment.transition_history_id || '')?.to_state?.color}>{getHistoryById(attachment.transition_history_id || '')?.to_state?.name}</span>
+                                            </div>
+                                          )
+                                        }
                                       </div>
                                     </div>
                                   ))}
@@ -2213,8 +2237,22 @@ export const IncidentDetailPage: React.FC = () => {
                                                 {attachment.uploaded_by.roles?.[0]
                                                   ?.name || "No Role"}
                                               </span>
+                                              <span className="ml-1 opacity-60">
+                                                ·{" "}
+                                                {users.find((user: any) => user.id === attachment.uploaded_by?.id)?.departments?.map((department: any) => department.name).join(', ') || 'No Department'}
+                                              </span>
                                             </p>
                                           )}
+                                          {/* transition */}
+                                          {
+                                            getHistoryById(attachment.transition_history_id || '') && (
+                                              <div className="flex justify-start items-center gap-2">
+                                                <span className={"text-xs  mt-0.5" + getHistoryById(attachment.transition_history_id || '')?.from_state?.color}>{getHistoryById(attachment.transition_history_id || '')?.from_state?.name}</span>
+                                                <ArrowRight className="w-4 h-4" />
+                                                <span className={"text-xs  mt-0.5" + getHistoryById(attachment.transition_history_id || '')?.to_state?.color}>{getHistoryById(attachment.transition_history_id || '')?.to_state?.name}</span>
+                                              </div>
+                                            )
+                                          }
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2">
@@ -2290,8 +2328,22 @@ export const IncidentDetailPage: React.FC = () => {
                                               {attachment.uploaded_by.roles?.[0]
                                                 ?.name || "No Role"}
                                             </span>
+                                            <span className="ml-1 opacity-60">
+                                              ·{" "}
+                                              {users.find((user: any) => user.id === attachment.uploaded_by?.id)?.departments?.map((department: any) => department.name).join(', ') || 'No Department'}
+                                            </span>
                                           </p>
                                         )}
+                                        {/* transition */}
+                                        {
+                                          getHistoryById(attachment.transition_history_id || '') && (
+                                            <div className="flex justify-start items-center gap-2">
+                                              <span className={"text-xs  mt-0.5" + getHistoryById(attachment.transition_history_id || '')?.from_state?.color}>{getHistoryById(attachment.transition_history_id || '')?.from_state?.name}</span>
+                                              <ArrowRight className="w-4 h-4" />
+                                              <span className={"text-xs  mt-0.5" + getHistoryById(attachment.transition_history_id || '')?.to_state?.color}>{getHistoryById(attachment.transition_history_id || '')?.to_state?.name}</span>
+                                            </div>
+                                          )
+                                        }
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2">
