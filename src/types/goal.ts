@@ -234,6 +234,14 @@ export interface GoalTransitionRequest {
   status: GoalStatus;
 }
 
+export interface GoalCloneRequest {
+  title?: string;
+  start_date?: string;
+  target_date?: string;
+  review_date?: string;
+  owner_id?: string;
+}
+
 export interface GoalFilter {
   page?: number;
   limit?: number;
@@ -335,6 +343,76 @@ export interface ApprovalListResponse {
 export interface EvidenceTransitionHistoryListResponse {
   success: boolean;
   data: EvidenceTransitionHistory[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ──────────────────────────────────────────────────
+// Goal Templates
+// ──────────────────────────────────────────────────
+
+export interface TemplateMetric {
+  name: string;
+  metric_type: MetricType;
+  unit: string;
+  baseline_value: number;
+  target_value: number;
+  weight: number;
+}
+
+export interface TemplateCollaboratorRole {
+  role: CollaboratorRole;
+}
+
+export interface GoalTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  priority: GoalPriority;
+  default_metrics: TemplateMetric[];
+  default_collaborators: TemplateCollaboratorRole[];
+  workflow_id?: string;
+  is_active: boolean;
+  created_by_id: string;
+  created_by?: UserBrief;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalTemplateCreateRequest {
+  name: string;
+  description?: string;
+  category?: string;
+  priority?: GoalPriority;
+  default_metrics?: TemplateMetric[];
+  default_collaborators?: TemplateCollaboratorRole[];
+  workflow_id?: string;
+  is_active?: boolean;
+}
+
+export interface GoalTemplateUpdateRequest {
+  name?: string;
+  description?: string;
+  category?: string;
+  priority?: GoalPriority;
+  default_metrics?: TemplateMetric[];
+  default_collaborators?: TemplateCollaboratorRole[];
+  workflow_id?: string;
+  is_active?: boolean;
+}
+
+export interface GoalTemplateFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  is_active?: boolean;
+}
+
+export interface GoalTemplateListResponse {
+  success: boolean;
+  data: GoalTemplate[];
   total: number;
   page: number;
   limit: number;

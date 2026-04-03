@@ -38,3 +38,4 @@ export { GoalDetailPage } from "./GoalDetailPage";
 export { GoalCreatePage } from "./GoalCreatePage";
 export { GoalEditPage } from "./GoalEditPage";
 export { GoalApprovalsPage } from "./GoalApprovalsPage";
+export { GoalTemplatesPage } from "./GoalTemplatesPage";

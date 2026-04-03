@@ -66,6 +66,7 @@ import {
   GoalCreatePage,
   GoalEditPage,
   GoalApprovalsPage,
+  GoalTemplatesPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
 
@@ -468,6 +469,10 @@ function App() {
                 >
                   <Route path="/goals" element={<GoalsPage />} />
                   <Route path="/goals/new" element={<GoalCreatePage />} />
+                  <Route
+                    path="/goals/templates"
+                    element={<GoalTemplatesPage />}
+                  />
                   <Route
                     path="/goals/approvals"
                     element={<GoalApprovalsPage />}

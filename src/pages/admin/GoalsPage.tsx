@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Plus,
@@ -6,7 +6,13 @@ import {
   ChevronRight,
   AlertCircle,
   Target,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  LayoutTemplate,
 } from "lucide-react";
+import { toast } from "sonner";
+import { saveAs } from "file-saver";
 import { useGoals } from "../../hooks/useGoals";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
@@ -14,7 +20,66 @@ import { GoalStatusBadge } from "../../components/goals/GoalStatusBadge";
 import { GoalPriorityBadge } from "../../components/goals/GoalPriorityBadge";
 import { GoalProgressBar } from "../../components/goals/GoalProgressBar";
 import { GoalFilters } from "../../components/goals/GoalFilters";
+import { goalApi } from "../../api/goals";
+import { exportGoalsToXlsx } from "../../utils/goalExport";
 import type { GoalFilter, Goal } from "../../types/goal";
+
+function ExportDropdown({ filters }: { filters: GoalFilter }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleCSV = async () => {
+    setOpen(false);
+    try {
+      const blob = await goalApi.exportCSV(filters);
+      saveAs(blob, `goals_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      toast.success("CSV exported");
+    } catch {
+      toast.error("Failed to export CSV");
+    }
+  };
+
+  const handleXLSX = async () => {
+    setOpen(false);
+    try {
+      const res = await goalApi.exportJSON(filters);
+      exportGoalsToXlsx(res.data);
+      toast.success("Excel exported");
+    } catch {
+      toast.error("Failed to export Excel");
+    }
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+      >
+        <Download className="w-4 h-4" />
+        Export
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-44 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800 z-50">
+          <button
+            onClick={handleCSV}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 rounded-t-lg"
+          >
+            <FileText className="w-4 h-4" />
+            CSV (.csv)
+          </button>
+          <button
+            onClick={handleXLSX}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 rounded-b-lg"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel (.xlsx)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const GoalsPage: React.FC = () => {
   const { hasPermission } = usePermissions();
@@ -88,15 +153,25 @@ export const GoalsPage: React.FC = () => {
             </p>
           </div>
         </div>
-        {canCreate && (
+        <div className="flex items-center gap-2">
           <Link
-            to="/goals/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            to="/goals/templates"
+            className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            New Goal
+            <LayoutTemplate className="w-4 h-4" />
+            Templates
           </Link>
-        )}
+          <ExportDropdown filters={filters} />
+          {canCreate && (
+            <Link
+              to="/goals/new"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Goal
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

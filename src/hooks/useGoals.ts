@@ -12,6 +12,7 @@ import type {
   GoalCreateRequest,
   GoalUpdateRequest,
   GoalTransitionRequest,
+  GoalCloneRequest,
   GoalMetricCreateRequest,
   GoalMetricUpdateRequest,
   MetricValueUpdateRequest,
@@ -128,6 +129,21 @@ export function useTransitionGoal() {
     },
     onError: () => {
       toast.error("Failed to transition goal status");
+    },
+  });
+}
+
+export function useCloneGoal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: GoalCloneRequest }) =>
+      goalApi.clone(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: goalKeys.lists() });
+      toast.success("Goal cloned successfully");
+    },
+    onError: () => {
+      toast.error("Failed to clone goal");
     },
   });
 }

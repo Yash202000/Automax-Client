@@ -5,6 +5,7 @@ import type {
   GoalCreateRequest,
   GoalUpdateRequest,
   GoalTransitionRequest,
+  GoalCloneRequest,
   GoalFilter,
   GoalListResponse,
   GoalMetric,
@@ -78,6 +79,44 @@ export const goalApi = {
     data: GoalTransitionRequest,
   ): Promise<ApiResponse<Goal>> => {
     const res = await apiClient.post(`/goals/${id}/transition`, data);
+    return res.data;
+  },
+
+  clone: async (
+    id: string,
+    data: GoalCloneRequest,
+  ): Promise<ApiResponse<Goal>> => {
+    const res = await apiClient.post(`/goals/${id}/clone`, data);
+    return res.data;
+  },
+
+  exportCSV: async (filter: GoalFilter = {}): Promise<Blob> => {
+    const params = new URLSearchParams();
+    params.append("format", "csv");
+    if (filter.status) params.append("status", filter.status);
+    if (filter.priority) params.append("priority", filter.priority);
+    if (filter.owner_id) params.append("owner_id", filter.owner_id);
+    if (filter.department_id) params.append("department_id", filter.department_id);
+    if (filter.category) params.append("category", filter.category);
+    if (filter.search) params.append("search", filter.search);
+
+    const res = await apiClient.get(`/goals/export?${params.toString()}`, {
+      responseType: "blob",
+    });
+    return res.data;
+  },
+
+  exportJSON: async (filter: GoalFilter = {}): Promise<{ success: boolean; data: Goal[]; total: number }> => {
+    const params = new URLSearchParams();
+    params.append("format", "json");
+    if (filter.status) params.append("status", filter.status);
+    if (filter.priority) params.append("priority", filter.priority);
+    if (filter.owner_id) params.append("owner_id", filter.owner_id);
+    if (filter.department_id) params.append("department_id", filter.department_id);
+    if (filter.category) params.append("category", filter.category);
+    if (filter.search) params.append("search", filter.search);
+
+    const res = await apiClient.get(`/goals/export?${params.toString()}`);
     return res.data;
   },
 };

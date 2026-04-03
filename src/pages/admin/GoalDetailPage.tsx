@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Upload,
   Search,
+  Copy,
 } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
@@ -24,6 +25,7 @@ import {
   useGoal,
   useTransitionGoal,
   useDeleteGoal,
+  useCloneGoal,
   useCreateMetric,
   useDeleteMetric,
   useGoalEvidences,
@@ -50,6 +52,7 @@ import { MetricCard } from "../../components/goals/MetricCard";
 import { MetricValueUpdateModal } from "../../components/goals/MetricValueUpdateModal";
 import { EvidenceUploadModal } from "../../components/goals/EvidenceUploadModal";
 import { EvidenceCard } from "../../components/goals/EvidenceCard";
+import { GoalCloneModal } from "../../components/goals/GoalCloneModal";
 import { CollaboratorPicker } from "../../components/goals/CollaboratorPicker";
 
 type TabType = "overview" | "metrics" | "evidence" | "collaborators";
@@ -71,6 +74,7 @@ export const GoalDetailPage: React.FC = () => {
   // ── State ──────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
   const [showAddMetric, setShowAddMetric] = useState(false);
   const [metricUpdateId, setMetricUpdateId] = useState<string | null>(null);
   const [showEvidenceUpload, setShowEvidenceUpload] = useState(false);
@@ -111,6 +115,7 @@ export const GoalDetailPage: React.FC = () => {
   // ── Mutations ──────────────────────────────────────
   const transitionGoal = useTransitionGoal();
   const deleteGoal = useDeleteGoal();
+  const cloneGoal = useCloneGoal();
   const createMetric = useCreateMetric();
   const deleteMetric = useDeleteMetric();
   const deleteEvidence = useDeleteEvidence();
@@ -298,6 +303,16 @@ export const GoalDetailPage: React.FC = () => {
                 {GOAL_STATUS_LABELS[nextStatus]}
               </button>
             ))}
+
+            {canEdit && (
+              <button
+                onClick={() => setShowCloneModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Copy className="w-4 h-4" />
+                Clone
+              </button>
+            )}
 
             {canEdit && (
               <Link
@@ -873,6 +888,23 @@ export const GoalDetailPage: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* ── Clone Modal ─────────────────────────────── */}
+      {goal && (
+        <GoalCloneModal
+          goal={goal}
+          isOpen={showCloneModal}
+          onClose={() => setShowCloneModal(false)}
+          isLoading={cloneGoal.isPending}
+          onClone={async (data) => {
+            const result = await cloneGoal.mutateAsync({ id: goal.id, data });
+            setShowCloneModal(false);
+            if (result?.data?.id) {
+              navigate(`/goals/${result.data.id}`);
+            }
+          }}
+        />
       )}
     </div>
   );
