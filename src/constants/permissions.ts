@@ -6,6 +6,7 @@ export const PERMISSIONS = {
   DASHBOARD_COMPLAINTS: "dashboard:complaints",
   DASHBOARD_QUERIES: "dashboard:queries",
   DASHBOARD_WORKFLOWS: "dashboard:workflows",
+  DASHBOARD_CALL_CENTRE: "dashboard:ccm",
 
   // User permissions
   USERS_VIEW: "users:view",

@@ -28,10 +28,12 @@ import {
 } from "../../i18n";
 import SoftPhone from "../sip/Softphone";
 import ThemeToggle from "../common/ThemeToggle";
+import usePermissions from "@/hooks/usePermissions";
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { hasAnyPermission, isSuperAdmin } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -189,11 +191,10 @@ export const Navbar: React.FC = () => {
                     to={link.href}
                     className={`
                     flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${
-                      isActive(link.href)
+                    ${isActive(link.href)
                         ? "bg-primary/10 text-primary"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
+                      }
                   `}
                   >
                     <link.icon className="w-4 h-4" />
@@ -241,11 +242,10 @@ export const Navbar: React.FC = () => {
                         <button
                           key={lang.code}
                           onClick={() => handleLanguageChange(lang.code)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-0 ${
-                            currentLang === lang.code
-                              ? "bg-primary/5 text-primary"
-                              : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-0 ${currentLang === lang.code
+                            ? "bg-primary/5 text-primary"
+                            : "text-gray-700 hover:bg-gray-50"
+                            }`}
                         >
                           <span className="text-lg">
                             {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
@@ -261,32 +261,34 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* Sip */}
-                <button
-                  onClick={() => setShowSoftphone(!showSoftphone)}
-                  className={`relative p-2 rounded-xl transition-colors ${
-                    showSoftphone
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  }`}
-                >
-                  <Phone className="w-5 h-5" />
-                </button>
-
-                <SoftPhone
-                  showSip={showSoftphone}
-                  onClose={() => setShowSoftphone(false)}
-                  settings={{
-                    domain: "zkff.automaxsw.com",
-                    socketURL: "wss://zkff.automaxsw.com:7443",
-                  }}
-                  auth={{
-                    user: {
-                      userID: user?.id || "",
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      extension: (user as any)?.extension || "",
-                    },
-                  }}
-                />
+                {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
+                  <>
+                    <button
+                      onClick={() => setShowSoftphone(!showSoftphone)}
+                      className={`relative p-2 rounded-xl transition-colors ${showSoftphone
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                    >
+                      <Phone className="w-5 h-5" />
+                    </button>
+                    <SoftPhone
+                      showSip={showSoftphone}
+                      onClose={() => setShowSoftphone(false)}
+                      settings={{
+                        domain: "zkff.automaxsw.com",
+                        socketURL: "wss://zkff.automaxsw.com:7443",
+                      }}
+                      auth={{
+                        user: {
+                          userID: user?.id || "",
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          extension: (user as any)?.extension || "",
+                        },
+                      }}
+                    />
+                  </>
+                )}
 
                 {/* Notifications */}
                 <div className="relative" ref={notifRef}>
@@ -335,9 +337,8 @@ export const Navbar: React.FC = () => {
                                 setIsNotifOpen(false);
                                 await navigateToNotif(notif.subject);
                               }}
-                              className={`px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${
-                                !notif.is_read ? "bg-blue-50/50" : ""
-                              }`}
+                              className={`px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 ${!notif.is_read ? "bg-blue-50/50" : ""
+                                }`}
                             >
                               <div className="flex items-start gap-3">
                                 <div
@@ -419,7 +420,7 @@ export const Navbar: React.FC = () => {
                           {user?.is_super_admin
                             ? "Super Administrator"
                             : user?.roles?.map((r) => r.name).join(", ") ||
-                              "User"}
+                            "User"}
                         </p>
                       </div>
 
@@ -513,10 +514,9 @@ export const Navbar: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                  ${
-                    isActive(link.href)
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50"
+                  ${isActive(link.href)
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-600 hover:bg-gray-50"
                   }
                 `}
               >
