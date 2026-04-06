@@ -2564,12 +2564,12 @@ export const IncidentDetailPage: React.FC = () => {
                       </span>
                     )}
                   </label>
-                  <button
+                  {/* <button
                     onClick={() => setAssignModalOpen(true)}
                     className="text-xs text-[hsl(var(--primary))] hover:underline"
                   >
                     {t("incidents.change")}
-                  </button>
+                  </button> */}
                 </div>
                 <div className="mt-1">
                   {incident.assignees && incident.assignees.length > 0 ? (
