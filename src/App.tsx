@@ -70,6 +70,12 @@ import {
   DocumentsPage,
   MetricImportBatchesPage,
   MetricImportBatchDetailPage,
+  GoalAnalyticsPage,
+  OKRAlignmentPage,
+  ReviewCyclesPage,
+  ReviewCycleDetailPage,
+  MyReviewPage,
+  ReviewAssignmentPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
 
@@ -471,6 +477,14 @@ function App() {
                   }
                 >
                   <Route path="/goals" element={<GoalsPage />} />
+                  <Route
+                    path="/goals/analytics"
+                    element={<GoalAnalyticsPage />}
+                  />
+                  <Route
+                    path="/goals/okr-alignment"
+                    element={<OKRAlignmentPage />}
+                  />
                   <Route path="/goals/new" element={<GoalCreatePage />} />
                   <Route
                     path="/goals/templates"
@@ -491,6 +505,22 @@ function App() {
                   <Route
                     path="/goals/metric-batches/:id"
                     element={<MetricImportBatchDetailPage />}
+                  />
+                  <Route
+                    path="/goals/reviews"
+                    element={<ReviewCyclesPage />}
+                  />
+                  <Route
+                    path="/goals/reviews/my-reviews"
+                    element={<MyReviewPage />}
+                  />
+                  <Route
+                    path="/goals/reviews/assignments/:id"
+                    element={<ReviewAssignmentPage />}
+                  />
+                  <Route
+                    path="/goals/reviews/:id"
+                    element={<ReviewCycleDetailPage />}
                   />
                   <Route path="/goals/:id" element={<GoalDetailPage />} />
                   <Route path="/goals/:id/edit" element={<GoalEditPage />} />
