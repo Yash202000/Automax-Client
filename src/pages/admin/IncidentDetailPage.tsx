@@ -59,6 +59,7 @@ import {
   incidentMergeApi,
   locationApi,
   classificationApi,
+  rejectionLogApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type {
@@ -72,6 +73,7 @@ import type {
   UserMatchResponse,
   LookupValue,
   Department,
+  IncidentRejectionLog,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -107,8 +109,6 @@ export const IncidentDetailPage: React.FC = () => {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { users } = useAppSelector((state) => state.users);
 
-  const canEditIncident =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
   const canMergeIncidents =
@@ -117,7 +117,7 @@ export const IncidentDetailPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
   const [activeTab, setActiveTab] = useState<
-    "activity" | "comments" | "attachments" | "revisions"
+    "activity" | "comments" | "attachments" | "revisions" | "rejections"
   >("activity");
   const [commentText, setCommentText] = useState("");
   const [isInternalComment, setIsInternalComment] = useState(false);
@@ -243,6 +243,13 @@ export const IncidentDetailPage: React.FC = () => {
       enabled: !!id,
     });
 
+  // Fetch rejection logs for this incident
+  const { data: rejectionLogsData } = useQuery({
+    queryKey: ["incident", id, "rejection-logs"],
+    queryFn: () => rejectionLogApi.getByIncident(id!),
+    enabled: !!id,
+  });
+
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", 1, 100],
     queryFn: () => userApi.list(1, 100),
@@ -332,6 +339,16 @@ export const IncidentDetailPage: React.FC = () => {
     [lookupCategoriesData?.data],
   );
   const user = useAuthStore((state) => state.user);
+
+  // State-level edit restriction: if current state has editable_roles configured,
+  // user must be in one of those roles (superadmin bypasses this check).
+  const canEditIncident = (() => {
+    if (!hasPermission(PERMISSIONS.INCIDENTS_UPDATE)) return false;
+    if (isSuperAdmin) return true;
+    const editableRoles = incident?.current_state?.editable_roles;
+    if (!editableRoles || editableRoles.length === 0) return true;
+    return editableRoles.some((r) => user?.roles?.some((ur) => ur.id === r.id));
+  })();
 
   // Check merge permission based on incident's workflow
   // const { data: mergePermissionData } = useQuery({
@@ -1730,6 +1747,25 @@ export const IncidentDetailPage: React.FC = () => {
                   {t("incidents.revisions")}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab("rejections")}
+                className={cn(
+                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  activeTab === "rejections"
+                    ? "text-[hsl(var(--destructive))] border-b-2 border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.05)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <XCircle className="w-4 h-4" />
+                  Rejection History
+                  {(rejectionLogsData?.data?.length ?? 0) > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]">
+                      {rejectionLogsData?.data?.length}
+                    </span>
+                  )}
+                </span>
+              </button>
             </div>
 
             <div className="p-4">
@@ -2509,6 +2545,131 @@ export const IncidentDetailPage: React.FC = () => {
               {/* Revisions Tab */}
               {activeTab === "revisions" && (
                 <RevisionHistory incidentId={id!} />
+              )}
+
+              {/* Rejection History Tab */}
+              {activeTab === "rejections" && (
+                <div className="space-y-3">
+                  {!rejectionLogsData?.data?.length ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <XCircle className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm">
+                        No rejection records for this incident.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        This incident has been rejected{" "}
+                        <span className="font-semibold text-[hsl(var(--destructive))]">
+                          {rejectionLogsData.data.length}
+                        </span>{" "}
+                        time{rejectionLogsData.data.length !== 1 ? "s" : ""}.
+                      </p>
+                      {rejectionLogsData.data.map(
+                        (log: IncidentRejectionLog) => (
+                          <div
+                            key={log.id}
+                            className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--destructive)/0.03)] p-4 space-y-3"
+                          >
+                            {/* Header row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))] text-xs font-bold">
+                                  #{log.rejection_sequence}
+                                </span>
+                                <div>
+                                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                    {log.from_state?.name ?? "—"} →{" "}
+                                    {log.to_state?.name ?? "—"}
+                                  </p>
+                                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                    Rejected by{" "}
+                                    <span className="font-medium">
+                                      {log.rejected_by?.first_name ??
+                                        log.rejected_by_username}
+                                    </span>
+                                    {log.rejected_by_roles_snapshot?.length >
+                                      0 && (
+                                      <span className="ml-1">
+                                        (
+                                        {log.rejected_by_roles_snapshot.join(
+                                          ", ",
+                                        )}
+                                        )
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-xs font-medium",
+                                    log.sla_status === "breached"
+                                      ? "bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]"
+                                      : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                                  )}
+                                >
+                                  {log.sla_status === "breached"
+                                    ? "SLA Breached"
+                                    : "Within SLA"}
+                                </span>
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  {new Date(log.rejected_at).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Metrics row */}
+                            <div className="grid grid-cols-3 gap-3 text-xs">
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  Reaction Time
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.reaction_time_minutes < 60
+                                    ? `${log.reaction_time_minutes}m`
+                                    : `${Math.floor(log.reaction_time_minutes / 60)}h ${log.reaction_time_minutes % 60}m`}
+                                </p>
+                              </div>
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  SLA Threshold
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.sla_threshold_hours != null
+                                    ? `${log.sla_threshold_hours}h`
+                                    : "—"}
+                                </p>
+                              </div>
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  Total Rejections
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.total_rejection_count}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Rejection reason */}
+                            {log.rejection_reason && (
+                              <div className="text-xs">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-1 font-medium">
+                                  Rejection Reason
+                                </p>
+                                <p className="text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.3)] rounded p-2 leading-relaxed">
+                                  {log.rejection_reason}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

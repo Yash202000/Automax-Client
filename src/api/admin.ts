@@ -96,6 +96,8 @@ import type {
   BulkConvertToRequestRequest,
   CreateEscalationRequest,
   CallerFeedBackRequest,
+  IncidentRejectionLog,
+  RejectionLogListResponse,
 } from "../types";
 
 // User Management
@@ -2740,6 +2742,39 @@ export const callerFeedbackApi = {
   }): Promise<ApiResponse<DataSourceDefinition[]>> => {
     const response = await apiClient.get<ApiResponse<DataSourceDefinition[]>>(
       `/caller-sentiments/${callee_id}/${caller_id}`,
+    );
+    return response.data;
+  },
+};
+
+// Rejection Log API
+export const rejectionLogApi = {
+  getByIncident: async (
+    incidentId: string,
+  ): Promise<ApiResponse<IncidentRejectionLog[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentRejectionLog[]>>(
+      `/incidents/${incidentId}/rejection-logs`,
+    );
+    return response.data;
+  },
+
+  list: async (params?: {
+    page?: number;
+    limit?: number;
+    record_type?: string;
+    sla_status?: string;
+    incident_id?: string;
+    rejected_by_id?: string;
+    department_id?: string;
+    classification_id?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<RejectionLogListResponse> => {
+    const response = await apiClient.get<RejectionLogListResponse>(
+      "/admin/rejection-logs",
+      {
+        params,
+      },
     );
     return response.data;
   },
