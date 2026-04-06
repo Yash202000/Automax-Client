@@ -275,6 +275,12 @@ export default function SoftPhone({
   const wasIncomingCallRef = useRef(false);
   const dialedNumberRef = useRef("");
 
+  const canCreateSentimentRef = useRef(false);
+
+  useEffect(() => {
+    canCreateSentimentRef.current = canCreateSentiment;
+  }, [canCreateSentiment]);
+
   /* ---------------- SIP CONNECTION ---------------- */
 
   // Initialize persistent audio element on mount
@@ -474,12 +480,13 @@ export default function SoftPhone({
 
   const cleanup = (): void => {
     stopRingtone();
+    const duration = globalCallDuration;
     stopTimer();
 
-    if (wasIncomingCallRef.current && canCreateSentiment) {
+    if (wasIncomingCallRef.current && canCreateSentimentRef.current) {
       setCallSummary({
         number: dialedNumberRef.current,
-        duration: globalCallDuration,
+        duration: duration,
         calleeId: dialedNumberRef.current,
       });
       setShowSentimentModal(true);
