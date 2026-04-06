@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileSpreadsheet,
@@ -44,8 +44,7 @@ const getStatusBadgeClass = (status: string): string =>
   statusBadgeClasses[status] ??
   "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:border-slate-600";
 
-const formatStatusLabel = (status: string): string =>
-  status.replace(/_/g, " ");
+const formatStatusLabel = (status: string): string => status.replace(/_/g, " ");
 
 // ── Helpers ───────────────────────────────────────────
 const formatDate = (dateStr: string) =>
@@ -55,7 +54,10 @@ const formatDate = (dateStr: string) =>
     year: "numeric",
   });
 
-const getUserName = (user?: { first_name: string; last_name: string }): string =>
+const getUserName = (user?: {
+  first_name: string;
+  last_name: string;
+}): string =>
   user ? `${user.first_name} ${user.last_name}`.trim() || "Unknown" : "—";
 
 // ── Main Component ────────────────────────────────────
@@ -140,7 +142,7 @@ export const MetricImportBatchesPage: React.FC = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {statusFilter
               ? `No batches with status "${formatStatusLabel(statusFilter)}".`
-              : "No metric import batches yet. Click \"New Import\" to get started."}
+              : 'No metric import batches yet. Click "New Import" to get started.'}
           </p>
         </div>
       ) : (
@@ -176,7 +178,9 @@ export const MetricImportBatchesPage: React.FC = () => {
                 {batches.map((batch) => (
                   <tr
                     key={batch.id}
-                    onClick={() => navigate(`/goals/metric-batches/${batch.id}`)}
+                    onClick={() =>
+                      navigate(`/goals/metric-batches/${batch.id}`)
+                    }
                     className="border-b border-slate-100 dark:border-slate-700/40 hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3">
@@ -258,10 +262,9 @@ export const MetricImportBatchesPage: React.FC = () => {
       )}
 
       {/* ── Import Modal ────────────────────────── */}
-      <MetricImportModal
-        isOpen={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-      />
+      {importModalOpen && (
+        <MetricImportModal onClose={() => setImportModalOpen(false)} />
+      )}
     </div>
   );
 };

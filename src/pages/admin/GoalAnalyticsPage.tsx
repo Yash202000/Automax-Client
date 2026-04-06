@@ -8,7 +8,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  FileEdit,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -34,7 +33,6 @@ import {
   useAtRiskGoals,
   useGoalTrends,
 } from "../../hooks/useGoalAnalytics";
-import { GoalStatusBadge } from "../../components/goals/GoalStatusBadge";
 import { GoalPriorityBadge } from "../../components/goals/GoalPriorityBadge";
 import { GoalProgressBar } from "../../components/goals/GoalProgressBar";
 
@@ -170,13 +168,10 @@ export function GoalAnalyticsPage() {
                   outerRadius={100}
                   dataKey="value"
                   nameKey="label"
-                  label={({ label, value }) => `${label}: ${value}`}
+                  label={({ name, value }) => `${name}: ${value}`}
                 >
                   {distributions.by_status.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.color || "#94a3b8"}
-                    />
+                    <Cell key={index} fill={entry.color || "#94a3b8"} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -207,10 +202,7 @@ export function GoalAnalyticsPage() {
                 <Tooltip />
                 <Bar dataKey="value" name="Goals" radius={[4, 4, 0, 0]}>
                   {distributions.by_priority.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.color || "#3b82f6"}
-                    />
+                    <Cell key={index} fill={entry.color || "#3b82f6"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -280,10 +272,7 @@ export function GoalAnalyticsPage() {
                 <Tooltip />
                 <Bar dataKey="value" name="Goals" radius={[4, 4, 0, 0]}>
                   {progress.ranges.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.color || "#3b82f6"}
-                    />
+                    <Cell key={index} fill={entry.color || "#3b82f6"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -315,8 +304,8 @@ export function GoalAnalyticsPage() {
               />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip
-                labelFormatter={(v: string) => {
-                  const [y, m] = v.split("-");
+                labelFormatter={(v) => {
+                  const [y, m] = String(v).split("-");
                   const months = [
                     "Jan",
                     "Feb",
@@ -480,9 +469,7 @@ export function GoalAnalyticsPage() {
                 </span>
                 <div className="flex gap-2">
                   <button
-                    onClick={() =>
-                      setAtRiskPage((p) => Math.max(1, p - 1))
-                    }
+                    onClick={() => setAtRiskPage((p) => Math.max(1, p - 1))}
                     disabled={atRiskPage <= 1}
                     className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                   >
