@@ -664,7 +664,6 @@ export interface WorkflowState {
   viewable_roles?: Role[];
   editable_roles?: Role[];
   created_at: string;
-  editable_roles?: Role[];
 }
 
 export interface WorkflowTransition {
