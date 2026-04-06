@@ -544,27 +544,9 @@ function App() {
                   />
                   <Route path="/goals/:id" element={<GoalDetailPage />} />
                   <Route path="/goals/:id/edit" element={<GoalEditPage />} />
-              {/* Goal Management routes - dedicated layout */}
-              <Route element={<AdminProtectedRoute />}>
-                <Route element={<GoalLayout />}>
-                  <Route
-                    element={
-                      <PermissionRoute
-                        requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
-                      />
-                    }
-                  >
-                    <Route path="/goals" element={<GoalsPage />} />
-                    <Route path="/goals/new" element={<GoalCreatePage />} />
-                    <Route
-                      path="/goals/approvals"
-                      element={<GoalApprovalsPage />}
-                    />
-                    <Route path="/goals/:id" element={<GoalDetailPage />} />
-                    <Route path="/goals/:id/edit" element={<GoalEditPage />} />
-                  </Route>
                 </Route>
               </Route>
+            </Route>
 
               {/* Redirect root to dashboard or login */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
