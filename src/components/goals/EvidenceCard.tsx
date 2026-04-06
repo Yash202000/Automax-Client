@@ -10,6 +10,7 @@ import {
   Paperclip,
   Download,
   Trash2,
+  RefreshCw,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -26,6 +27,7 @@ import {
 } from "../../hooks/useGoals";
 import { evidenceApi } from "../../api/goals";
 import { EvidenceTransitionModal } from "./EvidenceTransitionModal";
+import EvidenceReplaceModal from "./EvidenceReplaceModal";
 
 interface EvidenceCardProps {
   evidence: Evidence;
@@ -53,6 +55,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
   canEdit,
 }) => {
   const [transitionModalOpen, setTransitionModalOpen] = useState(false);
+  const [replaceModalOpen, setReplaceModalOpen] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const { data: transitionsData } = useEvidenceTransitions(evidence.id);
@@ -80,7 +83,10 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
   const stateName = evidence.current_state?.name ?? "Unknown";
   const stateColor = evidence.current_state?.color ?? "#94a3b8";
   const stateType = evidence.current_state?.state_type ?? "";
+  const stateCode = evidence.current_state?.code ?? "";
   const isDraft = stateType === "initial";
+  const isChangesRequested = stateCode === "changes_requested";
+  const canModifyFile = isDraft || isChangesRequested;
 
   const handleDownload = async () => {
     try {
@@ -195,8 +201,20 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
             </button>
           ) : null}
 
-          {/* Delete (draft only) */}
-          {canEdit && isDraft && onDelete && (
+          {/* Replace File (draft / changes requested) */}
+          {canEdit && canModifyFile && (
+            <button
+              onClick={() => setReplaceModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              title="Replace file"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Replace
+            </button>
+          )}
+
+          {/* Delete (draft / changes requested) */}
+          {canEdit && canModifyFile && onDelete && (
             <button
               onClick={() => onDelete(evidence.id)}
               className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto"
@@ -291,6 +309,15 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
           </p>
         )}
       </div>
+
+      {/* Replace File Modal */}
+      {replaceModalOpen && (
+        <EvidenceReplaceModal
+          evidenceId={evidence.id}
+          currentFileName={evidence.file_name}
+          onClose={() => setReplaceModalOpen(false)}
+        />
+      )}
 
       {/* Transition Modal */}
       <EvidenceTransitionModal

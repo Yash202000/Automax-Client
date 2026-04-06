@@ -1,16 +1,42 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Save, LayoutTemplate, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { useCreateGoal } from "../../hooks/useGoals";
+import { useCreateGoal, useGoal } from "../../hooks/useGoals";
+import { useActiveGoalTemplates } from "../../hooks/useGoalTemplates";
+import { metricApi } from "../../api/goals";
 import { userApi, departmentApi } from "../../api/admin";
 import { GOAL_PRIORITY_OPTIONS } from "../../types/goal";
-import type { GoalCreateRequest, GoalPriority } from "../../types/goal";
+import type { GoalCreateRequest, GoalPriority, GoalBrief, TemplateMetric } from "../../types/goal";
+import { ParentGoalSelector } from "../../components/goals/ParentGoalSelector";
 
 export const GoalCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const createGoal = useCreateGoal();
+  const { data: templatesData } = useActiveGoalTemplates();
+  const activeTemplates = templatesData?.data ?? [];
+  const [searchParams] = useSearchParams();
+  const presetParentId = searchParams.get("parent") ?? undefined;
+  const { data: presetParentData } = useGoal(presetParentId ?? "");
+  const [pendingMetrics, setPendingMetrics] = useState<TemplateMetric[]>([]);
+  const [parentGoal, setParentGoal] = useState<GoalBrief | null>(null);
+  const [parentInitialized, setParentInitialized] = useState(false);
+
+  // Pre-fill parent from URL param
+  if (presetParentData?.data && !parentInitialized) {
+    const pg = presetParentData.data;
+    setParentGoal({
+      id: pg.id,
+      title: pg.title,
+      status: pg.status,
+      priority: pg.priority,
+      progress: pg.progress,
+      level: pg.level,
+    });
+    setForm((prev) => ({ ...prev, parent_goal_id: pg.id }));
+    setParentInitialized(true);
+  }
 
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users"],
@@ -30,6 +56,7 @@ export const GoalCreatePage: React.FC = () => {
     priority: "Medium",
     owner_id: "",
     department_id: "",
+    parent_goal_id: presetParentId,
     start_date: "",
     target_date: "",
     review_date: "",
@@ -37,6 +64,21 @@ export const GoalCreatePage: React.FC = () => {
 
   const handleChange = (field: keyof GoalCreateRequest, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    if (!templateId) {
+      setPendingMetrics([]);
+      return;
+    }
+    const template = activeTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+    setForm((prev) => ({
+      ...prev,
+      category: template.category || prev.category || "",
+      priority: (template.priority as GoalPriority) || prev.priority,
+    }));
+    setPendingMetrics(template.default_metrics ?? []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,12 +103,31 @@ export const GoalCreatePage: React.FC = () => {
     if (form.category?.trim()) payload.category = form.category.trim();
     if (form.department_id?.trim())
       payload.department_id = form.department_id.trim();
+    if (form.parent_goal_id?.trim())
+      payload.parent_goal_id = form.parent_goal_id.trim();
     if (form.start_date) payload.start_date = `${form.start_date}T00:00:00Z`;
     if (form.target_date) payload.target_date = `${form.target_date}T00:00:00Z`;
     if (form.review_date) payload.review_date = `${form.review_date}T00:00:00Z`;
 
     try {
-      await createGoal.mutateAsync(payload);
+      const result = await createGoal.mutateAsync(payload);
+      // Create metrics from template if any
+      if (pendingMetrics.length > 0 && result?.data?.id) {
+        for (const m of pendingMetrics) {
+          try {
+            await metricApi.create(result.data.id, {
+              name: m.name,
+              metric_type: m.metric_type,
+              unit: m.unit,
+              baseline_value: m.baseline_value,
+              target_value: m.target_value,
+              weight: m.weight,
+            });
+          } catch {
+            toast.error(`Failed to create metric: ${m.name}`);
+          }
+        }
+      }
       navigate("/goals");
     } catch {
       // Error toast is handled by the hook
@@ -97,6 +158,37 @@ export const GoalCreatePage: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Template Selector */}
+            {activeTemplates.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <LayoutTemplate className="w-4 h-4" />
+                    Start from Template (optional)
+                  </span>
+                </label>
+                <select
+                  onChange={(e) => handleTemplateSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  <option value="">No template</option>
+                  {activeTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                      {t.category ? ` (${t.category})` : ""}
+                    </option>
+                  ))}
+                </select>
+                {pendingMetrics.length > 0 && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
+                    <Info className="w-3.5 h-3.5" />
+                    {pendingMetrics.length} metric(s) will be created from this
+                    template
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Title */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -198,6 +290,18 @@ export const GoalCreatePage: React.FC = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Parent Goal */}
+            <div className="md:col-span-2">
+              <ParentGoalSelector
+                value={form.parent_goal_id}
+                selectedGoal={parentGoal}
+                onChange={(goalId, goal) => {
+                  setForm((prev) => ({ ...prev, parent_goal_id: goalId }));
+                  setParentGoal(goal ?? null);
+                }}
+              />
             </div>
 
             {/* Start Date */}

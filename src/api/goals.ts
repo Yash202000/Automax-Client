@@ -5,8 +5,12 @@ import type {
   GoalCreateRequest,
   GoalUpdateRequest,
   GoalTransitionRequest,
+  GoalCloneRequest,
   GoalFilter,
   GoalListResponse,
+  GoalImportResponse,
+  BulkActionRequest,
+  BulkActionResponse,
   GoalMetric,
   GoalMetricCreateRequest,
   GoalMetricUpdateRequest,
@@ -21,6 +25,15 @@ import type {
   EvidenceTransitionHistoryListResponse,
   AvailableTransition,
   ApprovalListResponse,
+  GoalCheckIn,
+  CheckInCreateRequest,
+  CheckInListResponse,
+  MetricImportBatch,
+  MetricImportDryRunResponse,
+  MetricImportBatchFilter,
+  MetricImportBatchListResponse,
+  MetricImportBatchTransitionRequest,
+  MetricImportBatchTransitionHistory,
 } from "../types/goal";
 
 // ──────────────────────────────────────────────────
@@ -42,6 +55,9 @@ export const goalApi = {
     if (filter.owner_id) params.append("owner_id", filter.owner_id);
     if (filter.department_id)
       params.append("department_id", filter.department_id);
+    if (filter.parent_goal_id)
+      params.append("parent_goal_id", filter.parent_goal_id);
+    if (filter.root_only) params.append("root_only", "true");
     if (filter.category) params.append("category", filter.category);
     if (filter.search) params.append("search", filter.search);
     if (filter.start_from) params.append("start_from", filter.start_from);
@@ -78,6 +94,105 @@ export const goalApi = {
     data: GoalTransitionRequest,
   ): Promise<ApiResponse<Goal>> => {
     const res = await apiClient.post(`/goals/${id}/transition`, data);
+    return res.data;
+  },
+
+  clone: async (
+    id: string,
+    data: GoalCloneRequest,
+  ): Promise<ApiResponse<Goal>> => {
+    const res = await apiClient.post(`/goals/${id}/clone`, data);
+    return res.data;
+  },
+
+  exportCSV: async (filter: GoalFilter = {}): Promise<Blob> => {
+    const params = new URLSearchParams();
+    params.append("format", "csv");
+    if (filter.status) params.append("status", filter.status);
+    if (filter.priority) params.append("priority", filter.priority);
+    if (filter.owner_id) params.append("owner_id", filter.owner_id);
+    if (filter.department_id) params.append("department_id", filter.department_id);
+    if (filter.category) params.append("category", filter.category);
+    if (filter.search) params.append("search", filter.search);
+
+    const res = await apiClient.get(`/goals/export?${params.toString()}`, {
+      responseType: "blob",
+    });
+    return res.data;
+  },
+
+  exportJSON: async (filter: GoalFilter = {}): Promise<{ success: boolean; data: Goal[]; total: number }> => {
+    const params = new URLSearchParams();
+    params.append("format", "json");
+    if (filter.status) params.append("status", filter.status);
+    if (filter.priority) params.append("priority", filter.priority);
+    if (filter.owner_id) params.append("owner_id", filter.owner_id);
+    if (filter.department_id) params.append("department_id", filter.department_id);
+    if (filter.category) params.append("category", filter.category);
+    if (filter.search) params.append("search", filter.search);
+
+    const res = await apiClient.get(`/goals/export?${params.toString()}`);
+    return res.data;
+  },
+
+  importGoals: async (
+    file: File,
+    dryRun: boolean,
+  ): Promise<ApiResponse<GoalImportResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("dry_run", dryRun ? "true" : "false");
+
+    const res = await apiClient.post("/goals/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  bulkAction: async (
+    data: BulkActionRequest,
+  ): Promise<ApiResponse<BulkActionResponse>> => {
+    const res = await apiClient.post("/goals/bulk", data);
+    return res.data;
+  },
+
+  getChildren: async (goalId: string): Promise<ApiResponse<Goal[]>> => {
+    const res = await apiClient.get(`/goals/${goalId}/children`);
+    return res.data;
+  },
+
+  getTree: async (goalId: string): Promise<ApiResponse<Goal>> => {
+    const res = await apiClient.get(`/goals/${goalId}/tree`);
+    return res.data;
+  },
+};
+
+// ──────────────────────────────────────────────────
+// Check-ins
+// ──────────────────────────────────────────────────
+
+export const checkInApi = {
+  create: async (
+    goalId: string,
+    data: CheckInCreateRequest,
+  ): Promise<ApiResponse<GoalCheckIn>> => {
+    const res = await apiClient.post(`/goals/${goalId}/check-ins`, data);
+    return res.data;
+  },
+
+  list: async (
+    goalId: string,
+    page = 1,
+    limit = 10,
+  ): Promise<CheckInListResponse> => {
+    const res = await apiClient.get(`/goals/${goalId}/check-ins`, {
+      params: { page, limit },
+    });
+    return res.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const res = await apiClient.delete(`/goals/check-ins/${id}`);
     return res.data;
   },
 };
@@ -254,6 +369,20 @@ export const evidenceApi = {
     );
     return res.data;
   },
+
+  replaceFile: async (
+    evidenceId: string,
+    file: File,
+  ): Promise<ApiResponse<Evidence>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiClient.put(
+      `/goals/evidences/${evidenceId}/file`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return res.data;
+  },
 };
 
 // ──────────────────────────────────────────────────
@@ -275,6 +404,97 @@ export const approvalApi = {
     const res = await apiClient.get("/approvals/completed", {
       params: { page, limit },
     });
+    return res.data;
+  },
+};
+
+// ──────────────────────────────────────────────────
+// Metric Import/Export
+// ──────────────────────────────────────────────────
+
+export const metricImportApi = {
+  exportTemplate: async (
+    filter: GoalFilter = {},
+    format: "csv" | "xlsx" = "csv",
+  ): Promise<Blob> => {
+    const params = new URLSearchParams();
+    params.append("format", format);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.priority) params.append("priority", filter.priority);
+    if (filter.department_id) params.append("department_id", filter.department_id);
+    const res = await apiClient.get(
+      `/goals/metrics/export-template?${params.toString()}`,
+      { responseType: "blob" },
+    );
+    return res.data;
+  },
+
+  importMetrics: async (
+    file: File,
+    dryRun: boolean,
+    title?: string,
+    comment?: string,
+    primaryGoalId?: string,
+  ): Promise<ApiResponse<MetricImportDryRunResponse | MetricImportBatch>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("dry_run", String(dryRun));
+    if (title) formData.append("title", title);
+    if (comment) formData.append("comment", comment);
+    if (primaryGoalId) formData.append("primary_goal_id", primaryGoalId);
+    const res = await apiClient.post("/goals/metrics/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  listBatches: async (
+    filter: MetricImportBatchFilter = {},
+  ): Promise<MetricImportBatchListResponse> => {
+    const res = await apiClient.get("/goals/metric-batches", {
+      params: filter,
+    });
+    return res.data;
+  },
+
+  getBatch: async (
+    id: string,
+  ): Promise<ApiResponse<MetricImportBatch>> => {
+    const res = await apiClient.get(`/goals/metric-batches/${id}`);
+    return res.data;
+  },
+
+  deleteBatch: async (id: string): Promise<ApiResponse<null>> => {
+    const res = await apiClient.delete(`/goals/metric-batches/${id}`);
+    return res.data;
+  },
+
+  getAvailableTransitions: async (
+    id: string,
+  ): Promise<ApiResponse<AvailableTransition[]>> => {
+    const res = await apiClient.get(
+      `/goals/metric-batches/${id}/available-transitions`,
+    );
+    return res.data;
+  },
+
+  executeTransition: async (
+    id: string,
+    data: MetricImportBatchTransitionRequest,
+  ): Promise<ApiResponse<MetricImportBatch>> => {
+    const res = await apiClient.post(
+      `/goals/metric-batches/${id}/transition`,
+      data,
+    );
+    return res.data;
+  },
+
+  getTransitionHistory: async (
+    id: string,
+  ): Promise<ApiResponse<MetricImportBatchTransitionHistory[]>> => {
+    const res = await apiClient.get(
+      `/goals/metric-batches/${id}/transition-history`,
+    );
     return res.data;
   },
 };

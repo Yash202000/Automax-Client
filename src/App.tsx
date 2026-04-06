@@ -66,6 +66,16 @@ import {
   GoalCreatePage,
   GoalEditPage,
   GoalApprovalsPage,
+  GoalTemplatesPage,
+  DocumentsPage,
+  MetricImportBatchesPage,
+  MetricImportBatchDetailPage,
+  GoalAnalyticsPage,
+  OKRAlignmentPage,
+  ReviewCyclesPage,
+  ReviewCycleDetailPage,
+  MyReviewPage,
+  ReviewAssignmentPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
 import { UserBootstrap } from "./components/common/UserBootstrap";
@@ -458,6 +468,82 @@ function App() {
                 </Route>
               </Route>
 
+            {/* Call Centre Management - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<CallCentreLayout />}>
+                <Route
+                  path="/call-centre"
+                  element={<Navigate to="/call-centre/contacts" replace />}
+                />
+                <Route
+                  path="/call-centre/contacts"
+                  element={<CallCentrePage />}
+                />
+                <Route path="/call-centre/history" element={<CallHistory />} />
+                <Route path="/call-centre/email" element={<EmailPage />} />
+                <Route path="/call-centre/sms" element={<SMSPage />} />
+                {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+              </Route>
+            </Route>
+
+            {/* Goal Management routes - dedicated layout */}
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<GoalLayout />}>
+                <Route
+                  element={
+                    <PermissionRoute
+                      requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
+                    />
+                  }
+                >
+                  <Route path="/goals" element={<GoalsPage />} />
+                  <Route
+                    path="/goals/analytics"
+                    element={<GoalAnalyticsPage />}
+                  />
+                  <Route
+                    path="/goals/okr-alignment"
+                    element={<OKRAlignmentPage />}
+                  />
+                  <Route path="/goals/new" element={<GoalCreatePage />} />
+                  <Route
+                    path="/goals/templates"
+                    element={<GoalTemplatesPage />}
+                  />
+                  <Route
+                    path="/goals/approvals"
+                    element={<GoalApprovalsPage />}
+                  />
+                  <Route
+                    path="/goals/documents"
+                    element={<DocumentsPage />}
+                  />
+                  <Route
+                    path="/goals/metric-batches"
+                    element={<MetricImportBatchesPage />}
+                  />
+                  <Route
+                    path="/goals/metric-batches/:id"
+                    element={<MetricImportBatchDetailPage />}
+                  />
+                  <Route
+                    path="/goals/reviews"
+                    element={<ReviewCyclesPage />}
+                  />
+                  <Route
+                    path="/goals/reviews/my-reviews"
+                    element={<MyReviewPage />}
+                  />
+                  <Route
+                    path="/goals/reviews/assignments/:id"
+                    element={<ReviewAssignmentPage />}
+                  />
+                  <Route
+                    path="/goals/reviews/:id"
+                    element={<ReviewCycleDetailPage />}
+                  />
+                  <Route path="/goals/:id" element={<GoalDetailPage />} />
+                  <Route path="/goals/:id/edit" element={<GoalEditPage />} />
               {/* Goal Management routes - dedicated layout */}
               <Route element={<AdminProtectedRoute />}>
                 <Route element={<GoalLayout />}>

@@ -19,6 +19,7 @@ import {
 import type { ApprovalListItem } from "../../types/goal";
 import { GoalPriorityBadge } from "../../components/goals/GoalPriorityBadge";
 import { EvidenceTransitionModal } from "../../components/goals/EvidenceTransitionModal";
+import { useGoalListWebSocket } from "../../lib/services/goalListWebSocket";
 
 type TabType = "pending" | "completed";
 
@@ -208,6 +209,8 @@ const CompletedRow: React.FC<{ item: ApprovalListItem }> = ({ item }) => (
 // ── Main Component ─────────────────────────────────────
 
 export const GoalApprovalsPage: React.FC = () => {
+  useGoalListWebSocket();
+
   // ── State ──────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabType>("pending");
   const [pendingPage, setPendingPage] = useState(1);

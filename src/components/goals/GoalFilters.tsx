@@ -39,7 +39,8 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
     filters.search ||
     filters.category ||
     filters.start_from ||
-    filters.target_to;
+    filters.target_to ||
+    filters.root_only;
 
   return (
     <div className="flex flex-wrap items-end gap-3">
@@ -161,6 +162,25 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         />
       </div>
+
+      {/* Root Only Toggle */}
+      <label className="inline-flex items-center gap-2 px-3 py-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={!!filters.root_only}
+          onChange={(e) =>
+            onChange({
+              ...filters,
+              root_only: e.target.checked || undefined,
+              page: 1,
+            })
+          }
+          className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+        />
+        <span className="text-sm text-slate-700 dark:text-slate-300">
+          Root goals only
+        </span>
+      </label>
 
       {/* Clear Filters */}
       {hasActiveFilters && (

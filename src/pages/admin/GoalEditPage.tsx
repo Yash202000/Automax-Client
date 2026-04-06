@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useGoal, useUpdateGoal } from "../../hooks/useGoals";
 import { userApi, departmentApi } from "../../api/admin";
 import { GOAL_PRIORITY_OPTIONS } from "../../types/goal";
-import type { GoalUpdateRequest, GoalPriority } from "../../types/goal";
+import type { GoalUpdateRequest, GoalPriority, GoalBrief } from "../../types/goal";
+import { ParentGoalSelector } from "../../components/goals/ParentGoalSelector";
 
 export const GoalEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,7 @@ export const GoalEditPage: React.FC = () => {
   });
 
   const [initialized, setInitialized] = useState(false);
+  const [parentGoal, setParentGoal] = useState<GoalBrief | null>(null);
 
   // Pre-fill form when goal data loads
   if (goal && !initialized) {
@@ -50,10 +52,14 @@ export const GoalEditPage: React.FC = () => {
       priority: goal.priority ?? "Medium",
       owner_id: goal.owner_id ?? "",
       department_id: goal.department_id ?? "",
+      parent_goal_id: goal.parent_goal_id ?? "",
       start_date: goal.start_date ? goal.start_date.slice(0, 10) : "",
       target_date: goal.target_date ? goal.target_date.slice(0, 10) : "",
       review_date: goal.review_date ? goal.review_date.slice(0, 10) : "",
     });
+    if (goal.parent_goal) {
+      setParentGoal(goal.parent_goal);
+    }
     setInitialized(true);
   }
 
@@ -82,6 +88,8 @@ export const GoalEditPage: React.FC = () => {
     if (form.owner_id?.trim()) payload.owner_id = form.owner_id.trim();
     if (form.department_id?.trim())
       payload.department_id = form.department_id.trim();
+    if (form.parent_goal_id?.trim())
+      payload.parent_goal_id = form.parent_goal_id.trim();
     if (form.start_date)
       payload.start_date =
         form.start_date.length === 10
@@ -263,6 +271,19 @@ export const GoalEditPage: React.FC = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Parent Goal */}
+            <div className="md:col-span-2">
+              <ParentGoalSelector
+                value={form.parent_goal_id}
+                excludeId={id}
+                selectedGoal={parentGoal}
+                onChange={(goalId, goal) => {
+                  setForm((prev) => ({ ...prev, parent_goal_id: goalId }));
+                  setParentGoal(goal ?? null);
+                }}
+              />
             </div>
 
             {/* Start Date */}

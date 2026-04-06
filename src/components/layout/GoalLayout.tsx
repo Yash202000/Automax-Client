@@ -13,6 +13,12 @@ import {
   Sparkles,
   Target,
   CheckCheck,
+  FileText,
+  FolderOpen,
+  FileSpreadsheet,
+  BarChart3,
+  GitBranch,
+  ClipboardCheck,
   Languages,
   Phone,
 } from "lucide-react";
@@ -136,6 +142,65 @@ export const GoalLayout: React.FC = () => {
             )}
           </NavLink>
 
+          {/* Analytics */}
+          <NavLink
+            to="/goals/analytics"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <BarChart3 size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">Analytics</span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          {/* OKR Alignment */}
+          <NavLink
+            to="/goals/okr-alignment"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <GitBranch size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    OKR Alignment
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          {/* Reviews */}
+          <NavLink
+            to="/goals/reviews"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <ClipboardCheck size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">Reviews</span>
+                )}
+              </>
+            )}
+          </NavLink>
+
           {/* Approvals */}
           {canApprove && (
             <NavLink
@@ -158,6 +223,69 @@ export const GoalLayout: React.FC = () => {
               )}
             </NavLink>
           )}
+
+          {/* Documents */}
+          <NavLink
+            to="/goals/documents"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <FolderOpen size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    Documents
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          {/* Metric Imports */}
+          <NavLink
+            to="/goals/metric-batches"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <FileSpreadsheet size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    Metric Imports
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          {/* Templates */}
+          <NavLink
+            to="/goals/templates"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <FileText size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    Templates
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
         </div>
 
         {/* Divider + Quick Links */}
