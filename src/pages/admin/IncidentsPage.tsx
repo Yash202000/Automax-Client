@@ -23,6 +23,9 @@ import {
   Check,
   ArrowRightLeft,
   Repeat,
+  Map,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
@@ -41,6 +44,7 @@ import type {
   Workflow,
   User as UserType,
   WorkflowState,
+  IncidentMergeOption,
 } from "../../types";
 import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSocket";
 import { cn } from "@/lib/utils";
@@ -48,6 +52,8 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { MergeIncidentsModal } from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
+import { useAuthStore } from "@/stores/authStore";
+import { LocationMap } from "@/components/maps";
 
 // Column configuration
 interface ColumnConfig {
@@ -60,15 +66,20 @@ interface ColumnConfig {
 const COLUMN_STORAGE_KEY = "incident_columns_config";
 
 const defaultColumns: ColumnConfig[] = [
-  { id: "incident", label: "Incident", visible: true, required: true },
-  { id: "state", label: "State", visible: true },
-  { id: "priority", label: "Priority", visible: true },
-  { id: "assignee", label: "Assignee", visible: true },
-  { id: "department", label: "Department", visible: false },
-  { id: "due_date", label: "Due Date", visible: true },
-  { id: "created_at", label: "Created", visible: false },
-  { id: "sla", label: "SLA", visible: true },
-  { id: "actions", label: "Actions", visible: true, required: true },
+  {
+    id: "incident",
+    label: "incidents.incident",
+    visible: true,
+    required: true,
+  },
+  { id: "state", label: "incidents.status", visible: true },
+  { id: "priority", label: "incidents.priority", visible: true },
+  { id: "assignee", label: "incidents.assignee", visible: true },
+  { id: "department", label: "incidents.department", visible: false },
+  { id: "due_date", label: "incidents.dueDate", visible: true },
+  { id: "created_at", label: "incidents.createdAt", visible: false },
+  { id: "sla", label: "incidents.slaStatus", visible: true },
+  { id: "actions", label: "common.actions", visible: true, required: true },
 ];
 
 // Returns true when an incident is in a ready_to_close state and within 24 hours of auto-reversion.
@@ -117,10 +128,10 @@ export const IncidentsPage: React.FC = () => {
     const statusParam = searchParams.get("status");
     if (stateTypeParam) {
       return stateTypeParam === "initial"
-        ? "New"
+        ? t("incidents.initial")
         : stateTypeParam === "terminal"
-          ? "Closed"
-          : "In Progress";
+          ? t("incidents.resolved")
+          : t("incidents.inProgress");
     } else if (statusParam) {
       return statusParam;
     }
@@ -134,6 +145,15 @@ export const IncidentsPage: React.FC = () => {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
+  const [showMap, setShowMap] = useState(false);
+  const { user } = useAuthStore();
+  const [isValidationLoading, setIsValidationLoading] =
+    useState<boolean>(false);
+  const [validationResult, setValidationResult] = useState<{
+    canMerge: boolean;
+    errors: string[];
+    masterOptions: IncidentMergeOption[];
+  } | null>(null);
 
   const canViewAllIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
@@ -146,8 +166,8 @@ export const IncidentsPage: React.FC = () => {
   const selectedWorkflowId =
     selectedIncidents?.length >= 2
       ? selectedIncidents.every(
-          (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
-        )
+        (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
+      )
         ? selectedIncidents[0].workflow?.id || null
         : null
       : null;
@@ -158,6 +178,26 @@ export const IncidentsPage: React.FC = () => {
     queryFn: () => incidentMergeApi.canMerge(selectedWorkflowId || undefined),
     enabled: !!selectedWorkflowId,
   });
+
+  const validateMerge = async () => {
+    setIsValidationLoading(true);
+    try {
+      const incidentIds = selectedIncidents.map((inc) => inc.id);
+      const response = await incidentMergeApi.validateMerge(incidentIds);
+      const data = response.data;
+      setValidationResult({
+        canMerge: data?.can_merge ?? false,
+        errors: data?.errors || [],
+        masterOptions: data?.master_options || [],
+      });
+    } catch (err: any) {
+      console.error(
+        err.response?.data?.error || t("incidentMerge.validationFailed"),
+      );
+    } finally {
+      setIsValidationLoading(false);
+    }
+  };
 
   const canMergeIncidents =
     isSuperAdmin ||
@@ -271,17 +311,35 @@ export const IncidentsPage: React.FC = () => {
   });
 
   // Get all states from incident workflows for filter
-  const allStates =
-    workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
-  const uniqueStates = allStates.reduce(
-    (acc: WorkflowState[], state: WorkflowState) => {
-      if (!acc.find((s) => s.name === state.name)) {
-        acc.push(state);
-      }
-      return acc;
-    },
-    [],
+  const allStates = useMemo(
+    () => workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [],
+    [workflowsData],
   );
+
+  const uniqueStates = useMemo(
+    () =>
+      allStates.reduce((acc: WorkflowState[], state: WorkflowState) => {
+        if (!acc.find((s) => s.name === state.name)) {
+          acc.push(state);
+        }
+        return acc;
+      }, []),
+    [allStates],
+  );
+
+  const canConvertToRequest = useMemo(() => {
+    if (isSuperAdmin) return true;
+    const allowedRoleIds =
+      workflowsData?.data
+        ?.flatMap((wf) => wf?.convert_to_request_roles || [])
+        ?.map((role: any) => role.id) || [];
+
+    const userRoleIds = user?.roles?.map((role: any) => role.id) || [];
+
+    return userRoleIds.some((roleId: string) =>
+      allowedRoleIds.includes(roleId),
+    );
+  }, [user, workflowsData?.data, isSuperAdmin]);
 
   const { data: statsData } = useQuery({
     queryKey: ["incidents", "stats", "incident"],
@@ -468,14 +526,44 @@ export const IncidentsPage: React.FC = () => {
     selectedIncidents.every(
       (incident) =>
         incident?.current_state?.name ===
-          selectedIncidents[0]?.current_state?.name &&
+        selectedIncidents[0]?.current_state?.name &&
         incident?.location?.id === selectedIncidents[0]?.location?.id &&
         incident?.classification?.id ===
-          selectedIncidents[0]?.classification?.id,
+        selectedIncidents[0]?.classification?.id,
     );
 
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
+
+  const getLocation = () => {
+    return (incidents || [])
+      .filter((incident) => incident.latitude !== undefined && incident.longitude !== undefined)
+      .map((incident) => {
+        return {
+          id: incident.id,
+          name: incident.incident_number,
+          code: incident.incident_number,
+          description: incident.description,
+          latitude: Number(incident.latitude),
+          longitude: Number(incident.longitude),
+          type: "building",
+          address: incident.address || incident.location?.address || "",
+        } as any; // Cast as any to avoid missing required Location fields
+      });
+  };
+
+  useEffect(() => {
+    if (selectedIncidents.length >= 2) {
+      validateMerge();
+    } else {
+      setValidationResult(null);
+    }
+  }, [selectedIncidents]);
+
+  const isMergeDisabled =
+    isValidationLoading ||
+    !validationResult?.canMerge ||
+    (validationResult?.errors?.length ?? 0) > 0;
 
   if (error) {
     return (
@@ -531,6 +619,21 @@ export const IncidentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant={showMap ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowMap(!showMap)}
+            leftIcon={<Map className="w-4 h-4" />}
+            rightIcon={
+              showMap ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )
+            }
+          >
+            {showMap ? t("common.hideMap", "Hide Map") : t("common.showMap", "Show Map")}
+          </Button>
           {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
@@ -548,12 +651,15 @@ export const IncidentsPage: React.FC = () => {
                 variant="default"
                 onClick={() => setShowMergeModal(true)}
                 leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                disabled={isMergeDisabled}
               >
                 {t("incidentMerge.title")}
               </Button>
             </>
           )}
-          {selectedIncidents?.length > 1 && allSameState ? (
+          {canConvertToRequest &&
+            selectedIncidents?.length > 1 &&
+            allSameState ? (
             <Button
               leftIcon={<Repeat className="w-4 h-4" />}
               onClick={() => setShowConvertModal(true)}
@@ -652,6 +758,12 @@ export const IncidentsPage: React.FC = () => {
         </div>
       )}
 
+      {showMap && (
+        <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+          <LocationMap locations={getLocation()} height="450px" />
+        </div>
+      )}
+
       {/* Filters Bar */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -734,13 +846,13 @@ export const IncidentsPage: React.FC = () => {
                         </div>
                         <span
                           className={cn(
-                            "flex-1 text-left",
+                            "flex-1 text-start",
                             col.visible
                               ? "text-[hsl(var(--foreground))]"
                               : "text-[hsl(var(--muted-foreground))]",
                           )}
                         >
-                          {col.label}
+                          {t(col.label)}
                         </span>
                         {col.required && (
                           <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -802,8 +914,8 @@ export const IncidentsPage: React.FC = () => {
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
                   !canViewAllIncidents &&
-                    hasUrlFilter &&
-                    "opacity-60 cursor-not-allowed",
+                  hasUrlFilter &&
+                  "opacity-60 cursor-not-allowed",
                 )}
               >
                 <option value="">{t("common.allStates")}</option>
@@ -925,8 +1037,8 @@ export const IncidentsPage: React.FC = () => {
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
                   !canViewAllIncidents &&
-                    hasUrlFilter &&
-                    "opacity-60 cursor-not-allowed",
+                  hasUrlFilter &&
+                  "opacity-60 cursor-not-allowed",
                 )}
               >
                 <option value="">{t("common.all")}</option>
@@ -962,9 +1074,9 @@ export const IncidentsPage: React.FC = () => {
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {isShortSearch
                 ? t(
-                    "search.minCharsDesc",
-                    "Enter at least 3 characters to search",
-                  )
+                  "search.minCharsDesc",
+                  "Enter at least 3 characters to search",
+                )
                 : hasActiveFilters
                   ? t("incidents.adjustFilters")
                   : t("incidents.noIncidentsDesc")}
@@ -1001,63 +1113,63 @@ export const IncidentsPage: React.FC = () => {
                       />
                     </th>
                     {isColumnVisible("incident") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("incidents.title")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("state") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.state")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("priority") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.priority")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("assignee") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.assignee")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("department") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.department")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("due_date") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.dueDate")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_at") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.created")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("sla") && (
-                      <th className="px-6 py-4 text-left">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.sla")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("actions") && (
-                      <th className="px-6 py-4 text-right">
+                      <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("common.actions")}
                         </span>
@@ -1076,7 +1188,7 @@ export const IncidentsPage: React.FC = () => {
                         className={cn(
                           "hover:bg-[hsl(var(--muted)/0.5)] transition-colors",
                           isExpiringSoon &&
-                            "bg-amber-50/40 border-l-2 border-l-amber-400",
+                          "bg-amber-50/40 border-l-2 border-l-amber-400",
                         )}
                       >
                         <td
@@ -1261,7 +1373,7 @@ export const IncidentsPage: React.FC = () => {
                           </td>
                         )}
                         {isColumnVisible("actions") && (
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-start">
                             <Button
                               variant="ghost"
                               size="sm"

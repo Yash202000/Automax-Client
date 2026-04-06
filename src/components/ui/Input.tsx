@@ -59,7 +59,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={inputType}
             className={cn(
-              "w-full px-4 py-3 bg-[hsl(var(--background))] border-2 rounded-xl text-[hsl(var(--foreground))] text-sm placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:outline-none disabled:bg-[hsl(var(--muted))] disabled:text-[hsl(var(--muted-foreground))] disabled:cursor-not-allowed",
+              "w-full px-4 py-3 bg-[hsl(var(--background))] border-2 rounded-xl text-[hsl(var(--foreground))] caret-[hsl(var(--foreground))] text-sm placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:outline-none disabled:bg-[hsl(var(--muted))] disabled:text-[hsl(var(--muted-foreground))] disabled:cursor-not-allowed",
               leftIcon && "pl-12",
               (rightIcon || isPassword || error || success) && "pr-12",
               error
@@ -146,7 +146,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           className={cn(
-            "w-full px-4 py-3 bg-[hsl(var(--background))] border-2 rounded-xl text-[hsl(var(--foreground))] text-sm placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:outline-none resize-none disabled:bg-[hsl(var(--muted))] disabled:text-[hsl(var(--muted-foreground))] disabled:cursor-not-allowed",
+            "w-full px-4 py-3 bg-[hsl(var(--background))] border-2 rounded-xl text-[hsl(var(--foreground))] caret-[hsl(var(--foreground))] text-sm placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:outline-none resize-none disabled:bg-[hsl(var(--muted))] disabled:text-[hsl(var(--muted-foreground))] disabled:cursor-not-allowed",
             error
               ? "border-[hsl(var(--destructive)/0.5)] focus:border-[hsl(var(--destructive))] focus:ring-4 focus:ring-[hsl(var(--destructive)/0.1)]"
               : "border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)] focus:border-[hsl(var(--primary))] focus:ring-4 focus:ring-[hsl(var(--primary)/0.1)]",

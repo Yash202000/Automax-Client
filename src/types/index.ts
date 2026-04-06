@@ -311,6 +311,7 @@ export interface UpdateProfileRequest {
   last_name?: string;
   phone?: string;
   department_id?: string;
+  extension?: string;
   location_id?: string;
   department_ids?: string[];
   location_ids?: string[];
@@ -662,6 +663,7 @@ export interface WorkflowState {
   is_active: boolean;
   viewable_roles?: Role[];
   created_at: string;
+  editable_roles?: Role[];
 }
 
 export interface WorkflowTransition {
@@ -1045,6 +1047,12 @@ export interface StateStatDetail {
   state_type?: string;
 }
 
+export interface WorkflowStats {
+  workflow_id: string;
+  workflow_name: string;
+  by_state: Record<string, number>;
+  by_state_details: StateStatDetail[];
+}
 export interface IncidentStats {
   total: number;
   open: number;
@@ -1054,6 +1062,7 @@ export interface IncidentStats {
   sla_breached: number;
   by_state: Record<string, number>;
   by_state_details?: StateStatDetail[];
+  workflow_stats?: WorkflowStats[];
 }
 
 // Incident request types
@@ -1366,6 +1375,7 @@ export interface ReportFieldDefinition {
   relationField?: string;
   description?: string;
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
+  canBeColumn?: boolean;
 }
 
 // Data Source Definition
@@ -1728,4 +1738,11 @@ export interface CreateEscalationRequest {
   frequency: string;
   is_active: boolean;
   user_ids: string[];
+}
+
+export interface CallerFeedBackRequest {
+  callee_id: string;
+  call_uuid?: string;
+  sentiment: number;
+  feedback: string;
 }

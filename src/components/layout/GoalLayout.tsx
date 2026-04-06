@@ -46,7 +46,7 @@ export const GoalLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
-  const { hasPermission, isSuperAdmin } = usePermissions();
+  const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canApprove = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_APPROVE);
 
   const handleLanguageChange = async (langCode: string) => {
@@ -83,10 +83,9 @@ export const GoalLayout: React.FC = () => {
   };
 
   const navLinkClass = (isActive: boolean) =>
-    `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-      isActive
-        ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
-        : "text-slate-400 hover:text-white hover:bg-white/5"
+    `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+      ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
+      : "text-slate-400 hover:text-white hover:bg-white/5"
     }`;
 
   const SidebarContent = () => (
@@ -437,11 +436,10 @@ export const GoalLayout: React.FC = () => {
                     <button
                       key={lang.code}
                       onClick={() => handleLanguageChange(lang.code)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                        currentLang === lang.code
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-slate-700 hover:bg-slate-50"
-                      }`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${currentLang === lang.code
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-slate-700 hover:bg-slate-50"
+                        }`}
                     >
                       <span className="text-lg">
                         {lang.code === "en"
@@ -459,32 +457,37 @@ export const GoalLayout: React.FC = () => {
             </div>
 
             {/* Softphone */}
-            <button
-              onClick={() => setShowSoftphone(!showSoftphone)}
-              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                showSoftphone
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Phone className="w-5 h-5" />
-            </button>
+            {
+              (isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
+                <>
+                  <button
+                    onClick={() => setShowSoftphone(!showSoftphone)}
+                    className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${showSoftphone
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                      }`}
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
 
-            <SoftPhone
-              showSip={showSoftphone}
-              onClose={() => setShowSoftphone(false)}
-              settings={{
-                domain: "zkff.automaxsw.com",
-                socketURL: "wss://zkff.automaxsw.com:7443",
-              }}
-              auth={{
-                user: {
-                  userID: user?.id || "",
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  extension: (user as any)?.extension || "",
-                },
-              }}
-            />
+                  <SoftPhone
+                    showSip={showSoftphone}
+                    onClose={() => setShowSoftphone(false)}
+                    settings={{
+                      domain: "zkff.automaxsw.com",
+                      socketURL: "wss://zkff.automaxsw.com:7443",
+                    }}
+                    auth={{
+                      user: {
+                        userID: user?.id || "",
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        extension: (user as any)?.extension || "",
+                      },
+                    }}
+                  />
+                </>
+              )
+            }
 
             {/* Notifications */}
             <button className="relative p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors focus:outline-none focus:ring-0">

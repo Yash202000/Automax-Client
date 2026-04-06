@@ -39,7 +39,7 @@ export const ReportLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
-  const { hasPermission, isSuperAdmin } = usePermissions();
+  const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canViewAllReports =
     hasPermission(PERMISSIONS.REPORTS_VIEW) || isSuperAdmin;
 
@@ -68,14 +68,14 @@ export const ReportLayout: React.FC = () => {
     // Set flag to prevent 401 interceptor from running during logout
     setLoggingOut(true);
 
-    // Clear auth state first to prevent any race conditions
-    logout();
-
     try {
+      // Call logout API FIRST while token is still in localStorage
       await authApi.logout();
     } catch {
       // Continue with logout even if API call fails
     } finally {
+      // Clear auth state after API call
+      logout();
       setLoggingOut(false);
     }
 
@@ -122,10 +122,9 @@ export const ReportLayout: React.FC = () => {
               end
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                  ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`
               }
             >
@@ -151,10 +150,9 @@ export const ReportLayout: React.FC = () => {
               end
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                  ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`
               }
             >
@@ -247,9 +245,8 @@ export const ReportLayout: React.FC = () => {
     <div className="flex h-screen bg-slate-100">
       {/* Desktop Sidebar */}
       <aside
-        className={`${
-          collapsed ? "w-[72px]" : "w-[264px]"
-        } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
+        className={`${collapsed ? "w-[72px]" : "w-[264px]"
+          } bg-slate-900 transition-all duration-300 flex-col hidden lg:flex relative`}
       >
         <SidebarContent />
       </aside>
@@ -264,11 +261,10 @@ export const ReportLayout: React.FC = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen
-            ? "translate-x-0"
-            : "ltr:-translate-x-full rtl:translate-x-full"
-        }`}
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${mobileMenuOpen
+          ? "translate-x-0"
+          : "ltr:-translate-x-full rtl:translate-x-full"
+          }`}
       >
         <button
           onClick={() => setMobileMenuOpen(false)}
@@ -356,11 +352,10 @@ export const ReportLayout: React.FC = () => {
                     <button
                       key={lang.code}
                       onClick={() => handleLanguageChange(lang.code)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                        currentLang === lang.code
-                          ? "bg-primary/50 text-primary"
-                          : "text-slate-700 hover:bg-slate-50"
-                      }`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${currentLang === lang.code
+                        ? "bg-primary/50 text-primary"
+                        : "text-slate-700 hover:bg-slate-50"
+                        }`}
                     >
                       <span className="text-lg">
                         {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
@@ -376,26 +371,31 @@ export const ReportLayout: React.FC = () => {
             </div>
 
             {/* Phone/Softphone */}
-            <button
-              onClick={() => setShowSoftphone(!showSoftphone)}
-              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                showSoftphone
-                  ? "text-emerald-600 bg-emerald-50"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Phone className="w-5 h-5" />
-            </button>
+            {
+              (isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
+                <>
+                  <button
+                    onClick={() => setShowSoftphone(!showSoftphone)}
+                    className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${showSoftphone
+                      ? "text-emerald-600 bg-emerald-50"
+                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                      }`}
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
 
-            <SoftPhone
-              showSip={showSoftphone}
-              onClose={() => setShowSoftphone(false)}
-              settings={{
-                domain: "zkff.automaxsw.com",
-                socketURL: "wss://zkff.automaxsw.com:7443",
-              }}
-              auth={{}}
-            />
+                  <SoftPhone
+                    showSip={showSoftphone}
+                    onClose={() => setShowSoftphone(false)}
+                    settings={{
+                      domain: "zkff.automaxsw.com",
+                      socketURL: "wss://zkff.automaxsw.com:7443",
+                    }}
+                    auth={{}}
+                  />
+                </>
+              )
+            }
 
             {/* Notifications */}
             <button className="relative p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">

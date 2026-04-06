@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -21,16 +21,20 @@ import {
   PenLine,
   Repeat,
   ArrowRightLeft,
+  Map,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { incidentApi, incidentMergeApi } from "../../api/admin";
-import type { Incident } from "../../types";
+import type { Incident, IncidentMergeOption } from "../../types";
 import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSocket";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import { MergeIncidentsModal } from "../../components/incidents";
+import LocationMap from "@/components/maps/LocationMap";
 
 interface MyIncidentsPageProps {
   type: "assigned" | "created";
@@ -46,6 +50,15 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
   const [showMergeModal, setShowMergeModal] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+
+  const [isValidationLoading, setIsValidationLoading] =
+    useState<boolean>(false);
+  const [validationResult, setValidationResult] = useState<{
+    canMerge: boolean;
+    errors: string[];
+    masterOptions: IncidentMergeOption[];
+  } | null>(null);
 
   const isAssigned = type === "assigned";
   const canCreateIncident =
@@ -62,8 +75,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const selectedWorkflowId =
     selectedIncidents?.length >= 2
       ? selectedIncidents.every(
-          (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
-        )
+        (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
+      )
         ? selectedIncidents[0].workflow?.id || null
         : null
       : null;
@@ -74,6 +87,26 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     queryFn: () => incidentMergeApi.canMerge(selectedWorkflowId || undefined),
     enabled: !!selectedWorkflowId,
   });
+
+  const validateMerge = async () => {
+    setIsValidationLoading(true);
+    try {
+      const incidentIds = selectedIncidents.map((inc) => inc.id);
+      const response = await incidentMergeApi.validateMerge(incidentIds);
+      const data = response.data;
+      setValidationResult({
+        canMerge: data?.can_merge ?? false,
+        errors: data?.errors || [],
+        masterOptions: data?.master_options || [],
+      });
+    } catch (err: any) {
+      console.error(
+        err.response?.data?.error || t("incidentMerge.validationFailed"),
+      );
+    } finally {
+      setIsValidationLoading(false);
+    }
+  };
 
   const canMergeIncidents =
     isSuperAdmin ||
@@ -122,12 +155,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   // Client-side search filter
   const filteredIncidents = searchTerm
     ? incidents.filter(
-        (incident: Incident) =>
-          incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          incident.incident_number
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()),
-      )
+      (incident: Incident) =>
+        incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        incident.incident_number
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()),
+    )
     : incidents;
 
   const getLookupValue = (incident: Incident, categoryCode: string) => {
@@ -174,14 +207,44 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     selectedIncidents.every(
       (incident) =>
         incident?.current_state?.name ===
-          selectedIncidents[0]?.current_state?.name &&
+        selectedIncidents[0]?.current_state?.name &&
         incident?.location?.id === selectedIncidents[0]?.location?.id &&
         incident?.classification?.id ===
-          selectedIncidents[0]?.classification?.id,
+        selectedIncidents[0]?.classification?.id,
     );
 
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
+
+  const getLocation = () => {
+    return (incidents || [])
+      .filter((incident) => incident.latitude !== undefined && incident.longitude !== undefined)
+      .map((incident) => {
+        return {
+          id: incident.id,
+          name: incident.incident_number,
+          code: incident.incident_number,
+          description: incident.description,
+          latitude: Number(incident.latitude),
+          longitude: Number(incident.longitude),
+          type: "building",
+          address: incident.address || incident.location?.address || "",
+        } as any; // Cast as any to avoid missing required Location fields
+      });
+  };
+
+  useEffect(() => {
+    if (selectedIncidents.length >= 2) {
+      validateMerge();
+    } else {
+      setValidationResult(null);
+    }
+  }, [selectedIncidents]);
+
+  const isMergeDisabled =
+    isValidationLoading ||
+    !validationResult?.canMerge ||
+    (validationResult?.errors?.length ?? 0) > 0;
 
   if (error) {
     return (
@@ -225,6 +288,21 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant={showMap ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowMap(!showMap)}
+            leftIcon={<Map className="w-4 h-4" />}
+            rightIcon={
+              showMap ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )
+            }
+          >
+            {showMap ? t("common.hideMap", "Hide Map") : t("common.showMap", "Show Map")}
+          </Button>
           {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
@@ -242,6 +320,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 variant="default"
                 onClick={() => setShowMergeModal(true)}
                 leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                disabled={isMergeDisabled}
               >
                 {t("incidentMerge.title")}
               </Button>
@@ -341,6 +420,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
         </div>
       </div>
 
+      {showMap && (
+        <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+          <LocationMap locations={getLocation()} height="450px" />
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
         <div className="relative flex-1">
@@ -411,34 +496,34 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                         }
                       />
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("incidents.incident")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.state")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.priority")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {isAssigned
                           ? t("common.department")
                           : t("common.assignee")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.dueDate")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.sla")}
                       </span>

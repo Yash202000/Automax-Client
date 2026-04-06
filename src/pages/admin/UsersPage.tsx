@@ -322,6 +322,26 @@ export const UsersPage: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => userApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success(
+        t("users.userDeletedSuccessfully", "User deleted successfully"),
+      );
+      closeDropdown();
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        t("users.deleteFailed", "Failed to delete user");
+      toast.error(t("common.error", "Error"), {
+        description: errorMessage,
+      });
+    },
+  });
+
   const openCreateModal = () => {
     setCreateFormData({
       email: "",
@@ -447,7 +467,7 @@ export const UsersPage: React.FC = () => {
       last_name: formData.last_name,
       username: formData.username,
       phone: formData.phone,
-      extension: formData.extension || undefined,
+      extension: formData.extension || "",
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,
       department_ids: formData.department_ids,
@@ -1182,7 +1202,25 @@ export const UsersPage: React.FC = () => {
               {t("users.editUser")}
             </button>
             <div className="my-1 border-t border-[hsl(var(--border))]" />
-            <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] transition-colors">
+            <button
+              onClick={() => {
+                const user = filteredUsers?.find(
+                  (u: User) => u.id === activeDropdown,
+                );
+                if (
+                  user &&
+                  window.confirm(
+                    t(
+                      "users.confirmDelete",
+                      "Are you sure you want to delete this user?",
+                    ),
+                  )
+                ) {
+                  deleteMutation.mutate(user.id);
+                }
+              }}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] transition-colors"
+            >
               <Trash2 className="w-4 h-4" />
               {t("users.deleteUser")}
             </button>

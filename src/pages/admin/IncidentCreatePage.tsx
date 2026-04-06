@@ -36,6 +36,7 @@ import {
   lookupApi,
 } from "../../api/admin";
 import { userApi, departmentApi, locationApi } from "../../api/admin";
+import { API_URL } from "../../api/client";
 import type {
   IncidentCreateRequest,
   User,
@@ -68,7 +69,7 @@ export function IncidentCreatePage() {
     description: "",
     workflow_id: "",
     classification_id: "",
-    source: undefined,
+    source: "web",
     assignee_id: "",
     department_id: "",
     location_id: "",
@@ -240,29 +241,92 @@ export function IncidentCreatePage() {
     [lookupCategoriesData?.data],
   );
 
-  const fetchIncidentById = async (id: string) => {
-    const d = await incidentApi.getById(id);
-    if (d && d.data) {
-      setFormData({
-        title: d.data.title,
-        description: d.data.description,
-        workflow_id: d.data.workflow?.id,
-        classification_id: d.data.classification?.id,
-        source: d.data.source,
-        assignee_id: d.data.assignee?.id,
-        department_id: d.data.department?.id,
-        location_id: d.data.location?.id,
-        latitude: d.data.latitude,
-        longitude: d.data.longitude,
-        address: d.data.address,
-        city: d.data.city,
-        state: d.data.state,
-        country: d.data.country,
-        postal_code: d.data.postal_code,
-        due_date: d.data.due_date,
-      });
+  const fetchIncidentById = useCallback(
+    async (id: string) => {
+      const d = await incidentApi.getById(id);
+      if (d && d.data) {
+        setFormData({
+          title: d.data.title,
+          description: d.data.description,
+          workflow_id: d.data.workflow?.id,
+          classification_id: d.data.classification?.id,
+          source: d.data.source,
+          assignee_id: d.data.assignee?.id,
+          department_id: d.data.department?.id,
+          location_id: d.data.location?.id,
+          latitude: d.data.latitude,
+          longitude: d.data.longitude,
+          address: d.data.address,
+          city: d.data.city,
+          state: d.data.state,
+          country: d.data.country,
+          postal_code: d.data.postal_code,
+          due_date: d.data.due_date,
+        });
+
+        // Clone lookup values
+        if (d.data.lookup_values) {
+          const values: Record<string, any> = {};
+          d.data.lookup_values.forEach((v) => {
+            if (v.category_id) {
+              const category = incidentLookupCategories.find(
+                (c) => c.id === v.category_id,
+              );
+              if (category?.field_type === "multiselect") {
+                if (!values[v.category_id]) values[v.category_id] = [];
+                values[v.category_id].push(v.id);
+              } else {
+                values[v.category_id] = v.id;
+              }
+            }
+          });
+          setLookupValues(values);
+        }
+
+        // Clone custom fields if they exist
+        if (d.data.custom_fields) {
+          try {
+            const customFields = JSON.parse(d.data.custom_fields);
+            Object.entries(customFields).forEach(([key, value]) => {
+              const category = incidentLookupCategories.find(
+                (c) => c.id === key || c.code === key,
+              );
+              if (category) {
+                setLookupValues((prev) => ({ ...prev, [category.id]: value }));
+              }
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error("Failed to parse custom fields:", e);
+          }
+        }
+      }
+    },
+    [incidentLookupCategories],
+  );
+
+  const fetchOriginalAttachments = useCallback(async (incidentId: string) => {
+    try {
+      const response = await incidentApi.listAttachments(incidentId);
+      if (response.data && response.data.length > 0) {
+        const token = localStorage.getItem("token");
+        const filePromises = response.data.map(async (attachment) => {
+          const url = `${API_URL}/attachments/${attachment.id}/preview?token=${token}`;
+          const res = await fetch(url);
+          const blob = await res.blob();
+          return new File([blob], attachment.file_name, {
+            type: attachment.mime_type,
+          });
+        });
+        const files = await Promise.all(filePromises);
+        // Overwrite attachments instead of appending to avoid duplicates on re-runs
+        setAttachments(files);
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to fetch original attachments:", error);
     }
-  };
+  }, []);
 
   const getLookupValueFromState = useCallback(
     (categoryCode: string): LookupValue | undefined => {
@@ -407,6 +471,7 @@ export function IncidentCreatePage() {
   useEffect(() => {
     if (id) {
       fetchIncidentById(id);
+      fetchOriginalAttachments(id);
     } else {
       setFormData({
         title: "",
@@ -422,9 +487,12 @@ export function IncidentCreatePage() {
         country: "",
         postal_code: "",
         due_date: "",
+        source: "web",
       });
+      setLookupValues({});
+      setAttachments([]);
     }
-  }, [id]);
+  }, [id, fetchIncidentById, fetchOriginalAttachments]);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {

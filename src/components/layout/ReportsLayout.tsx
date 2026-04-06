@@ -68,12 +68,12 @@ export const ReportsLayout: React.FC = () => {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    logout();
     try {
       await authApi.logout();
     } catch {
       // Continue with logout even if API call fails
     } finally {
+      logout();
       setLoggingOut(false);
     }
     navigate("/login");

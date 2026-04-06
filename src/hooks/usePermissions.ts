@@ -6,6 +6,7 @@ export const usePermissions = () => {
   const { user } = useAuthStore();
 
   const hasPermission = useCallback((permission: string): boolean => {
+    console.log(user)
     if (!user) return false;
     if (user.is_super_admin) return true;
     if (!user.permissions) return false;

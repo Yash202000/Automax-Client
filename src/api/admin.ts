@@ -95,6 +95,7 @@ import type {
   CanMergeResponse,
   BulkConvertToRequestRequest,
   CreateEscalationRequest,
+  CallerFeedBackRequest,
 } from "../types";
 
 // User Management
@@ -251,6 +252,13 @@ export const userApi = {
     >("/admin/users/import", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/admin/users/${id}`,
+    );
     return response.data;
   },
 };
@@ -1352,8 +1360,8 @@ export const incidentApi = {
     if (recordType) params.append("record_type", recordType);
     if (assignType) params.append("type", assignType);
     const url = params.toString()
-      ? `/incidents/stats?${params.toString()}`
-      : "/incidents/stats";
+      ? `/incidents/stats/v2?${params.toString()}`
+      : "/incidents/stats/v2";
     const response = await apiClient.get<ApiResponse<IncidentStats>>(url);
     return response.data;
   },
@@ -1473,6 +1481,18 @@ export const incidentApi = {
   removePresence: async (incidentId: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete<ApiResponse<null>>(
       `/incidents/${incidentId}/presence`,
+    );
+    return response.data;
+  },
+
+  // Closed incident editing (requires 'incidents:edit-closed' permission)
+  updateClosedSummary: async (
+    incidentId: string,
+    data: { description: string; reason?: string },
+  ): Promise<ApiResponse<Incident>> => {
+    const response = await apiClient.patch<ApiResponse<Incident>>(
+      `/incidents/${incidentId}/closed-summary`,
+      data,
     );
     return response.data;
   },
@@ -2699,6 +2719,28 @@ export const escalationApi = {
   },
   delete: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.delete(`/admin/escalation-groups/${id}`);
+    return response.data;
+  },
+};
+
+export const callerFeedbackApi = {
+  create: async (data: CallerFeedBackRequest): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/caller-sentiments",
+      data,
+    );
+    return response.data;
+  },
+  get: async ({
+    callee_id,
+    caller_id,
+  }: {
+    callee_id: string;
+    caller_id: string;
+  }): Promise<ApiResponse<DataSourceDefinition[]>> => {
+    const response = await apiClient.get<ApiResponse<DataSourceDefinition[]>>(
+      `/caller-sentiments/${callee_id}/${caller_id}`,
+    );
     return response.data;
   },
 };

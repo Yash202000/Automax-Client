@@ -118,7 +118,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
     },
     accent: {
       selected:
-        "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))] border-[hsl(var(--accent)/0.3)]",
+        "bg-[hsl(var(--accent)/0.1)] text-success border-[hsl(var(--accent)/0.3)]",
       checkbox: "bg-[hsl(var(--accent))] border-[hsl(var(--accent))]",
     },
   };
@@ -351,7 +351,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
     primary: "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]",
     success: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
     warning: "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))]",
-    accent: "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent-foreground))]",
+    accent: "bg-[hsl(var(--accent)/0.1)] text-success",
   };
 
   return (

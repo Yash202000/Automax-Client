@@ -6,6 +6,7 @@ export const PERMISSIONS = {
   DASHBOARD_COMPLAINTS: "dashboard:complaints",
   DASHBOARD_QUERIES: "dashboard:queries",
   DASHBOARD_WORKFLOWS: "dashboard:workflows",
+  DASHBOARD_CALL_CENTRE: "dashboard:ccm",
 
   // User permissions
   USERS_VIEW: "users:view",
@@ -60,6 +61,7 @@ export const PERMISSIONS = {
   INCIDENTS_COMMENT: "incidents:comment",
   INCIDENTS_MANAGE_SLA: "incidents:manage_sla",
   INCIDENTS_MERGE: "incidents:merge",
+  INCIDENTS_EDIT_CLOSED: "incidents:edit-closed",
 
   // Request permissions
   REQUESTS_VIEW: "requests:view",
@@ -135,6 +137,9 @@ export const PERMISSIONS = {
   GOALS_ASSIGN: "goals:assign",
   GOALS_APPROVE: "goals:approve",
   DASHBOARD_GOALS: "dashboard:goals",
+
+  CALLER_SENTIMENT_CREATE: "caller-sentiment:create",
+  CALLER_SENTIMENT_VIEW: "caller-sentiment:view",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

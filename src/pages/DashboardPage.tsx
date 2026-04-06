@@ -211,7 +211,7 @@ export const DashboardPage: React.FC = () => {
       icon: PhoneCallIcon,
       gradient: "from-[#EF5C39] to-[#9D3A22]",
       shadowColor: "shadow-orange-500/20",
-      permissions: [],
+      permissions: [PERMISSIONS.DASHBOARD_CALL_CENTRE],
     },
     {
       title: "Goal Management",
