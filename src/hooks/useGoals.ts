@@ -367,15 +367,19 @@ export function useUploadEvidence() {
     }) => evidenceApi.upload(goalId, file, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: goalKeys.evidences(variables.goalId),
+        queryKey: [...goalKeys.all, "evidences", variables.goalId],
       });
       queryClient.invalidateQueries({
         queryKey: goalKeys.detail(variables.goalId),
       });
+      queryClient.invalidateQueries({
+        queryKey: [...goalKeys.all, "pendingApprovals"],
+      });
       toast.success("Evidence uploaded");
     },
-    onError: () => {
-      toast.error("Failed to upload evidence");
+    onError: (error: any) => {
+      const msg = error?.response?.data?.error || "Failed to upload evidence";
+      toast.error(msg);
     },
   });
 }
@@ -424,8 +428,10 @@ export function useExecuteEvidenceTransition() {
       await queryClient.invalidateQueries({ queryKey: goalKeys.all });
       toast.success("Transition completed");
     },
-    onError: () => {
-      toast.error("Failed to execute transition");
+    onError: (error: any) => {
+      const msg =
+        error?.response?.data?.error || "Failed to execute transition";
+      toast.error(msg);
     },
   });
 }
