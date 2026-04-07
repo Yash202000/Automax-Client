@@ -10,16 +10,33 @@ import type {
   OKRTreeFilter,
 } from "../types/goalAnalytics";
 
+export interface AnalyticsFilter {
+  department_id?: string;
+  period_start?: string;
+  period_end?: string;
+}
+
+function buildParams(filter?: AnalyticsFilter): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (filter?.department_id) params.department_id = filter.department_id;
+  if (filter?.period_start) params.period_start = filter.period_start;
+  if (filter?.period_end) params.period_end = filter.period_end;
+  return params;
+}
+
 export const goalAnalyticsApi = {
-  getStats: async (): Promise<ApiResponse<GoalStats>> => {
-    const { data } = await apiClient.get("/goals/analytics/stats");
+  getStats: async (filter?: AnalyticsFilter): Promise<ApiResponse<GoalStats>> => {
+    const { data } = await apiClient.get("/goals/analytics/stats", {
+      params: buildParams(filter),
+    });
     return data;
   },
 
   getDistributions: async (
     departmentId?: string,
+    filter?: AnalyticsFilter,
   ): Promise<ApiResponse<GoalDistributions>> => {
-    const params: Record<string, string> = {};
+    const params = buildParams(filter);
     if (departmentId) params.department_id = departmentId;
     const { data } = await apiClient.get("/goals/analytics/distributions", {
       params,
@@ -27,24 +44,27 @@ export const goalAnalyticsApi = {
     return data;
   },
 
-  getProgressSummary: async (): Promise<ApiResponse<ProgressSummary>> => {
-    const { data } = await apiClient.get("/goals/analytics/progress");
+  getProgressSummary: async (filter?: AnalyticsFilter): Promise<ApiResponse<ProgressSummary>> => {
+    const { data } = await apiClient.get("/goals/analytics/progress", {
+      params: buildParams(filter),
+    });
     return data;
   },
 
   getAtRiskGoals: async (
     page = 1,
     limit = 10,
+    filter?: AnalyticsFilter,
   ): Promise<AtRiskGoalsResponse> => {
     const { data } = await apiClient.get("/goals/analytics/at-risk", {
-      params: { page, limit },
+      params: { page, limit, ...buildParams(filter) },
     });
     return data;
   },
 
-  getTrends: async (months = 12): Promise<ApiResponse<TrendData>> => {
+  getTrends: async (months = 12, filter?: AnalyticsFilter): Promise<ApiResponse<TrendData>> => {
     const { data } = await apiClient.get("/goals/analytics/trends", {
-      params: { months },
+      params: { months, ...buildParams(filter) },
     });
     return data;
   },

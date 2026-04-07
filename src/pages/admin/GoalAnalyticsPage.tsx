@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
-  BarChart3,
   Target,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
   XCircle,
   Clock,
-  FileEdit,
   ChevronLeft,
   ChevronRight,
+  Printer,
+  Maximize2,
+  Minimize2,
+  Building2,
+  Calendar,
 } from "lucide-react";
 import {
   PieChart,
@@ -34,9 +38,53 @@ import {
   useAtRiskGoals,
   useGoalTrends,
 } from "../../hooks/useGoalAnalytics";
-import { GoalStatusBadge } from "../../components/goals/GoalStatusBadge";
+import type { AnalyticsFilter } from "../../api/goalAnalytics";
+import { departmentApi } from "../../api/admin";
+import { useAuthStore } from "../../stores/authStore";
 import { GoalPriorityBadge } from "../../components/goals/GoalPriorityBadge";
 import { GoalProgressBar } from "../../components/goals/GoalProgressBar";
+
+// ──────────────────────────────────────────────────
+// Print styles (injected once)
+// ──────────────────────────────────────────────────
+
+const PRINT_STYLE_ID = "goal-analytics-print-styles";
+
+function ensurePrintStyles() {
+  if (document.getElementById(PRINT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = PRINT_STYLE_ID;
+  style.textContent = `
+    @media print {
+      /* Hide sidebar, navbar, toolbar controls */
+      nav, aside, header,
+      [data-print-hide],
+      .no-print { display: none !important; }
+
+      /* Full-width content */
+      main, [role="main"] {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* White background for print */
+      body, html {
+        background: white !important;
+        color: black !important;
+      }
+
+      /* Avoid page breaks inside charts/cards */
+      .rounded-xl { break-inside: avoid; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// ──────────────────────────────────────────────────
+// Stat card config
+// ──────────────────────────────────────────────────
 
 const statCards = [
   {
@@ -83,22 +131,88 @@ const statCards = [
   },
 ];
 
+// ──────────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────────
+
 export function GoalAnalyticsPage() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.is_super_admin || user?.permissions?.includes("*");
+
+  // ── Filter state ─────────────────────────────────
+  const [departmentId, setDepartmentId] = useState<string>(() => {
+    // Non-admin users default to their own department
+    if (!isAdmin && user?.department_id) return user.department_id;
+    return "";
+  });
+  const [periodStart, setPeriodStart] = useState<string>("");
+  const [periodEnd, setPeriodEnd] = useState<string>("");
+
+  const analyticsFilter = useMemo<AnalyticsFilter | undefined>(() => {
+    const f: AnalyticsFilter = {};
+    if (departmentId) f.department_id = departmentId;
+    if (periodStart) f.period_start = periodStart;
+    if (periodEnd) f.period_end = periodEnd;
+    if (!f.department_id && !f.period_start && !f.period_end) return undefined;
+    return f;
+  }, [departmentId, periodStart, periodEnd]);
+
+  // ── Fullscreen state ─────────────────────────────
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  // ── Print ────────────────────────────────────────
+  const handlePrint = useCallback(() => {
+    ensurePrintStyles();
+    window.print();
+  }, []);
+
+  // ── Department list ──────────────────────────────
+  const { data: deptResp } = useQuery({
+    queryKey: ["departments", "list"],
+    queryFn: () => departmentApi.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const departments = deptResp?.data ?? [];
+
+  // ── Analytics queries ────────────────────────────
   const [atRiskPage, setAtRiskPage] = useState(1);
 
-  const { data: statsResp, isLoading: statsLoading } = useGoalStats();
-  const { data: distResp, isLoading: distLoading } = useGoalDistributions();
-  const { data: progressResp } = useProgressSummary();
-  const { data: trendResp } = useGoalTrends(12);
+  const { data: statsResp, isLoading: statsLoading } = useGoalStats(analyticsFilter);
+  const { data: distResp, isLoading: distLoading } = useGoalDistributions(
+    departmentId || undefined,
+    analyticsFilter,
+  );
+  const { data: progressResp } = useProgressSummary(analyticsFilter);
+  const { data: trendResp } = useGoalTrends(12, analyticsFilter);
   const { data: atRiskResp, isLoading: atRiskLoading } = useAtRiskGoals(
     atRiskPage,
     10,
+    analyticsFilter,
   );
 
   const stats = statsResp?.data;
   const distributions = distResp?.data;
   const progress = progressResp?.data;
   const trend = trendResp?.data;
+
+  // Reset at-risk page when filters change
+  useEffect(() => {
+    setAtRiskPage(1);
+  }, [departmentId, periodStart, periodEnd]);
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -112,11 +226,98 @@ export function GoalAnalyticsPage() {
             Overview of goal performance and health metrics
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-slate-400" />
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            Live data
-          </span>
+        <div className="flex items-center gap-2" data-print-hide>
+          <button
+            onClick={handlePrint}
+            title="Print report"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">Print</span>
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Toolbar */}
+      <div
+        className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4"
+        data-print-hide
+      >
+        <div className="flex flex-wrap items-end gap-4">
+          {/* Department filter */}
+          <div className="flex flex-col gap-1 min-w-[200px]">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <Building2 className="w-3.5 h-3.5" />
+              Department
+            </label>
+            <select
+              value={departmentId}
+              onChange={(e) => setDepartmentId(e.target.value)}
+              className="h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            >
+              {isAdmin && <option value="">All Departments</option>}
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Period start */}
+          <div className="flex flex-col gap-1">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <Calendar className="w-3.5 h-3.5" />
+              From
+            </label>
+            <input
+              type="date"
+              value={periodStart}
+              onChange={(e) => setPeriodStart(e.target.value)}
+              max={periodEnd || undefined}
+              className="h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+          </div>
+
+          {/* Period end */}
+          <div className="flex flex-col gap-1">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <Calendar className="w-3.5 h-3.5" />
+              To
+            </label>
+            <input
+              type="date"
+              value={periodEnd}
+              onChange={(e) => setPeriodEnd(e.target.value)}
+              min={periodStart || undefined}
+              className="h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+          </div>
+
+          {/* Clear filters */}
+          {(departmentId || periodStart || periodEnd) && (
+            <button
+              onClick={() => {
+                setDepartmentId(isAdmin ? "" : user?.department_id || "");
+                setPeriodStart("");
+                setPeriodEnd("");
+              }}
+              className="h-9 px-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -124,7 +325,7 @@ export function GoalAnalyticsPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
-          const value = statsLoading ? "—" : (stats?.[card.key] ?? 0);
+          const value = statsLoading ? "\u2014" : (stats?.[card.key] ?? 0);
           return (
             <div
               key={card.key}
@@ -428,7 +629,7 @@ export function GoalAnalyticsPage() {
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                         {goal.owner
                           ? `${goal.owner.first_name} ${goal.owner.last_name}`
-                          : "—"}
+                          : "\u2014"}
                       </td>
                       <td className="px-4 py-3">
                         <GoalPriorityBadge priority={goal.priority} />
@@ -449,7 +650,7 @@ export function GoalAnalyticsPage() {
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 tabular-nums">
                         {goal.target_date
                           ? new Date(goal.target_date).toLocaleDateString()
-                          : "—"}
+                          : "\u2014"}
                       </td>
                       <td className="px-4 py-3">
                         {goal.days_overdue > 0 ? (
@@ -463,7 +664,7 @@ export function GoalAnalyticsPage() {
                             {goal.last_check_in_status.replace("_", " ")}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400">—</span>
+                          <span className="text-xs text-slate-400">{"\u2014"}</span>
                         )}
                       </td>
                     </tr>
