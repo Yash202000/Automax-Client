@@ -12,7 +12,8 @@ import {
   Download,
   Filter,
   ArrowRight,
-  Workflow
+  Workflow,
+  GitMerge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui";
@@ -66,7 +67,6 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
   const totalPages = data?.total_pages || 1;
   const totalItems = data?.total_items || 0;
 
-
   const toggleExpand = (revisionId: string) => {
     const newExpanded = new Set(expandedRevisions);
     if (newExpanded.has(revisionId)) {
@@ -103,10 +103,14 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
       Action: rev.action_description,
       "Action Taken By": rev.performed_by
         ? `${rev.performed_by.first_name || ""} ${rev.performed_by.last_name || ""}`.trim() ||
-        rev.performed_by.username
+          rev.performed_by.username
         : "System",
-      Department: (users.find(u => u.id === rev.performed_by_id) || rev.performed_by)?.department?.name ||
-        (users.find(u => u.id === rev.performed_by_id) || rev.performed_by)?.departments?.[0]?.name || "-",
+      Department:
+        (users.find((u) => u.id === rev.performed_by_id) || rev.performed_by)
+          ?.department?.name ||
+        (users.find((u) => u.id === rev.performed_by_id) || rev.performed_by)
+          ?.departments?.[0]?.name ||
+        "-",
       Role: rev.performed_by_roles?.join(", ") || "",
       Mobile: rev.performed_by_phone || rev.performed_by?.phone || "",
     }));
@@ -258,14 +262,31 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                       <span className="text-sm text-[hsl(var(--foreground))]">
                         {revision.action_description}
                       </span>
-                      {
-                        revision.transition?.name && (
-                          <span className="text-xs bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] flex items-center gap-1 px-2 py-1 rounded-full w-fit">
-                            <Workflow className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                            {revision.transition?.name || revision.transition?.code}
-                          </span>
-                        )
-                      }
+                      {revision.transition?.name && (
+                        <span className="text-xs bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] flex items-center gap-1 px-2 py-1 rounded-full w-fit">
+                          <Workflow className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                          {revision.transition?.name ||
+                            revision.transition?.code}
+                        </span>
+                      )}
+                      {/* Show synced child incidents */}
+                      {revision.synced_incidents &&
+                        revision.synced_incidents.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <GitMerge className="w-3.5 h-3.5 text-[hsl(var(--accent))] flex-shrink-0" />
+                            <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                              Synced to:
+                            </span>
+                            {revision.synced_incidents.map((incNum, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))] border border-[hsl(var(--accent)/0.2)] rounded-full"
+                              >
+                                {incNum}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -279,7 +300,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
                           {revision.performed_by
                             ? `${revision.performed_by.first_name || ""} ${revision.performed_by.last_name || ""}`.trim() ||
-                            revision.performed_by.username
+                              revision.performed_by.username
                             : t("revisionHistory.system")}
                         </span>
                       </div>
@@ -287,8 +308,15 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     <td className="px-4 py-3">
                       <span className="text-sm text-[hsl(var(--foreground))]">
                         {(() => {
-                          const user = users.find(u => u.id === revision.performed_by_id) || revision.performed_by;
-                          return user?.department?.name || user?.departments?.[0]?.name || "-";
+                          const user =
+                            users.find(
+                              (u) => u.id === revision.performed_by_id,
+                            ) || revision.performed_by;
+                          return (
+                            user?.department?.name ||
+                            user?.departments?.[0]?.name ||
+                            "-"
+                          );
                         })()}
                       </span>
                     </td>
@@ -305,15 +333,15 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                         ))}
                         {(!revision.performed_by_roles ||
                           revision.performed_by_roles.length === 0) && (
-                            <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                              -
-                            </span>
-                          )}
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                            -
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       {revision.performed_by_phone ||
-                        revision.performed_by?.phone ? (
+                      revision.performed_by?.phone ? (
                         <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                           <Phone className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                           {revision.performed_by_phone ||
