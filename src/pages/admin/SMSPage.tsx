@@ -14,8 +14,30 @@ import {
 import { smsApi } from "../../api/admin";
 import type { SMS, SMSFilter } from "../../types";
 import { Button } from "@/components/ui";
+import { useAuthStore } from "@/stores/authStore";
+
+const linkifyText = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.split(urlRegex).map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
 
 export const SMSPage: React.FC = () => {
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [currentFolder, setCurrentFolder] = useState<
     "inbox" | "sent" | "trash"
@@ -41,12 +63,12 @@ export const SMSPage: React.FC = () => {
 
       if (currentFolder === "inbox") {
         filter.direction = "inbound";
+        filter.received_by = user?.id;
       } else if (currentFolder === "sent") {
         filter.direction = "outbound";
       } else {
         filter.category = currentFolder;
       }
-
       return smsApi.list(filter);
     },
   });
@@ -264,7 +286,9 @@ export const SMSPage: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="text-slate-800">{selectedSMS.body}</div>
+              <div className="text-slate-800 whitespace-pre-wrap break-words">
+                {linkifyText(selectedSMS.body)}
+              </div>
             </div>
           </>
         ) : (

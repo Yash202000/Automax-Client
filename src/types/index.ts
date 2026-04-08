@@ -1674,6 +1674,7 @@ export interface SMSFilter {
   category?: string;
   direction?: string;
   is_read?: boolean;
+  received_by?: string;
 }
 
 // Incident Merge Types

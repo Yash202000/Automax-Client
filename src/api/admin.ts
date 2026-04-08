@@ -2598,6 +2598,7 @@ export const smsApi = {
     if (filter.sent_by) params.append("sent_by", filter.sent_by);
     if (filter.category) params.append("category", filter.category);
     if (filter.direction) params.append("direction", filter.direction);
+    if (filter.received_by) params.append("received_by", filter.received_by);
     if (filter.is_read !== undefined)
       params.append("is_read", String(filter.is_read));
 
@@ -2798,4 +2799,3 @@ export const SmsLinkApi = {
     return response.data;
   },
 };
-
