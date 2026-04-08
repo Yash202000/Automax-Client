@@ -104,7 +104,7 @@ export const MergeIncidentsModal: React.FC<MergeIncidentsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 flex-1 overflow-y-auto">
           {/* Validation Loading */}
           {isValidationLoading && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -142,7 +142,7 @@ export const MergeIncidentsModal: React.FC<MergeIncidentsModalProps> = ({
                 <p className="text-xs text-gray-500 mb-3">
                   {t("incidentMerge.masterIncidentHint")}
                 </p>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {selectedIncidents.map((incident) => (
                     <label
                       key={incident.id}

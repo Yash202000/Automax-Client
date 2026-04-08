@@ -95,6 +95,9 @@ import type {
   CanMergeResponse,
   BulkConvertToRequestRequest,
   CreateEscalationRequest,
+  CallerFeedBackRequest,
+  IncidentRejectionLog,
+  RejectionLogListResponse,
 } from "../types";
 
 // User Management
@@ -1359,8 +1362,8 @@ export const incidentApi = {
     if (recordType) params.append("record_type", recordType);
     if (assignType) params.append("type", assignType);
     const url = params.toString()
-      ? `/incidents/stats?${params.toString()}`
-      : "/incidents/stats";
+      ? `/incidents/stats/v2?${params.toString()}`
+      : "/incidents/stats/v2";
     const response = await apiClient.get<ApiResponse<IncidentStats>>(url);
     return response.data;
   },
@@ -2722,6 +2725,61 @@ export const escalationApi = {
   },
 };
 
+export const callerFeedbackApi = {
+  create: async (data: CallerFeedBackRequest): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/caller-sentiments",
+      data,
+    );
+    return response.data;
+  },
+  get: async ({
+    callee_id,
+    caller_id,
+  }: {
+    callee_id: string;
+    caller_id: string;
+  }): Promise<ApiResponse<DataSourceDefinition[]>> => {
+    const response = await apiClient.get<ApiResponse<DataSourceDefinition[]>>(
+      `/caller-sentiments/${callee_id}/${caller_id}`,
+    );
+    return response.data;
+  },
+};
+
+// Rejection Log API
+export const rejectionLogApi = {
+  getByIncident: async (
+    incidentId: string,
+  ): Promise<ApiResponse<IncidentRejectionLog[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentRejectionLog[]>>(
+      `/incidents/${incidentId}/rejection-logs`,
+    );
+    return response.data;
+  },
+
+  list: async (params?: {
+    page?: number;
+    limit?: number;
+    record_type?: string;
+    sla_status?: string;
+    incident_id?: string;
+    rejected_by_id?: string;
+    department_id?: string;
+    classification_id?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<RejectionLogListResponse> => {
+    const response = await apiClient.get<RejectionLogListResponse>(
+      "/admin/rejection-logs",
+      {
+        params,
+      },
+    );
+    return response.data;
+  },
+};
+
 export const SmsLinkApi = {
   validate: async (
     id: string,
@@ -2740,3 +2798,4 @@ export const SmsLinkApi = {
     return response.data;
   },
 };
+

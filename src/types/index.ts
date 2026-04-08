@@ -5,6 +5,7 @@ export type ClassificationType =
   | "request"
   | "complaint"
   | "query"
+  | "evidence"
   | "both"
   | "all";
 
@@ -310,6 +311,7 @@ export interface UpdateProfileRequest {
   last_name?: string;
   phone?: string;
   department_id?: string;
+  extension?: string;
   location_id?: string;
   department_ids?: string[];
   location_ids?: string[];
@@ -660,8 +662,8 @@ export interface WorkflowState {
   sort_order: number;
   is_active: boolean;
   viewable_roles?: Role[];
-  created_at: string;
   editable_roles?: Role[];
+  created_at: string;
 }
 
 export interface WorkflowTransition {
@@ -688,6 +690,8 @@ export interface WorkflowTransition {
   assignment_roles?: Role[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+
+  is_rejection: boolean;
 
   requirements?: TransitionRequirement[];
   actions?: TransitionAction[];
@@ -781,6 +785,7 @@ export interface WorkflowStateCreateRequest {
   duration_options?: string[];
   sort_order?: number;
   viewable_role_ids?: string[];
+  editable_role_ids?: string[];
 }
 
 export interface WorkflowStateUpdateRequest {
@@ -798,6 +803,7 @@ export interface WorkflowStateUpdateRequest {
   sort_order?: number;
   is_active?: boolean;
   viewable_role_ids?: string[];
+  editable_role_ids?: string[];
 }
 
 export interface WorkflowTransitionCreateRequest {
@@ -819,6 +825,7 @@ export interface WorkflowTransitionCreateRequest {
   assignment_role_ids?: string[];
   auto_match_user?: boolean;
   manual_select_user?: boolean;
+  is_rejection?: boolean;
 }
 
 export interface WorkflowTransitionUpdateRequest {
@@ -841,6 +848,7 @@ export interface WorkflowTransitionUpdateRequest {
   assignment_role_ids?: string[];
   auto_match_user?: boolean;
   manual_select_user?: boolean;
+  is_rejection?: boolean;
 }
 
 export interface WorkflowImportResponse {
@@ -1018,6 +1026,7 @@ export interface IncidentRevision {
   attachment_id?: string;
   transition_history_id?: string;
   transition?: WorkflowTransition;
+  synced_incidents?: string[];
   created_at: string;
 }
 
@@ -1045,6 +1054,12 @@ export interface StateStatDetail {
   state_type?: string;
 }
 
+export interface WorkflowStats {
+  workflow_id: string;
+  workflow_name: string;
+  by_state: Record<string, number>;
+  by_state_details: StateStatDetail[];
+}
 export interface IncidentStats {
   total: number;
   open: number;
@@ -1054,6 +1069,7 @@ export interface IncidentStats {
   sla_breached: number;
   by_state: Record<string, number>;
   by_state_details?: StateStatDetail[];
+  workflow_stats?: WorkflowStats[];
 }
 
 // Incident request types
@@ -1366,6 +1382,7 @@ export interface ReportFieldDefinition {
   relationField?: string;
   description?: string;
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
+  canBeColumn?: boolean;
 }
 
 // Data Source Definition
@@ -1542,6 +1559,9 @@ export interface SettingsUpdateRequest {
 
 // Re-export report template builder types
 export * from "./reportTemplate";
+
+// Re-export goal management types
+export * from "./goal";
 
 // Communication types
 export interface EmailRecipient {
@@ -1725,4 +1745,47 @@ export interface CreateEscalationRequest {
   frequency: string;
   is_active: boolean;
   user_ids: string[];
+}
+
+export interface CallerFeedBackRequest {
+  callee_id: string;
+  call_uuid?: string;
+  sentiment: number;
+  feedback: string;
+}
+
+export interface IncidentRejectionLog {
+  id: string;
+  incident_id: string;
+  incident_number: string;
+  incident_title: string;
+  record_type: string;
+  rejection_sequence: number;
+  total_rejection_count: number;
+  received_at: string;
+  rejected_at: string;
+  reaction_time_minutes: number;
+  rejection_reason: string;
+  from_state?: WorkflowState;
+  to_state?: WorkflowState;
+  rejected_by?: User;
+  rejected_by_username: string;
+  rejected_by_roles_snapshot: string[];
+  sla_threshold_hours?: number;
+  sla_threshold_minutes?: number;
+  sla_breached_at_rejection: boolean;
+  sla_status: "within_sla" | "breached";
+  department_id?: string;
+  classification_id?: string;
+  transition_history_id: string;
+  created_at: string;
+}
+
+export interface RejectionLogListResponse {
+  success: boolean;
+  data: IncidentRejectionLog[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }

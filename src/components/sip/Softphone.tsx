@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import sipService from "../../lib/services/sipService";
@@ -16,7 +16,15 @@ import {
   VolumeX,
   Delete,
   Settings,
+  Clock,
+  BarChart2,
 } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { callerFeedbackApi } from "@/api/admin";
+import { useAuthStore } from "@/stores/authStore";
+import { v4 as uuid } from "uuid";
+import usePermissions from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/constants/permissions";
 
 /* -------------------- Types -------------------- */
 
@@ -30,7 +38,7 @@ interface Auth {
   accessToken?: string;
 }
 
-interface Settings {
+interface Setting {
   socketURL?: string;
   domain?: string;
 }
@@ -38,7 +46,7 @@ interface Settings {
 interface SoftPhoneProps {
   showSip: boolean;
   onClose?: () => void;
-  settings: Settings;
+  settings: Setting;
   auth: Auth;
   findByID?: (id: string) => User | undefined;
 }
@@ -89,7 +97,136 @@ const dialpadKeys = [
   { digit: "#", letters: "" },
 ];
 
+const SENTIMENTS = (t: any) =>
+  [
+    { key: 1, emoji: "😡", label: t("softphone.sentiment.angry") },
+    { key: 2, emoji: "😠", label: t("softphone.sentiment.upset") },
+    { key: 3, emoji: "😐", label: t("softphone.sentiment.normal") },
+    { key: 4, emoji: "😊", label: t("softphone.sentiment.satisfied") },
+    {
+      key: 5,
+      emoji: "😄",
+      label: t("softphone.sentiment.verySatisfied"),
+    },
+  ] as const;
+
 /* -------------------- Component -------------------- */
+
+const SentimentStats: React.FC<{
+  calleeId: string;
+  callerId: string;
+  t: any;
+}> = ({ calleeId, callerId, t }) => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["caller-sentiment-stats", calleeId],
+    queryFn: () =>
+      callerFeedbackApi.get({ callee_id: calleeId, caller_id: callerId }),
+    enabled: !!calleeId && !!callerId,
+  });
+
+  const barColour = (key: number) =>
+    [
+      "bg-red-500",
+      "bg-orange-400",
+      "bg-yellow-400",
+      "bg-emerald-400",
+      "bg-green-500",
+    ][key - 1] ?? "bg-gray-300";
+
+  const response = data as any;
+
+  const raw: Array<{ sentiment: number; count: number; percent: number }> =
+    response?.summary ?? [];
+
+  const summary = SENTIMENTS(t).map((def) => {
+    const match = raw.find((r) => r.sentiment === def.key);
+    return { ...def, count: match?.count ?? 0, percent: match?.percent ?? 0 };
+  });
+
+  const totalCalls = response?.calls?.length ?? 0;
+  const dominant = response?.dominant ?? null;
+
+  if (isLoading)
+    return (
+      <div className="mx-4 mb-3 rounded-xl border border-gray-100 bg-white p-3 animate-pulse">
+        <div className="h-3 bg-gray-100 rounded mb-2 w-24" />
+        <div className="space-y-1.5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-4 bg-gray-100 rounded-full" />
+          ))}
+        </div>
+      </div>
+    );
+
+  if (isError || totalCalls === 0)
+    return (
+      <div className="mx-4 mb-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-center">
+        <BarChart2 className="w-4 h-4 text-gray-300 mx-auto mb-1" />
+        <p className="text-xs text-gray-400">
+          {t("softphone.noCallerHistory")}
+        </p>
+      </div>
+    );
+
+  return (
+    <div className="mx-4 mb-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-1.5">
+          <BarChart2 className="w-3.5 h-3.5 text-blue-500" />
+          <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+            {t("softphone.callerHistory")}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {dominant && (
+            <span
+              className="text-sm"
+              title={SENTIMENTS(t).find((s) => s.key === dominant)?.label}
+            >
+              {SENTIMENTS(t).find((s) => s.key === dominant)?.emoji}
+            </span>
+          )}
+          <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            {totalCalls} {t("softphone.calls")}
+          </span>
+        </div>
+      </div>
+
+      {/* Stacked bar */}
+      <div className="flex h-2 rounded-full overflow-hidden gap-px mb-3">
+        {summary.map((s) =>
+          s.percent > 0 ? (
+            <div
+              key={s.key}
+              className={barColour(s.key)}
+              style={{ width: `${s.percent}%` }}
+            />
+          ) : null,
+        )}
+      </div>
+
+      {/* Per-sentiment rows */}
+      <div className="space-y-1.5">
+        {summary.map((s) => (
+          <div key={s.key} className="flex items-center gap-2">
+            <span className="text-sm w-5 text-center leading-none">
+              {s.emoji}
+            </span>
+            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`${barColour(s.key)} h-full rounded-full transition-all duration-500`}
+                style={{ width: `${s.percent}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-gray-500 w-7 text-right tabular-nums">
+              {s.percent}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function SoftPhone({
   showSip,
@@ -99,6 +236,7 @@ export default function SoftPhone({
 }: SoftPhoneProps) {
   const { t } = useTranslation();
   const dragRef = useRef<HTMLDivElement | null>(null);
+  const { hasPermission } = usePermissions();
 
   const [sipConnected, setSipConnected] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
@@ -122,6 +260,27 @@ export default function SoftPhone({
   const [sipPassword, setSipPassword] = useState<string>("51234");
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<boolean>(false);
 
+  const [showSentimentModal, setShowSentimentModal] = useState<boolean>(false);
+  const [callSummary, setCallSummary] = useState<{
+    number: string;
+    duration: number;
+    calleeId: string;
+  } | null>();
+
+  const [selectedSentiment, setSelectedSentiment] = useState<any | null>(null);
+  const { user } = useAuthStore();
+  const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
+  const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
+
+  const wasIncomingCallRef = useRef(false);
+  const dialedNumberRef = useRef("");
+
+  const canCreateSentimentRef = useRef(false);
+
+  useEffect(() => {
+    canCreateSentimentRef.current = canCreateSentiment;
+  }, [canCreateSentiment]);
+
   /* ---------------- SIP CONNECTION ---------------- */
 
   // Initialize persistent audio element on mount
@@ -133,6 +292,7 @@ export default function SoftPhone({
     if (showSip && !sipConnected && !isConnecting) {
       tryConnect();
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSip, settings]);
 
@@ -171,6 +331,10 @@ export default function SoftPhone({
       const session = ce.detail.session;
 
       setIncomingCall(session);
+      wasIncomingCallRef.current = true;
+      dialedNumberRef.current =
+        session?.remote_identity?.uri?.user ?? "Unknown";
+
       setDialedNumber(session?.remote_identity?.uri?.user ?? "Unknown");
       setCallStatus("incoming");
       playRingtone();
@@ -315,6 +479,24 @@ export default function SoftPhone({
   };
 
   const cleanup = (): void => {
+    stopRingtone();
+    const duration = globalCallDuration;
+    stopTimer();
+
+    if (wasIncomingCallRef.current && canCreateSentimentRef.current) {
+      setCallSummary({
+        number: dialedNumberRef.current,
+        duration: duration,
+        calleeId: dialedNumberRef.current,
+      });
+      setShowSentimentModal(true);
+      return;
+    }
+
+    resetCallState();
+  };
+
+  const resetCallState = (): void => {
     setCallStatus("idle");
     setDialedNumber("");
     setIncomingCall(null);
@@ -322,8 +504,9 @@ export default function SoftPhone({
     setCallDuration(0);
     setIsMuted(false);
     setIsSpeakerOn(true);
-    stopRingtone();
-    stopTimer();
+    setSelectedSentiment(null);
+    wasIncomingCallRef.current = false;
+    dialedNumberRef.current = "";
 
     const audioEl = getRemoteAudioElement();
     audioEl.srcObject = null;
@@ -420,6 +603,35 @@ export default function SoftPhone({
     };
   }, [dragging, dragOffset]);
 
+  const handleSentimentSubmit = (sentiment: any | null): void => {
+    if (!sentiment) {
+      setShowSentimentModal(false);
+      setCallSummary(null);
+      resetCallState();
+      return;
+    }
+    feedbackMutation.mutate();
+  };
+
+  const feedbackMutation = useMutation({
+    mutationFn: () => {
+      return callerFeedbackApi.create({
+        callee_id: callSummary!.calleeId,
+        call_uuid: uuid(),
+        sentiment: selectedSentiment?.key,
+        feedback: selectedSentiment?.labelKey,
+      });
+    },
+    onSuccess: () => {
+      toast.success(t("softphone.feedbackSubmitted"));
+      setShowSentimentModal(false);
+      setCallSummary(null);
+      resetCallState();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
   /* ---------------- RENDER ---------------- */
 
   if (!showSip) return null;
@@ -603,6 +815,10 @@ export default function SoftPhone({
         )}
       </div>
 
+      {isIncomingCall && canViewSentiment && (
+        <SentimentStats calleeId={user!.id} callerId={dialedNumber} t={t} />
+      )}
+
       {/* Dialpad */}
       {!isInCall && !isIncomingCall && (
         <div className="px-4 pb-4">
@@ -740,6 +956,74 @@ export default function SoftPhone({
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {showSentimentModal && callSummary && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl w-[300px] overflow-hidden p-4">
+            {/* Sentiment header row */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {t("softphone.sentimentTitle")}
+                </p>
+
+                <p className="text-xs text-gray-400 flex items-center gap-2">
+                  <Phone className="w-3 h-3" />
+                  <span>{callSummary.number}</span>
+                  <Clock className="w-3 h-3" />
+                  <span>{formatDuration(callSummary.duration)}</span>
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleSentimentSubmit(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Emoji row */}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              {SENTIMENTS(t).map((item) => (
+                <button
+                  key={item?.key}
+                  onClick={() => setSelectedSentiment(item)}
+                  title={t(item?.label)}
+                  className={`text-2xl leading-none p-2 rounded-xl border transition-all duration-150 ${
+                    selectedSentiment?.key === item?.key
+                      ? "scale-110 bg-blue-50 border-primary opacity-100"
+                      : "bg-transparent hover:bg-muted border-transparent "
+                  }`}
+                >
+                  {item?.emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Selected label */}
+            <div
+              className={`text-center text-xs font-medium text-blue-600 capitalize h-4 mb-4 transition-opacity duration-200 ${
+                selectedSentiment ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {t(selectedSentiment?.labelKey)}
+            </div>
+
+            {/* Submit */}
+            <button
+              onClick={() => handleSentimentSubmit(selectedSentiment)}
+              disabled={!selectedSentiment}
+              className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                selectedSentiment
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {t("softphone.submit")}
+            </button>
           </div>
         </div>
       )}

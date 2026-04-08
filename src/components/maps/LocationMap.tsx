@@ -38,9 +38,11 @@ const getMarkerColor = (type?: string): string => {
   return colorMap[type?.toLowerCase() || ''] || '#6b7280'; // gray default
 };
 
-const createColoredIcon = (color: string, isSelected: boolean = false): L.DivIcon => {
+const createColoredIcon = (color: string, isSelected: boolean = false, count: number = 1): L.DivIcon => {
   const size = isSelected ? 32 : 24;
   const borderWidth = isSelected ? 3 : 2;
+  const isGroup = count > 1;
+
   return L.divIcon({
     className: 'custom-marker',
     html: `
@@ -51,8 +53,16 @@ const createColoredIcon = (color: string, isSelected: boolean = false): L.DivIco
         border: ${borderWidth}px solid white;
         border-radius: 50%;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: ${size * 0.4}px;
         ${isSelected ? 'transform: scale(1.2);' : ''}
-      "></div>
+      ">
+        ${isGroup ? count : ''}
+      </div>
     `,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -108,64 +118,81 @@ export default function LocationMap({
 
     if (locationsWithCoords.length === 0) return;
 
+    // Group locations by exact coordinates
+    const groups = new Map<string, Location[]>();
+    locationsWithCoords.forEach((loc) => {
+      const key = `${loc.latitude},${loc.longitude}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(loc);
+    });
+
     const bounds = L.latLngBounds([]);
 
-    locationsWithCoords.forEach((location) => {
-      if (location.latitude === undefined || location.longitude === undefined) return;
+    groups.forEach((items, coords) => {
+      const [lat, lng] = coords.split(',').map(Number);
+      const isSelected = items.some((item) => item.id === selectedId);
+      const count = items.length;
 
-      const isSelected = location.id === selectedId;
-      const color = getMarkerColor(location.type);
-      const icon = createColoredIcon(color, isSelected);
+      // Use the first item's type for the marker color
+      const color = getMarkerColor(items[0].type);
+      const icon = createColoredIcon(color, isSelected, count);
 
-      const marker = L.marker([location.latitude, location.longitude], { icon })
-        .addTo(mapRef.current!);
+      const marker = L.marker([lat, lng], { icon }).addTo(mapRef.current!);
 
       // Create popup content
+      const isGroup = count > 1;
       const popupContent = `
-        <div style="min-width: 150px;">
-          <strong style="font-size: 14px;">${location.name}</strong>
-          ${location.code ? `<br/><span style="color: #666; font-size: 12px;">Code: ${location.code}</span>` : ''}
-          ${location.type ? `<br/><span style="color: #888; font-size: 11px; text-transform: capitalize;">${location.type}</span>` : ''}
-          ${location.address ? `<br/><span style="color: #666; font-size: 11px;">${location.address}</span>` : ''}
+        <div style="min-width: 200px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+          ${isGroup ? `<h4 style="margin: 0 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; font-weight: bold;">${count} Incidents</h4>` : ''}
+          ${items.map((location, idx) => `
+            <div style="margin-bottom: 12px; padding-bottom: 8px; ${idx < items.length - 1 ? 'border-bottom: 1px dashed #eee;' : ''}">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                <strong style="font-size: 14px; color: #1e293b; display: block;">${location.name}</strong>
+                <span style="font-size: 10px; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #64748b;">${location.code}</span>
+              </div>
+              <p style="margin: 4px 0; font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${location.description || ''}</p>
+              ${location.address ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">${location.address}</div>` : ''}
+              <div style="margin-top: 6px;">
+                <a href="/incidents/${location.id}" style="color: #3b82f6; font-size: 12px; text-decoration: none; font-weight: 500;">View Detail →</a>
+              </div>
+            </div>
+          `).join('')}
         </div>
       `;
       marker.bindPopup(popupContent);
 
       // Handle click
       marker.on('click', () => {
-        if (onSelect) {
-          onSelect(location);
+        if (onSelect && items.length === 1) {
+          onSelect(items[0]);
         }
       });
 
-      markersRef.current.set(location.id, marker);
-      bounds.extend([location.latitude, location.longitude]);
+      items.forEach((item) => {
+        markersRef.current.set(item.id, marker);
+      });
+      bounds.extend([lat, lng]);
     });
 
     // Fit map to show all markers
     if (locationsWithCoords.length > 0) {
       mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     }
-  }, [locations, locationsWithCoords, selectedId, onSelect]);
+  }, [locationsWithCoords, selectedId, onSelect]);
 
   // Update selected marker appearance
   useEffect(() => {
-    markersRef.current.forEach((marker, id) => {
-      const location = locationsWithCoords.find((loc) => loc.id === id);
-      if (!location) return;
-
-      const isSelected = id === selectedId;
-      const color = getMarkerColor(location.type);
-      const icon = createColoredIcon(color, isSelected);
-      marker.setIcon(icon);
-
-      // Center map on selected location
-      if (isSelected && location.latitude && location.longitude && mapRef.current) {
-        mapRef.current.panTo([location.latitude, location.longitude]);
-        marker.openPopup();
-      }
-    });
-  }, [selectedId, locationsWithCoords]);
+    // This is handled in the main useEffect now to avoid complex re-mapping
+    // But we still need to pan to selected markers if needed
+    if (selectedId && markersRef.current.has(selectedId) && mapRef.current) {
+      const marker = markersRef.current.get(selectedId)!;
+      const latlng = marker.getLatLng();
+      mapRef.current.panTo(latlng);
+      marker.openPopup();
+    }
+  }, [selectedId]);
 
   return (
     <div

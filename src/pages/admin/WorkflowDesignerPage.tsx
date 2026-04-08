@@ -97,6 +97,7 @@ interface TransitionFormData {
   assignment_role_ids: string[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+  is_rejection: boolean;
 }
 
 const initialStateFormData: StateFormData = {
@@ -129,6 +130,7 @@ const initialTransitionFormData: TransitionFormData = {
   assignment_role_ids: [],
   auto_match_user: false,
   manual_select_user: false,
+  is_rejection: false,
 };
 
 const STATE_COLORS = [
@@ -685,6 +687,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: transition.assignment_roles?.map((r) => r.id) || [],
       auto_match_user: transition.auto_match_user || false,
       manual_select_user: transition.manual_select_user || false,
+      is_rejection: transition.is_rejection || false,
     });
     setIsTransitionModalOpen(true);
   };
@@ -786,6 +789,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: transitionFormData.assignment_role_ids,
       auto_match_user: transitionFormData.auto_match_user,
       manual_select_user: transitionFormData.manual_select_user,
+      is_rejection: transitionFormData.is_rejection,
     };
 
     if (editingTransition) {
@@ -3151,6 +3155,33 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                   </div>
                 </div>
+              </div>
+
+              {/* Rejection Tracking */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-destructive focus:ring-destructive"
+                    checked={transitionFormData.is_rejection}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        is_rejection: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      Mark as Rejection Transition
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      When enabled, executing this transition will create a
+                      detailed rejection log record used for SLA tracking,
+                      analytics, and Power BI reports.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">

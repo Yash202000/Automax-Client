@@ -36,6 +36,7 @@ import {
   Copy,
   Search,
   ChevronDown,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
@@ -58,6 +59,7 @@ import {
   incidentMergeApi,
   locationApi,
   classificationApi,
+  rejectionLogApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type {
@@ -71,6 +73,7 @@ import type {
   UserMatchResponse,
   LookupValue,
   Department,
+  IncidentRejectionLog,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -85,6 +88,7 @@ import {
 } from "../../utils/customFields";
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
+import { useAppSelector } from "../../hooks/redux";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -103,9 +107,8 @@ export const IncidentDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const { users } = useAppSelector((state) => state.users);
 
-  const canEditIncident =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
   const canMergeIncidents =
@@ -114,7 +117,7 @@ export const IncidentDetailPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
   const [activeTab, setActiveTab] = useState<
-    "activity" | "comments" | "attachments" | "revisions"
+    "activity" | "comments" | "attachments" | "revisions" | "rejections"
   >("activity");
   const [commentText, setCommentText] = useState("");
   const [isInternalComment, setIsInternalComment] = useState(false);
@@ -240,6 +243,13 @@ export const IncidentDetailPage: React.FC = () => {
       enabled: !!id,
     });
 
+  // Fetch rejection logs for this incident
+  const { data: rejectionLogsData } = useQuery({
+    queryKey: ["incident", id, "rejection-logs"],
+    queryFn: () => rejectionLogApi.getByIncident(id!),
+    enabled: !!id,
+  });
+
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", 1, 100],
     queryFn: () => userApi.list(1, 100),
@@ -329,6 +339,16 @@ export const IncidentDetailPage: React.FC = () => {
     [lookupCategoriesData?.data],
   );
   const user = useAuthStore((state) => state.user);
+
+  // State-level edit restriction: if current state has editable_roles configured,
+  // user must be in one of those roles (superadmin bypasses this check).
+  const canEditIncident = (() => {
+    if (!hasPermission(PERMISSIONS.INCIDENTS_UPDATE)) return false;
+    if (isSuperAdmin) return true;
+    const editableRoles = incident?.current_state?.editable_roles;
+    if (!editableRoles || editableRoles.length === 0) return true;
+    return editableRoles.some((r) => user?.roles?.some((ur) => ur.id === r.id));
+  })();
 
   // Check merge permission based on incident's workflow
   // const { data: mergePermissionData } = useQuery({
@@ -605,6 +625,7 @@ export const IncidentDetailPage: React.FC = () => {
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
   const comments = commentsData?.data || [];
+
   const attachments = attachmentsData?.data || [];
   const fullWorkflow = fullWorkflowData?.data;
 
@@ -1184,6 +1205,10 @@ export const IncidentDetailPage: React.FC = () => {
     }
   };
 
+  const getHistoryById = (id: string) => {
+    return history.find((h: any) => h.id === id);
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -1440,7 +1465,9 @@ export const IncidentDetailPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setUnmergeModalOpen(true)}
+              onClick={() => {
+                setUnmergeModalOpen(true);
+              }}
               leftIcon={<ArrowRightLeft className="w-4 h-4" />}
             >
               {t("incidentMerge.unmerge")}
@@ -1461,7 +1488,13 @@ export const IncidentDetailPage: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setBulkUnmergeModalOpen(true)}
+                  onClick={() => {
+                    setBulkUnmergeModalOpen(true);
+                    setSelectedForUnmerge(
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      new Set(mergedIncidents.map((m: any) => m.id)),
+                    );
+                  }}
                   leftIcon={<ArrowRightLeft className="w-4 h-4" />}
                 >
                   {t("incidentMerge.bulkUnmerge")} ({mergedIncidents.length})
@@ -1714,6 +1747,25 @@ export const IncidentDetailPage: React.FC = () => {
                   {t("incidents.revisions")}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab("rejections")}
+                className={cn(
+                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  activeTab === "rejections"
+                    ? "text-[hsl(var(--destructive))] border-b-2 border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.05)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <XCircle className="w-4 h-4" />
+                  Rejection History
+                  {(rejectionLogsData?.data?.length ?? 0) > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]">
+                      {rejectionLogsData?.data?.length}
+                    </span>
+                  )}
+                </span>
+              </button>
             </div>
 
             <div className="p-4">
@@ -1761,6 +1813,26 @@ export const IncidentDetailPage: React.FC = () => {
                                     item.performed_by?.username ||
                                     t("incidents.system")}
                                 </span>
+                                {item.performed_by && (
+                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
+                                    (
+                                    {(() => {
+                                      const u = users.find(
+                                        (user) =>
+                                          user.id === item.performed_by?.id,
+                                      );
+                                      return (
+                                        u?.department?.name ||
+                                        u?.departments?.[0]?.name ||
+                                        item.performed_by?.department?.name ||
+                                        item.performed_by?.departments?.[0]
+                                          ?.name ||
+                                        "-"
+                                      );
+                                    })()}
+                                    )
+                                  </span>
+                                )}
                               </div>
                               <span className="text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(item.transitioned_at)}
@@ -2000,7 +2072,7 @@ export const IncidentDetailPage: React.FC = () => {
                               </div>
                             )}
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-3 mb-4">
                               {attachments
                                 .filter((a: IncidentAttachment) =>
                                   isImageAttachment(a.mime_type),
@@ -2055,7 +2127,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       )}
                                       alt={attachment.file_name}
                                       className={cn(
-                                        "w-full h-32 object-cover transition-opacity",
+                                        "w-full h-48 object-cover transition-opacity",
                                         compareMode
                                           ? "cursor-pointer"
                                           : "cursor-pointer hover:opacity-90",
@@ -2069,7 +2141,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       }}
                                     />
                                     {!compareMode && (
-                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
+                                      <div className="absolute mb-3 inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 gap-2">
                                         <button
                                           onClick={() =>
                                             openLightbox(attachment)
@@ -2123,6 +2195,10 @@ export const IncidentDetailPage: React.FC = () => {
                                       <p className="truncate">
                                         {attachment.file_name}
                                       </p>
+                                      <p className="text-xs text-white/70 mt-0.5">
+                                        {formatFileSize(attachment.file_size)} •{" "}
+                                        {formatDateTime(attachment.created_at)}
+                                      </p>
                                       {attachment.uploaded_by && (
                                         <p className="truncate text-white/70 mt-0.5">
                                           {attachment.uploaded_by.first_name}{" "}
@@ -2132,7 +2208,62 @@ export const IncidentDetailPage: React.FC = () => {
                                             {attachment.uploaded_by.roles?.[0]
                                               ?.name || "No Role"}
                                           </span>
+                                          <span className="ml-1">
+                                            ·{" "}
+                                            {users
+                                              .find(
+                                                (user: any) =>
+                                                  user.id ===
+                                                  attachment.uploaded_by?.id,
+                                              )
+                                              ?.departments?.map(
+                                                (department: any) =>
+                                                  department.name,
+                                              )
+                                              .join(", ") || "No Department"}
+                                          </span>
                                         </p>
+                                      )}
+
+                                      {/* transition */}
+                                      {getHistoryById(
+                                        attachment.transition_history_id || "",
+                                      ) && (
+                                        <div className="flex justify-start items-center gap-2">
+                                          <span
+                                            className={
+                                              "text-xs  mt-0.5" +
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.from_state?.color
+                                            }
+                                          >
+                                            {
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.from_state?.name
+                                            }
+                                          </span>
+                                          <ArrowRight className="w-4 h-4" />
+                                          <span
+                                            className={
+                                              "text-xs  mt-0.5" +
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.to_state?.color
+                                            }
+                                          >
+                                            {
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.to_state?.name
+                                            }
+                                          </span>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
@@ -2192,7 +2323,62 @@ export const IncidentDetailPage: React.FC = () => {
                                               {attachment.uploaded_by.roles?.[0]
                                                 ?.name || "No Role"}
                                             </span>
+                                            <span className="ml-1 opacity-60">
+                                              ·{" "}
+                                              {users
+                                                .find(
+                                                  (user: any) =>
+                                                    user.id ===
+                                                    attachment.uploaded_by?.id,
+                                                )
+                                                ?.departments?.map(
+                                                  (department: any) =>
+                                                    department.name,
+                                                )
+                                                .join(", ") || "No Department"}
+                                            </span>
                                           </p>
+                                        )}
+                                        {/* transition */}
+                                        {getHistoryById(
+                                          attachment.transition_history_id ||
+                                            "",
+                                        ) && (
+                                          <div className="flex justify-start items-center gap-2">
+                                            <span
+                                              className={
+                                                "text-xs  mt-0.5" +
+                                                getHistoryById(
+                                                  attachment.transition_history_id ||
+                                                    "",
+                                                )?.from_state?.color
+                                              }
+                                            >
+                                              {
+                                                getHistoryById(
+                                                  attachment.transition_history_id ||
+                                                    "",
+                                                )?.from_state?.name
+                                              }
+                                            </span>
+                                            <ArrowRight className="w-4 h-4" />
+                                            <span
+                                              className={
+                                                "text-xs  mt-0.5" +
+                                                getHistoryById(
+                                                  attachment.transition_history_id ||
+                                                    "",
+                                                )?.to_state?.color
+                                              }
+                                            >
+                                              {
+                                                getHistoryById(
+                                                  attachment.transition_history_id ||
+                                                    "",
+                                                )?.to_state?.name
+                                              }
+                                            </span>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
@@ -2269,7 +2455,61 @@ export const IncidentDetailPage: React.FC = () => {
                                             {attachment.uploaded_by.roles?.[0]
                                               ?.name || "No Role"}
                                           </span>
+                                          <span className="ml-1 opacity-60">
+                                            ·{" "}
+                                            {users
+                                              .find(
+                                                (user: any) =>
+                                                  user.id ===
+                                                  attachment.uploaded_by?.id,
+                                              )
+                                              ?.departments?.map(
+                                                (department: any) =>
+                                                  department.name,
+                                              )
+                                              .join(", ") || "No Department"}
+                                          </span>
                                         </p>
+                                      )}
+                                      {/* transition */}
+                                      {getHistoryById(
+                                        attachment.transition_history_id || "",
+                                      ) && (
+                                        <div className="flex justify-start items-center gap-2">
+                                          <span
+                                            className={
+                                              "text-xs  mt-0.5" +
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.from_state?.color
+                                            }
+                                          >
+                                            {
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.from_state?.name
+                                            }
+                                          </span>
+                                          <ArrowRight className="w-4 h-4" />
+                                          <span
+                                            className={
+                                              "text-xs  mt-0.5" +
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.to_state?.color
+                                            }
+                                          >
+                                            {
+                                              getHistoryById(
+                                                attachment.transition_history_id ||
+                                                  "",
+                                              )?.to_state?.name
+                                            }
+                                          </span>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
@@ -2305,6 +2545,131 @@ export const IncidentDetailPage: React.FC = () => {
               {/* Revisions Tab */}
               {activeTab === "revisions" && (
                 <RevisionHistory incidentId={id!} />
+              )}
+
+              {/* Rejection History Tab */}
+              {activeTab === "rejections" && (
+                <div className="space-y-3">
+                  {!rejectionLogsData?.data?.length ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <XCircle className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm">
+                        No rejection records for this incident.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        This incident has been rejected{" "}
+                        <span className="font-semibold text-[hsl(var(--destructive))]">
+                          {rejectionLogsData.data.length}
+                        </span>{" "}
+                        time{rejectionLogsData.data.length !== 1 ? "s" : ""}.
+                      </p>
+                      {rejectionLogsData.data.map(
+                        (log: IncidentRejectionLog) => (
+                          <div
+                            key={log.id}
+                            className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--destructive)/0.03)] p-4 space-y-3"
+                          >
+                            {/* Header row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))] text-xs font-bold">
+                                  #{log.rejection_sequence}
+                                </span>
+                                <div>
+                                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                    {log.from_state?.name ?? "—"} →{" "}
+                                    {log.to_state?.name ?? "—"}
+                                  </p>
+                                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                    Rejected by{" "}
+                                    <span className="font-medium">
+                                      {log.rejected_by?.first_name ??
+                                        log.rejected_by_username}
+                                    </span>
+                                    {log.rejected_by_roles_snapshot?.length >
+                                      0 && (
+                                      <span className="ml-1">
+                                        (
+                                        {log.rejected_by_roles_snapshot.join(
+                                          ", ",
+                                        )}
+                                        )
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-xs font-medium",
+                                    log.sla_status === "breached"
+                                      ? "bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]"
+                                      : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                                  )}
+                                >
+                                  {log.sla_status === "breached"
+                                    ? "SLA Breached"
+                                    : "Within SLA"}
+                                </span>
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  {new Date(log.rejected_at).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Metrics row */}
+                            <div className="grid grid-cols-3 gap-3 text-xs">
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  Reaction Time
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.reaction_time_minutes < 60
+                                    ? `${log.reaction_time_minutes}m`
+                                    : `${Math.floor(log.reaction_time_minutes / 60)}h ${log.reaction_time_minutes % 60}m`}
+                                </p>
+                              </div>
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  SLA Threshold
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.sla_threshold_hours != null
+                                    ? `${log.sla_threshold_hours}h`
+                                    : "—"}
+                                </p>
+                              </div>
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  Total Rejections
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.total_rejection_count}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Rejection reason */}
+                            {log.rejection_reason && (
+                              <div className="text-xs">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-1 font-medium">
+                                  Rejection Reason
+                                </p>
+                                <p className="text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.3)] rounded p-2 leading-relaxed">
+                                  {log.rejection_reason}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -2491,12 +2856,12 @@ export const IncidentDetailPage: React.FC = () => {
                       </span>
                     )}
                   </label>
-                  <button
+                  {/* <button
                     onClick={() => setAssignModalOpen(true)}
                     className="text-xs text-[hsl(var(--primary))] hover:underline"
                   >
                     {t("incidents.change")}
-                  </button>
+                  </button> */}
                 </div>
                 <div className="mt-1">
                   {incident.assignees && incident.assignees.length > 0 ? (
@@ -3437,10 +3802,7 @@ export const IncidentDetailPage: React.FC = () => {
                                           {!isCollapsed &&
                                             (users.length === 0 ? (
                                               <p className="px-6 py-2 text-xs text-[hsl(var(--muted-foreground))]">
-                                                {t(
-                                                  "incidents.noUsersWithRole",
-                                                  "No users with this role",
-                                                )}
+                                                {t("incidents.noUsersWithRole")}
                                               </p>
                                             ) : (
                                               users.map((u) =>
@@ -3575,10 +3937,7 @@ export const IncidentDetailPage: React.FC = () => {
                         {/* Star Rating */}
                         <div>
                           <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                            {t(
-                              "incidents.rateExperience",
-                              "Rate your experience",
-                            )}
+                            {t("incidents.rateExperience")}
                           </span>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -3620,7 +3979,6 @@ export const IncidentDetailPage: React.FC = () => {
                             }
                             placeholder={t(
                               "incidents.feedbackCommentPlaceholder",
-                              "Add optional feedback comments...",
                             )}
                             rows={2}
                             className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
@@ -3669,12 +4027,24 @@ export const IncidentDetailPage: React.FC = () => {
                                   }}
                                   className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 >
-                                  <option value="">Select priority...</option>
-                                  <option value="1">Low</option>
-                                  <option value="2">Medium</option>
-                                  <option value="3">High</option>
-                                  <option value="4">Urgent</option>
-                                  <option value="5">Critical</option>
+                                  <option value="">
+                                    {t("incidents.selectPriority")}
+                                  </option>
+                                  <option value="1">
+                                    {t("priorities.low")}
+                                  </option>
+                                  <option value="2">
+                                    {t("priorities.medium")}
+                                  </option>
+                                  <option value="3">
+                                    {t("priorities.high")}
+                                  </option>
+                                  <option value="4">
+                                    {t("priorities.urgent")}
+                                  </option>
+                                  <option value="5">
+                                    {t("priorities.critical")}
+                                  </option>
                                 </select>
                                 {transitionErrors[fc.field_name] && (
                                   <p className="text-xs text-red-500 mt-1">
@@ -3711,9 +4081,12 @@ export const IncidentDetailPage: React.FC = () => {
                                       [fc.field_name]: "",
                                     }));
                                 }}
-                                placeholder={`Select ${fc.department_type_filter || ""} department...`
-                                  .replace("  ", " ")
-                                  .trim()}
+                                placeholder={t(
+                                  "incidents.selectDepartmentPlaceholder",
+                                  {
+                                    type: fc.department_type_filter || "",
+                                  },
+                                )}
                                 leafOnly={false}
                                 error={transitionErrors[fc.field_name]}
                                 maxHeight="240px"
@@ -3739,7 +4112,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       [fc.field_name]: "",
                                     }));
                                 }}
-                                placeholder="Select location..."
+                                placeholder={t("incidents.selectLocation")}
                                 leafOnly={false}
                                 maxHeight="240px"
                                 error={transitionErrors[fc.field_name]}
@@ -3765,7 +4138,9 @@ export const IncidentDetailPage: React.FC = () => {
                                       [fc.field_name]: "",
                                     }));
                                 }}
-                                placeholder="Select classification..."
+                                placeholder={t(
+                                  "incidents.selectClassification",
+                                )}
                                 leafOnly={false}
                                 maxHeight="240px"
                                 error={transitionErrors[fc.field_name]}
@@ -3789,7 +4164,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         [fc.field_name]: "",
                                       }));
                                   }}
-                                  placeholder="Enter title..."
+                                  placeholder={t("incidents.enterTitle")}
                                   className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 />
                                 {transitionErrors[fc.field_name] && (
@@ -3816,7 +4191,7 @@ export const IncidentDetailPage: React.FC = () => {
                                         [fc.field_name]: "",
                                       }));
                                   }}
-                                  placeholder="Enter description..."
+                                  placeholder={t("incidents.enterDescription")}
                                   rows={3}
                                   className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                                 />
@@ -3836,10 +4211,7 @@ export const IncidentDetailPage: React.FC = () => {
                   {currentStepKey === "duration" && (
                     <div>
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
-                        {t(
-                          "incidents.readyToCloseDurationHint",
-                          "The incident will automatically revert if not closed within the selected period.",
-                        )}
+                        {t("incidents.readyToCloseDurationHint")}
                       </p>
                       <select
                         value={readyToCloseDuration}

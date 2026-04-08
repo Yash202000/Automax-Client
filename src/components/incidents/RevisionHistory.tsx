@@ -12,7 +12,8 @@ import {
   Download,
   Filter,
   ArrowRight,
-  Workflow
+  Workflow,
+  GitMerge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui";
@@ -20,6 +21,7 @@ import { incidentApi } from "../../api/admin";
 import type { IncidentRevisionActionType } from "../../types";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useAppSelector } from "../../hooks/redux";
 
 interface RevisionHistoryProps {
   incidentId: string;
@@ -36,6 +38,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
   const [filterType, setFilterType] = useState<IncidentRevisionActionType | "">(
     "",
   );
+  const { users } = useAppSelector((state) => state.users);
 
   const actionTypeLabels: Record<IncidentRevisionActionType, string> = {
     field_change: t("revisionHistory.actionTypes.fieldChange"),
@@ -74,11 +77,16 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
     setExpandedRevisions(newExpanded);
   };
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("en-US", {
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       second: "2-digit",
@@ -96,12 +104,18 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
 
     const rows = allData.data.map((rev) => ({
       "#": rev.revision_number,
-      Timestamp: formatDateTime(rev.created_at),
+      Timestamp: `${formatDate(rev.created_at)} ${formatTime(rev.created_at)}`,
       Action: rev.action_description,
       "Action Taken By": rev.performed_by
         ? `${rev.performed_by.first_name || ""} ${rev.performed_by.last_name || ""}`.trim() ||
-        rev.performed_by.username
+          rev.performed_by.username
         : "System",
+      Department:
+        (users.find((u) => u.id === rev.performed_by_id) || rev.performed_by)
+          ?.department?.name ||
+        (users.find((u) => u.id === rev.performed_by_id) || rev.performed_by)
+          ?.departments?.[0]?.name ||
+        "-",
       Role: rev.performed_by_roles?.join(", ") || "",
       Mobile: rev.performed_by_phone || rev.performed_by?.phone || "",
     }));
@@ -221,6 +235,9 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                   {t("revisionHistory.actionTakenBy")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                  {t("common.department", "Department")}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("revisionHistory.role")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -240,24 +257,46 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 text-sm text-[hsl(var(--foreground))]">
-                        <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                        <span className="whitespace-nowrap">
-                          {formatDateTime(revision.created_at)}
-                        </span>
+                        <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="whitespace-nowrap">
+                            {formatDate(revision.created_at)}
+                          </span>
+                          <span className="whitespace-nowrap text-xs text-[hsl(var(--muted-foreground))]">
+                            {formatTime(revision.created_at)}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 flex flex-col gap-2">
                       <span className="text-sm text-[hsl(var(--foreground))]">
                         {revision.action_description}
                       </span>
-                      {
-                        revision.transition?.name && (
-                          <span className="text-xs bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] flex items-center gap-1 px-2 py-1 rounded-full w-fit">
-                            <Workflow className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                            {revision.transition?.name || revision.transition?.code}
-                          </span>
-                        )
-                      }
+                      {revision.transition?.name && (
+                        <span className="text-xs bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] flex items-center gap-1 px-2 py-1 rounded-full w-fit">
+                          <Workflow className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                          {revision.transition?.name ||
+                            revision.transition?.code}
+                        </span>
+                      )}
+                      {/* Show synced child incidents */}
+                      {revision.synced_incidents &&
+                        revision.synced_incidents.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <GitMerge className="w-3.5 h-3.5 text-[hsl(var(--accent))] flex-shrink-0" />
+                            <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                              Synced to:
+                            </span>
+                            {revision.synced_incidents.map((incNum, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))] border border-[hsl(var(--accent)/0.2)] rounded-full"
+                              >
+                                {incNum}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -271,10 +310,25 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
                           {revision.performed_by
                             ? `${revision.performed_by.first_name || ""} ${revision.performed_by.last_name || ""}`.trim() ||
-                            revision.performed_by.username
+                              revision.performed_by.username
                             : t("revisionHistory.system")}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-[hsl(var(--foreground))]">
+                        {(() => {
+                          const user =
+                            users.find(
+                              (u) => u.id === revision.performed_by_id,
+                            ) || revision.performed_by;
+                          return (
+                            user?.department?.name ||
+                            user?.departments?.[0]?.name ||
+                            "-"
+                          );
+                        })()}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1 max-w-xs">
@@ -289,15 +343,15 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                         ))}
                         {(!revision.performed_by_roles ||
                           revision.performed_by_roles.length === 0) && (
-                            <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                              -
-                            </span>
-                          )}
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                            -
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       {revision.performed_by_phone ||
-                        revision.performed_by?.phone ? (
+                      revision.performed_by?.phone ? (
                         <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                           <Phone className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                           {revision.performed_by_phone ||
@@ -331,7 +385,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     revision.changes.length > 0 && (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-4 py-3 bg-[hsl(var(--muted)/0.2)]"
                         >
                           <div className="pl-8 space-y-2">
