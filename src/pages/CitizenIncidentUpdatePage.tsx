@@ -62,6 +62,7 @@ export function CitizenIncidentUpdatePage() {
         postal_code?: string;
         comment: string;
         version: number;
+        source: string;
       };
       files: File[];
     }) => {
@@ -149,7 +150,8 @@ export function CitizenIncidentUpdatePage() {
         country: location?.country,
         postal_code: location?.postal_code,
         comment: comment.trim(),
-        version: incident.version + 1,
+        version: incident.version,
+        source: "sms-link",
       },
       files: attachments,
     });
