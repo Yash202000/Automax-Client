@@ -77,11 +77,16 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
     setExpandedRevisions(newExpanded);
   };
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("en-US", {
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       second: "2-digit",
@@ -99,7 +104,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
 
     const rows = allData.data.map((rev) => ({
       "#": rev.revision_number,
-      Timestamp: formatDateTime(rev.created_at),
+      Timestamp: `${formatDate(rev.created_at)} ${formatTime(rev.created_at)}`,
       Action: rev.action_description,
       "Action Taken By": rev.performed_by
         ? `${rev.performed_by.first_name || ""} ${rev.performed_by.last_name || ""}`.trim() ||
@@ -252,10 +257,15 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 text-sm text-[hsl(var(--foreground))]">
-                        <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                        <span className="whitespace-nowrap">
-                          {formatDateTime(revision.created_at)}
-                        </span>
+                        <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="whitespace-nowrap">
+                            {formatDate(revision.created_at)}
+                          </span>
+                          <span className="whitespace-nowrap text-xs text-[hsl(var(--muted-foreground))]">
+                            {formatTime(revision.created_at)}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 flex flex-col gap-2">
