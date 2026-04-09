@@ -84,8 +84,8 @@ const dataSourceInfo: Record<
     icon: "FileText",
     color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400",
   },
-  users: {
-    labelKey: "reports.dataSources.users",
+  users_performance: {
+    labelKey: "reports.dataSources.users_performance",
     icon: "Users",
     color:
       "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400",

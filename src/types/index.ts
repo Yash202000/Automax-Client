@@ -1327,7 +1327,7 @@ export type ReportDataSource =
   | "incidents"
   | "requests"
   | "action_logs"
-  | "users"
+  | "users_performance"
   | "departments"
   | "locations"
   | "workflows";
