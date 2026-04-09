@@ -5,9 +5,8 @@ export type ClassificationType =
   | "request"
   | "complaint"
   | "query"
-  | "evidence"
-  | "both"
-  | "all";
+  | "mobile"
+  | "ivr";
 
 // Base types
 export interface User {
@@ -59,7 +58,7 @@ export interface Classification {
   id: string;
   name: string;
   description: string;
-  type: ClassificationType;
+  types: string[];
   parent_id: string | null;
   level: number;
   path: string;
@@ -329,7 +328,7 @@ export interface ChangePasswordRequest {
 export interface ClassificationCreateRequest {
   name: string;
   description?: string;
-  type?: ClassificationType;
+  types?: string[];
   parent_id?: string;
   sort_order?: number;
   criticalities?: ClassificationCriticalityCreateRequest[];
@@ -344,7 +343,7 @@ export interface ClassificationCriticalityCreateRequest {
 export interface ClassificationUpdateRequest {
   name?: string;
   description?: string;
-  type?: ClassificationType;
+  types?: string[];
   is_active?: boolean;
   sort_order?: number;
 }

@@ -277,9 +277,7 @@ export const classificationApi = {
     return response.data;
   },
 
-  list: async (
-    type?: ClassificationType,
-  ): Promise<ApiResponse<Classification[]>> => {
+  list: async (type?: string): Promise<ApiResponse<Classification[]>> => {
     const url = type
       ? `/admin/classifications?type=${type}`
       : "/admin/classifications";
@@ -287,18 +285,14 @@ export const classificationApi = {
     return response.data;
   },
 
-  listByType: async (
-    type: ClassificationType,
-  ): Promise<ApiResponse<Classification[]>> => {
+  listByType: async (type: string): Promise<ApiResponse<Classification[]>> => {
     const response = await apiClient.get<ApiResponse<Classification[]>>(
       `/admin/classifications?type=${type}`,
     );
     return response.data;
   },
 
-  getTree: async (
-    type?: ClassificationType,
-  ): Promise<ApiResponse<Classification[]>> => {
+  getTree: async (type?: string): Promise<ApiResponse<Classification[]>> => {
     const url = type
       ? `/admin/classifications/tree?type=${type}`
       : "/admin/classifications/tree";
@@ -307,7 +301,7 @@ export const classificationApi = {
   },
 
   getTreeByType: async (
-    type: ClassificationType,
+    type: string,
   ): Promise<ApiResponse<Classification[]>> => {
     const response = await apiClient.get<ApiResponse<Classification[]>>(
       `/admin/classifications/tree?type=${type}`,

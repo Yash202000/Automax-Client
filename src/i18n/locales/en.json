@@ -826,6 +826,8 @@
     "request": "Request",
     "complaint": "Complaint",
     "query": "Query",
+    "mobile": "Mobile",
+    "ivr": "IVR",
     "both": "Both",
     "all": "All",
     "maxClosingTime": "Max Closing Time",

@@ -31,14 +31,13 @@ import type {
   Classification,
   ClassificationCreateRequest,
   ClassificationUpdateRequest,
-  ClassificationType,
   ClassificationCriticalityCreateRequest,
   LookupValue,
   User,
   Department,
 } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button } from "../../components/ui";
+import { Button, MultiSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 
@@ -48,7 +47,7 @@ interface ClassificationFormData {
   parent_id: string;
   parent_name: string;
   sort_order: number;
-  type: ClassificationType;
+  types: string[];
   criticalities: ClassificationCriticalityCreateRequest[];
 }
 
@@ -58,9 +57,64 @@ const initialFormData: ClassificationFormData = {
   parent_id: "",
   parent_name: "",
   sort_order: 0,
-  type: "both",
+  types: ["incident", "request"],
   criticalities: [],
 };
+
+// Per-type chip styling
+const TYPE_CHIP: Record<
+  string,
+  { badge: string; chip: string; active: string }
+> = {
+  incident: {
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    chip: "border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20",
+    active:
+      "bg-blue-500 border-blue-500 text-white dark:bg-blue-600 dark:border-blue-600",
+  },
+  request: {
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    chip: "border-emerald-300 text-emerald-600 dark:border-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20",
+    active:
+      "bg-emerald-500 border-emerald-500 text-white dark:bg-emerald-600 dark:border-emerald-600",
+  },
+  complaint: {
+    badge:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    chip: "border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20",
+    active:
+      "bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-600",
+  },
+  query: {
+    badge:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    chip: "border-purple-300 text-purple-600 dark:border-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20",
+    active:
+      "bg-purple-500 border-purple-500 text-white dark:bg-purple-600 dark:border-purple-600",
+  },
+  mobile: {
+    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+    chip: "border-cyan-300 text-cyan-600 dark:border-cyan-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20",
+    active:
+      "bg-cyan-500 border-cyan-500 text-white dark:bg-cyan-600 dark:border-cyan-600",
+  },
+  ivr: {
+    badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+    chip: "border-rose-300 text-rose-600 dark:border-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20",
+    active:
+      "bg-rose-500 border-rose-500 text-white dark:bg-rose-600 dark:border-rose-600",
+  },
+};
+
+const ALL_TYPES = [
+  "incident",
+  "request",
+  "complaint",
+  "query",
+  "mobile",
+  "ivr",
+];
 
 const levelGradients = [
   "from-[hsl(var(--primary))] to-[hsl(var(--accent))]",
@@ -158,32 +212,20 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           >
             {t("classifications.level")} {classification.level}
           </span>
-          <span
-            className={cn(
-              "px-2.5 py-1 text-xs font-medium rounded-lg",
-              classification.type === "incident"
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                : classification.type === "request"
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                  : classification.type === "complaint"
-                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                    : classification.type === "all"
-                      ? "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                      : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-            )}
-          >
-            {classification.type === "incident"
-              ? t("classifications.incident")
-              : classification.type === "request"
-                ? t("classifications.request")
-                : classification.type === "complaint"
-                  ? t("classifications.complaint")
-                  : classification.type === "query"
-                    ? t("classifications.query")
-                    : classification.type === "all"
-                      ? t("classifications.all")
-                      : t("classifications.both")}
-          </span>
+          <div className="flex items-center gap-1 flex-wrap">
+            {(classification.types ?? []).map((type) => (
+              <span
+                key={type}
+                className={cn(
+                  "px-2 py-0.5 text-xs font-medium rounded-md",
+                  TYPE_CHIP[type]?.badge ??
+                    "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+                )}
+              >
+                {t(`classifications.${type}`, { defaultValue: type })}
+              </span>
+            ))}
+          </div>
           <span
             className={cn(
               "px-2.5 py-1 text-xs font-medium rounded-lg",
@@ -395,7 +437,9 @@ export const ClassificationsPage: React.FC = () => {
       parent_id: classification.parent_id || "",
       parent_name: parentCls?.name || "",
       sort_order: classification.sort_order,
-      type: classification.type || "both",
+      types: classification.types?.length
+        ? classification.types
+        : ["incident", "request"],
       criticalities,
     });
     setIsModalOpen(true);
@@ -431,6 +475,15 @@ export const ClassificationsPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (formData.types.length === 0) {
+      toast.error(
+        t("classifications.typesRequired", {
+          defaultValue: "Select at least one type",
+        }),
+      );
+      return;
+    }
+
     // Validate criticalities - all must have closing time configured
     const hasInvalidCriticality = formData.criticalities.some(
       (c) =>
@@ -450,7 +503,7 @@ export const ClassificationsPage: React.FC = () => {
       description: formData.description,
       parent_id: formData.parent_id || undefined,
       sort_order: formData.sort_order,
-      type: formData.type,
+      types: formData.types,
       criticalities: formData.criticalities,
     };
 
@@ -655,7 +708,7 @@ export const ClassificationsPage: React.FC = () => {
                   </h3>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
                     Level {viewingClassification.level} ·{" "}
-                    {viewingClassification.type}
+                    {(viewingClassification.types ?? []).join(", ")}
                   </p>
                 </div>
               </div>
@@ -1029,43 +1082,27 @@ export const ClassificationsPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("classifications.type")}
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      type: e.target.value as ClassificationType,
-                    })
-                  }
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                >
-                  <option value="all">{t("classifications.typeAll")}</option>
-                  <option value="both">{t("classifications.typeBoth")}</option>
-                  <option value="incident">
-                    {t("classifications.typeIncident")}
-                  </option>
-                  <option value="request">
-                    {t("classifications.typeRequest")}
-                  </option>
-                  <option value="complaint">
-                    {t("classifications.typeComplaint")}
-                  </option>
-                  <option value="query">
-                    {t("classifications.typeQuery")}
-                  </option>
-                  <option value="ivr">{t("classifications.typeIVR")}</option>
-                  <option value="mobile">
-                    {t("classifications.typeMobile")}
-                  </option>
-                </select>
-                <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
-                  {t("classifications.typeHelp")}
-                </p>
-              </div>
+              <MultiSelect
+                label={t("classifications.type")}
+                options={ALL_TYPES.map((type) => ({
+                  value: type,
+                  label: t(`classifications.${type}`, { defaultValue: type }),
+                }))}
+                value={formData.types}
+                onChange={(types) => setFormData({ ...formData, types })}
+                placeholder={t("classifications.selectTypes", {
+                  defaultValue: "Select types…",
+                })}
+                helperText={t("classifications.typeHelp")}
+                error={
+                  formData.types.length === 0
+                    ? t("classifications.typesRequired", {
+                        defaultValue: "Select at least one type",
+                      })
+                    : undefined
+                }
+                showFooter
+              />
 
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">

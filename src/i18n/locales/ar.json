@@ -786,6 +786,8 @@
     "request": "طلب",
     "complaint": "شكوى",
     "query": "استفسار",
+    "mobile": "موبايل",
+    "ivr": "IVR",
     "both": "كلاهما",
     "all": "الكل",
     "maxClosingTime": "أقصى وقت للإغلاق",
