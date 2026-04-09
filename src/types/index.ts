@@ -1215,6 +1215,7 @@ export interface ConvertToRequestRequest {
   department_id?: string;
   due_date?: string;
   feedback?: IncidentFeedbackRequest;
+  existing_request_id?: string;
 }
 
 export interface BulkConvertToRequestRequest {

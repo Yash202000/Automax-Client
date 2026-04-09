@@ -365,6 +365,7 @@ export const BulkConvertToRequestModal: React.FC<
         incident_ids: incidents.map((i) => i.id),
         classification_id: data.classification_id,
         workflow_id: data.workflow_id,
+        existing_request_id: data.existing_request_id,
         feedback: data.feedback,
       });
     },
