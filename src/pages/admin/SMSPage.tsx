@@ -49,6 +49,8 @@ export const SMSPage: React.FC = () => {
   // Compose State
   const [composeTo, setComposeTo] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [bodyError, setBodyError] = useState<string | null>(null);
 
   // Fetch SMS
   const { data: smsData, isLoading } = useQuery({
@@ -59,15 +61,14 @@ export const SMSPage: React.FC = () => {
         limit: 50,
         search: searchTerm,
         channel: "sms",
+        category: currentFolder,
       };
 
       if (currentFolder === "inbox") {
-        filter.direction = "inbound";
+        // filter.direction = "inbound";
         filter.received_by = user?.id;
       } else if (currentFolder === "sent") {
-        filter.direction = "outbound";
-      } else {
-        filter.category = currentFolder;
+        // filter.direction = "outbound";
       }
       return smsApi.list(filter);
     },
@@ -88,6 +89,26 @@ export const SMSPage: React.FC = () => {
 
   const handleSendSMS = (e: React.FormEvent) => {
     e.preventDefault();
+    let hasError = false;
+
+    if (!composeTo.startsWith("+")) {
+      setPhoneError(
+        "Phone number must include country code (e.g., +1234567890)",
+      );
+      hasError = true;
+    } else {
+      setPhoneError(null);
+    }
+
+    if (!composeBody.trim()) {
+      setBodyError("Message cannot be empty");
+      hasError = true;
+    } else {
+      setBodyError(null);
+    }
+
+    if (hasError) return;
+
     sendSMSMutation.mutate({
       to: composeTo,
       body: composeBody,
@@ -103,10 +124,26 @@ export const SMSPage: React.FC = () => {
     },
   });
 
+  const hardDeleteMutation = useMutation({
+    mutationFn: (id: string) => smsApi.hardDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sms"] });
+      setSelectedSMS(null);
+    },
+  });
+
   const deleteSMS = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this SMS?")) {
-      deleteMutation.mutate(id);
+    if (currentFolder === "trash") {
+      if (
+        window.confirm("Are you sure you want to delete this SMS permanently?")
+      ) {
+        hardDeleteMutation.mutate(id);
+      }
+    } else {
+      if (window.confirm("Are you sure you want to delete this SMS?")) {
+        deleteMutation.mutate(id);
+      }
     }
   };
 
@@ -331,10 +368,16 @@ export const SMSPage: React.FC = () => {
                     type="tel"
                     required
                     value={composeTo}
-                    onChange={(e) => setComposeTo(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={(e) => {
+                      setComposeTo(e.target.value);
+                      if (phoneError) setPhoneError(null);
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${phoneError ? "border-red-500 bg-red-50" : "border-slate-300"}`}
                     placeholder="+1234567890"
                   />
+                  {phoneError && (
+                    <p className="mt-1 text-sm text-red-600">{phoneError}</p>
+                  )}
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -343,10 +386,16 @@ export const SMSPage: React.FC = () => {
                   <textarea
                     required
                     value={composeBody}
-                    onChange={(e) => setComposeBody(e.target.value)}
-                    className="w-full h-40 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    onChange={(e) => {
+                      setComposeBody(e.target.value);
+                      if (bodyError) setBodyError(null);
+                    }}
+                    className={`w-full h-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none ${bodyError ? "border-red-500 bg-red-50" : "border-slate-300"}`}
                     placeholder="Write your message here..."
                   />
+                  {bodyError && (
+                    <p className="mt-1 text-sm text-red-600">{bodyError}</p>
+                  )}
                 </div>
               </div>
 

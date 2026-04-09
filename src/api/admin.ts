@@ -2629,6 +2629,13 @@ export const smsApi = {
     );
     return response.data;
   },
+
+  hardDelete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(
+      `/notifications/${id}/permanent`,
+    );
+    return response.data;
+  },
 };
 
 // Incident Merge API
