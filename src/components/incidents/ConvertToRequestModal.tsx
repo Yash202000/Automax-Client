@@ -11,13 +11,13 @@ import {
   FileText,
   Workflow,
   Tags,
-  Star,
   Paperclip,
   Upload,
   ArrowRight,
   PlusCircle,
   Link,
   Search,
+  Star,
 } from "lucide-react";
 import { Button, TreeSelect } from "../ui";
 import type { TreeSelectNode } from "../ui";
@@ -66,6 +66,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
   // Workflow state
   const [workflowId, setWorkflowId] = useState("");
+
+  // Optional overrides
+  // const [title, setTitle] = useState("");
+  // const [description, setDescription] = useState("");
 
   // Convert type (existing or new request)
   const [convertType, setConvertType] = useState<"existing" | "new">("new");
@@ -268,6 +272,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setFeedbackComment("");
       setClassificationId("");
       setWorkflowId("");
+      // setTitle("");
+      // setDescription("");
       setConvertType("new");
       setSelectedRequest(null);
       setRequestSearch("");
@@ -554,10 +560,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                             </div>
                           ) : searchedRequests.length === 0 ? (
                             <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                              {t(
-                                "requests.noRequests",
-                                "No requests found",
-                              )}
+                              {t("requests.noRequests", "No requests found")}
                             </div>
                           ) : (
                             searchedRequests.map((req) => (

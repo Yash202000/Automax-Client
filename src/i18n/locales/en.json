@@ -596,7 +596,7 @@
     "assignDepartment": "Assign Department",
     "resetPassword": "Reset Password",
     "noUsers": "No users found",
-    "searchPlaceholder": "Search by name, email, or username...",
+    "searchPlaceholder": "Search by name, email...",
     "loadingUsers": "Loading users...",
     "failedToLoad": "Failed to Load Users",
     "errorLoading": "There was an error loading the user list. Please try again.",
