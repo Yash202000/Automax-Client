@@ -1626,6 +1626,7 @@ export interface Email {
   category: string;
   subject: string;
   body: string;
+  body_html?: string;
   status: string;
   recipients: EmailRecipient[];
   attachments?: EmailAttachment[];

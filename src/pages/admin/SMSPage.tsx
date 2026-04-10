@@ -57,9 +57,13 @@ export const SMSPage: React.FC = () => {
   });
 
   // Compose State
-  const [composeTo, setComposeTo] = useState("");
+  const [countryCode, setCountryCode] = useState("+91");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [errors, setErrors] = useState<{ to?: string; body?: string }>({});
+
+  // Full number sent to API
+  const composeTo = countryCode + phoneNumber.replace(/^0+/, "");
 
   // Fetch SMS
   const { data: smsData, isLoading } = useQuery({
@@ -75,8 +79,10 @@ export const SMSPage: React.FC = () => {
       if (currentFolder === "inbox") {
         filter.direction = "inbound";
         filter.received_by = user?.id;
+        filter.category = "inbox"; // exclude trashed messages
       } else if (currentFolder === "sent") {
         filter.direction = "outbound";
+        filter.category = "sent"; // exclude trashed messages
       } else {
         filter.category = currentFolder;
       }
@@ -92,7 +98,8 @@ export const SMSPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sms"] });
       setIsComposeOpen(false);
-      setComposeTo("");
+      setCountryCode("+91");
+      setPhoneNumber("");
       setComposeBody("");
     },
   });
@@ -100,14 +107,13 @@ export const SMSPage: React.FC = () => {
   const handleSendSMS = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     const newErrors: { to?: string; body?: string } = {};
-    if (!composeTo.trim()) {
+    if (!phoneNumber.trim()) {
       newErrors.to = "Phone number is required";
-    } else if (!composeTo.startsWith("+")) {
-      newErrors.to = "Phone number must include country code (start with +)";
+    } else if (!/^\d{4,15}$/.test(phoneNumber.replace(/[\s\-()]/g, ""))) {
+      newErrors.to =
+        "Enter a valid phone number (digits only, no country code)";
     }
-
     if (!composeBody.trim()) {
       newErrors.body = "Message cannot be empty";
     }
@@ -118,10 +124,7 @@ export const SMSPage: React.FC = () => {
     }
 
     setErrors({});
-    sendSMSMutation.mutate({
-      to: composeTo,
-      body: composeBody,
-    });
+    sendSMSMutation.mutate({ to: composeTo, body: composeBody });
   };
 
   // Delete SMS Mutation (move to trash)
@@ -380,22 +383,52 @@ export const SMSPage: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     To (Phone Number)
                   </label>
-                  <input
-                    type="tel"
-                    required
-                    value={composeTo}
-                    onChange={(e) => {
-                      setComposeTo(e.target.value);
-                      if (errors.to) setErrors((prev) => ({ ...prev, to: "" }));
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${errors.to ? "border-red-500" : "border-slate-300"}`}
-                    placeholder="+1234567890"
-                  />
+                  <div
+                    className={`flex rounded-lg border overflow-hidden focus-within:ring-2 focus-within:ring-primary ${errors.to ? "border-red-500" : "border-slate-300"}`}
+                  >
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="shrink-0 px-2 py-2 bg-slate-50 border-r border-slate-300 text-sm focus:outline-none"
+                    >
+                      <option value="+91">🇮🇳 +91</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+971">🇦🇪 +971</option>
+                      <option value="+966">🇸🇦 +966</option>
+                      <option value="+65">🇸🇬 +65</option>
+                      <option value="+60">🇲🇾 +60</option>
+                      <option value="+61">🇦🇺 +61</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+81">🇯🇵 +81</option>
+                      <option value="+86">🇨🇳 +86</option>
+                      <option value="+55">🇧🇷 +55</option>
+                      <option value="+27">🇿🇦 +27</option>
+                      <option value="+234">🇳🇬 +234</option>
+                    </select>
+                    <input
+                      type="tel"
+                      required
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        setPhoneNumber(e.target.value);
+                        if (errors.to)
+                          setErrors((prev) => ({ ...prev, to: "" }));
+                      }}
+                      className="flex-1 px-3 py-2 text-sm focus:outline-none bg-white"
+                      placeholder="9876543210"
+                    />
+                  </div>
                   {errors.to && (
                     <p className="mt-1 text-xs text-red-500 font-medium">
                       {errors.to}
                     </p>
                   )}
+                  <p className="mt-1 text-xs text-slate-400">
+                    Will be sent to:{" "}
+                    <span className="font-mono">{composeTo || "—"}</span>
+                  </p>
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">

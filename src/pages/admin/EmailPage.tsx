@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { emailApi } from "../../api/admin";
 import type { Email, EmailFilter, EmailAttachment } from "../../types";
@@ -23,6 +23,7 @@ import {
 import { RichTextEditor } from "../../components/RichTextEditor";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui";
+import { EmailChipInput } from "@/components/ui/EmailChipInput";
 import { ConfirmationModal } from "../../components/common/ConfirmationModal";
 
 type Folder = "inbox" | "sent" | "drafts" | "trash";
@@ -38,15 +39,16 @@ export const EmailPage: React.FC = () => {
   const { user } = useAuthStore();
 
   // Compose State
-  const [composeTo, setComposeTo] = useState("");
-  const [composeCc, setComposeCc] = useState("");
-  const [composeBcc, setComposeBcc] = useState("");
+  const [composeTo, setComposeTo] = useState<string[]>([]);
+  const [composeCc, setComposeCc] = useState<string[]>([]);
+  const [composeBcc, setComposeBcc] = useState<string[]>([]);
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   // Track if we're editing an existing draft
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [isCloningAttachments, setIsCloningAttachments] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     id: string | null;
@@ -136,9 +138,9 @@ export const EmailPage: React.FC = () => {
 
   // Reset compose form
   const resetCompose = () => {
-    setComposeTo("");
-    setComposeCc("");
-    setComposeBcc("");
+    setComposeTo([]);
+    setComposeCc([]);
+    setComposeBcc([]);
     setComposeSubject("");
     setComposeBody("");
     setAttachments([]);
@@ -227,26 +229,21 @@ export const EmailPage: React.FC = () => {
 
   const handleSendEmail = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingDraftId) {
-      // Send the existing draft directly
-      sendDraftMutation.mutate(editingDraftId);
-    } else {
-      sendEmailMutation.mutate({
-        to: composeTo,
-        cc: composeCc || undefined,
-        bcc: composeBcc || undefined,
-        subject: composeSubject,
-        body: composeBody,
-        attachments: attachments,
-      });
-    }
+    sendEmailMutation.mutate({
+      to: composeTo.join(","),
+      cc: composeCc.length > 0 ? composeCc.join(",") : undefined,
+      bcc: composeBcc.length > 0 ? composeBcc.join(",") : undefined,
+      subject: composeSubject,
+      body: composeBody,
+      attachments: attachments,
+    });
   };
 
   const handleSaveDraft = () => {
     const draftData = {
-      to: composeTo || undefined,
-      cc: composeCc || undefined,
-      bcc: composeBcc || undefined,
+      to: composeTo.length > 0 ? composeTo.join(",") : undefined,
+      cc: composeCc.length > 0 ? composeCc.join(",") : undefined,
+      bcc: composeBcc.length > 0 ? composeBcc.join(",") : undefined,
       subject: composeSubject || undefined,
       body: composeBody || undefined,
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -276,13 +273,21 @@ export const EmailPage: React.FC = () => {
     }
   };
 
+  const splitEmails = (str: string): string[] =>
+    str
+      ? str
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+
   // Open a draft for editing in the compose window
   const openDraftForEditing = async (email: Email) => {
     resetCompose();
     setEditingDraftId(email.id);
-    setComposeTo(getRecipients(email, "to"));
-    setComposeCc(getRecipients(email, "cc"));
-    setComposeBcc(getRecipients(email, "bcc"));
+    setComposeTo(splitEmails(getRecipients(email, "to")));
+    setComposeCc(splitEmails(getRecipients(email, "cc")));
+    setComposeBcc(splitEmails(getRecipients(email, "bcc")));
     setComposeSubject(email.subject || "");
     setComposeBody(email.body || "");
 
@@ -311,8 +316,24 @@ export const EmailPage: React.FC = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setAttachments((prev) => [...prev, ...Array.from(e.target.files!)]);
+    console.log("[Attachment] onChange fired", e.target.files);
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      console.log(
+        "[Attachment] Adding files:",
+        newFiles.map((f) => f.name),
+      );
+      setAttachments((prev) => {
+        const updated = [...prev, ...newFiles];
+        console.log(
+          "[Attachment] Updated attachments state:",
+          updated.map((f) => f.name),
+        );
+        return updated;
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } else {
+      console.log("[Attachment] No files selected or empty FileList");
     }
   };
 
@@ -377,17 +398,22 @@ export const EmailPage: React.FC = () => {
 
   const handleReply = async () => {
     if (!selectedEmail) return;
+    // For outbound emails reply to original recipients; for inbound use the actual sender email
+    const replyTo =
+      selectedEmail.direction === "outbound"
+        ? getRecipients(selectedEmail, "to")
+        : selectedEmail.sent_by_user?.email || selectedEmail.sender || "";
     const sender = getSender(selectedEmail);
     resetCompose();
     setEditingDraftId(null);
-    setComposeTo(sender);
+    setComposeTo(splitEmails(replyTo));
     setComposeSubject(
       selectedEmail.subject.startsWith("Re: ")
         ? selectedEmail.subject
         : `Re: ${selectedEmail.subject}`,
     );
     setComposeBody(
-      `<br/><br/>---<br/>On ${new Date(selectedEmail.created_at).toLocaleString()}, ${sender} wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body}</blockquote>`,
+      `<br/><br/>---<br/>On ${new Date(selectedEmail.created_at).toLocaleString()}, ${sender} wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body_html || selectedEmail.body}</blockquote>`,
     );
 
     if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
@@ -405,14 +431,14 @@ export const EmailPage: React.FC = () => {
     if (!selectedEmail) return;
     resetCompose();
     setEditingDraftId(null);
-    setComposeTo("");
+    // composeTo stays [] — user picks forward recipient
     setComposeSubject(
       selectedEmail.subject.startsWith("Fwd: ")
         ? selectedEmail.subject
         : `Fwd: ${selectedEmail.subject}`,
     );
     setComposeBody(
-      `<br/><br/>---<br/>Forwarded message from ${getSender(selectedEmail)}:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body}</blockquote>`,
+      `<br/><br/>---<br/>Forwarded message from ${getSender(selectedEmail)}:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body_html || selectedEmail.body}</blockquote>`,
     );
 
     if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
@@ -692,7 +718,9 @@ export const EmailPage: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-6">
               <div
                 className="prose max-w-none text-slate-800"
-                dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                dangerouslySetInnerHTML={{
+                  __html: selectedEmail.body_html || selectedEmail.body,
+                }}
               />
 
               {selectedEmail.attachments &&
@@ -777,23 +805,19 @@ export const EmailPage: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     To
                   </label>
-                  <input
-                    type="email"
+                  <EmailChipInput
                     value={composeTo}
-                    onChange={(e) => setComposeTo(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="recipient@example.com"
+                    onChange={setComposeTo}
+                    placeholder="recipient@example.com — press Enter or comma to add"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     CC (optional)
                   </label>
-                  <input
-                    type="email"
+                  <EmailChipInput
                     value={composeCc}
-                    onChange={(e) => setComposeCc(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={setComposeCc}
                     placeholder="cc@example.com"
                   />
                 </div>
@@ -801,11 +825,9 @@ export const EmailPage: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     BCC (optional)
                   </label>
-                  <input
-                    type="email"
+                  <EmailChipInput
                     value={composeBcc}
-                    onChange={(e) => setComposeBcc(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={setComposeBcc}
                     placeholder="bcc@example.com"
                   />
                 </div>
@@ -833,20 +855,28 @@ export const EmailPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Attachments
-                  </label>
+                  {/* Hidden native file input — triggered programmatically */}
                   <input
+                    ref={fileInputRef}
                     type="file"
                     multiple
                     onChange={handleFileChange}
-                    className="block w-full text-sm text-slate-500
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-full file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-violet-50 file:text-violet-700
-                                            hover:file:bg-violet-100"
+                    className="hidden"
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log(
+                        "[Attachment] Attach button clicked, fileInputRef:",
+                        fileInputRef.current,
+                      );
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    Attach Files
+                  </button>
                   {attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {attachments.map((file, index) => (
@@ -855,13 +885,13 @@ export const EmailPage: React.FC = () => {
                           className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <Paperclip className="w-4 h-4 text-slate-400" />
+                            <Paperclip className="w-4 h-4 text-slate-400 shrink-0" />
                             <span className="truncate">{file.name}</span>
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-slate-400 shrink-0">
                               ({formatBytes(file.size)})
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               type="button"
                               onClick={() => handlePreviewAttachment(file)}
@@ -872,11 +902,13 @@ export const EmailPage: React.FC = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
                                 setAttachments(
                                   attachments.filter((_, i) => i !== index),
-                                )
-                              }
+                                );
+                                if (fileInputRef.current)
+                                  fileInputRef.current.value = "";
+                              }}
                               className="text-slate-400 hover:text-red-500 p-1"
                               title="Remove"
                             >
@@ -915,7 +947,9 @@ export const EmailPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSending || (!composeTo && !editingDraftId)}
+                    disabled={
+                      isSending || (composeTo.length === 0 && !editingDraftId)
+                    }
                     className="px-6 py-2 bg-primary hover:bg-violet-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSending ? (
