@@ -11,7 +11,6 @@ import {
   FileText,
   Workflow,
   Tags,
-  Star,
   Paperclip,
   Upload,
   ArrowRight,
@@ -346,6 +345,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         if (convertType === "existing") return true;
         return !!workflowId;
       case "review":
+        // Feedback is mandatory
+        if (!feedbackComment.trim()) return false;
+        // For existing request, need selectedRequest
+        if (convertType === "existing") return !!selectedRequest;
         return true;
       default:
         return false;
@@ -376,15 +379,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       workflow_id: selectedRequest?.workflow?.id || workflowId,
       transition_id: selectedTransition?.transition.id,
       transition_comment: transitionComment || undefined,
-      title: title || undefined,
-      description: description || undefined,
-      feedback:
-        feedbackRating > 0
-          ? {
-              rating: feedbackRating,
-              comment: feedbackComment || undefined,
-            }
-          : undefined,
+      feedback: {
+        rating: 0,
+        comment: feedbackComment,
+      },
       existing_request_id:
         convertType === "existing" && selectedRequest
           ? selectedRequest.id
@@ -1079,7 +1077,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
                   {t(
                     "requests.reviewDescription",
-                    "Review the details before creating the request.",
+                    "Review the details before converting.",
                   )}
                 </p>
               </div>
@@ -1094,6 +1092,18 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     {incident.incident_number} - {incident.title}
                   </p>
                 </div>
+
+                {convertType === "existing" && selectedRequest && (
+                  <div>
+                    <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+                      {t("requests.existingRequest", "Existing Request")}
+                    </span>
+                    <p className="text-sm text-[hsl(var(--foreground))]">
+                      {selectedRequest.incident_number} -{" "}
+                      {selectedRequest.title}
+                    </p>
+                  </div>
+                )}
 
                 {selectedTransition && (
                   <div>
@@ -1113,7 +1123,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     {t("requests.classification", "Classification")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))]">
-                    {selectedClassification?.name}
+                    {selectedClassification?.name ||
+                      selectedRequest?.classification?.name ||
+                      "—"}
                   </p>
                 </div>
 
@@ -1122,45 +1134,34 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     {t("requests.workflow", "Workflow")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))]">
-                    {selectedWorkflow?.name} ({selectedWorkflow?.code})
+                    {selectedWorkflow?.name ||
+                      selectedRequest?.workflow?.name ||
+                      "—"}{" "}
+                    (
+                    {selectedWorkflow?.code ||
+                      selectedRequest?.workflow?.code ||
+                      "—"}
+                    )
                   </p>
                 </div>
               </div>
 
-              {/* Optional Overrides */}
+              {/* Mandatory Feedback */}
               <div className="space-y-4">
                 <h5 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                  {t("requests.optionalOverrides", "Optional Overrides")}
+                  {t("requests.feedback", "Feedback")}{" "}
+                  <span className="text-red-500">*</span>
                 </h5>
-
-                <div>
-                  <label className="block text-sm text-[hsl(var(--muted-foreground))] mb-1">
-                    {t("requests.newTitle", "New Title")} (
-                    {t("common.optional", "optional")})
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={incident.title}
-                    className="w-full px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-[hsl(var(--muted-foreground))] mb-1">
-                    {t("requests.newDescription", "New Description")} (
-                    {t("common.optional", "optional")})
-                  </label>
+                <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg">
                   <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={
-                      incident.description ||
-                      t("requests.noDescription", "No description")
-                    }
+                    value={feedbackComment}
+                    onChange={(e) => setFeedbackComment(e.target.value)}
+                    placeholder={t(
+                      "incidents.feedbackCommentPlaceholder",
+                      "Add feedback comments...",
+                    )}
                     rows={3}
-                    className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                   />
                 </div>
               </div>
@@ -1173,13 +1174,13 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     <p className="font-medium">
                       {t(
                         "requests.conversionWarning",
-                        "This action will create a new request record.",
+                        "This action will link the incident to a request.",
                       )}
                     </p>
                     <p className="mt-1">
                       {t(
                         "requests.conversionWarningDetails",
-                        "The original incident will remain unchanged and will be linked to the new request.",
+                        "The original incident will be closed and linked to the request.",
                       )}
                     </p>
                   </div>
