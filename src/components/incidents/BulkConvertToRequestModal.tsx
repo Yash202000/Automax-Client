@@ -632,8 +632,8 @@ export const BulkConvertToRequestModal: React.FC<
                       ) : searchedRequests.length === 0 ? (
                         <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
                           {t(
-                            "complaints.noIncidentsFound",
-                            "No incidents found",
+                            "requests.noRequests",
+                            "No requests found",
                           )}
                         </div>
                       ) : (

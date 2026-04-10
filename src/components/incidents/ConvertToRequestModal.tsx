@@ -11,6 +11,7 @@ import {
   FileText,
   Workflow,
   Tags,
+  Star,
   Paperclip,
   Upload,
   ArrowRight,
@@ -65,10 +66,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
   // Workflow state
   const [workflowId, setWorkflowId] = useState("");
-
-  // Optional overrides
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
 
   // Convert type (existing or new request)
   const [convertType, setConvertType] = useState<"existing" | "new">("new");
@@ -251,17 +248,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
       return incidentApi.convertToRequest(incident.id, {
         ...data,
-        feedback:
-          feedbackRating > 0
-            ? {
-                rating: feedbackRating,
-                comment: feedbackComment || undefined,
-              }
-            : undefined,
-        existing_request_id:
-          convertType === "existing" && selectedRequest
-            ? selectedRequest.id
-            : undefined,
       });
     },
     onSuccess: (result) => {
@@ -282,8 +268,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setFeedbackComment("");
       setClassificationId("");
       setWorkflowId("");
-      setTitle("");
-      setDescription("");
       setConvertType("new");
       setSelectedRequest(null);
       setRequestSearch("");
@@ -571,7 +555,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                           ) : searchedRequests.length === 0 ? (
                             <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
                               {t(
-                                "complaints.noIncidentsFound",
+                                "requests.noRequests",
                                 "No requests found",
                               )}
                             </div>

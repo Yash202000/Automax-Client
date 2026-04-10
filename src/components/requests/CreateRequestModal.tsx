@@ -1079,7 +1079,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                       </div>
                     ) : searchedIncidents.length === 0 ? (
                       <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("requests.noIncidentsFound", "No incidents found")}
+                        {t("requests.noRequests", "No requests found")}
                       </div>
                     ) : (
                       searchedIncidents.map((incident) => (
