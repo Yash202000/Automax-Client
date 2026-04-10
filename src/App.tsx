@@ -273,18 +273,6 @@ function App() {
                       element={<EscalationConfigPage />}
                     />
                   </Route>
-                  <Route
-                    element={
-                      <PermissionRoute
-                        requiredPermissions={[PERMISSIONS.QUALITY_AUDIT_VIEW]}
-                      />
-                    }
-                  >
-                    <Route
-                      path="/admin/quality-audit"
-                      element={<QualityAuditPage />}
-                    />
-                  </Route>
                 </Route>
               </Route>
 
@@ -310,6 +298,18 @@ function App() {
               {/* Incident routes - separate layout */}
               <Route element={<AdminProtectedRoute />}>
                 <Route element={<IncidentLayout />}>
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.QUALITY_AUDIT_VIEW]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/incidents/quality-audit"
+                      element={<QualityAuditPage />}
+                    />
+                  </Route>
                   {/* Base route requires view permission, page handles redirect if no view_all */}
                   <Route
                     element={

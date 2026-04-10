@@ -499,7 +499,7 @@ export const IncidentLayout: React.FC = () => {
 
         {(isSuperAdmin || hasPermission(PERMISSIONS.QUALITY_AUDIT_VIEW)) && (
           <NavLink
-            to="/admin/quality-audit"
+            to="/incidents/quality-audit"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) =>
               `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
