@@ -5,6 +5,7 @@ import { ShieldCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { SmsLinkApi } from "@/api/admin";
 import { useMutation } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/authStore";
 
 function resolveError(
   status: number | undefined,
@@ -41,6 +42,7 @@ export function CitizenVerifyPage() {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState("");
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleChange = (index: number, value: string) => {
     const digit = value.replace(/\D/g, "").slice(-1);
@@ -100,8 +102,7 @@ export function CitizenVerifyPage() {
     onSuccess: (res) => {
       const { incident, auth_data } = res.data;
 
-      sessionStorage.setItem("ivr_token", auth_data.token);
-      sessionStorage.setItem("ivr_refresh_token", auth_data.refresh_token);
+      setAuth(auth_data.user, auth_data.token, auth_data.refresh_token);
 
       navigate(`/ivr/incident/${id}/update`, {
         state: { incident, auth_data },
@@ -236,7 +237,7 @@ export function CitizenVerifyPage() {
       <p className="mt-6 text-center text-xs text-gray-400">
         {t(
           "citizen.secureNote",
-          "This link is unique to your incident and expires after 72 hours.",
+          "This link is unique to your incident and expires after 24 hours.",
         )}
       </p>
     </div>
