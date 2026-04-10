@@ -329,7 +329,7 @@ export default function SoftPhone({
     const incomingHandler = (e: Event) => {
       const ce = e as CustomEvent<any>;
       const session = ce.detail.session;
-
+      setShowSentimentModal(false);
       setIncomingCall(session);
       wasIncomingCallRef.current = true;
       dialedNumberRef.current =
@@ -352,8 +352,11 @@ export default function SoftPhone({
 
     const callConnectedHandler = () => {
       setCallStatus("connected");
+
+      if (!globalTimerRef) {
+        startTimer();
+      }
       stopRingtone();
-      startTimer();
     };
 
     const callEndedHandler = () => {
@@ -463,8 +466,8 @@ export default function SoftPhone({
       setActiveCall(incomingCall);
       setIncomingCall(null);
       setCallStatus("connected");
-      stopRingtone();
       startTimer();
+      stopRingtone();
     }
   };
 
@@ -482,8 +485,11 @@ export default function SoftPhone({
     stopRingtone();
     const duration = globalCallDuration;
     stopTimer();
-
-    if (wasIncomingCallRef.current && canCreateSentimentRef.current) {
+    if (
+      wasIncomingCallRef.current &&
+      canCreateSentimentRef.current &&
+      duration > 0
+    ) {
       setCallSummary({
         number: dialedNumberRef.current,
         duration: duration,
@@ -607,7 +613,6 @@ export default function SoftPhone({
     if (!sentiment) {
       setShowSentimentModal(false);
       setCallSummary(null);
-      resetCallState();
       return;
     }
     feedbackMutation.mutate();
