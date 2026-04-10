@@ -17,7 +17,6 @@ import { Button } from "../../components/ui";
 import { incidentApi } from "../../api/admin";
 import type { Incident, IncidentFilter } from "../../types";
 import { cn } from "@/lib/utils";
-import usePermissions from "@/hooks/usePermissions";
 
 // ─── AI Audit Logic ─────────────────────────────────────────────────────────
 
@@ -187,7 +186,7 @@ const ReopenButton: React.FC<ReopenButtonProps> = ({ incident, onSuccess }) => {
 
 export const QualityAuditPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isSuperAdmin } = usePermissions();
+  //   const { isSuperAdmin } = usePermissions();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
