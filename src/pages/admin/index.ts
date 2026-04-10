@@ -48,3 +48,4 @@ export { ReviewCyclesPage } from "./ReviewCyclesPage";
 export { ReviewCycleDetailPage } from "./ReviewCycleDetailPage";
 export { MyReviewPage } from "./MyReviewPage";
 export { ReviewAssignmentPage } from "./ReviewAssignmentPage";
+export { QualityAuditPage } from "./QualityAuditPage";

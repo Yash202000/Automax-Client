@@ -214,6 +214,16 @@ export const DashboardPage: React.FC = () => {
       permissions: [PERMISSIONS.DASHBOARD_CALL_CENTRE],
     },
     {
+      title: t("dashboard.qualityAudit"),
+      subtitle: t("dashboard.qualityAudit"),
+      description: t("dashboard.viewQualityAudit"),
+      href: "/quality-audit",
+      icon: PhoneCallIcon,
+      gradient: "from-[#EF5C39] to-[#9D3A22]",
+      shadowColor: "shadow-orange-500/20",
+      permissions: [PERMISSIONS.DASHBOARD_CALL_CENTRE],
+    },
+    {
       title: "Goal Management",
       subtitle: "Track & Achieve",
       description: "Set goals, track metrics, manage approvals",

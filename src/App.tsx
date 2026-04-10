@@ -76,6 +76,7 @@ import {
   ReviewCycleDetailPage,
   MyReviewPage,
   ReviewAssignmentPage,
+  QualityAuditPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
 import { CitizenAuthLayout } from "./components/layout/CitizenAuthLayout";
@@ -83,6 +84,7 @@ import { CitizenLayout } from "./components/layout/CitizenLayout";
 import { CitizenVerifyPage } from "./pages/CitizenverifyPage";
 import { CitizenIncidentUpdatePage } from "./pages/CitizenIncidentUpdatePage";
 import { UserBootstrap } from "./components/common/UserBootstrap";
+import { QualityAuditLayout } from "./components/layout/QualityAuditLayout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -480,6 +482,13 @@ function App() {
                   <Route path="/call-centre/email" element={<EmailPage />} />
                   <Route path="/call-centre/sms" element={<SMSPage />} />
                   {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
+                </Route>
+              </Route>
+
+              {/* Quality Audit routes - dedicated layout */}
+              <Route element={<AdminProtectedRoute />}>
+                <Route element={<QualityAuditLayout />}>
+                  <Route path="/quality-audit" element={<QualityAuditPage />} />
                 </Route>
               </Route>
 
