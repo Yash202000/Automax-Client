@@ -950,6 +950,9 @@ export interface Incident {
   version: number;
   active_viewers?: number;
 
+  // AI quality
+  is_ai_verified?: boolean;
+
   // Merge-related fields
   master_incident_id?: string;
   master_incident?: Incident;
@@ -1000,6 +1003,16 @@ export interface IncidentFeedback {
 export interface IncidentFeedbackRequest {
   rating: number;
   comment?: string;
+}
+
+export interface AIQualityFeedback {
+  id: string;
+  incident_id: string;
+  changed_summary: string;
+  resolution_status: string;
+  distance_meters: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TransitionHistory {

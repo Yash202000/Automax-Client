@@ -102,6 +102,7 @@ import type {
   UpdateEscalationPolicyRequest,
   EscalationPolicy,
   ResolveUsersRequest,
+  AIQualityFeedback,
 } from "../types";
 
 // User Management
@@ -2870,6 +2871,17 @@ export const rejectionLogApi = {
       {
         params,
       },
+    );
+    return response.data;
+  },
+};
+
+export const aiQualityApi = {
+  getByIncident: async (
+    incidentId: string,
+  ): Promise<ApiResponse<AIQualityFeedback>> => {
+    const response = await apiClient.get<ApiResponse<AIQualityFeedback>>(
+      `/incidents/${incidentId}/ai-quality`,
     );
     return response.data;
   },

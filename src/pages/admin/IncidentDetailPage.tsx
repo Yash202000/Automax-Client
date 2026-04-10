@@ -37,6 +37,8 @@ import {
   Search,
   ChevronDown,
   ArrowRight,
+  Bot,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
@@ -60,6 +62,7 @@ import {
   locationApi,
   classificationApi,
   rejectionLogApi,
+  aiQualityApi,
 } from "../../api/admin";
 import type { EscalationSLARecord } from "../../types";
 import { API_URL } from "../../api/client";
@@ -75,6 +78,7 @@ import type {
   LookupValue,
   Department,
   IncidentRejectionLog,
+  AIQualityFeedback,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -118,7 +122,12 @@ export const IncidentDetailPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
   const [activeTab, setActiveTab] = useState<
-    "activity" | "comments" | "attachments" | "revisions" | "rejections"
+    | "activity"
+    | "comments"
+    | "attachments"
+    | "revisions"
+    | "rejections"
+    | "ai-quality"
   >("activity");
   const [commentText, setCommentText] = useState("");
   const [isInternalComment, setIsInternalComment] = useState(false);
@@ -249,6 +258,14 @@ export const IncidentDetailPage: React.FC = () => {
     queryKey: ["incident", id, "rejection-logs"],
     queryFn: () => rejectionLogApi.getByIncident(id!),
     enabled: !!id,
+  });
+
+  // Fetch AI quality feedback for this incident
+  const { data: aiQualityData, isLoading: aiQualityLoading } = useQuery({
+    queryKey: ["incident", id, "ai-quality"],
+    queryFn: () => aiQualityApi.getByIncident(id!),
+    enabled: !!id,
+    retry: false,
   });
 
   // Fetch escalation SLA actions fired for this incident
@@ -1788,6 +1805,27 @@ export const IncidentDetailPage: React.FC = () => {
                   )}
                 </span>
               </button>
+              {incident?.is_ai_verified && (
+                <button
+                  onClick={() => setActiveTab("ai-quality")}
+                  className={cn(
+                    "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                    activeTab === "ai-quality"
+                      ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
+                      : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Bot className="w-4 h-4" />
+                    AI Quality
+                    {aiQualityData?.data && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        1
+                      </span>
+                    )}
+                  </span>
+                </button>
+              )}
             </div>
 
             <div className="p-4">
@@ -2567,6 +2605,33 @@ export const IncidentDetailPage: React.FC = () => {
               {/* Revisions Tab */}
               {activeTab === "revisions" && (
                 <RevisionHistory incidentId={id!} />
+              )}
+
+              {/* AI Quality Tab */}
+              {activeTab === "ai-quality" && (
+                <div className="space-y-4">
+                  {aiQualityLoading ? (
+                    <div className="flex items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-sm">
+                        Loading AI quality report...
+                      </span>
+                    </div>
+                  ) : !aiQualityData?.data ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <Bot className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm font-medium">
+                        No AI quality report yet
+                      </p>
+                      <p className="text-xs mt-1 text-center max-w-xs">
+                        The AI quality monitor will process this incident
+                        shortly.
+                      </p>
+                    </div>
+                  ) : (
+                    <AIQualityReport feedback={aiQualityData.data} />
+                  )}
+                </div>
               )}
 
               {/* Rejection History Tab */}
@@ -4658,3 +4723,90 @@ export const IncidentDetailPage: React.FC = () => {
     </div>
   );
 };
+
+// ---------------------------------------------------------------------------
+// AI Quality Report sub-component
+// ---------------------------------------------------------------------------
+function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
+  const isResolved =
+    feedback.resolution_status?.toLowerCase().includes("resolved") ?? false;
+
+  return (
+    <div className="space-y-4">
+      {/* Header badge */}
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20">
+        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-800/40">
+          <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            AI Quality Assessment
+          </p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-500">
+            Processed on{" "}
+            {new Date(feedback.created_at).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </p>
+        </div>
+      </div>
+
+      {/* Metrics grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Resolution status */}
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 space-y-1">
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+            Resolution Status
+          </p>
+          <div className="flex items-center gap-2">
+            <ShieldCheck
+              className={cn(
+                "w-4 h-4 flex-shrink-0",
+                isResolved ? "text-emerald-500" : "text-amber-500",
+              )}
+            />
+            <span
+              className={cn(
+                "text-sm font-semibold capitalize",
+                isResolved
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-amber-700 dark:text-amber-400",
+              )}
+            >
+              {feedback.resolution_status || "—"}
+            </span>
+          </div>
+        </div>
+
+        {/* Distance */}
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 space-y-1">
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+            Coordinate Drift
+          </p>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+            <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+              {feedback.distance_meters != null
+                ? `${Number(feedback.distance_meters).toFixed(1)} m`
+                : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Change summary */}
+      {feedback.changed_summary && (
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 space-y-2">
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Change Summary
+          </p>
+          <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
+            {feedback.changed_summary}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
