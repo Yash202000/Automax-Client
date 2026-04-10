@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { emailApi } from "../../api/admin";
-import type { Email, EmailFilter } from "../../types";
+import type { Email, EmailFilter, EmailAttachment } from "../../types";
 import {
   Mail,
   Send,
@@ -19,10 +19,12 @@ import {
   Download,
   FileText,
   Save,
+  Eye,
 } from "lucide-react";
 import { RichTextEditor } from "../../components/RichTextEditor";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui";
+import { ConfirmationModal } from "../../components/common/ConfirmationModal";
 
 type Folder = "inbox" | "sent" | "drafts" | "trash";
 
@@ -32,6 +34,7 @@ export const EmailPage: React.FC = () => {
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isNewEmail, setIsNewEmail] = useState(true);
   const [page] = useState(1);
   const { user } = useAuthStore();
 
@@ -44,6 +47,16 @@ export const EmailPage: React.FC = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   // Track if we're editing an existing draft
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [isCloningAttachments, setIsCloningAttachments] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    id: string | null;
+    isPermanent: boolean;
+  }>({
+    isOpen: false,
+    id: null,
+    isPermanent: false,
+  });
 
   // Fetch Emails
   const { data: emailData, isLoading } = useQuery({
@@ -247,15 +260,40 @@ export const EmailPage: React.FC = () => {
     }
   };
 
+  const fetchAttachmentsAsFiles = async (
+    emailAttachments: EmailAttachment[],
+  ): Promise<File[]> => {
+    try {
+      const filePromises = emailAttachments.map(async (attachment) => {
+        const blob = await emailApi.attachmentById(attachment.id!);
+        return new File([blob as unknown as Blob], attachment.filename, {
+          type: (blob as any).type || "application/octet-stream",
+        });
+      });
+      return await Promise.all(filePromises);
+    } catch (error) {
+      console.error("Failed to fetch attachments as files:", error);
+      return [];
+    }
+  };
+
   // Open a draft for editing in the compose window
-  const openDraftForEditing = (email: Email) => {
+  const openDraftForEditing = async (email: Email) => {
+    resetCompose();
     setEditingDraftId(email.id);
     setComposeTo(getRecipients(email, "to"));
     setComposeCc(getRecipients(email, "cc"));
     setComposeBcc(getRecipients(email, "bcc"));
     setComposeSubject(email.subject || "");
     setComposeBody(email.body || "");
-    setAttachments([]);
+
+    if (email.attachments && email.attachments.length > 0) {
+      setIsCloningAttachments(true);
+      const files = await fetchAttachmentsAsFiles(email.attachments);
+      setAttachments(files);
+      setIsCloningAttachments(false);
+    }
+
     setIsComposeOpen(true);
   };
 
@@ -275,7 +313,7 @@ export const EmailPage: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setAttachments(Array.from(e.target.files));
+      setAttachments((prev) => [...prev, ...Array.from(e.target.files!)]);
     }
   };
 
@@ -293,6 +331,12 @@ export const EmailPage: React.FC = () => {
     if (email) {
       starMutation.mutate({ id, is_starred: !email.is_starred });
     }
+  };
+
+  const handlePreviewAttachment = (file: File) => {
+    const url = URL.createObjectURL(file);
+    window.open(url, "_blank");
+    // Note: In a production app, we might want to track these URLs and revoke them later.
   };
 
   const deleteMutation = useMutation({
@@ -314,24 +358,28 @@ export const EmailPage: React.FC = () => {
   const deleteEmail = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const email = emails.find((em: Email) => em.id === id);
-    if (email?.category === "trash") {
-      if (
-        window.confirm(
-          "Are you sure you want to delete this email permanently?",
-        )
-      ) {
-        hardDeleteMutation.mutate(id);
-      }
-    } else {
-      if (window.confirm("Are you sure you want to delete this email?")) {
-        deleteMutation.mutate(id);
-      }
-    }
+    setDeleteConfirmation({
+      isOpen: true,
+      id,
+      isPermanent: email?.category === "trash",
+    });
   };
 
-  const handleReply = () => {
+  const handleConfirmDelete = () => {
+    if (deleteConfirmation.id) {
+      if (deleteConfirmation.isPermanent) {
+        hardDeleteMutation.mutate(deleteConfirmation.id);
+      } else {
+        deleteMutation.mutate(deleteConfirmation.id);
+      }
+    }
+    setDeleteConfirmation({ isOpen: false, id: null, isPermanent: false });
+  };
+
+  const handleReply = async () => {
     if (!selectedEmail) return;
     const sender = getSender(selectedEmail);
+    resetCompose();
     setEditingDraftId(null);
     setComposeTo(sender);
     setComposeSubject(
@@ -342,11 +390,21 @@ export const EmailPage: React.FC = () => {
     setComposeBody(
       `<br/><br/>---<br/>On ${new Date(selectedEmail.created_at).toLocaleString()}, ${sender} wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body}</blockquote>`,
     );
+
+    if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
+      setIsCloningAttachments(true);
+      const files = await fetchAttachmentsAsFiles(selectedEmail.attachments);
+      setAttachments(files);
+      setIsCloningAttachments(false);
+    }
+
     setIsComposeOpen(true);
+    setIsNewEmail(false);
   };
 
-  const handleForward = () => {
+  const handleForward = async () => {
     if (!selectedEmail) return;
+    resetCompose();
     setEditingDraftId(null);
     setComposeTo("");
     setComposeSubject(
@@ -357,7 +415,16 @@ export const EmailPage: React.FC = () => {
     setComposeBody(
       `<br/><br/>---<br/>Forwarded message from ${getSender(selectedEmail)}:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body}</blockquote>`,
     );
+
+    if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
+      setIsCloningAttachments(true);
+      const files = await fetchAttachmentsAsFiles(selectedEmail.attachments);
+      setAttachments(files);
+      setIsCloningAttachments(false);
+    }
+
     setIsComposeOpen(true);
+    setIsNewEmail(false);
   };
 
   const isSavingDraft =
@@ -386,6 +453,7 @@ export const EmailPage: React.FC = () => {
             onClick={() => {
               resetCompose();
               setIsComposeOpen(true);
+              setIsNewEmail(true);
             }}
             className="w-full"
           >
@@ -685,7 +753,13 @@ export const EmailPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-slate-50">
               <h3 className="font-semibold text-slate-900">
-                {editingDraftId ? "Edit Draft" : "New Message"}
+                {editingDraftId
+                  ? "Edit Draft"
+                  : isNewEmail
+                    ? "New Message"
+                    : isCloningAttachments
+                      ? "Cloning attachments..."
+                      : composeSubject}
               </h3>
               <button
                 onClick={closeCompose}
@@ -774,6 +848,46 @@ export const EmailPage: React.FC = () => {
                                             file:bg-violet-50 file:text-violet-700
                                             hover:file:bg-violet-100"
                   />
+                  {attachments.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {attachments.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <Paperclip className="w-4 h-4 text-slate-400" />
+                            <span className="truncate">{file.name}</span>
+                            <span className="text-xs text-slate-400">
+                              ({formatBytes(file.size)})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handlePreviewAttachment(file)}
+                              className="text-slate-400 hover:text-primary p-1"
+                              title="Preview"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAttachments(
+                                  attachments.filter((_, i) => i !== index),
+                                )
+                              }
+                              className="text-slate-400 hover:text-red-500 p-1"
+                              title="Remove"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="px-6 py-4 border-t border-border bg-slate-50 flex justify-between gap-3">
@@ -818,6 +932,26 @@ export const EmailPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() =>
+          setDeleteConfirmation({ isOpen: false, id: null, isPermanent: false })
+        }
+        onConfirm={handleConfirmDelete}
+        title={
+          deleteConfirmation.isPermanent ? "Permanent Deletion" : "Delete Email"
+        }
+        message={
+          deleteConfirmation.isPermanent
+            ? "Are you sure you want to delete this email permanently? This action cannot be undone."
+            : "Are you sure you want to delete this email? It will be moved to the trash."
+        }
+        confirmText={
+          deleteConfirmation.isPermanent ? "Delete Permanently" : "Delete"
+        }
+        isLoading={deleteMutation.isPending || hardDeleteMutation.isPending}
+      />
     </div>
   );
 };

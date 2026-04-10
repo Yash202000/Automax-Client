@@ -15,6 +15,7 @@ import { smsApi } from "../../api/admin";
 import type { SMS, SMSFilter } from "../../types";
 import { Button } from "@/components/ui";
 import { useAuthStore } from "@/stores/authStore";
+import { ConfirmationModal } from "../../components/common/ConfirmationModal";
 
 const linkifyText = (text: string) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -45,10 +46,20 @@ export const SMSPage: React.FC = () => {
   const [selectedSMS, setSelectedSMS] = useState<SMS | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    id: string | null;
+    isPermanent: boolean;
+  }>({
+    isOpen: false,
+    id: null,
+    isPermanent: false,
+  });
 
   // Compose State
   const [composeTo, setComposeTo] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  const [errors, setErrors] = useState<{ to?: string; body?: string }>({});
 
   // Fetch SMS
   const { data: smsData, isLoading } = useQuery({
@@ -88,13 +99,32 @@ export const SMSPage: React.FC = () => {
 
   const handleSendSMS = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    const newErrors: { to?: string; body?: string } = {};
+    if (!composeTo.trim()) {
+      newErrors.to = "Phone number is required";
+    } else if (!composeTo.startsWith("+")) {
+      newErrors.to = "Phone number must include country code (start with +)";
+    }
+
+    if (!composeBody.trim()) {
+      newErrors.body = "Message cannot be empty";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     sendSMSMutation.mutate({
       to: composeTo,
       body: composeBody,
     });
   };
 
-  // Delete SMS Mutation
+  // Delete SMS Mutation (move to trash)
   const deleteMutation = useMutation({
     mutationFn: (id: string) => smsApi.delete(id),
     onSuccess: () => {
@@ -103,11 +133,34 @@ export const SMSPage: React.FC = () => {
     },
   });
 
+  // Permanent Delete SMS Mutation
+  const hardDeleteMutation = useMutation({
+    mutationFn: (id: string) => smsApi.hardDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sms"] });
+      setSelectedSMS(null);
+    },
+  });
+
   const deleteSMS = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this SMS?")) {
-      deleteMutation.mutate(id);
+    const sms = smsList.find((s) => s.id === id);
+    setDeleteConfirmation({
+      isOpen: true,
+      id,
+      isPermanent: currentFolder === "trash" || sms?.category === "trash",
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmation.id) {
+      if (deleteConfirmation.isPermanent) {
+        hardDeleteMutation.mutate(deleteConfirmation.id);
+      } else {
+        deleteMutation.mutate(deleteConfirmation.id);
+      }
     }
+    setDeleteConfirmation({ isOpen: false, id: null, isPermanent: false });
   };
 
   const getPhoneNumber = (sms: SMS) => {
@@ -331,10 +384,18 @@ export const SMSPage: React.FC = () => {
                     type="tel"
                     required
                     value={composeTo}
-                    onChange={(e) => setComposeTo(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={(e) => {
+                      setComposeTo(e.target.value);
+                      if (errors.to) setErrors((prev) => ({ ...prev, to: "" }));
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${errors.to ? "border-red-500" : "border-slate-300"}`}
                     placeholder="+1234567890"
                   />
+                  {errors.to && (
+                    <p className="mt-1 text-xs text-red-500 font-medium">
+                      {errors.to}
+                    </p>
+                  )}
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -343,10 +404,19 @@ export const SMSPage: React.FC = () => {
                   <textarea
                     required
                     value={composeBody}
-                    onChange={(e) => setComposeBody(e.target.value)}
-                    className="w-full h-40 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    onChange={(e) => {
+                      setComposeBody(e.target.value);
+                      if (errors.body)
+                        setErrors((prev) => ({ ...prev, body: "" }));
+                    }}
+                    className={`w-full h-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none ${errors.body ? "border-red-500" : "border-slate-300"}`}
                     placeholder="Write your message here..."
                   />
+                  {errors.body && (
+                    <p className="mt-1 text-xs text-red-500 font-medium">
+                      {errors.body}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -380,6 +450,26 @@ export const SMSPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() =>
+          setDeleteConfirmation({ isOpen: false, id: null, isPermanent: false })
+        }
+        onConfirm={handleConfirmDelete}
+        title={
+          deleteConfirmation.isPermanent ? "Permanent Deletion" : "Delete SMS"
+        }
+        message={
+          deleteConfirmation.isPermanent
+            ? "Are you sure you want to delete this SMS permanently? This action cannot be undone."
+            : "Are you sure you want to delete this SMS? It will be moved to the trash."
+        }
+        confirmText={
+          deleteConfirmation.isPermanent ? "Delete Permanently" : "Delete"
+        }
+        isLoading={deleteMutation.isPending || hardDeleteMutation.isPending}
+      />
     </div>
   );
 };

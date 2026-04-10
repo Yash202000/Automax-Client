@@ -2450,32 +2450,53 @@ export const emailApi = {
     cc?: string;
     bcc?: string;
     language?: string;
+    attachments?: File[];
   }): Promise<ApiResponse<any>> => {
-    const payload: Record<string, any> = {
-      channel: "email",
-      language: data.language || "en",
-    };
-    // API expects arrays for recipients
-    if (data.to)
-      payload.to = data.to
+    const formData = new FormData();
+    formData.append("channel", "email");
+    formData.append("language", data.language || "en");
+
+    if (data.to) {
+      const recipients = data.to
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.subject) payload.subject = data.subject;
-    if (data.body) payload.body = data.body;
-    if (data.cc)
-      payload.cc = data.cc
+      recipients.forEach((r) => formData.append("to[]", r));
+    }
+    if (data.subject) formData.append("subject", data.subject);
+    if (data.body) {
+      formData.append("body", data.body);
+      formData.append("htmlBody", data.body);
+    }
+    if (data.cc) {
+      const cc = data.cc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.bcc)
-      payload.bcc = data.bcc
+      cc.forEach((r) => formData.append("cc[]", r));
+    }
+    if (data.bcc) {
+      const bcc = data.bcc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      bcc.forEach((r) => formData.append("bcc[]", r));
+    }
+
+    if (data.attachments) {
+      data.attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+    }
+
     const response = await apiClient.post<ApiResponse<any>>(
       "/notifications/drafts",
-      payload,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return response.data;
   },
@@ -2490,32 +2511,54 @@ export const emailApi = {
       cc?: string;
       bcc?: string;
       language?: string;
+      attachments?: File[];
     },
   ): Promise<ApiResponse<any>> => {
-    const payload: Record<string, any> = {
-      channel: "email",
-      language: data.language || "en",
-    };
-    if (data.to)
-      payload.to = data.to
+    const formData = new FormData();
+    formData.append("channel", "email");
+    formData.append("language", data.language || "en");
+
+    if (data.to) {
+      const recipients = data.to
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.subject) payload.subject = data.subject;
-    if (data.body) payload.body = data.body;
-    if (data.cc)
-      payload.cc = data.cc
+      recipients.forEach((r) => formData.append("to[]", r));
+    }
+    if (data.subject) formData.append("subject", data.subject);
+    if (data.body) {
+      formData.append("body", data.body);
+      formData.append("htmlBody", data.body);
+    }
+    if (data.cc) {
+      const cc = data.cc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.bcc)
-      payload.bcc = data.bcc
+      cc.forEach((r) => formData.append("cc[]", r));
+    }
+    if (data.bcc) {
+      const bcc = data.bcc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      bcc.forEach((r) => formData.append("bcc[]", r));
+    }
+
+    if (data.attachments) {
+      data.attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+    }
+
     const response = await apiClient.put<ApiResponse<any>>(
       `/notifications/drafts/${id}`,
-      payload,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return response.data;
   },
@@ -2626,6 +2669,12 @@ export const smsApi = {
   delete: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.delete<ApiResponse<any>>(
       `/notifications/${id}`,
+    );
+    return response.data;
+  },
+  hardDelete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(
+      `/notifications/${id}/permanent`,
     );
     return response.data;
   },
