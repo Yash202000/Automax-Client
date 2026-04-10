@@ -653,6 +653,7 @@ export const IncidentDetailPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
       toast.success("Incident summary updated successfully");
       setIsEditingDescription(false);
+      setIsSavingDescription(false);
     },
     onError: (error: any) => {
       const errorMessage =
