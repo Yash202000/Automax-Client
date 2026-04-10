@@ -34,7 +34,7 @@ export default defineConfig([
       /* ERRORS (critical) */
       /* ---------------- */
 
-      "no-undef": "error",
+      "no-undef": "off", // Disabled because TypeScript already handles undefined variables; this rule causes false errors for DOM types like EventListener
       "no-unreachable": "error",
       "no-redeclare": "error",
       "valid-typeof": "error",

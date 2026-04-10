@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Mail, Lock, ArrowRight } from "lucide-react";
-import { Button, Input, Checkbox } from "../ui";
+import { Button, Input } from "../ui";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -103,16 +103,16 @@ export const LoginForm: React.FC = () => {
           {...register("password")}
         />
 
-        <div className="flex items-center justify-between">
-          <Checkbox label={t("auth.rememberMe")} />
-          {/* commented as currenly we don't have forgot password API */}
-          {/* <Link
+        {/* <div className="flex items-center justify-between"> */}
+        {/* <Checkbox label={t("auth.rememberMe")} /> */}
+        {/* commented as currenly we don't have forgot password API */}
+        {/* <Link
             to="/forgot-password"
             className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
           >
             {t('auth.forgotPassword')}
           </Link> */}
-        </div>
+        {/* </div> */}
 
         <Button
           type="submit"

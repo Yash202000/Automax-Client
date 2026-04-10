@@ -9,9 +9,11 @@ import {
   User,
   Radio,
   Calendar,
+  Target,
 } from "lucide-react";
-import { Button, TreeSelect } from "../ui";
-import type { TreeSelectNode } from "../ui";
+import { Button } from "../ui";
+import MultiTreeSelect from "../ui/MultiTreeSelect";
+import type { TreeNode } from "../ui/HierarchicalTreeSelect";
 import {
   classificationApi,
   userApi,
@@ -28,6 +30,9 @@ import { useAuthStore } from "../../stores/authStore";
 import MultiSelect from "../ui/MultiSelect";
 import Select from "../ui/SelectInput";
 import { toast } from "sonner";
+import TargetPicker from "../escalation/TargetPicker";
+import type { TargetEntry } from "../escalation/TargetPicker";
+import { toTargetRequests, fromBackendTarget } from "../escalation/targetUtils";
 
 interface CreateEscalationProps {
   isOpen: boolean;
@@ -49,9 +54,10 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   // Form state
   const [title, setTitle] = useState("");
   const [channel, setChannel] = useState("");
-  const [classificationId, setClassificationId] = useState("");
+  const [classificationIds, setClassificationIds] = useState<string[]>([]);
   const [locationId, setLocationId] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<UserType[]>([]);
+  const [targets, setTargets] = useState<TargetEntry[]>([]);
   const [frequency, setFrequency] = useState("daily");
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -171,9 +177,9 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   //   return filterByUserAccess(rawLocations);
   // }, [rawLocations, user]);
 
-  // Convert classifications to TreeSelectNode format
-  const classificationTreeData: TreeSelectNode[] = useMemo(() => {
-    const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
+  // Convert classifications to TreeNode format for MultiTreeSelect
+  const classificationTreeData: TreeNode[] = useMemo(() => {
+    const convertToTreeNode = (items: Classification[]): TreeNode[] => {
       return items.map((item) => ({
         id: item.id,
         name: item.name,
@@ -274,17 +280,25 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
     if (editData) {
       setTitle(editData.name ?? "");
       setChannel(editData.channel ?? "");
-      setClassificationId(editData.classification?.id ?? "");
+      // Populate from multi-classifications array, fall back to single legacy field
+      const ids: string[] = (editData.classifications || []).map(
+        (c: any) => c.id,
+      );
+      if (ids.length === 0 && editData.classification?.id)
+        ids.push(editData.classification.id);
+      setClassificationIds(ids);
       setLocationId(editData.location?.id ?? "");
       setFrequency(editData.frequency ?? "daily");
       setSelectedUsers(editData.users ?? []);
+      setTargets((editData.targets || []).map(fromBackendTarget));
     } else {
       setTitle("");
       setChannel("");
-      setClassificationId("");
+      setClassificationIds([]);
       setLocationId("");
       setFrequency("daily");
       setSelectedUsers([]);
+      setTargets([]);
     }
     setErrors({});
   }, [isOpen, editData]);
@@ -296,7 +310,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       newErrors.title = t("escalation.titleRequired");
     }
 
-    if (!classificationId) {
+    if (classificationIds.length === 0) {
       newErrors.classification = t("escalation.fieldRequired", {
         field: t("escalation.classification"),
       });
@@ -312,7 +326,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       });
     }
 
-    if (!selectedUsers?.length) {
+    if (!selectedUsers?.length && targets.length === 0) {
       newErrors.assignee = t("escalation.fieldRequired", {
         field: t("escalation.users", "Users"),
       });
@@ -326,12 +340,13 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
     if (!validate()) return;
     const data: CreateEscalationRequest = {
       name: title.trim(),
-      classification_id: classificationId,
+      classification_ids: classificationIds,
       channel: channel.trim(),
       location_id: locationId,
       frequency: frequency,
       is_active: true,
       user_ids: selectedUsers.map((u) => u.id),
+      targets: targets.length > 0 ? toTargetRequests(targets) : undefined,
     };
     if (editData?.id) {
       updateMutation.mutate(data);
@@ -404,9 +419,16 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <Target className="w-4 h-4" />
+                  {t("escalation.targets", "Dept / Role Targets")}
+                </h4>
+                <TargetPicker value={targets} onChange={setTargets} />
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   <User className="w-4 h-4" />
-                  {t("escalation.users")}
-                  <span className="text-red-500">*</span>
+                  {t("escalation.usersDirectly", "Or select users directly")}
                 </h4>
 
                 <MultiSelect
@@ -427,7 +449,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
                   searchable
                 />
               </div>
-              {/* Classification */}
+              {/* Classifications — multi select */}
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <Tags className="w-3 h-3 inline me-1" />
@@ -439,16 +461,21 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
                     <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : (
-                  <TreeSelect
-                    data={classificationTreeData}
-                    value={classificationId}
-                    onChange={(id) => setClassificationId(id)}
-                    placeholder={t("escalation.selectClassification")}
-                    error={errors.classification}
-                    leafOnly={true}
-                    emptyMessage={t("escalation.noClassifications")}
-                    maxHeight="200px"
-                  />
+                  <>
+                    <MultiTreeSelect
+                      data={classificationTreeData}
+                      selectedIds={classificationIds}
+                      onSelectionChange={setClassificationIds}
+                      placeholder={t("escalation.selectClassification")}
+                      leafOnly={true}
+                      maxHeight="200px"
+                    />
+                    {errors.classification && (
+                      <p className="text-xs text-red-500">
+                        {errors.classification}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               {/* Location */}

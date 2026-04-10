@@ -78,6 +78,11 @@ import {
   ReviewAssignmentPage,
 } from "./pages";
 import EscalationConfigPage from "./pages/admin/EsclationPage";
+import QualityAuditPage from "./pages/admin/QualityAuditPage";
+import { CitizenAuthLayout } from "./components/layout/CitizenAuthLayout";
+import { CitizenLayout } from "./components/layout/CitizenLayout";
+import { CitizenVerifyPage } from "./pages/CitizenverifyPage";
+import { CitizenIncidentUpdatePage } from "./pages/CitizenIncidentUpdatePage";
 import { UserBootstrap } from "./components/common/UserBootstrap";
 
 const queryClient = new QueryClient({
@@ -183,7 +188,10 @@ function App() {
                       />
                     }
                   >
-                    <Route path="/admin/locations" element={<LocationsPage />} />
+                    <Route
+                      path="/admin/locations"
+                      element={<LocationsPage />}
+                    />
                     <Route
                       path="/admin/locations/map"
                       element={<LocationMapPage />}
@@ -229,7 +237,9 @@ function App() {
                   <Route
                     element={
                       <PermissionRoute
-                        requiredPermissions={[PERMISSIONS.APPLICATION_LINKS_VIEW]}
+                        requiredPermissions={[
+                          PERMISSIONS.APPLICATION_LINKS_VIEW,
+                        ]}
                       />
                     }
                   >
@@ -288,6 +298,18 @@ function App() {
               {/* Incident routes - separate layout */}
               <Route element={<AdminProtectedRoute />}>
                 <Route element={<IncidentLayout />}>
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.QUALITY_AUDIT_VIEW]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/incidents/quality-audit"
+                      element={<QualityAuditPage />}
+                    />
+                  </Route>
                   {/* Base route requires view permission, page handles redirect if no view_all */}
                   <Route
                     element={
@@ -353,7 +375,10 @@ function App() {
                     }
                   >
                     <Route path="/requests" element={<RequestsPage />} />
-                    <Route path="/requests/:id" element={<RequestDetailPage />} />
+                    <Route
+                      path="/requests/:id"
+                      element={<RequestDetailPage />}
+                    />
                   </Route>
                   <Route
                     element={
@@ -461,7 +486,10 @@ function App() {
                     path="/call-centre/contacts"
                     element={<CallCentrePage />}
                   />
-                  <Route path="/call-centre/history" element={<CallHistory />} />
+                  <Route
+                    path="/call-centre/history"
+                    element={<CallHistory />}
+                  />
                   <Route path="/call-centre/email" element={<EmailPage />} />
                   <Route path="/call-centre/sms" element={<SMSPage />} />
                   {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
@@ -553,6 +581,18 @@ function App() {
 
               {/* 404 redirect */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route element={<CitizenAuthLayout />}>
+                <Route
+                  path="/ivr/incident/sms-link/:id"
+                  element={<CitizenVerifyPage />}
+                />
+              </Route>
+              <Route element={<CitizenLayout />}>
+                <Route
+                  path="/ivr/incident/:id/update"
+                  element={<CitizenIncidentUpdatePage />}
+                />
+              </Route>
             </Routes>
           </UserBootstrap>
         </BrowserRouter>

@@ -51,8 +51,7 @@ export const goalKeys = {
     [...goalKeys.all, "approvals", "pending", page, limit] as const,
   completedApprovals: (page: number, limit: number) =>
     [...goalKeys.all, "approvals", "completed", page, limit] as const,
-  children: (goalId: string) =>
-    [...goalKeys.all, "children", goalId] as const,
+  children: (goalId: string) => [...goalKeys.all, "children", goalId] as const,
   tree: (goalId: string) => [...goalKeys.all, "tree", goalId] as const,
   checkIns: (goalId: string, page: number) =>
     [...goalKeys.all, "check-ins", goalId, page] as const,
@@ -61,8 +60,7 @@ export const goalKeys = {
   activity: (goalId: string, page: number) =>
     [...goalKeys.all, "activity", goalId, page] as const,
   metricBatches: () => [...goalKeys.all, "metricBatches"] as const,
-  metricBatch: (id: string) =>
-    [...goalKeys.all, "metricBatch", id] as const,
+  metricBatch: (id: string) => [...goalKeys.all, "metricBatch", id] as const,
   metricBatchTransitions: (id: string) =>
     [...goalKeys.all, "metricBatchTransitions", id] as const,
   metricBatchHistory: (id: string) =>
@@ -445,13 +443,8 @@ export function useExecuteEvidenceTransition() {
 export function useReplaceEvidenceFile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      evidenceId,
-      file,
-    }: {
-      evidenceId: string;
-      file: File;
-    }) => evidenceApi.replaceFile(evidenceId, file),
+    mutationFn: ({ evidenceId, file }: { evidenceId: string; file: File }) =>
+      evidenceApi.replaceFile(evidenceId, file),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: goalKeys.all });
       toast.success("Evidence file replaced");
@@ -637,8 +630,15 @@ export function useImportMetrics() {
       title?: string;
       comment?: string;
       primaryGoalId?: string;
-    }) => metricImportApi.importMetrics(file, dryRun, title, comment, primaryGoalId),
-    onSuccess: (data, variables) => {
+    }) =>
+      metricImportApi.importMetrics(
+        file,
+        dryRun,
+        title,
+        comment,
+        primaryGoalId,
+      ),
+    onSuccess: (_data, variables) => {
       if (!variables.dryRun) {
         queryClient.invalidateQueries({ queryKey: goalKeys.metricBatches() });
         toast.success("Metric import batch created");

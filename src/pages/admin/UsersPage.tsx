@@ -461,11 +461,15 @@ export const UsersPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
-
+    let phoneChanged = false;
+    if (editingUser.phone !== formData.phone) {
+      phoneChanged = true;
+    }
     const payload: UpdateProfileRequest = {
       first_name: formData.first_name,
       last_name: formData.last_name,
       username: formData.username,
+      mobile_verified: phoneChanged ? false : editingUser.mobile_verified,
       phone: formData.phone,
       extension: formData.extension || "",
       department_id: formData.department_id || undefined,

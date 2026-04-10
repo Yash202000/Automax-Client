@@ -24,6 +24,8 @@ import {
   Map,
   ChevronUp,
   ChevronDown,
+  GitMerge,
+  Link2,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { incidentApi, incidentMergeApi } from "../../api/admin";
@@ -75,8 +77,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const selectedWorkflowId =
     selectedIncidents?.length >= 2
       ? selectedIncidents.every(
-        (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
-      )
+          (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
+        )
         ? selectedIncidents[0].workflow?.id || null
         : null
       : null;
@@ -155,12 +157,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   // Client-side search filter
   const filteredIncidents = searchTerm
     ? incidents.filter(
-      (incident: Incident) =>
-        incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        incident.incident_number
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()),
-    )
+        (incident: Incident) =>
+          incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.incident_number
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()),
+      )
     : incidents;
 
   const getLookupValue = (incident: Incident, categoryCode: string) => {
@@ -207,10 +209,10 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     selectedIncidents.every(
       (incident) =>
         incident?.current_state?.name ===
-        selectedIncidents[0]?.current_state?.name &&
+          selectedIncidents[0]?.current_state?.name &&
         incident?.location?.id === selectedIncidents[0]?.location?.id &&
         incident?.classification?.id ===
-        selectedIncidents[0]?.classification?.id,
+          selectedIncidents[0]?.classification?.id,
     );
 
   const isSelected = (item: Incident) =>
@@ -218,7 +220,10 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
 
   const getLocation = () => {
     return (incidents || [])
-      .filter((incident) => incident.latitude !== undefined && incident.longitude !== undefined)
+      .filter(
+        (incident) =>
+          incident.latitude !== undefined && incident.longitude !== undefined,
+      )
       .map((incident) => {
         return {
           id: incident.id,
@@ -301,7 +306,9 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               )
             }
           >
-            {showMap ? t("common.hideMap", "Hide Map") : t("common.showMap", "Show Map")}
+            {showMap
+              ? t("common.hideMap", "Hide Map")
+              : t("common.showMap", "Show Map")}
           </Button>
           {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
@@ -538,10 +545,23 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                 <tbody className="divide-y divide-[hsl(var(--border))]">
                   {filteredIncidents.map((incident: Incident) => {
                     const priority = getLookupValue(incident, "PRIORITY");
+
+                    // Detect master and child incidents
+                    // Child: is_merged=true AND has master_incident_id
+                    // Master: is_merged=true AND NO master_incident_id (or master_incident_id === id)
+                    const isChildIncident =
+                      incident.is_merged && !!incident.master_incident_id;
+                    const isMasterIncident =
+                      incident.is_merged && !isChildIncident;
+
                     return (
                       <tr
                         key={incident.id}
-                        className="hover:bg-[hsl(var(--muted)/0.5)] transition-colors cursor-pointer"
+                        className={cn(
+                          "hover:bg-[hsl(var(--muted)/0.5)] transition-colors",
+                          isChildIncident &&
+                            "opacity-50 bg-gray-50/50 pointer-events-none",
+                        )}
                       >
                         <td
                           onClick={(e) => e.stopPropagation()}
@@ -550,16 +570,45 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                           <Checkbox
                             id={incident.id}
                             checked={isSelected(incident)}
-                            // disabled={isDisabled(incident)}
-                            onChange={(e) => handleCheckboxChange(e, incident)}
+                            disabled={isChildIncident}
+                            onChange={(e) =>
+                              !isChildIncident &&
+                              handleCheckboxChange(e, incident)
+                            }
                           />
                         </td>
                         <td className="px-6 py-4">
                           <div className="max-w-xs">
                             <div className="flex items-center gap-2">
+                              {/* Master incident icon */}
+                              {isMasterIncident && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300"
+                                  title="Master incident (has merged child tickets)"
+                                >
+                                  <GitMerge className="w-3 h-3" />
+                                  Master
+                                </span>
+                              )}
+                              {/* Child incident icon */}
+                              {isChildIncident && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300"
+                                  title="Child incident (merged)"
+                                >
+                                  <Link2 className="w-3 h-3" />
+                                  Child
+                                </span>
+                              )}
                               <p
-                                className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5 cursor-pointer hover:underline"
+                                className={cn(
+                                  "text-xs font-medium mb-0.5",
+                                  isChildIncident
+                                    ? "text-gray-400 cursor-not-allowed"
+                                    : "text-[hsl(var(--primary))] cursor-pointer hover:underline",
+                                )}
                                 onClick={() =>
+                                  !isChildIncident &&
                                   navigate(`/incidents/${incident.id}`)
                                 }
                               >
@@ -693,10 +742,13 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            disabled={isChildIncident}
                             leftIcon={<Eye className="w-4 h-4" />}
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/incidents/${incident.id}`);
+                              if (!isChildIncident) {
+                                navigate(`/incidents/${incident.id}`);
+                              }
                             }}
                           >
                             {t("common.view")}

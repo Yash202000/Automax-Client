@@ -809,13 +809,14 @@ export const DepartmentDetailPage: React.FC = () => {
                             {classification.name}
                           </p>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            {classification.type &&
-                              classification.type !== "both" &&
-                              classification.type !== "all" && (
-                                <span className="text-xs font-medium bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))] px-1.5 py-0.5 rounded capitalize">
-                                  {classification.type}
-                                </span>
-                              )}
+                            {classification.types?.map((t) => (
+                              <span
+                                key={t}
+                                className="text-xs font-medium bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))] px-1.5 py-0.5 rounded capitalize"
+                              >
+                                {t}
+                              </span>
+                            ))}
                             {classification.description && (
                               <p className="text-xs text-[hsl(var(--muted-foreground))] truncate max-w-[180px]">
                                 {classification.description}

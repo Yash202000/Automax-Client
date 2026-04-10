@@ -34,6 +34,7 @@ import {
   departmentApi,
   userApi,
   lookupApi,
+  escalationPolicyApi,
 } from "../../api/admin";
 import { HierarchicalCheckboxTree } from "../../components/workflow/HierarchicalCheckboxTree";
 import type {
@@ -74,6 +75,7 @@ interface StateFormData {
   state_type: "initial" | "normal" | "terminal";
   color: string;
   sla_hours: number | undefined;
+  escalation_policy_id: string | undefined;
   is_mergable: boolean;
   is_ready_to_close: boolean;
   duration_options: string; // comma-separated input string
@@ -97,6 +99,7 @@ interface TransitionFormData {
   assignment_role_ids: string[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+  is_rejection: boolean;
 }
 
 const initialStateFormData: StateFormData = {
@@ -106,6 +109,7 @@ const initialStateFormData: StateFormData = {
   state_type: "normal",
   color: "#6366f1",
   sla_hours: undefined,
+  escalation_policy_id: undefined,
   is_mergable: false,
   is_ready_to_close: false,
   duration_options: "",
@@ -129,6 +133,7 @@ const initialTransitionFormData: TransitionFormData = {
   assignment_role_ids: [],
   auto_match_user: false,
   manual_select_user: false,
+  is_rejection: false,
 };
 
 const STATE_COLORS = [
@@ -325,6 +330,11 @@ export const WorkflowDesignerPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
+  const { data: escalationPoliciesData } = useQuery({
+    queryKey: ["escalation-policies"],
+    queryFn: () => escalationPolicyApi.list(),
+  });
+
   const workflow = workflowData?.data;
   const classifications: Classification[] = classificationsData?.data || [];
   const locations: Location[] = locationsData?.data || [];
@@ -336,6 +346,7 @@ export const WorkflowDesignerPage: React.FC = () => {
   const lookupCategories: LookupCategory[] = (
     lookupCategoriesData?.data || []
   ).filter((cat) => cat.add_to_incident_form);
+  const escalationPolicies = escalationPoliciesData?.data || [];
 
   // Get Priority and Severity categories for matching rules
   const allLookupCategories: LookupCategory[] =
@@ -643,6 +654,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       state_type: state.state_type as "initial" | "normal" | "terminal",
       color: state.color,
       sla_hours: state.sla_hours || undefined,
+      escalation_policy_id: state.escalation_policy_id || undefined,
       is_mergable: state.is_mergable || false,
       is_ready_to_close: state.is_ready_to_close || false,
       duration_options: (state.duration_options || []).join(", "),
@@ -685,6 +697,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: transition.assignment_roles?.map((r) => r.id) || [],
       auto_match_user: transition.auto_match_user || false,
       manual_select_user: transition.manual_select_user || false,
+      is_rejection: transition.is_rejection || false,
     });
     setIsTransitionModalOpen(true);
   };
@@ -747,6 +760,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       state_type: stateFormData.state_type,
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
+      escalation_policy_id: stateFormData.escalation_policy_id || null,
       is_mergable: stateFormData.is_mergable,
       is_ready_to_close: stateFormData.is_ready_to_close,
       duration_options: stateFormData.duration_options
@@ -786,6 +800,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: transitionFormData.assignment_role_ids,
       auto_match_user: transitionFormData.auto_match_user,
       manual_select_user: transitionFormData.manual_select_user,
+      is_rejection: transitionFormData.is_rejection,
     };
 
     if (editingTransition) {
@@ -2509,6 +2524,33 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </p>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Escalation Policy (optional)
+                  </label>
+                  <select
+                    value={stateFormData.escalation_policy_id || ""}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        escalation_policy_id: e.target.value || undefined,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                  >
+                    <option value="">— None —</option>
+                    {escalationPolicies
+                      .filter((p) => p.is_active)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    Policy to fire when this state's SLA is breached
+                  </p>
+                </div>
+                <div>
                   <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
@@ -3151,6 +3193,33 @@ export const WorkflowDesignerPage: React.FC = () => {
                       )}
                   </div>
                 </div>
+              </div>
+
+              {/* Rejection Tracking */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-destructive focus:ring-destructive"
+                    checked={transitionFormData.is_rejection}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        is_rejection: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      Mark as Rejection Transition
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      When enabled, executing this transition will create a
+                      detailed rejection log record used for SLA tracking,
+                      analytics, and Power BI reports.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">

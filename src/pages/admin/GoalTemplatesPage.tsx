@@ -22,6 +22,7 @@ import type {
   GoalTemplateFilter,
   TemplateMetric,
   TemplateCollaboratorRole,
+  CollaboratorRole,
 } from "../../types/goal";
 import {
   GOAL_PRIORITY_OPTIONS,
@@ -30,7 +31,7 @@ import {
 } from "../../types/goal";
 
 export const GoalTemplatesPage: React.FC = () => {
-  const [filter, setFilter] = useState<GoalTemplateFilter>({
+  const [filter] = useState<GoalTemplateFilter>({
     page: 1,
     limit: 20,
   });
@@ -294,7 +295,7 @@ function TemplateFormModal({
   template: GoalTemplate | null;
   onClose: () => void;
   onSave: (
-    data: GoalTemplateCreateRequest | GoalTemplateUpdateRequest,
+    _data: GoalTemplateCreateRequest | GoalTemplateUpdateRequest,
   ) => void;
   isLoading: boolean;
 }) {
@@ -328,7 +329,11 @@ function TemplateFormModal({
     setMetrics(metrics.filter((_, i) => i !== index));
   };
 
-  const updateMetric = (index: number, field: string, value: string | number) => {
+  const updateMetric = (
+    index: number,
+    field: string,
+    value: string | number,
+  ) => {
     const updated = [...metrics];
     updated[index] = { ...updated[index], [field]: value };
     setMetrics(updated);
@@ -414,7 +419,11 @@ function TemplateFormModal({
               </label>
               <select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value)}
+                onChange={(e) =>
+                  setPriority(
+                    e.target.value as "Critical" | "High" | "Medium" | "Low",
+                  )
+                }
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 {GOAL_PRIORITY_OPTIONS.map((opt) => (
@@ -548,7 +557,9 @@ function TemplateFormModal({
                       value={c.role}
                       onChange={(e) => {
                         const updated = [...collaborators];
-                        updated[i] = { role: e.target.value };
+                        updated[i] = {
+                          role: e.target.value as CollaboratorRole,
+                        };
                         setCollaborators(updated);
                       }}
                       className="rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-700 dark:text-white"

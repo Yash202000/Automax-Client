@@ -96,6 +96,13 @@ import type {
   BulkConvertToRequestRequest,
   CreateEscalationRequest,
   CallerFeedBackRequest,
+  IncidentRejectionLog,
+  RejectionLogListResponse,
+  CreateEscalationPolicyRequest,
+  UpdateEscalationPolicyRequest,
+  EscalationPolicy,
+  ResolveUsersRequest,
+  AIQualityFeedback,
 } from "../types";
 
 // User Management
@@ -275,9 +282,7 @@ export const classificationApi = {
     return response.data;
   },
 
-  list: async (
-    type?: ClassificationType,
-  ): Promise<ApiResponse<Classification[]>> => {
+  list: async (type?: string): Promise<ApiResponse<Classification[]>> => {
     const url = type
       ? `/admin/classifications?type=${type}`
       : "/admin/classifications";
@@ -285,18 +290,14 @@ export const classificationApi = {
     return response.data;
   },
 
-  listByType: async (
-    type: ClassificationType,
-  ): Promise<ApiResponse<Classification[]>> => {
+  listByType: async (type: string): Promise<ApiResponse<Classification[]>> => {
     const response = await apiClient.get<ApiResponse<Classification[]>>(
       `/admin/classifications?type=${type}`,
     );
     return response.data;
   },
 
-  getTree: async (
-    type?: ClassificationType,
-  ): Promise<ApiResponse<Classification[]>> => {
+  getTree: async (type?: string): Promise<ApiResponse<Classification[]>> => {
     const url = type
       ? `/admin/classifications/tree?type=${type}`
       : "/admin/classifications/tree";
@@ -305,7 +306,7 @@ export const classificationApi = {
   },
 
   getTreeByType: async (
-    type: ClassificationType,
+    type: string,
   ): Promise<ApiResponse<Classification[]>> => {
     const response = await apiClient.get<ApiResponse<Classification[]>>(
       `/admin/classifications/tree?type=${type}`,
@@ -2454,32 +2455,53 @@ export const emailApi = {
     cc?: string;
     bcc?: string;
     language?: string;
+    attachments?: File[];
   }): Promise<ApiResponse<any>> => {
-    const payload: Record<string, any> = {
-      channel: "email",
-      language: data.language || "en",
-    };
-    // API expects arrays for recipients
-    if (data.to)
-      payload.to = data.to
+    const formData = new FormData();
+    formData.append("channel", "email");
+    formData.append("language", data.language || "en");
+
+    if (data.to) {
+      const recipients = data.to
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.subject) payload.subject = data.subject;
-    if (data.body) payload.body = data.body;
-    if (data.cc)
-      payload.cc = data.cc
+      recipients.forEach((r) => formData.append("to[]", r));
+    }
+    if (data.subject) formData.append("subject", data.subject);
+    if (data.body) {
+      formData.append("body", data.body);
+      formData.append("htmlBody", data.body);
+    }
+    if (data.cc) {
+      const cc = data.cc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.bcc)
-      payload.bcc = data.bcc
+      cc.forEach((r) => formData.append("cc[]", r));
+    }
+    if (data.bcc) {
+      const bcc = data.bcc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      bcc.forEach((r) => formData.append("bcc[]", r));
+    }
+
+    if (data.attachments) {
+      data.attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+    }
+
     const response = await apiClient.post<ApiResponse<any>>(
       "/notifications/drafts",
-      payload,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return response.data;
   },
@@ -2494,32 +2516,54 @@ export const emailApi = {
       cc?: string;
       bcc?: string;
       language?: string;
+      attachments?: File[];
     },
   ): Promise<ApiResponse<any>> => {
-    const payload: Record<string, any> = {
-      channel: "email",
-      language: data.language || "en",
-    };
-    if (data.to)
-      payload.to = data.to
+    const formData = new FormData();
+    formData.append("channel", "email");
+    formData.append("language", data.language || "en");
+
+    if (data.to) {
+      const recipients = data.to
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.subject) payload.subject = data.subject;
-    if (data.body) payload.body = data.body;
-    if (data.cc)
-      payload.cc = data.cc
+      recipients.forEach((r) => formData.append("to[]", r));
+    }
+    if (data.subject) formData.append("subject", data.subject);
+    if (data.body) {
+      formData.append("body", data.body);
+      formData.append("htmlBody", data.body);
+    }
+    if (data.cc) {
+      const cc = data.cc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    if (data.bcc)
-      payload.bcc = data.bcc
+      cc.forEach((r) => formData.append("cc[]", r));
+    }
+    if (data.bcc) {
+      const bcc = data.bcc
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      bcc.forEach((r) => formData.append("bcc[]", r));
+    }
+
+    if (data.attachments) {
+      data.attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+    }
+
     const response = await apiClient.put<ApiResponse<any>>(
       `/notifications/drafts/${id}`,
-      payload,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return response.data;
   },
@@ -2596,6 +2640,7 @@ export const smsApi = {
     if (filter.sent_by) params.append("sent_by", filter.sent_by);
     if (filter.category) params.append("category", filter.category);
     if (filter.direction) params.append("direction", filter.direction);
+    if (filter.received_by) params.append("received_by", filter.received_by);
     if (filter.is_read !== undefined)
       params.append("is_read", String(filter.is_read));
 
@@ -2629,6 +2674,12 @@ export const smsApi = {
   delete: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.delete<ApiResponse<any>>(
       `/notifications/${id}`,
+    );
+    return response.data;
+  },
+  hardDelete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(
+      `/notifications/${id}/permanent`,
     );
     return response.data;
   },
@@ -2723,6 +2774,53 @@ export const escalationApi = {
   },
 };
 
+export const escalationPolicyApi = {
+  list: async (): Promise<ApiResponse<EscalationPolicy[]>> => {
+    const response = await apiClient.get<ApiResponse<EscalationPolicy[]>>(
+      "/admin/escalation-policies",
+    );
+    return response.data;
+  },
+  getById: async (id: string): Promise<ApiResponse<EscalationPolicy>> => {
+    const response = await apiClient.get<ApiResponse<EscalationPolicy>>(
+      `/admin/escalation-policies/${id}`,
+    );
+    return response.data;
+  },
+  create: async (
+    data: CreateEscalationPolicyRequest,
+  ): Promise<ApiResponse<EscalationPolicy>> => {
+    const response = await apiClient.post<ApiResponse<EscalationPolicy>>(
+      "/admin/escalation-policies",
+      data,
+    );
+    return response.data;
+  },
+  update: async (
+    id: string,
+    data: UpdateEscalationPolicyRequest,
+  ): Promise<ApiResponse<EscalationPolicy>> => {
+    const response = await apiClient.put<ApiResponse<EscalationPolicy>>(
+      `/admin/escalation-policies/${id}`,
+      data,
+    );
+    return response.data;
+  },
+  delete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete(`/admin/escalation-policies/${id}`);
+    return response.data;
+  },
+  resolveUsers: async (
+    data: ResolveUsersRequest,
+  ): Promise<ApiResponse<User[]>> => {
+    const response = await apiClient.post<ApiResponse<User[]>>(
+      "/admin/escalation-policies/resolve-users",
+      data,
+    );
+    return response.data;
+  },
+};
+
 export const callerFeedbackApi = {
   create: async (data: CallerFeedBackRequest): Promise<ApiResponse<any>> => {
     const response = await apiClient.post<ApiResponse<any>>(
@@ -2740,6 +2838,82 @@ export const callerFeedbackApi = {
   }): Promise<ApiResponse<DataSourceDefinition[]>> => {
     const response = await apiClient.get<ApiResponse<DataSourceDefinition[]>>(
       `/caller-sentiments/${callee_id}/${caller_id}`,
+    );
+    return response.data;
+  },
+};
+
+// Rejection Log API
+export const rejectionLogApi = {
+  getByIncident: async (
+    incidentId: string,
+  ): Promise<ApiResponse<IncidentRejectionLog[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentRejectionLog[]>>(
+      `/incidents/${incidentId}/rejection-logs`,
+    );
+    return response.data;
+  },
+
+  list: async (params?: {
+    page?: number;
+    limit?: number;
+    record_type?: string;
+    sla_status?: string;
+    incident_id?: string;
+    rejected_by_id?: string;
+    department_id?: string;
+    classification_id?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<RejectionLogListResponse> => {
+    const response = await apiClient.get<RejectionLogListResponse>(
+      "/admin/rejection-logs",
+      {
+        params,
+      },
+    );
+    return response.data;
+  },
+};
+
+export const aiQualityApi = {
+  list: async (): Promise<ApiResponse<AIQualityFeedback[]>> => {
+    const response =
+      await apiClient.get<ApiResponse<AIQualityFeedback[]>>("/ai-quality");
+    return response.data;
+  },
+
+  getByIncident: async (
+    incidentId: string,
+  ): Promise<ApiResponse<AIQualityFeedback>> => {
+    const response = await apiClient.get<ApiResponse<AIQualityFeedback>>(
+      `/incidents/${incidentId}/ai-quality`,
+    );
+    return response.data;
+  },
+
+  reopen: async (incidentId: string): Promise<ApiResponse<unknown>> => {
+    const response = await apiClient.post<ApiResponse<unknown>>(
+      `/incidents/${incidentId}/reopen`,
+    );
+    return response.data;
+  },
+};
+
+export const SmsLinkApi = {
+  validate: async (
+    id: string,
+    signed_token: string,
+    last6digits: string,
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get<ApiResponse<any>>(
+      `/ivr/incident/sms-link/${id}`,
+      {
+        params: {
+          signed_token,
+          last6digits,
+        },
+      },
     );
     return response.data;
   },

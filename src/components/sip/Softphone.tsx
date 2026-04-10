@@ -269,9 +269,18 @@ export default function SoftPhone({
 
   const [selectedSentiment, setSelectedSentiment] = useState<any | null>(null);
   const { user } = useAuthStore();
-  const [wasIncomingCall, setWasIncomingCall] = useState<boolean>(false);
   const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
   const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
+
+  const wasIncomingCallRef = useRef(false);
+  const dialedNumberRef = useRef("");
+
+  const canCreateSentimentRef = useRef(false);
+
+  useEffect(() => {
+    canCreateSentimentRef.current = canCreateSentiment;
+  }, [canCreateSentiment]);
+
   /* ---------------- SIP CONNECTION ---------------- */
 
   // Initialize persistent audio element on mount
@@ -320,9 +329,12 @@ export default function SoftPhone({
     const incomingHandler = (e: Event) => {
       const ce = e as CustomEvent<any>;
       const session = ce.detail.session;
-
+      setShowSentimentModal(false);
       setIncomingCall(session);
-      setWasIncomingCall(true);
+      wasIncomingCallRef.current = true;
+      dialedNumberRef.current =
+        session?.remote_identity?.uri?.user ?? "Unknown";
+
       setDialedNumber(session?.remote_identity?.uri?.user ?? "Unknown");
       setCallStatus("incoming");
       playRingtone();
@@ -340,13 +352,16 @@ export default function SoftPhone({
 
     const callConnectedHandler = () => {
       setCallStatus("connected");
+
+      if (!globalTimerRef) {
+        startTimer();
+      }
       stopRingtone();
-      startTimer();
     };
 
     const callEndedHandler = () => {
       setCallStatus("ended");
-      cleanup(true);
+      cleanup();
     };
 
     const remoteStreamHandler = (e: Event) => {
@@ -451,8 +466,8 @@ export default function SoftPhone({
       setActiveCall(incomingCall);
       setIncomingCall(null);
       setCallStatus("connected");
-      stopRingtone();
       startTimer();
+      stopRingtone();
     }
   };
 
@@ -463,18 +478,22 @@ export default function SoftPhone({
 
   const hangup = (): void => {
     sipService.hangup();
-    cleanup(true);
+    cleanup();
   };
 
-  const cleanup = (showFeedback = false): void => {
+  const cleanup = (): void => {
     stopRingtone();
+    const duration = globalCallDuration;
     stopTimer();
-
-    if (showFeedback && wasIncomingCall && canCreateSentiment) {
+    if (
+      wasIncomingCallRef.current &&
+      canCreateSentimentRef.current &&
+      duration > 0
+    ) {
       setCallSummary({
-        number: dialedNumber,
-        duration: callDuration,
-        calleeId: dialedNumber,
+        number: dialedNumberRef.current,
+        duration: duration,
+        calleeId: dialedNumberRef.current,
       });
       setShowSentimentModal(true);
       return;
@@ -492,7 +511,8 @@ export default function SoftPhone({
     setIsMuted(false);
     setIsSpeakerOn(true);
     setSelectedSentiment(null);
-    setWasIncomingCall(false);
+    wasIncomingCallRef.current = false;
+    dialedNumberRef.current = "";
 
     const audioEl = getRemoteAudioElement();
     audioEl.srcObject = null;
@@ -593,7 +613,6 @@ export default function SoftPhone({
     if (!sentiment) {
       setShowSentimentModal(false);
       setCallSummary(null);
-      resetCallState();
       return;
     }
     feedbackMutation.mutate();

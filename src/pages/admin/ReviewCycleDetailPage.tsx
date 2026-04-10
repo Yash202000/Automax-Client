@@ -9,7 +9,6 @@ import {
   Play,
   CheckCircle2,
   Trash2,
-  Plus,
   Star,
   Loader2,
   UserPlus,
@@ -44,12 +43,10 @@ const assignmentStatusColor: Record<ReviewAssignmentStatus, string> = {
 
 const cycleStatusColor: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
-  active:
-    "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   completed:
     "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  archived:
-    "bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-400",
+  archived: "bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-400",
 };
 
 // ── Add Assignment Modal ──────────────────────────────
@@ -71,9 +68,7 @@ const AddAssignmentModal: React.FC<{
       {
         cycleId,
         data: {
-          assignments: [
-            { employee_id: employeeId, reviewer_id: reviewerId },
-          ],
+          assignments: [{ employee_id: employeeId, reviewer_id: reviewerId }],
         },
       },
       {

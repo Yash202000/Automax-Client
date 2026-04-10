@@ -8,7 +8,12 @@ import { useActiveGoalTemplates } from "../../hooks/useGoalTemplates";
 import { metricApi } from "../../api/goals";
 import { userApi, departmentApi } from "../../api/admin";
 import { GOAL_PRIORITY_OPTIONS } from "../../types/goal";
-import type { GoalCreateRequest, GoalPriority, GoalBrief, TemplateMetric } from "../../types/goal";
+import type {
+  GoalCreateRequest,
+  GoalPriority,
+  GoalBrief,
+  TemplateMetric,
+} from "../../types/goal";
 import { ParentGoalSelector } from "../../components/goals/ParentGoalSelector";
 
 export const GoalCreatePage: React.FC = () => {
@@ -22,6 +27,18 @@ export const GoalCreatePage: React.FC = () => {
   const [pendingMetrics, setPendingMetrics] = useState<TemplateMetric[]>([]);
   const [parentGoal, setParentGoal] = useState<GoalBrief | null>(null);
   const [parentInitialized, setParentInitialized] = useState(false);
+  const [form, setForm] = useState<GoalCreateRequest>({
+    title: "",
+    description: "",
+    category: "",
+    priority: "Medium",
+    owner_id: "",
+    department_id: "",
+    parent_goal_id: presetParentId,
+    start_date: "",
+    target_date: "",
+    review_date: "",
+  });
 
   // Pre-fill parent from URL param
   if (presetParentData?.data && !parentInitialized) {
@@ -48,19 +65,6 @@ export const GoalCreatePage: React.FC = () => {
   });
   const users = usersData?.data || [];
   const departments = departmentsData?.data || [];
-
-  const [form, setForm] = useState<GoalCreateRequest>({
-    title: "",
-    description: "",
-    category: "",
-    priority: "Medium",
-    owner_id: "",
-    department_id: "",
-    parent_goal_id: presetParentId,
-    start_date: "",
-    target_date: "",
-    review_date: "",
-  });
 
   const handleChange = (field: keyof GoalCreateRequest, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));

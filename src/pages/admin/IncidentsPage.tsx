@@ -26,6 +26,8 @@ import {
   Map,
   ChevronUp,
   ChevronDown,
+  GitMerge,
+  Link2,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
@@ -166,8 +168,8 @@ export const IncidentsPage: React.FC = () => {
   const selectedWorkflowId =
     selectedIncidents?.length >= 2
       ? selectedIncidents.every(
-        (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
-      )
+          (inc, _, arr) => inc.workflow?.id === arr[0].workflow?.id,
+        )
         ? selectedIncidents[0].workflow?.id || null
         : null
       : null;
@@ -526,10 +528,10 @@ export const IncidentsPage: React.FC = () => {
     selectedIncidents.every(
       (incident) =>
         incident?.current_state?.name ===
-        selectedIncidents[0]?.current_state?.name &&
+          selectedIncidents[0]?.current_state?.name &&
         incident?.location?.id === selectedIncidents[0]?.location?.id &&
         incident?.classification?.id ===
-        selectedIncidents[0]?.classification?.id,
+          selectedIncidents[0]?.classification?.id,
     );
 
   const isSelected = (item: Incident) =>
@@ -537,7 +539,10 @@ export const IncidentsPage: React.FC = () => {
 
   const getLocation = () => {
     return (incidents || [])
-      .filter((incident) => incident.latitude !== undefined && incident.longitude !== undefined)
+      .filter(
+        (incident) =>
+          incident.latitude !== undefined && incident.longitude !== undefined,
+      )
       .map((incident) => {
         return {
           id: incident.id,
@@ -632,7 +637,9 @@ export const IncidentsPage: React.FC = () => {
               )
             }
           >
-            {showMap ? t("common.hideMap", "Hide Map") : t("common.showMap", "Show Map")}
+            {showMap
+              ? t("common.hideMap", "Hide Map")
+              : t("common.showMap", "Show Map")}
           </Button>
           {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
@@ -658,8 +665,8 @@ export const IncidentsPage: React.FC = () => {
             </>
           )}
           {canConvertToRequest &&
-            selectedIncidents?.length > 1 &&
-            allSameState ? (
+          selectedIncidents?.length > 1 &&
+          allSameState ? (
             <Button
               leftIcon={<Repeat className="w-4 h-4" />}
               onClick={() => setShowConvertModal(true)}
@@ -914,8 +921,8 @@ export const IncidentsPage: React.FC = () => {
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
                   !canViewAllIncidents &&
-                  hasUrlFilter &&
-                  "opacity-60 cursor-not-allowed",
+                    hasUrlFilter &&
+                    "opacity-60 cursor-not-allowed",
                 )}
               >
                 <option value="">{t("common.allStates")}</option>
@@ -1037,8 +1044,8 @@ export const IncidentsPage: React.FC = () => {
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
                   !canViewAllIncidents &&
-                  hasUrlFilter &&
-                  "opacity-60 cursor-not-allowed",
+                    hasUrlFilter &&
+                    "opacity-60 cursor-not-allowed",
                 )}
               >
                 <option value="">{t("common.all")}</option>
@@ -1074,9 +1081,9 @@ export const IncidentsPage: React.FC = () => {
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {isShortSearch
                 ? t(
-                  "search.minCharsDesc",
-                  "Enter at least 3 characters to search",
-                )
+                    "search.minCharsDesc",
+                    "Enter at least 3 characters to search",
+                  )
                 : hasActiveFilters
                   ? t("incidents.adjustFilters")
                   : t("incidents.noIncidentsDesc")}
@@ -1182,13 +1189,21 @@ export const IncidentsPage: React.FC = () => {
                     const priority = getLookupValue(incident, "PRIORITY");
                     const rtcHours = getRtcHoursRemaining(incident);
                     const isExpiringSoon = rtcHours !== null && rtcHours <= 24;
+
+                    // Detect master and child incidents
+                    const isMasterIncident =
+                      (incident.merged_incidents_count ?? 0) > 0;
+                    const isChildIncident = !!incident.master_incident_id;
+
                     return (
                       <tr
                         key={incident.id}
                         className={cn(
                           "hover:bg-[hsl(var(--muted)/0.5)] transition-colors",
                           isExpiringSoon &&
-                          "bg-amber-50/40 border-l-2 border-l-amber-400",
+                            "bg-amber-50/40 border-l-2 border-l-amber-400",
+                          isChildIncident &&
+                            "opacity-50 bg-gray-50/50 pointer-events-none",
                         )}
                       >
                         <td
@@ -1198,17 +1213,46 @@ export const IncidentsPage: React.FC = () => {
                           <Checkbox
                             id={incident.id}
                             checked={isSelected(incident)}
-                            // disabled={isDisabled(incident)}
-                            onChange={(e) => handleCheckboxChange(e, incident)}
+                            disabled={isChildIncident}
+                            onChange={(e) =>
+                              !isChildIncident &&
+                              handleCheckboxChange(e, incident)
+                            }
                           />
                         </td>
                         {isColumnVisible("incident") && (
                           <td className="px-6 py-4">
                             <div className="max-w-xs">
                               <div className="flex items-center gap-2">
+                                {/* Master incident icon */}
+                                {isMasterIncident && (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300"
+                                    title="Master incident (has merged child tickets)"
+                                  >
+                                    <GitMerge className="w-3 h-3" />
+                                    Master
+                                  </span>
+                                )}
+                                {/* Child incident icon */}
+                                {isChildIncident && (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300"
+                                    title="Child incident (merged)"
+                                  >
+                                    <Link2 className="w-3 h-3" />
+                                    Child
+                                  </span>
+                                )}
                                 <p
-                                  className="text-xs font-medium text-[hsl(var(--primary))] mb-0.5 cursor-pointer"
+                                  className={cn(
+                                    "text-xs font-medium mb-0.5",
+                                    isChildIncident
+                                      ? "text-gray-400 cursor-not-allowed"
+                                      : "text-[hsl(var(--primary))] cursor-pointer",
+                                  )}
                                   onClick={() =>
+                                    !isChildIncident &&
                                     navigate(`/incidents/${incident.id}`)
                                   }
                                 >
@@ -1377,10 +1421,13 @@ export const IncidentsPage: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              disabled={isChildIncident}
                               leftIcon={<Eye className="w-4 h-4" />}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/incidents/${incident.id}`);
+                                if (!isChildIncident) {
+                                  navigate(`/incidents/${incident.id}`);
+                                }
                               }}
                             >
                               {t("common.view")}

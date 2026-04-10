@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { GitBranch, Target, Building2, Filter } from "lucide-react";
+import { GitBranch, Target, Filter } from "lucide-react";
 import { useOKRTree } from "../../hooks/useGoalAnalytics";
 import { DepartmentNode } from "../../components/goals/OKRTreeNode";
 import type { OKRTreeFilter } from "../../types/goalAnalytics";

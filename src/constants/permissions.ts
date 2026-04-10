@@ -140,6 +140,9 @@ export const PERMISSIONS = {
 
   CALLER_SENTIMENT_CREATE: "caller-sentiment:create",
   CALLER_SENTIMENT_VIEW: "caller-sentiment:view",
+
+  // Quality Audit
+  QUALITY_AUDIT_VIEW: "incidents:view",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

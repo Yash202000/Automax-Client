@@ -5,7 +5,8 @@ export type ClassificationType =
   | "request"
   | "complaint"
   | "query"
-  | "evidence"
+  | "mobile"
+  | "ivr"
   | "both"
   | "all";
 
@@ -29,6 +30,8 @@ export interface User {
   permissions: string[];
   is_active: boolean;
   is_super_admin: boolean;
+  mobile_verified?: boolean;
+  extension?: string;
   last_login_at: string | null;
   created_at: string;
 }
@@ -59,7 +62,7 @@ export interface Classification {
   id: string;
   name: string;
   description: string;
-  type: ClassificationType;
+  types: string[];
   parent_id: string | null;
   level: number;
   path: string;
@@ -78,6 +81,8 @@ export interface ClassificationCriticality {
   max_closing_hours: number;
   max_closing_minutes: number;
   is_active: boolean;
+  escalation_policy_id?: string;
+  escalation_policy?: EscalationPolicy;
   created_at: string;
   updated_at: string;
 }
@@ -318,6 +323,7 @@ export interface UpdateProfileRequest {
   classification_ids?: string[];
   role_ids?: string[];
   is_active?: boolean;
+  mobile_verified?: boolean;
 }
 
 export interface ChangePasswordRequest {
@@ -325,11 +331,27 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+// OTP types
+export interface OtpSendRequest {
+  phone: string;
+  channel: "sms" | "email";
+}
+
+export interface OtpSendResponse {
+  session_id: string;
+}
+
+export interface OtpVerifyRequest {
+  phone: string;
+  session_id: string;
+  otp: string;
+}
+
 // Classification request types
 export interface ClassificationCreateRequest {
   name: string;
   description?: string;
-  type?: ClassificationType;
+  types?: string[];
   parent_id?: string;
   sort_order?: number;
   criticalities?: ClassificationCriticalityCreateRequest[];
@@ -344,7 +366,7 @@ export interface ClassificationCriticalityCreateRequest {
 export interface ClassificationUpdateRequest {
   name?: string;
   description?: string;
-  type?: ClassificationType;
+  types?: string[];
   is_active?: boolean;
   sort_order?: number;
 }
@@ -653,6 +675,8 @@ export interface WorkflowState {
   position_x: number;
   position_y: number;
   sla_hours?: number;
+  escalation_policy_id?: string;
+  escalation_policy?: EscalationPolicy;
   is_mergable: boolean;
   /** When true this state requires a duration selection before entering
    *  and triggers automatic reversion if not closed in time. */
@@ -662,8 +686,8 @@ export interface WorkflowState {
   sort_order: number;
   is_active: boolean;
   viewable_roles?: Role[];
-  created_at: string;
   editable_roles?: Role[];
+  created_at: string;
 }
 
 export interface WorkflowTransition {
@@ -690,6 +714,8 @@ export interface WorkflowTransition {
   assignment_roles?: Role[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+
+  is_rejection: boolean;
 
   requirements?: TransitionRequirement[];
   actions?: TransitionAction[];
@@ -783,6 +809,7 @@ export interface WorkflowStateCreateRequest {
   duration_options?: string[];
   sort_order?: number;
   viewable_role_ids?: string[];
+  editable_role_ids?: string[];
 }
 
 export interface WorkflowStateUpdateRequest {
@@ -800,6 +827,7 @@ export interface WorkflowStateUpdateRequest {
   sort_order?: number;
   is_active?: boolean;
   viewable_role_ids?: string[];
+  editable_role_ids?: string[];
 }
 
 export interface WorkflowTransitionCreateRequest {
@@ -821,6 +849,7 @@ export interface WorkflowTransitionCreateRequest {
   assignment_role_ids?: string[];
   auto_match_user?: boolean;
   manual_select_user?: boolean;
+  is_rejection?: boolean;
 }
 
 export interface WorkflowTransitionUpdateRequest {
@@ -843,6 +872,7 @@ export interface WorkflowTransitionUpdateRequest {
   assignment_role_ids?: string[];
   auto_match_user?: boolean;
   manual_select_user?: boolean;
+  is_rejection?: boolean;
 }
 
 export interface WorkflowImportResponse {
@@ -920,6 +950,9 @@ export interface Incident {
   version: number;
   active_viewers?: number;
 
+  // AI quality
+  is_ai_verified?: boolean;
+
   // Merge-related fields
   master_incident_id?: string;
   master_incident?: Incident;
@@ -972,6 +1005,17 @@ export interface IncidentFeedbackRequest {
   comment?: string;
 }
 
+export interface AIQualityFeedback {
+  id: string;
+  incident_id: string;
+  changed_summary: string;
+  resolution_status: string;
+  distance_meters: number;
+  created_at: string;
+  updated_at: string;
+  incident?: Incident;
+}
+
 export interface TransitionHistory {
   id: string;
   incident_id: string;
@@ -1020,6 +1064,7 @@ export interface IncidentRevision {
   attachment_id?: string;
   transition_history_id?: string;
   transition?: WorkflowTransition;
+  synced_incidents?: string[];
   created_at: string;
 }
 
@@ -1207,6 +1252,7 @@ export interface ConvertToRequestRequest {
   department_id?: string;
   due_date?: string;
   feedback?: IncidentFeedbackRequest;
+  existing_request_id?: string;
 }
 
 export interface BulkConvertToRequestRequest {
@@ -1667,6 +1713,7 @@ export interface SMSFilter {
   category?: string;
   direction?: string;
   is_read?: boolean;
+  received_by?: string;
 }
 
 // Incident Merge Types
@@ -1732,12 +1779,122 @@ export interface iLocationOption {
 
 export interface CreateEscalationRequest {
   name: string;
-  classification_id: string;
+  classification_ids: string[];
+  /** @deprecated use classification_ids */
+  classification_id?: string;
   channel: string;
   location_id: string;
   frequency: string;
   is_active: boolean;
   user_ids: string[];
+  targets?: EscalationGroupTargetRequest[];
+}
+
+// ─── Escalation Group Target ──────────────────────────────────────────────────
+
+export interface EscalationGroupTarget {
+  id: string;
+  group_id: string;
+  department_id?: string;
+  department?: Department;
+  role_id?: string;
+  role?: Role;
+  excluded_user_ids?: string[];
+  created_at: string;
+}
+
+export interface EscalationGroupTargetRequest {
+  department_id?: string;
+  role_id?: string;
+  excluded_user_ids?: string[];
+}
+
+// ─── Escalation Policy ───────────────────────────────────────────────────────
+
+export interface EscalationPolicyStepTarget {
+  id: string;
+  step_id: string;
+  department_id?: string;
+  department?: Department;
+  role_id?: string;
+  role?: Role;
+  excluded_user_ids?: string[];
+  created_at: string;
+}
+
+export interface EscalationPolicyStep {
+  id: string;
+  policy_id: string;
+  step_order: number;
+  delay_hours: number;
+  channel: "email" | "sms" | "both";
+  targets: EscalationPolicyStepTarget[];
+  created_at: string;
+}
+
+export interface EscalationPolicy {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  steps: EscalationPolicyStep[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EscalationPolicyStepTargetRequest {
+  department_id?: string;
+  role_id?: string;
+  excluded_user_ids?: string[];
+}
+
+export interface EscalationPolicyStepRequest {
+  step_order: number;
+  delay_hours: number;
+  channel: "email" | "sms" | "both";
+  targets: EscalationPolicyStepTargetRequest[];
+}
+
+export interface CreateEscalationPolicyRequest {
+  name: string;
+  description?: string;
+  is_active?: boolean;
+  steps: EscalationPolicyStepRequest[];
+}
+
+export interface UpdateEscalationPolicyRequest {
+  name?: string;
+  description?: string;
+  is_active?: boolean;
+  steps?: EscalationPolicyStepRequest[];
+}
+
+// ─── Escalation SLA (breach audit) ──────────────────────────────────────────
+
+export interface EscalationSLARecord {
+  id: string;
+  incident_id: string;
+  incident_number?: string;
+  state_id?: string;
+  state_name?: string;
+  group_id?: string;
+  group_name?: string;
+  escalation_policy_id?: string;
+  escalation_policy_step_id?: string;
+  step_order?: number;
+  escalation_type: string;
+  channel: string;
+  sent_at: string;
+  recipients?: string;
+  created_at: string;
+}
+
+// ─── Resolve Users Request ───────────────────────────────────────────────────
+
+export interface ResolveUsersRequest {
+  department_id?: string;
+  role_id?: string;
+  excluded_user_ids?: string[];
 }
 
 export interface CallerFeedBackRequest {
@@ -1745,4 +1902,40 @@ export interface CallerFeedBackRequest {
   call_uuid?: string;
   sentiment: number;
   feedback: string;
+}
+
+export interface IncidentRejectionLog {
+  id: string;
+  incident_id: string;
+  incident_number: string;
+  incident_title: string;
+  record_type: string;
+  rejection_sequence: number;
+  total_rejection_count: number;
+  received_at: string;
+  rejected_at: string;
+  reaction_time_minutes: number;
+  rejection_reason: string;
+  from_state?: WorkflowState;
+  to_state?: WorkflowState;
+  rejected_by?: User;
+  rejected_by_username: string;
+  rejected_by_roles_snapshot: string[];
+  sla_threshold_hours?: number;
+  sla_threshold_minutes?: number;
+  sla_breached_at_rejection: boolean;
+  sla_status: "within_sla" | "breached";
+  department_id?: string;
+  classification_id?: string;
+  transition_history_id: string;
+  created_at: string;
+}
+
+export interface RejectionLogListResponse {
+  success: boolean;
+  data: IncidentRejectionLog[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }

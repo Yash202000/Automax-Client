@@ -365,6 +365,7 @@ export const BulkConvertToRequestModal: React.FC<
         incident_ids: incidents.map((i) => i.id),
         classification_id: data.classification_id,
         workflow_id: data.workflow_id,
+        existing_request_id: data.existing_request_id,
         feedback: data.feedback,
       });
     },
@@ -631,8 +632,8 @@ export const BulkConvertToRequestModal: React.FC<
                       ) : searchedRequests.length === 0 ? (
                         <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
                           {t(
-                            "complaints.noIncidentsFound",
-                            "No incidents found",
+                            "requests.noRequests",
+                            "No requests found",
                           )}
                         </div>
                       ) : (

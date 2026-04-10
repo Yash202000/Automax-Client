@@ -37,6 +37,8 @@ import {
   Search,
   ChevronDown,
   ArrowRight,
+  Bot,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
@@ -59,7 +61,10 @@ import {
   incidentMergeApi,
   locationApi,
   classificationApi,
+  rejectionLogApi,
+  aiQualityApi,
 } from "../../api/admin";
+import type { EscalationSLARecord } from "../../types";
 import { API_URL } from "../../api/client";
 import type {
   IncidentDetail,
@@ -72,6 +77,8 @@ import type {
   UserMatchResponse,
   LookupValue,
   Department,
+  IncidentRejectionLog,
+  AIQualityFeedback,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -107,8 +114,6 @@ export const IncidentDetailPage: React.FC = () => {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { users } = useAppSelector((state) => state.users);
 
-  const canEditIncident =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_UPDATE);
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
   const canMergeIncidents =
@@ -117,7 +122,12 @@ export const IncidentDetailPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
   const [activeTab, setActiveTab] = useState<
-    "activity" | "comments" | "attachments" | "revisions"
+    | "activity"
+    | "comments"
+    | "attachments"
+    | "revisions"
+    | "rejections"
+    | "ai-quality"
   >("activity");
   const [commentText, setCommentText] = useState("");
   const [isInternalComment, setIsInternalComment] = useState(false);
@@ -243,6 +253,47 @@ export const IncidentDetailPage: React.FC = () => {
       enabled: !!id,
     });
 
+  // Fetch rejection logs for this incident
+  const { data: rejectionLogsData } = useQuery({
+    queryKey: ["incident", id, "rejection-logs"],
+    queryFn: () => rejectionLogApi.getByIncident(id!),
+    enabled: !!id,
+  });
+
+  // Fetch AI quality feedback for this incident
+  const { data: aiQualityData, isLoading: aiQualityLoading } = useQuery({
+    queryKey: ["incident", id, "ai-quality"],
+    queryFn: async () => {
+      console.log("[AIQuality] Fetching for incident:", id);
+      const result = await aiQualityApi.getByIncident(id!);
+      console.log("[AIQuality] Response:", result);
+      return result;
+    },
+    enabled: !!id,
+    retry: false,
+  });
+
+  // Fetch escalation SLA actions fired for this incident
+  const { data: escalationSlaData } = useQuery({
+    queryKey: ["incident", id, "escalation-sla"],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/v1/admin/escalation-sla?incident_id=${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
+      if (!res.ok) return { data: [] };
+      return res.json();
+    },
+    enabled: !!id,
+    retry: false,
+  });
+  const escalationSlaRecords: EscalationSLARecord[] =
+    escalationSlaData?.data || [];
+
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", 1, 100],
     queryFn: () => userApi.list(1, 100),
@@ -332,6 +383,16 @@ export const IncidentDetailPage: React.FC = () => {
     [lookupCategoriesData?.data],
   );
   const user = useAuthStore((state) => state.user);
+
+  // State-level edit restriction: if current state has editable_roles configured,
+  // user must be in one of those roles (superadmin bypasses this check).
+  const canEditIncident = (() => {
+    if (!hasPermission(PERMISSIONS.INCIDENTS_UPDATE)) return false;
+    if (isSuperAdmin) return true;
+    const editableRoles = incident?.current_state?.editable_roles;
+    if (!editableRoles || editableRoles.length === 0) return true;
+    return editableRoles.some((r) => user?.roles?.some((ur) => ur.id === r.id));
+  })();
 
   // Check merge permission based on incident's workflow
   // const { data: mergePermissionData } = useQuery({
@@ -1730,6 +1791,44 @@ export const IncidentDetailPage: React.FC = () => {
                   {t("incidents.revisions")}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab("rejections")}
+                className={cn(
+                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  activeTab === "rejections"
+                    ? "text-[hsl(var(--destructive))] border-b-2 border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.05)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <XCircle className="w-4 h-4" />
+                  Rejection History
+                  {(rejectionLogsData?.data?.length ?? 0) > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]">
+                      {rejectionLogsData?.data?.length}
+                    </span>
+                  )}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab("ai-quality")}
+                className={cn(
+                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  activeTab === "ai-quality"
+                    ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Bot className="w-4 h-4" />
+                  AI Quality
+                  {aiQualityData?.data && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      1
+                    </span>
+                  )}
+                </span>
+              </button>
             </div>
 
             <div className="p-4">
@@ -2510,6 +2609,158 @@ export const IncidentDetailPage: React.FC = () => {
               {activeTab === "revisions" && (
                 <RevisionHistory incidentId={id!} />
               )}
+
+              {/* AI Quality Tab */}
+              {activeTab === "ai-quality" && (
+                <div className="space-y-4">
+                  {aiQualityLoading ? (
+                    <div className="flex items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-sm">
+                        Loading AI quality report...
+                      </span>
+                    </div>
+                  ) : !aiQualityData?.data ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <Bot className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm font-medium">
+                        No AI quality report yet
+                      </p>
+                      <p className="text-xs mt-1 text-center max-w-xs">
+                        The AI quality monitor will process this incident
+                        shortly.
+                      </p>
+                    </div>
+                  ) : (
+                    <AIQualityReport feedback={aiQualityData.data} />
+                  )}
+                </div>
+              )}
+
+              {/* Rejection History Tab */}
+              {activeTab === "rejections" && (
+                <div className="space-y-3">
+                  {!rejectionLogsData?.data?.length ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <XCircle className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm">
+                        No rejection records for this incident.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        This incident has been rejected{" "}
+                        <span className="font-semibold text-[hsl(var(--destructive))]">
+                          {rejectionLogsData.data.length}
+                        </span>{" "}
+                        time{rejectionLogsData.data.length !== 1 ? "s" : ""}.
+                      </p>
+                      {rejectionLogsData.data.map(
+                        (log: IncidentRejectionLog) => (
+                          <div
+                            key={log.id}
+                            className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--destructive)/0.03)] p-4 space-y-3"
+                          >
+                            {/* Header row */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))] text-xs font-bold">
+                                  #{log.rejection_sequence}
+                                </span>
+                                <div>
+                                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                    {log.from_state?.name ?? "—"} →{" "}
+                                    {log.to_state?.name ?? "—"}
+                                  </p>
+                                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                    Rejected by{" "}
+                                    <span className="font-medium">
+                                      {log.rejected_by?.first_name ??
+                                        log.rejected_by_username}
+                                    </span>
+                                    {log.rejected_by_roles_snapshot?.length >
+                                      0 && (
+                                      <span className="ml-1">
+                                        (
+                                        {log.rejected_by_roles_snapshot.join(
+                                          ", ",
+                                        )}
+                                        )
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-xs font-medium",
+                                    log.sla_status === "breached"
+                                      ? "bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]"
+                                      : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                                  )}
+                                >
+                                  {log.sla_status === "breached"
+                                    ? "SLA Breached"
+                                    : "Within SLA"}
+                                </span>
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  {new Date(log.rejected_at).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Metrics row */}
+                            <div className="grid grid-cols-3 gap-3 text-xs">
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  Reaction Time
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.reaction_time_minutes < 60
+                                    ? `${log.reaction_time_minutes}m`
+                                    : `${Math.floor(log.reaction_time_minutes / 60)}h ${log.reaction_time_minutes % 60}m`}
+                                </p>
+                              </div>
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  SLA Threshold
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.sla_threshold_hours != null
+                                    ? `${log.sla_threshold_hours}h`
+                                    : "—"}
+                                </p>
+                              </div>
+                              <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
+                                  Total Rejections
+                                </p>
+                                <p className="font-semibold text-[hsl(var(--foreground))]">
+                                  {log.total_rejection_count}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Rejection reason */}
+                            {log.rejection_reason && (
+                              <div className="text-xs">
+                                <p className="text-[hsl(var(--muted-foreground))] mb-1 font-medium">
+                                  Rejection Reason
+                                </p>
+                                <p className="text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.3)] rounded p-2 leading-relaxed">
+                                  {log.rejection_reason}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2610,6 +2861,46 @@ export const IncidentDetailPage: React.FC = () => {
                       {incident.sla_breached && (
                         <AlertTriangle className="w-3.5 h-3.5" />
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Escalation Actions Performed */}
+                {escalationSlaRecords.length > 0 && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t("incidents.escalationActions", "Escalation Actions")}
+                    </label>
+                    <div className="mt-1.5 space-y-1.5">
+                      {escalationSlaRecords.map((rec) => (
+                        <div
+                          key={rec.id}
+                          className="flex items-start gap-2 p-2 rounded-lg bg-orange-500/5 border border-orange-500/15"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-[hsl(var(--foreground))] leading-tight">
+                              {rec.escalation_type}
+                              {rec.step_order != null &&
+                                ` · Step ${rec.step_order}`}
+                              {rec.state_name && ` · ${rec.state_name}`}
+                            </p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                              <span className="capitalize">{rec.channel}</span>
+                              {" · "}
+                              {new Date(rec.sent_at).toLocaleString(
+                                i18n.language === "ar" ? "ar-SA" : "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -4435,3 +4726,92 @@ export const IncidentDetailPage: React.FC = () => {
     </div>
   );
 };
+
+// ---------------------------------------------------------------------------
+// AI Quality Report sub-component
+// ---------------------------------------------------------------------------
+function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
+  const isResolved =
+    feedback.resolution_status?.toLowerCase().includes("resolved") ?? false;
+
+  console.log("[AIQuality] Rendering AIQualityReport with feedback:", feedback);
+
+  return (
+    <div className="space-y-4">
+      {/* Header badge */}
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20">
+        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-800/40">
+          <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            AI Quality Assessment
+          </p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-500">
+            Processed on{" "}
+            {new Date(feedback.created_at).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </p>
+        </div>
+      </div>
+
+      {/* Metrics grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Resolution status */}
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 space-y-1">
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+            Resolution Status
+          </p>
+          <div className="flex items-center gap-2">
+            <ShieldCheck
+              className={cn(
+                "w-4 h-4 flex-shrink-0",
+                isResolved ? "text-emerald-500" : "text-amber-500",
+              )}
+            />
+            <span
+              className={cn(
+                "text-sm font-semibold capitalize",
+                isResolved
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-amber-700 dark:text-amber-400",
+              )}
+            >
+              {feedback.resolution_status || "—"}
+            </span>
+          </div>
+        </div>
+
+        {/* Distance */}
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 space-y-1">
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+            Coordinate Drift
+          </p>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+            <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+              {feedback.distance_meters != null
+                ? `${Number(feedback.distance_meters).toFixed(1)} m`
+                : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Change summary */}
+      {feedback.changed_summary && (
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 space-y-2">
+          <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Change Summary
+          </p>
+          <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
+            {feedback.changed_summary}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

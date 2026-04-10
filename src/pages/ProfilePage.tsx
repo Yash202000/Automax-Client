@@ -18,10 +18,22 @@ import {
   Phone,
   MapPin,
   Tag,
+  ShieldCheck,
+  AlertCircle,
+  MessageSquare,
 } from "lucide-react";
-import { Button, Input, Card } from "../components/ui";
+import {
+  Button,
+  Input,
+  Card,
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+} from "../components/ui";
 import { useAuthStore } from "../stores/authStore";
 import { authApi } from "../api/auth";
+import { otpApi } from "../api/otp";
 
 const profileSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(50),
@@ -41,7 +53,107 @@ export const ProfilePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSendOtp = async () => {
+    if (!user?.phone) {
+      setError("Please add and save a phone number first.");
+      return;
+    }
+
+    // Open modal immediately so user sees feedback
+    setIsOtpModalOpen(true);
+    setOtp("");
+    setOtpError("");
+    setSessionId("");
+    setOtpLoading(true);
+
+    try {
+      const response = await otpApi.send({
+        phone: user.phone,
+        channel: "sms",
+      });
+      // API returns { message, session_id } directly
+      if (response.session_id) {
+        setSessionId(response.session_id);
+      } else {
+        setOtpError("Failed to send OTP. Please try again.");
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "An error occurred while sending OTP";
+      setOtpError(msg);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length < 6) {
+      setOtpError("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError("");
+    try {
+      const response = await otpApi.verify({
+        phone: user!.phone,
+        session_id: sessionId,
+        otp: otp,
+      });
+
+      if (response.success && response.data) {
+        // Store the new tokens returned by verify
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+        }
+        if (response.data.refresh_token) {
+          localStorage.setItem("refreshToken", response.data.refresh_token);
+        }
+
+        // Now update mobile_verified: true via the user update API
+        const updateResponse = await authApi.updateProfile({
+          mobile_verified: true,
+          extension: user?.extension || "",
+          phone: user?.phone || "",
+          username: user?.username || "",
+          first_name: user?.first_name || "",
+          last_name: user?.last_name || "",
+        });
+
+        if (updateResponse.success && updateResponse.data) {
+          setUser(updateResponse.data);
+        } else {
+          // Even if update fails, set local user state with verified flag
+          setUser({ ...response.data.user, mobile_verified: true });
+        }
+
+        setSuccess("Phone number verified successfully!");
+        setIsOtpModalOpen(false);
+        setOtp("");
+      } else {
+        setOtpError(response.message || "Invalid OTP. Please try again.");
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Invalid OTP. Please try again.";
+      setOtpError(msg);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const {
     register,
@@ -65,7 +177,14 @@ export const ProfilePage: React.FC = () => {
     setSuccess("");
 
     try {
-      const response = await authApi.updateProfile(data);
+      // If phone number changed, reset mobile_verified to false
+      const phoneChanged = data.phone && data.phone !== user?.phone;
+      const payload = {
+        ...data,
+        ...(phoneChanged ? { mobile_verified: false } : {}),
+      };
+
+      const response = await authApi.updateProfile(payload);
       if (response.success && response.data) {
         setUser(response.data);
         setSuccess(t("profile.profileUpdated"));
@@ -284,9 +403,26 @@ export const ProfilePage: React.FC = () => {
                     <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                       <Phone className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <span className="text-gray-700 font-medium">
-                      {user.phone}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 font-medium">
+                        {user.phone}
+                      </span>
+                      {user.mobile_verified ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">
+                          <ShieldCheck className="w-3 h-3" />
+                          Verified
+                        </span>
+                      ) : (
+                        <button
+                          onClick={handleSendOtp}
+                          disabled={otpLoading}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 hover:bg-amber-200 text-[10px] font-bold rounded-full transition-colors"
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          Verify Now
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
                 {(user as any)?.extension && (
@@ -489,7 +625,25 @@ export const ProfilePage: React.FC = () => {
                       <Phone className="w-3.5 h-3.5" />
                       Phone Number
                     </label>
-                    <p className="mt-2  font-medium">{user?.phone || "—"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="mt-2 font-medium">{user?.phone || "—"}</p>
+                      {user?.phone &&
+                        (user.mobile_verified ? (
+                          <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">
+                            <ShieldCheck className="w-3 h-3" />
+                            Verified
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handleSendOtp}
+                            disabled={otpLoading}
+                            className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 hover:bg-amber-200 text-[10px] font-bold rounded-full transition-colors"
+                          >
+                            <AlertCircle className="w-3 h-3" />
+                            Verify Now
+                          </button>
+                        ))}
+                    </div>
                   </div>
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -604,6 +758,78 @@ export const ProfilePage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* OTP Verification Modal */}
+      <Modal
+        isOpen={isOtpModalOpen}
+        onClose={() => !otpLoading && setIsOtpModalOpen(false)}
+        size="sm"
+      >
+        <ModalHeader>
+          <ModalTitle>Verify Phone Number</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-6">
+            {/* Sending state */}
+            {otpLoading && !sessionId ? (
+              <div className="text-center py-6 space-y-3">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-sm text-slate-500 font-medium">
+                  Sending OTP to {user?.phone}…
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="w-8 h-8" />
+                  </div>
+                  <h4 className="text-lg font-bold text-slate-900">
+                    Enter Verification Code
+                  </h4>
+                  <p className="text-sm text-slate-500">
+                    We've sent a 6-digit code to{" "}
+                    <span className="font-semibold text-slate-700">
+                      {user?.phone}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <Input
+                    label="OTP Code"
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    error={otpError}
+                    className="text-center text-2xl tracking-[0.5em] font-mono"
+                    autoFocus
+                  />
+
+                  <Button
+                    className="w-full h-12 text-base font-bold"
+                    onClick={handleVerifyOtp}
+                    isLoading={otpLoading}
+                    disabled={otp.length !== 6 || otpLoading}
+                  >
+                    Verify Code
+                  </Button>
+
+                  <button
+                    onClick={handleSendOtp}
+                    disabled={otpLoading}
+                    className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 text-center py-2"
+                  >
+                    Didn't receive code? Resend
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </ModalBody>
+      </Modal>
     </div>
   );
 };
