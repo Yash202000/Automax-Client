@@ -98,6 +98,10 @@ import type {
   CallerFeedBackRequest,
   IncidentRejectionLog,
   RejectionLogListResponse,
+  CreateEscalationPolicyRequest,
+  UpdateEscalationPolicyRequest,
+  EscalationPolicy,
+  ResolveUsersRequest,
 } from "../types";
 
 // User Management
@@ -2716,6 +2720,53 @@ export const escalationApi = {
   },
   delete: async (id: string): Promise<ApiResponse<any>> => {
     const response = await apiClient.delete(`/admin/escalation-groups/${id}`);
+    return response.data;
+  },
+};
+
+export const escalationPolicyApi = {
+  list: async (): Promise<ApiResponse<EscalationPolicy[]>> => {
+    const response = await apiClient.get<ApiResponse<EscalationPolicy[]>>(
+      "/admin/escalation-policies",
+    );
+    return response.data;
+  },
+  getById: async (id: string): Promise<ApiResponse<EscalationPolicy>> => {
+    const response = await apiClient.get<ApiResponse<EscalationPolicy>>(
+      `/admin/escalation-policies/${id}`,
+    );
+    return response.data;
+  },
+  create: async (
+    data: CreateEscalationPolicyRequest,
+  ): Promise<ApiResponse<EscalationPolicy>> => {
+    const response = await apiClient.post<ApiResponse<EscalationPolicy>>(
+      "/admin/escalation-policies",
+      data,
+    );
+    return response.data;
+  },
+  update: async (
+    id: string,
+    data: UpdateEscalationPolicyRequest,
+  ): Promise<ApiResponse<EscalationPolicy>> => {
+    const response = await apiClient.put<ApiResponse<EscalationPolicy>>(
+      `/admin/escalation-policies/${id}`,
+      data,
+    );
+    return response.data;
+  },
+  delete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete(`/admin/escalation-policies/${id}`);
+    return response.data;
+  },
+  resolveUsers: async (
+    data: ResolveUsersRequest,
+  ): Promise<ApiResponse<User[]>> => {
+    const response = await apiClient.post<ApiResponse<User[]>>(
+      "/admin/escalation-policies/resolve-users",
+      data,
+    );
     return response.data;
   },
 };

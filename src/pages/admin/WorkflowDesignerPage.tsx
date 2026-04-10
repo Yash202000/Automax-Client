@@ -34,6 +34,7 @@ import {
   departmentApi,
   userApi,
   lookupApi,
+  escalationPolicyApi,
 } from "../../api/admin";
 import { HierarchicalCheckboxTree } from "../../components/workflow/HierarchicalCheckboxTree";
 import type {
@@ -74,6 +75,7 @@ interface StateFormData {
   state_type: "initial" | "normal" | "terminal";
   color: string;
   sla_hours: number | undefined;
+  escalation_policy_id: string | undefined;
   is_mergable: boolean;
   is_ready_to_close: boolean;
   duration_options: string; // comma-separated input string
@@ -107,6 +109,7 @@ const initialStateFormData: StateFormData = {
   state_type: "normal",
   color: "#6366f1",
   sla_hours: undefined,
+  escalation_policy_id: undefined,
   is_mergable: false,
   is_ready_to_close: false,
   duration_options: "",
@@ -327,6 +330,11 @@ export const WorkflowDesignerPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
+  const { data: escalationPoliciesData } = useQuery({
+    queryKey: ["escalation-policies"],
+    queryFn: () => escalationPolicyApi.list(),
+  });
+
   const workflow = workflowData?.data;
   const classifications: Classification[] = classificationsData?.data || [];
   const locations: Location[] = locationsData?.data || [];
@@ -338,6 +346,7 @@ export const WorkflowDesignerPage: React.FC = () => {
   const lookupCategories: LookupCategory[] = (
     lookupCategoriesData?.data || []
   ).filter((cat) => cat.add_to_incident_form);
+  const escalationPolicies = escalationPoliciesData?.data || [];
 
   // Get Priority and Severity categories for matching rules
   const allLookupCategories: LookupCategory[] =
@@ -645,6 +654,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       state_type: state.state_type as "initial" | "normal" | "terminal",
       color: state.color,
       sla_hours: state.sla_hours || undefined,
+      escalation_policy_id: state.escalation_policy_id || undefined,
       is_mergable: state.is_mergable || false,
       is_ready_to_close: state.is_ready_to_close || false,
       duration_options: (state.duration_options || []).join(", "),
@@ -750,6 +760,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       state_type: stateFormData.state_type,
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
+      escalation_policy_id: stateFormData.escalation_policy_id || null,
       is_mergable: stateFormData.is_mergable,
       is_ready_to_close: stateFormData.is_ready_to_close,
       duration_options: stateFormData.duration_options
@@ -2510,6 +2521,33 @@ export const WorkflowDesignerPage: React.FC = () => {
                   />
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
                     Maximum time an incident should remain in this state
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    Escalation Policy (optional)
+                  </label>
+                  <select
+                    value={stateFormData.escalation_policy_id || ""}
+                    onChange={(e) =>
+                      setStateFormData({
+                        ...stateFormData,
+                        escalation_policy_id: e.target.value || undefined,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                  >
+                    <option value="">— None —</option>
+                    {escalationPolicies
+                      .filter((p) => p.is_active)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    Policy to fire when this state's SLA is breached
                   </p>
                 </div>
                 <div>

@@ -1566,6 +1566,8 @@
   "escalation": {
     "pageTitle": "Escalation Group",
     "pageDescription": "Manage escalation triggers for incidents.",
+    "managementTitle": "Escalation Management",
+    "managementDescription": "Configure policies, groups, and review SLA breach activity",
     "addNew": "Add Escalation Group",
     "searchPlaceholder": "Search by name…",
     "loading": "Loading escalation groups…",
@@ -1575,12 +1577,22 @@
     "active": "Active",
     "inactive": "Inactive",
     "failedToLoad": "Failed to Load",
-    "deleteTitle": "Delete Escalation Group",
+    "deleteTitle": "Delete",
     "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "name": "Name",
     "users": "Users",
+    "usersDirectly": "Or select users directly",
+    "targets": "Dept / Role Targets",
+    "allUsers": "All Users",
+    "noTargets": "No targets defined",
+    "noUsersResolved": "No users resolved for this target",
+    "selectDept": "Select department...",
+    "addTarget": "Add Target & Resolve Users",
     "classification": "Classification",
     "channel": "Channel",
+    "channelEmail": "Email",
+    "channelSms": "SMS",
+    "channelBoth": "Both",
     "clearSearch": "Clear Search",
     "edit": "Edit Escalation Group",
     "create": "Create Escalation Group",
@@ -1604,6 +1616,39 @@
     "noClassifications": "No classifications found.",
     "deletedSuccess": "Escalation deleted successfully",
     "deleteError": "Failed to delete escalation",
-    "update": "Update Escalation Group"
+    "update": "Update Escalation Group",
+    "tabs": {
+      "policies": "Escalation Policies",
+      "groups": "Escalation Groups",
+      "breachLog": "Breach Log"
+    },
+    "policy": {
+      "addNew": "New Policy",
+      "edit": "Edit Policy",
+      "create": "Create Escalation Policy",
+      "searchPlaceholder": "Search policies...",
+      "noPolicies": "No escalation policies yet",
+      "noPoliciesHint": "Create reusable escalation policies and attach them to workflow states or classification criticalities.",
+      "steps": "Steps",
+      "stepCount": "steps",
+      "step": "Step",
+      "addStep": "Add Step",
+      "delayHours": "Fire after (hours)",
+      "stepNeedsTarget": "At least one target required",
+      "namePlaceholder": "e.g. Critical Incident Escalation",
+      "createdSuccess": "Policy created",
+      "updatedSuccess": "Policy updated",
+      "deletedSuccess": "Policy deleted"
+    },
+    "breachLog": {
+      "search": "Search by incident or type...",
+      "noRecords": "No breach records found",
+      "noRecordsHint": "Escalation actions fired on SLA breaches will appear here.",
+      "incident": "Incident",
+      "type": "Type",
+      "state": "State",
+      "step": "Step",
+      "sentAt": "Sent At"
+    }
   }
 }

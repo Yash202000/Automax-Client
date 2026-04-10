@@ -79,6 +79,8 @@ export interface ClassificationCriticality {
   max_closing_hours: number;
   max_closing_minutes: number;
   is_active: boolean;
+  escalation_policy_id?: string;
+  escalation_policy?: EscalationPolicy;
   created_at: string;
   updated_at: string;
 }
@@ -654,6 +656,8 @@ export interface WorkflowState {
   position_x: number;
   position_y: number;
   sla_hours?: number;
+  escalation_policy_id?: string;
+  escalation_policy?: EscalationPolicy;
   is_mergable: boolean;
   /** When true this state requires a duration selection before entering
    *  and triggers automatic reversion if not closed in time. */
@@ -1742,12 +1746,122 @@ export interface iLocationOption {
 
 export interface CreateEscalationRequest {
   name: string;
-  classification_id: string;
+  classification_ids: string[];
+  /** @deprecated use classification_ids */
+  classification_id?: string;
   channel: string;
   location_id: string;
   frequency: string;
   is_active: boolean;
   user_ids: string[];
+  targets?: EscalationGroupTargetRequest[];
+}
+
+// ─── Escalation Group Target ──────────────────────────────────────────────────
+
+export interface EscalationGroupTarget {
+  id: string;
+  group_id: string;
+  department_id?: string;
+  department?: Department;
+  role_id?: string;
+  role?: Role;
+  excluded_user_ids?: string[];
+  created_at: string;
+}
+
+export interface EscalationGroupTargetRequest {
+  department_id?: string;
+  role_id?: string;
+  excluded_user_ids?: string[];
+}
+
+// ─── Escalation Policy ───────────────────────────────────────────────────────
+
+export interface EscalationPolicyStepTarget {
+  id: string;
+  step_id: string;
+  department_id?: string;
+  department?: Department;
+  role_id?: string;
+  role?: Role;
+  excluded_user_ids?: string[];
+  created_at: string;
+}
+
+export interface EscalationPolicyStep {
+  id: string;
+  policy_id: string;
+  step_order: number;
+  delay_hours: number;
+  channel: "email" | "sms" | "both";
+  targets: EscalationPolicyStepTarget[];
+  created_at: string;
+}
+
+export interface EscalationPolicy {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  steps: EscalationPolicyStep[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EscalationPolicyStepTargetRequest {
+  department_id?: string;
+  role_id?: string;
+  excluded_user_ids?: string[];
+}
+
+export interface EscalationPolicyStepRequest {
+  step_order: number;
+  delay_hours: number;
+  channel: "email" | "sms" | "both";
+  targets: EscalationPolicyStepTargetRequest[];
+}
+
+export interface CreateEscalationPolicyRequest {
+  name: string;
+  description?: string;
+  is_active?: boolean;
+  steps: EscalationPolicyStepRequest[];
+}
+
+export interface UpdateEscalationPolicyRequest {
+  name?: string;
+  description?: string;
+  is_active?: boolean;
+  steps?: EscalationPolicyStepRequest[];
+}
+
+// ─── Escalation SLA (breach audit) ──────────────────────────────────────────
+
+export interface EscalationSLARecord {
+  id: string;
+  incident_id: string;
+  incident_number?: string;
+  state_id?: string;
+  state_name?: string;
+  group_id?: string;
+  group_name?: string;
+  escalation_policy_id?: string;
+  escalation_policy_step_id?: string;
+  step_order?: number;
+  escalation_type: string;
+  channel: string;
+  sent_at: string;
+  recipients?: string;
+  created_at: string;
+}
+
+// ─── Resolve Users Request ───────────────────────────────────────────────────
+
+export interface ResolveUsersRequest {
+  department_id?: string;
+  role_id?: string;
+  excluded_user_ids?: string[];
 }
 
 export interface CallerFeedBackRequest {

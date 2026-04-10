@@ -61,6 +61,7 @@ import {
   classificationApi,
   rejectionLogApi,
 } from "../../api/admin";
+import type { EscalationSLARecord } from "../../types";
 import { API_URL } from "../../api/client";
 import type {
   IncidentDetail,
@@ -249,6 +250,27 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => rejectionLogApi.getByIncident(id!),
     enabled: !!id,
   });
+
+  // Fetch escalation SLA actions fired for this incident
+  const { data: escalationSlaData } = useQuery({
+    queryKey: ["incident", id, "escalation-sla"],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/v1/admin/escalation-sla?incident_id=${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
+      if (!res.ok) return { data: [] };
+      return res.json();
+    },
+    enabled: !!id,
+    retry: false,
+  });
+  const escalationSlaRecords: EscalationSLARecord[] =
+    escalationSlaData?.data || [];
 
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", 1, 100],
@@ -2771,6 +2793,46 @@ export const IncidentDetailPage: React.FC = () => {
                       {incident.sla_breached && (
                         <AlertTriangle className="w-3.5 h-3.5" />
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Escalation Actions Performed */}
+                {escalationSlaRecords.length > 0 && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t("incidents.escalationActions", "Escalation Actions")}
+                    </label>
+                    <div className="mt-1.5 space-y-1.5">
+                      {escalationSlaRecords.map((rec) => (
+                        <div
+                          key={rec.id}
+                          className="flex items-start gap-2 p-2 rounded-lg bg-orange-500/5 border border-orange-500/15"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-[hsl(var(--foreground))] leading-tight">
+                              {rec.escalation_type}
+                              {rec.step_order != null &&
+                                ` · Step ${rec.step_order}`}
+                              {rec.state_name && ` · ${rec.state_name}`}
+                            </p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                              <span className="capitalize">{rec.channel}</span>
+                              {" · "}
+                              {new Date(rec.sent_at).toLocaleString(
+                                i18n.language === "ar" ? "ar-SA" : "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

@@ -26,6 +26,7 @@ import {
   lookupApi,
   userApi,
   departmentApi,
+  escalationPolicyApi,
 } from "../../api/admin";
 import type {
   Classification,
@@ -35,6 +36,7 @@ import type {
   LookupValue,
   User,
   Department,
+  EscalationPolicy,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { Button, MultiSelect } from "../../components/ui";
@@ -357,6 +359,13 @@ export const ClassificationsPage: React.FC = () => {
 
   const priorityValues: LookupValue[] = priorityLookupData?.data || [];
 
+  const { data: escalationPoliciesData } = useQuery({
+    queryKey: ["escalation-policies"],
+    queryFn: () => escalationPolicyApi.list(),
+  });
+  const escalationPolicies: EscalationPolicy[] =
+    escalationPoliciesData?.data?.filter((p) => p.is_active) || [];
+
   const createMutation = useMutation({
     mutationFn: (data: ClassificationCreateRequest) =>
       classificationApi.create(data),
@@ -395,6 +404,7 @@ export const ClassificationsPage: React.FC = () => {
       criticality_id: priority.id,
       max_closing_hours: 0,
       max_closing_minutes: 30,
+      escalation_policy_id: undefined as string | undefined,
     }));
     setFormData({
       ...initialFormData,
@@ -422,12 +432,16 @@ export const ClassificationsPage: React.FC = () => {
           criticality_id: existing.criticality_id,
           max_closing_hours: existing.max_closing_hours,
           max_closing_minutes: existing.max_closing_minutes,
+          escalation_policy_id: (existing as any).escalation_policy_id as
+            | string
+            | undefined,
         };
       }
       return {
         criticality_id: priority.id,
         max_closing_hours: 0,
         max_closing_minutes: 30,
+        escalation_policy_id: undefined as string | undefined,
       };
     });
 
@@ -1233,6 +1247,47 @@ export const ClassificationsPage: React.FC = () => {
                               )}
                             />
                           </div>
+                          {escalationPolicies.length > 0 && (
+                            <div>
+                              <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-0.5">
+                                {t(
+                                  "classifications.escalationPolicy",
+                                  "Escalation Policy",
+                                )}
+                              </label>
+                              <select
+                                value={
+                                  (criticality as any)?.escalation_policy_id ||
+                                  ""
+                                }
+                                onChange={(e) => {
+                                  const newCriticalities = [
+                                    ...formData.criticalities,
+                                  ];
+                                  if (index >= 0) {
+                                    (
+                                      newCriticalities[index] as any
+                                    ).escalation_policy_id =
+                                      e.target.value || undefined;
+                                  }
+                                  setFormData({
+                                    ...formData,
+                                    criticalities: newCriticalities,
+                                  });
+                                }}
+                                className="h-8 px-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-xs text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all min-w-[140px]"
+                              >
+                                <option value="">
+                                  — {t("common.none", "None")} —
+                                </option>
+                                {escalationPolicies.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
