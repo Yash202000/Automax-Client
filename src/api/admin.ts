@@ -2683,6 +2683,18 @@ export const smsApi = {
     );
     return response.data;
   },
+  getCount: async (
+    channel: string,
+    userId: string,
+  ): Promise<ApiResponse<any>> => {
+    const params = new URLSearchParams();
+    params.append("channel", channel);
+    params.append("user_id", userId);
+    const response = await apiClient.get<ApiResponse<any>>(
+      `/notifications/stats?${params.toString()}`,
+    );
+    return response.data;
+  },
 };
 
 // Incident Merge API

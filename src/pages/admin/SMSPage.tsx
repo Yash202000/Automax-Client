@@ -145,6 +145,13 @@ export const SMSPage: React.FC = () => {
     },
   });
 
+  const { data: smsCount } = useQuery({
+    queryKey: ["sms", "count"],
+    queryFn: () => smsApi.getCount("sms", user!.id),
+    enabled: user?.id !== undefined,
+    select: (response) => response.data.counts,
+  });
+
   const deleteSMS = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const sms = smsList.find((s) => s.id === id);
@@ -195,16 +202,28 @@ export const SMSPage: React.FC = () => {
                 <Inbox className="w-4 h-4" />
                 <span>Inbox</span>
               </div>
+              {smsCount?.inbox ? (
+                <span className="ml-auto text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
+                  {smsCount?.inbox}
+                </span>
+              ) : null}
             </button>
             <button
               onClick={() => {
                 setCurrentFolder("sent");
                 setSelectedSMS(null);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === "sent" ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
+              className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === "sent" ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
             >
-              <Send className="w-4 h-4" />
-              <span>Sent</span>
+              <div className="flex items-center gap-3">
+                <Send className="w-4 h-4" />
+                <span>Sent</span>
+              </div>
+              {smsCount?.sent ? (
+                <span className="text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
+                  {smsCount.sent}
+                </span>
+              ) : null}
             </button>
             <button
               onClick={() => {
@@ -213,8 +232,15 @@ export const SMSPage: React.FC = () => {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === "trash" ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
             >
-              <Trash className="w-4 h-4" />
-              <span>Trash</span>
+              <div className="flex items-center gap-3">
+                <Trash className="w-4 h-4" />
+                <span>Trash</span>
+              </div>
+              {smsCount?.trash ? (
+                <span className="text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
+                  {smsCount.trash}
+                </span>
+              ) : null}
             </button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { emailApi } from "../../api/admin";
 import type { Email, EmailFilter, EmailAttachment } from "../../types";
+import { emailApi, smsApi } from "../../api/admin";
 import {
   Mail,
   Send,
@@ -78,6 +78,13 @@ export const EmailPage: React.FC = () => {
 
       return emailApi.list(filter);
     },
+  });
+
+  const { data: emailCount } = useQuery({
+    queryKey: ["emails", "count"],
+    queryFn: () => smsApi.getCount("email", user!.id),
+    enabled: user?.id !== undefined,
+    select: (response) => response.data.counts,
   });
 
   const { mutate: getEmailById } = useMutation({
@@ -457,17 +464,37 @@ export const EmailPage: React.FC = () => {
   const isSendingDraft = sendDraftMutation.isPending;
   const isSending = sendEmailMutation.isPending || isSendingDraft;
 
-  const folderConfig: { key: Folder; label: string; icon: React.ReactNode }[] =
-    [
-      { key: "inbox", label: "Inbox", icon: <Inbox className="w-4 h-4" /> },
-      { key: "sent", label: "Sent", icon: <Send className="w-4 h-4" /> },
-      {
-        key: "drafts",
-        label: "Drafts",
-        icon: <FileText className="w-4 h-4" />,
-      },
-      { key: "trash", label: "Trash", icon: <Trash className="w-4 h-4" /> },
-    ];
+  const folderConfig: {
+    key: Folder;
+    label: string;
+    icon: React.ReactNode;
+    count?: number;
+  }[] = [
+    {
+      key: "inbox",
+      label: "Inbox",
+      icon: <Inbox className="w-4 h-4" />,
+      count: emailCount?.inbox,
+    },
+    {
+      key: "sent",
+      label: "Sent",
+      icon: <Send className="w-4 h-4" />,
+      count: emailCount?.sent,
+    },
+    {
+      key: "drafts",
+      label: "Drafts",
+      icon: <FileText className="w-4 h-4" />,
+      count: emailCount?.drafts,
+    },
+    {
+      key: "trash",
+      label: "Trash",
+      icon: <Trash className="w-4 h-4" />,
+      count: emailCount?.trash,
+    },
+  ];
 
   return (
     <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-border overflow-hidden shadow-sm">
@@ -489,17 +516,24 @@ export const EmailPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto py-2">
           <div className="px-3 space-y-1">
-            {folderConfig.map(({ key, label, icon }) => (
+            {folderConfig.map(({ key, label, icon, count }) => (
               <button
                 key={key}
                 onClick={() => {
                   setCurrentFolder(key);
                   setSelectedEmail(null);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === key ? "bg-primary/5 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === key ? "bg-primary/5 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
               >
-                {icon}
-                <span>{label}</span>
+                <div className="flex items-center gap-3">
+                  {icon}
+                  <span>{label}</span>
+                </div>
+                {count ? (
+                  <span className="ml-auto text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
+                    {count}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>

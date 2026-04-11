@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   HelpCircle,
@@ -348,6 +348,16 @@ export const CallCentreLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+              title={t("sidebar.backToHome", "Back to Home")}
+            >
+              <Home className="w-5 h-5" />
+              <span className="hidden md:inline text-sm font-medium">
+                {t("sidebar.backToHome", "Back to Home")}
+              </span>
+            </Link>
             {/* Softphone Toggle */}
             <button
               onClick={() => setShowSoftphone(!showSoftphone)}
