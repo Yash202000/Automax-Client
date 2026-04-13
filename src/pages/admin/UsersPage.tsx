@@ -1347,10 +1347,41 @@ export const UsersPage: React.FC = () => {
                 <HierarchicalTreeSelect
                   data={departmentsTree}
                   selectedIds={formData.department_ids}
-                  onSelectionChange={(ids) => {
-                    // Only update departments, don't auto-populate classifications/locations
-                    // Let backend handle the syncing via syncDepartmentAttributesToUser
+                  onSelectionChange={async (ids) => {
                     setFormData({ ...formData, department_ids: ids });
+
+                    // Auto-populate classifications and locations from departments
+                    try {
+                      const allClassifications = new Set<string>();
+                      const allLocations = new Set<string>();
+
+                      for (const deptId of ids) {
+                        const dept = await departmentApi.getById(deptId);
+                        if (dept.success && dept.data) {
+                          // Add department's classifications
+                          dept.data.classifications?.forEach((c) =>
+                            allClassifications.add(c.id),
+                          );
+                          // Add department's locations
+                          dept.data.locations?.forEach((l) =>
+                            allLocations.add(l.id),
+                          );
+                        }
+                      }
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        department_ids: ids,
+                        classification_ids: Array.from(allClassifications),
+                        location_ids: Array.from(allLocations),
+                      }));
+                    } catch (error) {
+                      console.error(
+                        "Error fetching department details:",
+                        error,
+                      );
+                      setFormData({ ...formData, department_ids: ids });
+                    }
                   }}
                   label={t("users.departments")}
                   icon={
