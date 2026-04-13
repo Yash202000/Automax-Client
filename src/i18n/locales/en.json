@@ -579,7 +579,8 @@
     "loggedInAsAdmin": "Logged in as admin",
     "escalationGroups": "Escalation Groups",
     "quality": "Quality",
-    "qualityAudit": "Quality Audit"
+    "qualityAudit": "Quality Audit",
+    "escalationManagement": "Escalation Management"
   },
   "users": {
     "title": "Users",

@@ -970,11 +970,11 @@ const TABS: { id: Tab; labelKey: string; icon: React.ReactNode }[] = [
     labelKey: "escalation.tabs.groups",
     icon: <Users className="w-4 h-4" />,
   },
-  {
-    id: "breach-log",
-    labelKey: "escalation.tabs.breachLog",
-    icon: <AlertTriangle className="w-4 h-4" />,
-  },
+  // {
+  //   id: "breach-log",
+  //   labelKey: "escalation.tabs.breachLog",
+  //   icon: <AlertTriangle className="w-4 h-4" />,
+  // },
 ];
 
 export const EscalationConfigPage: React.FC = () => {

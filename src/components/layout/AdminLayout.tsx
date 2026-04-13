@@ -132,7 +132,7 @@ const sidebarSectionsConfig: SidebarSection[] = [
       },
       {
         icon: AlertTriangle,
-        labelKey: "admin.escalationGroups",
+        labelKey: "admin.escalationManagement",
         path: "/admin/escalation-groups",
         permission: PERMISSIONS.ESCALATION_GROUPS_VIEW,
       },
