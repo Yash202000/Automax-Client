@@ -23,7 +23,7 @@ export function LocationPickerModal({
       <ModalHeader>
         <ModalTitle>{t("incidents.selectLocationModal")}</ModalTitle>
       </ModalHeader>
-      <ModalBody>
+      <ModalBody className="max-h-[80vh] overflow-y-auto">
         <div className="p-1">
           <LocationPicker
             value={value}

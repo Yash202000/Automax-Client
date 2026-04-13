@@ -356,13 +356,14 @@ export function LocationPicker({
       )}
 
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={handleGetCurrentLocation}
           disabled={isLoading}
+          className="h-8 px-2 text-xs sm:h-9 sm:px-4 sm:text-sm"
           leftIcon={
             isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -380,7 +381,7 @@ export function LocationPicker({
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 px-2 text-xs sm:h-9 sm:px-4 sm:text-sm"
             leftIcon={<X className="w-4 h-4" />}
           >
             {t("locationPicker.clear")}
@@ -405,7 +406,7 @@ export function LocationPicker({
           />
           <MapClickHandler onLocationSelect={handleMapClick} />
           <MapCenterUpdater center={mapCenter} />
-          <ZoomControl position={isExpanded ? "bottomleft" : "topleft"} />
+          <ZoomControl position={"bottomleft"} />
 
           {value?.latitude && value?.longitude && (
             <Marker
