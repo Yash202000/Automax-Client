@@ -240,7 +240,7 @@ export const SMSPage: React.FC = () => {
                 setCurrentFolder("trash");
                 setSelectedSMS(null);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === "trash" ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
+              className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFolder === "trash" ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100"}`}
             >
               <div className="flex items-center gap-3">
                 <Trash className="w-4 h-4" />
