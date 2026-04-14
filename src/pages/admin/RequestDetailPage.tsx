@@ -438,11 +438,11 @@ export const RequestDetailPage: React.FC = () => {
 
           {/* Tabs */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm overflow-hidden">
-            <div className="flex border-b border-[hsl(var(--border))]">
+            <div className="flex border-b border-[hsl(var(--border))] overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab("activity")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "activity"
                     ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -456,7 +456,7 @@ export const RequestDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("comments")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "comments"
                     ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -470,7 +470,7 @@ export const RequestDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("attachments")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "attachments"
                     ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -485,7 +485,7 @@ export const RequestDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("revisions")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "revisions"
                     ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",

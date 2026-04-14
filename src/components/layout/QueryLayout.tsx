@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
-import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -50,6 +56,9 @@ export const QueryLayout: React.FC = () => {
   const [createQueryModalOpen, setCreateQueryModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const currentStatus = queryParams.get("status");
   const langRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canViewIncidents =
@@ -155,27 +164,31 @@ export const QueryLayout: React.FC = () => {
               to="/queries"
               end
               onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive
+              className={({ isActive }) => {
+                const isAllQueriesActive = isActive && !currentStatus;
+                return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  isAllQueriesActive
                     ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`
-              }
+                }`;
+              }}
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
-                  )}
-                  <List size={20} className="flex-shrink-0" />
-                  {!collapsed && (
-                    <span className="ms-3 font-medium text-sm">
-                      {t("sidebar.allQueries", "All Queries")}
-                    </span>
-                  )}
-                </>
-              )}
+              {({ isActive }) => {
+                const isAllQueriesActive = isActive && !currentStatus;
+                return (
+                  <>
+                    {isAllQueriesActive && (
+                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                    )}
+                    <List size={20} className="flex-shrink-0" />
+                    {!collapsed && (
+                      <span className="ms-3 font-medium text-sm">
+                        {t("sidebar.allQueries", "All Queries")}
+                      </span>
+                    )}
+                  </>
+                );
+              }}
             </NavLink>
           )}
 
@@ -293,19 +306,48 @@ export const QueryLayout: React.FC = () => {
                   key={status.name}
                   to={`/queries?status=${encodeURIComponent(status.name)}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                  className={({ isActive }) => {
+                    const isItemActive =
+                      isActive && currentStatus === status.name;
+                    return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                      isItemActive ? "bg-white/10 text-white shadow-sm" : ""
+                    }`;
+                  }}
                 >
-                  <Circle size={8} className="flex-shrink-0 fill-current" />
-                  {!collapsed && (
-                    <>
-                      <span className="ms-3 font-medium text-sm flex-1">
-                        {status.name}
-                      </span>
-                      <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
-                        {status.count}
-                      </span>
-                    </>
-                  )}
+                  {({ isActive }) => {
+                    const isItemActive =
+                      isActive && currentStatus === status.name;
+                    return (
+                      <>
+                        <Circle
+                          size={8}
+                          className={`flex-shrink-0 fill-current ${
+                            isItemActive
+                              ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                              : "text-slate-500"
+                          }`}
+                        />
+                        {!collapsed && (
+                          <>
+                            <span
+                              className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
+                            >
+                              {status.name}
+                            </span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                                isItemActive
+                                  ? "bg-primary text-white"
+                                  : "bg-slate-700 text-slate-300"
+                              }`}
+                            >
+                              {status.count}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    );
+                  }}
                 </NavLink>
               ))}
             </div>
@@ -323,10 +365,18 @@ export const QueryLayout: React.FC = () => {
               {canViewAllQueries ? (
                 <NavLink
                   to="/queries"
+                  end
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                  className={({ isActive }) => {
+                    const isTotalActive = isActive && !currentStatus;
+                    return `flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
+                      isTotalActive ? "bg-white/5 text-white" : ""
+                    }`;
+                  }}
                 >
-                  <span className="text-slate-400">
+                  <span
+                    className={!currentStatus ? "text-white" : "text-slate-400"}
+                  >
                     {t("sidebar.total", "Total")}
                   </span>
                   <span className="text-white font-semibold">

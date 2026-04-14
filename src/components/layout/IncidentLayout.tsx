@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
-import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -52,6 +58,10 @@ export const IncidentLayout: React.FC = () => {
   const [createRequestModalOpen, setCreateRequestModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const currentStatus = queryParams.get("status");
+  const isSlaBreached = queryParams.get("sla_breached") === "true";
   const queryClient = useQueryClient();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
@@ -207,7 +217,7 @@ export const IncidentLayout: React.FC = () => {
       </button>
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 overflow-y-auto">
+      <nav className="flex-1 py-6 px-3 overflow-y-auto scrollbar-hide">
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -220,27 +230,33 @@ export const IncidentLayout: React.FC = () => {
               to="/incidents"
               end
               onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive
+              className={({ isActive }) => {
+                const isAllIncidentsActive =
+                  isActive && !currentStatus && !isSlaBreached;
+                return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  isAllIncidentsActive
                     ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`
-              }
+                }`;
+              }}
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                  )}
-                  <List size={20} className="flex-shrink-0" />
-                  {!collapsed && (
-                    <span className="ms-3 font-medium text-sm">
-                      {t("sidebar.allIncidents")}
-                    </span>
-                  )}
-                </>
-              )}
+              {({ isActive }) => {
+                const isAllIncidentsActive =
+                  isActive && !currentStatus && !isSlaBreached;
+                return (
+                  <>
+                    {isAllIncidentsActive && (
+                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                    )}
+                    <List size={20} className="flex-shrink-0" />
+                    {!collapsed && (
+                      <span className="ms-3 font-medium text-sm">
+                        {t("sidebar.allIncidents")}
+                      </span>
+                    )}
+                  </>
+                );
+              }}
             </NavLink>
           )}
 
@@ -408,23 +424,51 @@ export const IncidentLayout: React.FC = () => {
                         key={stateName}
                         to={`/incidents?status=${encodeURIComponent(stateName)}`}
                         onClick={() => setMobileMenuOpen(false)}
-                        className="group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                        className={({ isActive }) => {
+                          const isItemActive =
+                            isActive && currentStatus === stateName;
+                          return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                            isItemActive
+                              ? "bg-white/10 text-white shadow-sm"
+                              : ""
+                          }`;
+                        }}
                       >
-                        <Circle
-                          size={8}
-                          className="flex-shrink-0 fill-current"
-                        />
+                        {({ isActive }) => {
+                          const isItemActive =
+                            isActive && currentStatus === stateName;
+                          return (
+                            <>
+                              <Circle
+                                size={8}
+                                className={`flex-shrink-0 fill-current ${
+                                  isItemActive
+                                    ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                    : "text-slate-500"
+                                }`}
+                              />
 
-                        {!collapsed && (
-                          <>
-                            <span className="ms-3 font-medium text-sm flex-1">
-                              {stateName}
-                            </span>
-                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded-md">
-                              {count as number}
-                            </span>
-                          </>
-                        )}
+                              {!collapsed && (
+                                <>
+                                  <span
+                                    className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
+                                  >
+                                    {stateName}
+                                  </span>
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                                      isItemActive
+                                        ? "bg-primary text-white"
+                                        : "bg-slate-700 text-slate-300"
+                                    }`}
+                                  >
+                                    {count as number}
+                                  </span>
+                                </>
+                              )}
+                            </>
+                          );
+                        }}
                       </NavLink>
                     ),
                   )}
@@ -445,10 +489,25 @@ export const IncidentLayout: React.FC = () => {
               {canViewAllIncidents ? (
                 <NavLink
                   to="/incidents"
+                  end
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                  className={({ isActive }) => {
+                    const isTotalActive =
+                      isActive && !currentStatus && !isSlaBreached;
+                    return `flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
+                      isTotalActive ? "bg-white/5 text-white" : ""
+                    }`;
+                  }}
                 >
-                  <span className="text-slate-400">{t("sidebar.total")}</span>
+                  <span
+                    className={
+                      !currentStatus && !isSlaBreached
+                        ? "text-white"
+                        : "text-slate-400"
+                    }
+                  >
+                    {t("sidebar.total")}
+                  </span>
                   <span className="text-white font-semibold">
                     {statsData.data.total || 0}
                   </span>
@@ -464,10 +523,22 @@ export const IncidentLayout: React.FC = () => {
               {canViewAllIncidents ? (
                 <NavLink
                   to="/incidents?sla_breached=true"
+                  end
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                  className={({ isActive }) => {
+                    const isItemActive = isActive && isSlaBreached;
+                    return `flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
+                      isItemActive
+                        ? "bg-white/5 text-white underline underline-offset-4 decoration-rose-500/50"
+                        : ""
+                    }`;
+                  }}
                 >
-                  <span className="text-slate-400">
+                  <span
+                    className={
+                      isSlaBreached ? "text-rose-400" : "text-slate-400"
+                    }
+                  >
                     {t("sidebar.slaBreached")}
                   </span>
                   <span className="text-rose-400 font-semibold">

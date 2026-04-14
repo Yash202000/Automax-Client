@@ -192,6 +192,7 @@
 }
 
 @layer components {
+
   /* Gradient backgrounds for modern UI */
   .gradient-primary {
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
@@ -259,12 +260,14 @@
 }
 
 @layer utilities {
+
   /* Slide and Fade animations */
   @keyframes slideInLeft {
     from {
       opacity: 0;
       transform: translateX(-20px);
     }
+
     to {
       opacity: 1;
       transform: translateX(0);
@@ -276,6 +279,7 @@
       opacity: 0;
       transform: translateX(20px);
     }
+
     to {
       opacity: 1;
       transform: translateX(0);
@@ -287,6 +291,7 @@
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -297,6 +302,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -307,6 +313,7 @@
       opacity: 0;
       transform: scale(0.95);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
@@ -318,6 +325,7 @@
     0% {
       background-position: -200% 0;
     }
+
     100% {
       background-position: 200% 0;
     }
@@ -325,9 +333,12 @@
 
   /* Gentle floating animation */
   @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0);
     }
+
     50% {
       transform: translateY(-6px);
     }
@@ -339,10 +350,12 @@
       transform: scale(0.95);
       box-shadow: 0 0 0 0 hsl(var(--primary) / 0.7);
     }
+
     70% {
       transform: scale(1);
       box-shadow: 0 0 0 10px hsl(var(--primary) / 0);
     }
+
     100% {
       transform: scale(0.95);
       box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
@@ -354,6 +367,7 @@
     from {
       transform: rotate(0deg);
     }
+
     to {
       transform: rotate(360deg);
     }
@@ -394,12 +408,10 @@
 
   /* Skeleton loading */
   .skeleton {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 25%,
-      hsl(var(--muted-foreground) / 0.1) 50%,
-      hsl(var(--muted)) 75%
-    );
+    background: linear-gradient(90deg,
+        hsl(var(--muted)) 25%,
+        hsl(var(--muted-foreground) / 0.1) 50%,
+        hsl(var(--muted)) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
@@ -463,14 +475,37 @@
   }
 
   /* Stagger animation delays */
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
-  .stagger-6 { animation-delay: 0.3s; }
-  .stagger-7 { animation-delay: 0.35s; }
-  .stagger-8 { animation-delay: 0.4s; }
+  .stagger-1 {
+    animation-delay: 0.05s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.15s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-5 {
+    animation-delay: 0.25s;
+  }
+
+  .stagger-6 {
+    animation-delay: 0.3s;
+  }
+
+  .stagger-7 {
+    animation-delay: 0.35s;
+  }
+
+  .stagger-8 {
+    animation-delay: 0.4s;
+  }
 
   /* Empty state illustrations */
   .empty-state-icon {
@@ -509,7 +544,7 @@
   text-align: right;
 }
 
-[dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+[dir="rtl"] .rtl\:space-x-reverse> :not([hidden])~ :not([hidden]) {
   --tw-space-x-reverse: 1;
 }
 
@@ -606,4 +641,13 @@
   .no-print {
     display: none !important;
   }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

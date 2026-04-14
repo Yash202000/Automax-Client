@@ -457,7 +457,7 @@ export const QueryDetailPage: React.FC = () => {
           </div>
 
           {/* Tabs: Activity, Comments, Attachments, Revisions */}
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm">
+          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm overflow-x-auto scrollbar-hide">
             <div className="flex border-b border-[hsl(var(--border))]">
               {(
                 ["activity", "comments", "attachments", "revisions"] as const
@@ -466,7 +466,7 @@ export const QueryDetailPage: React.FC = () => {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={cn(
-                    "flex-1 px-4 py-3 text-sm font-medium transition-colors relative",
+                    "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap",
                     activeTab === tab
                       ? "text-violet-500"
                       : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",

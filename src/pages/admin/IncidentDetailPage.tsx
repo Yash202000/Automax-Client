@@ -1735,11 +1735,11 @@ export const IncidentDetailPage: React.FC = () => {
 
           {/* Tabs */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm overflow-hidden">
-            <div className="flex border-b border-[hsl(var(--border))]">
+            <div className="flex border-b border-[hsl(var(--border))] overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab("activity")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "activity"
                     ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -1753,7 +1753,7 @@ export const IncidentDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("comments")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "comments"
                     ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -1767,7 +1767,7 @@ export const IncidentDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("attachments")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "attachments"
                     ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -1781,7 +1781,7 @@ export const IncidentDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("revisions")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "revisions"
                     ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -1795,7 +1795,7 @@ export const IncidentDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("rejections")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "rejections"
                     ? "text-[hsl(var(--destructive))] border-b-2 border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.05)]"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
@@ -1814,7 +1814,7 @@ export const IncidentDetailPage: React.FC = () => {
               <button
                 onClick={() => setActiveTab("ai-quality")}
                 className={cn(
-                  "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "ai-quality"
                     ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
                     : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
