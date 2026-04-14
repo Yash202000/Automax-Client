@@ -11,8 +11,10 @@ import {
   ArrowDownLeft,
 } from "lucide-react";
 import { callLogApi } from "../../../api/admin";
+import { useAuthStore } from "@/stores/authStore";
 
 export const CallHistory: React.FC = () => {
+  const { user } = useAuthStore();
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -184,10 +186,10 @@ export const CallHistory: React.FC = () => {
                             <ArrowDownLeft size={16} />
                           )}
                           <span className="capitalize">{call.status}</span>
-                          <span>•</span>
+                          {/* <span>•</span>
                           <span className="text-xs text-slate-400 truncate">
                             {call.call_uuid}
-                          </span>
+                          </span> */}
                         </div>
                       </div>
                     </div>
@@ -200,6 +202,32 @@ export const CallHistory: React.FC = () => {
                           ? formatDuration(call.duration)
                           : "—"}
                       </p>
+                    </div>
+                    <div className="ml-4">
+                      <button
+                        onClick={() => {
+                          const extension =
+                            (user as any).extension || user?.phone;
+                          if (extension) {
+                            window.dispatchEvent(
+                              new CustomEvent("initiate-call", {
+                                detail: { number: extension },
+                              }),
+                            );
+                          }
+                        }}
+                        disabled={!(user as any).extension && !user?.phone}
+                        className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                        title={
+                          (user as any).extension
+                            ? `Call ext. ${(user as any).extension}`
+                            : user?.phone
+                              ? `Call ${user.phone}`
+                              : "No extension"
+                        }
+                      >
+                        <Phone className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );

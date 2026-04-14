@@ -22,16 +22,16 @@ import {
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
-import SoftPhone from "../sip/Softphone";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
 
 export const CallCentreLayout: React.FC = () => {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [showSoftphone, setShowSoftphone] = useState(false);
+  const { isOpen, setIsOpen, toggle } = useSoftphoneStore();
 
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
@@ -62,13 +62,13 @@ export const CallCentreLayout: React.FC = () => {
 
   useEffect(() => {
     const handleInitiateCall = () => {
-      setShowSoftphone(true);
+      setIsOpen(true);
     };
 
     window.addEventListener("initiate-call", handleInitiateCall);
     return () =>
       window.removeEventListener("initiate-call", handleInitiateCall);
-  }, []);
+  }, [setIsOpen]);
 
   const handleLogout = () => {
     logout();
@@ -360,9 +360,9 @@ export const CallCentreLayout: React.FC = () => {
             </Link>
             {/* Softphone Toggle */}
             <button
-              onClick={() => setShowSoftphone(!showSoftphone)}
+              onClick={toggle}
               className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                showSoftphone
+                isOpen
                   ? "text-primary bg-primary/10"
                   : "text-muted-foreground hover:text-primary hover:bg-primary/10"
               }`}
@@ -521,21 +521,6 @@ export const CallCentreLayout: React.FC = () => {
           </div>
         </main>
       </div>
-
-      <SoftPhone
-        showSip={showSoftphone}
-        onClose={() => setShowSoftphone(false)}
-        settings={{
-          domain: "zkff.automaxsw.com",
-          socketURL: "wss://zkff.automaxsw.com:7443",
-        }}
-        auth={{
-          user: {
-            userID: user?.id || "",
-            extension: (user as any)?.extension || "",
-          },
-        }}
-      />
     </div>
   );
 };

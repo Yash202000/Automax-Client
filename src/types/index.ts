@@ -1569,6 +1569,8 @@ export interface Settings {
   date_format: string;
   time_format: string;
   default_language: string;
+  sip_domain?: string;
+  sip_socket_url?: string;
   updated_at: string;
 }
 
@@ -1595,6 +1597,8 @@ export interface SettingsUpdateRequest {
   date_format?: string;
   time_format?: string;
   default_language?: string;
+  sip_domain?: string;
+  sip_socket_url?: string;
 }
 
 // Re-export report template builder types

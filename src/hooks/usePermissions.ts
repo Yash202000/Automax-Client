@@ -1,38 +1,53 @@
-import { useCallback } from 'react';
-import { useAuthStore } from '../stores/authStore';
-import { PERMISSIONS } from '../constants/permissions';
+import { useCallback } from "react";
+import { useAuthStore } from "../stores/authStore";
+import { PERMISSIONS } from "../constants/permissions";
 
 export const usePermissions = () => {
   const { user } = useAuthStore();
 
-  const hasPermission = useCallback((permission: string): boolean => {
-    console.log(user)
-    if (!user) return false;
-    if (user.is_super_admin) return true;
-    if (!user.permissions) return false;
-    return user.permissions.includes(permission) || user.permissions.includes('*');
-  }, [user]);
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      if (!user) return false;
+      if (user.is_super_admin) return true;
+      if (!user.permissions) return false;
+      return (
+        user.permissions.includes(permission) || user.permissions.includes("*")
+      );
+    },
+    [user],
+  );
 
-  const hasAnyPermission = useCallback((permissions: string[]): boolean => {
-    if (!user) return false;
-    if (user.is_super_admin) return true;
-    if (!permissions || permissions.length === 0) return true; // No permissions required
-    return permissions.some(perm => hasPermission(perm));
-  }, [user, hasPermission]);
+  const hasAnyPermission = useCallback(
+    (permissions: string[]): boolean => {
+      if (!user) return false;
+      if (user.is_super_admin) return true;
+      if (!permissions || permissions.length === 0) return true; // No permissions required
+      return permissions.some((perm) => hasPermission(perm));
+    },
+    [user, hasPermission],
+  );
 
-  const hasAllPermissions = useCallback((permissions: string[]): boolean => {
-    if (!user) return false;
-    if (user.is_super_admin) return true;
-    if (!permissions || permissions.length === 0) return true; // No permissions required
-    return permissions.every(perm => hasPermission(perm));
-  }, [user, hasPermission]);
+  const hasAllPermissions = useCallback(
+    (permissions: string[]): boolean => {
+      if (!user) return false;
+      if (user.is_super_admin) return true;
+      if (!permissions || permissions.length === 0) return true; // No permissions required
+      return permissions.every((perm) => hasPermission(perm));
+    },
+    [user, hasPermission],
+  );
 
-  const hasRole = useCallback((roleCode: string): boolean => {
-    if (!user) return false;
-    if (user.is_super_admin) return true;
-    if (!user.roles) return false;
-    return user.roles.some(role => role.code === roleCode && role.is_active);
-  }, [user]);
+  const hasRole = useCallback(
+    (roleCode: string): boolean => {
+      if (!user) return false;
+      if (user.is_super_admin) return true;
+      if (!user.roles) return false;
+      return user.roles.some(
+        (role) => role.code === roleCode && role.is_active,
+      );
+    },
+    [user],
+  );
 
   return {
     // Core permission functions
@@ -76,10 +91,14 @@ export const usePermissions = () => {
     canDeleteLocations: () => hasPermission(PERMISSIONS.LOCATIONS_DELETE),
 
     // Classification permissions
-    canViewClassifications: () => hasPermission(PERMISSIONS.CLASSIFICATIONS_VIEW),
-    canCreateClassifications: () => hasPermission(PERMISSIONS.CLASSIFICATIONS_CREATE),
-    canUpdateClassifications: () => hasPermission(PERMISSIONS.CLASSIFICATIONS_UPDATE),
-    canDeleteClassifications: () => hasPermission(PERMISSIONS.CLASSIFICATIONS_DELETE),
+    canViewClassifications: () =>
+      hasPermission(PERMISSIONS.CLASSIFICATIONS_VIEW),
+    canCreateClassifications: () =>
+      hasPermission(PERMISSIONS.CLASSIFICATIONS_CREATE),
+    canUpdateClassifications: () =>
+      hasPermission(PERMISSIONS.CLASSIFICATIONS_UPDATE),
+    canDeleteClassifications: () =>
+      hasPermission(PERMISSIONS.CLASSIFICATIONS_DELETE),
 
     // Workflow permissions
     canViewWorkflows: () => hasPermission(PERMISSIONS.WORKFLOWS_VIEW),
@@ -93,7 +112,8 @@ export const usePermissions = () => {
     canCreateIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_CREATE),
     canUpdateIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_UPDATE),
     canDeleteIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_DELETE),
-    canTransitionIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_TRANSITION),
+    canTransitionIncidents: () =>
+      hasPermission(PERMISSIONS.INCIDENTS_TRANSITION),
     canAssignIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_ASSIGN),
     canCommentIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_COMMENT),
 
@@ -113,7 +133,8 @@ export const usePermissions = () => {
     canCreateComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_CREATE),
     canUpdateComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_UPDATE),
     canDeleteComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_DELETE),
-    canTransitionComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_TRANSITION),
+    canTransitionComplaints: () =>
+      hasPermission(PERMISSIONS.COMPLAINTS_TRANSITION),
     canAssignComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_ASSIGN),
     canCommentComplaints: () => hasPermission(PERMISSIONS.COMPLAINTS_COMMENT),
 

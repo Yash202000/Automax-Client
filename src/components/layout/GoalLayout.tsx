@@ -29,11 +29,11 @@ import {
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
-import SoftPhone from "../sip/Softphone";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
 
 export const GoalLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -42,7 +42,7 @@ export const GoalLayout: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const [showSoftphone, setShowSoftphone] = useState(false);
+  const { isOpen, toggle } = useSoftphoneStore();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -456,34 +456,16 @@ export const GoalLayout: React.FC = () => {
 
             {/* Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <>
-                <button
-                  onClick={() => setShowSoftphone(!showSoftphone)}
-                  className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                    showSoftphone
-                      ? "text-blue-600 bg-blue-50"
-                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  }`}
-                >
-                  <Phone className="w-5 h-5" />
-                </button>
-
-                <SoftPhone
-                  showSip={showSoftphone}
-                  onClose={() => setShowSoftphone(false)}
-                  settings={{
-                    domain: "zkff.automaxsw.com",
-                    socketURL: "wss://zkff.automaxsw.com:7443",
-                  }}
-                  auth={{
-                    user: {
-                      userID: user?.id || "",
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      extension: (user as any)?.extension || "",
-                    },
-                  }}
-                />
-              </>
+              <button
+                onClick={toggle}
+                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                  isOpen
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                }`}
+              >
+                <Phone className="w-5 h-5" />
+              </button>
             )}
 
             {/* Notifications */}

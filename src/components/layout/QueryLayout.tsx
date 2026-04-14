@@ -39,10 +39,10 @@ import {
 } from "../../i18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
-import SoftPhone from "../sip/Softphone";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
 import { CreateQueryModal } from "@/components/queries/CreateQueryModal";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
 
 export const QueryLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -52,7 +52,7 @@ export const QueryLayout: React.FC = () => {
   const [myQueriesOpen, setMyQueriesOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const [showSoftphone, setShowSoftphone] = useState(false);
+  const { isOpen, toggle } = useSoftphoneStore();
   const [createQueryModalOpen, setCreateQueryModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -599,36 +599,17 @@ export const QueryLayout: React.FC = () => {
 
             {/* Phone/Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <>
-                <button
-                  onClick={() => setShowSoftphone(!showSoftphone)}
-                  className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                    showSoftphone
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  }`}
-                >
-                  <Phone className="w-5 h-5" />
-                </button>
-
-                <SoftPhone
-                  showSip={showSoftphone}
-                  onClose={() => setShowSoftphone(false)}
-                  settings={{
-                    domain: "zkff.automaxsw.com",
-                    socketURL: "wss://zkff.automaxsw.com:7443",
-                  }}
-                  auth={{
-                    user: {
-                      userID: user?.id || "",
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      extension: (user as any)?.extension || "",
-                    },
-                  }}
-                />
-              </>
+              <button
+                onClick={toggle}
+                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                  isOpen
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                }`}
+              >
+                <Phone className="w-5 h-5" />
+              </button>
             )}
-
             {/* Notifications */}
             <NotificationBell />
             <ThemeToggle />

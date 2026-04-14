@@ -40,7 +40,7 @@ import {
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
-import SoftPhone from "../sip/Softphone";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
@@ -54,7 +54,7 @@ export const IncidentLayout: React.FC = () => {
   const [myIncidentsOpen, setMyIncidentsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const [showSoftphone, setShowSoftphone] = useState(false);
+  const { isOpen, toggle } = useSoftphoneStore();
   const [createRequestModalOpen, setCreateRequestModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -785,34 +785,16 @@ export const IncidentLayout: React.FC = () => {
 
             {/* Phone/Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <>
-                <button
-                  onClick={() => setShowSoftphone(!showSoftphone)}
-                  className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                    showSoftphone
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  }`}
-                >
-                  <Phone className="w-5 h-5" />
-                </button>
-
-                <SoftPhone
-                  showSip={showSoftphone}
-                  onClose={() => setShowSoftphone(false)}
-                  settings={{
-                    domain: "zkff.automaxsw.com",
-                    socketURL: "wss://zkff.automaxsw.com:7443",
-                  }}
-                  auth={{
-                    user: {
-                      userID: user?.id || "",
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      extension: (user as any)?.extension || "",
-                    },
-                  }}
-                />
-              </>
+              <button
+                onClick={toggle}
+                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                  isOpen
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                }`}
+              >
+                <Phone className="w-5 h-5" />
+              </button>
             )}
 
             {/* Notifications */}

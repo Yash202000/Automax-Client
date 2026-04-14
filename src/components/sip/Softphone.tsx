@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import sipService from "../../lib/services/sipService";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
 import ringtone from "./phone_ring.mp3";
 import {
   Phone,
@@ -269,6 +270,7 @@ export default function SoftPhone({
 
   const [selectedSentiment, setSelectedSentiment] = useState<any | null>(null);
   const { user } = useAuthStore();
+  const setIsOpen = useSoftphoneStore((state) => state.setIsOpen);
   const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
   const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
 
@@ -289,12 +291,13 @@ export default function SoftPhone({
   }, []);
 
   useEffect(() => {
-    if (showSip && !sipConnected && !isConnecting) {
+    // tryConnect regardless of showSip to allow background connection
+    if (!sipConnected && !isConnecting) {
       tryConnect();
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSip, settings]);
+  }, [settings, auth]);
 
   const tryConnect = (): void => {
     if (sipConnected || isConnecting) return;
@@ -337,6 +340,7 @@ export default function SoftPhone({
 
       setDialedNumber(session?.remote_identity?.uri?.user ?? "Unknown");
       setCallStatus("incoming");
+      setIsOpen(true); // Auto-show softphone on incoming call
       playRingtone();
     };
 
@@ -820,8 +824,8 @@ export default function SoftPhone({
         )}
       </div>
 
-      {isIncomingCall && canViewSentiment && (
-        <SentimentStats calleeId={user!.id} callerId={dialedNumber} t={t} />
+      {isIncomingCall && canViewSentiment && user && (
+        <SentimentStats calleeId={user.id} callerId={dialedNumber} t={t} />
       )}
 
       {/* Dialpad */}

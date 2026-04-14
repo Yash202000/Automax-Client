@@ -38,7 +38,7 @@ let pendingRemoteStream: MediaStream | null = null;
 /* -------------------- RTC Config -------------------- */
 
 const pcConfig: RTCConfiguration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
 /* -------------------- Utils -------------------- */
@@ -59,7 +59,7 @@ const sipService = {
       sockets: [socket],
       uri: `sip:${config.username}@${config.domain}`,
       password: config.password,
-      pcConfig
+      pcConfig,
     } as any);
 
     ua.on("registered", () => {
@@ -77,7 +77,7 @@ const sipService = {
 
       dispatch("new-call", {
         session,
-        originator: e.originator
+        originator: e.originator,
       });
 
       if (e.originator === "remote") {
@@ -125,10 +125,14 @@ const sipService = {
         };
       }
 
-      session.on("progress", () => {});
+      session.on("progress", () => {
+        console.log("📞 Ringing...");
+      });
 
-      session.on("accepted", () => {
+      session.on("confirmed", () => {
+        console.log("✅ Call connected (real answer)");
         callAccepted = true;
+        dispatch("call-connected");
 
         if (pendingRemoteStream && !remoteStreamDispatched) {
           remoteStreamDispatched = true;
@@ -155,11 +159,7 @@ const sipService = {
             }
           }
         }
-
-        dispatch("call-connected");
       });
-
-      session.on("confirmed", () => {});
 
       session.on("ended", () => {
         cleanup();
@@ -177,7 +177,7 @@ const sipService = {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: withVideo
+        video: withVideo,
       });
 
       localStream = stream;
@@ -203,7 +203,7 @@ const sipService = {
 
     session = ua.call(target, {
       mediaStream: stream,
-      pcConfig
+      pcConfig,
     });
   },
 
@@ -217,7 +217,7 @@ const sipService = {
 
     session.answer({
       mediaStream: stream,
-      pcConfig
+      pcConfig,
     });
   },
 
@@ -229,20 +229,20 @@ const sipService = {
   },
 
   toggleMute(): void {
-    localStream?.getAudioTracks().forEach(track => {
+    localStream?.getAudioTracks().forEach((track) => {
       track.enabled = !track.enabled;
     });
   },
 
   toggleVideo(): void {
-    localStream?.getVideoTracks().forEach(track => {
+    localStream?.getVideoTracks().forEach((track) => {
       track.enabled = !track.enabled;
     });
   },
 
   getSession(): any {
     return session;
-  }
+  },
 };
 
 /* -------------------- Cleanup -------------------- */
@@ -253,7 +253,7 @@ function cleanup(): void {
   callAccepted = false;
   pendingRemoteStream = null;
   if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
+    localStream.getTracks().forEach((track) => track.stop());
     localStream = null;
   }
   dispatch("call-ended");
@@ -263,7 +263,7 @@ function cleanup(): void {
 
 export async function updateUserStatus(
   status: string,
-  config: SipConfig
+  config: SipConfig,
 ): Promise<void> {
   try {
     if (!config.auth) return;
@@ -274,10 +274,10 @@ export async function updateUserStatus(
         method: "PUT",
         headers: {
           Authorization: `Bearer ${config.auth.accessToken}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ call_status: status })
-      }
+        body: JSON.stringify({ call_status: status }),
+      },
     );
 
     const data = await res.json();
