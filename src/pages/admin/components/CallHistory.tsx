@@ -7,8 +7,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
-  ArrowUpRight,
-  ArrowDownLeft,
+  PhoneMissed,
+  PhoneOff,
+  PhoneOutgoing,
+  PhoneIncoming,
 } from "lucide-react";
 import { callLogApi } from "../../../api/admin";
 import { useAuthStore } from "@/stores/authStore";
@@ -45,6 +47,25 @@ export const CallHistory: React.FC = () => {
         return "text-slate-400";
       default:
         return "text-slate-900";
+    }
+  };
+
+  const getCallIcon = (call: any) => {
+    const isOutgoing = call.direction === "outgoing";
+
+    switch (call.status) {
+      case "missed":
+        return PhoneMissed;
+      case "declined":
+      case "rejected":
+      case "failed":
+      case "cancelled":
+        return PhoneOff;
+      case "answered":
+      case "completed":
+        return isOutgoing ? PhoneOutgoing : PhoneIncoming;
+      default:
+        return isOutgoing ? PhoneOutgoing : PhoneIncoming;
     }
   };
 
@@ -133,13 +154,13 @@ export const CallHistory: React.FC = () => {
           <>
             <div className="divide-y divide-slate-100">
               {calls.map((call: any) => {
-                const isOutgoing = call.direction === "outgoing";
                 const isFailed =
                   call.status === "missed" ||
                   call.status === "rejected" ||
                   call.status === "failed";
                 const isAnswered =
                   call.status === "completed" || call.status === "answered";
+                const Icon = getCallIcon(call);
 
                 return (
                   <div
@@ -156,7 +177,7 @@ export const CallHistory: React.FC = () => {
                               : "bg-slate-100"
                         }`}
                       >
-                        <Phone
+                        <Icon
                           className={`w-4 h-4 ${
                             isFailed
                               ? "text-red-500"
@@ -180,11 +201,6 @@ export const CallHistory: React.FC = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-                          {isOutgoing ? (
-                            <ArrowUpRight size={16} />
-                          ) : (
-                            <ArrowDownLeft size={16} />
-                          )}
                           <span className="capitalize">{call.status}</span>
                           {/* <span>•</span>
                           <span className="text-xs text-slate-400 truncate">
