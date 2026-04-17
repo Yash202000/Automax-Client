@@ -850,6 +850,23 @@ export const requestFields: ReportFieldDefinition[] = [
     filterable: true,
     dynamicOptions: "users",
   },
+
+  {
+    field: "reporter_name",
+    label: "Reporter Name",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reporter_phone",
+    label: "Reporter Phone",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
   {
     field: "reporter_first_name",
     label: "Reporter First Name",
