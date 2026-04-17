@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Mail, Lock, ArrowRight } from "lucide-react";
-import { Button, Input } from "../ui";
+import { Button, Input, Checkbox } from "../ui";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -20,6 +20,7 @@ export const LoginForm: React.FC = () => {
   const { t } = useTranslation();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -36,12 +37,16 @@ export const LoginForm: React.FC = () => {
     setError("");
 
     try {
-      const response = await authApi.login(data);
+      const response = await authApi.login({
+        ...data,
+        remember_me: rememberMe,
+      });
       if (response.success && response.data) {
         setAuth(
           response.data.user,
           response.data.token,
           response.data.refresh_token,
+          rememberMe,
         );
         navigate("/dashboard");
       } else {
@@ -103,16 +108,13 @@ export const LoginForm: React.FC = () => {
           {...register("password")}
         />
 
-        {/* <div className="flex items-center justify-between"> */}
-        {/* <Checkbox label={t("auth.rememberMe")} /> */}
-        {/* commented as currenly we don't have forgot password API */}
-        {/* <Link
-            to="/forgot-password"
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-          >
-            {t('auth.forgotPassword')}
-          </Link> */}
-        {/* </div> */}
+        <div className="flex items-center justify-between">
+          <Checkbox
+            label={t("auth.rememberMe")}
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+          />
+        </div>
 
         <Button
           type="submit"
