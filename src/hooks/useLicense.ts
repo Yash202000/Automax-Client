@@ -8,6 +8,27 @@ export const licenseKeys = {
   all: ['license'] as const,
   info: () => [...licenseKeys.all, 'info'] as const,
   status: () => [...licenseKeys.all, 'status'] as const,
+  catalog: () => [...licenseKeys.all, 'catalog'] as const,
+};
+
+/**
+ * useLicenseCatalog returns the canonical list of licensable features from the
+ * server. The catalog is static per deploy, so it's cached indefinitely.
+ * Use this anywhere the UI needs human-readable labels or the full feature list
+ * (license page, admin-side tooling), not for per-tenant license state —
+ * for that, use useLicenseInfo / useLicense.
+ */
+export const useLicenseCatalog = () => {
+  return useQuery({
+    queryKey: licenseKeys.catalog(),
+    queryFn: async () => {
+      const res = await licenseApi.getCatalog();
+      return res.data;
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 1,
+  });
 };
 
 export const useLicenseInfo = () => {

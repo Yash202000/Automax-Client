@@ -20,26 +20,10 @@ import {
   useLicenseStatus,
   useActivateLicense,
   useDeactivateLicense,
+  useLicenseCatalog,
 } from "../../hooks/useLicense";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
-
-const ALL_FEATURES = [
-  { code: "incidents", label: "Incidents" },
-  { code: "requests", label: "Requests" },
-  { code: "complaints", label: "Complaints" },
-  { code: "queries", label: "Queries" },
-  { code: "goals", label: "Goals & OKR" },
-  { code: "reports", label: "Reports" },
-  { code: "workflows", label: "Workflow Designer" },
-  { code: "documents", label: "Documents (DMS)" },
-  { code: "escalation", label: "Escalation Engine" },
-  { code: "ai_quality", label: "AI Quality Audit" },
-  { code: "sso", label: "SSO / LDAP" },
-  { code: "communication", label: "Communication Center" },
-  { code: "call_centre", label: "Call Centre" },
-  { code: "analytics", label: "Advanced Analytics" },
-];
 
 const LICENSE_TYPE_COLORS: Record<string, string> = {
   trial: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -60,6 +44,8 @@ export const LicensePage: React.FC = () => {
   const canManage = hasPermission(PERMISSIONS.LICENSE_MANAGE);
 
   const { data: license, isLoading, error, refetch } = useLicenseStatus();
+  const { data: catalogData } = useLicenseCatalog();
+  const allFeatures = catalogData?.features ?? [];
   const activateMutation = useActivateLicense();
   const deactivateMutation = useDeactivateLicense();
 
@@ -378,11 +364,12 @@ export const LicensePage: React.FC = () => {
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-5">
             <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">Licensed Features</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {ALL_FEATURES.map((feature) => {
+              {allFeatures.map((feature) => {
                 const isLicensed = license.features?.includes(feature.code);
                 return (
                   <div
                     key={feature.code}
+                    title={feature.description}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
                       isLicensed
                         ? "border-emerald-200 dark:border-emerald-700/40 bg-emerald-50 dark:bg-emerald-900/10"
@@ -401,7 +388,7 @@ export const LicensePage: React.FC = () => {
                           : "text-slate-500 dark:text-slate-400"
                       }`}
                     >
-                      {feature.label}
+                      {feature.name}
                     </span>
                   </div>
                 );

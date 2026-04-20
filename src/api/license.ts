@@ -26,9 +26,27 @@ export interface LicenseActivateRequest {
   public_key: string;
 }
 
+export interface LicenseFeature {
+  code: string;
+  name: string;
+  description: string;
+  permission_modules: string[];
+  dependencies?: string[];
+  tier_minimum?: string;
+}
+
+export interface LicenseCatalog {
+  features: LicenseFeature[];
+}
+
 export const licenseApi = {
   getInfo: async () => {
     const response = await client.get<{ success: boolean; data: LicenseInfo }>('/license/info');
+    return response.data;
+  },
+
+  getCatalog: async () => {
+    const response = await client.get<{ success: boolean; data: LicenseCatalog }>('/license/catalog');
     return response.data;
   },
 
