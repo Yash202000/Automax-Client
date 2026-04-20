@@ -119,11 +119,6 @@ export const IncidentsPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filter, setFilter] = useState<IncidentFilter>({
-    page: 1,
-    limit: 10,
-    record_type: "incident",
-  });
   const [showFilters, setShowFilters] = useState(false);
   const statusFilter = useMemo(() => {
     const stateTypeParam = searchParams.get("state_type");
@@ -329,6 +324,54 @@ export const IncidentsPage: React.FC = () => {
     [allStates],
   );
 
+  const filter: IncidentFilter = useMemo(() => {
+    const statusParam = searchParams.get("status");
+
+    let currentStateId: string | undefined = searchParams.get(
+      "current_state_id",
+    )
+      ? String(searchParams.get("current_state_id"))
+      : undefined;
+
+    if (statusParam && uniqueStates.length) {
+      const matchingState = uniqueStates.find(
+        (s) => s.name.toLowerCase() === statusParam.toLowerCase(),
+      );
+
+      if (matchingState) {
+        currentStateId = matchingState.id;
+      }
+    }
+    return {
+      page: Number(searchParams.get("page") || 1),
+      limit: Number(searchParams.get("limit") || 10),
+      record_type: "incident",
+
+      search: searchParams.get("search") || undefined,
+      workflow_id: searchParams.get("workflow_id") || undefined,
+      assignee_id: searchParams.get("assignee_id") || undefined,
+
+      priority: searchParams.get("priority")
+        ? Number(searchParams.get("priority"))
+        : undefined,
+
+      status: searchParams.get("status") || undefined,
+
+      sla_breached:
+        searchParams.get("sla_breached") === "true"
+          ? true
+          : searchParams.get("sla_breached") === "false"
+            ? false
+            : undefined,
+
+      department_ids: searchParams.getAll("department_ids"),
+      location_ids: searchParams.getAll("location_ids"),
+      classification_ids: searchParams.getAll("classification_ids"),
+
+      current_state_id: currentStateId,
+    };
+  }, [searchParams, uniqueStates]);
+
   const canConvertToRequest = useMemo(() => {
     if (isSuperAdmin) return true;
     const allowedRoleIds =
@@ -347,71 +390,6 @@ export const IncidentsPage: React.FC = () => {
     queryKey: ["incidents", "stats", "incident"],
     queryFn: () => incidentApi.getStats("incident"),
   });
-
-  // Read status and sla_breached from URL and sync with filter
-  useEffect(() => {
-    const statusParam = searchParams.get("status");
-    const slaBreachedParam = searchParams.get("sla_breached");
-
-    // Build new filter state based on URL params
-    const newFilterUpdates: Partial<IncidentFilter> = {};
-    let needsUpdate = false;
-
-    // Handle sla_breached param
-    if (slaBreachedParam === "true") {
-      if (filter.sla_breached !== true) {
-        newFilterUpdates.sla_breached = true;
-        needsUpdate = true;
-      }
-    } else {
-      if (filter.sla_breached !== undefined) {
-        newFilterUpdates.sla_breached = undefined;
-        needsUpdate = true;
-      }
-    }
-
-    // Handle state_type param (grouped sidebar filter: initial/normal/terminal)
-    const stateTypeParam = searchParams.get("state_type");
-    if (stateTypeParam) {
-      const matchingIds = (statsData?.data?.by_state_details || [])
-        .filter((s) => s.state_type === stateTypeParam)
-        .map((s) => s.id);
-      const idStr = matchingIds.join(",");
-      const prevIdStr =
-        (filter.current_state_id as string[] | undefined)?.join(",") ?? "";
-      if (idStr !== prevIdStr) {
-        newFilterUpdates.current_state_id = matchingIds as any;
-        needsUpdate = true;
-      }
-    }
-    // Handle status param (individual state name)
-    else if (statusParam) {
-      // Find the state ID by name
-      const matchingState = uniqueStates.find(
-        (s: WorkflowState) =>
-          s.name.toLowerCase() === statusParam.toLowerCase(),
-      );
-      if (matchingState && filter.current_state_id !== matchingState.id) {
-        newFilterUpdates.current_state_id = matchingState.id;
-        needsUpdate = true;
-      }
-    } else {
-      if (filter.current_state_id !== undefined) {
-        newFilterUpdates.current_state_id = undefined;
-        needsUpdate = true;
-      }
-    }
-
-    // Apply updates if needed
-    if (needsUpdate) {
-      setFilter((prev) => ({
-        ...prev,
-        ...newFilterUpdates,
-        page: 1,
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, uniqueStates, statsData]);
 
   // Skip the API call when search is 1-2 chars — wait for 3+ before fetching
   const isShortSearch = !!(
@@ -461,26 +439,38 @@ export const IncidentsPage: React.FC = () => {
   const totalPages = incidentsData?.total_pages ?? 1;
   const totalItems = incidentsData?.total_items ?? 0;
 
-  const handleFilterChange = (
-    key: keyof IncidentFilter,
-    value: string | number | boolean | undefined,
-  ) => {
-    setFilter((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1, // Reset to first page on filter change
-    }));
+  const handleFilterChange = (key: keyof IncidentFilter, value: any) => {
+    const params = new URLSearchParams(searchParams);
+
+    params.delete(key);
+
+    if (value !== undefined && value !== "" && value !== null) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => params.append(key, v));
+      } else {
+        params.set(key, String(value));
+      }
+    }
+
+    // reset page
+    params.set("page", "1");
+
+    setSearchParams(params);
   };
 
   const clearFilters = () => {
-    setFilter({
-      page: 1,
-      limit: 10,
+    setSearchParams({
+      page: "1",
+      limit: "10",
       record_type: "incident",
     });
-    setSearchParams({});
   };
 
+  const updatePage = (page: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(page));
+    setSearchParams(params);
+  };
   const hasActiveFilters = !!(
     filter.search ||
     filter.workflow_id ||
@@ -958,11 +948,10 @@ export const IncidentsPage: React.FC = () => {
               data={departmentsData?.data || []}
               selectedIds={filter.department_ids || []}
               onSelectionChange={(ids) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  department_ids: ids.length ? ids : undefined,
-                  page: 1,
-                }))
+                handleFilterChange(
+                  "classification_ids",
+                  ids.length ? ids : undefined,
+                )
               }
               label={t("common.department")}
               placeholder={t("common.allDepartments")}
@@ -972,11 +961,10 @@ export const IncidentsPage: React.FC = () => {
               data={classificationsData?.data || []}
               selectedIds={filter.classification_ids || []}
               onSelectionChange={(ids) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  classification_ids: ids.length ? ids : undefined,
-                  page: 1,
-                }))
+                handleFilterChange(
+                  "classification_ids",
+                  ids.length ? ids : undefined,
+                )
               }
               label={t("common.classification")}
               placeholder={t("common.allClassifications")}
@@ -986,11 +974,7 @@ export const IncidentsPage: React.FC = () => {
               data={locationsData?.data || []}
               selectedIds={filter.location_ids || []}
               onSelectionChange={(ids) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  location_ids: ids.length ? ids : undefined,
-                  page: 1,
-                }))
+                handleFilterChange("location_ids", ids.length ? ids : undefined)
               }
               label={t("common.location")}
               placeholder={t("common.allLocations")}
@@ -1465,10 +1449,7 @@ export const IncidentsPage: React.FC = () => {
               <div dir="ltr" className="flex items-center gap-2">
                 <button
                   onClick={() =>
-                    setFilter((prev) => ({
-                      ...prev,
-                      page: Math.max(1, (prev.page || 1) - 1),
-                    }))
+                    updatePage(Math.max(1, (filter.page || 1) - 1))
                   }
                   disabled={(filter.page || 1) === 1}
                   className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card))] rounded-lg border border-[hsl(var(--border))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -1492,9 +1473,7 @@ export const IncidentsPage: React.FC = () => {
                     return (
                       <button
                         key={pageNum}
-                        onClick={() =>
-                          setFilter((prev) => ({ ...prev, page: pageNum }))
-                        }
+                        onClick={() => updatePage(pageNum)}
                         className={cn(
                           "w-10 h-10 rounded-lg text-sm font-semibold transition-all",
                           currentPage === pageNum
@@ -1510,10 +1489,7 @@ export const IncidentsPage: React.FC = () => {
 
                 <button
                   onClick={() =>
-                    setFilter((prev) => ({
-                      ...prev,
-                      page: Math.min(totalPages, (prev.page || 1) + 1),
-                    }))
+                    updatePage(Math.min(totalPages, (filter.page || 1) + 1))
                   }
                   disabled={(filter.page || 1) === totalPages}
                   className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card))] rounded-lg border border-[hsl(var(--border))] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
