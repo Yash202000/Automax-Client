@@ -33,11 +33,16 @@ const GoalNode: React.FC<{ node: OKRGoalNode; depth: number }> = ({
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
 
+  const isFilteredOut = node.is_filtered_out === true;
+
   return (
     <div>
       <div
-        className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors group"
+        className={`flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors group ${
+          isFilteredOut ? "opacity-50 italic" : ""
+        }`}
         style={{ paddingLeft: `${depth * 24 + 12}px` }}
+        title={isFilteredOut ? "Parent goal (outside current filter) — shown for context" : undefined}
       >
         {hasChildren ? (
           <button
