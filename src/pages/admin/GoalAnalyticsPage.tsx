@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Target,
   TrendingUp,
@@ -10,7 +12,8 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  Printer,
+  FileDown,
+  Loader2,
   Maximize2,
   Minimize2,
   Building2,
@@ -38,14 +41,16 @@ import {
   useAtRiskGoals,
   useGoalTrends,
 } from "../../hooks/useGoalAnalytics";
+import { goalAnalyticsApi } from "../../api/goalAnalytics";
 import type { AnalyticsFilter } from "../../api/goalAnalytics";
+import type { AtRiskGoal } from "../../types/goalAnalytics";
 import { departmentApi } from "../../api/admin";
 import { useAuthStore } from "../../stores/authStore";
 import { GoalPriorityBadge } from "../../components/goals/GoalPriorityBadge";
 import { GoalProgressBar } from "../../components/goals/GoalProgressBar";
 
 // ──────────────────────────────────────────────────
-// Print styles (injected once)
+// Print styles (retained as fallback for ctrl+P)
 // ──────────────────────────────────────────────────
 
 const PRINT_STYLE_ID = "goal-analytics-print-styles";
@@ -77,6 +82,9 @@ function ensurePrintStyles() {
 
       /* Avoid page breaks inside charts/cards */
       .rounded-xl { break-inside: avoid; }
+
+      /* Hide the hidden pdf export container during native print */
+      #goal-analytics-pdf-export { display: none !important; }
     }
   `;
   document.head.appendChild(style);
@@ -132,6 +140,31 @@ const statCards = [
 ];
 
 // ──────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────
+
+function formatMonthLabel(v: string): string {
+  const [y, m] = v.split("-");
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const idx = parseInt(m, 10) - 1;
+  if (Number.isNaN(idx) || idx < 0 || idx > 11) return v;
+  return `${months[idx]} ${y}`;
+}
+
+// ──────────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────────
 
@@ -174,12 +207,6 @@ export function GoalAnalyticsPage() {
     }
   }, []);
 
-  // ── Print ────────────────────────────────────────
-  const handlePrint = useCallback(() => {
-    ensurePrintStyles();
-    window.print();
-  }, []);
-
   // ── Department list ──────────────────────────────
   const { data: deptResp } = useQuery({
     queryKey: ["departments", "list"],
@@ -187,6 +214,12 @@ export function GoalAnalyticsPage() {
     staleTime: 5 * 60 * 1000,
   });
   const departments = deptResp?.data ?? [];
+
+  const selectedDepartmentName = useMemo(() => {
+    if (!departmentId) return "All Departments";
+    const d = departments.find((x) => x.id === departmentId);
+    return d?.name ?? "—";
+  }, [departmentId, departments]);
 
   // ── Analytics queries ────────────────────────────
   const [atRiskPage, setAtRiskPage] = useState(1);
@@ -214,6 +247,107 @@ export function GoalAnalyticsPage() {
     setAtRiskPage(1);
   }, [departmentId, periodStart, periodEnd]);
 
+  // ── PDF generation ───────────────────────────────
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfAtRiskAll, setPdfAtRiskAll] = useState<AtRiskGoal[] | null>(null);
+  const [pdfAtRiskTotal, setPdfAtRiskTotal] = useState<number>(0);
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (isGenerating) return;
+
+    if (statsLoading || distLoading || atRiskLoading) {
+      toast.error("Please wait for analytics data to finish loading");
+      return;
+    }
+
+    setIsGenerating(true);
+    const loadingToast = toast.loading("Generating PDF report...");
+
+    try {
+      // Fetch ALL at-risk goals (up to 1000) so the report is complete
+      const allAtRisk = await goalAnalyticsApi.getAtRiskGoals(
+        1,
+        1000,
+        analyticsFilter,
+      );
+      setPdfAtRiskAll(allAtRisk.data ?? []);
+      setPdfAtRiskTotal(allAtRisk.total ?? (allAtRisk.data?.length ?? 0));
+
+      // Wait a tick for React to render the hidden PDF container with data
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      if (!reportRef.current) {
+        throw new Error("PDF container not ready");
+      }
+
+      const html2pdfModule = await import("html2pdf.js");
+      const html2pdf = html2pdfModule.default;
+
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `Goal_Analytics_${date}.pdf`;
+
+      await html2pdf()
+        .from(reportRef.current)
+        .set({
+          margin: [10, 10, 10, 10],
+          filename,
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+          },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"], after: ".pdf-page-break" },
+        })
+        .save();
+
+      toast.dismiss(loadingToast);
+      toast.success("PDF report downloaded");
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF report");
+    } finally {
+      setPdfAtRiskAll(null);
+      setPdfAtRiskTotal(0);
+      setIsGenerating(false);
+    }
+  }, [
+    analyticsFilter,
+    atRiskLoading,
+    distLoading,
+    isGenerating,
+    statsLoading,
+  ]);
+
+  // Ensure native print fallback CSS is injected (for Ctrl+P)
+  useEffect(() => {
+    ensurePrintStyles();
+  }, []);
+
+  // ── Derived values for PDF ───────────────────────
+  const generatedDate = new Date();
+  const filtersText = useMemo(() => {
+    const parts: string[] = [];
+    parts.push(`Department: ${selectedDepartmentName}`);
+    if (periodStart || periodEnd) {
+      parts.push(
+        `Period: ${periodStart || "—"} to ${periodEnd || "—"}`,
+      );
+    } else {
+      parts.push("Period: All time");
+    }
+    return parts;
+  }, [selectedDepartmentName, periodStart, periodEnd]);
+
+  const generatedByText = user
+    ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || user.email
+    : "—";
+
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
@@ -228,12 +362,19 @@ export function GoalAnalyticsPage() {
         </div>
         <div className="flex items-center gap-2" data-print-hide>
           <button
-            onClick={handlePrint}
-            title="Print report"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            onClick={handleDownloadPDF}
+            disabled={isGenerating}
+            title="Download PDF report"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Print</span>
+            {isGenerating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">
+              {isGenerating ? "Generating..." : "Download PDF Report"}
+            </span>
           </button>
           <button
             onClick={toggleFullscreen}
@@ -506,26 +647,7 @@ export function GoalAnalyticsPage() {
                 }}
               />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip
-                labelFormatter={(v) => {
-                  const [y, m] = String(v).split("-");
-                  const months = [
-                    "Jan",
-                    "Feb",
-                    "Mar",
-                    "Apr",
-                    "May",
-                    "Jun",
-                    "Jul",
-                    "Aug",
-                    "Sep",
-                    "Oct",
-                    "Nov",
-                    "Dec",
-                  ];
-                  return `${months[parseInt(m) - 1]} ${y}`;
-                }}
-              />
+              <Tooltip labelFormatter={(v) => formatMonthLabel(String(v))} />
               <Legend />
               <Area
                 type="monotone"
@@ -702,8 +824,860 @@ export function GoalAnalyticsPage() {
           </div>
         )}
       </div>
+
+      {/* ────────────────────────────────────────────
+          Hidden PDF Export Container
+          Rendered off-screen during generation only.
+          A4 width = 210mm. Self-contained light styling.
+         ──────────────────────────────────────────── */}
+      {isGenerating && (
+        <div
+          id="goal-analytics-pdf-export"
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: 0,
+            width: "210mm",
+            backgroundColor: "#ffffff",
+          }}
+          data-print-hide
+        >
+          <div
+            ref={reportRef}
+            style={{
+              width: "210mm",
+              backgroundColor: "#ffffff",
+              color: "#0f172a",
+              fontFamily:
+                "'Inter', 'Helvetica Neue', Arial, sans-serif",
+              fontSize: "11px",
+              lineHeight: 1.45,
+            }}
+          >
+            {/* ───────── Cover Page ───────── */}
+            <section
+              style={{
+                minHeight: "277mm",
+                padding: "28mm 18mm 18mm 18mm",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                background:
+                  "linear-gradient(160deg, #eff6ff 0%, #ffffff 45%, #f1f5f9 100%)",
+                boxSizing: "border-box",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "36px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "10px",
+                      background:
+                        "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      fontWeight: 800,
+                      fontSize: "20px",
+                      letterSpacing: "-0.5px",
+                    }}
+                  >
+                    A
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "22px",
+                      fontWeight: 800,
+                      letterSpacing: "1px",
+                      color: "#1e293b",
+                    }}
+                  >
+                    AUTOMAX
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "3px",
+                    color: "#2563eb",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Analytics Report
+                </div>
+
+                <h1
+                  style={{
+                    fontSize: "40px",
+                    fontWeight: 800,
+                    lineHeight: 1.1,
+                    margin: "0 0 16px 0",
+                    color: "#0f172a",
+                  }}
+                >
+                  Goal Analytics Report
+                </h1>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#475569",
+                    margin: "0 0 32px 0",
+                    maxWidth: "150mm",
+                  }}
+                >
+                  A comprehensive overview of goal performance, distribution,
+                  progress trends, and at-risk items for the selected scope.
+                </p>
+
+                <div
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    backgroundColor: "#ffffff",
+                    padding: "16px 20px",
+                    marginTop: "24px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      letterSpacing: "1.5px",
+                      textTransform: "uppercase",
+                      color: "#64748b",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Report Parameters
+                  </div>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <tbody>
+                      {filtersText.map((line, i) => (
+                        <tr key={i}>
+                          <td
+                            style={{
+                              padding: "4px 0",
+                              color: "#0f172a",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {line}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td
+                          style={{
+                            padding: "4px 0",
+                            color: "#0f172a",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Generated by: {generatedByText}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          style={{
+                            padding: "4px 0",
+                            color: "#0f172a",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Generated on: {generatedDate.toLocaleString()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#94a3b8",
+                  borderTop: "1px solid #e2e8f0",
+                  paddingTop: "12px",
+                }}
+              >
+                Automax — Enterprise Goal Management Platform · Confidential
+              </div>
+            </section>
+
+            <div className="pdf-page-break" style={{ pageBreakAfter: "always" }} />
+
+            {/* ───────── Executive Summary ───────── */}
+            <section style={{ padding: "14mm 14mm 8mm 14mm" }}>
+              <h2
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  margin: "0 0 4px 0",
+                  color: "#0f172a",
+                }}
+              >
+                Executive Summary
+              </h2>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#64748b",
+                  margin: "0 0 14px 0",
+                }}
+              >
+                High-level counts across the goal lifecycle.
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "10px",
+                }}
+              >
+                {statCards.map((card) => {
+                  const value = stats?.[card.key] ?? 0;
+                  return (
+                    <div
+                      key={card.key}
+                      style={{
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        padding: "12px 14px",
+                        backgroundColor: "#ffffff",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "1px",
+                          color: "#64748b",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {card.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "24px",
+                          fontWeight: 800,
+                          color: "#0f172a",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {value}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ───────── Status Distribution ───────── */}
+            <section style={{ padding: "4mm 14mm" }}>
+              <h2
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  margin: "0 0 8px 0",
+                  color: "#0f172a",
+                }}
+              >
+                Status Distribution
+              </h2>
+              {distributions?.by_status?.length ? (
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "11px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc" }}>
+                      <th style={thStyle}>Status</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>Count</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const total = distributions.by_status.reduce(
+                        (s, x) => s + (x.value || 0),
+                        0,
+                      );
+                      return distributions.by_status.map((row, i) => (
+                        <tr key={i}>
+                          <td style={tdStyle}>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: "10px",
+                                height: "10px",
+                                borderRadius: "2px",
+                                backgroundColor: row.color || "#94a3b8",
+                                marginRight: "8px",
+                                verticalAlign: "middle",
+                              }}
+                            />
+                            {row.label}
+                          </td>
+                          <td
+                            style={{
+                              ...tdStyle,
+                              textAlign: "right",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {row.value}
+                          </td>
+                          <td
+                            style={{
+                              ...tdStyle,
+                              textAlign: "right",
+                              color: "#64748b",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {total > 0
+                              ? `${Math.round((row.value / total) * 100)}%`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={emptyStyle}>No data available</p>
+              )}
+            </section>
+
+            {/* ───────── Priority Distribution ───────── */}
+            <section style={{ padding: "4mm 14mm" }}>
+              <h2
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  margin: "0 0 8px 0",
+                  color: "#0f172a",
+                }}
+              >
+                Priority Distribution
+              </h2>
+              {distributions?.by_priority?.length ? (
+                <div>
+                  {(() => {
+                    const max = Math.max(
+                      1,
+                      ...distributions.by_priority.map((r) => r.value || 0),
+                    );
+                    return distributions.by_priority.map((row, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "80px",
+                            fontSize: "11px",
+                            color: "#334155",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {row.label}
+                        </div>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: "14px",
+                            backgroundColor: "#f1f5f9",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${((row.value || 0) / max) * 100}%`,
+                              height: "100%",
+                              backgroundColor: row.color || "#3b82f6",
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            width: "44px",
+                            textAlign: "right",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {row.value}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              ) : (
+                <p style={emptyStyle}>No data available</p>
+              )}
+            </section>
+
+            {/* ───────── Goals by Department ───────── */}
+            <section style={{ padding: "4mm 14mm" }}>
+              <h2
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  margin: "0 0 8px 0",
+                  color: "#0f172a",
+                }}
+              >
+                Goals by Department
+              </h2>
+              {distributions?.by_department?.length ? (
+                <div>
+                  {(() => {
+                    const max = Math.max(
+                      1,
+                      ...distributions.by_department.map((r) => r.value || 0),
+                    );
+                    return distributions.by_department.map((row, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "120px",
+                            fontSize: "11px",
+                            color: "#334155",
+                            fontWeight: 500,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {row.label}
+                        </div>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: "12px",
+                            backgroundColor: "#f1f5f9",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${((row.value || 0) / max) * 100}%`,
+                              height: "100%",
+                              backgroundColor: row.color || "#6366f1",
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            width: "44px",
+                            textAlign: "right",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {row.value}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              ) : (
+                <p style={emptyStyle}>No data available</p>
+              )}
+            </section>
+
+            <div className="pdf-page-break" style={{ pageBreakAfter: "always" }} />
+
+            {/* ───────── Progress Summary ───────── */}
+            <section style={{ padding: "14mm 14mm 4mm 14mm" }}>
+              <h2
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  margin: "0 0 4px 0",
+                  color: "#0f172a",
+                }}
+              >
+                Progress Summary
+              </h2>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#64748b",
+                  margin: "0 0 14px 0",
+                }}
+              >
+                Average progress:{" "}
+                <strong style={{ color: "#0f172a" }}>
+                  {progress?.average ?? 0}%
+                </strong>
+              </p>
+
+              {progress?.ranges?.length ? (
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "11px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc" }}>
+                      <th style={thStyle}>Progress Range</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>Goals</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {progress.ranges.map((row, i) => (
+                      <tr key={i}>
+                        <td style={tdStyle}>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              width: "10px",
+                              height: "10px",
+                              borderRadius: "2px",
+                              backgroundColor: row.color || "#3b82f6",
+                              marginRight: "8px",
+                              verticalAlign: "middle",
+                            }}
+                          />
+                          {row.label}
+                        </td>
+                        <td
+                          style={{
+                            ...tdStyle,
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {row.value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={emptyStyle}>No data available</p>
+              )}
+            </section>
+
+            {/* ───────── Monthly Trend ───────── */}
+            <section style={{ padding: "4mm 14mm" }}>
+              <h2
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  margin: "0 0 8px 0",
+                  color: "#0f172a",
+                }}
+              >
+                Monthly Trend (Last 12 Months)
+              </h2>
+              {trend?.points?.length ? (
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "11px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc" }}>
+                      <th style={thStyle}>Month</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>
+                        Created
+                      </th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>
+                        Completed
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trend.points.map((p, i) => (
+                      <tr key={i}>
+                        <td style={tdStyle}>{formatMonthLabel(p.month)}</td>
+                        <td
+                          style={{
+                            ...tdStyle,
+                            textAlign: "right",
+                            color: "#2563eb",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {p.created}
+                        </td>
+                        <td
+                          style={{
+                            ...tdStyle,
+                            textAlign: "right",
+                            color: "#16a34a",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {p.completed}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={emptyStyle}>No data available</p>
+              )}
+            </section>
+
+            <div className="pdf-page-break" style={{ pageBreakAfter: "always" }} />
+
+            {/* ───────── At-Risk Goals (full list) ───────── */}
+            <section style={{ padding: "14mm 14mm 14mm 14mm" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "4px",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    margin: 0,
+                    color: "#0f172a",
+                  }}
+                >
+                  At-Risk & Overdue Goals
+                </h2>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: "#92400e",
+                    backgroundColor: "#fef3c7",
+                    padding: "2px 10px",
+                    borderRadius: "999px",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {pdfAtRiskTotal} total
+                </span>
+              </div>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#64748b",
+                  margin: "0 0 10px 0",
+                }}
+              >
+                Full list of goals flagged as at-risk or overdue.
+              </p>
+
+              {pdfAtRiskAll && pdfAtRiskAll.length > 0 ? (
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "10px",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc" }}>
+                      <th style={thStyle}>Title</th>
+                      <th style={thStyle}>Owner</th>
+                      <th style={thStyle}>Priority</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>
+                        Progress
+                      </th>
+                      <th style={thStyle}>Target Date</th>
+                      <th style={thStyle}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pdfAtRiskAll.map((goal) => (
+                      <tr key={goal.id}>
+                        <td style={tdStyle}>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              color: "#0f172a",
+                            }}
+                          >
+                            {goal.title}
+                          </div>
+                          {goal.department && (
+                            <div
+                              style={{
+                                fontSize: "9px",
+                                color: "#94a3b8",
+                                marginTop: "2px",
+                              }}
+                            >
+                              {goal.department.name}
+                            </div>
+                          )}
+                        </td>
+                        <td style={tdStyle}>
+                          {goal.owner
+                            ? `${goal.owner.first_name} ${goal.owner.last_name}`
+                            : "—"}
+                        </td>
+                        <td style={tdStyle}>{goal.priority}</td>
+                        <td
+                          style={{
+                            ...tdStyle,
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {Math.round(goal.progress)}%
+                        </td>
+                        <td
+                          style={{
+                            ...tdStyle,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {goal.target_date
+                            ? new Date(goal.target_date).toLocaleDateString()
+                            : "—"}
+                        </td>
+                        <td style={tdStyle}>
+                          {goal.days_overdue > 0 ? (
+                            <span
+                              style={{
+                                color: "#dc2626",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {goal.days_overdue}d overdue
+                            </span>
+                          ) : goal.last_check_in_status ? (
+                            <span
+                              style={{
+                                color: "#d97706",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {goal.last_check_in_status.replace("_", " ")}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#94a3b8" }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={emptyStyle}>
+                  No at-risk or overdue goals — great job!
+                </p>
+              )}
+            </section>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: "8mm 14mm 14mm 14mm",
+                fontSize: "9px",
+                color: "#94a3b8",
+                borderTop: "1px solid #e2e8f0",
+                textAlign: "center",
+              }}
+            >
+              Automax Goal Analytics · Generated{" "}
+              {generatedDate.toLocaleString()} · Confidential
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// ──────────────────────────────────────────────────
+// Shared inline styles for PDF tables
+// ──────────────────────────────────────────────────
+
+const thStyle: CSSProperties = {
+  textAlign: "left",
+  padding: "8px 10px",
+  fontSize: "10px",
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+  color: "#64748b",
+  borderBottom: "1px solid #e2e8f0",
+};
+
+const tdStyle: CSSProperties = {
+  padding: "8px 10px",
+  color: "#0f172a",
+  borderBottom: "1px solid #f1f5f9",
+  verticalAlign: "top",
+};
+
+const emptyStyle: CSSProperties = {
+  fontSize: "11px",
+  color: "#94a3b8",
+  fontStyle: "italic",
+  padding: "12px 0",
+};
 
 export default GoalAnalyticsPage;
