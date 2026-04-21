@@ -1522,6 +1522,7 @@ export interface ReportExportRequest {
     includeFilters?: boolean;
     includeTimestamp?: boolean;
   };
+  title?: string;
 }
 
 // Report Template Request Types

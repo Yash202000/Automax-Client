@@ -359,6 +359,7 @@ export const ReportBuilderPage: React.FC = () => {
           sorting: [],
           format,
           options,
+          title: templateData?.data?.name,
         },
         language,
       );

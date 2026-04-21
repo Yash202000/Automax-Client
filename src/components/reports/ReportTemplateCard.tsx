@@ -263,6 +263,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
           sorting: [],
           format,
           options,
+          title: template.name,
         },
         language,
       );
