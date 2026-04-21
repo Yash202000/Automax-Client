@@ -45,13 +45,7 @@ import type {
   Location,
   Classification,
 } from "../../types";
-import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import {
-  formatCellValue,
-  getNestedValue,
-  toHumanReadable,
-} from "../../components/reports/ReportPreview";
 import i18n from "@/i18n";
 
 // Helper to build hierarchical label with path
