@@ -35,10 +35,9 @@ export const toHumanReadable = (key: string): string =>
 
 // ── Styled cell helpers ──────────────────────────────────────────────────────
 
-const getPriorityConfig = (t: any): Record<
-  number,
-  { label: string; bg: string; text: string }
-> => ({
+const getPriorityConfig = (
+  t: any,
+): Record<number, { label: string; bg: string; text: string }> => ({
   1: { label: t("priorities.critical"), bg: "#fee2e2", text: "#dc2626" },
   2: { label: t("priorities.high"), bg: "#ffedd5", text: "#ea580c" },
   3: { label: t("priorities.medium"), bg: "#fef9c3", text: "#ca8a04" },
@@ -186,8 +185,10 @@ export const formatCellValue = (
 
   if (field.type === "boolean") {
     const bool = value === true || value === "true" || value === 1;
-    if (field.field === "sla_breached") return bool ? t("incidents.breached") : t("incidents.onTrack");
-    if (field.field === "is_active") return bool ? t("common.active") : t("common.inactive");
+    if (field.field === "sla_breached")
+      return bool ? t("incidents.breached") : t("incidents.onTrack");
+    if (field.field === "is_active")
+      return bool ? t("common.active") : t("common.inactive");
     return bool ? t("common.yes") : t("common.no");
   }
 
@@ -306,7 +307,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                 {columnDefs.map((col) => (
                   <th
                     key={col.field}
-                    className="px-5 py-4 text-left text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-[0.1em] whitespace-nowrap"
+                    className="px-5 py-4 text-left text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-[0.1em] whitespace-nowrap rtl:text-right"
                   >
                     {col.label}
                   </th>
@@ -321,7 +322,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                 >
                   {columnDefs.map((col) => {
                     const value = getNestedValue(row, col.label);
-                    console.log(col.label, col.field)
                     return (
                       <td
                         key={col.field}
@@ -373,10 +373,11 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
                     key={pageNum}
                     type="button"
                     onClick={() => onPageChange(pageNum)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${pageNum === page
-                      ? "bg-[hsl(var(--primary))] text-white"
-                      : "hover:bg-[hsl(var(--muted))]"
-                      }`}
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                      pageNum === page
+                        ? "bg-[hsl(var(--primary))] text-white"
+                        : "hover:bg-[hsl(var(--muted))]"
+                    }`}
                   >
                     {pageNum}
                   </button>

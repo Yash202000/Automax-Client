@@ -52,6 +52,7 @@ import {
   getNestedValue,
   toHumanReadable,
 } from "../../components/reports/ReportPreview";
+import i18n from "@/i18n";
 
 // Helper to build hierarchical label with path
 // const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
@@ -351,42 +352,9 @@ export const ReportBuilderPage: React.FC = () => {
       };
     }) => {
       if (!dataSource) throw new Error("No data source selected");
-
-      // For Excel, use the already-fetched previewData (respects the configured recordLimit)
-      if (format === "xlsx") {
-        // Build headers — use field label, fall back to human-readable key
-        const headers = selectedColumns.map((col) => {
-          const field = fields.find((f) => f.field === col.field);
-          return field?.label || toHumanReadable(col.field);
-        });
-
-        // Build rows from previewData
-        const rows = previewData.map((row) => {
-          return selectedColumns.map((col) => {
-            const fieldDef = fields.find((f) => f.field === col.field);
-            const value = getNestedValue(row, col.label);
-            if (!fieldDef) return value == null ? "" : String(value);
-            return formatCellValue(value, fieldDef, t);
-          });
-        });
-
-        // Create worksheet
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Report");
-
-        // Generate buffer
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-
-        // Download
-        const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`;
-        saveAs(blob, filename);
-      } else {
-        // PDF - use server-side export
-        const blob = await reportApi.export({
+      const language = i18n.language;
+      const response = await reportApi.export(
+        {
           data_source: dataSource,
           columns: selectedColumns,
           filters: filters.map(({ field, operator, value }) => ({
@@ -394,14 +362,22 @@ export const ReportBuilderPage: React.FC = () => {
             operator,
             value,
           })),
-          sorting,
-          format: "pdf",
+          sorting: [],
+          format,
           options,
-        });
-        const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
-        saveAs(blob, filename);
-      }
+        },
+        language,
+      );
+
+      const blob = response;
+
+      const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${
+        new Date().toISOString().split("T")[0]
+      }.${format}`;
+
+      saveAs(blob, filename);
     },
+
     onSuccess: () => {
       setShowExportDialog(false);
     },

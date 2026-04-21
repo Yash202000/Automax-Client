@@ -42,6 +42,7 @@ import ReportPreview, {
 import ExportDialog from "./ExportDialog";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 interface ReportTemplateCardProps {
   template: ReportTemplate;
@@ -254,48 +255,9 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
       };
     }) => {
       if (!template.data_source) throw new Error("No data source selected");
-      const response = await fetchReportData();
-      const dataToExport = response.data;
-
-      // For Excel, use the already-fetched previewData (respects the configured recordLimit)
-      if (format === "xlsx") {
-        // Build headers — use field label, fall back to human-readable key
-        const headers = template.config.columns.map((col) => {
-          const field = getFields(template.data_source).find(
-            (f) => f.field === col.field,
-          );
-          return field?.label || toHumanReadable(col.field);
-        });
-
-        // Build rows from previewData
-        const rows = dataToExport.map((row) => {
-          return template.config.columns.map((col) => {
-            const fieldDef = getFields(template.data_source).find(
-              (f) => f.field === col.field,
-            );
-            const value = getNestedValue(row, col.label);
-            if (!fieldDef) return value == null ? "" : String(value);
-            return formatCellValue(value, fieldDef, t);
-          });
-        });
-
-        // Create worksheet
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Report");
-
-        // Generate buffer
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-
-        // Download
-        const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`;
-        saveAs(blob, filename);
-      } else {
-        // PDF - use server-side export
-        const blob = await reportApi.export({
+      const language = i18n.language;
+      const response = await reportApi.export(
+        {
           data_source: template.data_source,
           columns: template.config.columns,
           filters: filters.map(({ field, operator, value }) => ({
@@ -304,13 +266,21 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             value,
           })),
           sorting: [],
-          format: "pdf",
+          format,
           options,
-        });
-        const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
-        saveAs(blob, filename);
-      }
+        },
+        language,
+      );
+
+      const blob = response;
+
+      const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${
+        new Date().toISOString().split("T")[0]
+      }.${format}`;
+
+      saveAs(blob, filename);
     },
+
     onSuccess: () => {
       setShowExportDialog(false);
     },
@@ -421,7 +391,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
               htmlFor={`from-${template.id}`}
               className="text-[11px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider ml-1"
             >
-              {t("common.fromDate")}
+              {t("reports.filterBuilder.from")}
             </label>
             <div className="relative group/input">
               <input
@@ -438,7 +408,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
               htmlFor={`to-${template.id}`}
               className="text-[11px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider ml-1"
             >
-              {t("common.toDate")}
+              {t("reports.filterBuilder.to")}
             </label>
             <div className="relative group/input">
               <input

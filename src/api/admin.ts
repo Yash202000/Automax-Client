@@ -2113,9 +2113,15 @@ export const reportApi = {
   },
 
   // Export report to file
-  export: async (request: ReportExportRequest): Promise<Blob> => {
+  export: async (
+    request: ReportExportRequest,
+    language: string = "en",
+  ): Promise<Blob> => {
     const response = await apiClient.post("/admin/reports/export", request, {
       responseType: "blob",
+      headers: {
+        "Accept-Language": language,
+      },
     });
     return response.data;
   },
