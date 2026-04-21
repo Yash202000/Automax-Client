@@ -358,8 +358,7 @@ export const ReportBuilderPage: React.FC = () => {
           })),
           sorting: [],
           format,
-          options,
-          title: loadedTemplate?.name || "Report",
+          options: { ...options, title: loadedTemplate?.name || "Report" },
         },
         language,
       );
