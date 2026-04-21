@@ -263,14 +263,14 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
           sorting: [],
           format,
           options,
-          title: template.name,
+          title: template.name || "Report",
         },
         language,
       );
 
       const blob = response;
 
-      const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${
+      const filename = `${(template.name || "Report").replace(/[^a-z0-9]/gi, "_")}_${
         new Date().toISOString().split("T")[0]
       }.${format}`;
 

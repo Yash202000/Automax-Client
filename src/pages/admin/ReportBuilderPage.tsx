@@ -359,14 +359,14 @@ export const ReportBuilderPage: React.FC = () => {
           sorting: [],
           format,
           options,
-          title: templateData?.data?.name,
+          title: loadedTemplate?.name || "Report",
         },
         language,
       );
 
       const blob = response;
 
-      const filename = `${options.title.replace(/[^a-z0-9]/gi, "_")}_${
+      const filename = `${(loadedTemplate?.name || "Report").replace(/[^a-z0-9]/gi, "_")}_${
         new Date().toISOString().split("T")[0]
       }.${format}`;
 
