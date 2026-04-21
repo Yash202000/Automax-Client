@@ -116,7 +116,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
         (users.find((u) => u.id === rev.performed_by_id) || rev.performed_by)
           ?.departments?.[0]?.name ||
         "-",
-      Role: rev.performed_by_roles?.join(", ") || "",
+      Role: rev.performed_by?.roles?.map((role) => role.name)?.join(", ") || "",
       Mobile: rev.performed_by_phone || rev.performed_by?.phone || "",
     }));
 
@@ -341,8 +341,8 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                             {role.name}
                           </span>
                         ))}
-                        {(!revision.performed_by_roles ||
-                          revision.performed_by_roles.length === 0) && (
+                        {(!revision.performed_by?.roles ||
+                          revision.performed_by?.roles.length === 0) && (
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
                             -
                           </span>
