@@ -222,6 +222,14 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: true,
   },
   {
+    field: "reporter_phone",
+    label: "Reporter Phone",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
     field: "reporter_id",
     label: "Reporter",
     type: "enum",
