@@ -578,6 +578,7 @@
     "administrator": "Administrator",
     "loggedInAsAdmin": "Logged in as admin",
     "escalationGroups": "Escalation Groups",
+    "license": "License",
     "quality": "Quality",
     "qualityAudit": "Quality Audit"
   },

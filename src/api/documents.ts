@@ -35,6 +35,13 @@ export const documentApi = {
     return res.data;
   },
 
+  getFileBreadcrumb: async (
+    fileId: string,
+  ): Promise<ApiResponse<{ breadcrumb: Array<{ uuid: string; name: string }> }>> => {
+    const res = await apiClient.get(`/documents/files/${fileId}/breadcrumb`);
+    return res.data;
+  },
+
   getPreviewUrl: async (
     fileId: string,
   ): Promise<ApiResponse<{ url: string }>> => {

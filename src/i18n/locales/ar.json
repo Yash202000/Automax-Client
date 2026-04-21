@@ -537,7 +537,8 @@
     "backToApp": "العودة للتطبيق",
     "administrator": "مدير",
     "loggedInAsAdmin": "مسجل كمدير",
-    "escalationGroups": "مجموعات التصعيد"
+    "escalationGroups": "مجموعات التصعيد",
+    "license": "الترخيص"
   },
   "users": {
     "title": "المستخدمون",

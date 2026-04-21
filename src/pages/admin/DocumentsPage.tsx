@@ -839,23 +839,36 @@ export function DocumentsPage() {
   const [selectedFile, setSelectedFile] = useState<DmsFile | null>(null);
   const [searchTags, setSearchTags] = useState<Record<string, string>>({});
 
-  // Deep-link: ?file=<uuid> opens the file detail panel on load.
-  // Used by "Open in Documents" links from evidence cards so users can jump
-  // straight to a file's info / versions / comments without navigating the tree.
+  // Deep-link: ?file=<uuid> navigates into the file's parent folder and opens
+  // the file detail panel. Used by "Open in Documents" links from evidence
+  // cards so users can jump straight to a file's context without manually
+  // walking the folder tree.
   const deepLinkFileId = searchParams.get("file");
   useEffect(() => {
     if (!deepLinkFileId) return;
     let cancelled = false;
     (async () => {
       try {
-        const info = await documentApi.getFileInfo(deepLinkFileId);
-        if (!cancelled && info?.data) {
-          setSelectedFile(info.data);
+        // Fetch file info + folder chain in parallel.
+        const [infoRes, breadcrumbRes] = await Promise.all([
+          documentApi.getFileInfo(deepLinkFileId),
+          documentApi.getFileBreadcrumb(deepLinkFileId),
+        ]);
+        if (cancelled) return;
+        if (breadcrumbRes?.data?.breadcrumb) {
+          setFolderPath(
+            breadcrumbRes.data.breadcrumb.map((entry) => ({
+              id: entry.uuid,
+              name: entry.name,
+            })),
+          );
+        }
+        if (infoRes?.data) {
+          setSelectedFile(infoRes.data);
         }
       } catch {
         // file not found or not accessible — silently ignore; user lands on root
       }
-      // Clear the query param once handled so a refresh doesn't re-trigger.
       if (!cancelled) {
         const next = new URLSearchParams(searchParams);
         next.delete("file");
