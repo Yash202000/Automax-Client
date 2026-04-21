@@ -117,6 +117,7 @@ export const GoalDetailPage: React.FC = () => {
     baseline_value: 0,
     target_value: 100,
     weight: 1,
+    formula: "",
   });
 
   // ── Evidence filter (debounced via memo) ──────────
@@ -233,6 +234,7 @@ export const GoalDetailPage: React.FC = () => {
         baseline_value: 0,
         target_value: 100,
         weight: 1,
+        formula: "",
       });
     } catch {
       // Toast handled by hook
@@ -808,6 +810,30 @@ export const GoalDetailPage: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Formula (optional) — computed value from sibling metrics.
+                  When set, the current value is derived automatically; manual
+                  value updates are ignored in favor of the formula. */}
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Formula{" "}
+                  <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={newMetric.formula ?? ""}
+                  onChange={(e) =>
+                    setNewMetric({ ...newMetric, formula: e.target.value })
+                  }
+                  placeholder="e.g. ${tasks_completed} / ${tasks_total} * 100"
+                  className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Reference other metrics with <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">{`\${metric_name}`}</code>.
+                  Helpers: <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">min</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">max</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">abs</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">round</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">pow</code>.
+                </p>
+              </div>
+
               <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
                 <button
                   onClick={() => setShowAddMetric(false)}

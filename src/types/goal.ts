@@ -95,6 +95,7 @@ export interface GoalMetric {
   current_value: number;
   target_value: number;
   weight: number;
+  formula?: string;
   progress: number;
   created_at: string;
   updated_at: string;
@@ -323,6 +324,7 @@ export interface GoalMetricCreateRequest {
   current_value?: number;
   target_value: number;
   weight?: number;
+  formula?: string;
 }
 
 export interface GoalMetricUpdateRequest {
@@ -332,6 +334,7 @@ export interface GoalMetricUpdateRequest {
   baseline_value?: number;
   target_value?: number;
   weight?: number;
+  formula?: string;
 }
 
 export interface MetricValueUpdateRequest {
