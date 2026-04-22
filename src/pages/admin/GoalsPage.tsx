@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   ChevronLeft,
@@ -32,6 +33,7 @@ import type { GoalFilter, Goal } from "../../types/goal";
 import { useGoalListWebSocket } from "../../lib/services/goalListWebSocket";
 
 function ExportDropdown({ filters }: { filters: GoalFilter }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -40,9 +42,9 @@ function ExportDropdown({ filters }: { filters: GoalFilter }) {
     try {
       const blob = await goalApi.exportCSV(filters);
       saveAs(blob, `goals_export_${new Date().toISOString().slice(0, 10)}.csv`);
-      toast.success("CSV exported");
+      toast.success(t("goals.csvExported"));
     } catch {
-      toast.error("Failed to export CSV");
+      toast.error(t("goals.csvExportFailed"));
     }
   };
 
@@ -51,9 +53,9 @@ function ExportDropdown({ filters }: { filters: GoalFilter }) {
     try {
       const res = await goalApi.exportJSON(filters);
       exportGoalsToXlsx(res.data);
-      toast.success("Excel exported");
+      toast.success(t("goals.excelExported"));
     } catch {
-      toast.error("Failed to export Excel");
+      toast.error(t("goals.excelExportFailed"));
     }
   };
 
@@ -64,10 +66,10 @@ function ExportDropdown({ filters }: { filters: GoalFilter }) {
         className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
       >
         <Download className="w-4 h-4" />
-        Export
+        {t("goals.export")}
       </button>
       {open && (
-        <div className="absolute right-0 mt-1 w-44 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800 z-50">
+        <div className="absolute end-0 mt-1 w-44 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800 z-50">
           <button
             onClick={handleCSV}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 rounded-t-lg"
@@ -89,6 +91,7 @@ function ExportDropdown({ filters }: { filters: GoalFilter }) {
 }
 
 export const GoalsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { hasPermission } = usePermissions();
   useGoalListWebSocket();
   const [filters, setFilters] = useState<GoalFilter>({
@@ -170,12 +173,12 @@ export const GoalsPage: React.FC = () => {
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
             <div>
               <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
-                Failed to load goals
+                {t("goals.failedToLoad")}
               </h3>
               <p className="mt-1 text-sm text-red-700 dark:text-red-400">
                 {error instanceof Error
                   ? error.message
-                  : "An unexpected error occurred."}
+                  : t("goals.unexpectedError")}
               </p>
             </div>
           </div>
@@ -194,10 +197,10 @@ export const GoalsPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Goals
+              {t("goals.title")}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Manage and track organizational goals
+              {t("goals.subtitle")}
             </p>
           </div>
         </div>
@@ -207,7 +210,7 @@ export const GoalsPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
           >
             <LayoutTemplate className="w-4 h-4" />
-            Templates
+            {t("goals.templates.title")}
           </Link>
           {canCreate && (
             <button
@@ -215,7 +218,7 @@ export const GoalsPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
             >
               <Upload className="w-4 h-4" />
-              Import
+              {t("goals.import")}
             </button>
           )}
           <button
@@ -223,7 +226,7 @@ export const GoalsPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            Metric Import
+            {t("goals.metricImport.title")}
           </button>
           <ExportDropdown filters={filters} />
           {canCreate && (
@@ -232,7 +235,7 @@ export const GoalsPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
-              New Goal
+              {t("goals.newGoal")}
             </Link>
           )}
         </div>
@@ -251,10 +254,10 @@ export const GoalsPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-20">
             <Target className="w-10 h-10 text-slate-400 dark:text-slate-500 mb-3" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              No goals found
+              {t("goals.empty")}
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
-              Try adjusting your filters or create a new goal.
+              {t("goals.emptyHint")}
             </p>
           </div>
         ) : (
@@ -276,23 +279,23 @@ export const GoalsPage: React.FC = () => {
                         />
                       </th>
                     )}
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Title
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {t("goals.table.title")}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Priority
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {t("goals.table.priority")}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Status
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {t("goals.table.status")}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Progress
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {t("goals.table.progress")}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Owner
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {t("goals.table.owner")}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Target Date
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {t("goals.table.targetDate")}
                     </th>
                   </tr>
                 </thead>
@@ -359,7 +362,7 @@ export const GoalsPage: React.FC = () => {
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Page {currentPage} of {totalPages}
+                {t("goals.pageOf", { current: currentPage, total: totalPages })}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -372,8 +375,8 @@ export const GoalsPage: React.FC = () => {
                   disabled={currentPage <= 1}
                   className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
+                  <ChevronLeft className="w-4 h-4 rtl:-rotate-180" />
+                  {t("common.previous")}
                 </button>
                 <button
                   onClick={() =>
@@ -385,8 +388,8 @@ export const GoalsPage: React.FC = () => {
                   disabled={currentPage >= totalPages}
                   className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
+                  {t("common.next")}
+                  <ChevronRight className="w-4 h-4 rtl:-rotate-180" />
                 </button>
               </div>
             </div>

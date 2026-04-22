@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, X, GitBranch } from "lucide-react";
 import { useGoals } from "../../hooks/useGoals";
 import { GoalStatusBadge } from "./GoalStatusBadge";
@@ -18,6 +19,7 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
   selectedGoal,
   onChange,
 }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -71,7 +73,7 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
         <span className="flex items-center gap-1.5">
           <GitBranch className="w-4 h-4" />
-          Parent Goal
+          {t("goals.components.parentSelector.label")}
         </span>
       </label>
 
@@ -92,13 +94,14 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
             type="button"
             onClick={handleClear}
             className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            aria-label={t("common.clear")}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       ) : (
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             value={search}
@@ -107,8 +110,8 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            placeholder="Search for a parent goal..."
-            className="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            placeholder={t("goals.components.parentSelector.searchPlaceholder")}
+            className="w-full ltr:pl-9 ltr:pr-3 rtl:pr-9 rtl:pl-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
         </div>
       )}
@@ -121,7 +124,7 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
             </div>
           ) : goals.length === 0 ? (
             <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-              No goals found
+              {t("goals.components.parentSelector.noGoalsFound")}
             </div>
           ) : (
             goals.map((goal) => (
@@ -129,7 +132,7 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
                 key={goal.id}
                 type="button"
                 onClick={() => handleSelect(goal)}
-                className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700/40 last:border-b-0"
+                className="w-full ltr:text-left rtl:text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700/40 last:border-b-0"
               >
                 <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                   {goal.title}
@@ -139,7 +142,9 @@ export const ParentGoalSelector: React.FC<ParentGoalSelectorProps> = ({
                   <GoalProgressBar progress={goal.progress} size="sm" />
                   {goal.level > 0 && (
                     <span className="text-xs text-slate-400">
-                      L{goal.level}
+                      {t("goals.components.parentSelector.level", {
+                        level: goal.level,
+                      })}
                     </span>
                   )}
                 </div>

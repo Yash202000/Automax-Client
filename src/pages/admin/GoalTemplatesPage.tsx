@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   LayoutTemplate,
@@ -31,6 +32,7 @@ import {
 } from "../../types/goal";
 
 export const GoalTemplatesPage: React.FC = () => {
+  const { t } = useTranslation();
   const [filter] = useState<GoalTemplateFilter>({
     page: 1,
     limit: 20,
@@ -82,19 +84,20 @@ export const GoalTemplatesPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/goals"
+            aria-label={t("goals.backToGoals")}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-500" />
+            <ArrowLeft className="w-5 h-5 text-slate-500 rtl:-rotate-180" />
           </Link>
           <div className="p-2 rounded-lg bg-purple-500/10">
             <LayoutTemplate className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Goal Templates
+              {t("goals.templates.title")}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Pre-configured templates for quick goal creation
+              {t("goals.templates.subtitle")}
             </p>
           </div>
         </div>
@@ -103,19 +106,19 @@ export const GoalTemplatesPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
-          New Template
+          {t("goals.templates.newTemplate")}
         </button>
       </div>
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Search templates..."
+          placeholder={t("goals.templates.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white"
+          className="w-full ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white"
         />
       </div>
 
@@ -127,81 +130,85 @@ export const GoalTemplatesPage: React.FC = () => {
           </div>
         ) : templates.length === 0 ? (
           <div className="py-20 text-center text-slate-500 dark:text-slate-400">
-            No templates found. Create one to get started.
+            {t("goals.templates.empty")}
           </div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/30">
-                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Name
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("goals.templates.table.name")}
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Category
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("goals.templates.table.category")}
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Priority
-                </th>
-                <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Metrics
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("goals.templates.table.priority")}
                 </th>
                 <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Active
+                  {t("goals.templates.table.metrics")}
                 </th>
-                <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Actions
+                <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("goals.templates.table.active")}
+                </th>
+                <th className="ltr:text-right rtl:text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("goals.templates.table.actions")}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
-              {templates.map((t) => (
+              {templates.map((tpl) => (
                 <tr
-                  key={t.id}
+                  key={tpl.id}
                   className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                 >
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium text-slate-900 dark:text-white">
-                      {t.name}
+                      {tpl.name}
                     </div>
-                    {t.description && (
+                    {tpl.description && (
                       <div className="text-xs text-slate-500 truncate max-w-xs">
-                        {t.description}
+                        {tpl.description}
                       </div>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                    {t.category || "-"}
+                    {tpl.category || "-"}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                    {t.priority || "-"}
+                    {tpl.priority || "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className="tabular-nums text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {t.default_metrics?.length ?? 0}
+                      {tpl.default_metrics?.length ?? 0}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
-                      onClick={() => handleToggleActive(t)}
+                      onClick={() => handleToggleActive(tpl)}
                       className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                        t.is_active
+                        tpl.is_active
                           ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                           : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                       }`}
                     >
-                      {t.is_active ? "Active" : "Inactive"}
+                      {tpl.is_active
+                        ? t("goals.templates.active")
+                        : t("goals.templates.inactive")}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 ltr:text-right rtl:text-left">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => handleEdit(t)}
+                        onClick={() => handleEdit(tpl)}
+                        aria-label={t("common.edit")}
                         className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => setDeleteConfirm(t.id)}
+                        onClick={() => setDeleteConfirm(tpl.id)}
+                        aria-label={t("common.delete")}
                         className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -217,7 +224,9 @@ export const GoalTemplatesPage: React.FC = () => {
         {total > (filter.limit ?? 20) && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700/60">
             <span className="text-sm text-slate-500 tabular-nums">
-              {total} template{total !== 1 ? "s" : ""}
+              {total === 1
+                ? t("goals.templates.totalOne", { count: total })
+                : t("goals.templates.totalMany", { count: total })}
             </span>
           </div>
         )}
@@ -254,25 +263,24 @@ export const GoalTemplatesPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700/60 dark:bg-slate-800/80">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              Delete Template
+              {t("goals.templates.deleteTitle")}
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              Are you sure you want to delete this template? This action cannot
-              be undone.
+              {t("goals.templates.deleteConfirm")}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 disabled={deleteTemplate.isPending}
                 className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
               >
-                Delete
+                {t("common.delete")}
               </button>
             </div>
           </div>
@@ -299,6 +307,7 @@ function TemplateFormModal({
   ) => void;
   isLoading: boolean;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState(template?.name ?? "");
   const [description, setDescription] = useState(template?.description ?? "");
   const [category, setCategory] = useState(template?.category ?? "");
@@ -366,10 +375,13 @@ function TemplateFormModal({
       <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700/60 dark:bg-slate-800/80 mx-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {template ? "Edit Template" : "New Template"}
+            {template
+              ? t("goals.templates.form.editTitle")
+              : t("goals.templates.form.newTitle")}
           </h3>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
           >
             <X className="w-5 h-5" />
@@ -381,7 +393,7 @@ function TemplateFormModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Name *
+                {t("goals.templates.form.nameLabel")}
               </label>
               <input
                 type="text"
@@ -393,7 +405,7 @@ function TemplateFormModal({
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Description
+                {t("goals.templates.form.descriptionLabel")}
               </label>
               <textarea
                 value={description}
@@ -404,7 +416,7 @@ function TemplateFormModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Category
+                {t("goals.templates.form.categoryLabel")}
               </label>
               <input
                 type="text"
@@ -415,7 +427,7 @@ function TemplateFormModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Priority
+                {t("goals.templates.form.priorityLabel")}
               </label>
               <select
                 value={priority}
@@ -447,7 +459,7 @@ function TemplateFormModal({
               htmlFor="is-active"
               className="text-sm text-slate-700 dark:text-slate-300"
             >
-              Active
+              {t("goals.templates.form.active")}
             </label>
           </div>
 
@@ -455,19 +467,19 @@ function TemplateFormModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Default Metrics
+                {t("goals.templates.form.defaultMetrics")}
               </label>
               <button
                 type="button"
                 onClick={addMetric}
                 className="text-xs text-purple-600 hover:text-purple-700 font-medium"
               >
-                + Add Metric
+                {t("goals.templates.form.addMetric")}
               </button>
             </div>
             {metrics.length === 0 ? (
               <p className="text-xs text-slate-400">
-                No default metrics configured.
+                {t("goals.templates.form.noMetrics")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -478,7 +490,7 @@ function TemplateFormModal({
                   >
                     <input
                       type="text"
-                      placeholder="Metric name"
+                      placeholder={t("goals.templates.form.metricName")}
                       value={m.name}
                       onChange={(e) => updateMetric(i, "name", e.target.value)}
                       className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-700 dark:text-white"
@@ -498,7 +510,7 @@ function TemplateFormModal({
                     </select>
                     <input
                       type="number"
-                      placeholder="Target"
+                      placeholder={t("goals.templates.form.target")}
                       value={m.target_value}
                       onChange={(e) =>
                         updateMetric(i, "target_value", Number(e.target.value))
@@ -507,7 +519,7 @@ function TemplateFormModal({
                     />
                     <input
                       type="number"
-                      placeholder="Weight"
+                      placeholder={t("goals.templates.form.weight")}
                       value={m.weight}
                       onChange={(e) =>
                         updateMetric(i, "weight", Number(e.target.value))
@@ -518,6 +530,7 @@ function TemplateFormModal({
                     <button
                       type="button"
                       onClick={() => removeMetric(i)}
+                      aria-label={t("common.remove")}
                       className="p-1 text-slate-400 hover:text-red-500"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -532,19 +545,19 @@ function TemplateFormModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Default Collaborator Roles
+                {t("goals.templates.form.defaultRoles")}
               </label>
               <button
                 type="button"
                 onClick={addCollaboratorRole}
                 className="text-xs text-purple-600 hover:text-purple-700 font-medium"
               >
-                + Add Role
+                {t("goals.templates.form.addRole")}
               </button>
             </div>
             {collaborators.length === 0 ? (
               <p className="text-xs text-slate-400">
-                No default collaborator roles configured.
+                {t("goals.templates.form.noRoles")}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -573,6 +586,7 @@ function TemplateFormModal({
                     <button
                       type="button"
                       onClick={() => removeCollaboratorRole(i)}
+                      aria-label={t("common.remove")}
                       className="p-0.5 text-slate-400 hover:text-red-500"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -590,14 +604,18 @@ function TemplateFormModal({
               onClick={onClose}
               className="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={isLoading || !name.trim()}
               className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50"
             >
-              {isLoading ? "Saving..." : template ? "Update" : "Create"}
+              {isLoading
+                ? t("goals.templates.form.saving")
+                : template
+                  ? t("goals.templates.form.updateAction")
+                  : t("goals.templates.form.createAction")}
             </button>
           </div>
         </form>

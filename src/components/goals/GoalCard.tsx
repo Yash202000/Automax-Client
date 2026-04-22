@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Calendar, User, BarChart3 } from "lucide-react";
 import type { Goal } from "../../types/goal";
 import { GoalStatusBadge } from "./GoalStatusBadge";
@@ -11,9 +12,10 @@ interface GoalCardProps {
 }
 
 export const GoalCard: React.FC<GoalCardProps> = ({ goal }) => {
+  const { t } = useTranslation();
   const ownerName = goal.owner
     ? `${goal.owner.first_name} ${goal.owner.last_name}`.trim()
-    : "Unassigned";
+    : t("goals.components.goalCard.unassigned");
 
   const formattedTargetDate = goal.target_date
     ? new Date(goal.target_date).toLocaleDateString("en-US", {
@@ -63,7 +65,11 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal }) => {
         {metricCount > 0 && (
           <span className="flex items-center gap-1.5">
             <BarChart3 className="w-3.5 h-3.5" />
-            {metricCount} metric{metricCount !== 1 ? "s" : ""}
+            {metricCount === 1
+              ? t("goals.components.goalCard.metricOne", { count: metricCount })
+              : t("goals.components.goalCard.metricMany", {
+                  count: metricCount,
+                })}
           </span>
         )}
       </div>

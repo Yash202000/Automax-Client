@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -99,9 +100,13 @@ const getTransitionButtonStyle = (code: string): string => {
   return "bg-slate-600 hover:bg-slate-700 text-white";
 };
 
-const getUserName = (user?: { first_name: string; last_name: string }): string => {
-  if (!user) return "System";
-  return `${user.first_name} ${user.last_name}`.trim() || "Unknown";
+const getUserName = (
+  user: { first_name: string; last_name: string } | undefined,
+  fallbackSystem: string,
+  fallbackUnknown: string,
+): string => {
+  if (!user) return fallbackSystem;
+  return `${user.first_name} ${user.last_name}`.trim() || fallbackUnknown;
 };
 
 // ── Sub-components ─────────────────────────────────────
@@ -161,6 +166,7 @@ const TransitionDialog: React.FC<{
   onConfirm: (comment: string) => void;
   onCancel: () => void;
 }> = ({ transition, isExecuting, onConfirm, onCancel }) => {
+  const { t } = useTranslation();
   const [comment, setComment] = useState("");
 
   return (
@@ -171,7 +177,9 @@ const TransitionDialog: React.FC<{
       />
       <div className="relative w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 shadow-xl p-6 space-y-4">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Confirm: {transition.transition.name}
+          {t("goals.metricImport.detail.confirmTitle", {
+            name: transition.transition.name,
+          })}
         </h3>
         {transition.transition.description && (
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -180,14 +188,14 @@ const TransitionDialog: React.FC<{
         )}
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Comment (optional)
+            {t("goals.metricImport.detail.commentOptional")}
           </label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={3}
             className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            placeholder="Add a comment..."
+            placeholder={t("goals.metricImport.detail.commentPlaceholder")}
           />
         </div>
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -197,7 +205,7 @@ const TransitionDialog: React.FC<{
             disabled={isExecuting}
             className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -221,76 +229,80 @@ const DeleteDialog: React.FC<{
   isDeleting: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ batchTitle, isDeleting, onConfirm, onCancel }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div
-      className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-      onClick={onCancel}
-    />
-    <div className="relative w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 shadow-xl p-6 space-y-4">
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-        Delete Import Batch
-      </h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        Are you sure you want to delete <strong>"{batchTitle}"</strong>? This action
-        cannot be undone.
-      </p>
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isDeleting}
-          className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={isDeleting}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
-        >
-          {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-          Delete
-        </button>
+}> = ({ batchTitle, isDeleting, onConfirm, onCancel }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      <div className="relative w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 shadow-xl p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          {t("goals.metricImport.detail.deleteTitle")}
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t("goals.metricImport.detail.deleteConfirm", { title: batchTitle })}
+        </p>
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+            {t("common.delete")}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Items Table ────────────────────────────────────────
 
-const ItemsTable: React.FC<{ items: MetricImportItem[] }> = ({ items }) => (
+const ItemsTable: React.FC<{ items: MetricImportItem[] }> = ({ items }) => {
+  const { t } = useTranslation();
+  return (
   <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
     <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700/60">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-        Import Items
+        {t("goals.metricImport.detail.importItems")}
       </h2>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/50">
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Goal Title
+            <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("goals.metricImport.detail.itemsTable.goalTitle")}
             </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Metric Name
+            <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("goals.metricImport.detail.itemsTable.metricName")}
             </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Type
+            <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("goals.metricImport.detail.itemsTable.type")}
             </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Unit
+            <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("goals.metricImport.detail.itemsTable.unit")}
             </th>
-            <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Old Value
+            <th className="ltr:text-right rtl:text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("goals.metricImport.detail.itemsTable.oldValue")}
             </th>
-            <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              New Value
+            <th className="ltr:text-right rtl:text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t("goals.metricImport.detail.itemsTable.newValue")}
             </th>
             <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Applied
+              {t("goals.metricImport.detail.itemsTable.applied")}
             </th>
           </tr>
         </thead>
@@ -317,10 +329,10 @@ const ItemsTable: React.FC<{ items: MetricImportItem[] }> = ({ items }) => (
               <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                 {item.unit || "\u2014"}
               </td>
-              <td className="px-4 py-3 text-sm text-right text-slate-700 dark:text-slate-300 tabular-nums">
+              <td className="px-4 py-3 text-sm ltr:text-right rtl:text-left text-slate-700 dark:text-slate-300 tabular-nums">
                 {item.old_value}
               </td>
-              <td className="px-4 py-3 text-sm text-right text-slate-700 dark:text-slate-300 tabular-nums">
+              <td className="px-4 py-3 text-sm ltr:text-right rtl:text-left text-slate-700 dark:text-slate-300 tabular-nums">
                 {item.new_value}
               </td>
               <td className="px-4 py-3 text-center">
@@ -340,7 +352,7 @@ const ItemsTable: React.FC<{ items: MetricImportItem[] }> = ({ items }) => (
                 colSpan={7}
                 className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400"
               >
-                No import items found.
+                {t("goals.metricImport.detail.noItems")}
               </td>
             </tr>
           )}
@@ -348,22 +360,25 @@ const ItemsTable: React.FC<{ items: MetricImportItem[] }> = ({ items }) => (
       </table>
     </div>
   </div>
-);
+  );
+};
 
 // ── Transition History Timeline ────────────────────────
 
 const TransitionTimeline: React.FC<{
   history: MetricImportBatchTransitionHistory[];
-}> = ({ history }) => (
+}> = ({ history }) => {
+  const { t } = useTranslation();
+  return (
   <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
     <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700/60">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-        Transition History
+        {t("goals.metricImport.detail.transitionHistory")}
       </h2>
     </div>
     {history.length === 0 ? (
       <div className="px-5 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
-        No transitions recorded yet.
+        {t("goals.metricImport.detail.noTransitions")}
       </div>
     ) : (
       <div className="divide-y divide-slate-100 dark:divide-slate-700/40">
@@ -374,7 +389,7 @@ const TransitionTimeline: React.FC<{
                 name={entry.from_state_name}
                 color={entry.from_state_color}
               />
-              <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0 rtl:-rotate-180" />
               <StateBadgeFromColor
                 name={entry.to_state_name}
                 color={entry.to_state_color}
@@ -390,9 +405,15 @@ const TransitionTimeline: React.FC<{
               <span className="inline-flex items-center gap-1">
                 <User className="w-3.5 h-3.5" />
                 {entry.is_system_action ? (
-                  <em className="text-slate-400 dark:text-slate-500">System</em>
+                  <em className="text-slate-400 dark:text-slate-500">
+                    {t("goals.metricImport.system")}
+                  </em>
                 ) : (
-                  getUserName(entry.performed_by)
+                  getUserName(
+                    entry.performed_by,
+                    t("goals.metricImport.system"),
+                    t("goals.metricImport.unknown"),
+                  )
                 )}
               </span>
               <span className="inline-flex items-center gap-1">
@@ -413,11 +434,13 @@ const TransitionTimeline: React.FC<{
       </div>
     )}
   </div>
-);
+  );
+};
 
 // ── Main Component ─────────────────────────────────────
 
 export const MetricImportBatchDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -494,13 +517,13 @@ export const MetricImportBatchDetailPage: React.FC = () => {
           to="/goals/metric-batches"
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Metric Batches
+          <ArrowLeft className="w-4 h-4 rtl:-rotate-180" />
+          {t("goals.metricImport.detail.backToBatches")}
         </Link>
         <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">
           <XCircle className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Import batch not found.
+            {t("goals.metricImport.detail.notFound")}
           </p>
         </div>
       </div>
@@ -515,8 +538,8 @@ export const MetricImportBatchDetailPage: React.FC = () => {
         to="/goals/metric-batches"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Metric Batches
+        <ArrowLeft className="w-4 h-4 rtl:-rotate-180" />
+        {t("goals.metricImport.detail.backToBatches")}
       </Link>
 
       {/* ── Header ────────────────────────────────── */}
@@ -537,27 +560,31 @@ export const MetricImportBatchDetailPage: React.FC = () => {
           <div className="flex items-center gap-3 flex-wrap">
             <InfoPill
               icon={<User className="w-3.5 h-3.5" />}
-              label="Imported By"
-              value={getUserName(batch.imported_by)}
+              label={t("goals.metricImport.detail.labelImportedBy")}
+              value={getUserName(
+                batch.imported_by,
+                t("goals.metricImport.system"),
+                t("goals.metricImport.unknown"),
+              )}
             />
             <InfoPill
               icon={<FileSpreadsheet className="w-3.5 h-3.5" />}
-              label="File"
+              label={t("goals.metricImport.detail.labelFile")}
               value={batch.file_name}
             />
             <InfoPill
               icon={<Clock className="w-3.5 h-3.5" />}
-              label="Created"
+              label={t("goals.metricImport.detail.labelCreated")}
               value={formatDate(batch.created_at)}
             />
             <InfoPill
               icon={<Send className="w-3.5 h-3.5" />}
-              label="Items"
+              label={t("goals.metricImport.detail.labelItems")}
               value={String(batch.item_count)}
             />
             <InfoPill
               icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-              label="Goals"
+              label={t("goals.metricImport.detail.labelGoals")}
               value={String(batch.goal_count)}
             />
           </div>
@@ -592,7 +619,7 @@ export const MetricImportBatchDetailPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-200 dark:border-red-800/50"
           >
             <Trash2 className="w-4 h-4" />
-            Delete
+            {t("common.delete")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Upload, FileText, Loader2 } from "lucide-react";
 import { useReplaceEvidenceFile } from "../../hooks/useGoals";
 
@@ -13,6 +14,7 @@ export default function EvidenceReplaceModal({
   currentFileName,
   onClose,
 }: EvidenceReplaceModalProps) {
+  const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceFile = useReplaceEvidenceFile();
@@ -41,11 +43,12 @@ export default function EvidenceReplaceModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Replace Evidence File
+            {t("goals.components.evidence.replaceModal.title")}
           </h3>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            aria-label={t("common.close")}
           >
             <X size={18} />
           </button>
@@ -56,7 +59,8 @@ export default function EvidenceReplaceModal({
           <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <FileText size={16} />
             <span>
-              Current file: <strong>{currentFileName}</strong>
+              {t("goals.components.evidence.replaceModal.currentFile")}{" "}
+              <strong>{currentFileName}</strong>
             </span>
           </div>
 
@@ -87,7 +91,9 @@ export default function EvidenceReplaceModal({
               <div className="space-y-2">
                 <Upload size={32} className="mx-auto text-slate-300" />
                 <p className="text-sm text-slate-500">
-                  Click to select a replacement file
+                  {t(
+                    "goals.components.evidence.replaceModal.selectReplacement",
+                  )}
                 </p>
               </div>
             )}
@@ -100,7 +106,7 @@ export default function EvidenceReplaceModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleReplace}
@@ -110,7 +116,7 @@ export default function EvidenceReplaceModal({
             {replaceFile.isPending && (
               <Loader2 size={14} className="animate-spin" />
             )}
-            Replace File
+            {t("goals.components.evidence.replaceModal.replace")}
           </button>
         </div>
       </div>

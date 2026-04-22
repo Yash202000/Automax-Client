@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   FileText,
   Image,
@@ -9,6 +11,7 @@ import {
   User,
   Paperclip,
   Download,
+  ExternalLink,
   Trash2,
   RefreshCw,
   ArrowRight,
@@ -58,6 +61,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
   onDelete,
   canEdit,
 }) => {
+  const { t } = useTranslation();
   const [transitionModalOpen, setTransitionModalOpen] = useState(false);
   const [replaceModalOpen, setReplaceModalOpen] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -80,7 +84,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
 
   const uploadedByName = evidence.uploaded_by
     ? `${evidence.uploaded_by.first_name} ${evidence.uploaded_by.last_name}`.trim()
-    : "Unknown";
+    : t("goals.components.evidence.unknownUploader");
 
   const assignedToName = evidence.assigned_to
     ? `${evidence.assigned_to.first_name} ${evidence.assigned_to.last_name}`.trim()
@@ -91,7 +95,9 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
     { month: "short", day: "numeric", year: "numeric" },
   );
 
-  const stateName = evidence.current_state?.name ?? "Unknown";
+  const stateName =
+    evidence.current_state?.name ??
+    t("goals.components.evidence.unknownState");
   const stateColor = evidence.current_state?.color ?? "#94a3b8";
   const stateType = evidence.current_state?.state_type ?? "";
   const stateCode = evidence.current_state?.code ?? "";
@@ -161,7 +167,9 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
             </div>
           </div>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300 flex-shrink-0">
-            {evidence.evidence_type}
+            {t(`goals.components.evidenceType.${evidence.evidence_type}`, {
+              defaultValue: evidence.evidence_type,
+            })}
           </span>
         </div>
 
@@ -201,11 +209,25 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
           <button
             onClick={handleDownload}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            title="Download file"
+            title={t("goals.components.evidence.downloadTitle")}
           >
             <Download className="w-3.5 h-3.5" />
-            Download
+            {t("goals.components.evidence.download")}
           </button>
+
+          {/* Open in Documents — deep link to /goals/documents?file=<uuid>
+              Opens the file directly in the Documents detail panel (versions,
+              comments, tags) without having to navigate the folder tree. */}
+          {hasDmsFile && (
+            <Link
+              to={`/goals/documents?file=${evidence.documenta_file_id}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              title={t("goals.components.evidence.openInDocumentsTitle")}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {t("goals.components.evidence.openInDocuments")}
+            </Link>
+          )}
 
           {/* Transition buttons */}
           {executableTransitions.length === 1 ? (
@@ -213,7 +235,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
               onClick={() => setTransitionModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
             >
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 rtl:-rotate-180" />
               {executableTransitions[0].transition.name}
             </button>
           ) : executableTransitions.length > 1 ? (
@@ -221,8 +243,10 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
               onClick={() => setTransitionModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
             >
-              <ArrowRight className="w-3.5 h-3.5" />
-              Actions ({executableTransitions.length})
+              <ArrowRight className="w-3.5 h-3.5 rtl:-rotate-180" />
+              {t("goals.components.evidence.actionsCount", {
+                count: executableTransitions.length,
+              })}
             </button>
           ) : null}
 
@@ -231,10 +255,10 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
             <button
               onClick={() => setReplaceModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-              title="Replace file"
+              title={t("goals.components.evidence.replaceTitle")}
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Replace
+              {t("goals.components.evidence.replace")}
             </button>
           )}
 
@@ -242,11 +266,11 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
           {canEdit && canModifyFile && onDelete && (
             <button
               onClick={() => onDelete(evidence.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto"
-              title="Delete evidence"
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ms-auto"
+              title={t("goals.components.evidence.deleteTitle")}
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Delete
+              {t("goals.components.evidence.delete")}
             </button>
           )}
         </div>
@@ -257,7 +281,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
           className="flex items-center gap-1.5 mt-3 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
         >
           <Clock className="w-3.5 h-3.5" />
-          History
+          {t("goals.components.evidence.history")}
           {historyExpanded ? (
             <ChevronUp className="w-3.5 h-3.5" />
           ) : (
@@ -273,7 +297,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
               .map((h) => {
                 const performerName = h.performed_by
                   ? `${h.performed_by.first_name} ${h.performed_by.last_name}`.trim()
-                  : "System";
+                  : t("goals.components.evidence.systemActor");
                 const transDate = new Date(
                   h.transitioned_at,
                 ).toLocaleDateString("en-US", {
@@ -298,7 +322,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
                         >
                           {h.from_state_name}
                         </span>
-                        <ArrowRight className="w-3 h-3 text-slate-400" />
+                        <ArrowRight className="w-3 h-3 text-slate-400 rtl:-rotate-180" />
                         <span
                           className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium"
                           style={{
@@ -323,14 +347,14 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
               })}
             {historyItems.filter((h) => !h.is_system_action).length === 0 && (
               <p className="text-xs text-slate-400 dark:text-slate-500 py-2">
-                No transition history yet.
+                {t("goals.components.evidence.noHistory")}
               </p>
             )}
           </div>
         )}
         {historyExpanded && historyItems.length === 0 && (
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 py-2">
-            No transition history yet.
+            {t("goals.components.evidence.noHistory")}
           </p>
         )}
 
@@ -342,7 +366,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
               className="flex items-center gap-1.5 mt-3 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             >
               <History className="w-3.5 h-3.5" />
-              Versions
+              {t("goals.components.evidence.versions")}
               {versionsExpanded ? (
                 <ChevronUp className="w-3.5 h-3.5" />
               ) : (
@@ -371,7 +395,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
                         </span>
                         {v.is_current && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                            Current
+                            {t("goals.components.evidence.versionCurrent")}
                           </span>
                         )}
                         <span className="text-slate-400 tabular-nums">
@@ -388,7 +412,10 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
                       <button
                         onClick={() => handleDownloadVersion(v.uuid)}
                         className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                        title="Download this version"
+                        title={t("goals.components.evidence.downloadVersionTitle")}
+                        aria-label={t(
+                          "goals.components.evidence.downloadVersionTitle",
+                        )}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
@@ -396,7 +423,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
                   ))
                 ) : (
                   <p className="text-xs text-slate-400 dark:text-slate-500 py-2">
-                    No versions available.
+                    {t("goals.components.evidence.noVersions")}
                   </p>
                 )}
               </div>

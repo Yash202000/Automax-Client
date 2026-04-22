@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Hash,
   Percent,
@@ -25,29 +26,29 @@ const METRIC_TYPE_ICONS: Record<MetricType, React.ReactNode> = {
   Boolean: <ToggleLeft className="w-4 h-4" />,
 };
 
-const formatMetricValue = (
-  value: number,
-  type: MetricType,
-  unit: string,
-): string => {
-  if (type === "Boolean") {
-    return value >= 1 ? "Yes" : "No";
-  }
-  if (type === "Percentage") {
-    return `${value}%`;
-  }
-  if (type === "Currency") {
-    return `${unit || "$"}${value.toLocaleString()}`;
-  }
-  return unit ? `${value.toLocaleString()} ${unit}` : value.toLocaleString();
-};
-
 export const MetricCard: React.FC<MetricCardProps> = ({
   metric,
   onUpdateValue,
   onDelete,
   canEdit,
 }) => {
+  const { t } = useTranslation();
+
+  const formatMetricValue = (value: number, type: MetricType, unit: string) => {
+    if (type === "Boolean") {
+      return value >= 1
+        ? t("goals.components.metric.yes")
+        : t("goals.components.metric.no");
+    }
+    if (type === "Percentage") {
+      return `${value}%`;
+    }
+    if (type === "Currency") {
+      return `${unit || "$"}${value.toLocaleString()}`;
+    }
+    return unit ? `${value.toLocaleString()} ${unit}` : value.toLocaleString();
+  };
+
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4">
       {/* Header */}
@@ -60,8 +61,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
               {metric.name}
             </h4>
-            <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-              {metric.metric_type}
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {t(`goals.components.metricType.${metric.metric_type}`, {
+                defaultValue: metric.metric_type,
+              })}
               {metric.unit ? ` (${metric.unit})` : ""}
             </span>
           </div>
@@ -76,7 +79,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div className="text-center p-2 rounded-lg bg-slate-50 dark:bg-slate-700/30">
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-            Baseline
+            {t("goals.components.metric.baseline")}
           </p>
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
             {formatMetricValue(
@@ -88,7 +91,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         </div>
         <div className="text-center p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-            Current
+            {t("goals.components.metric.current")}
           </p>
           <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 tabular-nums">
             {formatMetricValue(
@@ -100,7 +103,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         </div>
         <div className="text-center p-2 rounded-lg bg-slate-50 dark:bg-slate-700/30">
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-            Target
+            {t("goals.components.metric.target")}
           </p>
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
             {formatMetricValue(
@@ -125,13 +128,14 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <TrendingUp className="w-4 h-4" />
-            Update Value
+            {t("goals.components.metric.updateValue")}
           </button>
           {onDelete && (
             <button
               onClick={() => onDelete(metric.id)}
               className="flex items-center justify-center p-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              title="Delete metric"
+              title={t("goals.components.metric.deleteTitle")}
+              aria-label={t("goals.components.metric.deleteTitle")}
             >
               <Trash2 className="w-4 h-4" />
             </button>

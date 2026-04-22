@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { GoalPriority } from "../../types/goal";
 
 interface GoalPriorityBadgeProps {
@@ -16,11 +17,12 @@ const PRIORITY_STYLES: Record<GoalPriority, string> = {
 export const GoalPriorityBadge: React.FC<GoalPriorityBadgeProps> = ({
   priority,
 }) => {
+  const { t } = useTranslation();
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${PRIORITY_STYLES[priority]}`}
     >
-      {priority}
+      {t(`goals.components.badges.priority.${priority}`)}
     </span>
   );
 };

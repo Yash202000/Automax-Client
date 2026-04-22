@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Upload, FileUp, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import type { GoalMetric, EvidenceType } from "../../types/goal";
@@ -24,6 +25,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
   onClose,
   metrics,
 }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [evidenceType, setEvidenceType] = useState<EvidenceType>("Report");
@@ -62,17 +64,23 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
     e.preventDefault();
 
     if (!file) {
-      toast.error("Please select a file to upload");
+      toast.error(
+        t("goals.components.evidence.uploadModal.errorSelectFile"),
+      );
       return;
     }
 
     if (!title.trim()) {
-      toast.error("Title is required");
+      toast.error(
+        t("goals.components.evidence.uploadModal.errorTitleRequired"),
+      );
       return;
     }
 
     if (!comment.trim()) {
-      toast.error("Comment is required");
+      toast.error(
+        t("goals.components.evidence.uploadModal.errorCommentRequired"),
+      );
       return;
     }
 
@@ -106,16 +114,17 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Upload Evidence
+                {t("goals.components.evidence.uploadModal.title")}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Attach supporting evidence to this goal
+                {t("goals.components.evidence.uploadModal.subtitle")}
               </p>
             </div>
           </div>
           <button
             onClick={handleClose}
             className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -126,7 +135,8 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
           {/* File Picker */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              File <span className="text-red-500">*</span>
+              {t("goals.components.evidence.uploadModal.fileLabel")}{" "}
+              <span className="text-red-500">*</span>
             </label>
             {file ? (
               <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-700/30">
@@ -146,6 +156,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
                   className="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                  aria-label={t("common.remove")}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -157,7 +168,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               >
                 <Upload className="w-8 h-8 text-slate-400" />
                 <span className="text-sm text-slate-500 dark:text-slate-400">
-                  Click to select a file
+                  {t("goals.components.evidence.uploadModal.selectFile")}
                 </span>
               </label>
             )}
@@ -176,7 +187,8 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               htmlFor="evidence-title"
               className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
             >
-              Title <span className="text-red-500">*</span>
+              {t("goals.components.evidence.uploadModal.titleLabel")}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               id="evidence-title"
@@ -185,7 +197,9 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               required
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Evidence title"
+              placeholder={t(
+                "goals.components.evidence.uploadModal.titlePlaceholder",
+              )}
             />
           </div>
 
@@ -195,7 +209,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               htmlFor="evidence-type-select"
               className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
             >
-              Evidence Type
+              {t("goals.components.evidence.uploadModal.typeLabel")}
             </label>
             <select
               id="evidence-type-select"
@@ -205,7 +219,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
             >
               {EVIDENCE_TYPE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(`goals.components.evidenceType.${opt.value}`)}
                 </option>
               ))}
             </select>
@@ -217,7 +231,8 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               htmlFor="evidence-comment"
               className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
             >
-              Comment <span className="text-red-500">*</span>
+              {t("goals.components.evidence.uploadModal.commentLabel")}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <textarea
               id="evidence-comment"
@@ -226,7 +241,9 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               required
               rows={3}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-              placeholder="Describe this evidence..."
+              placeholder={t(
+                "goals.components.evidence.uploadModal.commentPlaceholder",
+              )}
             />
           </div>
 
@@ -237,8 +254,10 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
                 htmlFor="evidence-metric-select"
                 className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
               >
-                Related Metric{" "}
-                <span className="text-slate-400 font-normal">(optional)</span>
+                {t("goals.components.evidence.uploadModal.metricLabel")}{" "}
+                <span className="text-slate-400 font-normal">
+                  {t("goals.components.evidence.uploadModal.optional")}
+                </span>
               </label>
               <select
                 id="evidence-metric-select"
@@ -246,7 +265,9 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
                 onChange={(e) => setMetricId(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               >
-                <option value="">No specific metric</option>
+                <option value="">
+                  {t("goals.components.evidence.uploadModal.noSpecificMetric")}
+                </option>
                 {metrics.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -264,14 +285,16 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
               disabled={uploadEvidence.isPending}
               className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={uploadEvidence.isPending}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {uploadEvidence.isPending ? "Uploading..." : "Upload Evidence"}
+              {uploadEvidence.isPending
+                ? t("goals.components.evidence.uploadModal.uploading")
+                : t("goals.components.evidence.uploadModal.upload")}
             </button>
           </div>
         </form>

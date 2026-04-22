@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ClipboardCheck,
@@ -56,6 +57,7 @@ const AddAssignmentModal: React.FC<{
   onClose: () => void;
   cycleId: string;
 }> = ({ open, onClose, cycleId }) => {
+  const { t } = useTranslation();
   const assignReviewees = useAssignReviewees();
   const [employeeId, setEmployeeId] = useState("");
   const [reviewerId, setReviewerId] = useState("");
@@ -85,12 +87,12 @@ const AddAssignmentModal: React.FC<{
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Add Assignment
+          {t("goals.reviews.addAssignmentModal.title")}
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Employee ID
+              {t("goals.reviews.addAssignmentModal.employeeId")}
             </label>
             <input
               type="text"
@@ -98,12 +100,14 @@ const AddAssignmentModal: React.FC<{
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
               className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="UUID of employee"
+              placeholder={t(
+                "goals.reviews.addAssignmentModal.employeeIdPlaceholder",
+              )}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Reviewer ID
+              {t("goals.reviews.addAssignmentModal.reviewerId")}
             </label>
             <input
               type="text"
@@ -111,7 +115,9 @@ const AddAssignmentModal: React.FC<{
               value={reviewerId}
               onChange={(e) => setReviewerId(e.target.value)}
               className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="UUID of reviewer"
+              placeholder={t(
+                "goals.reviews.addAssignmentModal.reviewerIdPlaceholder",
+              )}
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -120,7 +126,7 @@ const AddAssignmentModal: React.FC<{
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
@@ -130,7 +136,7 @@ const AddAssignmentModal: React.FC<{
               {assignReviewees.isPending && (
                 <Loader2 size={14} className="animate-spin" />
               )}
-              Assign
+              {t("goals.reviews.addAssignmentModal.assign")}
             </button>
           </div>
         </form>
@@ -142,6 +148,7 @@ const AddAssignmentModal: React.FC<{
 // ── Main Page ────────────────────────────────────────
 
 export const ReviewCycleDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data: cycleData, isLoading: cycleLoading } = useReviewCycle(id!);
   const { data: assignmentsData, isLoading: assignmentsLoading } =
@@ -154,6 +161,34 @@ export const ReviewCycleDetailPage: React.FC = () => {
   const cycle = cycleData?.data;
   const assignments = assignmentsData?.data ?? [];
 
+  const cycleStatusLabel = (s: string): string => {
+    switch (s) {
+      case "draft":
+        return t("goals.reviews.statusDraft");
+      case "active":
+        return t("goals.reviews.statusActive");
+      case "completed":
+        return t("goals.reviews.statusCompleted");
+      case "archived":
+        return t("goals.reviews.statusArchived");
+      default:
+        return s;
+    }
+  };
+
+  const assignmentStatusLabel = (s: ReviewAssignmentStatus): string => {
+    switch (s) {
+      case "pending":
+        return t("goals.reviews.detail.statusPending");
+      case "in_progress":
+        return t("goals.reviews.detail.statusInProgress");
+      case "completed":
+        return t("goals.reviews.detail.statusCompleted");
+      default:
+        return s;
+    }
+  };
+
   if (cycleLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -165,7 +200,7 @@ export const ReviewCycleDetailPage: React.FC = () => {
   if (!cycle) {
     return (
       <div className="text-center py-20 text-slate-400">
-        Review cycle not found
+        {t("goals.reviews.detail.notFound")}
       </div>
     );
   }
@@ -177,8 +212,8 @@ export const ReviewCycleDetailPage: React.FC = () => {
         to="/goals/reviews"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition-colors"
       >
-        <ArrowLeft size={16} />
-        Back to Review Cycles
+        <ArrowLeft size={16} className="rtl:-rotate-180" />
+        {t("goals.reviews.detail.backToCycles")}
       </Link>
 
       {/* Cycle Header Card */}
@@ -203,9 +238,9 @@ export const ReviewCycleDetailPage: React.FC = () => {
             </div>
           </div>
           <span
-            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium capitalize ${cycleStatusColor[cycle.status]}`}
+            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${cycleStatusColor[cycle.status]}`}
           >
-            {cycle.status}
+            {cycleStatusLabel(cycle.status)}
           </span>
         </div>
 
@@ -226,7 +261,10 @@ export const ReviewCycleDetailPage: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <Users size={14} className="text-slate-400" />
             <span className="tabular-nums">
-              {cycle.completed_count}/{cycle.assignment_count} completed
+              {t("goals.reviews.detail.completedOf", {
+                completed: cycle.completed_count,
+                total: cycle.assignment_count,
+              })}
             </span>
           </div>
         </div>
@@ -239,7 +277,7 @@ export const ReviewCycleDetailPage: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Play size={14} />
-              Activate
+              {t("goals.reviews.activate")}
             </button>
           )}
           {cycle.status === "active" && (
@@ -248,7 +286,7 @@ export const ReviewCycleDetailPage: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <CheckCircle2 size={14} />
-              Complete Cycle
+              {t("goals.reviews.detail.completeCycle")}
             </button>
           )}
           {(cycle.status === "draft" || cycle.status === "active") && (
@@ -257,7 +295,7 @@ export const ReviewCycleDetailPage: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-medium rounded-lg transition-colors"
             >
               <UserPlus size={14} />
-              Add Assignment
+              {t("goals.reviews.detail.addAssignment")}
             </button>
           )}
         </div>
@@ -267,7 +305,9 @@ export const ReviewCycleDetailPage: React.FC = () => {
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/60">
           <h2 className="font-semibold text-slate-900 dark:text-white">
-            Assignments ({assignments.length})
+            {t("goals.reviews.detail.assignments", {
+              count: assignments.length,
+            })}
           </h2>
         </div>
 
@@ -278,26 +318,26 @@ export const ReviewCycleDetailPage: React.FC = () => {
         ) : assignments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
             <Users size={32} className="mb-2 opacity-50" />
-            <p className="text-sm">No assignments yet</p>
+            <p className="text-sm">{t("goals.reviews.detail.noAssignments")}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/60">
-                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                  Employee
+                <th className="ltr:text-left rtl:text-right px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
+                  {t("goals.reviews.detail.assignmentTable.employee")}
                 </th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                  Reviewer
+                <th className="ltr:text-left rtl:text-right px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
+                  {t("goals.reviews.detail.assignmentTable.reviewer")}
                 </th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                  Status
+                <th className="ltr:text-left rtl:text-right px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
+                  {t("goals.reviews.detail.assignmentTable.status")}
                 </th>
                 <th className="text-center px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                  Rating
+                  {t("goals.reviews.detail.assignmentTable.rating")}
                 </th>
-                <th className="text-right px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
-                  Actions
+                <th className="ltr:text-right rtl:text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-400">
+                  {t("goals.reviews.detail.assignmentTable.actions")}
                 </th>
               </tr>
             </thead>
@@ -319,9 +359,9 @@ export const ReviewCycleDetailPage: React.FC = () => {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${assignmentStatusColor[a.status]}`}
+                      className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${assignmentStatusColor[a.status]}`}
                     >
-                      {a.status.replace("_", " ")}
+                      {assignmentStatusLabel(a.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -345,14 +385,15 @@ export const ReviewCycleDetailPage: React.FC = () => {
                         to={`/goals/reviews/assignments/${a.id}`}
                         className="px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                       >
-                        View
+                        {t("goals.reviews.detail.viewAction")}
                       </Link>
                       {a.status !== "completed" && (
                         <button
                           onClick={() => {
-                            if (confirm("Remove this assignment?"))
+                            if (confirm(t("goals.reviews.detail.removePrompt")))
                               removeAssignment.mutate(a.id);
                           }}
+                          aria-label={t("common.remove")}
                           className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         >
                           <Trash2 size={14} />

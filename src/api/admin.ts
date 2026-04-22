@@ -1,5 +1,11 @@
 import apiClient from "./client";
 import type {
+  Category,
+  CategoryCreateRequest,
+  CategoryUpdateRequest,
+  CategoryListParams,
+} from "../types/category";
+import type {
   ApiResponse,
   PaginatedResponse,
   User,
@@ -419,6 +425,63 @@ export const classificationApi = {
   deleteCriticality: async (id: string): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete<ApiResponse<null>>(
       `/admin/classifications/criticalities/${id}`,
+    );
+    return response.data;
+  },
+};
+
+// Category API (goal category hierarchy)
+export const categoryApi = {
+  list: async (
+    params?: CategoryListParams,
+  ): Promise<ApiResponse<Category[]>> => {
+    const qs = new URLSearchParams();
+    if (params?.include_inactive) qs.append("include_inactive", "true");
+    const url = qs.toString()
+      ? `/admin/categories?${qs.toString()}`
+      : "/admin/categories";
+    const response = await apiClient.get<ApiResponse<Category[]>>(url);
+    return response.data;
+  },
+
+  getTree: async (): Promise<ApiResponse<Category[]>> => {
+    const response = await apiClient.get<ApiResponse<Category[]>>(
+      "/admin/categories/tree",
+    );
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<ApiResponse<Category>> => {
+    const response = await apiClient.get<ApiResponse<Category>>(
+      `/admin/categories/${id}`,
+    );
+    return response.data;
+  },
+
+  create: async (
+    data: CategoryCreateRequest,
+  ): Promise<ApiResponse<Category>> => {
+    const response = await apiClient.post<ApiResponse<Category>>(
+      "/admin/categories",
+      data,
+    );
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: CategoryUpdateRequest,
+  ): Promise<ApiResponse<Category>> => {
+    const response = await apiClient.put<ApiResponse<Category>>(
+      `/admin/categories/${id}`,
+      data,
+    );
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/admin/categories/${id}`,
     );
     return response.data;
   },

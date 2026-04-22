@@ -15,6 +15,7 @@ import {
   Building2,
   MapPin,
   FolderTree,
+  Tag,
   ChevronLeft,
   LogOut,
   Home,
@@ -28,6 +29,7 @@ import {
   Link2,
   Settings,
   AlertTriangle,
+  KeyRound,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
@@ -42,12 +44,18 @@ import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
 import { PERMISSIONS } from "@/constants/permissions";
+import { LicenseGraceBanner } from "../common/LicenseGraceBanner";
+import { useLicense } from "../../hooks/useLicense";
 
 interface SidebarItem {
   icon: React.ElementType;
   labelKey: string;
   path: string;
   permission?: string;
+  // License feature code. If set and the feature is not licensed, the item hides.
+  // Undefined for foundational modules (users/roles/departments/etc.) that are
+  // always available regardless of license.
+  licenseFeature?: string;
   badge?: number;
 }
 
@@ -101,6 +109,12 @@ const sidebarSectionsConfig: SidebarSection[] = [
         path: "/admin/classifications",
         permission: "classifications:view",
       },
+      {
+        icon: Tag,
+        labelKey: "admin.categories",
+        path: "/admin/categories",
+        permission: "categories:view",
+      },
     ],
   },
   {
@@ -135,6 +149,13 @@ const sidebarSectionsConfig: SidebarSection[] = [
         labelKey: "admin.escalationManagement",
         path: "/admin/escalation-groups",
         permission: PERMISSIONS.ESCALATION_GROUPS_VIEW,
+        licenseFeature: "escalation",
+      },
+      {
+        icon: KeyRound,
+        labelKey: "admin.license",
+        path: "/admin/license",
+        permission: PERMISSIONS.LICENSE_VIEW,
       },
     ],
   },
@@ -153,6 +174,7 @@ export const AdminLayout: React.FC = () => {
   const location = useLocation();
   const langRef = useRef<HTMLDivElement>(null);
   const { hasAnyPermission, isSuperAdmin } = usePermissions();
+  const { isFeatureLicensed, hasLicense } = useLicense();
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -199,11 +221,20 @@ export const AdminLayout: React.FC = () => {
     return user?.permissions?.includes(permission) ?? false;
   };
 
-  // Filter sections based on permissions
+  // Filter sections based on permissions AND license features.
+  // License hasn't loaded yet → show everything (avoids flicker on first paint).
+  // Super admin → show everything regardless of license (useful for debug/support).
+  const itemAllowed = (item: SidebarItem) => {
+    if (!hasPermission(item.permission)) return false;
+    if (!item.licenseFeature) return true;
+    if (isSuperAdmin) return true;
+    if (!hasLicense) return true;
+    return isFeatureLicensed(item.licenseFeature);
+  };
   const filteredSections = sidebarSectionsConfig
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => hasPermission(item.permission)),
+      items: section.items.filter(itemAllowed),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -607,6 +638,7 @@ export const AdminLayout: React.FC = () => {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-background">
+          <LicenseGraceBanner />
           <div className="p-4 lg:p-8">
             <div className="max-w-7xl mx-auto">
               <Outlet />

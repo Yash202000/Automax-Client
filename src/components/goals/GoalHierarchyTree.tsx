@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown, GitBranch } from "lucide-react";
 import { GoalStatusBadge } from "./GoalStatusBadge";
 import { GoalProgressBar } from "./GoalProgressBar";
@@ -21,7 +22,7 @@ const TreeNode: React.FC<{ node: GoalBrief; depth: number }> = ({
     <div>
       <div
         className="flex items-center gap-2 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors group"
-        style={{ paddingLeft: `${depth * 24 + 12}px` }}
+        style={{ paddingInlineStart: `${depth * 24 + 12}px` }}
       >
         {hasChildren ? (
           <button
@@ -31,7 +32,7 @@ const TreeNode: React.FC<{ node: GoalBrief; depth: number }> = ({
             {expanded ? (
               <ChevronDown className="w-4 h-4" />
             ) : (
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 rtl:-rotate-180" />
             )}
           </button>
         ) : (
@@ -52,7 +53,7 @@ const TreeNode: React.FC<{ node: GoalBrief; depth: number }> = ({
           <div className="w-24">
             <GoalProgressBar progress={node.progress} size="sm" />
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums w-10 text-right">
+          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums w-10 ltr:text-right rtl:text-left">
             {Math.round(node.progress)}%
           </span>
         </div>
@@ -65,12 +66,14 @@ export const GoalHierarchyTree: React.FC<GoalHierarchyTreeProps> = ({
   children,
   parentId: _parentId,
 }) => {
+  const { t } = useTranslation();
+
   if (children.length === 0) {
     return (
       <div className="text-center py-8">
         <GitBranch className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          No child goals yet
+          {t("goals.components.hierarchyTree.empty")}
         </p>
       </div>
     );

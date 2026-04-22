@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Search, X } from "lucide-react";
 import type { GoalFilter, GoalStatus } from "../../types/goal";
 import { GOAL_STATUS_LABELS, GOAL_PRIORITY_OPTIONS } from "../../types/goal";
@@ -8,15 +9,14 @@ interface GoalFiltersProps {
   onChange: (updated: GoalFilter) => void;
 }
 
-const STATUS_OPTIONS = Object.entries(GOAL_STATUS_LABELS) as [
-  GoalStatus,
-  string,
-][];
+const STATUS_OPTIONS = Object.keys(GOAL_STATUS_LABELS) as GoalStatus[];
 
 export const GoalFilters: React.FC<GoalFiltersProps> = ({
   filters,
   onChange,
 }) => {
+  const { t } = useTranslation();
+
   const updateFilter = (key: keyof GoalFilter, value: string | undefined) => {
     onChange({
       ...filters,
@@ -50,17 +50,17 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           htmlFor="goal-filter-search"
           className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
         >
-          Search
+          {t("common.search")}
         </label>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             id="goal-filter-search"
             type="text"
             value={filters.search ?? ""}
             onChange={(e) => updateFilter("search", e.target.value)}
-            placeholder="Search goals..."
-            className="w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            placeholder={t("goals.components.filters.searchPlaceholder")}
+            className="w-full ltr:pl-10 ltr:pr-3 rtl:pr-10 rtl:pl-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
         </div>
       </div>
@@ -71,7 +71,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           htmlFor="goal-filter-status"
           className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
         >
-          Status
+          {t("common.status")}
         </label>
         <select
           id="goal-filter-status"
@@ -79,10 +79,10 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           onChange={(e) => updateFilter("status", e.target.value)}
           className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         >
-          <option value="">All Statuses</option>
-          {STATUS_OPTIONS.map(([value, label]) => (
+          <option value="">{t("goals.components.filters.allStatuses")}</option>
+          {STATUS_OPTIONS.map((value) => (
             <option key={value} value={value}>
-              {label}
+              {t(`goals.components.badges.status.${value}`)}
             </option>
           ))}
         </select>
@@ -94,7 +94,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           htmlFor="goal-filter-priority"
           className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
         >
-          Priority
+          {t("common.priority")}
         </label>
         <select
           id="goal-filter-priority"
@@ -102,10 +102,12 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           onChange={(e) => updateFilter("priority", e.target.value)}
           className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         >
-          <option value="">All Priorities</option>
+          <option value="">
+            {t("goals.components.filters.allPriorities")}
+          </option>
           {GOAL_PRIORITY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
-              {opt.label}
+              {t(`goals.components.badges.priority.${opt.value}`)}
             </option>
           ))}
         </select>
@@ -117,14 +119,14 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           htmlFor="goal-filter-category"
           className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
         >
-          Category
+          {t("goals.category")}
         </label>
         <input
           id="goal-filter-category"
           type="text"
           value={filters.category ?? ""}
           onChange={(e) => updateFilter("category", e.target.value)}
-          placeholder="Category..."
+          placeholder={t("goals.components.filters.categoryPlaceholder")}
           className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
         />
       </div>
@@ -135,7 +137,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           htmlFor="goal-filter-start-from"
           className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
         >
-          Start From
+          {t("goals.components.filters.startFrom")}
         </label>
         <input
           id="goal-filter-start-from"
@@ -152,7 +154,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           htmlFor="goal-filter-target-to"
           className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
         >
-          Target To
+          {t("goals.components.filters.targetTo")}
         </label>
         <input
           id="goal-filter-target-to"
@@ -178,7 +180,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
         />
         <span className="text-sm text-slate-700 dark:text-slate-300">
-          Root goals only
+          {t("goals.components.filters.rootOnly")}
         </span>
       </label>
 
@@ -189,7 +191,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
           className="flex items-center gap-1.5 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <X className="w-4 h-4" />
-          Clear Filters
+          {t("common.clearFilters")}
         </button>
       )}
     </div>

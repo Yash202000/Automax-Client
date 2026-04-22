@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ClipboardCheck,
   Star,
@@ -34,6 +35,7 @@ const assignmentStatusColor: Record<ReviewAssignmentStatus, string> = {
 type TabType = "my-reviews" | "review-tasks";
 
 export const MyReviewPage: React.FC = () => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<TabType>("my-reviews");
   const [reviewPage, setReviewPage] = useState(1);
   const [taskPage, setTaskPage] = useState(1);
@@ -64,6 +66,19 @@ export const MyReviewPage: React.FC = () => {
   const setPage = isMyReviews ? setReviewPage : setTaskPage;
   const loading = isMyReviews ? reviewsLoading : tasksLoading;
 
+  const assignmentStatusLabel = (s: ReviewAssignmentStatus): string => {
+    switch (s) {
+      case "pending":
+        return t("goals.reviews.detail.statusPending");
+      case "in_progress":
+        return t("goals.reviews.detail.statusInProgress");
+      case "completed":
+        return t("goals.reviews.detail.statusCompleted");
+      default:
+        return s;
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -76,11 +91,10 @@ export const MyReviewPage: React.FC = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            My Reviews
+            {t("goals.reviews.my.title")}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Reviews where you are being reviewed, or tasks where you review
-            others
+            {t("goals.reviews.my.subtitle")}
           </p>
         </div>
       </div>
@@ -95,7 +109,7 @@ export const MyReviewPage: React.FC = () => {
               : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
-          My Reviews ({reviewsTotal})
+          {t("goals.reviews.my.tabMyReviews", { count: reviewsTotal })}
         </button>
         <button
           onClick={() => setTab("review-tasks")}
@@ -105,7 +119,7 @@ export const MyReviewPage: React.FC = () => {
               : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
-          Review Tasks ({tasksTotal})
+          {t("goals.reviews.my.tabReviewTasks", { count: tasksTotal })}
         </button>
       </div>
 
@@ -120,8 +134,8 @@ export const MyReviewPage: React.FC = () => {
             <Inbox size={40} className="mb-3 opacity-50" />
             <p className="text-sm">
               {isMyReviews
-                ? "No reviews assigned to you"
-                : "No review tasks pending"}
+                ? t("goals.reviews.my.emptyMyReviews")
+                : t("goals.reviews.my.emptyTasks")}
             </p>
           </div>
         ) : (
@@ -134,7 +148,7 @@ export const MyReviewPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium text-slate-900 dark:text-white">
-                    {item.cycle?.title ?? "Review"}
+                    {item.cycle?.title ?? t("goals.reviews.my.reviewFallback")}
                   </h3>
                   <div className="flex items-center gap-4 mt-1.5 text-sm text-slate-500 dark:text-slate-400">
                     {item.cycle && (
@@ -150,11 +164,15 @@ export const MyReviewPage: React.FC = () => {
                       <User size={13} />
                       {isMyReviews
                         ? item.reviewer
-                          ? `Reviewer: ${item.reviewer.first_name} ${item.reviewer.last_name}`
-                          : "Reviewer: Unknown"
+                          ? t("goals.reviews.my.reviewerLabel", {
+                              name: `${item.reviewer.first_name} ${item.reviewer.last_name}`,
+                            })
+                          : t("goals.reviews.my.reviewerUnknown")
                         : item.employee
-                          ? `Employee: ${item.employee.first_name} ${item.employee.last_name}`
-                          : "Employee: Unknown"}
+                          ? t("goals.reviews.my.employeeLabel", {
+                              name: `${item.employee.first_name} ${item.employee.last_name}`,
+                            })
+                          : t("goals.reviews.my.employeeUnknown")}
                     </span>
                   </div>
                 </div>
@@ -171,9 +189,9 @@ export const MyReviewPage: React.FC = () => {
                     </div>
                   )}
                   <span
-                    className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${assignmentStatusColor[item.status]}`}
+                    className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${assignmentStatusColor[item.status]}`}
                   >
-                    {item.status.replace("_", " ")}
+                    {assignmentStatusLabel(item.status)}
                   </span>
                 </div>
               </div>
@@ -186,23 +204,28 @@ export const MyReviewPage: React.FC = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-            Showing {(page - 1) * limit + 1} –{" "}
-            {Math.min(page * limit, total)} of {total}
+            {t("goals.reviews.my.showing", {
+              from: (page - 1) * limit + 1,
+              to: Math.min(page * limit, total),
+              total,
+            })}
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page <= 1}
+              aria-label={t("common.previous")}
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 transition-colors"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={16} className="rtl:-rotate-180" />
             </button>
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page >= totalPages}
+              aria-label={t("common.next")}
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 transition-colors"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={16} className="rtl:-rotate-180" />
             </button>
           </div>
         </div>

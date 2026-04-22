@@ -35,6 +35,7 @@ import {
   LocationsPage,
   LocationMapPage,
   ClassificationsPage,
+  CategoriesPage,
   ActionLogsPage,
   WorkflowsPage,
   WorkflowDesignerPage,
@@ -57,6 +58,7 @@ import {
   LookupsPage,
   ApplicationLinksPage,
   SettingsManagementPage,
+  LicensePage,
   CallCentrePage,
   CallHistory,
   EmailPage,
@@ -210,6 +212,19 @@ function App() {
                       element={<ClassificationsPage />}
                     />
                   </Route>
+                  {/* Category (goal) management - requires categories:view permission */}
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.CATEGORIES_VIEW]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/admin/categories"
+                      element={<CategoriesPage />}
+                    />
+                  </Route>
                   {/* Action logs - requires action-logs:view permission */}
                   <Route
                     element={
@@ -259,6 +274,18 @@ function App() {
                     <Route
                       path="/admin/settings"
                       element={<SettingsManagementPage />}
+                    />
+                  </Route>
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.LICENSE_VIEW]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/admin/license"
+                      element={<LicensePage />}
                     />
                   </Route>
                   <Route

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -86,6 +87,7 @@ const TRANSITION_BUTTON_STYLES: Record<string, string> = {
 };
 
 export const GoalDetailPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
@@ -117,6 +119,7 @@ export const GoalDetailPage: React.FC = () => {
     baseline_value: 0,
     target_value: 100,
     weight: 1,
+    formula: "",
   });
 
   // ── Evidence filter (debounced via memo) ──────────
@@ -196,7 +199,7 @@ export const GoalDetailPage: React.FC = () => {
 
   const ownerName = goal?.owner
     ? `${goal.owner.first_name} ${goal.owner.last_name}`.trim()
-    : "Unassigned";
+    : t("goals.detail.unassigned");
 
   // ── Handlers ───────────────────────────────────────
   const handleTransition = async (nextStatus: GoalStatus) => {
@@ -220,7 +223,7 @@ export const GoalDetailPage: React.FC = () => {
 
   const handleCreateMetric = async () => {
     if (!id || !newMetric.name.trim()) {
-      toast.error("Metric name is required");
+      toast.error(t("goals.detail.metrics.nameRequired"));
       return;
     }
     try {
@@ -233,6 +236,7 @@ export const GoalDetailPage: React.FC = () => {
         baseline_value: 0,
         target_value: 100,
         weight: 1,
+        formula: "",
       });
     } catch {
       // Toast handled by hook
@@ -240,7 +244,7 @@ export const GoalDetailPage: React.FC = () => {
   };
 
   const handleDeleteMetric = async (metricId: string) => {
-    if (!window.confirm("Are you sure you want to delete this metric?")) return;
+    if (!window.confirm(t("goals.detail.deleteMetricConfirm"))) return;
     try {
       await deleteMetric.mutateAsync(metricId);
     } catch {
@@ -250,15 +254,14 @@ export const GoalDetailPage: React.FC = () => {
 
   const handleDeleteEvidence = useCallback(
     async (evidenceId: string) => {
-      if (!window.confirm("Are you sure you want to delete this evidence?"))
-        return;
+      if (!window.confirm(t("goals.detail.deleteEvidenceConfirm"))) return;
       try {
         await deleteEvidence.mutateAsync(evidenceId);
       } catch {
         // Toast handled by hook
       }
     },
-    [deleteEvidence],
+    [deleteEvidence, t],
   );
 
   // ── Loading / Error ────────────────────────────────
@@ -277,12 +280,12 @@ export const GoalDetailPage: React.FC = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
           <AlertTriangle className="w-12 h-12 mb-4 text-red-400" />
-          <p className="text-lg font-medium">Goal not found</p>
+          <p className="text-lg font-medium">{t("goals.notFound")}</p>
           <Link
             to="/goals"
             className="mt-4 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            Back to Goals
+            {t("goals.backToGoals")}
           </Link>
         </div>
       </div>
@@ -295,37 +298,37 @@ export const GoalDetailPage: React.FC = () => {
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
     {
       key: "overview",
-      label: "Overview",
+      label: t("goals.detail.tabs.overview"),
       icon: <Target className="w-4 h-4" />,
     },
     {
       key: "metrics",
-      label: "Metrics",
+      label: t("goals.detail.tabs.metrics"),
       icon: <BarChart3 className="w-4 h-4" />,
     },
     {
       key: "evidence",
-      label: "Evidence",
+      label: t("goals.detail.tabs.evidence"),
       icon: <FileText className="w-4 h-4" />,
     },
     {
       key: "collaborators",
-      label: "Collaborators",
+      label: t("goals.detail.tabs.collaborators"),
       icon: <Users className="w-4 h-4" />,
     },
     {
       key: "check-ins",
-      label: "Check-ins",
+      label: t("goals.detail.tabs.checkIns"),
       icon: <ClipboardCheck className="w-4 h-4" />,
     },
     {
       key: "comments",
-      label: "Comments",
+      label: t("goals.detail.tabs.comments"),
       icon: <MessageSquare className="w-4 h-4" />,
     },
     {
       key: "activity",
-      label: "Activity",
+      label: t("goals.detail.tabs.activity"),
       icon: <History className="w-4 h-4" />,
     },
   ];
@@ -339,12 +342,12 @@ export const GoalDetailPage: React.FC = () => {
           to="/goals"
           className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Goals
+          <ArrowLeft className="w-4 h-4 rtl:-rotate-180" />
+          {t("goals.title")}
         </Link>
         {goal?.parent_goal && (
           <>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 rtl:-rotate-180" />
             <Link
               to={`/goals/${goal.parent_goal.id}`}
               className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
@@ -368,7 +371,7 @@ export const GoalDetailPage: React.FC = () => {
             </div>
             {goal.category && (
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Category: {goal.category}
+                {t("goals.detail.categoryLabel", { name: goal.category })}
               </p>
             )}
           </div>
@@ -393,7 +396,7 @@ export const GoalDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
               >
                 <Copy className="w-4 h-4" />
-                Clone
+                {t("goals.detail.clone")}
               </button>
             )}
 
@@ -403,7 +406,7 @@ export const GoalDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 <Edit2 className="w-4 h-4" />
-                Edit
+                {t("common.edit")}
               </Link>
             )}
 
@@ -413,7 +416,7 @@ export const GoalDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete
+                {t("common.delete")}
               </button>
             )}
           </div>
@@ -429,27 +432,27 @@ export const GoalDetailPage: React.FC = () => {
                 <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Delete Goal
+                {t("goals.detail.deleteTitle")}
               </h3>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-              Are you sure you want to delete &ldquo;{goal.title}&rdquo;? This
-              action cannot be undone. All associated metrics, evidence, and
-              collaborators will be permanently removed.
+              {t("goals.detail.deleteConfirm", { title: goal.title })}
             </p>
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleteGoal.isPending}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
               >
-                {deleteGoal.isPending ? "Deleting..." : "Delete Goal"}
+                {deleteGoal.isPending
+                  ? t("goals.detail.deleting")
+                  : t("goals.detail.deleteTitle")}
               </button>
             </div>
           </div>
@@ -465,7 +468,7 @@ export const GoalDetailPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Owner
+                {t("goals.detail.overview.owner")}
               </p>
               <p className="text-sm font-medium text-slate-900 dark:text-white">
                 {ownerName}
@@ -479,7 +482,7 @@ export const GoalDetailPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Department
+                  {t("goals.detail.overview.department")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   {goal.department.name}
@@ -493,7 +496,7 @@ export const GoalDetailPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Target Date
+                {t("goals.detail.overview.targetDate")}
               </p>
               <p className="text-sm font-medium text-slate-900 dark:text-white">
                 {formatDate(goal.target_date)}
@@ -506,7 +509,7 @@ export const GoalDetailPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Progress
+                {t("goals.detail.overview.progress")}
               </p>
               <p className="text-sm font-medium text-slate-900 dark:text-white tabular-nums">
                 {Math.round(goal.progress)}%
@@ -545,34 +548,34 @@ export const GoalDetailPage: React.FC = () => {
           {/* Description */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Description
+              {t("goals.detail.overview.description")}
             </h2>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-              {goal.description || "No description provided."}
+              {goal.description || t("goals.detail.overview.noDescription")}
             </p>
           </div>
 
           {/* Metadata Grid */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Details
+              {t("goals.detail.overview.details")}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8">
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Status
+                  {t("goals.detail.overview.status")}
                 </p>
                 <GoalStatusBadge status={goal.status} />
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Priority
+                  {t("goals.detail.overview.priority")}
                 </p>
                 <GoalPriorityBadge priority={goal.priority} />
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Category
+                  {t("goals.detail.overview.category")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   {goal.category || "--"}
@@ -580,7 +583,7 @@ export const GoalDetailPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Owner
+                  {t("goals.detail.overview.owner")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   {ownerName}
@@ -589,7 +592,7 @@ export const GoalDetailPage: React.FC = () => {
               {goal.department && (
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                    Department
+                    {t("goals.detail.overview.department")}
                   </p>
                   <p className="text-sm font-medium text-slate-900 dark:text-white">
                     {goal.department.name}
@@ -598,7 +601,7 @@ export const GoalDetailPage: React.FC = () => {
               )}
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Start Date
+                  {t("goals.detail.overview.startDate")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   {formatDate(goal.start_date)}
@@ -606,7 +609,7 @@ export const GoalDetailPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Target Date
+                  {t("goals.detail.overview.targetDate")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   {formatDate(goal.target_date)}
@@ -614,7 +617,7 @@ export const GoalDetailPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Review Date
+                  {t("goals.detail.overview.reviewDate")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   {formatDate(goal.review_date)}
@@ -622,7 +625,7 @@ export const GoalDetailPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Evidence Count
+                  {t("goals.detail.overview.evidenceCount")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white tabular-nums">
                   {goal.evidence_count}
@@ -634,23 +637,32 @@ export const GoalDetailPage: React.FC = () => {
           {/* Timestamps */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Timeline
+              {t("goals.detail.overview.timeline")}
             </h2>
             <div className="flex items-center gap-8 text-sm text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>Created: {formatDate(goal.created_at)}</span>
+                <span>
+                  {t("goals.detail.overview.created", {
+                    date: formatDate(goal.created_at),
+                  })}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>Updated: {formatDate(goal.updated_at)}</span>
+                <span>
+                  {t("goals.detail.overview.updated", {
+                    date: formatDate(goal.updated_at),
+                  })}
+                </span>
               </div>
               {goal.created_by && (
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4" />
                   <span>
-                    Created by: {goal.created_by.first_name}{" "}
-                    {goal.created_by.last_name}
+                    {t("goals.detail.overview.createdBy", {
+                      name: `${goal.created_by.first_name} ${goal.created_by.last_name}`,
+                    })}
                   </span>
                 </div>
               )}
@@ -662,7 +674,9 @@ export const GoalDetailPage: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <GitBranch className="w-5 h-5" />
-                Child Goals ({goal.children?.length ?? 0})
+                {t("goals.detail.overview.childGoals", {
+                  count: goal.children?.length ?? 0,
+                })}
               </h2>
               {canEdit && (
                 <Link
@@ -670,7 +684,7 @@ export const GoalDetailPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Child
+                  {t("goals.detail.overview.addChild")}
                 </Link>
               )}
             </div>
@@ -688,7 +702,9 @@ export const GoalDetailPage: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Metrics ({goal.metrics?.length ?? 0})
+              {t("goals.detail.metrics.heading", {
+                count: goal.metrics?.length ?? 0,
+              })}
             </h2>
             {canEdit && (
               <button
@@ -696,7 +712,7 @@ export const GoalDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add Metric
+                {t("goals.detail.metrics.addMetric")}
               </button>
             )}
           </div>
@@ -705,12 +721,12 @@ export const GoalDetailPage: React.FC = () => {
           {showAddMetric && (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">
-                New Metric
+                {t("goals.detail.metrics.newMetric")}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Name *
+                    {t("goals.detail.metrics.nameLabel")}
                   </label>
                   <input
                     type="text"
@@ -718,13 +734,13 @@ export const GoalDetailPage: React.FC = () => {
                     onChange={(e) =>
                       setNewMetric({ ...newMetric, name: e.target.value })
                     }
-                    placeholder="e.g., Revenue Target"
+                    placeholder={t("goals.detail.metrics.namePlaceholder")}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Type
+                    {t("goals.detail.metrics.typeLabel")}
                   </label>
                   <select
                     value={newMetric.metric_type}
@@ -745,7 +761,7 @@ export const GoalDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Unit
+                    {t("goals.detail.metrics.unitLabel")}
                   </label>
                   <input
                     type="text"
@@ -753,13 +769,13 @@ export const GoalDetailPage: React.FC = () => {
                     onChange={(e) =>
                       setNewMetric({ ...newMetric, unit: e.target.value })
                     }
-                    placeholder="e.g., %, USD, items"
+                    placeholder={t("goals.detail.metrics.unitPlaceholder")}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Baseline Value
+                    {t("goals.detail.metrics.baselineLabel")}
                   </label>
                   <input
                     type="number"
@@ -775,7 +791,7 @@ export const GoalDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Target Value *
+                    {t("goals.detail.metrics.targetValueLabel")}
                   </label>
                   <input
                     type="number"
@@ -791,7 +807,7 @@ export const GoalDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Weight
+                    {t("goals.detail.metrics.weightLabel")}
                   </label>
                   <input
                     type="number"
@@ -808,19 +824,47 @@ export const GoalDetailPage: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Formula (optional) — computed value from sibling metrics.
+                  When set, the current value is derived automatically; manual
+                  value updates are ignored in favor of the formula. */}
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t("goals.detail.metrics.formulaLabel")}{" "}
+                  <span className="text-slate-400 font-normal">
+                    {t("goals.detail.metrics.formulaOptional")}
+                  </span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={newMetric.formula ?? ""}
+                  onChange={(e) =>
+                    setNewMetric({ ...newMetric, formula: e.target.value })
+                  }
+                  placeholder={t("goals.detail.metrics.formulaPlaceholder")}
+                  className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Reference other metrics with <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">{`\${metric_name}`}</code>.
+                  Helpers: <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">min</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">max</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">abs</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">round</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">pow</code>.
+                </p>
+              </div>
+
               <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
                 <button
                   onClick={() => setShowAddMetric(false)}
                   className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={handleCreateMetric}
                   disabled={createMetric.isPending || !newMetric.name.trim()}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                  {createMetric.isPending ? "Creating..." : "Create Metric"}
+                  {createMetric.isPending
+                    ? t("goals.detail.metrics.creating")
+                    : t("goals.detail.metrics.create")}
                 </button>
               </div>
             </div>
@@ -843,7 +887,7 @@ export const GoalDetailPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">
               <BarChart3 className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                No metrics defined yet.
+                {t("goals.detail.metrics.empty")}
               </p>
               {canEdit && (
                 <button
@@ -851,7 +895,7 @@ export const GoalDetailPage: React.FC = () => {
                   className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Add First Metric
+                  {t("goals.detail.metrics.addFirst")}
                 </button>
               )}
             </div>
@@ -875,14 +919,16 @@ export const GoalDetailPage: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Evidence ({evidenceData?.total ?? 0})
+              {t("goals.detail.evidence.heading", {
+                count: evidenceData?.total ?? 0,
+              })}
             </h2>
             <button
               onClick={() => setShowEvidenceUpload(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <Upload className="w-4 h-4" />
-              Upload Evidence
+              {t("goals.detail.evidence.upload")}
             </button>
           </div>
 
@@ -891,13 +937,13 @@ export const GoalDetailPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Search */}
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={evidenceSearch}
                   onChange={(e) => setEvidenceSearch(e.target.value)}
-                  placeholder="Search by title or file name..."
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={t("goals.detail.evidence.searchPlaceholder")}
+                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               {/* Type filter */}
@@ -908,7 +954,7 @@ export const GoalDetailPage: React.FC = () => {
                 }
                 className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Types</option>
+                <option value="">{t("goals.detail.evidence.allTypes")}</option>
                 {EVIDENCE_TYPE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -921,14 +967,30 @@ export const GoalDetailPage: React.FC = () => {
                 onChange={(e) => setEvidenceStatusFilter(e.target.value)}
                 className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Statuses</option>
-                <option value="draft">Draft</option>
-                <option value="submitted">Submitted</option>
-                <option value="l1_review">L1 Review</option>
-                <option value="l2_review">L2 Review</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="changes_requested">Changes Requested</option>
+                <option value="">
+                  {t("goals.detail.evidence.allStatuses")}
+                </option>
+                <option value="draft">
+                  {t("goals.detail.evidence.statusDraft")}
+                </option>
+                <option value="submitted">
+                  {t("goals.detail.evidence.statusSubmitted")}
+                </option>
+                <option value="l1_review">
+                  {t("goals.detail.evidence.statusL1Review")}
+                </option>
+                <option value="l2_review">
+                  {t("goals.detail.evidence.statusL2Review")}
+                </option>
+                <option value="approved">
+                  {t("goals.detail.evidence.statusApproved")}
+                </option>
+                <option value="rejected">
+                  {t("goals.detail.evidence.statusRejected")}
+                </option>
+                <option value="changes_requested">
+                  {t("goals.detail.evidence.statusChangesRequested")}
+                </option>
               </select>
             </div>
           </div>
@@ -954,8 +1016,8 @@ export const GoalDetailPage: React.FC = () => {
               <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {evidenceSearch || evidenceTypeFilter || evidenceStatusFilter
-                  ? "No evidence matches your filters."
-                  : "No evidence uploaded yet."}
+                  ? t("goals.detail.evidence.noneMatching")
+                  : t("goals.detail.evidence.empty")}
               </p>
               {!evidenceSearch &&
                 !evidenceTypeFilter &&
@@ -965,7 +1027,7 @@ export const GoalDetailPage: React.FC = () => {
                     className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     <Upload className="w-4 h-4" />
-                    Upload First Evidence
+                    {t("goals.detail.evidence.uploadFirst")}
                   </button>
                 )}
             </div>
@@ -986,7 +1048,7 @@ export const GoalDetailPage: React.FC = () => {
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Collaborators
+              {t("goals.detail.collaborators.heading")}
             </h2>
             <CollaboratorPicker
               goalId={id!}
@@ -1026,7 +1088,7 @@ export const GoalDetailPage: React.FC = () => {
                       ? (checkInId) => {
                           if (
                             window.confirm(
-                              "Are you sure you want to delete this check-in?",
+                              t("goals.detail.deleteCheckInConfirm"),
                             )
                           ) {
                             deleteCheckIn.mutate(checkInId);
@@ -1048,11 +1110,13 @@ export const GoalDetailPage: React.FC = () => {
                     disabled={checkInPage <= 1}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
-                    Previous
+                    {t("common.previous")}
                   </button>
                   <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-                    Page {checkInPage} of{" "}
-                    {Math.ceil(checkInData.total / 10)}
+                    {t("goals.pageOf", {
+                      current: checkInPage,
+                      total: Math.ceil(checkInData.total / 10),
+                    })}
                   </span>
                   <button
                     onClick={() => setCheckInPage((p) => p + 1)}
@@ -1061,7 +1125,7 @@ export const GoalDetailPage: React.FC = () => {
                     }
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
-                    Next
+                    {t("common.next")}
                   </button>
                 </div>
               )}
@@ -1070,7 +1134,7 @@ export const GoalDetailPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">
               <ClipboardCheck className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                No check-ins yet. Submit your first progress update above.
+                {t("goals.detail.checkIns.empty")}
               </p>
             </div>
           )}
@@ -1083,13 +1147,13 @@ export const GoalDetailPage: React.FC = () => {
           {/* Add Comment */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Add Comment
+              {t("goals.detail.comments.addHeading")}
             </h2>
             <div className="space-y-3">
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
+                placeholder={t("goals.detail.comments.placeholder")}
                 rows={3}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
@@ -1097,7 +1161,7 @@ export const GoalDetailPage: React.FC = () => {
                 <button
                   onClick={async () => {
                     if (!commentText.trim()) {
-                      toast.error("Comment cannot be empty");
+                      toast.error(t("goals.detail.comments.cannotBeEmpty"));
                       return;
                     }
                     try {
@@ -1114,7 +1178,9 @@ export const GoalDetailPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
-                  {addComment.isPending ? "Posting..." : "Add Comment"}
+                  {addComment.isPending
+                    ? t("goals.detail.comments.posting")
+                    : t("goals.detail.comments.submit")}
                 </button>
               </div>
             </div>
@@ -1130,18 +1196,22 @@ export const GoalDetailPage: React.FC = () => {
               {(commentData?.data ?? []).map((comment) => {
                 const authorName = comment.author
                   ? `${comment.author.first_name} ${comment.author.last_name}`.trim()
-                  : "Unknown";
+                  : t("goals.detail.comments.unknown");
                 const initial = authorName.charAt(0).toUpperCase();
                 const isOwn = comment.author?.id === user?.id;
                 const relativeTime = (() => {
                   const diff = Date.now() - new Date(comment.created_at).getTime();
                   const mins = Math.floor(diff / 60000);
-                  if (mins < 1) return "just now";
-                  if (mins < 60) return `${mins}m ago`;
+                  if (mins < 1) return t("goals.detail.comments.justNow");
+                  if (mins < 60)
+                    return t("goals.detail.comments.minutesAgo", {
+                      count: mins,
+                    });
                   const hrs = Math.floor(mins / 60);
-                  if (hrs < 24) return `${hrs}h ago`;
+                  if (hrs < 24)
+                    return t("goals.detail.comments.hoursAgo", { count: hrs });
                   const days = Math.floor(hrs / 24);
-                  return `${days}d ago`;
+                  return t("goals.detail.comments.daysAgo", { count: days });
                 })();
 
                 return (
@@ -1170,14 +1240,15 @@ export const GoalDetailPage: React.FC = () => {
                               onClick={() => {
                                 if (
                                   window.confirm(
-                                    "Are you sure you want to delete this comment?",
+                                    t("goals.detail.deleteCommentConfirm"),
                                   )
                                 ) {
                                   deleteComment.mutate(comment.id);
                                 }
                               }}
                               className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                              title="Delete comment"
+                              title={t("goals.detail.comments.deleteTitle")}
+                              aria-label={t("goals.detail.comments.deleteTitle")}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1202,11 +1273,13 @@ export const GoalDetailPage: React.FC = () => {
                     disabled={commentPage <= 1}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
-                    Previous
+                    {t("common.previous")}
                   </button>
                   <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-                    Page {commentPage} of{" "}
-                    {Math.ceil(commentData.total / 20)}
+                    {t("goals.pageOf", {
+                      current: commentPage,
+                      total: Math.ceil(commentData.total / 20),
+                    })}
                   </span>
                   <button
                     onClick={() => setCommentPage((p) => p + 1)}
@@ -1215,7 +1288,7 @@ export const GoalDetailPage: React.FC = () => {
                     }
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
-                    Next
+                    {t("common.next")}
                   </button>
                 </div>
               )}
@@ -1224,7 +1297,7 @@ export const GoalDetailPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                No comments yet. Start the conversation above.
+                {t("goals.detail.comments.empty")}
               </p>
             </div>
           )}
@@ -1241,7 +1314,7 @@ export const GoalDetailPage: React.FC = () => {
           ) : (activityData?.data ?? []).length > 0 ? (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">
-                Activity Timeline
+                {t("goals.detail.activity.heading")}
               </h2>
               <div className="relative">
                 {/* Timeline line */}
@@ -1266,7 +1339,7 @@ export const GoalDetailPage: React.FC = () => {
                       actionColors.view;
                     const userName = entry.user
                       ? `${entry.user.first_name} ${entry.user.last_name}`.trim()
-                      : "System";
+                      : t("goals.detail.activity.system");
                     const timestamp = new Date(
                       entry.created_at,
                     ).toLocaleString("en-US", {
@@ -1318,11 +1391,13 @@ export const GoalDetailPage: React.FC = () => {
                     disabled={activityPage <= 1}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
-                    Previous
+                    {t("common.previous")}
                   </button>
                   <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-                    Page {activityPage} of{" "}
-                    {Math.ceil(activityData.total / 20)}
+                    {t("goals.pageOf", {
+                      current: activityPage,
+                      total: Math.ceil(activityData.total / 20),
+                    })}
                   </span>
                   <button
                     onClick={() => setActivityPage((p) => p + 1)}
@@ -1331,7 +1406,7 @@ export const GoalDetailPage: React.FC = () => {
                     }
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
-                    Next
+                    {t("common.next")}
                   </button>
                 </div>
               )}
@@ -1340,7 +1415,7 @@ export const GoalDetailPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">
               <History className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                No activity recorded yet.
+                {t("goals.detail.activity.empty")}
               </p>
             </div>
           )}

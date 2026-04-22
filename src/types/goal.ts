@@ -59,6 +59,7 @@ export interface Goal {
   title: string;
   description: string;
   category: string;
+  category_id?: string | null;
   priority: GoalPriority;
   status: GoalStatus;
   owner_id: string;
@@ -95,6 +96,7 @@ export interface GoalMetric {
   current_value: number;
   target_value: number;
   weight: number;
+  formula?: string;
   progress: number;
   created_at: string;
   updated_at: string;
@@ -259,7 +261,10 @@ export interface GoalActivityListResponse {
 export interface GoalCreateRequest {
   title: string;
   description?: string;
+  /** Legacy free-text category (kept for backward compatibility). */
   category?: string;
+  /** Preferred: uuid of a Category in the hierarchy. */
+  category_id?: string;
   priority: GoalPriority;
   owner_id: string;
   department_id?: string;
@@ -273,7 +278,10 @@ export interface GoalCreateRequest {
 export interface GoalUpdateRequest {
   title?: string;
   description?: string;
+  /** Legacy free-text category (kept for backward compatibility). */
   category?: string;
+  /** Preferred: uuid of a Category in the hierarchy. */
+  category_id?: string;
   priority?: GoalPriority;
   owner_id?: string;
   department_id?: string;
@@ -323,6 +331,7 @@ export interface GoalMetricCreateRequest {
   current_value?: number;
   target_value: number;
   weight?: number;
+  formula?: string;
 }
 
 export interface GoalMetricUpdateRequest {
@@ -332,6 +341,7 @@ export interface GoalMetricUpdateRequest {
   baseline_value?: number;
   target_value?: number;
   weight?: number;
+  formula?: string;
 }
 
 export interface MetricValueUpdateRequest {
