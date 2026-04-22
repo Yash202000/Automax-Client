@@ -8,6 +8,7 @@ import { Mail, Lock, ArrowRight } from "lucide-react";
 import { Button, Input, Checkbox } from "../ui";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../stores/authStore";
+import type { User } from "../../types";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -23,6 +24,7 @@ export const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const setUser = useAuthStore((state) => state.setUser);
 
   const {
     register,
@@ -42,12 +44,23 @@ export const LoginForm: React.FC = () => {
         remember_me: rememberMe,
       });
       if (response.success && response.data) {
+        // Store token + slim user so subsequent API calls are authenticated
         setAuth(
-          response.data.user,
+          response.data.user as unknown as User,
           response.data.token,
           response.data.refresh_token,
           rememberMe,
         );
+        // Fetch full profile (departments, locations, classifications, role permissions)
+        // and upgrade the stored user object in the background before navigating
+        try {
+          const profileResp = await authApi.getProfile();
+          if (profileResp.success && profileResp.data) {
+            setUser(profileResp.data);
+          }
+        } catch {
+          // Non-fatal — the app works with the slim user; full data loads on next /users/me call
+        }
         navigate("/dashboard");
       } else {
         setError(response.error || "Login failed. Please try again.");

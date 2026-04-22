@@ -284,10 +284,43 @@ export interface PaginatedResponse<T> {
 }
 
 // Auth types
+
+/** Slim role returned by POST /auth/login — no nested permissions. */
+export interface RoleBasic {
+  id: string;
+  name: string;
+  code: string;
+  is_system: boolean;
+  is_active: boolean;
+}
+
+/** Slim user returned by POST /auth/login. Call GET /users/me for the full object. */
+export interface UserLoginResponse {
+  id: string;
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  mobile_verified: boolean;
+  avatar: string;
+  department_id: string | null;
+  location_id: string | null;
+  roles: RoleBasic[];
+  permissions: string[];
+  is_active: boolean;
+  is_super_admin: boolean;
+  extension?: string;
+  call_status?: string;
+  last_login_at: string | null;
+  created_at: string;
+}
+
 export interface AuthResponse {
-  user: User;
+  user: UserLoginResponse;
   token: string;
   refresh_token?: string;
+  expires_in?: number;
 }
 
 export interface LoginRequest {
