@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { X, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import type {
   AvailableTransition,
@@ -25,6 +26,7 @@ export const EvidenceTransitionModal: React.FC<
   isOpen,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [selectedTransitionId, setSelectedTransitionId] = useState<
     string | null
   >(null);
@@ -75,9 +77,9 @@ export const EvidenceTransitionModal: React.FC<
     onClose();
   };
 
-  const getTransitionColor = (t: AvailableTransition) => {
-    if (t.transition.is_rejection) return "red";
-    const code = t.transition.code;
+  const getTransitionColor = (tr: AvailableTransition) => {
+    if (tr.transition.is_rejection) return "red";
+    const code = tr.transition.code;
     if (code.startsWith("approve") || code === "approve_l1_final")
       return "green";
     if (code.startsWith("request_changes")) return "amber";
@@ -121,7 +123,7 @@ export const EvidenceTransitionModal: React.FC<
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700/60">
           <div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Transition Evidence
+              {t("goals.components.evidence.transitionModal.title")}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[300px]">
               {evidenceTitle}
@@ -130,6 +132,7 @@ export const EvidenceTransitionModal: React.FC<
           <button
             onClick={handleClose}
             className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -141,7 +144,7 @@ export const EvidenceTransitionModal: React.FC<
             <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <p className="text-sm text-amber-700 dark:text-amber-300">
-                No transitions available for this evidence in its current state.
+                {t("goals.components.evidence.transitionModal.noTransitions")}
               </p>
             </div>
           ) : (
@@ -149,27 +152,30 @@ export const EvidenceTransitionModal: React.FC<
               {/* Transition Buttons */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                  Choose Action
+                  {t("goals.components.evidence.transitionModal.chooseAction")}
                 </label>
                 <div
                   className={`grid gap-3 ${executableTransitions.length <= 3 ? `grid-cols-${executableTransitions.length}` : "grid-cols-2"}`}
                 >
-                  {executableTransitions.map((t) => {
-                    const color = getTransitionColor(t);
-                    const isSelected = selectedTransitionId === t.transition.id;
+                  {executableTransitions.map((tr) => {
+                    const color = getTransitionColor(tr);
+                    const isSelected =
+                      selectedTransitionId === tr.transition.id;
                     return (
                       <button
-                        key={t.transition.id}
+                        key={tr.transition.id}
                         type="button"
-                        onClick={() => setSelectedTransitionId(t.transition.id)}
+                        onClick={() =>
+                          setSelectedTransitionId(tr.transition.id)
+                        }
                         className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           isSelected
                             ? colorClasses[color].selected
                             : colorClasses[color].default
                         }`}
                       >
-                        <ArrowRight className="w-4 h-4" />
-                        {t.transition.name}
+                        <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
+                        {tr.transition.name}
                       </button>
                     );
                   })}
@@ -183,12 +189,14 @@ export const EvidenceTransitionModal: React.FC<
                     htmlFor="transition-comment"
                     className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                   >
-                    Comment{" "}
+                    {t("common.comment")}{" "}
                     {commentRequired ? (
                       <span className="text-red-500">*</span>
                     ) : (
                       <span className="text-slate-400 font-normal">
-                        (optional)
+                        {t(
+                          "goals.components.evidence.transitionModal.commentOptional",
+                        )}
                       </span>
                     )}
                   </label>
@@ -201,8 +209,12 @@ export const EvidenceTransitionModal: React.FC<
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                     placeholder={
                       commentRequired
-                        ? "Please provide a reason..."
-                        : "Add a comment..."
+                        ? t(
+                            "goals.components.evidence.transitionModal.reasonPlaceholder",
+                          )
+                        : t(
+                            "goals.components.evidence.transitionModal.commentPlaceholder",
+                          )
                     }
                   />
                 </div>
@@ -218,7 +230,7 @@ export const EvidenceTransitionModal: React.FC<
               disabled={executeTransition.isPending}
               className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             {executableTransitions.length > 0 && (
               <button
@@ -234,7 +246,9 @@ export const EvidenceTransitionModal: React.FC<
                 {executeTransition.isPending && (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 )}
-                {executeTransition.isPending ? "Processing..." : "Confirm"}
+                {executeTransition.isPending
+                  ? t("goals.components.evidence.transitionModal.processing")
+                  : t("goals.components.evidence.transitionModal.confirm")}
               </button>
             )}
           </div>

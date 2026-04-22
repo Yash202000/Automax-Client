@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ClipboardCheck,
   Clock,
@@ -32,13 +33,6 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-const getUserName = (item: ApprovalListItem): string => {
-  if (item.submitted_by) {
-    return `${item.submitted_by.first_name} ${item.submitted_by.last_name}`.trim();
-  }
-  return "Unknown";
-};
-
 // ── Sub-components (outside render) ────────────────────
 
 const ApprovalPagination: React.FC<{
@@ -48,6 +42,7 @@ const ApprovalPagination: React.FC<{
   limit: number;
   onPageChange: (page: number) => void;
 }> = ({ page, totalPages, total, limit, onPageChange }) => {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
 
   const startItem = (page - 1) * limit + 1;
@@ -56,7 +51,7 @@ const ApprovalPagination: React.FC<{
   return (
     <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700/60">
       <p className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-        Showing {startItem} - {endItem} of {total}
+        {t("goals.approvals.showing", { from: startItem, to: endItem, total })}
       </p>
       <div className="flex items-center gap-2">
         <button
@@ -64,19 +59,19 @@ const ApprovalPagination: React.FC<{
           disabled={page <= 1}
           className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="w-4 h-4" />
-          Previous
+          <ChevronLeft className="w-4 h-4 rtl:-rotate-180" />
+          {t("goals.approvals.previous")}
         </button>
         <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums px-2">
-          Page {page} of {totalPages}
+          {t("goals.approvals.pageOf", { current: page, total: totalPages })}
         </span>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Next
-          <ChevronRight className="w-4 h-4" />
+          {t("goals.approvals.next")}
+          <ChevronRight className="w-4 h-4 rtl:-rotate-180" />
         </button>
       </div>
     </div>
@@ -99,65 +94,72 @@ const LoadingState: React.FC = () => (
 const PendingRow: React.FC<{
   item: ApprovalListItem;
   onReview: (item: ApprovalListItem) => void;
-}> = ({ item, onReview }) => (
-  <tr className="border-b border-slate-100 dark:border-slate-700/40 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-    <td className="px-4 py-3">
-      <Link
-        to={`/goals/${item.goal_id}`}
-        className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-      >
-        {item.goal_title}
-      </Link>
-      <div className="mt-0.5">
-        <GoalPriorityBadge priority={item.goal_priority} />
-      </div>
-    </td>
-    <td className="px-4 py-3">
-      <div className="flex items-center gap-2">
-        <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
-        <span className="text-sm text-slate-700 dark:text-slate-300">
-          {item.evidence_title}
+  getUserName: (item: ApprovalListItem) => string;
+}> = ({ item, onReview, getUserName }) => {
+  const { t } = useTranslation();
+  return (
+    <tr className="border-b border-slate-100 dark:border-slate-700/40 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+      <td className="px-4 py-3">
+        <Link
+          to={`/goals/${item.goal_id}`}
+          className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+        >
+          {item.goal_title}
+        </Link>
+        <div className="mt-0.5">
+          <GoalPriorityBadge priority={item.goal_priority} />
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          <span className="text-sm text-slate-700 dark:text-slate-300">
+            {item.evidence_title}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          <span className="text-sm text-slate-700 dark:text-slate-300">
+            {getUserName(item)}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+          style={{
+            backgroundColor: `${item.state_color}20`,
+            color: item.state_color,
+            border: `1px solid ${item.state_color}40`,
+          }}
+        >
+          {item.state_name}
         </span>
-      </div>
-    </td>
-    <td className="px-4 py-3">
-      <div className="flex items-center gap-2">
-        <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
-        <span className="text-sm text-slate-700 dark:text-slate-300">
-          {getUserName(item)}
+      </td>
+      <td className="px-4 py-3">
+        <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+          {formatDate(item.created_at)}
         </span>
-      </div>
-    </td>
-    <td className="px-4 py-3">
-      <span
-        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-        style={{
-          backgroundColor: `${item.state_color}20`,
-          color: item.state_color,
-          border: `1px solid ${item.state_color}40`,
-        }}
-      >
-        {item.state_name}
-      </span>
-    </td>
-    <td className="px-4 py-3">
-      <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-        {formatDate(item.created_at)}
-      </span>
-    </td>
-    <td className="px-4 py-3">
-      <button
-        onClick={() => onReview(item)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
-      >
-        <Eye className="w-3.5 h-3.5" />
-        Review
-      </button>
-    </td>
-  </tr>
-);
+      </td>
+      <td className="px-4 py-3">
+        <button
+          onClick={() => onReview(item)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          {t("goals.approvals.review")}
+        </button>
+      </td>
+    </tr>
+  );
+};
 
-const CompletedRow: React.FC<{ item: ApprovalListItem }> = ({ item }) => (
+const CompletedRow: React.FC<{
+  item: ApprovalListItem;
+  getUserName: (item: ApprovalListItem) => string;
+}> = ({ item, getUserName }) => (
   <tr className="border-b border-slate-100 dark:border-slate-700/40 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
     <td className="px-4 py-3">
       <Link
@@ -209,7 +211,15 @@ const CompletedRow: React.FC<{ item: ApprovalListItem }> = ({ item }) => (
 // ── Main Component ─────────────────────────────────────
 
 export const GoalApprovalsPage: React.FC = () => {
+  const { t } = useTranslation();
   useGoalListWebSocket();
+
+  const getUserName = (item: ApprovalListItem): string => {
+    if (item.submitted_by) {
+      return `${item.submitted_by.first_name} ${item.submitted_by.last_name}`.trim();
+    }
+    return t("goals.approvals.unknown");
+  };
 
   // ── State ──────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabType>("pending");
@@ -253,13 +263,13 @@ export const GoalApprovalsPage: React.FC = () => {
   }[] = [
     {
       key: "pending",
-      label: "Pending",
+      label: t("goals.approvals.tabPending"),
       icon: <Clock className="w-4 h-4" />,
       count: pendingTotal,
     },
     {
       key: "completed",
-      label: "Completed",
+      label: t("goals.approvals.tabCompleted"),
       icon: <CheckCircle2 className="w-4 h-4" />,
       count: completedTotal,
     },
@@ -273,17 +283,17 @@ export const GoalApprovalsPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ClipboardCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            Goal Approvals
+            {t("goals.approvals.title")}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Review and manage evidence approval requests
+            {t("goals.approvals.subtitle")}
           </p>
         </div>
       </div>
 
       {/* ── Tabs ──────────────────────────────────── */}
       <div className="border-b border-slate-200 dark:border-slate-700/60">
-        <nav className="flex gap-1 -mb-px" aria-label="Approval tabs">
+        <nav className="flex gap-1 -mb-px" aria-label={t("goals.approvals.title")}>
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -298,7 +308,7 @@ export const GoalApprovalsPage: React.FC = () => {
               {tab.label}
               {tab.count > 0 && (
                 <span
-                  className={`ml-1 px-1.5 py-0.5 rounded-full text-xs font-medium tabular-nums ${
+                  className={`ms-1 px-1.5 py-0.5 rounded-full text-xs font-medium tabular-nums ${
                     activeTab === tab.key
                       ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                       : "bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400"
@@ -318,30 +328,30 @@ export const GoalApprovalsPage: React.FC = () => {
           {pendingLoading ? (
             <LoadingState />
           ) : pendingApprovals.length === 0 ? (
-            <EmptyState message="No pending approvals. You're all caught up!" />
+            <EmptyState message={t("goals.approvals.emptyPending")} />
           ) : (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/50">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Goal
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.goal")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Evidence
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.evidence")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Submitted By
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.submittedBy")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        State
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.state")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Date
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.date")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Actions
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.actions")}
                       </th>
                     </tr>
                   </thead>
@@ -351,6 +361,7 @@ export const GoalApprovalsPage: React.FC = () => {
                         key={item.id}
                         item={item}
                         onReview={setReviewItem}
+                        getUserName={getUserName}
                       />
                     ))}
                   </tbody>
@@ -376,33 +387,37 @@ export const GoalApprovalsPage: React.FC = () => {
           {completedLoading ? (
             <LoadingState />
           ) : completedApprovals.length === 0 ? (
-            <EmptyState message="No completed approvals yet." />
+            <EmptyState message={t("goals.approvals.emptyCompleted")} />
           ) : (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/50">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Goal
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.goal")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Evidence
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.evidence")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Submitted By
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.submittedBy")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Result
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.result")}
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Date
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {t("goals.approvals.table.date")}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {completedApprovals.map((item) => (
-                      <CompletedRow key={item.id} item={item} />
+                      <CompletedRow
+                        key={item.id}
+                        item={item}
+                        getUserName={getUserName}
+                      />
                     ))}
                   </tbody>
                 </table>

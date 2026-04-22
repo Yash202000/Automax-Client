@@ -62,10 +62,16 @@ export const goalApi = {
     if (filter.root_only) params.append("root_only", "true");
     if (filter.category) params.append("category", filter.category);
     if (filter.search) params.append("search", filter.search);
-    if (filter.start_from) params.append("start_from", filter.start_from);
-    if (filter.start_to) params.append("start_to", filter.start_to);
-    if (filter.target_from) params.append("target_from", filter.target_from);
-    if (filter.target_to) params.append("target_to", filter.target_to);
+    const toStartOfDay = (d: string) => `${d}T00:00:00Z`;
+    const toEndOfDay = (d: string) => `${d}T23:59:59Z`;
+    if (filter.start_from)
+      params.append("start_from", toStartOfDay(filter.start_from));
+    if (filter.start_to)
+      params.append("start_to", toEndOfDay(filter.start_to));
+    if (filter.target_from)
+      params.append("target_from", toStartOfDay(filter.target_from));
+    if (filter.target_to)
+      params.append("target_to", toEndOfDay(filter.target_to));
     if (filter.sort_by) params.append("sort_by", filter.sort_by);
     if (filter.sort_order) params.append("sort_order", filter.sort_order);
 

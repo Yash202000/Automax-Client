@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Copy, Info } from "lucide-react";
 import type { Goal, GoalCloneRequest } from "../../types/goal";
 
@@ -17,7 +18,10 @@ export function GoalCloneModal({
   onClone,
   isLoading,
 }: GoalCloneModalProps) {
-  const [title, setTitle] = useState(`Copy of ${goal.title}`);
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(
+    t("goals.components.clone.copyOfPrefix", { title: goal.title }),
+  );
   const [startDate, setStartDate] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [reviewDate, setReviewDate] = useState("");
@@ -40,11 +44,12 @@ export function GoalCloneModal({
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
             <Copy className="h-5 w-5" />
-            Clone Goal
+            {t("goals.components.clone.title")}
           </h3>
           <button
             onClick={onClose}
             className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+            aria-label={t("common.close")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -52,17 +57,13 @@ export function GoalCloneModal({
 
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            Metrics and collaborators will be copied. Evidence, comments, and
-            activity history will not. The cloned goal will start in Draft
-            status with progress reset to 0%.
-          </span>
+          <span>{t("goals.components.clone.infoText")}</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Title
+              {t("goals.components.clone.titleLabel")}
             </label>
             <input
               type="text"
@@ -76,7 +77,7 @@ export function GoalCloneModal({
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Start Date
+                {t("goals.components.clone.startDate")}
               </label>
               <input
                 type="date"
@@ -87,7 +88,7 @@ export function GoalCloneModal({
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Target Date
+                {t("goals.components.clone.targetDate")}
               </label>
               <input
                 type="date"
@@ -98,7 +99,7 @@ export function GoalCloneModal({
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Review Date
+                {t("goals.components.clone.reviewDate")}
               </label>
               <input
                 type="date"
@@ -115,14 +116,16 @@ export function GoalCloneModal({
               onClick={onClose}
               className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={isLoading}
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {isLoading ? "Cloning..." : "Clone Goal"}
+              {isLoading
+                ? t("goals.components.clone.cloning")
+                : t("goals.components.clone.cloneGoal")}
             </button>
           </div>
         </form>

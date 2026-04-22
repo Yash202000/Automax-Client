@@ -1,6 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { GoalStatus } from "../../types/goal";
-import { GOAL_STATUS_LABELS } from "../../types/goal";
 
 interface GoalStatusBadgeProps {
   status: GoalStatus;
@@ -19,11 +19,12 @@ const STATUS_STYLES: Record<GoalStatus, string> = {
 };
 
 export const GoalStatusBadge: React.FC<GoalStatusBadgeProps> = ({ status }) => {
+  const { t } = useTranslation();
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}
     >
-      {GOAL_STATUS_LABELS[status]}
+      {t(`goals.components.badges.status.${status}`)}
     </span>
   );
 };

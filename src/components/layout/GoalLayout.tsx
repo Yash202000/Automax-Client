@@ -48,6 +48,8 @@ export const GoalLayout: React.FC = () => {
   const langRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canApprove = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_APPROVE);
+  const canManageReviews = canApprove;
+  const canAdminGoals = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_DELETE);
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -183,24 +185,26 @@ export const GoalLayout: React.FC = () => {
             )}
           </NavLink>
 
-          {/* Reviews */}
-          <NavLink
-            to="/goals/reviews"
-            onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) => navLinkClass(isActive)}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                )}
-                <ClipboardCheck size={20} className="flex-shrink-0" />
-                {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">Reviews</span>
-                )}
-              </>
-            )}
-          </NavLink>
+          {/* Reviews — review cycle administration, gated to approvers/admins */}
+          {canManageReviews && (
+            <NavLink
+              to="/goals/reviews"
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) => navLinkClass(isActive)}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                  )}
+                  <ClipboardCheck size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">Reviews</span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          )}
 
           {/* Approvals */}
           {canApprove && (
@@ -225,45 +229,52 @@ export const GoalLayout: React.FC = () => {
             </NavLink>
           )}
 
-          {/* Documents */}
-          <NavLink
-            to="/goals/documents"
-            onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) => navLinkClass(isActive)}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                )}
-                <FolderOpen size={20} className="flex-shrink-0" />
-                {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">Documents</span>
-                )}
-              </>
-            )}
-          </NavLink>
+          {/* Documents — workspace-wide DMS browser; contributors access their
+              goal-linked evidence via the goal detail page instead. */}
+          {canAdminGoals && (
+            <NavLink
+              to="/goals/documents"
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) => navLinkClass(isActive)}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                  )}
+                  <FolderOpen size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      Documents
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          )}
 
-          {/* Metric Imports */}
-          <NavLink
-            to="/goals/metric-batches"
-            onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) => navLinkClass(isActive)}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                )}
-                <FileSpreadsheet size={20} className="flex-shrink-0" />
-                {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">
-                    Metric Imports
-                  </span>
-                )}
-              </>
-            )}
-          </NavLink>
+          {/* Metric Imports — bulk admin operation */}
+          {canAdminGoals && (
+            <NavLink
+              to="/goals/metric-batches"
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) => navLinkClass(isActive)}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                  )}
+                  <FileSpreadsheet size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      Metric Imports
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          )}
 
           {/* Templates */}
           <NavLink

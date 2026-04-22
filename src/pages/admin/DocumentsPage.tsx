@@ -1,4 +1,5 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search,
   FolderOpen,
@@ -248,9 +249,10 @@ function FileDetailPanel({
   };
 
   const handleDownload = async () => {
-    const res = await documentApi.getDownloadUrl(file.uuid);
-    if (res.data?.url) {
-      window.open(res.data.url, "_blank");
+    try {
+      await documentApi.download(file.uuid, file.name);
+    } catch {
+      // Error toast is surfaced by the axios interceptor.
     }
   };
 
@@ -831,11 +833,54 @@ function TagFilterBar({
 // ──────────────────────────────────────────────────
 
 export function DocumentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [folderPath, setFolderPath] = useState<BreadcrumbItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<DmsFile | null>(null);
   const [searchTags, setSearchTags] = useState<Record<string, string>>({});
+
+  // Deep-link: ?file=<uuid> navigates into the file's parent folder and opens
+  // the file detail panel. Used by "Open in Documents" links from evidence
+  // cards so users can jump straight to a file's context without manually
+  // walking the folder tree.
+  const deepLinkFileId = searchParams.get("file");
+  useEffect(() => {
+    if (!deepLinkFileId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Fetch file info + folder chain in parallel.
+        const [infoRes, breadcrumbRes] = await Promise.all([
+          documentApi.getFileInfo(deepLinkFileId),
+          documentApi.getFileBreadcrumb(deepLinkFileId),
+        ]);
+        if (cancelled) return;
+        if (breadcrumbRes?.data?.breadcrumb) {
+          setFolderPath(
+            breadcrumbRes.data.breadcrumb.map((entry) => ({
+              id: entry.uuid,
+              name: entry.name,
+            })),
+          );
+        }
+        if (infoRes?.data) {
+          setSelectedFile(infoRes.data);
+        }
+      } catch {
+        // file not found or not accessible — silently ignore; user lands on root
+      }
+      if (!cancelled) {
+        const next = new URLSearchParams(searchParams);
+        next.delete("file");
+        setSearchParams(next, { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkFileId]);
 
   const currentParentId =
     folderPath.length > 0 ? folderPath[folderPath.length - 1].id : undefined;

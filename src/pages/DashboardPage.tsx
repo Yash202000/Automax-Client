@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/authStore";
 import { usePermissions } from "../hooks/usePermissions";
+import { useLicense } from "../hooks/useLicense";
 import { PERMISSIONS } from "../constants/permissions";
 import { applicationLinkApi } from "../api/applicationLinks";
 import { ssoApi } from "../api/sso";
@@ -34,6 +35,10 @@ interface NavigationCard {
   gradient: string;
   shadowColor: string;
   permissions: string[];
+  // Optional license feature code. If set and the feature is not licensed,
+  // the card is hidden. Undefined for cards that point at foundational
+  // modules (admin panel, etc.) which are always available.
+  licenseFeature?: string;
 }
 
 // Normalize stored image paths: "application-links/x.jpg" → "/application-links/x.jpg"
@@ -78,6 +83,7 @@ export const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { hasAnyPermission, hasPermission, isSuperAdmin } = usePermissions();
+  const { isFeatureLicensed, hasLicense } = useLicense();
   const [brokenImages, setBrokenImages] = React.useState<Set<string>>(
     new Set(),
   );
@@ -143,6 +149,7 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#5997F8] to-[#2968CC]",
       shadowColor: "shadow-blue-500/20",
       permissions: [PERMISSIONS.DASHBOARD_INCIDENTS],
+      licenseFeature: "incidents",
     },
     {
       title: t("dashboard.requestManagement", "Request Management"),
@@ -156,6 +163,8 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#73C54F] to-[#469822]",
       shadowColor: "shadow-emerald-500/20",
       permissions: [PERMISSIONS.DASHBOARD_REQUESTS],
+      // Requests are a record-type variant of incidents and share the feature code.
+      licenseFeature: "incidents",
     },
     {
       title: t("dashboard.complaintManagement", "Complaint Management"),
@@ -169,6 +178,7 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#EF9D39] to-[#C17B26]",
       shadowColor: "shadow-amber-600/20",
       permissions: [PERMISSIONS.DASHBOARD_COMPLAINTS],
+      licenseFeature: "complaints",
     },
     {
       title: t("dashboard.queryManagement", "Query Management"),
@@ -182,6 +192,7 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#DC68B2] to-[#B13283]",
       shadowColor: "shadow-violet-500/20",
       permissions: [PERMISSIONS.DASHBOARD_QUERIES],
+      licenseFeature: "queries",
     },
     {
       title: t("dashboard.workflowManagement"),
@@ -192,6 +203,7 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#5C39EF] to-[#3B22A2]",
       shadowColor: "shadow-rose-500/20",
       permissions: [PERMISSIONS.DASHBOARD_WORKFLOWS],
+      licenseFeature: "workflows",
     },
     {
       title: t("dashboard.reportsAnalytics"),
@@ -202,6 +214,7 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#5ABEAA] to-[#25A78E]",
       shadowColor: "shadow-orange-600/20",
       permissions: [PERMISSIONS.REPORTS_VIEW],
+      licenseFeature: "reports",
     },
     {
       title: t("dashboard.callCentreManagement"),
@@ -212,6 +225,7 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#EF5C39] to-[#9D3A22]",
       shadowColor: "shadow-orange-500/20",
       permissions: [PERMISSIONS.DASHBOARD_CALL_CENTRE],
+      licenseFeature: "call_centre",
     },
     {
       title: "Goal Management",
@@ -222,17 +236,26 @@ export const DashboardPage: React.FC = () => {
       gradient: "from-[#0EA5E9] to-[#0369A1]",
       shadowColor: "shadow-sky-500/20",
       permissions: [PERMISSIONS.DASHBOARD_GOALS],
+      licenseFeature: "goals",
     },
   ];
 
-  // Filter cards based on user permissions
-  const visibleCards = navigationCards.filter(
-    (card) =>
+  // Filter cards by permission AND license. Cards without a licenseFeature
+  // always pass the license check (admin panel, foundational modules).
+  // Super admins always see everything (useful for debugging license config).
+  const visibleCards = navigationCards.filter((card) => {
+    const permOk =
       isSuperAdmin ||
       !card.permissions ||
       card.permissions.length === 0 ||
-      hasAnyPermission(card.permissions),
-  );
+      hasAnyPermission(card.permissions);
+    if (!permOk) return false;
+    if (!card.licenseFeature) return true;
+    if (isSuperAdmin) return true;
+    // If license data hasn't loaded yet, show the card to avoid flicker.
+    if (!hasLicense) return true;
+    return isFeatureLicensed(card.licenseFeature);
+  });
 
   const handleAppLinkClick = async (appLink: ApplicationLink) => {
     if (appLink.sso_enabled) {

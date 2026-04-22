@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   FileSpreadsheet,
   Plus,
@@ -12,17 +13,6 @@ import { useMetricImportBatches } from "../../hooks/useGoals";
 import { MetricImportModal } from "../../components/goals/MetricImportModal";
 import type { MetricImportBatchFilter } from "../../types/goal";
 import { useGoalListWebSocket } from "../../lib/services/goalListWebSocket";
-
-// ── Status filter options ─────────────────────────────
-const STATUS_OPTIONS = [
-  { value: "", label: "All" },
-  { value: "Draft", label: "Draft" },
-  { value: "Submitted", label: "Submitted" },
-  { value: "In_Review", label: "In Review" },
-  { value: "Approved", label: "Approved" },
-  { value: "Rejected", label: "Rejected" },
-  { value: "Changes_Requested", label: "Changes Requested" },
-] as const;
 
 // ── Status badge color map ────────────────────────────
 const statusBadgeClasses: Record<string, string> = {
@@ -44,8 +34,6 @@ const getStatusBadgeClass = (status: string): string =>
   statusBadgeClasses[status] ??
   "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:border-slate-600";
 
-const formatStatusLabel = (status: string): string => status.replace(/_/g, " ");
-
 // ── Helpers ───────────────────────────────────────────
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString("en-US", {
@@ -54,16 +42,39 @@ const formatDate = (dateStr: string) =>
     year: "numeric",
   });
 
-const getUserName = (user?: {
-  first_name: string;
-  last_name: string;
-}): string =>
-  user ? `${user.first_name} ${user.last_name}`.trim() || "Unknown" : "—";
-
 // ── Main Component ────────────────────────────────────
 export const MetricImportBatchesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   useGoalListWebSocket();
+
+  // ── Status filter options (localized) ─────────────
+  const STATUS_OPTIONS: { value: string; label: string }[] = [
+    { value: "", label: t("goals.metricImport.statusAll") },
+    { value: "Draft", label: t("goals.metricImport.statusDraft") },
+    { value: "Submitted", label: t("goals.metricImport.statusSubmitted") },
+    { value: "In_Review", label: t("goals.metricImport.statusInReview") },
+    { value: "Approved", label: t("goals.metricImport.statusApproved") },
+    { value: "Rejected", label: t("goals.metricImport.statusRejected") },
+    {
+      value: "Changes_Requested",
+      label: t("goals.metricImport.statusChangesRequested"),
+    },
+  ];
+
+  const formatStatusLabel = (status: string): string => {
+    const opt = STATUS_OPTIONS.find((o) => o.value === status);
+    return opt ? opt.label : status.replace(/_/g, " ");
+  };
+
+  const getUserName = (user?: {
+    first_name: string;
+    last_name: string;
+  }): string =>
+    user
+      ? `${user.first_name} ${user.last_name}`.trim() ||
+        t("goals.metricImport.unknown")
+      : "—";
 
   // ── State ─────────────────────────────────────────
   const [page, setPage] = useState(1);
@@ -94,10 +105,10 @@ export const MetricImportBatchesPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <FileSpreadsheet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            Metric Imports
+            {t("goals.metricImport.title")}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage bulk metric import batches
+            {t("goals.metricImport.subtitle")}
           </p>
         </div>
         <button
@@ -105,13 +116,16 @@ export const MetricImportBatchesPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
-          New Import
+          {t("goals.metricImport.newImport")}
         </button>
       </div>
 
       {/* ── Status Filter Tabs ──────────────────── */}
       <div className="border-b border-slate-200 dark:border-slate-700/60">
-        <nav className="flex gap-1 -mb-px" aria-label="Status filter">
+        <nav
+          className="flex gap-1 -mb-px"
+          aria-label={t("goals.metricImport.statusFilter")}
+        >
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -141,8 +155,10 @@ export const MetricImportBatchesPage: React.FC = () => {
           <Inbox className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {statusFilter
-              ? `No batches with status "${formatStatusLabel(statusFilter)}".`
-              : 'No metric import batches yet. Click "New Import" to get started.'}
+              ? t("goals.metricImport.emptyWithFilter", {
+                  status: formatStatusLabel(statusFilter),
+                })
+              : t("goals.metricImport.empty")}
           </p>
         </div>
       ) : (
@@ -151,26 +167,26 @@ export const MetricImportBatchesPage: React.FC = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-700/50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Title
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.title")}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Status
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.status")}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Items
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.items")}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Goals
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.goals")}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Imported By
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.importedBy")}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Assigned To
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.assignedTo")}
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Created
+                  <th className="ltr:text-left rtl:text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("goals.metricImport.table.created")}
                   </th>
                 </tr>
               </thead>
@@ -231,8 +247,11 @@ export const MetricImportBatchesPage: React.FC = () => {
             <div className="px-4 py-3">
               <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700/60">
                 <p className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-                  Showing {(page - 1) * limit + 1} -{" "}
-                  {Math.min(page * limit, total)} of {total}
+                  {t("goals.metricImport.showing", {
+                    from: (page - 1) * limit + 1,
+                    to: Math.min(page * limit, total),
+                    total,
+                  })}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -240,19 +259,22 @@ export const MetricImportBatchesPage: React.FC = () => {
                     disabled={page <= 1}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
+                    <ChevronLeft className="w-4 h-4 rtl:-rotate-180" />
+                    {t("goals.metricImport.previous")}
                   </button>
                   <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums px-2">
-                    Page {page} of {totalPages}
+                    {t("goals.metricImport.pageOf", {
+                      current: page,
+                      total: totalPages,
+                    })}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
+                    {t("goals.metricImport.next")}
+                    <ChevronRight className="w-4 h-4 rtl:-rotate-180" />
                   </button>
                 </div>
               </div>

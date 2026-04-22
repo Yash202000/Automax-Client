@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Send, ChevronDown, ChevronUp } from "lucide-react";
 import { CHECK_IN_STATUS_OPTIONS } from "../../types/goal";
 import type {
@@ -40,6 +41,7 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
   isPending,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<CheckInStatus>("on_track");
   const [content, setContent] = useState("");
   const [showMetrics, setShowMetrics] = useState(false);
@@ -94,13 +96,13 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
       className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-5"
     >
       <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">
-        New Check-in
+        {t("goals.components.checkIn.newCheckIn")}
       </h3>
 
       {/* Status selector */}
       <div className="mb-4">
         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-          How is this goal progressing?
+          {t("goals.components.checkIn.progressQuestion")}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {CHECK_IN_STATUS_OPTIONS.map((opt) => (
@@ -114,7 +116,7 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
                   : STATUS_BUTTON_STYLES[opt.value]
               }`}
             >
-              {opt.label}
+              {t(`goals.components.badges.checkIn.${opt.value}`)}
             </button>
           ))}
         </div>
@@ -123,12 +125,13 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
       {/* Content */}
       <div className="mb-4">
         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-          Update <span className="text-red-500">*</span>
+          {t("goals.components.checkIn.updateLabel")}{" "}
+          <span className="text-red-500">*</span>
         </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Describe progress, blockers, next steps..."
+          placeholder={t("goals.components.checkIn.updatePlaceholder")}
           rows={3}
           required
           className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -148,7 +151,9 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
             ) : (
               <ChevronDown className="w-4 h-4" />
             )}
-            Update Metrics ({metrics.length})
+            {t("goals.components.checkIn.updateMetricsToggle", {
+              count: metrics.length,
+            })}
           </button>
 
           {showMetrics && (
@@ -161,9 +166,11 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
                   <div className="sm:col-span-3">
                     <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
                       {metric.name}
-                      <span className="ml-2 text-slate-400 tabular-nums">
-                        (current: {metric.current_value} / target:{" "}
-                        {metric.target_value})
+                      <span className="ms-2 text-slate-400 tabular-nums">
+                        {t("goals.components.checkIn.metricCurrentTarget", {
+                          current: metric.current_value,
+                          target: metric.target_value,
+                        })}
                       </span>
                     </p>
                   </div>
@@ -175,7 +182,9 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
                       onChange={(e) =>
                         updateMetricField(metric.id, "value", e.target.value)
                       }
-                      placeholder="New value"
+                      placeholder={t(
+                        "goals.components.checkIn.newValuePlaceholder",
+                      )}
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -186,7 +195,9 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
                       onChange={(e) =>
                         updateMetricField(metric.id, "comment", e.target.value)
                       }
-                      placeholder="Comment (optional)"
+                      placeholder={t(
+                        "goals.components.checkIn.commentPlaceholder",
+                      )}
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -205,7 +216,9 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-4 h-4" />
-          {isPending ? "Submitting..." : "Submit Check-in"}
+          {isPending
+            ? t("goals.components.checkIn.submitting")
+            : t("goals.components.checkIn.submitCheckIn")}
         </button>
       </div>
     </form>

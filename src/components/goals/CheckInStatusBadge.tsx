@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { CheckInStatus } from "../../types/goal";
 
 interface CheckInStatusBadgeProps {
@@ -15,21 +16,15 @@ const STATUS_STYLES: Record<CheckInStatus, string> = {
     "bg-slate-200 text-slate-600 dark:bg-slate-600/50 dark:text-slate-400",
 };
 
-const STATUS_LABELS: Record<CheckInStatus, string> = {
-  on_track: "On Track",
-  at_risk: "At Risk",
-  behind: "Behind",
-  blocked: "Blocked",
-};
-
 export const CheckInStatusBadge: React.FC<CheckInStatusBadgeProps> = ({
   status,
 }) => {
+  const { t } = useTranslation();
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] ?? STATUS_STYLES.blocked}`}
     >
-      {STATUS_LABELS[status] ?? status}
+      {t(`goals.components.badges.checkIn.${status}`, { defaultValue: status })}
     </span>
   );
 };

@@ -1,10 +1,8 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { X, ArrowRightLeft, Loader2 } from "lucide-react";
 import type { Goal, GoalStatus, BulkActionResponse } from "../../types/goal";
-import {
-  VALID_GOAL_TRANSITIONS,
-  GOAL_STATUS_LABELS,
-} from "../../types/goal";
+import { VALID_GOAL_TRANSITIONS } from "../../types/goal";
 import { useBulkAction } from "../../hooks/useGoals";
 
 interface BulkTransitionModalProps {
@@ -18,6 +16,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   onClose,
   onComplete,
 }) => {
+  const { t } = useTranslation();
   const [targetStatus, setTargetStatus] = useState<GoalStatus | "">("");
   const [result, setResult] = useState<BulkActionResponse | null>(null);
   const bulkAction = useBulkAction();
@@ -55,11 +54,12 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Bulk Transition
+            {t("goals.components.bulk.transitionModal.title")}
           </h2>
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5 text-slate-500" />
           </button>
@@ -70,19 +70,23 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
           {!result ? (
             <>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Transition {selectedGoals.length} goal
-                {selectedGoals.length !== 1 ? "s" : ""} to a new status.
+                {selectedGoals.length === 1
+                  ? t("goals.components.bulk.transitionModal.introOne", {
+                      count: selectedGoals.length,
+                    })
+                  : t("goals.components.bulk.transitionModal.introMany", {
+                      count: selectedGoals.length,
+                    })}
               </p>
 
               {commonTransitions.length === 0 ? (
                 <p className="text-sm text-amber-600">
-                  No common valid transitions exist for the selected goals. They
-                  may be in different statuses.
+                  {t("goals.components.bulk.transitionModal.noCommonTransitions")}
                 </p>
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Target Status
+                    {t("goals.components.bulk.transitionModal.targetStatusLabel")}
                   </label>
                   <select
                     value={targetStatus}
@@ -91,10 +95,14 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                     }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white"
                   >
-                    <option value="">Select status...</option>
+                    <option value="">
+                      {t(
+                        "goals.components.bulk.transitionModal.selectStatusPlaceholder",
+                      )}
+                    </option>
                     {commonTransitions.map((s) => (
                       <option key={s} value={s}>
-                        {GOAL_STATUS_LABELS[s] || s}
+                        {t(`goals.components.badges.status.${s}`)}
                       </option>
                     ))}
                   </select>
@@ -104,7 +112,10 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
           ) : (
             <div className="space-y-2">
               <p className="text-sm font-medium text-slate-900 dark:text-white">
-                {result.success_count} succeeded, {result.failure_count} failed
+                {t("goals.components.bulk.transitionModal.resultSummary", {
+                  success: result.success_count,
+                  failed: result.failure_count,
+                })}
               </p>
               {result.results
                 .filter((r) => !r.success)
@@ -128,7 +139,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleConfirm}
@@ -144,7 +155,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 ) : (
                   <ArrowRightLeft className="w-4 h-4" />
                 )}
-                Transition
+                {t("goals.components.bulk.transition")}
               </button>
             </>
           ) : (
@@ -152,7 +163,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
-              Close
+              {t("common.close")}
             </button>
           )}
         </div>

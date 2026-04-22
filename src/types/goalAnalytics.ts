@@ -98,6 +98,7 @@ export interface OKRGoalNode {
   level: number;
   metric_summary: string;
   health: "on_track" | "at_risk" | "behind";
+  is_filtered_out?: boolean;
   children?: OKRGoalNode[];
 }
 

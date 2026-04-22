@@ -35,6 +35,13 @@ export const documentApi = {
     return res.data;
   },
 
+  getFileBreadcrumb: async (
+    fileId: string,
+  ): Promise<ApiResponse<{ breadcrumb: Array<{ uuid: string; name: string }> }>> => {
+    const res = await apiClient.get(`/documents/files/${fileId}/breadcrumb`);
+    return res.data;
+  },
+
   getPreviewUrl: async (
     fileId: string,
   ): Promise<ApiResponse<{ url: string }>> => {
@@ -42,11 +49,23 @@ export const documentApi = {
     return res.data;
   },
 
-  getDownloadUrl: async (
-    fileId: string,
-  ): Promise<ApiResponse<{ url: string }>> => {
-    const res = await apiClient.get(`/documents/files/${fileId}/download`);
-    return res.data;
+  // download triggers a blob download in the browser. The backend streams the
+  // file bytes with Content-Disposition: attachment. We turn that into a
+  // programmatic click on an <a download> so the user sees a native save
+  // dialog instead of the old "open JSON URL in new tab" behaviour.
+  download: async (fileId: string, filename?: string): Promise<void> => {
+    const res = await apiClient.get(`/documents/files/${fileId}/download`, {
+      responseType: "blob",
+    });
+    const blob = res.data as Blob;
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename || "file";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
   },
 
   getComments: async (

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Upload,
@@ -26,6 +27,7 @@ interface MetricImportModalProps {
 export const MetricImportModal: React.FC<MetricImportModalProps> = ({
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [step, setStep] = useState<"upload" | "review" | "done">("upload");
   const [title, setTitle] = useState("");
@@ -180,11 +182,12 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Import Metric Values
+            {t("goals.components.metric.importModal.title")}
           </h2>
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5 text-slate-500" />
           </button>
@@ -195,8 +198,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
           {step === "upload" && (
             <>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Upload a CSV or XLSX file to import metric values in bulk. Use
-                the template to ensure the correct format.
+                {t("goals.components.metric.importModal.intro")}
               </p>
 
               <button
@@ -209,7 +211,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 ) : (
                   <Download className="w-4 h-4" />
                 )}
-                Download CSV template
+                {t("goals.components.metric.importModal.downloadTemplate")}
               </button>
 
               {/* File drop zone */}
@@ -232,10 +234,10 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 ) : (
                   <div>
                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                      Click to select a file or drag and drop
+                      {t("goals.components.metric.importModal.selectFile")}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Supports CSV and XLSX files
+                      {t("goals.components.metric.importModal.supports")}
                     </p>
                   </div>
                 )}
@@ -251,13 +253,16 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Title <span className="text-red-500">*</span>
+                  {t("goals.components.metric.importModal.titleLabel")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Q2 2026 metric update"
+                  placeholder={t(
+                    "goals.components.metric.importModal.titlePlaceholder",
+                  )}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -265,13 +270,15 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
               {/* Comment */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Comment
+                  {t("goals.components.metric.importModal.commentLabel")}
                 </label>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={2}
-                  placeholder="Optional notes about this import..."
+                  placeholder={t(
+                    "goals.components.metric.importModal.commentPlaceholder",
+                  )}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
               </div>
@@ -279,7 +286,8 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
               {/* Primary Goal dropdown */}
               <div className="relative" ref={goalDropdownRef}>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Primary Goal <span className="text-red-500">*</span>
+                  {t("goals.components.metric.importModal.primaryGoalLabel")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <div
                   onClick={() => setGoalDropdownOpen(!goalDropdownOpen)}
@@ -292,7 +300,11 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                         : "text-slate-400"
                     }
                   >
-                    {selectedGoal ? selectedGoal.title : "Select a goal..."}
+                    {selectedGoal
+                      ? selectedGoal.title
+                      : t(
+                          "goals.components.metric.importModal.primaryGoalPlaceholder",
+                        )}
                   </span>
                   <svg
                     className={`w-4 h-4 text-slate-400 transition-transform ${goalDropdownOpen ? "rotate-180" : ""}`}
@@ -315,7 +327,9 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                         type="text"
                         value={goalSearch}
                         onChange={(e) => setGoalSearch(e.target.value)}
-                        placeholder="Search goals..."
+                        placeholder={t(
+                          "goals.components.metric.importModal.searchGoalsPlaceholder",
+                        )}
                         className="w-full rounded border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-600 px-2 py-1 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -323,7 +337,9 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                     <div className="overflow-y-auto max-h-36">
                       {filteredGoals.length === 0 ? (
                         <div className="px-3 py-2 text-sm text-slate-500">
-                          No goals found
+                          {t(
+                            "goals.components.metric.importModal.noGoalsFound",
+                          )}
                         </div>
                       ) : (
                         filteredGoals.map((goal) => (
@@ -335,7 +351,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                               setGoalDropdownOpen(false);
                               setGoalSearch("");
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors ${
+                            className={`w-full ltr:text-left rtl:text-right px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors ${
                               primaryGoalId === goal.id
                                 ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                                 : "text-slate-900 dark:text-white"
@@ -360,25 +376,35 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                   <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {validationResult.total_rows}
                   </p>
-                  <p className="text-xs text-slate-500">Total Rows</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.metric.importModal.summaryTotalRows")}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-900/20 p-3 text-center">
                   <p className="text-2xl font-bold text-green-600 tabular-nums">
                     {validationResult.valid_count}
                   </p>
-                  <p className="text-xs text-slate-500">Valid</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.metric.importModal.summaryValid")}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-900/20 p-3 text-center">
                   <p className="text-2xl font-bold text-red-600 tabular-nums">
                     {validationResult.error_count}
                   </p>
-                  <p className="text-xs text-slate-500">Errors</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.metric.importModal.summaryErrors")}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-3 text-center">
                   <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {validationResult.goal_count}
                   </p>
-                  <p className="text-xs text-slate-500">Goals Affected</p>
+                  <p className="text-xs text-slate-500">
+                    {t(
+                      "goals.components.metric.importModal.summaryGoalsAffected",
+                    )}
+                  </p>
                 </div>
               </div>
 
@@ -392,7 +418,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                       <span className="tabular-nums">
                         {validationResult.skipped_count}
                       </span>{" "}
-                      skipped
+                      {t("goals.components.metric.importModal.skippedLabel")}
                     </span>
                   )}
                   {validationResult.warning_count > 0 && (
@@ -401,7 +427,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                       <span className="tabular-nums">
                         {validationResult.warning_count}
                       </span>{" "}
-                      warnings
+                      {t("goals.components.metric.importModal.warningsLabel")}
                     </span>
                   )}
                 </div>
@@ -412,23 +438,27 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-700/50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 w-12">
-                        Row
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 w-12">
+                        {t("goals.components.metric.importModal.tableRow")}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 w-10">
-                        Status
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 w-10">
+                        {t("goals.components.metric.importModal.tableStatus")}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">
-                        Goal Title
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500">
+                        {t(
+                          "goals.components.metric.importModal.tableGoalTitle",
+                        )}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">
-                        Metric
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500">
+                        {t("goals.components.metric.importModal.tableMetric")}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">
-                        Value Change
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500">
+                        {t(
+                          "goals.components.metric.importModal.tableValueChange",
+                        )}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">
-                        Details
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500">
+                        {t("goals.components.metric.importModal.tableDetails")}
                       </th>
                     </tr>
                   </thead>
@@ -453,7 +483,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                         <td className="px-3 py-2">
                           <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 tabular-nums">
                             <span>{item.current_value}</span>
-                            <ArrowRight className="w-3 h-3 text-slate-400" />
+                            <ArrowRight className="w-3 h-3 text-slate-400 rtl:-rotate-180" />
                             <span className="font-medium">
                               {item.new_value}
                             </span>
@@ -471,11 +501,15 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                             </p>
                           ))}
                           {item.status === "valid" && (
-                            <span className="text-green-600 text-xs">OK</span>
+                            <span className="text-green-600 text-xs">
+                              {t("goals.components.metric.importModal.ok")}
+                            </span>
                           )}
                           {item.status === "skipped" && (
                             <span className="text-slate-400 text-xs">
-                              Skipped
+                              {t(
+                                "goals.components.metric.importModal.skipped",
+                              )}
                             </span>
                           )}
                         </td>
@@ -487,8 +521,9 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
 
               {validationResult.error_count > 0 && (
                 <p className="text-sm text-red-600">
-                  Fix {validationResult.error_count} error(s) in your file and
-                  re-upload.
+                  {t("goals.components.metric.importModal.fixErrors", {
+                    count: validationResult.error_count,
+                  })}
                 </p>
               )}
             </>
@@ -498,10 +533,10 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
             <div className="text-center py-8">
               <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Metric import batch created
+                {t("goals.components.metric.importModal.batchCreatedHeading")}
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                Batch ID:{" "}
+                {t("goals.components.metric.importModal.batchIdLabel")}{" "}
                 <span className="font-mono text-slate-900 dark:text-white">
                   {commitResult.id}
                 </span>
@@ -510,8 +545,8 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 to={`/goals/metric-batches/${commitResult.id}`}
                 className="inline-flex items-center gap-1 mt-4 text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
               >
-                View import batch
-                <ArrowRight className="w-4 h-4" />
+                {t("goals.components.metric.importModal.viewBatch")}
+                <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
               </Link>
             </div>
           )}
@@ -525,7 +560,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleValidate}
@@ -537,7 +572,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 ) : (
                   <Upload className="w-4 h-4" />
                 )}
-                Validate
+                {t("goals.components.metric.importModal.validate")}
               </button>
             </>
           )}
@@ -548,7 +583,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 onClick={handleReupload}
                 className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                Re-upload
+                {t("goals.components.metric.importModal.reupload")}
               </button>
               <button
                 onClick={handleConfirmImport}
@@ -560,7 +595,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
                 ) : (
                   <CheckCircle2 className="w-4 h-4" />
                 )}
-                Create Import Batch
+                {t("goals.components.metric.importModal.createBatch")}
               </button>
             </>
           )}
@@ -570,7 +605,7 @@ export const MetricImportModal: React.FC<MetricImportModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
-              Close
+              {t("common.close")}
             </button>
           )}
         </div>

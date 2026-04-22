@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ClipboardCheck,
@@ -74,6 +75,7 @@ const RatingInput: React.FC<{
 // ── Main Page ────────────────────────────────────────
 
 export const ReviewAssignmentPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data, isLoading } = useReviewAssignment(id!);
   const scoreGoals = useScoreGoals();
@@ -112,6 +114,19 @@ export const ReviewAssignmentPage: React.FC = () => {
     }
   }, [assignment]);
 
+  const assignmentStatusLabel = (s: ReviewAssignmentStatus): string => {
+    switch (s) {
+      case "pending":
+        return t("goals.reviews.detail.statusPending");
+      case "in_progress":
+        return t("goals.reviews.detail.statusInProgress");
+      case "completed":
+        return t("goals.reviews.detail.statusCompleted");
+      default:
+        return s;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -123,7 +138,7 @@ export const ReviewAssignmentPage: React.FC = () => {
   if (!assignment) {
     return (
       <div className="text-center py-20 text-slate-400">
-        Assignment not found
+        {t("goals.reviews.assignment.notFound")}
       </div>
     );
   }
@@ -172,8 +187,8 @@ export const ReviewAssignmentPage: React.FC = () => {
         }
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition-colors"
       >
-        <ArrowLeft size={16} />
-        Back
+        <ArrowLeft size={16} className="rtl:-rotate-180" />
+        {t("goals.reviews.assignment.back")}
       </Link>
 
       {/* Header Card */}
@@ -188,7 +203,8 @@ export const ReviewAssignmentPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                {assignment.cycle?.title ?? "Review Assignment"}
+                {assignment.cycle?.title ??
+                  t("goals.reviews.assignment.titleFallback")}
               </h1>
               {assignment.cycle && (
                 <div className="flex items-center gap-1 mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -202,9 +218,9 @@ export const ReviewAssignmentPage: React.FC = () => {
             </div>
           </div>
           <span
-            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColor[assignment.status]}`}
+            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusColor[assignment.status]}`}
           >
-            {assignment.status.replace("_", " ")}
+            {assignmentStatusLabel(assignment.status)}
           </span>
         </div>
 
@@ -212,7 +228,7 @@ export const ReviewAssignmentPage: React.FC = () => {
         <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
           <div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">
-              Employee
+              {t("goals.reviews.assignment.employee")}
             </p>
             <div className="flex items-center gap-2">
               <User size={16} className="text-slate-400" />
@@ -225,7 +241,7 @@ export const ReviewAssignmentPage: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">
-              Reviewer
+              {t("goals.reviews.assignment.reviewer")}
             </p>
             <div className="flex items-center gap-2">
               <User size={16} className="text-slate-400" />
@@ -245,7 +261,7 @@ export const ReviewAssignmentPage: React.FC = () => {
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/60">
             <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Target size={16} className="text-blue-500" />
-              Goal Scores
+              {t("goals.reviews.assignment.goalScores")}
             </h2>
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-700/40">
@@ -265,7 +281,7 @@ export const ReviewAssignmentPage: React.FC = () => {
                       </p>
                       <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
                         <span>
-                          Achievement:{" "}
+                          {t("goals.reviews.assignment.achievement")}{" "}
                           <span className="tabular-nums font-medium">
                             {gs.achievement_pct.toFixed(0)}%
                           </span>
@@ -308,7 +324,9 @@ export const ReviewAssignmentPage: React.FC = () => {
                         }))
                       }
                       rows={2}
-                      placeholder="Comments on this goal..."
+                      placeholder={t(
+                        "goals.reviews.assignment.commentsPlaceholder",
+                      )}
                       className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   ) : (
@@ -328,12 +346,12 @@ export const ReviewAssignmentPage: React.FC = () => {
       {/* Overall Rating & Comments */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
         <h2 className="font-semibold text-slate-900 dark:text-white mb-4">
-          Overall Assessment
+          {t("goals.reviews.assignment.overallAssessment")}
         </h2>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Overall Rating
+            {t("goals.reviews.assignment.overallRating")}
           </label>
           <div className="flex items-center gap-3">
             <RatingInput
@@ -351,19 +369,21 @@ export const ReviewAssignmentPage: React.FC = () => {
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Comments
+            {t("goals.reviews.assignment.comments")}
           </label>
           {canEdit ? (
             <textarea
               value={comments}
               onChange={(e) => setComments(e.target.value)}
               rows={3}
-              placeholder="Overall review comments..."
+              placeholder={t(
+                "goals.reviews.assignment.commentsPlaceholderOverall",
+              )}
               className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           ) : (
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              {comments || "No comments"}
+              {comments || t("goals.reviews.assignment.noComments")}
             </p>
           )}
         </div>
@@ -381,7 +401,7 @@ export const ReviewAssignmentPage: React.FC = () => {
               ) : (
                 <Save size={14} />
               )}
-              Save Draft
+              {t("goals.reviews.assignment.saveDraft")}
             </button>
             <button
               onClick={handleSubmit}
@@ -393,14 +413,16 @@ export const ReviewAssignmentPage: React.FC = () => {
               ) : (
                 <Send size={14} />
               )}
-              Submit Review
+              {t("goals.reviews.assignment.submitReview")}
             </button>
           </div>
         )}
 
         {isCompleted && assignment.completed_at && (
           <p className="text-sm text-green-600 dark:text-green-400 mt-3">
-            Completed on {formatDate(assignment.completed_at)}
+            {t("goals.reviews.assignment.completedOn", {
+              date: formatDate(assignment.completed_at),
+            })}
           </p>
         )}
       </div>

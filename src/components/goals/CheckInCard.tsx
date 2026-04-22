@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2, TrendingUp, User, Clock } from "lucide-react";
 import { CheckInStatusBadge } from "./CheckInStatusBadge";
 import type { GoalCheckIn } from "../../types/goal";
@@ -14,9 +15,10 @@ export const CheckInCard: React.FC<CheckInCardProps> = ({
   onDelete,
   canEdit,
 }) => {
+  const { t } = useTranslation();
   const authorName = checkIn.author
     ? `${checkIn.author.first_name} ${checkIn.author.last_name}`.trim()
-    : "Unknown";
+    : t("goals.components.checkIn.unknownAuthor");
 
   const formattedDate = new Date(checkIn.created_at).toLocaleDateString(
     "en-US",
@@ -60,7 +62,8 @@ export const CheckInCard: React.FC<CheckInCardProps> = ({
           <button
             onClick={() => onDelete(checkIn.id)}
             className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-            title="Delete check-in"
+            title={t("goals.components.checkIn.deleteTitle")}
+            aria-label={t("goals.components.checkIn.deleteTitle")}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -77,7 +80,7 @@ export const CheckInCard: React.FC<CheckInCardProps> = ({
         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
           <TrendingUp className="w-3.5 h-3.5" />
           <span>
-            Progress at check-in:{" "}
+            {t("goals.components.checkIn.progressAtCheckIn")}{" "}
             <span className="font-medium tabular-nums">
               {Math.round(checkIn.progress_snapshot)}%
             </span>
@@ -86,8 +89,13 @@ export const CheckInCard: React.FC<CheckInCardProps> = ({
 
         {metricChanges.length > 0 && (
           <span className="text-xs text-blue-600 dark:text-blue-400">
-            {metricChanges.length} metric update
-            {metricChanges.length !== 1 ? "s" : ""}
+            {metricChanges.length === 1
+              ? t("goals.components.checkIn.metricUpdateOne", {
+                  count: metricChanges.length,
+                })
+              : t("goals.components.checkIn.metricUpdateMany", {
+                  count: metricChanges.length,
+                })}
           </span>
         )}
       </div>

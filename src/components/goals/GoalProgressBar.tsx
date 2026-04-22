@@ -27,7 +27,7 @@ export const GoalProgressBar: React.FC<GoalProgressBarProps> = ({
           style={{ width: `${clampedProgress}%` }}
         />
       </div>
-      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 tabular-nums min-w-[3rem] text-right">
+      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 tabular-nums min-w-[3rem] ltr:text-right rtl:text-left">
         {Math.round(clampedProgress)}%
       </span>
     </div>

@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { GitBranch, Target, Filter } from "lucide-react";
 import { useOKRTree } from "../../hooks/useGoalAnalytics";
 import { DepartmentNode } from "../../components/goals/OKRTreeNode";
 import type { OKRTreeFilter } from "../../types/goalAnalytics";
 
 export function OKRAlignmentPage() {
+  const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
@@ -29,16 +31,18 @@ export function OKRAlignmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            OKR Alignment
+            {t("goals.okr.title")}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Company → Department → Team → Individual goal cascade
+            {t("goals.okr.subtitle")}
           </p>
         </div>
         {tree && (
           <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <Target className="w-4 h-4" />
-            <span className="tabular-nums">{tree.total_goals} goals</span>
+            <span className="tabular-nums">
+              {t("goals.okr.totalGoals", { count: tree.total_goals })}
+            </span>
           </div>
         )}
       </div>
@@ -48,7 +52,7 @@ export function OKRAlignmentPage() {
         <div className="flex items-center gap-2 mb-3">
           <Filter className="w-4 h-4 text-slate-400" />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Filters
+            {t("goals.okr.filters")}
           </span>
           {hasFilters && (
             <button
@@ -59,32 +63,34 @@ export function OKRAlignmentPage() {
               }}
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Clear all
+              {t("goals.okr.clearAll")}
             </button>
           )}
         </div>
         <div className="flex flex-wrap gap-4">
           <div>
             <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-              Status
+              {t("goals.okr.status")}
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-1.5 text-slate-900 dark:text-white"
             >
-              <option value="">All</option>
-              <option value="Draft">Draft</option>
-              <option value="Active">Active</option>
-              <option value="Under_Review">Under Review</option>
-              <option value="Achieved">Achieved</option>
-              <option value="Missed">Missed</option>
-              <option value="Closed">Closed</option>
+              <option value="">{t("goals.okr.statusAll")}</option>
+              <option value="Draft">{t("goals.okr.statusDraft")}</option>
+              <option value="Active">{t("goals.okr.statusActive")}</option>
+              <option value="Under_Review">
+                {t("goals.okr.statusUnderReview")}
+              </option>
+              <option value="Achieved">{t("goals.okr.statusAchieved")}</option>
+              <option value="Missed">{t("goals.okr.statusMissed")}</option>
+              <option value="Closed">{t("goals.okr.statusClosed")}</option>
             </select>
           </div>
           <div>
             <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-              Period Start
+              {t("goals.okr.periodStart")}
             </label>
             <input
               type="date"
@@ -95,7 +101,7 @@ export function OKRAlignmentPage() {
           </div>
           <div>
             <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-              Period End
+              {t("goals.okr.periodEnd")}
             </label>
             <input
               type="date"
@@ -110,13 +116,16 @@ export function OKRAlignmentPage() {
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-500" /> On Track
+          <span className="w-2 h-2 rounded-full bg-green-500" />{" "}
+          {t("goals.okr.legendOnTrack")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-amber-500" /> At Risk
+          <span className="w-2 h-2 rounded-full bg-amber-500" />{" "}
+          {t("goals.okr.legendAtRisk")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-red-500" /> Behind
+          <span className="w-2 h-2 rounded-full bg-red-500" />{" "}
+          {t("goals.okr.legendBehind")}
         </span>
       </div>
 
@@ -124,7 +133,7 @@ export function OKRAlignmentPage() {
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80">
         {isLoading ? (
           <div className="p-12 text-center text-slate-400">
-            Loading OKR tree...
+            {t("goals.okr.loadingTree")}
           </div>
         ) : tree?.departments?.length ? (
           <div className="py-2">
@@ -137,12 +146,11 @@ export function OKRAlignmentPage() {
             <GitBranch className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {hasFilters
-                ? "No goals match the current filters"
-                : "No goals with department assignments found"}
+                ? t("goals.okr.noMatching")
+                : t("goals.okr.noGoalsDept")}
             </p>
             <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-              Assign goals to departments and set parent-child relationships to
-              see OKR alignment
+              {t("goals.okr.helpText")}
             </p>
           </div>
         )}

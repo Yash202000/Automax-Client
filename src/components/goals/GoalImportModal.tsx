@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Upload,
@@ -52,6 +53,7 @@ function downloadTemplate() {
 export const GoalImportModal: React.FC<GoalImportModalProps> = ({
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [step, setStep] = useState<"upload" | "review" | "done">("upload");
   const [validationResult, setValidationResult] =
@@ -116,11 +118,12 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Import Goals
+            {t("goals.components.import.title")}
           </h2>
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5 text-slate-500" />
           </button>
@@ -131,8 +134,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
           {step === "upload" && (
             <>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Upload a CSV or XLSX file to import goals and metrics. The file
-                format should match the export format.
+                {t("goals.components.import.intro")}
               </p>
 
               <button
@@ -140,7 +142,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <Download className="w-4 h-4" />
-                Download CSV template
+                {t("goals.components.import.downloadTemplate")}
               </button>
 
               <div
@@ -160,10 +162,10 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 ) : (
                   <div>
                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                      Click to select a file
+                      {t("goals.components.import.selectFile")}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Supports CSV and XLSX files
+                      {t("goals.components.import.supports")}
                     </p>
                   </div>
                 )}
@@ -186,25 +188,33 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                   <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {validationResult.goals_count}
                   </p>
-                  <p className="text-xs text-slate-500">Goals</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.import.summaryGoals")}
+                  </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {validationResult.metrics_count}
                   </p>
-                  <p className="text-xs text-slate-500">Metrics</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.import.summaryMetrics")}
+                  </p>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-green-600 tabular-nums">
                     {validationResult.valid_count}
                   </p>
-                  <p className="text-xs text-slate-500">Valid</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.import.summaryValid")}
+                  </p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold text-red-600 tabular-nums">
                     {validationResult.error_count}
                   </p>
-                  <p className="text-xs text-slate-500">Errors</p>
+                  <p className="text-xs text-slate-500">
+                    {t("goals.components.import.summaryErrors")}
+                  </p>
                 </div>
               </div>
 
@@ -213,17 +223,17 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-700/50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 w-12">
-                        Row
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 w-12">
+                        {t("goals.components.import.tableRow")}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 w-10">
-                        Status
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 w-10">
+                        {t("goals.components.import.tableStatus")}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">
-                        Goal
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500">
+                        {t("goals.components.import.tableGoal")}
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500">
-                        Details
+                      <th className="px-3 py-2 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500">
+                        {t("goals.components.import.tableDetails")}
                       </th>
                     </tr>
                   </thead>
@@ -252,7 +262,9 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                             </p>
                           ))}
                           {row.status === "valid" && (
-                            <span className="text-green-600 text-xs">OK</span>
+                            <span className="text-green-600 text-xs">
+                              {t("goals.components.import.ok")}
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -263,8 +275,9 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
 
               {validationResult.error_count > 0 && (
                 <p className="text-sm text-red-600">
-                  Fix {validationResult.error_count} error(s) in your file and
-                  re-upload.
+                  {t("goals.components.import.fixErrors", {
+                    count: validationResult.error_count,
+                  })}
                 </p>
               )}
             </>
@@ -274,11 +287,13 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
             <div className="text-center py-8">
               <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Import Complete
+                {t("goals.components.import.completedHeading")}
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                Created {validationResult.goals_count} goals with{" "}
-                {validationResult.metrics_count} metrics.
+                {t("goals.components.import.completedSummary", {
+                  goals: validationResult.goals_count,
+                  metrics: validationResult.metrics_count,
+                })}
               </p>
             </div>
           )}
@@ -292,7 +307,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleValidate}
@@ -304,7 +319,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 ) : (
                   <Upload className="w-4 h-4" />
                 )}
-                Validate
+                {t("goals.components.import.validate")}
               </button>
             </>
           )}
@@ -320,7 +335,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 }}
                 className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                Re-upload
+                {t("goals.components.import.reupload")}
               </button>
               <button
                 onClick={handleConfirmImport}
@@ -335,7 +350,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
                 ) : (
                   <CheckCircle2 className="w-4 h-4" />
                 )}
-                Confirm Import
+                {t("goals.components.import.confirmImport")}
               </button>
             </>
           )}
@@ -345,7 +360,7 @@ export const GoalImportModal: React.FC<GoalImportModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
-              Close
+              {t("common.close")}
             </button>
           )}
         </div>
