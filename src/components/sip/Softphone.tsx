@@ -308,7 +308,6 @@ export default function SoftPhone({
       toast.error(
         "No extension configured for your account. Please contact your administrator to set up your extension.",
       );
-      if (onClose) onClose();
       return;
     }
 
