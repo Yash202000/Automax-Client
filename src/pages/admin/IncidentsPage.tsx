@@ -28,6 +28,7 @@ import {
   ChevronDown,
   GitMerge,
   Link2,
+  Play,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
@@ -52,7 +53,10 @@ import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSock
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
-import { MergeIncidentsModal } from "../../components/incidents";
+import {
+  MergeIncidentsModal,
+  BulkTransitionModal,
+} from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import { useAuthStore } from "@/stores/authStore";
 import { LocationMap } from "@/components/maps";
@@ -133,7 +137,7 @@ export const IncidentsPage: React.FC = () => {
       return statusParam;
     }
     return null;
-  }, [searchParams]);
+  }, [searchParams, t]);
   const [columns, setColumns] = useState<ColumnConfig[]>(
     loadColumnsFromStorage,
   );
@@ -142,6 +146,7 @@ export const IncidentsPage: React.FC = () => {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
+  const [showBulkTransitionModal, setShowBulkTransitionModal] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const { user } = useAuthStore();
   const [isValidationLoading, setIsValidationLoading] =
@@ -524,6 +529,18 @@ export const IncidentsPage: React.FC = () => {
           selectedIncidents[0]?.classification?.id,
     );
 
+  const canBulkTransition = useMemo(() => {
+    if (selectedIncidents.length < 2) return false;
+    const first = selectedIncidents[0];
+    return selectedIncidents.every(
+      (inc) =>
+        inc.workflow?.id === first.workflow?.id &&
+        inc.current_state?.id === first.current_state?.id &&
+        inc.classification?.id === first.classification?.id &&
+        inc.location?.id === first.location?.id,
+    );
+  }, [selectedIncidents]);
+
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
 
@@ -548,12 +565,13 @@ export const IncidentsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log(selectedIncidents);
     if (selectedIncidents.length >= 2) {
       validateMerge();
     } else {
       setValidationResult(null);
     }
-  }, [selectedIncidents]);
+  }, [selectedIncidents, validateMerge]);
 
   const isMergeDisabled =
     isValidationLoading ||
@@ -587,7 +605,9 @@ export const IncidentsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div
+        className={`flex flex-col gap-4 ${selectedIncidents.length > 1 ? "lg:flex-col lg:items-start lg:justify-start" : "lg:flex-row lg:items-center lg:justify-between"}`}
+      >
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div
@@ -664,6 +684,21 @@ export const IncidentsPage: React.FC = () => {
               {t("incidents.convertToRequest")}
             </Button>
           ) : null}
+          {canTransitionIncident && selectedIncidents?.length > 1 && (
+            <Button
+              disabled={!canBulkTransition}
+              variant="outline"
+              onClick={() => setShowBulkTransitionModal(true)}
+              leftIcon={<Play className="w-4 h-4" />}
+              title={
+                !canBulkTransition
+                  ? t("incidents.bulkTransitionDisabled")
+                  : undefined
+              }
+            >
+              {t("incidents.bulkTransition")}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -1511,6 +1546,16 @@ export const IncidentsPage: React.FC = () => {
           onMergeSuccess={handleMergeSuccess}
         />
       )}
+
+      <BulkTransitionModal
+        isOpen={showBulkTransitionModal}
+        onClose={() => setShowBulkTransitionModal(false)}
+        selectedIncidents={selectedIncidents}
+        onSuccess={() => {
+          clearSelection();
+          refetch();
+        }}
+      />
 
       <BulkConvertToRequestModal
         incidents={selectedIncidents}

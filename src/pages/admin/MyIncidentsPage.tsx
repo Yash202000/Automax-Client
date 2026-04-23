@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,7 @@ import {
   ChevronDown,
   GitMerge,
   Link2,
+  Play,
 } from "lucide-react";
 import { Button, Checkbox } from "../../components/ui";
 import { incidentApi, incidentMergeApi } from "../../api/admin";
@@ -35,7 +36,10 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
-import { MergeIncidentsModal } from "../../components/incidents";
+import {
+  MergeIncidentsModal,
+  BulkTransitionModal,
+} from "../../components/incidents";
 import LocationMap from "@/components/maps/LocationMap";
 
 interface MyIncidentsPageProps {
@@ -51,6 +55,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
+  const [showBulkTransitionModal, setShowBulkTransitionModal] = useState(false);
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [showMap, setShowMap] = useState(false);
 
@@ -65,6 +70,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const isAssigned = type === "assigned";
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+  const canTransitionIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
   const pageTitle = isAssigned
     ? t("incidents.assignedToMe")
     : t("incidents.createdByMe");
@@ -215,6 +222,16 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           selectedIncidents[0]?.classification?.id,
     );
 
+  const canBulkTransition = useMemo(() => {
+    if (selectedIncidents.length < 2) return false;
+    const first = selectedIncidents[0];
+    return selectedIncidents.every(
+      (inc) =>
+        inc.workflow?.id === first.workflow?.id &&
+        inc.current_state?.id === first.current_state?.id,
+    );
+  }, [selectedIncidents]);
+
   const isSelected = (item: Incident) =>
     selectedIncidents.some((i) => i?.id === item?.id);
 
@@ -244,7 +261,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     } else {
       setValidationResult(null);
     }
-  }, [selectedIncidents]);
+  }, [selectedIncidents, validateMerge]);
 
   const isMergeDisabled =
     isValidationLoading ||
@@ -341,6 +358,15 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               {t("incidents.convertToRequest")}
             </Button>
           ) : null}
+          {canTransitionIncident && canBulkTransition && (
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkTransitionModal(true)}
+              leftIcon={<Play className="w-4 h-4" />}
+            >
+              {t("incidents.bulkTransition")}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -834,6 +860,16 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           navigate(`/requests/${newRequestId}`);
         }}
       />
+      <BulkTransitionModal
+        isOpen={showBulkTransitionModal}
+        onClose={() => setShowBulkTransitionModal(false)}
+        selectedIncidents={selectedIncidents}
+        onSuccess={() => {
+          setSelectedIncidents([]);
+          refetch();
+        }}
+      />
+
       <MergeIncidentsModal
         isOpen={showMergeModal}
         onClose={() => setShowMergeModal(false)}
