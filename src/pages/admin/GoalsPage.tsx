@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useRef, useCallback, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -93,6 +93,13 @@ function ExportDropdown({ filters }: { filters: GoalFilter }) {
 export const GoalsPage: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermissions();
+  const location = useLocation();
+  // "My Goals" route reuses this page with a scope=mine filter; the backend
+  // intersects to goals the caller owns or collaborates on. Treat `scope` as
+  // derived from the URL — NOT owned by filter state — so that
+  // GoalFilters.clearFilters() (which emits a fresh object without scope) or
+  // any other wholesale filter replacement can't accidentally strip it.
+  const isMyGoals = location.pathname.startsWith("/goals/mine");
   useGoalListWebSocket();
   const [filters, setFilters] = useState<GoalFilter>({
     page: 1,
@@ -104,7 +111,15 @@ export const GoalsPage: React.FC = () => {
   const [showBulkTransition, setShowBulkTransition] = useState(false);
   const [showBulkReassign, setShowBulkReassign] = useState(false);
 
-  const { data, isLoading, error } = useGoals(filters);
+  // Merge route-derived scope onto the user-controlled filter state before
+  // issuing the query or export. filters (state) + scope (URL) = effective
+  // request.
+  const effectiveFilters = useMemo<GoalFilter>(
+    () => (isMyGoals ? { ...filters, scope: "mine" } : filters),
+    [filters, isMyGoals],
+  );
+
+  const { data, isLoading, error } = useGoals(effectiveFilters);
   const bulkAction = useBulkAction();
 
   const goals = data?.data ?? [];
@@ -196,11 +211,18 @@ export const GoalsPage: React.FC = () => {
             <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {t("goals.title")}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                {isMyGoals ? t("goals.myGoalsTitle") : t("goals.title")}
+              </h1>
+              {!isLoading && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                  {total}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t("goals.subtitle")}
+              {isMyGoals ? t("goals.myGoalsSubtitle") : t("goals.subtitle")}
             </p>
           </div>
         </div>
@@ -228,7 +250,7 @@ export const GoalsPage: React.FC = () => {
             <FileSpreadsheet className="w-4 h-4" />
             {t("goals.metricImport.title")}
           </button>
-          <ExportDropdown filters={filters} />
+          <ExportDropdown filters={effectiveFilters} />
           {canCreate && (
             <Link
               to="/goals/new"

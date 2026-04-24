@@ -1,6 +1,8 @@
 export { AdminDashboard } from "./AdminDashboard";
 export { UsersPage } from "./UsersPage";
 export { RolesPage } from "./RolesPage";
+export { RoleCreatePage } from "./RoleCreatePage";
+export { RoleEditPage } from "./RoleEditPage";
 export { PermissionsPage } from "./PermissionsPage";
 export { DepartmentsPage } from "./DepartmentsPage";
 export { DepartmentDetailPage } from "./DepartmentDetailPage";

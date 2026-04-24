@@ -74,6 +74,7 @@ export const goalApi = {
       params.append("target_to", toEndOfDay(filter.target_to));
     if (filter.sort_by) params.append("sort_by", filter.sort_by);
     if (filter.sort_order) params.append("sort_order", filter.sort_order);
+    if (filter.scope) params.append("scope", filter.scope);
 
     const res = await apiClient.get(`/goals?${params.toString()}`);
     return res.data;

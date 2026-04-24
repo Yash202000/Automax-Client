@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Sparkles,
   Target,
+  UserCircle,
   CheckCheck,
   FileText,
   FolderOpen,
@@ -125,6 +126,25 @@ export const GoalLayout: React.FC = () => {
         )}
 
         <div className="space-y-1">
+          {/* My Goals — owner or collaborator scope */}
+          <NavLink
+            to="/goals/mine"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <UserCircle size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">My Goals</span>
+                )}
+              </>
+            )}
+          </NavLink>
+
           {/* All Goals */}
           <NavLink
             to="/goals"

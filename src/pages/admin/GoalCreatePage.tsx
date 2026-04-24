@@ -9,6 +9,7 @@ import { useActiveGoalTemplates } from "../../hooks/useGoalTemplates";
 import { useCategoryTree } from "../../hooks/useCategories";
 import { metricApi } from "../../api/goals";
 import { userApi, departmentApi } from "../../api/admin";
+import { useAuthStore } from "../../stores/authStore";
 import { GOAL_PRIORITY_OPTIONS } from "../../types/goal";
 import type {
   GoalCreateRequest,
@@ -47,14 +48,17 @@ export const GoalCreatePage: React.FC = () => {
   const [pendingMetrics, setPendingMetrics] = useState<TemplateMetric[]>([]);
   const [parentGoal, setParentGoal] = useState<GoalBrief | null>(null);
   const [parentInitialized, setParentInitialized] = useState(false);
+  // Default the owner to the current user — users creating a goal usually own it.
+  // The field stays editable so admins/managers can reassign at create time.
+  const currentUser = useAuthStore((s) => s.user);
   const [form, setForm] = useState<GoalCreateRequest>({
     title: "",
     description: "",
     category: "",
     category_id: "",
     priority: "Medium",
-    owner_id: "",
-    department_id: "",
+    owner_id: currentUser?.id ?? "",
+    department_id: currentUser?.department_id ?? "",
     parent_goal_id: presetParentId,
     start_date: "",
     target_date: "",

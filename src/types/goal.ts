@@ -321,6 +321,8 @@ export interface GoalFilter {
   target_to?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+  /** "mine" restricts to goals owned by or collaborated on by the caller. */
+  scope?: "mine";
 }
 
 export interface GoalMetricCreateRequest {
