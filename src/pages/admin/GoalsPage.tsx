@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -95,13 +95,15 @@ export const GoalsPage: React.FC = () => {
   const { hasPermission } = usePermissions();
   const location = useLocation();
   // "My Goals" route reuses this page with a scope=mine filter; the backend
-  // intersects to goals the caller owns or collaborates on.
+  // intersects to goals the caller owns or collaborates on. Treat `scope` as
+  // derived from the URL — NOT owned by filter state — so that
+  // GoalFilters.clearFilters() (which emits a fresh object without scope) or
+  // any other wholesale filter replacement can't accidentally strip it.
   const isMyGoals = location.pathname.startsWith("/goals/mine");
   useGoalListWebSocket();
   const [filters, setFilters] = useState<GoalFilter>({
     page: 1,
     limit: 10,
-    ...(isMyGoals ? { scope: "mine" as const } : {}),
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
@@ -109,7 +111,15 @@ export const GoalsPage: React.FC = () => {
   const [showBulkTransition, setShowBulkTransition] = useState(false);
   const [showBulkReassign, setShowBulkReassign] = useState(false);
 
-  const { data, isLoading, error } = useGoals(filters);
+  // Merge route-derived scope onto the user-controlled filter state before
+  // issuing the query or export. filters (state) + scope (URL) = effective
+  // request.
+  const effectiveFilters = useMemo<GoalFilter>(
+    () => (isMyGoals ? { ...filters, scope: "mine" } : filters),
+    [filters, isMyGoals],
+  );
+
+  const { data, isLoading, error } = useGoals(effectiveFilters);
   const bulkAction = useBulkAction();
 
   const goals = data?.data ?? [];
@@ -240,7 +250,7 @@ export const GoalsPage: React.FC = () => {
             <FileSpreadsheet className="w-4 h-4" />
             {t("goals.metricImport.title")}
           </button>
-          <ExportDropdown filters={filters} />
+          <ExportDropdown filters={effectiveFilters} />
           {canCreate && (
             <Link
               to="/goals/new"
