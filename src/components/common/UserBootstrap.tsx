@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useAuthStore } from "../../stores/authStore";
 import { useAppDispatch } from "../../hooks/redux";
 import { fetchUsers } from "../../store/usersSlice";
@@ -13,7 +13,11 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const { user, isAuthenticated } = useAuthStore();
   const dispatch = useAppDispatch();
   const { settings } = useSettings();
-  const { isOpen, setIsOpen } = useSoftphoneStore();
+  // Use zustand selectors so this component re-renders only when the
+  // specific slice it reads changes. Subscribing to the full store via
+  // destructuring would re-render on every set(), even no-op sets.
+  const isOpen = useSoftphoneStore((s) => s.isOpen);
+  const setIsOpen = useSoftphoneStore((s) => s.setIsOpen);
   const { isSuperAdmin, hasAnyPermission } = usePermissions();
 
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
@@ -24,6 +28,29 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [isAuthenticated, dispatch]);
 
+  // Memoize the settings/auth object props so SoftPhone's effects don't
+  // re-fire on every UserBootstrap render. Without this, fresh object
+  // literals here would produce a new reference each render even when
+  // the underlying primitive values are unchanged.
+  const softphoneSettings = useMemo(
+    () => ({
+      domain: settings?.sip_domain || "zkff.automaxsw.com",
+      socketURL:
+        settings?.sip_socket_url || "wss://zkff.automaxsw.com:7443",
+    }),
+    [settings?.sip_domain, settings?.sip_socket_url],
+  );
+
+  const softphoneAuth = useMemo(
+    () => ({
+      user: {
+        userID: user?.id || "",
+        extension: user?.extension || "",
+      },
+    }),
+    [user?.id, user?.extension],
+  );
+
   return (
     <>
       {children}
@@ -31,17 +58,8 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
         <SoftPhone
           showSip={isOpen}
           onClose={() => setIsOpen(false)}
-          settings={{
-            domain: settings?.sip_domain || "zkff.automaxsw.com",
-            socketURL:
-              settings?.sip_socket_url || "wss://zkff.automaxsw.com:7443",
-          }}
-          auth={{
-            user: {
-              userID: user?.id || "",
-              extension: user?.extension || "",
-            },
-          }}
+          settings={softphoneSettings}
+          auth={softphoneAuth}
         />
       )}
     </>

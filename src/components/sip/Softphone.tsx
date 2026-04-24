@@ -276,6 +276,10 @@ export default function SoftPhone({
 
   const wasIncomingCallRef = useRef(false);
   const dialedNumberRef = useRef("");
+  // Guards the "no extension" toast so it fires once per session even if the
+  // effect below re-runs on settings/auth updates.
+  const missingExtensionToastShownRef = useRef(false);
+  const [, setMissingExtension] = useState<boolean>(false);
 
   const canCreateSentimentRef = useRef(false);
 
@@ -290,38 +294,53 @@ export default function SoftPhone({
     getRemoteAudioElement();
   }, []);
 
+  // Depend on the primitive fields we actually use so the effect is stable
+  // across unrelated parent re-renders that pass fresh object literals for
+  // `settings` / `auth`. Previously this effect ran on every parent render,
+  // which — combined with tryConnect's error path that flipped the softphone
+  // zustand store — produced an infinite render loop when the user had no
+  // extension configured.
+  const extension = auth?.user?.extension ?? "";
+  const socketURL = settings?.socketURL ?? "";
+  const domain = settings?.domain ?? "";
+
   useEffect(() => {
-    // tryConnect regardless of showSip to allow background connection
     if (!sipConnected && !isConnecting) {
       tryConnect();
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings, auth]);
+  }, [extension, socketURL, domain]);
 
   const tryConnect = (): void => {
     if (sipConnected || isConnecting) return;
 
-    const extension = auth?.user?.extension;
-
     if (!extension) {
-      toast.error(
-        "No extension configured for your account. Please contact your administrator to set up your extension.",
-      );
-      if (onClose) onClose();
+      setMissingExtension(true);
+      // Show the toast at most once per mount so we don't spam the user
+      // if the effect re-runs due to settings hydration.
+      if (!missingExtensionToastShownRef.current) {
+        missingExtensionToastShownRef.current = true;
+        toast.error(
+          "No extension configured for your account. Please contact your administrator to set up your extension.",
+        );
+      }
+      // Do NOT call onClose here — flipping parent state on a config error
+      // creates a re-render cycle and hides the error from the user. The
+      // panel stays mounted in a read-only "missing extension" state.
       return;
     }
 
+    setMissingExtension(false);
     // Use default password "51234" if not set
     const password = sipPassword || "51234";
 
-    if (settings?.socketURL && settings?.domain) {
+    if (socketURL && domain) {
       setIsConnecting(true);
       sipService.init({
         username: extension,
-        password: password,
-        domain: settings.domain,
-        socketUrl: settings.socketURL,
+        password,
+        domain,
+        socketUrl: socketURL,
       });
     }
   };
