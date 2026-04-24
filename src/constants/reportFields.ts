@@ -918,6 +918,15 @@ export const requestFields: ReportFieldDefinition[] = [
     defaultSelected: true,
   },
   {
+    field: "request_source",
+    label: "Request Source",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+    defaultSelected: true,
+  },
+  {
     field: "created_at",
     label: "Created At",
     type: "datetime",

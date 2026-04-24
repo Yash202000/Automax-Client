@@ -2274,13 +2274,11 @@ export const IncidentDetailPage: React.FC = () => {
                                           </span>
                                           <span className="ml-1">
                                             ·{" "}
-                                            {users
-                                              .find(
-                                                (user: any) =>
-                                                  user.id ===
-                                                  attachment.uploaded_by?.id,
-                                              )
-                                              ?.departments?.map(
+                                            {(
+                                              attachment.uploaded_by
+                                                ?.departments || []
+                                            )
+                                              .map(
                                                 (department: any) =>
                                                   department.name,
                                               )
