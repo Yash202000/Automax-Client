@@ -29,6 +29,8 @@ import {
   AdminDashboard,
   UsersPage,
   RolesPage,
+  RoleCreatePage,
+  RoleEditPage,
   PermissionsPage,
   DepartmentsPage,
   DepartmentDetailPage,
@@ -151,6 +153,30 @@ function App() {
                     }
                   >
                     <Route path="/admin/roles" element={<RolesPage />} />
+                  </Route>
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.ROLES_CREATE]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/admin/roles/new"
+                      element={<RoleCreatePage />}
+                    />
+                  </Route>
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.ROLES_UPDATE]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/admin/roles/:id/edit"
+                      element={<RoleEditPage />}
+                    />
                   </Route>
                   {/* Permission management - requires permissions:view permission */}
                   <Route
