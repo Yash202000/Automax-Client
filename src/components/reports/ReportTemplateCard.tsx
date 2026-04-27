@@ -171,6 +171,29 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     });
   };
 
+  const buildFilters = () => {
+    let updatedFilters: ReportFilter[] = [...filters];
+
+    if (fromDate && toDate) {
+      updatedFilters = updatedFilters.filter((f) => f.field !== "created_at");
+      updatedFilters.push({
+        id: "created_at",
+        field: "created_at",
+        operator: "between",
+        value: {
+          from: new Date(fromDate).toISOString(),
+          to: new Date(toDate).toISOString(),
+        },
+      });
+    }
+
+    return updatedFilters.map(({ field, operator, value }) => ({
+      field,
+      operator,
+      value,
+    }));
+  };
+
   // Generate report — fetches recordLimit rows in a single request, no server pagination
   const generateReport = useCallback(async () => {
     if (!template.data_source || template.config.columns.length === 0) return;
@@ -205,28 +228,10 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   ]);
 
   const fetchReportData = async () => {
-    const dateFilter: ReportFilter[] = [];
-    if (fromDate && toDate) {
-      dateFilter.push({
-        id: "created_at",
-        field: "created_at",
-        operator: "between",
-        value: {
-          from: new Date(fromDate).toISOString(),
-          to: new Date(toDate).toISOString(),
-        },
-      });
-    }
     const request: ReportQueryRequest = {
       data_source: template.data_source,
       columns: template.config.columns,
-      filters: [...filters, ...dateFilter].map(
-        ({ field, operator, value }) => ({
-          field,
-          operator,
-          value,
-        }),
-      ),
+      filters: buildFilters(),
       sorting: [],
       page: 1,
       limit: 100,
@@ -255,11 +260,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
         {
           data_source: template.data_source,
           columns: template.config.columns,
-          filters: filters.map(({ field, operator, value }) => ({
-            field,
-            operator,
-            value,
-          })),
+          filters: buildFilters(),
           sorting: [],
           format,
           options: { ...options, title: template.name || "Report" },

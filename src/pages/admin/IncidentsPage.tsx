@@ -566,13 +566,12 @@ export const IncidentsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log(selectedIncidents);
     if (selectedIncidents.length >= 2) {
       validateMerge();
     } else {
       setValidationResult(null);
     }
-  }, [selectedIncidents, validateMerge]);
+  }, [selectedIncidents]);
 
   const isMergeDisabled =
     isValidationLoading ||
