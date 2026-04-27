@@ -127,6 +127,12 @@ export const LoginForm: React.FC = () => {
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
           />
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            {t("auth.forgotPassword")}
+          </Link>
         </div>
 
         <Button

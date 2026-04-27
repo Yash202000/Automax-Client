@@ -88,6 +88,7 @@ import { CitizenLayout } from "./components/layout/CitizenLayout";
 import { CitizenVerifyPage } from "./pages/CitizenverifyPage";
 import { CitizenIncidentUpdatePage } from "./pages/CitizenIncidentUpdatePage";
 import { UserBootstrap } from "./components/common/UserBootstrap";
+import { ForgotPasswordPage } from "./pages/ForgetPasswordPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +117,10 @@ function App() {
               <Route element={<AuthLayout />}>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route
+                  path="/forgot-password"
+                  element={<ForgotPasswordPage />}
+                />
               </Route>
 
               {/* SSO complete — public, bootstraps its own auth from URL params */}
@@ -309,10 +314,7 @@ function App() {
                       />
                     }
                   >
-                    <Route
-                      path="/admin/license"
-                      element={<LicensePage />}
-                    />
+                    <Route path="/admin/license" element={<LicensePage />} />
                   </Route>
                   <Route
                     element={
@@ -549,86 +551,89 @@ function App() {
                 </Route>
               </Route>
 
-            {/* Call Centre Management - dedicated layout */}
-            <Route element={<AdminProtectedRoute />}>
-              <Route element={<CallCentreLayout />}>
-                <Route
-                  path="/call-centre"
-                  element={<Navigate to="/call-centre/contacts" replace />}
-                />
-                <Route
-                  path="/call-centre/contacts"
-                  element={<CallCentrePage />}
-                />
-                <Route path="/call-centre/history" element={<CallHistory />} />
-                <Route path="/call-centre/email" element={<EmailPage />} />
-                <Route path="/call-centre/sms" element={<SMSPage />} />
-                {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
-              </Route>
-            </Route>
-
-            {/* Goal Management routes - dedicated layout */}
-            <Route element={<AdminProtectedRoute />}>
-              <Route element={<GoalLayout />}>
-                <Route
-                  element={
-                    <PermissionRoute
-                      requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
-                    />
-                  }
-                >
-                  <Route path="/goals" element={<GoalsPage />} />
-                  <Route path="/goals/mine" element={<GoalsPage />} />
+              {/* Call Centre Management - dedicated layout */}
+              <Route element={<AdminProtectedRoute />}>
+                <Route element={<CallCentreLayout />}>
                   <Route
-                    path="/goals/analytics"
-                    element={<GoalAnalyticsPage />}
+                    path="/call-centre"
+                    element={<Navigate to="/call-centre/contacts" replace />}
                   />
                   <Route
-                    path="/goals/okr-alignment"
-                    element={<OKRAlignmentPage />}
-                  />
-                  <Route path="/goals/new" element={<GoalCreatePage />} />
-                  <Route
-                    path="/goals/templates"
-                    element={<GoalTemplatesPage />}
+                    path="/call-centre/contacts"
+                    element={<CallCentrePage />}
                   />
                   <Route
-                    path="/goals/approvals"
-                    element={<GoalApprovalsPage />}
+                    path="/call-centre/history"
+                    element={<CallHistory />}
                   />
-                  <Route
-                    path="/goals/documents"
-                    element={<DocumentsPage />}
-                  />
-                  <Route
-                    path="/goals/metric-batches"
-                    element={<MetricImportBatchesPage />}
-                  />
-                  <Route
-                    path="/goals/metric-batches/:id"
-                    element={<MetricImportBatchDetailPage />}
-                  />
-                  <Route
-                    path="/goals/reviews"
-                    element={<ReviewCyclesPage />}
-                  />
-                  <Route
-                    path="/goals/reviews/my-reviews"
-                    element={<MyReviewPage />}
-                  />
-                  <Route
-                    path="/goals/reviews/assignments/:id"
-                    element={<ReviewAssignmentPage />}
-                  />
-                  <Route
-                    path="/goals/reviews/:id"
-                    element={<ReviewCycleDetailPage />}
-                  />
-                  <Route path="/goals/:id" element={<GoalDetailPage />} />
-                  <Route path="/goals/:id/edit" element={<GoalEditPage />} />
+                  <Route path="/call-centre/email" element={<EmailPage />} />
+                  <Route path="/call-centre/sms" element={<SMSPage />} />
+                  {/* <Route path="/queries/:id" element={<QueryDetailPage />} /> */}
                 </Route>
               </Route>
-            </Route>
+
+              {/* Goal Management routes - dedicated layout */}
+              <Route element={<AdminProtectedRoute />}>
+                <Route element={<GoalLayout />}>
+                  <Route
+                    element={
+                      <PermissionRoute
+                        requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
+                      />
+                    }
+                  >
+                    <Route path="/goals" element={<GoalsPage />} />
+                    <Route path="/goals/mine" element={<GoalsPage />} />
+                    <Route
+                      path="/goals/analytics"
+                      element={<GoalAnalyticsPage />}
+                    />
+                    <Route
+                      path="/goals/okr-alignment"
+                      element={<OKRAlignmentPage />}
+                    />
+                    <Route path="/goals/new" element={<GoalCreatePage />} />
+                    <Route
+                      path="/goals/templates"
+                      element={<GoalTemplatesPage />}
+                    />
+                    <Route
+                      path="/goals/approvals"
+                      element={<GoalApprovalsPage />}
+                    />
+                    <Route
+                      path="/goals/documents"
+                      element={<DocumentsPage />}
+                    />
+                    <Route
+                      path="/goals/metric-batches"
+                      element={<MetricImportBatchesPage />}
+                    />
+                    <Route
+                      path="/goals/metric-batches/:id"
+                      element={<MetricImportBatchDetailPage />}
+                    />
+                    <Route
+                      path="/goals/reviews"
+                      element={<ReviewCyclesPage />}
+                    />
+                    <Route
+                      path="/goals/reviews/my-reviews"
+                      element={<MyReviewPage />}
+                    />
+                    <Route
+                      path="/goals/reviews/assignments/:id"
+                      element={<ReviewAssignmentPage />}
+                    />
+                    <Route
+                      path="/goals/reviews/:id"
+                      element={<ReviewCycleDetailPage />}
+                    />
+                    <Route path="/goals/:id" element={<GoalDetailPage />} />
+                    <Route path="/goals/:id/edit" element={<GoalEditPage />} />
+                  </Route>
+                </Route>
+              </Route>
 
               {/* Redirect root to dashboard or login */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
