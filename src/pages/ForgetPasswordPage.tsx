@@ -356,7 +356,7 @@ export function ForgotPasswordPage() {
                   <input
                     type="tel"
                     inputMode="numeric"
-                    placeholder="919454578502"
+                    placeholder="919876543210"
                     value={phone}
                     onChange={(e) => {
                       setPhone(e.target.value.replace(/\D/g, ""));
