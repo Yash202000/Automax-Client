@@ -183,6 +183,7 @@ export const ComplaintDetailPage: React.FC = () => {
       refetchTransitions();
       refetchComments();
       queryClient.invalidateQueries({ queryKey: ["complaint", id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["complaints", "stats"] });
       setTransitionModalOpen(false);
       setSelectedTransition(null);
       setTransitionComment("");
