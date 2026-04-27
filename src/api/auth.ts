@@ -10,6 +10,31 @@ import type {
   User,
 } from "../types";
 
+export interface ForgotPasswordRequest {
+  value: string;
+  channel: "sms" | "email";
+}
+
+export interface ForgotPasswordResponse {
+  sessionID: string;
+}
+
+export interface VerifyResetOtpRequest {
+  value: string;
+  channel: "sms" | "email";
+  session_id: string;
+  otp: string;
+}
+
+export interface VerifyResetOtpResponse {
+  resetToken: string;
+}
+
+export interface ResetPasswordRequest {
+  resetToken: string;
+  newPassword: string;
+}
+
 export const authApi = {
   login: async (
     data: LoginRequest,
@@ -75,6 +100,35 @@ export const authApi = {
 
   deleteAccount: async (): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete<ApiResponse<null>>("/users/me");
+    return response.data;
+  },
+  forgotPassword: async (
+    data: ForgotPasswordRequest,
+  ): Promise<ApiResponse<ForgotPasswordResponse>> => {
+    const response = await apiClient.post<ApiResponse<ForgotPasswordResponse>>(
+      "/auth/forgot-password",
+      data,
+    );
+    return response.data;
+  },
+
+  verifyResetOtp: async (
+    data: VerifyResetOtpRequest,
+  ): Promise<ApiResponse<VerifyResetOtpResponse>> => {
+    const response = await apiClient.post<ApiResponse<VerifyResetOtpResponse>>(
+      "/auth/verify-reset-otp",
+      data,
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    data: ResetPasswordRequest,
+  ): Promise<ApiResponse<null>> => {
+    const response = await apiClient.post<ApiResponse<null>>(
+      "/auth/reset-password",
+      data,
+    );
     return response.data;
   },
 };
