@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -53,6 +53,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
   // --- Modal State ---
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -156,7 +157,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
       !transition?.assign_department_id,
   });
 
-  const { data: userMatchData } = useQuery({
+  const { data: userMatchData, isLoading: isUserMatchLoading } = useQuery({
     queryKey: [
       "user-match",
       transition?.assignment_roles,
@@ -180,15 +181,17 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   });
 
   const roleIds = transition?.assignment_roles?.map((r) => r.id) || [];
-  const { data: usersByRolesData } = useQuery({
-    queryKey: ["admin", "users", "by-roles", roleIds],
-    queryFn: () => userApi.list(1, 100, "", roleIds),
-    enabled:
-      isOpen &&
-      currentStep === "user" &&
-      !!transition?.manual_select_user &&
-      roleIds.length > 0,
-  });
+  const { data: usersByRolesData, isLoading: isUsersByRolesLoading } = useQuery(
+    {
+      queryKey: ["admin", "users", "by-roles", roleIds],
+      queryFn: () => userApi.list(1, 100, "", roleIds),
+      enabled:
+        isOpen &&
+        currentStep === "user" &&
+        !!transition?.manual_select_user &&
+        roleIds.length > 0,
+    },
+  );
 
   const { data: durationOptionsData } = useQuery({
     queryKey: ["duration-options"],
@@ -371,6 +374,20 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
     setIsExecuting(false);
 
     const successCount = newResults.filter((r) => r.success).length;
+
+    // Invalidate sidebar stats so counts update immediately
+    if (successCount > 0) {
+      const recordType = firstIncident?.record_type || "incident";
+      if (recordType === "request") {
+        queryClient.invalidateQueries({ queryKey: ["requests", "stats"] });
+      } else if (recordType === "complaint") {
+        queryClient.invalidateQueries({ queryKey: ["complaints", "stats"] });
+      } else if (recordType === "query") {
+        queryClient.invalidateQueries({ queryKey: ["queries", "stats"] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["incidents", "stats"] });
+      }
+    }
     if (successCount === total) {
       toast.success(t("incidents.bulkTransitionSuccess", { count: total }));
       onSuccess();
@@ -448,7 +465,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
       case "department":
         return !!selectedDepartmentId;
       case "user":
-        return selectedUserIds.length > 0;
+        return true;
       case "duration":
         return !!readyToCloseDuration;
       case "feedback":
@@ -757,11 +774,11 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 <User className="w-5 h-5 text-[hsl(var(--primary))]" />
                 <h4 className="font-semibold">
                   {t("incidents.userAssignment")}
-                  {isMandatory && (
+                  {/* {isMandatory && (
                     <span className="text-[hsl(var(--destructive))] ml-1">
                       *
                     </span>
-                  )}
+                  )} */}
                 </h4>
               </div>
 
@@ -784,60 +801,34 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                     )}
                   </p>
                   <div className="space-y-3">
-                    {userMatchData?.data?.users &&
-                    userMatchData.data.users.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1">
-                        {userMatchData.data.users.map((u) => (
-                          <button
-                            key={u.id}
-                            onClick={() => setSelectedUserIds([u.id])}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-lg border transition-all text-left text-sm",
-                              selectedUserIds.includes(u.id)
-                                ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)] ring-1 ring-[hsl(var(--primary))]"
-                                : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.3)]",
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                              <span>
-                                {u.first_name
-                                  ? `${u.first_name} ${u.last_name || ""}`
-                                  : u.username}
-                              </span>
-                            </div>
-                            {selectedUserIds.includes(u.id) && (
-                              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {transition?.manual_select_user && (
-                      <div className="space-y-2">
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] font-medium mt-4">
+                    {isUserMatchLoading || isUsersByRolesLoading ? (
+                      <div className="flex flex-col items-center justify-center py-8 gap-3">
+                        <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm text-[hsl(var(--muted-foreground))]">
                           {t(
-                            "incidents.allEligibleUsers",
-                            "All Eligible Staff (Role Based):",
+                            "incidents.searchingUsers",
+                            "Searching for users...",
                           )}
                         </p>
-                        <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 border border-[hsl(var(--border))] rounded-lg p-2 bg-[hsl(var(--muted)/0.1)]">
-                          {usersByRolesData?.data &&
-                          usersByRolesData.data.length > 0 ? (
-                            usersByRolesData.data.map((u) => (
+                      </div>
+                    ) : (
+                      <>
+                        {userMatchData?.data?.users &&
+                        userMatchData.data.users.length > 0 ? (
+                          <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1">
+                            {userMatchData.data.users.map((u) => (
                               <button
                                 key={u.id}
                                 onClick={() => setSelectedUserIds([u.id])}
                                 className={cn(
-                                  "flex items-center justify-between p-2 rounded-md transition-all text-left text-xs",
+                                  "flex items-center justify-between p-3 rounded-lg border transition-all text-left text-sm",
                                   selectedUserIds.includes(u.id)
-                                    ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
-                                    : "hover:bg-[hsl(var(--muted))]",
+                                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)] ring-1 ring-[hsl(var(--primary))]"
+                                    : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.3)]",
                                 )}
                               >
                                 <div className="flex items-center gap-2">
-                                  <User className="w-3.5 h-3.5" />
+                                  <User className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                                   <span>
                                     {u.first_name
                                       ? `${u.first_name} ${u.last_name || ""}`
@@ -845,20 +836,85 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                                   </span>
                                 </div>
                                 {selectedUserIds.includes(u.id) && (
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
                                 )}
                               </button>
-                            ))
-                          ) : (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))] p-4 text-center italic">
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {transition?.manual_select_user && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] font-medium mt-4">
                               {t(
-                                "incidents.noEligibleUsersFound",
-                                "No active users found with the required roles.",
+                                "incidents.allEligibleUsers",
+                                "All Eligible Staff (Role Based):",
                               )}
                             </p>
+                            <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 border border-[hsl(var(--border))] rounded-lg p-2 bg-[hsl(var(--muted)/0.1)]">
+                              {usersByRolesData?.data &&
+                              usersByRolesData.data.length > 0 ? (
+                                usersByRolesData.data.map((u) => (
+                                  <button
+                                    key={u.id}
+                                    onClick={() => setSelectedUserIds([u.id])}
+                                    className={cn(
+                                      "flex items-center justify-between p-2 rounded-md transition-all text-left text-xs",
+                                      selectedUserIds.includes(u.id)
+                                        ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                                        : "hover:bg-[hsl(var(--muted))]",
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <User className="w-3.5 h-3.5" />
+                                      <span>
+                                        {u.first_name
+                                          ? `${u.first_name} ${u.last_name || ""}`
+                                          : u.username}
+                                      </span>
+                                    </div>
+                                    {selectedUserIds.includes(u.id) && (
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                ))
+                              ) : (
+                                <p className="text-xs text-[hsl(var(--muted-foreground))] p-4 text-center italic">
+                                  {t(
+                                    "incidents.noEligibleUsersFound",
+                                    "No active users found with the required roles.",
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* No user exists fallback */}
+                        {(!userMatchData?.data?.users ||
+                          userMatchData.data.users.length === 0) &&
+                          (!transition?.manual_select_user ||
+                            !usersByRolesData?.data ||
+                            usersByRolesData.data.length === 0) && (
+                            <div className="p-6 rounded-xl text-center border-2 border-dashed flex flex-col items-center gap-2 bg-muted/30 border-border text-muted-foreground">
+                              <User className="w-8 h-8 opacity-50" />
+                              <div className="space-y-1">
+                                <p className="font-semibold text-sm">
+                                  {t(
+                                    "incidents.noUserExists",
+                                    "No user exists",
+                                  )}
+                                </p>
+                                <p className="text-xs opacity-80">
+                                  {t(
+                                    "incidents.noUserExistsDesc",
+                                    "No eligible users found. You can skip user assignment and continue.",
+                                  )}
+                                </p>
+                              </div>
+                            </div>
                           )}
-                        </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>

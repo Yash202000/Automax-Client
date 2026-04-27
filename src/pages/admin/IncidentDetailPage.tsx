@@ -564,6 +564,7 @@ export const IncidentDetailPage: React.FC = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
+      queryClient.invalidateQueries({ queryKey: ["incidents", "stats"] });
       refetchTransitions();
       refetchAttachments();
       setTransitionModalOpen(false);

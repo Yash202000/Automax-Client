@@ -990,7 +990,7 @@ export const IncidentsPage: React.FC = () => {
               }
               label={t("common.department")}
               placeholder={t("common.allDepartments")}
-              leafOnly
+              leafOnly={false}
             />
             <MultiTreeSelect
               data={classificationsData?.data || []}
@@ -1003,7 +1003,7 @@ export const IncidentsPage: React.FC = () => {
               }
               label={t("common.classification")}
               placeholder={t("common.allClassifications")}
-              leafOnly
+              leafOnly={false}
             />
             <MultiTreeSelect
               data={locationsData?.data || []}
@@ -1013,7 +1013,7 @@ export const IncidentsPage: React.FC = () => {
               }
               label={t("common.location")}
               placeholder={t("common.allLocations")}
-              leafOnly
+              leafOnly={false}
             />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">

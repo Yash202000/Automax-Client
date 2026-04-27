@@ -205,6 +205,7 @@ export const QueryDetailPage: React.FC = () => {
       refetchTransitions();
       refetchComments();
       queryClient.invalidateQueries({ queryKey: ["query", id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["queries", "stats"] });
       setTransitionModalOpen(false);
       setSelectedTransition(null);
       setTransitionComment("");
