@@ -11,6 +11,7 @@ import {
   goalActivityApi,
   metricImportApi,
 } from "../api/goals";
+import { goalAnalyticsKeys } from "./useGoalAnalytics";
 import type {
   GoalFilter,
   GoalCreateRequest,
@@ -96,6 +97,8 @@ export function useCreateGoal() {
     mutationFn: (data: GoalCreateRequest) => goalApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: goalKeys.lists() });
+      // Analytics aggregates depend on the goal set — refresh them too.
+      queryClient.invalidateQueries({ queryKey: goalAnalyticsKeys.all });
       toast.success("Goal created successfully");
     },
     onError: () => {
@@ -114,6 +117,7 @@ export function useUpdateGoal() {
       queryClient.invalidateQueries({
         queryKey: goalKeys.detail(variables.id),
       });
+      queryClient.invalidateQueries({ queryKey: goalAnalyticsKeys.all });
       toast.success("Goal updated successfully");
     },
     onError: () => {
@@ -128,6 +132,11 @@ export function useDeleteGoal() {
     mutationFn: (id: string) => goalApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: goalKeys.lists() });
+      // Analytics aggregates must drop the deleted goal; otherwise the
+      // status distribution, priority chart, department chart, progress
+      // ranges, monthly trend, etc. all keep showing the goal until a
+      // hard reload.
+      queryClient.invalidateQueries({ queryKey: goalAnalyticsKeys.all });
       toast.success("Goal deleted successfully");
     },
     onError: (error: { response?: { data?: { error?: string } } }) => {

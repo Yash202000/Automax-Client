@@ -178,10 +178,26 @@ export const GoalTemplatesPage: React.FC = () => {
                   <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                     {tpl.priority || "-"}
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="tabular-nums text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {tpl.default_metrics?.length ?? 0}
-                    </span>
+                  <td className="px-4 py-3">
+                    {tpl.default_metrics && tpl.default_metrics.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {tpl.default_metrics.map((m, i) => (
+                          <span
+                            key={i}
+                            title={`${m.name} • target ${m.target_value}${m.unit ? " " + m.unit : ""} • weight ${m.weight}`}
+                            className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300"
+                          >
+                            <span className="truncate max-w-[120px]">{m.name}</span>
+                            <span className="tabular-nums opacity-75">
+                              {m.target_value}
+                              {m.unit ? m.unit : ""}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button

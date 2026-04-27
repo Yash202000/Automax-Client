@@ -16,7 +16,19 @@ export const reviewApi = {
   createCycle: async (
     data: ReviewCycleCreateRequest,
   ): Promise<ApiResponse<ReviewCycle>> => {
-    const resp = await apiClient.post("/reviews/cycles", data);
+    // <input type="date"> returns YYYY-MM-DD; backend's *time.Time parser
+    // wants RFC3339. Normalize period_start to start-of-day and period_end
+    // to end-of-day so the cycle covers the inclusive date range.
+    const toStartOfDay = (d: string) =>
+      d && d.length === 10 ? `${d}T00:00:00Z` : d;
+    const toEndOfDay = (d: string) =>
+      d && d.length === 10 ? `${d}T23:59:59Z` : d;
+    const payload = {
+      ...data,
+      period_start: toStartOfDay(data.period_start),
+      period_end: toEndOfDay(data.period_end),
+    };
+    const resp = await apiClient.post("/reviews/cycles", payload);
     return resp.data;
   },
 
