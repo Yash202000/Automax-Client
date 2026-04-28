@@ -1282,6 +1282,7 @@ export interface IncidentFilter {
   end_date?: string;
   page?: number;
   limit?: number;
+  transition_id?: string;
 }
 
 // Convert Incident to Request types

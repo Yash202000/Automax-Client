@@ -1227,6 +1227,8 @@ export const incidentApi = {
     if (filter.record_type) params.append("record_type", filter.record_type);
     if (filter.start_date) params.append("start_date", filter.start_date);
     if (filter.end_date) params.append("end_date", filter.end_date);
+    if (filter.transition_id)
+      params.append("transition_id", filter.transition_id);
 
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
@@ -1557,6 +1559,15 @@ export const incidentApi = {
     const response = await apiClient.patch<ApiResponse<Incident>>(
       `/incidents/${incidentId}/closed-summary`,
       data,
+    );
+    return response.data;
+  },
+
+  getTransitionsByState: async (
+    stateId: string,
+  ): Promise<ApiResponse<WorkflowTransition[]>> => {
+    const response = await apiClient.get<ApiResponse<WorkflowTransition[]>>(
+      `/admin/workflows/states/${stateId}/transitions`,
     );
     return response.data;
   },

@@ -374,6 +374,7 @@ export const IncidentsPage: React.FC = () => {
       classification_ids: searchParams.getAll("classification_ids"),
 
       current_state_id: currentStateId,
+      transition_id: searchParams.get("transition_id") || undefined,
     };
   }, [searchParams, uniqueStates]);
 
@@ -395,6 +396,14 @@ export const IncidentsPage: React.FC = () => {
     queryKey: ["incidents", "stats", "incident"],
     queryFn: () => incidentApi.getStats("incident"),
   });
+
+  const { data: availableTransitions, isLoading: isTransitionsLoading } =
+    useQuery({
+      queryKey: ["incidents", "available-transitions", filter.current_state_id],
+      queryFn: () =>
+        incidentApi.getTransitionsByState(filter.current_state_id || ""),
+      enabled: !!filter.current_state_id,
+    });
 
   // Skip the API call when search is 1-2 chars — wait for 3+ before fetching
   const isShortSearch = !!(
@@ -448,6 +457,10 @@ export const IncidentsPage: React.FC = () => {
     const params = new URLSearchParams(searchParams);
 
     params.delete(key);
+
+    if (key === "current_state_id") {
+      params.delete("transition_id");
+    }
 
     if (value !== undefined && value !== "" && value !== null) {
       if (Array.isArray(value)) {
@@ -958,6 +971,47 @@ export const IncidentsPage: React.FC = () => {
                 ))}
               </select>
             </div>
+            {filter.current_state_id && (
+              <div>
+                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                  {t("incidents.transition")}
+                </label>
+
+                <select
+                  value={filter.transition_id || ""}
+                  onChange={(e) =>
+                    handleFilterChange(
+                      "transition_id",
+                      e.target.value || undefined,
+                    )
+                  }
+                  disabled={
+                    isTransitionsLoading ||
+                    (!canViewAllIncidents && hasUrlFilter)
+                  }
+                  className={cn(
+                    "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
+                    (isTransitionsLoading ||
+                      (!canViewAllIncidents && hasUrlFilter)) &&
+                      "opacity-60 cursor-not-allowed",
+                  )}
+                >
+                  {isTransitionsLoading ? (
+                    <option>Loading...</option>
+                  ) : (
+                    <>
+                      <option value="">{t("incidents.allTransitions")}</option>
+
+                      {availableTransitions?.data?.map((transition: any) => (
+                        <option key={transition.id} value={transition.id}>
+                          {transition.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                 {t("common.assignee")}

@@ -437,7 +437,8 @@
     "selectDurationPlaceholder": "Select duration...",
     "additionalFeedbackPlaceholder": "Additional feedback...",
     "orDragAndDrop": "or drag and drop",
-    "uploadLimits": "PNG, JPG, PDF up to 10MB"
+    "uploadLimits": "PNG, JPG, PDF up to 10MB",
+    "allTransitions": "All Transitions"
   },
   "incidentMerge": {
     "title": "Merge Incidents",
