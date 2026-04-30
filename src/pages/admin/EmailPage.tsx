@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Email, EmailFilter, EmailAttachment } from "../../types";
 import { emailApi, smsApi } from "../../api/admin";
+import { useTranslation } from "react-i18next";
 import {
   Mail,
   Send,
@@ -29,6 +30,7 @@ import { ConfirmationModal } from "../../components/common/ConfirmationModal";
 type Folder = "inbox" | "sent" | "drafts" | "trash";
 
 export const EmailPage: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [currentFolder, setCurrentFolder] = useState<Folder>("inbox");
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
@@ -510,7 +512,7 @@ export const EmailPage: React.FC = () => {
             className="w-full"
           >
             <Plus className="w-5 h-5" />
-            <span>Compose</span>
+            <span>{t("email.compose")}</span>
           </Button>
         </div>
 
@@ -553,7 +555,7 @@ export const EmailPage: React.FC = () => {
               }}
               className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium"
             >
-              Compose
+              {t("email.compose")}
             </button>
             <select
               value={currentFolder}
@@ -563,10 +565,10 @@ export const EmailPage: React.FC = () => {
               }}
               className="bg-slate-50 border border-border rounded-lg px-2 text-sm"
             >
-              <option value="inbox">Inbox</option>
-              <option value="sent">Sent</option>
-              <option value="drafts">Drafts</option>
-              <option value="trash">Trash</option>
+              <option value="inbox">{t("email.inbox")}</option>
+              <option value="sent">{t("email.sent")}</option>
+              <option value="drafts">{t("email.drafts")}</option>
+              <option value="trash">{t("email.trash")}</option>
             </select>
           </div>
 
@@ -574,7 +576,7 @@ export const EmailPage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search mail..."
+              placeholder={t("email.searchMail")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -588,7 +590,7 @@ export const EmailPage: React.FC = () => {
             </div>
           ) : emails.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
-              <p>No emails found</p>
+              <p>{t("email.noEmailsFound")}</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
@@ -616,13 +618,13 @@ export const EmailPage: React.FC = () => {
                       {email.status === "failed" && (
                         <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full font-medium">
                           <AlertCircle className="w-3 h-3" />
-                          Failed
+                          {t("common.failed")}
                         </span>
                       )}
                       {(email.is_draft || currentFolder === "drafts") && (
                         <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
                           <FileText className="w-3 h-3" />
-                          Draft
+                          {t("goals.metricImport.statusDraft")}
                         </span>
                       )}
                       <span
@@ -657,7 +659,7 @@ export const EmailPage: React.FC = () => {
                       <button
                         onClick={(e) => deleteEmail(e, email.id)}
                         className="ml-2 p-1 hover:bg-red-50 rounded-full text-slate-300 hover:text-red-500 transition-colors"
-                        title="Delete draft"
+                        title={t("email.deleteDraft")}
                       >
                         <Trash className="w-4 h-4" />
                       </button>
@@ -707,11 +709,11 @@ export const EmailPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-xs text-slate-400">
-                        To: {getRecipients(selectedEmail, "to")}
+                        {t("email.to")} {getRecipients(selectedEmail, "to")}
                       </div>
                       {getRecipients(selectedEmail, "cc") && (
                         <div className="text-xs text-slate-400">
-                          Cc: {getRecipients(selectedEmail, "cc")}
+                          {t("email.cc")} {getRecipients(selectedEmail, "cc")}
                         </div>
                       )}
                     </div>
@@ -724,21 +726,21 @@ export const EmailPage: React.FC = () => {
                       <button
                         onClick={handleReply}
                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                        title="Reply"
+                        title={t("email.reply")}
                       >
                         <Reply className="w-4 h-4" />
                       </button>
                       <button
                         onClick={handleForward}
                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                        title="Forward"
+                        title={t("email.forward")}
                       >
                         <Forward className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => deleteEmail(e, selectedEmail.id)}
                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                        title="Delete"
+                        title={t("common.delete")}
                       >
                         <Trash className="w-4 h-4" />
                       </button>
@@ -762,7 +764,8 @@ export const EmailPage: React.FC = () => {
                   <div className="mt-8 pt-6 border-t border-border">
                     <h4 className="text-sm font-medium text-slate-900 mb-3 flex items-center gap-2">
                       <Paperclip className="w-4 h-4" />
-                      Attachments ({selectedEmail.attachments.length})
+                      {t("email.attachments")}{" "}
+                      {selectedEmail.attachments.length})
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {selectedEmail.attachments.map((attachment) => (
@@ -802,7 +805,7 @@ export const EmailPage: React.FC = () => {
               <Mail className="w-8 h-8" />
             </div>
             <p className="text-lg font-medium text-slate-600">
-              Select an email to read
+              {t("email.selectAnEmailToRead")}
             </p>
           </div>
         )}
@@ -852,49 +855,51 @@ export const EmailPage: React.FC = () => {
                   <EmailChipInput
                     value={composeTo}
                     onChange={setComposeTo}
-                    placeholder="recipient@example.com — press Enter or comma to add"
+                    placeholder={t(
+                      "email.recipientExampleComPressEnterOrComma",
+                    )}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium  mb-1">
-                    CC (optional)
+                    {t("email.ccOptional")}
                   </label>
                   <EmailChipInput
                     value={composeCc}
                     onChange={setComposeCc}
-                    placeholder="cc@example.com"
+                    placeholder={t("email.ccExampleCom")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium  mb-1">
-                    BCC (optional)
+                    {t("email.bccOptional")}
                   </label>
                   <EmailChipInput
                     value={composeBcc}
                     onChange={setComposeBcc}
-                    placeholder="bcc@example.com"
+                    placeholder={t("email.bccExampleCom")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium  mb-1">
-                    Subject
+                    {t("email.subject")}
                   </label>
                   <input
                     type="text"
                     value={composeSubject}
                     onChange={(e) => setComposeSubject(e.target.value)}
                     className="w-full px-3 py-2 border bg-background border-b border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="Subject"
+                    placeholder={t("email.subject")}
                   />
                 </div>
                 <div className="flex-1 flex flex-col">
                   <label className="block text-sm font-medium  mb-1">
-                    Message
+                    {t("email.message")}
                   </label>
                   <RichTextEditor
                     value={composeBody}
                     onChange={setComposeBody}
-                    placeholder="Write your message here..."
+                    placeholder={t("email.writeYourMessageHere")}
                     className="flex-1 min-h-[250px]"
                   />
                 </div>
@@ -919,7 +924,7 @@ export const EmailPage: React.FC = () => {
                     className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
                   >
                     <Paperclip className="w-4 h-4" />
-                    Attach Files
+                    {t("email.attachFiles")}
                   </button>
                   {attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
@@ -940,7 +945,7 @@ export const EmailPage: React.FC = () => {
                               type="button"
                               onClick={() => handlePreviewAttachment(file)}
                               className="text-slate-400 hover:text-primary p-1"
-                              title="Preview"
+                              title={t("reports.preview")}
                             >
                               <Download className="w-4 h-4" />
                             </button>
@@ -954,7 +959,7 @@ export const EmailPage: React.FC = () => {
                                   fileInputRef.current.value = "";
                               }}
                               className="text-slate-400 hover:text-red-500 p-1"
-                              title="Remove"
+                              title={t("common.remove")}
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -983,7 +988,7 @@ export const EmailPage: React.FC = () => {
 
                 <div className="flex gap-3">
                   <Button variant={"ghost"} onClick={closeCompose}>
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <button
                     type="submit"
@@ -997,7 +1002,7 @@ export const EmailPage: React.FC = () => {
                     ) : (
                       <Send className="w-4 h-4" />
                     )}
-                    Send Message
+                    {t("email.sendMessage")}
                   </button>
                 </div>
               </div>

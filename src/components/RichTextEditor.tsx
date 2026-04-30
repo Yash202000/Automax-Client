@@ -10,6 +10,7 @@ import {
   AlignRight,
   Link as LinkIcon,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface RichTextEditorProps {
   value: string;
@@ -24,6 +25,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = "Write your message here...",
   className = "",
 }) => {
+  const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false);
 
@@ -92,7 +94,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           type="button"
           onClick={createLink}
           className="p-2 hover:bg-slate-200 rounded transition-colors"
-          title="Insert Link"
+          title={t("common.insertLink")}
         >
           <LinkIcon className="w-4 h-4 text-slate-600" />
         </button>

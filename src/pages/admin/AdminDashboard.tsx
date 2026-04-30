@@ -49,6 +49,7 @@ const StatCard: React.FC<StatCardProps> = ({
   change,
   hasPermission = true,
 }) => {
+  const { t } = useTranslation();
   const CardContent = (
     <div
       className={`relative overflow-hidden bg-card rounded-2xl border border-slate-200/60 p-6 transition-all duration-300 ${
@@ -89,7 +90,9 @@ const StatCard: React.FC<StatCardProps> = ({
             <span className="text-sm font-medium text-emerald-600">
               {change}
             </span>
-            <span className="text-sm text-slate-400">vs last month</span>
+            <span className="text-sm text-slate-400">
+              {t("adminDashboard.vsLastMonth")}
+            </span>
           </div>
         )}
       </div>
@@ -527,7 +530,8 @@ export const AdminDashboard: React.FC = () => {
                 {service.status}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">
-                Latency: {service.latency}
+                {t("adminDashboard.latency")}
+                {service.latency}
               </p>
             </div>
           ))}

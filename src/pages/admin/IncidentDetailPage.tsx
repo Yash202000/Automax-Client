@@ -1057,7 +1057,7 @@ export const IncidentDetailPage: React.FC = () => {
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Failed to save edited image:", error);
-      toast.error(t("incidents.saveFailed", "Failed to save edited image"));
+      toast.error(t("incidents.saveFailed"));
       setOpenImageEditor(false);
     }
   };
@@ -1368,7 +1368,7 @@ export const IncidentDetailPage: React.FC = () => {
               </div>
               <p className="text-xs text-yellow-700 mt-1.5 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                Live collaboration active - changes may occur in real-time
+                {t("incidents.liveCollaborationActiveChangesMayOccurIn")}
               </p>
             </div>
           </div>
@@ -1593,10 +1593,11 @@ export const IncidentDetailPage: React.FC = () => {
               <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-amber-800">
-                  Ready to Close — Expiring in {h}h {m}m
+                  {t("incidents.readyToCloseExpiringIn")}
+                  {h}h {m}m
                 </p>
                 <p className="text-sm text-amber-700 mt-0.5">
-                  This incident will automatically revert if not closed by{" "}
+                  {t("incidents.thisIncidentWillAutomaticallyRevertIfNot")}{" "}
                   <strong>{expiresAt.toLocaleString()}</strong>.
                   {incident.ready_to_close_duration &&
                     ` Duration selected: ${incident.ready_to_close_duration}.`}
@@ -1624,7 +1625,7 @@ export const IncidentDetailPage: React.FC = () => {
                       setIsEditingDescription(true);
                     }}
                     className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
-                    title="Edit description"
+                    title={t("incidents.editDescription")}
                     disabled={isSavingDescription}
                   >
                     <Edit2 className="w-4 h-4 text-[hsl(var(--foreground))]" />
@@ -1652,7 +1653,7 @@ export const IncidentDetailPage: React.FC = () => {
                 autoFocus
                 disabled={isSavingDescription}
                 className="w-full min-h-[120px] p-3 border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] resize-none"
-                placeholder="Enter description..."
+                placeholder={t("incidents.enterDescription")}
               />
             ) : (
               <p className="text-[hsl(var(--foreground))] whitespace-pre-wrap">
@@ -1662,7 +1663,7 @@ export const IncidentDetailPage: React.FC = () => {
             {isSavingDescription && (
               <div className="flex items-center gap-2 mt-2 text-xs text-[hsl(var(--muted-foreground))]">
                 <RefreshCw className="w-3 h-3 animate-spin" />
-                Saving...
+                {t("users.saving")}
               </div>
             )}
           </div>
@@ -1831,7 +1832,7 @@ export const IncidentDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <XCircle className="w-4 h-4" />
-                  Rejection History
+                  {t("incidents.rejectionHistory")}
                   {(rejectionLogsData?.data?.length ?? 0) > 0 && (
                     <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]">
                       {rejectionLogsData?.data?.length}
@@ -1850,7 +1851,7 @@ export const IncidentDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <Bot className="w-4 h-4" />
-                  AI Quality
+                  {t("incidents.aiQuality")}
                   {aiQualityData?.data && (
                     <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                       1
@@ -2498,8 +2499,9 @@ export const IncidentDetailPage: React.FC = () => {
                                     src={getAttachmentPreviewUrl(attachment.id)}
                                     preload="metadata"
                                   >
-                                    Your browser does not support the audio
-                                    element.
+                                    {t(
+                                      "incidents.yourBrowserDoesNotSupportTheAudio",
+                                    )}
                                   </audio>
                                 </div>
                               ))}
@@ -2644,18 +2646,17 @@ export const IncidentDetailPage: React.FC = () => {
                     <div className="flex items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
                       <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                       <span className="text-sm">
-                        Loading AI quality report...
+                        {t("incidents.loadingAIQualityReport")}
                       </span>
                     </div>
                   ) : !aiQualityData?.data ? (
                     <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
                       <Bot className="w-10 h-10 mb-3 opacity-30" />
                       <p className="text-sm font-medium">
-                        No AI quality report yet
+                        {t("incidents.noAiQualityReport")}
                       </p>
                       <p className="text-xs mt-1 text-center max-w-xs">
-                        The AI quality monitor will process this incident
-                        shortly.
+                        {t("incidents.aiQualityProcessing")}
                       </p>
                     </div>
                   ) : (
@@ -2671,17 +2672,18 @@ export const IncidentDetailPage: React.FC = () => {
                     <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
                       <XCircle className="w-10 h-10 mb-3 opacity-30" />
                       <p className="text-sm">
-                        No rejection records for this incident.
+                        {t("incidents.noRejectionRecords")}
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        This incident has been rejected{" "}
+                        {t("incidents.thisIncidentHasBeenRejected")}{" "}
                         <span className="font-semibold text-[hsl(var(--destructive))]">
                           {rejectionLogsData.data.length}
                         </span>{" "}
-                        time{rejectionLogsData.data.length !== 1 ? "s" : ""}.
+                        {t("incidents.time")}
+                        {rejectionLogsData.data.length !== 1 ? "s" : ""}.
                       </p>
                       {rejectionLogsData.data.map(
                         (log: IncidentRejectionLog) => (
@@ -2701,7 +2703,7 @@ export const IncidentDetailPage: React.FC = () => {
                                     {log.to_state?.name ?? "—"}
                                   </p>
                                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                    Rejected by{" "}
+                                    {t("incidents.rejectedBy")}{" "}
                                     <span className="font-medium">
                                       {log.rejected_by?.first_name ??
                                         log.rejected_by_username}
@@ -2742,7 +2744,7 @@ export const IncidentDetailPage: React.FC = () => {
                             <div className="grid grid-cols-3 gap-3 text-xs">
                               <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
                                 <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
-                                  Reaction Time
+                                  {t("incidents.reactionTime")}
                                 </p>
                                 <p className="font-semibold text-[hsl(var(--foreground))]">
                                   {log.reaction_time_minutes < 60
@@ -2752,7 +2754,7 @@ export const IncidentDetailPage: React.FC = () => {
                               </div>
                               <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
                                 <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
-                                  SLA Threshold
+                                  {t("incidents.slaThreshold")}
                                 </p>
                                 <p className="font-semibold text-[hsl(var(--foreground))]">
                                   {log.sla_threshold_hours != null
@@ -2762,7 +2764,7 @@ export const IncidentDetailPage: React.FC = () => {
                               </div>
                               <div className="bg-[hsl(var(--muted)/0.4)] rounded p-2">
                                 <p className="text-[hsl(var(--muted-foreground))] mb-0.5">
-                                  Total Rejections
+                                  {t("incidents.totalRejections")}
                                 </p>
                                 <p className="font-semibold text-[hsl(var(--foreground))]">
                                   {log.total_rejection_count}
@@ -2774,7 +2776,7 @@ export const IncidentDetailPage: React.FC = () => {
                             {log.rejection_reason && (
                               <div className="text-xs">
                                 <p className="text-[hsl(var(--muted-foreground))] mb-1 font-medium">
-                                  Rejection Reason
+                                  {t("incidents.rejectionReason")}
                                 </p>
                                 <p className="text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.3)] rounded p-2 leading-relaxed">
                                   {log.rejection_reason}
@@ -2896,7 +2898,7 @@ export const IncidentDetailPage: React.FC = () => {
                 {escalationSlaRecords.length > 0 && (
                   <div>
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      {t("incidents.escalationActions", "Escalation Actions")}
+                      {t("incidents.escalationActions")}
                     </label>
                     <div className="mt-1.5 space-y-1.5">
                       {escalationSlaRecords.map((rec) => (
@@ -3156,7 +3158,7 @@ export const IncidentDetailPage: React.FC = () => {
                 incident.longitude !== undefined && (
                   <div className="pt-2 border-t border-[hsl(var(--border))]">
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      {t("incidents.geolocation", "Geolocation")}
+                      {t("incidents.geolocation")}
                     </label>
                     <div className="mt-1.5 space-y-1.5">
                       {/* Map - smaller height */}
@@ -3273,12 +3275,9 @@ export const IncidentDetailPage: React.FC = () => {
             department: t("incidents.departmentAssignment"),
             user: t("incidents.userAssignment"),
             field_changes: "Field Changes",
-            duration: t(
-              "incidents.readyToCloseDuration",
-              "Auto-Revert Duration",
-            ),
+            duration: t("incidents.readyToCloseDuration"),
             attachment: t("incidents.attachment"),
-            feedback: t("incidents.feedback", "Feedback"),
+            feedback: t("incidents.feedback"),
             comment: t("incidents.comment"),
           };
           const isMandatory =
@@ -3314,7 +3313,7 @@ export const IncidentDetailPage: React.FC = () => {
                       {t("incidents.executeTransition")}
                     </h3>
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                      {t("incidents.stepOf", "Step {{current}} of {{total}}", {
+                      {t("incidents.stepOf", {
                         current: transitionStep + 1,
                         total: transitionSteps.length,
                       })}
@@ -3386,7 +3385,7 @@ export const IncidentDetailPage: React.FC = () => {
                         <span className="text-red-500 font-bold">*</span>
                       ) : (
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                          ({t("incidents.optional", "optional")})
+                          ({t("incidents.optional")})
                         </span>
                       )}
                     </div>
@@ -3555,10 +3554,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   onChange={(e) =>
                                     setDeptSearchQuery(e.target.value)
                                   }
-                                  placeholder={t(
-                                    "incidents.searchDepartments",
-                                    "Search departments...",
-                                  )}
+                                  placeholder={t("incidents.searchDepartments")}
                                   className="w-full pl-8 pr-3 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
                                 />
                               </div>
@@ -3568,7 +3564,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {searchActive ? (
                                   filteredFlat.length === 0 ? (
                                     <p className="text-sm text-[hsl(var(--muted-foreground))] px-3 py-2">
-                                      {t("common.noResults", "No results")}
+                                      {t("common.noResults")}
                                     </p>
                                   ) : (
                                     filteredFlat
@@ -3618,10 +3614,7 @@ export const IncidentDetailPage: React.FC = () => {
                       )
                     ) : (
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {t(
-                          "incidents.loadingDepartments",
-                          "Loading departments...",
-                        )}
+                        {t("incidents.loadingDepartments")}
                       </p>
                     ))}
 
@@ -3663,7 +3656,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 : userMatchResult.users[0].username}
                             </span>
                             <span className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">
-                              Auto-selected
+                              {t("incidents.autoSelected")}
                             </span>
                           </div>
                         ) : (
@@ -3805,10 +3798,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       onChange={(e) =>
                                         setUserSearchQuery(e.target.value)
                                       }
-                                      placeholder={t(
-                                        "incidents.searchUsers",
-                                        "Search users...",
-                                      )}
+                                      placeholder={t("incidents.searchUsers")}
                                       className="w-full pl-8 pr-3 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-md text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                                     />
                                   </div>
@@ -3825,11 +3815,8 @@ export const IncidentDetailPage: React.FC = () => {
                                       className="flex-shrink-0 text-xs text-[hsl(var(--primary))] hover:underline whitespace-nowrap"
                                     >
                                       {allCollapsed
-                                        ? t("common.expandAll", "Expand all")
-                                        : t(
-                                            "common.collapseAll",
-                                            "Collapse all",
-                                          )}
+                                        ? t("common.expandAll")
+                                        : t("common.collapseAll")}
                                     </button>
                                   )}
                                 </div>
@@ -3887,24 +3874,18 @@ export const IncidentDetailPage: React.FC = () => {
                                     />
                                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
                                       {searchActive
-                                        ? t(
-                                            "common.selectAllFiltered",
-                                            "Select all filtered",
-                                          )
-                                        : t("common.selectAll", "Select All")}
+                                        ? t("common.selectAllFiltered")
+                                        : t("common.selectAll")}
                                     </span>
                                     <span className="ml-auto text-xs text-[hsl(var(--muted-foreground))]">
                                       {selectedUserIds.length}/{allUsers.length}{" "}
-                                      {t("common.selected", "selected")}
+                                      {t("common.selected")}
                                     </span>
                                   </label>
                                   {searchActive ? (
                                     filteredUsers.length === 0 ? (
                                       <p className="px-3 py-3 text-sm text-[hsl(var(--muted-foreground))] text-center">
-                                        {t(
-                                          "common.noResults",
-                                          "No results found",
-                                        )}
+                                        {t("common.noResults")}
                                       </p>
                                     ) : (
                                       filteredUsers.map((u) =>
@@ -4088,7 +4069,7 @@ export const IncidentDetailPage: React.FC = () => {
                             </span>
                             <span className="text-xs text-[hsl(var(--muted-foreground))]">
                               ({(transitionAttachment.size / 1024).toFixed(1)}{" "}
-                              KB)
+                              {t("common.kb")})
                             </span>
                           </div>
                           <button
@@ -4178,7 +4159,7 @@ export const IncidentDetailPage: React.FC = () => {
                             <div className="border rounded-lg overflow-hidden">
                               {feedbackTemplates.length === 0 ? (
                                 <p className="p-3 text-sm text-[hsl(var(--muted-foreground))]">
-                                  No templates available
+                                  {t("incidents.noTemplatesAvailable")}
                                 </p>
                               ) : (
                                 <>
@@ -4196,7 +4177,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       }}
                                     />
                                     <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                      None
+                                      {t("common.none")}
                                     </span>
                                   </label>
                                   {feedbackTemplates.map((tpl: any) => (
@@ -4485,10 +4466,7 @@ export const IncidentDetailPage: React.FC = () => {
                         className={`w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors.duration ? "border-red-500" : "border-[hsl(var(--border))]"}`}
                       >
                         <option value="">
-                          {t(
-                            "incidents.selectDuration",
-                            "Select a duration...",
-                          )}
+                          {t("incidents.selectDuration")}
                         </option>
                         {readyToCloseDurationOptions.map((opt) => (
                           <option key={opt} value={opt}>
@@ -4511,7 +4489,7 @@ export const IncidentDetailPage: React.FC = () => {
                         <div className="border rounded-lg overflow-hidden">
                           {commentTemplates.length === 0 ? (
                             <p className="p-3 text-sm text-[hsl(var(--muted-foreground))]">
-                              No templates available
+                              {t("incidents.noTemplatesAvailable")}
                             </p>
                           ) : (
                             <>
@@ -4529,7 +4507,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   }}
                                 />
                                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                  None
+                                  {t("common.none")}
                                 </span>
                               </label>
                               {commentTemplates.map((tpl: any) => (
@@ -4591,7 +4569,7 @@ export const IncidentDetailPage: React.FC = () => {
                   <div className="flex gap-2">
                     {transitionStep > 0 && (
                       <Button variant="outline" onClick={handleStepBack}>
-                        {t("common.back", "Back")}
+                        {t("common.back")}
                       </Button>
                     )}
                     <Button
@@ -4613,7 +4591,7 @@ export const IncidentDetailPage: React.FC = () => {
                         ? transitionUploading
                           ? t("incidents.uploading")
                           : t("incidents.execute")
-                        : t("common.next", "Next")}
+                        : t("common.next")}
                     </Button>
                   </div>
                 </div>
@@ -4914,6 +4892,7 @@ export const IncidentDetailPage: React.FC = () => {
 // AI Quality Report sub-component
 // ---------------------------------------------------------------------------
 function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
+  const { t } = useTranslation();
   const isResolved =
     feedback.resolution_status?.toLowerCase().includes("resolved") ?? false;
 
@@ -4928,10 +4907,10 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
         </div>
         <div>
           <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-            AI Quality Assessment
+            {t("incidents.aiQualityAssessment")}
           </p>
           <p className="text-xs text-emerald-600 dark:text-emerald-500">
-            Processed on{" "}
+            {t("incidents.processedOn")}{" "}
             {new Date(feedback.created_at).toLocaleString(undefined, {
               dateStyle: "medium",
               timeStyle: "short",
@@ -4945,7 +4924,7 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
         {/* Resolution status */}
         <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 space-y-1">
           <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-            Resolution Status
+            {t("incidents.resolutionStatus")}
           </p>
           <div className="flex items-center gap-2">
             <ShieldCheck
@@ -4970,7 +4949,7 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
         {/* Distance */}
         <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 space-y-1">
           <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-            Coordinate Drift
+            {t("incidents.coordinateDrift")}
           </p>
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
@@ -4988,7 +4967,7 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
         <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 space-y-2">
           <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
-            Change Summary
+            {t("incidents.changeSummary")}
           </p>
           <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
             {feedback.changed_summary}

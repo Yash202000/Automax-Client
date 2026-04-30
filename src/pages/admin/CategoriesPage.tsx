@@ -262,9 +262,7 @@ export const CategoriesPage: React.FC = () => {
   };
 
   const openEditModal = (category: Category) => {
-    const parentCat = flatList?.data?.find(
-      (c) => c.id === category.parent_id,
-    );
+    const parentCat = flatList?.data?.find((c) => c.id === category.parent_id);
     setEditingCategory(category);
     setFormData({
       name: category.name,
@@ -347,10 +345,7 @@ export const CategoriesPage: React.FC = () => {
             </h2>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
-            {t(
-              "categories.subtitle",
-              "Manage goal category hierarchy",
-            )}
+            {t("categories.subtitle", "Manage goal category hierarchy")}
           </p>
         </div>
       </div>
@@ -388,8 +383,7 @@ export const CategoriesPage: React.FC = () => {
                 {t("categories.hierarchy", "Category Hierarchy")}
               </h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {rootCount}{" "}
-                {t("categories.rootCategories", "root categories")}
+                {rootCount} {t("categories.rootCategories", "root categories")}
               </p>
             </div>
           </div>
@@ -707,7 +701,7 @@ export const CategoriesPage: React.FC = () => {
               {/* Sort Order */}
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("categories.sortOrder", "Sort order")}
+                  {t("categories.sortOrder")}
                 </label>
                 <input
                   type="number"

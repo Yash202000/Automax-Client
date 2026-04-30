@@ -25,24 +25,21 @@ export const CitizenAuthLayout: React.FC = () => {
           <div className="space-y-8">
             <div>
               <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-                {t("citizen.layoutTitle", "Complete your")}
+                {t("citizen.layoutTitle")}
                 <br />
                 <span className="text-blue-200">
-                  {t("citizen.layoutSubtitle", "incident report")}
+                  {t("citizen.layoutSubtitle")}
                 </span>
               </h1>
               <p className="mt-6 text-lg text-blue-100 max-w-md leading-relaxed">
-                {t(
-                  "citizen.layoutDescription",
-                  "You reported an incident via our IVR system. Use this secure page to add your exact location and supporting attachments.",
-                )}
+                {t("citizen.layoutDescription")}
               </p>
             </div>
             <div className="space-y-4">
               {[
-                t("citizen.feature1", "Pin your exact location on the map"),
-                t("citizen.feature2", "Upload photos or documents"),
-                t("citizen.feature3", "Add any extra details as a comment"),
+                t("citizen.feature1"),
+                t("citizen.feature2"),
+                t("citizen.feature3"),
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">

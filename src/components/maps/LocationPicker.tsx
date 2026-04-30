@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState, useCallback } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useTranslation } from "react-i18next";
 
 // Fix default marker icon issue with webpack/vite
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -26,13 +27,14 @@ export default function LocationPicker({
   latitude,
   longitude,
   onLocationChange,
-  height = '300px',
-  className = '',
+  height = "300px",
+  className = "",
 }: LocationPickerProps) {
+  const { t } = useTranslation();
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
@@ -45,27 +47,33 @@ export default function LocationPicker({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = L.map(containerRef.current).setView([defaultLat, defaultLng], defaultZoom);
+    const map = L.map(containerRef.current).setView(
+      [defaultLat, defaultLng],
+      defaultZoom,
+    );
     mapRef.current = map;
 
     // Add tile layer (OpenStreetMap)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
     // Add marker if coordinates exist
     if (latitude !== undefined && longitude !== undefined) {
-      const marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
+      const marker = L.marker([latitude, longitude], { draggable: true }).addTo(
+        map,
+      );
       markerRef.current = marker;
 
-      marker.on('dragend', () => {
+      marker.on("dragend", () => {
         const pos = marker.getLatLng();
         onLocationChange(pos.lat, pos.lng);
       });
     }
 
     // Handle map click to place/move marker
-    map.on('click', (e: L.LeafletMouseEvent) => {
+    map.on("click", (e: L.LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
 
       if (markerRef.current) {
@@ -74,7 +82,7 @@ export default function LocationPicker({
         const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
         markerRef.current = marker;
 
-        marker.on('dragend', () => {
+        marker.on("dragend", () => {
           const pos = marker.getLatLng();
           onLocationChange(pos.lat, pos.lng);
         });
@@ -100,10 +108,12 @@ export default function LocationPicker({
       if (markerRef.current) {
         markerRef.current.setLatLng([latitude, longitude]);
       } else {
-        const marker = L.marker([latitude, longitude], { draggable: true }).addTo(mapRef.current);
+        const marker = L.marker([latitude, longitude], {
+          draggable: true,
+        }).addTo(mapRef.current);
         markerRef.current = marker;
 
-        marker.on('dragend', () => {
+        marker.on("dragend", () => {
           const pos = marker.getLatLng();
           onLocationChange(pos.lat, pos.lng);
         });
@@ -123,21 +133,25 @@ export default function LocationPicker({
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
         {
           headers: {
-            'Accept-Language': 'en',
-            'User-Agent': 'AutomaxWebApp/1.0',
+            "Accept-Language": "en",
+            "User-Agent": "AutomaxWebApp/1.0",
           },
-        }
+        },
       );
 
       if (!response.ok) {
-        console.error('Location search failed:', response.status, response.statusText);
-        throw new Error('Search failed');
+        console.error(
+          "Location search failed:",
+          response.status,
+          response.statusText,
+        );
+        throw new Error("Search failed");
       }
 
       const results = await response.json();
 
       if (results.length === 0) {
-        setSearchError('No results found');
+        setSearchError("No results found");
         return;
       }
 
@@ -152,10 +166,12 @@ export default function LocationPicker({
       if (markerRef.current) {
         markerRef.current.setLatLng([latitude, longitude]);
       } else {
-        const marker = L.marker([latitude, longitude], { draggable: true }).addTo(mapRef.current);
+        const marker = L.marker([latitude, longitude], {
+          draggable: true,
+        }).addTo(mapRef.current);
         markerRef.current = marker;
 
-        marker.on('dragend', () => {
+        marker.on("dragend", () => {
           const pos = marker.getLatLng();
           onLocationChange(pos.lat, pos.lng);
         });
@@ -163,14 +179,14 @@ export default function LocationPicker({
 
       onLocationChange(latitude, longitude);
     } catch {
-      setSearchError('Search failed. Please try again.');
+      setSearchError("Search failed. Please try again.");
     } finally {
       setIsSearching(false);
     }
   }, [searchQuery, onLocationChange]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -184,7 +200,7 @@ export default function LocationPicker({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Search for an address..."
+          placeholder={t("locations.searchForAnAddress")}
           className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md
             bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -197,7 +213,7 @@ export default function LocationPicker({
             hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed
             focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {isSearching ? 'Searching...' : 'Search'}
+          {isSearching ? "Searching..." : "Search"}
         </button>
       </div>
 
@@ -209,20 +225,20 @@ export default function LocationPicker({
       <div
         ref={containerRef}
         className="rounded-lg border border-gray-200 dark:border-gray-700"
-        style={{ height, width: '100%' }}
+        style={{ height, width: "100%" }}
       />
 
       {/* Current coordinates display */}
       {latitude !== undefined && longitude !== undefined && (
         <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          <span className="font-medium">Coordinates:</span>{' '}
+          <span className="font-medium">{t("locations.coordinates")}:</span>{" "}
           {latitude.toFixed(6)}, {longitude.toFixed(6)}
         </div>
       )}
 
       {/* Instructions */}
       <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-        Click on the map to set location, or drag the marker to adjust.
+        {t("locations.clickOnTheMapToSetLocation")}
       </p>
     </div>
   );

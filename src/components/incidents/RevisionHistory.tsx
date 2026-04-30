@@ -235,7 +235,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                   {t("revisionHistory.actionTakenBy")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                  {t("common.department", "Department")}
+                  {t("common.department")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("revisionHistory.role")}
@@ -285,7 +285,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             <GitMerge className="w-3.5 h-3.5 text-[hsl(var(--accent))] flex-shrink-0" />
                             <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                              Synced to:
+                              {t("incidents.syncedTo")}
                             </span>
                             {revision.synced_incidents.map((incNum, idx) => (
                               <span

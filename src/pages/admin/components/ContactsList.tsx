@@ -71,13 +71,13 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             <UserIcon className="w-12 h-12" />
           </div>
           <h3 className="text-lg font-semibold text-slate-900 mb-2">
-            {t("users.failedToLoad", "Failed to load contacts")}
+            {t("users.failedToLoad")}
           </h3>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            {t("common.tryAgain", "Try Again")}
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -93,7 +93,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             <Search className="absolute start-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder={t("users.searchPlaceholder", "Search contacts...")}
+              placeholder={t("users.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full ps-12 pe-4 py-3 bg-slate-50 dark:bg-background border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
@@ -109,7 +109,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                 !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
               }
             >
-              {t("common.refresh", "Refresh")}
+              {t("common.refresh")}
             </Button>
           </div>
         </div>
@@ -122,9 +122,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-4">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-slate-500">
-              {t("users.loadingUsers", "Loading contacts...")}
-            </p>
+            <p className="text-slate-500">{t("users.loadingUsers")}</p>
           </div>
         ) : (
           <>
@@ -134,42 +132,42 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                   <tr className="border-b border-border bg-card">
                     <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {t("users.user", "User")}
+                        {t("users.user")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {t("users.phone", "Phone")}
+                        {t("users.phone")}
                       </span>
                     </th>
                     {variant === "call-centre" && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Extension
+                          {t("users.extension")}
                         </span>
                       </th>
                     )}
                     <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {t("users.email", "Email")}
+                        {t("users.email")}
                       </span>
                     </th>
                     <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {t("users.department", "Department")}
+                        {t("users.department")}
                       </span>
                     </th>
                     {variant !== "call-centre" && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          {t("users.location", "Location")}
+                          {t("users.location")}
                         </span>
                       </th>
                     )}
                     {variant === "call-centre" && (
                       <th className="px-6 py-4 text-center">
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          {t("users.actions", "Actions")}
+                          {t("users.actions")}
                         </span>
                       </th>
                     )}
@@ -223,7 +221,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                           </div>
                         ) : (
                           <span className="text-sm text-slate-400 italic">
-                            No phone
+                            {t("users.noPhone")}
                           </span>
                         )}
                       </td>
@@ -348,7 +346,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                         colSpan={variant === "call-centre" ? 6 : 5}
                         className="py-12 text-center text-slate-500"
                       >
-                        {t("users.noUsersFound", "No contacts found")}
+                        {t("users.noUsersFound")}
                       </td>
                     </tr>
                   )}
@@ -360,19 +358,19 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             {filteredUsers && filteredUsers.length > 0 && (
               <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 bg-card">
                 <p className="text-sm text-slate-500">
-                  {t("common.showing", "Showing")}{" "}
+                  {t("common.showing")}{" "}
                   <span className="font-semibold text-black dark:text-white">
                     {(page - 1) * limit + 1}
                   </span>{" "}
-                  {t("users.to", "to")}{" "}
+                  {t("users.to")}{" "}
                   <span className="font-semibold text-black dark:text-white">
                     {Math.min(page * limit, data?.total_items || 0)}
                   </span>{" "}
-                  {t("common.of", "of")}{" "}
+                  {t("common.of")}{" "}
                   <span className="font-semibold text-black dark:text-white">
                     {data?.total_items || 0}
                   </span>{" "}
-                  {t("users.users", "contacts")}
+                  {t("users.users")}
                 </p>
 
                 <div className="flex items-center gap-2">

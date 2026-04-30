@@ -75,7 +75,14 @@ import { CheckInCard } from "../../components/goals/CheckInCard";
 import { useAuthStore } from "../../stores/authStore";
 import { useGoalWebSocket } from "../../lib/services/goalWebSocket";
 
-type TabType = "overview" | "metrics" | "evidence" | "collaborators" | "check-ins" | "comments" | "activity";
+type TabType =
+  | "overview"
+  | "metrics"
+  | "evidence"
+  | "collaborators"
+  | "check-ins"
+  | "comments"
+  | "activity";
 
 const TRANSITION_BUTTON_STYLES: Record<string, string> = {
   Active: "bg-blue-600 hover:bg-blue-700 text-white",
@@ -522,7 +529,7 @@ export const GoalDetailPage: React.FC = () => {
 
       {/* ── Tabs ──────────────────────────────────── */}
       <div className="border-b border-slate-200 dark:border-slate-700/60">
-        <nav className="flex gap-1 -mb-px" aria-label="Goal tabs">
+        <nav className="flex gap-1 -mb-px" aria-label={t("goals.goalTabs")}>
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -845,8 +852,29 @@ export const GoalDetailPage: React.FC = () => {
                   className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                  Reference other metrics with <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">{`\${metric_name}`}</code>.
-                  Helpers: <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">min</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">max</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">abs</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">round</code>, <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">pow</code>.
+                  {t("goals.referenceOtherMetricsWith")}
+                  <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">{`\${metric_name}`}</code>
+                  {t("goals.helpers")}
+                  <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">
+                    min
+                  </code>
+                  ,{" "}
+                  <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">
+                    max
+                  </code>
+                  ,{" "}
+                  <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">
+                    abs
+                  </code>
+                  ,{" "}
+                  <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">
+                    round
+                  </code>
+                  ,{" "}
+                  <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 rounded">
+                    pow
+                  </code>
+                  .
                 </p>
               </div>
 
@@ -1104,9 +1132,7 @@ export const GoalDetailPage: React.FC = () => {
               {checkInData && checkInData.total > 10 && (
                 <div className="flex items-center justify-center gap-2 pt-4">
                   <button
-                    onClick={() =>
-                      setCheckInPage((p) => Math.max(1, p - 1))
-                    }
+                    onClick={() => setCheckInPage((p) => Math.max(1, p - 1))}
                     disabled={checkInPage <= 1}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
@@ -1120,9 +1146,7 @@ export const GoalDetailPage: React.FC = () => {
                   </span>
                   <button
                     onClick={() => setCheckInPage((p) => p + 1)}
-                    disabled={
-                      checkInPage >= Math.ceil(checkInData.total / 10)
-                    }
+                    disabled={checkInPage >= Math.ceil(checkInData.total / 10)}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
                     {t("common.next")}
@@ -1200,7 +1224,8 @@ export const GoalDetailPage: React.FC = () => {
                 const initial = authorName.charAt(0).toUpperCase();
                 const isOwn = comment.author?.id === user?.id;
                 const relativeTime = (() => {
-                  const diff = Date.now() - new Date(comment.created_at).getTime();
+                  const diff =
+                    Date.now() - new Date(comment.created_at).getTime();
                   const mins = Math.floor(diff / 60000);
                   if (mins < 1) return t("goals.detail.comments.justNow");
                   if (mins < 60)
@@ -1248,7 +1273,9 @@ export const GoalDetailPage: React.FC = () => {
                               }}
                               className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                               title={t("goals.detail.comments.deleteTitle")}
-                              aria-label={t("goals.detail.comments.deleteTitle")}
+                              aria-label={t(
+                                "goals.detail.comments.deleteTitle",
+                              )}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1267,9 +1294,7 @@ export const GoalDetailPage: React.FC = () => {
               {commentData && commentData.total > 20 && (
                 <div className="flex items-center justify-center gap-2 pt-4">
                   <button
-                    onClick={() =>
-                      setCommentPage((p) => Math.max(1, p - 1))
-                    }
+                    onClick={() => setCommentPage((p) => Math.max(1, p - 1))}
                     disabled={commentPage <= 1}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
@@ -1283,9 +1308,7 @@ export const GoalDetailPage: React.FC = () => {
                   </span>
                   <button
                     onClick={() => setCommentPage((p) => p + 1)}
-                    disabled={
-                      commentPage >= Math.ceil(commentData.total / 20)
-                    }
+                    disabled={commentPage >= Math.ceil(commentData.total / 20)}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >
                     {t("common.next")}
@@ -1331,8 +1354,7 @@ export const GoalDetailPage: React.FC = () => {
                         "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
                       transition:
                         "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                      view:
-                        "bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400",
+                      view: "bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400",
                     };
                     const colorClass =
                       actionColors[entry.action?.toLowerCase()] ??
@@ -1340,15 +1362,16 @@ export const GoalDetailPage: React.FC = () => {
                     const userName = entry.user
                       ? `${entry.user.first_name} ${entry.user.last_name}`.trim()
                       : t("goals.detail.activity.system");
-                    const timestamp = new Date(
-                      entry.created_at,
-                    ).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    });
+                    const timestamp = new Date(entry.created_at).toLocaleString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      },
+                    );
 
                     return (
                       <div key={entry.id} className="relative pl-10">
@@ -1385,9 +1408,7 @@ export const GoalDetailPage: React.FC = () => {
               {activityData && activityData.total > 20 && (
                 <div className="flex items-center justify-center gap-2 pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60">
                   <button
-                    onClick={() =>
-                      setActivityPage((p) => Math.max(1, p - 1))
-                    }
+                    onClick={() => setActivityPage((p) => Math.max(1, p - 1))}
                     disabled={activityPage <= 1}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                   >

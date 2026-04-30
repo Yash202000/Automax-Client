@@ -290,7 +290,9 @@ export const ProfilePage: React.FC = () => {
               <X className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-red-900">Error</p>
+              <p className="text-sm font-bold text-red-900">
+                {t("common.error")}
+              </p>
               <p className="text-sm text-red-700 mt-0.5">{error}</p>
             </div>
           </div>
@@ -303,7 +305,9 @@ export const ProfilePage: React.FC = () => {
               <Check className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-emerald-900">Success</p>
+              <p className="text-sm font-bold text-emerald-900">
+                {t("common.success")}
+              </p>
               <p className="text-sm text-emerald-700 mt-0.5">{success}</p>
             </div>
           </div>
@@ -410,7 +414,7 @@ export const ProfilePage: React.FC = () => {
                       {user.mobile_verified ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">
                           <ShieldCheck className="w-3 h-3" />
-                          Verified
+                          {t("profile.verified")}
                         </span>
                       ) : (
                         <button
@@ -419,7 +423,7 @@ export const ProfilePage: React.FC = () => {
                           className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 hover:bg-amber-200 text-[10px] font-bold rounded-full transition-colors"
                         >
                           <AlertCircle className="w-3 h-3" />
-                          Verify Now
+                          {t("profile.verifyNow")}
                         </button>
                       )}
                     </div>
@@ -431,7 +435,9 @@ export const ProfilePage: React.FC = () => {
                       <Tag className="w-4 h-4 text-violet-600" />
                     </div>
                     <div>
-                      <span className="text-gray-500 text-xs">Extension</span>
+                      <span className="text-gray-500 text-xs">
+                        {t("users.extension")}
+                      </span>
                       <p className="text-gray-700 font-semibold">
                         Ext. {(user as any).extension}
                       </p>
@@ -463,7 +469,9 @@ export const ProfilePage: React.FC = () => {
                     <Calendar className="w-4 h-4 text-slate-500" />
                   </div>
                   <div>
-                    <span className="text-gray-500 text-xs">Member since</span>
+                    <span className="text-gray-500 text-xs">
+                      {t("profile.memberSince")}
+                    </span>
                     <p className="text-muted-foreground font-medium">
                       {user?.created_at
                         ? new Date(user.created_at).toLocaleDateString(
@@ -623,7 +631,7 @@ export const ProfilePage: React.FC = () => {
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5" />
-                      Phone Number
+                      {t("profile.phoneNumber")}
                     </label>
                     <div className="flex items-center gap-2">
                       <p className="mt-2 font-medium">{user?.phone || "—"}</p>
@@ -631,7 +639,7 @@ export const ProfilePage: React.FC = () => {
                         (user.mobile_verified ? (
                           <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">
                             <ShieldCheck className="w-3 h-3" />
-                            Verified
+                            {t("profile.verified")}
                           </div>
                         ) : (
                           <button
@@ -640,7 +648,7 @@ export const ProfilePage: React.FC = () => {
                             className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 hover:bg-amber-200 text-[10px] font-bold rounded-full transition-colors"
                           >
                             <AlertCircle className="w-3 h-3" />
-                            Verify Now
+                            {t("profile.verifyNow")}
                           </button>
                         ))}
                     </div>
@@ -648,7 +656,7 @@ export const ProfilePage: React.FC = () => {
                   <div className="group">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                       <Tag className="w-3.5 h-3.5" />
-                      Extension
+                      {t("users.extension")}
                     </label>
                     {(user as any)?.extension ? (
                       <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 text-violet-700 rounded-lg font-semibold text-sm">
@@ -766,7 +774,7 @@ export const ProfilePage: React.FC = () => {
         size="sm"
       >
         <ModalHeader>
-          <ModalTitle>Verify Phone Number</ModalTitle>
+          <ModalTitle>{t("profile.verifyPhoneNumber")}</ModalTitle>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-6">
@@ -775,7 +783,7 @@ export const ProfilePage: React.FC = () => {
               <div className="text-center py-6 space-y-3">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-sm text-slate-500 font-medium">
-                  Sending OTP to {user?.phone}…
+                  {t("profile.sendingOtpTo")} {user?.phone}…
                 </p>
               </div>
             ) : (
@@ -785,10 +793,10 @@ export const ProfilePage: React.FC = () => {
                     <MessageSquare className="w-8 h-8" />
                   </div>
                   <h4 className="text-lg font-bold text-slate-900">
-                    Enter Verification Code
+                    {t("profile.enterVerificationCode")}
                   </h4>
                   <p className="text-sm text-slate-500">
-                    We've sent a 6-digit code to{" "}
+                    {t("profile.weVeSentA6DigitCode")}{" "}
                     <span className="font-semibold text-slate-700">
                       {user?.phone}
                     </span>
@@ -814,7 +822,7 @@ export const ProfilePage: React.FC = () => {
                     isLoading={otpLoading}
                     disabled={otp.length !== 6 || otpLoading}
                   >
-                    Verify Code
+                    {t("profile.verifyCode")}
                   </Button>
 
                   <button
@@ -822,7 +830,7 @@ export const ProfilePage: React.FC = () => {
                     disabled={otpLoading}
                     className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 text-center py-2"
                   >
-                    Didn't receive code? Resend
+                    {t("profile.didnTReceiveCodeResend")}
                   </button>
                 </div>
               </div>

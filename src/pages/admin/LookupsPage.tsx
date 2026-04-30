@@ -538,17 +538,19 @@ export const LookupsPage: React.FC = () => {
               <div className="p-12 text-center">
                 <AlertTriangle className="w-12 h-12 text-[hsl(var(--warning))] mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-                  Values Not Applicable
+                  {t("lookups.valuesNotApplicable")}
                 </h3>
                 <p className="text-[hsl(var(--muted-foreground))] mb-2">
-                  This category uses field type:{" "}
+                  {t("lookups.thisCategoryUsesFieldType")}{" "}
                   <span className="font-semibold text-[hsl(var(--primary))]">
                     {selectedCategory.field_type}
                   </span>
                 </p>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Values are only required for <strong>Select</strong> and{" "}
-                  <strong>Multi-select</strong> field types.
+                  {t("lookups.valuesAreOnlyRequiredFor")}
+                  <strong>{t("common.select")}</strong>
+                  {t("lookups.and")} <strong>{t("lookups.multiSelect")}</strong>
+                  {t("lookups.fieldTypes")}
                 </p>
               </div>
             ) : selectedCategoryValues.length === 0 ? (
@@ -781,7 +783,7 @@ export const LookupsPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., PRIORITY"
+                    placeholder={t("lookups.eGPriority")}
                     value={categoryFormData.code}
                     onChange={(e) =>
                       setCategoryFormData({
@@ -801,7 +803,7 @@ export const LookupsPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., Priority"
+                    placeholder={t("lookups.categoryNameExample")}
                     value={categoryFormData.name}
                     onChange={(e) =>
                       setCategoryFormData({
@@ -820,7 +822,7 @@ export const LookupsPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., الأولوية"
+                    placeholder={t("lookups.eG")}
                     value={categoryFormData.name_ar}
                     onChange={(e) =>
                       setCategoryFormData({
@@ -871,7 +873,7 @@ export const LookupsPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Field Type
+                    {t("lookups.fieldType")}
                   </label>
                   <select
                     value={categoryFormData.field_type}
@@ -884,13 +886,15 @@ export const LookupsPage: React.FC = () => {
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                     disabled={editingCategory?.is_system}
                   >
-                    <option value="select">Select (Dropdown)</option>
-                    <option value="multiselect">Multi-select</option>
-                    <option value="text">Text</option>
-                    <option value="textarea">Textarea</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date</option>
-                    <option value="checkbox">Checkbox</option>
+                    <option value="select">{t("common.selectDropdown")}</option>
+                    <option value="multiselect">
+                      {t("lookups.multiSelect")}
+                    </option>
+                    <option value="text">{t("lookups.text")}</option>
+                    <option value="textarea">{t("lookups.textarea")}</option>
+                    <option value="number">{t("lookups.number")}</option>
+                    <option value="date">{t("common.date")}</option>
+                    <option value="checkbox">{t("lookups.checkbox")}</option>
                   </select>
                   {categoryFormData.field_type !== "select" &&
                     categoryFormData.field_type !== "multiselect" &&
@@ -898,9 +902,9 @@ export const LookupsPage: React.FC = () => {
                     (editingCategory.values_count || 0) > 0 && (
                       <p className="mt-2 text-xs text-[hsl(var(--warning))] flex items-center gap-2">
                         <AlertTriangle className="w-3 h-3" />
-                        Warning: This category has{" "}
-                        {editingCategory.values_count} value(s). Non-select
-                        field types don't use values.
+                        {t("lookups.warningThisCategoryHas")}{" "}
+                        {editingCategory.values_count}
+                        {t("lookups.valueSNonSelectFieldTypesDon")}
                       </p>
                     )}
                 </div>
@@ -910,7 +914,7 @@ export const LookupsPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                        Min Length
+                        {t("lookups.minLength")}
                       </label>
                       <input
                         type="number"
@@ -934,7 +938,7 @@ export const LookupsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                        Max Length
+                        {t("lookups.maxLength")}
                       </label>
                       <input
                         type="number"
@@ -963,7 +967,7 @@ export const LookupsPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                        Min Value
+                        {t("lookups.minValue")}
                       </label>
                       <input
                         type="number"
@@ -985,7 +989,7 @@ export const LookupsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                        Max Value
+                        {t("lookups.maxValue")}
                       </label>
                       <input
                         type="number"
@@ -1128,7 +1132,7 @@ export const LookupsPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., CRITICAL"
+                    placeholder={t("lookups.eGCritical")}
                     value={valueFormData.code}
                     onChange={(e) =>
                       setValueFormData({
@@ -1147,7 +1151,7 @@ export const LookupsPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., Critical"
+                    placeholder={t("lookups.valueNameExample")}
                     value={valueFormData.name}
                     onChange={(e) =>
                       setValueFormData({
@@ -1166,7 +1170,7 @@ export const LookupsPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., حرج"
+                    placeholder={t("lookups.valueArabicExample")}
                     value={valueFormData.name_ar}
                     onChange={(e) =>
                       setValueFormData({

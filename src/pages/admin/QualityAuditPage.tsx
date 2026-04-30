@@ -116,13 +116,10 @@ export default function QualityAuditPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">
-              {t("qualityAudit.title", "Quality Audit")}
+              {t("qualityAudit.title")}
             </h1>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              {t(
-                "qualityAudit.subtitle",
-                "AI-powered quality validation results",
-              )}
+              {t("qualityAudit.subtitle")}
             </p>
           </div>
         </div>
@@ -132,7 +129,7 @@ export default function QualityAuditPage() {
           className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
         >
           <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
-          {t("common.refresh", "Refresh")}
+          {t("common.refresh")}
         </button>
       </div>
 
@@ -140,7 +137,7 @@ export default function QualityAuditPage() {
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4">
           <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-            Total Audited
+            {t("qualityAudit.totalAudited")}
           </p>
           <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
             {stats.total}
@@ -148,7 +145,7 @@ export default function QualityAuditPage() {
         </div>
         <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4">
           <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">
-            Compliant
+            {t("qualityAudit.compliant")}
           </p>
           <div className="flex items-center gap-2">
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
@@ -159,7 +156,7 @@ export default function QualityAuditPage() {
         </div>
         <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
           <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
-            Needs Review
+            {t("qualityAudit.needsReview")}
           </p>
           <div className="flex items-center gap-2">
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
@@ -177,10 +174,7 @@ export default function QualityAuditPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t(
-              "qualityAudit.searchPlaceholder",
-              "Search by incident, summary...",
-            )}
+            placeholder={t("qualityAudit.searchPlaceholder")}
             className="w-full pl-9 pr-3 h-9 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
           />
         </div>
@@ -203,7 +197,7 @@ export default function QualityAuditPage() {
             }}
             className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] underline"
           >
-            Clear
+            {t("common.clear")}
           </button>
         )}
       </div>
@@ -213,25 +207,29 @@ export default function QualityAuditPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-[hsl(var(--muted-foreground))]">
             <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-            <span className="text-sm">Loading quality audit records...</span>
+            <span className="text-sm">
+              {t("qualityAudit.loadingQualityAuditRecords")}
+            </span>
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-16 text-[hsl(var(--muted-foreground))]">
             <XCircle className="w-8 h-8 mb-2 text-[hsl(var(--destructive))]" />
-            <p className="text-sm">Failed to load records</p>
+            <p className="text-sm">{t("qualityAudit.failedToLoadRecords")}</p>
             <button
               onClick={() => refetch()}
               className="mt-2 text-xs underline text-[hsl(var(--primary))]"
             >
-              Try again
+              {t("qualityAudit.tryAgain")}
             </button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-[hsl(var(--muted-foreground))]">
             <Bot className="w-10 h-10 mb-3 opacity-30" />
-            <p className="text-sm font-medium">No records found</p>
+            <p className="text-sm font-medium">
+              {t("qualityAudit.noRecordsFound")}
+            </p>
             {(search || statusFilter) && (
-              <p className="text-xs mt-1">Try adjusting your filters</p>
+              <p className="text-xs mt-1">{t("incidents.adjustFilters")}</p>
             )}
           </div>
         ) : (
@@ -239,25 +237,25 @@ export default function QualityAuditPage() {
             <thead>
               <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.4)]">
                 <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
-                  Incident
+                  {t("incidents.incident")}
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
-                  AI Result
+                  {t("qualityAudit.aiResult")}
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
-                  Change Summary
+                  {t("qualityAudit.changeSummary")}
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
-                    Drift
+                    {t("qualityAudit.drift")}
                   </span>
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
-                  Status
+                  {t("common.status")}
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
-                  Processed
+                  {t("qualityAudit.processed")}
                 </th>
               </tr>
             </thead>
@@ -352,7 +350,8 @@ export default function QualityAuditPage() {
       {/* Footer count */}
       {!isLoading && !isError && filtered.length > 0 && (
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-          Showing {filtered.length} of {records.length} records
+          {t("common.showing")} {filtered.length} {t("common.of")}{" "}
+          {records.length} {t("reports.records")}
         </p>
       )}
     </div>

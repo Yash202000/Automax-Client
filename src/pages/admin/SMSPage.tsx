@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   MessageSquare,
   Send,
@@ -38,6 +39,7 @@ const linkifyText = (text: string) => {
 };
 
 export const SMSPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [currentFolder, setCurrentFolder] = useState<
@@ -195,7 +197,7 @@ export const SMSPage: React.FC = () => {
         <div className="p-4">
           <Button onClick={() => setIsComposeOpen(true)} className="w-full">
             <Plus className="w-5 h-5" />
-            <span>New SMS</span>
+            <span>{t("sms.newSms")}</span>
           </Button>
         </div>
 
@@ -210,7 +212,7 @@ export const SMSPage: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <Inbox className="w-4 h-4" />
-                <span>Inbox</span>
+                <span>{t("sms.inbox")}</span>
               </div>
               {smsCount?.inbox ? (
                 <span className="ml-auto text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
@@ -227,7 +229,7 @@ export const SMSPage: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <Send className="w-4 h-4" />
-                <span>Sent</span>
+                <span>{t("sms.sent")}</span>
               </div>
               {smsCount?.sent ? (
                 <span className="text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
@@ -244,7 +246,7 @@ export const SMSPage: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <Trash className="w-4 h-4" />
-                <span>Trash</span>
+                <span>{t("sms.trash")}</span>
               </div>
               {smsCount?.trash ? (
                 <span className="text-xs text-primary bg-gray-100 px-2 py-0.5 rounded">
@@ -266,7 +268,7 @@ export const SMSPage: React.FC = () => {
               onClick={() => setIsComposeOpen(true)}
               className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium"
             >
-              New SMS
+              {t("sms.newSms")}
             </button>
             <select
               value={currentFolder}
@@ -276,9 +278,9 @@ export const SMSPage: React.FC = () => {
               }}
               className="bg-slate-50 border border-border rounded-lg px-2 text-sm"
             >
-              <option value="inbox">Inbox</option>
-              <option value="sent">Sent</option>
-              <option value="trash">Trash</option>
+              <option value="inbox">{t("sms.inbox")}</option>
+              <option value="sent">{t("sms.sent")}</option>
+              <option value="trash">{t("sms.trash")}</option>
             </select>
           </div>
 
@@ -286,7 +288,7 @@ export const SMSPage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search messages..."
+              placeholder={t("sms.searchMessages")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -300,7 +302,7 @@ export const SMSPage: React.FC = () => {
             </div>
           ) : smsList.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
-              <p>No messages found</p>
+              <p>{t("sms.noMessagesFound")}</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
@@ -382,7 +384,7 @@ export const SMSPage: React.FC = () => {
                   <button
                     onClick={(e) => deleteSMS(e, selectedSMS.id)}
                     className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                    title="Delete"
+                    title={t("common.delete")}
                   >
                     <Trash className="w-4 h-4" />
                   </button>
@@ -402,7 +404,7 @@ export const SMSPage: React.FC = () => {
               <MessageSquare className="w-8 h-8" />
             </div>
             <p className="text-lg font-medium text-slate-600">
-              Select a message to read
+              {t("sms.selectAMessageToRead")}
             </p>
           </div>
         )}
@@ -419,10 +421,10 @@ export const SMSPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg leading-tight">
-                    New SMS
+                    {t("sms.newSms")}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Compose and send a text message
+                    {t("sms.composeAndSendATextMessage")}
                   </p>
                 </div>
               </div>
@@ -442,7 +444,7 @@ export const SMSPage: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium  mb-1 ">
-                    To (Phone Number)
+                    {t("sms.toPhoneNumber")}
                   </label>
                   <div
                     className={`flex rounded-lg border overflow-hidden focus-within:ring-1 focus-within:ring-primary ${errors.to ? "border-red-500" : "border-border"}`}
@@ -487,13 +489,13 @@ export const SMSPage: React.FC = () => {
                     </p>
                   )}
                   <p className="mt-1 text-xs text-slate-400">
-                    Will be sent to:{" "}
+                    {t("sms.willBeSentTo")}{" "}
                     <span className="font-mono">{composeTo || "—"}</span>
                   </p>
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium  mb-1">
-                    Message
+                    {t("sms.message")}
                   </label>
                   <textarea
                     required
@@ -504,7 +506,7 @@ export const SMSPage: React.FC = () => {
                         setErrors((prev) => ({ ...prev, body: "" }));
                     }}
                     className={`w-full h-40 px-3 py-2 border rounded-lg focus:ring-1 bg-background focus:ring-primary focus:border-transparent resize-none ${errors.body ? "border-red-500" : "border-border"}`}
-                    placeholder="Write your message here..."
+                    placeholder={t("sms.writeYourMessageHere")}
                   />
                   {errors.body && (
                     <p className="mt-1 text-xs text-red-500 font-medium">
@@ -516,7 +518,7 @@ export const SMSPage: React.FC = () => {
 
               <div className="px-6 py-4 border-t border-border flex justify-end gap-3 ">
                 <Button variant="ghost" onClick={() => setIsComposeOpen(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <button
                   type="submit"
@@ -526,12 +528,12 @@ export const SMSPage: React.FC = () => {
                   {sendSMSMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Sending...
+                      {t("sms.sending")}
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Send
+                      {t("common.send")}
                     </>
                   )}
                 </button>

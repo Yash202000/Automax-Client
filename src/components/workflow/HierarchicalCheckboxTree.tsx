@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import React, { useState } from "react";
+import { ChevronRight, ChevronDown } from "lucide-react";
+import { cn } from "../../lib/utils";
+import { useTranslation } from "react-i18next";
 
 export interface TreeNode {
   id: string;
@@ -22,7 +23,7 @@ interface HierarchicalCheckboxTreeProps {
 const getAllDescendantIds = (node: TreeNode): string[] => {
   const ids = [node.id];
   if (node.children && node.children.length > 0) {
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       ids.push(...getAllDescendantIds(child));
     });
   }
@@ -31,25 +32,33 @@ const getAllDescendantIds = (node: TreeNode): string[] => {
 
 // Helper to get all IDs in the tree
 const getAllIds = (nodes: TreeNode[]): string[] => {
-  let ids: string[] = [];
-  nodes.forEach(node => {
+  const ids: string[] = [];
+  nodes.forEach((node) => {
     ids.push(...getAllDescendantIds(node));
   });
   return ids;
 };
 
 // Helper to check if all children are selected
-const areAllChildrenSelected = (node: TreeNode, selectedIds: string[]): boolean => {
+const areAllChildrenSelected = (
+  node: TreeNode,
+  selectedIds: string[],
+): boolean => {
   if (!node.children || node.children.length === 0) return false;
-  const childIds = getAllDescendantIds(node).filter(id => id !== node.id);
-  return childIds.every(id => selectedIds.includes(id));
+  const childIds = getAllDescendantIds(node).filter((id) => id !== node.id);
+  return childIds.every((id) => selectedIds.includes(id));
 };
 
 // Helper to check if some (but not all) children are selected
-const areSomeChildrenSelected = (node: TreeNode, selectedIds: string[]): boolean => {
+const areSomeChildrenSelected = (
+  node: TreeNode,
+  selectedIds: string[],
+): boolean => {
   if (!node.children || node.children.length === 0) return false;
-  const childIds = getAllDescendantIds(node).filter(id => id !== node.id);
-  const selectedCount = childIds.filter(id => selectedIds.includes(id)).length;
+  const childIds = getAllDescendantIds(node).filter((id) => id !== node.id);
+  const selectedCount = childIds.filter((id) =>
+    selectedIds.includes(id),
+  ).length;
   return selectedCount > 0 && selectedCount < childIds.length;
 };
 
@@ -73,8 +82,10 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   const hasChildren = node.children && node.children.length > 0;
   const isExpanded = expandedIds.includes(node.id);
   const isChecked = selectedIds.includes(node.id);
-  const allChildrenSelected = hasChildren && areAllChildrenSelected(node, selectedIds);
-  const someChildrenSelected = hasChildren && areSomeChildrenSelected(node, selectedIds);
+  const allChildrenSelected =
+    hasChildren && areAllChildrenSelected(node, selectedIds);
+  const someChildrenSelected =
+    hasChildren && areSomeChildrenSelected(node, selectedIds);
   const isIndeterminate = someChildrenSelected && !allChildrenSelected;
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,7 +98,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       <div
         className={cn(
           "flex items-center gap-2 py-2 px-3 rounded-lg transition-all hover:bg-[hsl(var(--primary)/0.05)]",
-          isChecked && "bg-[hsl(var(--primary)/0.1)]"
+          isChecked && "bg-[hsl(var(--primary)/0.1)]",
         )}
         style={{ paddingLeft: `${level * 20 + 12}px` }}
       >
@@ -129,7 +140,9 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           onClick={() => hasChildren && onToggleExpand(node.id)}
           className={cn(
             "flex-1 text-sm cursor-pointer",
-            (isChecked || allChildrenSelected) ? "font-medium text-[hsl(var(--foreground))]" : "font-normal text-[hsl(var(--foreground))]"
+            isChecked || allChildrenSelected
+              ? "font-medium text-[hsl(var(--foreground))]"
+              : "font-normal text-[hsl(var(--foreground))]",
           )}
         >
           {node.name}
@@ -163,18 +176,21 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   );
 };
 
-export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> = ({
+export const HierarchicalCheckboxTree: React.FC<
+  HierarchicalCheckboxTreeProps
+> = ({
   data,
   selectedIds,
   onSelectionChange,
-  emptyMessage = 'No items available',
+  emptyMessage = "No items available",
   showSelectAll = true,
 }) => {
+  const { t } = useTranslation();
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
   const toggleExpand = (id: string) => {
-    setExpandedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    setExpandedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -187,7 +203,9 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
       onSelectionChange(newSelectedIds);
     } else {
       // Remove this node and all descendants
-      const newSelectedIds = selectedIds.filter(id => !descendantIds.includes(id));
+      const newSelectedIds = selectedIds.filter(
+        (id) => !descendantIds.includes(id),
+      );
       onSelectionChange(newSelectedIds);
     }
   };
@@ -204,7 +222,7 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
   const expandAll = () => {
     const allParentIds: string[] = [];
     const collectParentIds = (nodes: TreeNode[]) => {
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         if (node.children && node.children.length > 0) {
           allParentIds.push(node.id);
           collectParentIds(node.children);
@@ -220,8 +238,10 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
   };
 
   const allIds = getAllIds(data);
-  const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.includes(id));
-  const someSelected = !allSelected && allIds.some(id => selectedIds.includes(id));
+  const allSelected =
+    allIds.length > 0 && allIds.every((id) => selectedIds.includes(id));
+  const someSelected =
+    !allSelected && allIds.some((id) => selectedIds.includes(id));
 
   return (
     <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
@@ -248,14 +268,14 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
                 className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))] cursor-pointer"
               />
               <span className="text-xs font-medium text-[hsl(var(--foreground))]">
-                {allSelected ? 'Deselect All' : 'Select All'}
+                {allSelected ? "Deselect All" : "Select All"}
               </span>
             </div>
           )}
 
           {!showSelectAll && (
             <span className="text-xs text-[hsl(var(--muted-foreground))]">
-              {selectedIds.length} selected
+              {selectedIds.length} {t("workflows.selected")}
             </span>
           )}
 
@@ -265,21 +285,21 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
               onClick={expandAll}
               className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
             >
-              Expand All
+              {t("workflows.expandAll")}
             </button>
             <button
               type="button"
               onClick={collapseAll}
               className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
             >
-              Collapse
+              {t("workflows.collapse")}
             </button>
           </div>
         </div>
       )}
 
       {/* Tree content */}
-      <div className="overflow-y-auto p-2" style={{ maxHeight: '320px' }}>
+      <div className="overflow-y-auto p-2" style={{ maxHeight: "320px" }}>
         {data.length === 0 ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
             {emptyMessage}
@@ -303,7 +323,10 @@ export const HierarchicalCheckboxTree: React.FC<HierarchicalCheckboxTreeProps> =
       {selectedIds.length === 0 && data.length > 0 && (
         <div className="border-t border-[hsl(var(--border))] px-3 py-2 bg-blue-50">
           <p className="text-xs text-blue-700">
-            <strong>No selection</strong> - This workflow will match <strong>all items</strong> in this category
+            <strong>{t("workflows.noSelection")}</strong>{" "}
+            {t("workflows.thisWorkflowWillMatch")}
+            <strong>{t("workflows.allItems")}</strong>
+            {t("workflows.inThisCategory")}
           </p>
         </div>
       )}

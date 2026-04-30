@@ -666,11 +666,14 @@ export const DepartmentsPage: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
-              {isExporting ? "Exporting..." : "Export"}
+              {isExporting ? t("common.exporting") : t("common.export")}
             </button>
             <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
               <Upload className="w-4 h-4" />
-              <span>{isImporting ? "Importing..." : "Import"}</span>
+              <span>
+                {" "}
+                {isImporting ? t("common.importing") : t("common.import")}
+              </span>
               <input
                 type="file"
                 accept=".json"
@@ -765,27 +768,27 @@ export const DepartmentsPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Import Complete
+                    {t("goals.components.import.completedHeading")}
                   </h3>
                   <div className="mt-3 space-y-2">
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
                       <span className="font-medium text-[hsl(var(--success))]">
                         {importResult.imported}
                       </span>{" "}
-                      departments imported successfully
+                      {t("departments.departmentsImportedSuccessfully")}
                     </p>
                     {importResult.skipped > 0 && (
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
                         <span className="font-medium text-[hsl(var(--warning))]">
                           {importResult.skipped}
                         </span>{" "}
-                        departments skipped
+                        {t("departments.departmentsSkipped")}
                       </p>
                     )}
                     {importResult.errors.length > 0 && (
                       <div className="mt-3 max-h-40 overflow-y-auto">
                         <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">
-                          Errors:
+                          {t("departments.errors")}
                         </p>
                         <ul className="space-y-1">
                           {importResult.errors.map((error, index) => (
@@ -803,7 +806,9 @@ export const DepartmentsPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={() => setImportResult(null)}>Close</Button>
+                <Button onClick={() => setImportResult(null)}>
+                  {t("common.close")}
+                </Button>
               </div>
             </div>
           </div>
@@ -894,7 +899,7 @@ export const DepartmentsPage: React.FC = () => {
                   )}
                 >
                   <Building2 className="w-4 h-4" />
-                  Details
+                  {t("incidents.details")}
                 </button>
                 <button
                   type="button"
@@ -907,7 +912,7 @@ export const DepartmentsPage: React.FC = () => {
                   )}
                 >
                   <UsersIcon className="w-4 h-4" />
-                  Users
+                  {t("departments.users")}
                   {deptUsersData?.data && (
                     <span className="px-1.5 py-0.5 text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded">
                       {(deptUsersData.data as unknown as User[]).length}
@@ -931,7 +936,7 @@ export const DepartmentsPage: React.FC = () => {
                       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                       <input
                         type="text"
-                        placeholder="Search users to add..."
+                        placeholder={t("roles.searchUsersToAdd")}
                         value={userSearchTerm}
                         onChange={(e) => setUserSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
@@ -945,7 +950,7 @@ export const DepartmentsPage: React.FC = () => {
                         {!userSearchFetching &&
                         userSearchResults.length === 0 ? (
                           <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-5">
-                            No users found
+                            {t("users.noUsers")}
                           </p>
                         ) : (
                           userSearchResults.map((user: User) => (
@@ -985,7 +990,7 @@ export const DepartmentsPage: React.FC = () => {
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors disabled:opacity-50 flex-shrink-0"
                               >
                                 <Plus className="w-3.5 h-3.5" />
-                                Add
+                                {t("common.add")}
                               </button>
                             </div>
                           ))
@@ -998,7 +1003,7 @@ export const DepartmentsPage: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-px bg-[hsl(var(--border))]" />
                     <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      Current members (
+                      {t("departments.currentMembers")}
                       {
                         ((deptUsersData?.data as unknown as User[]) ?? [])
                           .length
@@ -1031,7 +1036,7 @@ export const DepartmentsPage: React.FC = () => {
                         <UsersIcon className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                       </div>
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        No users assigned yet
+                        {t("roles.noUsersAssignedYet")}
                       </p>
                     </div>
                   ) : (
@@ -1082,7 +1087,7 @@ export const DepartmentsPage: React.FC = () => {
                                 removeUserFromDeptMutation.mutate({ user })
                               }
                               disabled={removeUserFromDeptMutation.isPending}
-                              title="Remove from department"
+                              title={t("departments.removeFromDepartment")}
                               className="p-1.5 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-50"
                             >
                               <UserMinus className="w-4 h-4" />
@@ -1244,7 +1249,7 @@ export const DepartmentsPage: React.FC = () => {
                           }
                           className="text-xs text-[hsl(var(--primary))] hover:underline"
                         >
-                          Select All
+                          {t("common.selectAll")}
                         </button>
                         <span className="text-[hsl(var(--muted-foreground))]">
                           ·
@@ -1254,7 +1259,7 @@ export const DepartmentsPage: React.FC = () => {
                           onClick={() => clearAll("location_ids")}
                           className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
                         >
-                          Clear
+                          {t("common.clear")}
                         </button>
                       </div>
                     </div>
@@ -1296,7 +1301,7 @@ export const DepartmentsPage: React.FC = () => {
                           }
                           className="text-xs text-[hsl(var(--primary))] hover:underline"
                         >
-                          Select All
+                          {t("common.selectAll")}
                         </button>
                         <span className="text-[hsl(var(--muted-foreground))]">
                           ·
@@ -1306,7 +1311,7 @@ export const DepartmentsPage: React.FC = () => {
                           onClick={() => clearAll("classification_ids")}
                           className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
                         >
-                          Clear
+                          {t("common.clear")}
                         </button>
                       </div>
                     </div>
@@ -1350,7 +1355,7 @@ export const DepartmentsPage: React.FC = () => {
                           }
                           className="text-xs text-[hsl(var(--primary))] hover:underline"
                         >
-                          Select All
+                          {t("common.selectAll")}
                         </button>
                         <span className="text-[hsl(var(--muted-foreground))]">
                           ·
@@ -1360,7 +1365,7 @@ export const DepartmentsPage: React.FC = () => {
                           onClick={() => clearAll("role_ids")}
                           className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
                         >
-                          Clear
+                          {t("common.clear")}
                         </button>
                       </div>
                     </div>

@@ -285,22 +285,22 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
     {
       key: "transition",
-      label: t("requests.stepTransition", "Transition"),
+      label: t("requests.stepTransition"),
       icon: <Play className="w-4 h-4" />,
     },
     {
       key: "classification",
-      label: t("requests.stepClassification", "Classification"),
+      label: t("requests.stepClassification"),
       icon: <Tags className="w-4 h-4" />,
     },
     {
       key: "workflow",
-      label: t("requests.stepWorkflow", "Workflow"),
+      label: t("requests.stepWorkflow"),
       icon: <Workflow className="w-4 h-4" />,
     },
     {
       key: "review",
-      label: t("requests.stepReview", "Review"),
+      label: t("requests.stepReview"),
       icon: <FileText className="w-4 h-4" />,
     },
   ];
@@ -391,7 +391,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-              {t("requests.convertToRequest", "Convert to Request")}
+              {t("requests.convertToRequest")}
             </h3>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
               {incident.incident_number} - {incident.title}
@@ -457,10 +457,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               <Link className="w-5 h-5 text-[hsl(var(--muted-foreground))] mt-0.5" />
               <div>
                 <p className="font-medium text-[hsl(var(--foreground))]">
-                  Existing Request
+                  {t("requests.existingRequest")}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Link incident to an existing request
+                  {t("requests.linkIncidentToAnExistingRequest")}
                 </p>
               </div>
             </div>
@@ -484,10 +484,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               <PlusCircle className="w-5 h-5 text-[hsl(var(--muted-foreground))] mt-0.5" />
               <div>
                 <p className="font-medium text-[hsl(var(--foreground))]">
-                  New Request
+                  {t("requests.newRequest")}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Create a new request
+                  {t("requests.createANewRequest")}
                 </p>
               </div>
             </div>
@@ -503,16 +503,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 <>
                   <div>
                     <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t(
-                        "requests.selectExistingRequest",
-                        "Select Existing Request",
-                      )}
+                      {t("requests.selectExistingRequest")}
                     </h4>
                     <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                      {t(
-                        "requests.existingRequestDescription",
-                        "Search and select a request to link this incident to.",
-                      )}
+                      {t("requests.existingRequestDescription")}
                     </p>
                   </div>
 
@@ -545,10 +539,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                           setShowRequestSearch(true);
                         }}
                         onFocus={() => setShowRequestSearch(true)}
-                        placeholder={t(
-                          "incidents.searchRequests",
-                          "Search by request number or title...",
-                        )}
+                        placeholder={t("incidents.searchRequests")}
                         className="w-full pl-10 pr-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       />
 
@@ -560,7 +551,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                             </div>
                           ) : searchedRequests.length === 0 ? (
                             <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                              {t("requests.noRequests", "No requests found")}
+                              {t("requests.noRequests")}
                             </div>
                           ) : (
                             searchedRequests.map((req) => (
@@ -609,26 +600,17 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 <>
                   <div>
                     <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t(
-                        "requests.selectTransition",
-                        "Select Transition (Optional)",
-                      )}
+                      {t("requests.selectTransition")}
                     </h4>
                     <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                      {t(
-                        "requests.transitionDescription",
-                        "Optionally execute a transition before converting to request.",
-                      )}
+                      {t("requests.transitionDescription")}
                     </p>
                   </div>
 
                   {availableTransitions.length === 0 ? (
                     <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg text-center">
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {t(
-                          "requests.noTransitionsAvailable",
-                          "No transitions available. You can proceed without transitioning.",
-                        )}
+                        {t("requests.noTransitionsAvailable")}
                       </p>
                     </div>
                   ) : (
@@ -657,7 +639,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                             )}
                           </div>
                           <span className="font-medium text-[hsl(var(--foreground))]">
-                            {t("requests.skipTransition", "Skip transition")}
+                            {t("requests.skipTransition")}
                           </span>
                         </div>
                       </button>
@@ -742,7 +724,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                         ) && (
                           <div>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                              {t("incidents.feedback", "Feedback")}
+                              {t("incidents.feedback")}
                               {selectedTransition.requirements.some(
                                 (r) =>
                                   r.requirement_type === "feedback" &&
@@ -752,10 +734,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                             <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
                               <div>
                                 <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                                  {t(
-                                    "incidents.rateExperience",
-                                    "Rate your experience",
-                                  )}
+                                  {t("incidents.rateExperience")}
                                 </span>
                                 <div className="flex gap-1">
                                   {[1, 2, 3, 4, 5].map((star) => (
@@ -793,7 +772,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                 }
                                 placeholder={t(
                                   "incidents.feedbackCommentPlaceholder",
-                                  "Add optional feedback comments...",
                                 )}
                                 rows={2}
                                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
@@ -808,7 +786,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                         ) && (
                           <div>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                              {t("incidents.attachment", "Attachment")}
+                              {t("incidents.attachment")}
                               {selectedTransition.requirements.some(
                                 (r) =>
                                   r.requirement_type === "attachment" &&
@@ -835,10 +813,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                               <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                                 <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                  {t(
-                                    "incidents.clickToUpload",
-                                    "Click to upload",
-                                  )}
+                                  {t("incidents.clickToUpload")}
                                 </span>
                                 <input
                                   type="file"
@@ -859,7 +834,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                         ) && (
                           <div>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                              {t("incidents.comment", "Comment")}
+                              {t("incidents.comment")}
                               {selectedTransition.requirements.some(
                                 (r) =>
                                   r.requirement_type === "comment" &&
@@ -873,7 +848,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                               }
                               placeholder={t(
                                 "incidents.addCommentForTransition",
-                                "Add a comment for this transition...",
                               )}
                               rows={3}
                               className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
@@ -892,16 +866,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
             <div className="space-y-4">
               <div>
                 <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t(
-                    "requests.selectClassification",
-                    "Select Request Classification",
-                  )}
+                  {t("requests.selectClassification")}
                 </h4>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t(
-                    "requests.classificationDescription",
-                    "Choose a classification for the new request.",
-                  )}
+                  {t("requests.classificationDescription")}
                 </p>
               </div>
 
@@ -914,10 +882,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                   <div className="flex items-center gap-2 text-amber-700">
                     <AlertTriangle className="w-5 h-5" />
                     <p className="text-sm">
-                      {t(
-                        "requests.noRequestClassifications",
-                        'No request classifications found. Please create classifications with type "request" or "both".',
-                      )}
+                      {t("requests.noRequestClassifications")}
                     </p>
                   </div>
                 </div>
@@ -926,15 +891,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                   data={classificationTreeData}
                   value={classificationId}
                   onChange={(id) => setClassificationId(id)}
-                  placeholder={t(
-                    "requests.selectClassificationPlaceholder",
-                    "Select classification...",
-                  )}
+                  placeholder={t("requests.selectClassificationPlaceholder")}
                   leafOnly={true}
-                  emptyMessage={t(
-                    "requests.noRequestClassifications",
-                    "No request classifications found.",
-                  )}
+                  emptyMessage={t("requests.noRequestClassifications")}
                   maxHeight="350px"
                 />
               )}
@@ -946,13 +905,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
             <div className="space-y-4">
               <div>
                 <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("requests.selectWorkflow", "Select Request Workflow")}
+                  {t("requests.selectWorkflow")}
                 </h4>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t(
-                    "requests.workflowDescription",
-                    "Choose a workflow for the new request.",
-                  )}
+                  {t("requests.workflowDescription")}
                 </p>
               </div>
 
@@ -965,10 +921,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                   <div className="flex items-center gap-2 text-amber-700">
                     <AlertTriangle className="w-5 h-5" />
                     <p className="text-sm">
-                      {t(
-                        "requests.noRequestWorkflows",
-                        'No request workflows found. Please create workflows with record_type "request" or "both".',
-                      )}
+                      {t("requests.noRequestWorkflows")}
                     </p>
                   </div>
                 </div>
@@ -1040,7 +993,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                               ))}
                               {workflow.states.length > 5 && (
                                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  +{workflow.states.length - 5} more
+                                  +{workflow.states.length - 5}{" "}
+                                  {t("profile.more")}
                                 </span>
                               )}
                             </div>
@@ -1059,13 +1013,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
             <div className="space-y-6">
               <div>
                 <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("requests.reviewConversion", "Review Conversion")}
+                  {t("requests.reviewConversion")}
                 </h4>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  {t(
-                    "requests.reviewDescription",
-                    "Review the details before converting.",
-                  )}
+                  {t("requests.reviewDescription")}
                 </p>
               </div>
 
@@ -1073,7 +1024,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               <div className="bg-[hsl(var(--muted)/0.3)] rounded-lg p-4 space-y-4">
                 <div>
                   <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                    {t("requests.sourceIncident", "Source Incident")}
+                    {t("requests.sourceIncident")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))] font-medium">
                     {incident.incident_number} - {incident.title}
@@ -1083,7 +1034,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 {convertType === "existing" && selectedRequest && (
                   <div>
                     <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                      {t("requests.existingRequest", "Existing Request")}
+                      {t("requests.existingRequest")}
                     </span>
                     <p className="text-sm text-[hsl(var(--foreground))]">
                       {selectedRequest.incident_number} -{" "}
@@ -1095,7 +1046,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 {selectedTransition && (
                   <div>
                     <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                      {t("requests.transition", "Transition")}
+                      {t("requests.transition")}
                     </span>
                     <p className="text-sm text-[hsl(var(--foreground))]">
                       {selectedTransition.transition.name}:{" "}
@@ -1107,7 +1058,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
                 <div>
                   <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                    {t("requests.classification", "Classification")}
+                    {t("requests.classification")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))]">
                     {selectedClassification?.name ||
@@ -1118,7 +1069,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
                 <div>
                   <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                    {t("requests.workflow", "Workflow")}
+                    {t("requests.workflow")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))]">
                     {selectedWorkflow?.name ||
@@ -1136,17 +1087,14 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               {/* Mandatory Feedback */}
               <div className="space-y-4">
                 <h5 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                  {t("requests.feedback", "Feedback")}{" "}
+                  {t("requests.feedback")}{" "}
                   <span className="text-red-500">*</span>
                 </h5>
                 <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg">
                   <textarea
                     value={feedbackComment}
                     onChange={(e) => setFeedbackComment(e.target.value)}
-                    placeholder={t(
-                      "incidents.feedbackCommentPlaceholder",
-                      "Add feedback comments...",
-                    )}
+                    placeholder={t("incidents.feedbackCommentPlaceholder")}
                     rows={3}
                     className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
                   />
@@ -1159,16 +1107,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                   <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-amber-700">
                     <p className="font-medium">
-                      {t(
-                        "requests.conversionWarning",
-                        "This action will link the incident to a request.",
-                      )}
+                      {t("requests.conversionWarning")}
                     </p>
                     <p className="mt-1">
-                      {t(
-                        "requests.conversionWarningDetails",
-                        "The original incident will be closed and linked to the request.",
-                      )}
+                      {t("requests.conversionWarningDetails")}
                     </p>
                   </div>
                 </div>
@@ -1188,9 +1130,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               ) : undefined
             }
           >
-            {currentStepIndex === 0
-              ? t("common.cancel", "Cancel")
-              : t("common.back", "Back")}
+            {currentStepIndex === 0 ? t("common.cancel") : t("common.back")}
           </Button>
 
           {currentStep === "review" ? (
@@ -1204,7 +1144,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 ) : undefined
               }
             >
-              {t("requests.convert", "Convert")}
+              {t("requests.convert")}
             </Button>
           ) : (
             <Button
@@ -1212,7 +1152,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               disabled={!canProceed()}
               rightIcon={<ChevronRight className="w-4 h-4" />}
             >
-              {t("common.next", "Next")}
+              {t("common.next")}
             </Button>
           )}
         </div>

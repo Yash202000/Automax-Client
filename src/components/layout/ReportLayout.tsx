@@ -112,7 +112,7 @@ export const ReportLayout: React.FC = () => {
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t("sidebar.actions", "Actions")}
+            {t("sidebar.actions")}
           </p>
         )}
         <div className="space-y-1">
@@ -137,7 +137,7 @@ export const ReportLayout: React.FC = () => {
                   <FileBarChart size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("admin.reports", "All Reports")}
+                      {t("admin.reports")}
                     </span>
                   )}
                 </>
@@ -166,7 +166,7 @@ export const ReportLayout: React.FC = () => {
                   <LayoutTemplate size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("admin.reportTemplates", "Report Templates")}
+                      {t("admin.reportTemplates")}
                     </span>
                   )}
                 </>
@@ -179,7 +179,7 @@ export const ReportLayout: React.FC = () => {
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t("sidebar.quickLinks", "Quick Links")}
+              {t("sidebar.quickLinks")}
             </p>
           </>
         )}
@@ -192,7 +192,7 @@ export const ReportLayout: React.FC = () => {
           <Home size={20} />
           {!collapsed && (
             <span className="ms-3 font-medium text-sm">
-              {t("sidebar.backToHome", "Back to Home")}
+              {t("sidebar.backToHome")}
             </span>
           )}
         </NavLink>
@@ -235,7 +235,7 @@ export const ReportLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t("sidebar.signOut", "Sign Out")}
+              {t("sidebar.signOut")}
             </button>
           </div>
         )}
@@ -293,16 +293,14 @@ export const ReportLayout: React.FC = () => {
 
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-400">
-                {t("admin.reports", "Reports")}
-              </span>
+              <span className="text-slate-400">{t("admin.reports")}</span>
               <span className="text-slate-300">/</span>
               <span className="font-semibold text-slate-700">
-                {t("sidebar.management", "Management")}
+                {t("sidebar.management")}
               </span>
             </div>
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
-              {t("admin.reports", "Reports")}
+              {t("admin.reports")}
             </h1>
           </div>
 
@@ -313,7 +311,7 @@ export const ReportLayout: React.FC = () => {
                 <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={t('sidebar.searchQueries', 'Search queries...')}
+                  placeholder={t('sidebar.searchQueries')}
                   className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all placeholder:text-slate-400"
                 />
               </div>
@@ -324,11 +322,11 @@ export const ReportLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-violet-50 rounded-xl transition-colors"
-              title={t("sidebar.backToHome", "Back to Home")}
+              title={t("sidebar.backToHome")}
             >
               <Home className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
-                {t("sidebar.backToHome", "Back to Home")}
+                {t("sidebar.backToHome")}
               </span>
             </Link>
 
@@ -337,7 +335,7 @@ export const ReportLayout: React.FC = () => {
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-1.5 p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                title={t("settings.language", "Language")}
+                title={t("settings.language")}
               >
                 <Languages className="w-5 h-5" />
                 <span className="text-xs font-medium uppercase">
@@ -349,7 +347,7 @@ export const ReportLayout: React.FC = () => {
                 <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-xs font-medium text-slate-500 uppercase">
-                      {t("settings.selectLanguage", "Select Language")}
+                      {t("settings.selectLanguage")}
                     </p>
                   </div>
                   {supportedLanguages.map((lang) => (
@@ -422,8 +420,8 @@ export const ReportLayout: React.FC = () => {
                       <Sparkles className="w-3 h-3 text-primary" />
                     )}
                     {user?.is_super_admin
-                      ? t("profile.superAdmin", "Super Admin")
-                      : user?.roles?.[0]?.name || t("sidebar.user", "User")}
+                      ? t("profile.superAdmin")
+                      : user?.roles?.[0]?.name || t("sidebar.user")}
                   </p>
                 </div>
                 <ChevronDown
@@ -451,7 +449,7 @@ export const ReportLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t("sidebar.backToHome", "Back to Home")}
+                        {t("sidebar.backToHome")}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -463,7 +461,7 @@ export const ReportLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t("sidebar.signOut", "Sign Out")}
+                        {t("sidebar.signOut")}
                       </button>
                     </div>
                   </div>

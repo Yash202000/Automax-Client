@@ -66,14 +66,14 @@ export const AuthLayout: React.FC = () => {
           <div className="space-y-8">
             <div>
               <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-                Streamline your
+                {t("navigation.streamlineYour")}
                 <br />
-                <span className="text-blue-200">workflow automation</span>
+                <span className="text-blue-200">
+                  {t("navigation.workflowAutomation")}
+                </span>
               </h1>
               <p className="mt-6 text-lg text-blue-100 max-w-md leading-relaxed">
-                The complete platform for managing your business operations,
-                user access, and organizational structure with enterprise-grade
-                security.
+                {t("navigation.theCompletePlatformForManagingYourBusiness")}
               </p>
             </div>
 

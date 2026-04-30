@@ -727,7 +727,7 @@ export default function SoftPhone({
             <button
               onClick={() => setShowPasswordPrompt(true)}
               className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
-              title="Change SIP Password"
+              title={t("users.changeSipPassword")}
             >
               <Settings className="w-3.5 h-3.5" />
             </button>
@@ -748,7 +748,9 @@ export default function SoftPhone({
               Ext. {auth.user.extension}
             </span>
             <span className="text-xs text-gray-400 mx-1">•</span>
-            <span className="text-xs text-gray-400">Default password</span>
+            <span className="text-xs text-gray-400">
+              {t("users.defaultPassword")}
+            </span>
           </div>
         )}
       </div>
@@ -931,24 +933,24 @@ export default function SoftPhone({
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900">
-                  SIP Password Settings
+                  {t("users.sipPasswordSettings")}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Extension: {auth?.user?.extension}
+                  {t("users.extension")}: {auth?.user?.extension}
                 </p>
               </div>
             </div>
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs font-medium text-blue-900 mb-1">
-                Default Password
+                {t("users.defaultPassword")}
               </p>
               <p className="text-sm text-blue-700">
-                Using default password:{" "}
+                {t("users.usingDefaultPassword")}{" "}
                 <span className="font-mono font-bold">51234</span>
               </p>
             </div>
             <p className="text-sm text-gray-600 mb-3">
-              Enter a custom SIP password or leave as default:
+              {t("users.enterACustomSipPasswordOrLeave")}
             </p>
             <input
               type="password"
@@ -959,7 +961,7 @@ export default function SoftPhone({
                   setShowPasswordPrompt(false);
                 }
               }}
-              placeholder="51234 (default)"
+              placeholder={t("users.51234Default")}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 mb-4"
               autoFocus
             />
@@ -970,7 +972,7 @@ export default function SoftPhone({
                 }}
                 className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => {
@@ -981,7 +983,7 @@ export default function SoftPhone({
                 }}
                 className="flex-1 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
               >
-                Save
+                {t("common.save")}
               </button>
             </div>
           </div>

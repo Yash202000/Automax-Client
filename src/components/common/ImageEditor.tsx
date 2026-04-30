@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Canvas,
   FabricImage,
@@ -38,6 +39,7 @@ export default function ImageEditor({
   showReplaceButton?: boolean;
   showSaveAsCopyButton?: boolean;
 }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<Canvas>(null);
 
@@ -270,17 +272,17 @@ export default function ImageEditor({
             </div>
             <div>
               <h3 className="text-base font-semibold text-[hsl(var(--foreground))]">
-                Image Editor
+                {t("common.imageEditor")}
               </h3>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Add annotations, text, or shapes to the image
+                {t("common.addAnnotationsTextOrShapesToThe")}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
-            title="Close (Esc)"
+            title={t("common.closeEsc")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -289,34 +291,34 @@ export default function ImageEditor({
         {/* ── Toolbar row 1: shape/text tools ── */}
         <div className="flex flex-wrap items-center gap-2 px-6 py-3 bg-[hsl(var(--muted)/0.4)] border-b border-[hsl(var(--border))]">
           <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] mr-1 uppercase tracking-wider">
-            Shapes
+            {t("common.shapes")}
           </span>
 
           <button
             onClick={addRectangle}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] hover:border-[hsl(var(--primary)/0.4)] transition-all"
-            title="Add Rectangle"
+            title={t("common.addRectangle")}
           >
             <Square className="w-4 h-4 text-red-500" />
-            Rectangle
+            {t("common.rectangle")}
           </button>
 
           <button
             onClick={addCircle}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] hover:border-[hsl(var(--primary)/0.4)] transition-all"
-            title="Add Circle"
+            title={t("common.addCircle")}
           >
             <CircleIcon className="w-4 h-4 text-amber-500" />
-            Circle
+            {t("common.circle")}
           </button>
 
           <button
             onClick={addText}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] hover:border-[hsl(var(--primary)/0.4)] transition-all"
-            title="Add Text"
+            title={t("common.addText")}
           >
             <Type className="w-4 h-4 text-blue-500" />
-            Text
+            {t("common.text")}
           </button>
 
           <div className="w-px h-6 bg-[hsl(var(--border))] mx-1" />
@@ -324,19 +326,19 @@ export default function ImageEditor({
           <button
             onClick={clearSelection}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all"
-            title="Delete selected object"
+            title={t("common.deleteSelectedObject")}
           >
             <Trash2 className="w-4 h-4" />
-            Delete
+            {t("common.delete")}
           </button>
 
           <button
             onClick={resetCanvas}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-all"
-            title="Reset all annotations"
+            title={t("common.resetAllAnnotations")}
           >
             <RotateCcw className="w-4 h-4" />
-            Reset
+            {t("common.reset")}
           </button>
         </div>
 
@@ -346,7 +348,7 @@ export default function ImageEditor({
           <label className="flex items-center gap-2 cursor-pointer">
             <Palette className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
             <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-              Fill
+              {t("common.fill")}
             </span>
             <div className="relative">
               <input
@@ -354,7 +356,7 @@ export default function ImageEditor({
                 value={fillColor === "transparent" ? "#ffffff" : fillColor}
                 onChange={(e) => applyFill(e.target.value)}
                 className="w-7 h-7 rounded cursor-pointer border border-[hsl(var(--border))] p-0.5 bg-transparent"
-                title="Fill colour"
+                title={t("common.fillColour")}
               />
             </div>
             <label className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] cursor-pointer select-none">
@@ -366,7 +368,7 @@ export default function ImageEditor({
                 }
                 className="accent-[hsl(var(--primary))] w-3 h-3"
               />
-              None
+              {t("common.none")}
             </label>
           </label>
 
@@ -383,7 +385,7 @@ export default function ImageEditor({
               value={strokeColor}
               onChange={(e) => applyStrokeColor(e.target.value)}
               className="w-7 h-7 rounded cursor-pointer border border-[hsl(var(--border))] p-0.5 bg-transparent"
-              title="Stroke / text colour"
+              title={t("common.strokeTextColour")}
             />
           </label>
 
@@ -393,7 +395,7 @@ export default function ImageEditor({
               <div className="w-px h-5 bg-[hsl(var(--border))]" />
               <label className="flex items-center gap-2">
                 <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  Width
+                  {t("common.width")}
                 </span>
                 <input
                   type="number"
@@ -402,7 +404,7 @@ export default function ImageEditor({
                   value={strokeWidth}
                   onChange={(e) => applyStrokeWidth(Number(e.target.value))}
                   className="w-14 px-2 py-1 text-xs rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
-                  title="Stroke width"
+                  title={t("common.strokeWidth")}
                 />
               </label>
             </>
@@ -414,7 +416,7 @@ export default function ImageEditor({
               <div className="w-px h-5 bg-[hsl(var(--border))]" />
               <label className="flex items-center gap-2">
                 <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  Size
+                  {t("common.size")}
                 </span>
                 <input
                   type="number"
@@ -423,7 +425,7 @@ export default function ImageEditor({
                   value={fontSize}
                   onChange={(e) => applyFontSize(Number(e.target.value))}
                   className="w-14 px-2 py-1 text-xs rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
-                  title="Font size"
+                  title={t("common.fontSize")}
                 />
               </label>
             </>
@@ -431,8 +433,8 @@ export default function ImageEditor({
 
           {selectedObject && (
             <span className="ml-auto text-xs text-[hsl(var(--primary))] font-medium">
-              {isTextObject ? "Text selected" : "Shape selected"} — drag handles
-              to resize
+              {isTextObject ? "Text selected" : "Shape selected"}
+              {t("common.dragHandlesToResize")}
             </span>
           )}
         </div>
@@ -447,18 +449,18 @@ export default function ImageEditor({
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] shrink-0">
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Click an object to select it • Press{" "}
+            {t("common.clickAnObjectToSelectItPress")}{" "}
             <kbd className="px-1.5 py-0.5 bg-[hsl(var(--muted))] rounded text-xs font-mono">
               Esc
             </kbd>{" "}
-            to close
+            {t("common.toClose")}
           </p>
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--foreground))] bg-[hsl(var(--card))] hover:bg-[hsl(var(--muted))] transition-colors"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             {showReplaceButton && (
               <button
@@ -466,7 +468,7 @@ export default function ImageEditor({
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary)/0.9)] transition-colors shadow-sm"
               >
                 <Save className="w-4 h-4" />
-                Replace Image
+                {t("common.replaceImage")}
               </button>
             )}
             {showSaveAsCopyButton && (
@@ -475,7 +477,7 @@ export default function ImageEditor({
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary)/0.9)] transition-colors shadow-sm"
               >
                 <Copy className="w-4 h-4" />
-                Save as Copy
+                {t("common.saveAsCopy")}
               </button>
             )}
           </div>

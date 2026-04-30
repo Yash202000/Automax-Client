@@ -225,6 +225,7 @@ const TemplateModalBody: React.FC<{
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const queryKey =
     type === "feedback"
@@ -291,12 +292,14 @@ const TemplateModalBody: React.FC<{
         <div className="flex items-center justify-center gap-2 py-6">
           <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
           <span className="text-sm text-[hsl(var(--muted-foreground))]">
-            Loading...
+            {t("common.loading")}
           </span>
         </div>
       ) : templates.length === 0 ? (
         <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center py-4">
-          No {label} options yet.
+          {t("common.no")}
+          {label}
+          {t("workflows.optionsYet")}
         </p>
       ) : (
         templates.map((tpl) => (
@@ -401,7 +404,7 @@ const TemplateModalBody: React.FC<{
             !createMutation.isPending ? <Plus className="w-4 h-4" /> : undefined
           }
         >
-          Add
+          {t("common.add")}
         </Button>
       </div>
     </div>
@@ -1259,7 +1262,7 @@ export const WorkflowDesignerPage: React.FC = () => {
           onClick={handleExport}
           leftIcon={<Download className="w-4 h-4" />}
         >
-          Export Workflow
+          {t("workflows.exportWorkflow")}
         </Button>
       </div>
 
@@ -1381,28 +1384,28 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <thead>
                       <tr className="border-b border-[hsl(var(--border))]">
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          State
+                          {t("common.state")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Code
+                          {t("departments.code")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Type
+                          {t("common.type")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          SLA Hours
+                          {t("workflows.slaHours")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Mergable
+                          {t("workflows.mergable")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Viewable Roles
+                          {t("workflows.viewableRoles")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Editable Roles
+                          {t("workflows.editableRoles")}
                         </th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Actions
+                          {t("workflows.actions")}
                         </th>
                       </tr>
                     </thead>
@@ -1448,7 +1451,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                               {state.is_mergable ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">
                                   <CheckCircle2 className="w-3 h-3" />
-                                  Mergable
+                                  {t("workflows.mergable")}
                                 </span>
                               ) : (
                                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -1462,7 +1465,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                               {!state.viewable_roles ||
                               state.viewable_roles.length === 0 ? (
                                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  All roles
+                                  {t("workflows.allRoles")}
                                 </span>
                               ) : (
                                 <>
@@ -1490,7 +1493,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                               {!state.editable_roles ||
                               state.editable_roles.length === 0 ? (
                                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  All roles
+                                  {t("workflows.allRoles")}
                                 </span>
                               ) : (
                                 <>
@@ -1572,19 +1575,19 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <thead>
                       <tr className="border-b border-[hsl(var(--border))]">
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Transition
+                          {t("incidents.transition")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          From → To
+                          {t("workflows.fromTo")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Roles
+                          {t("incidents.roles")}
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Config
+                          {t("workflows.config")}
                         </th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-[hsl(var(--muted-foreground))]">
-                          Actions
+                          {t("workflows.actions")}
                         </th>
                       </tr>
                     </thead>
@@ -1633,7 +1636,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             <div className="flex flex-wrap gap-1">
                               {transition.allowed_roles?.length === 0 && (
                                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  All roles
+                                  {t("workflows.allRoles")}
                                 </span>
                               )}
                               {transition.allowed_roles
@@ -1674,7 +1677,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                               <button
                                 onClick={() => openConfigModal(transition)}
                                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                                title="Configure Requirements & Actions"
+                                title={t(
+                                  "workflows.configureRequirementsActions",
+                                )}
                               >
                                 <Settings className="w-4 h-4" />
                               </button>
@@ -1710,27 +1715,26 @@ export const WorkflowDesignerPage: React.FC = () => {
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <h3 className="text-sm font-medium text-blue-800 mb-1">
-                  Auto-Workflow Matching Rules
+                  {t("workflows.autoWorkflowMatchingRules")}
                 </h3>
                 <p className="text-xs text-blue-700 mb-2">
-                  Configure which incidents should automatically use this
-                  workflow based on sources, priorities, classifications, and
-                  locations.
+                  {t(
+                    "workflows.configureWhichIncidentsShouldAutomaticallyUseThis",
+                  )}
                 </p>
                 <p className="text-xs text-blue-700">
-                  <strong>Tip:</strong> Leave a category empty to match ALL
-                  items in that category (generic/fallback). For example, empty
-                  sources = matches all sources.
+                  <strong>{t("workflows.tip")}</strong>
+                  {t("workflows.leaveACategoryEmptyToMatchAll")}
                 </p>
               </div>
 
               {/* Record Type Selection */}
               <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-5">
                 <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
-                  Record Type
+                  {t("workflows.recordType")}
                 </h4>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                  Specify which record types this workflow applies to.
+                  {t("workflows.specifyWhichRecordTypesThisWorkflowApplies")}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   <label
@@ -2034,11 +2038,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Classifications */}
                 <div>
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                    Classifications
+                    {t("workflows.classificationsLabel")}
                   </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which classifications this workflow applies to. Leave
-                    empty for all classifications.
+                    {t(
+                      "workflows.selectWhichClassificationsThisWorkflowAppliesTo",
+                    )}
                   </p>
                   <HierarchicalCheckboxTree
                     data={classifications as any}
@@ -2057,11 +2062,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Locations */}
                 <div>
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                    Locations
+                    {t("users.locations")}
                   </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which locations this workflow applies to. Leave empty
-                    for all locations.
+                    {t("workflows.selectWhichLocationsThisWorkflowAppliesTo")}
                   </p>
                   <HierarchicalCheckboxTree
                     data={locations as any}
@@ -2080,11 +2084,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Sources */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
-                    Sources
+                    {t("workflows.sources")}
                   </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which incident sources this workflow applies to.
-                    Leave empty for all sources.
+                    {t(
+                      "workflows.selectWhichIncidentSourcesThisWorkflowApplies",
+                    )}
                   </p>
                   <div className="space-y-2">
                     {INCIDENT_SOURCES.map((source) => (
@@ -2122,8 +2127,10 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                     {matchingConfig.sources.length === 0 && (
                       <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
-                        <strong>No selection</strong> - This workflow will match{" "}
-                        <strong>all sources</strong> (generic/fallback behavior)
+                        <strong>{t("common.noSelection")}</strong>
+                        {t("workflows.thisWorkflowWillMatch")}{" "}
+                        <strong>{t("workflows.allSources")}</strong>
+                        {t("workflows.genericFallbackBehavior")}
                       </div>
                     )}
                   </div>
@@ -2132,11 +2139,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Priorities */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
-                    Priorities
+                    {t("workflows.priorities")}
                   </h4>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Select which priorities this workflow applies to. Leave
-                    empty for all priorities.
+                    {t("workflows.selectWhichPrioritiesThisWorkflowAppliesTo")}
                   </p>
                   <div className="space-y-2">
                     {priorityValues.map((priority) => (
@@ -2222,9 +2228,10 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                     {matchingConfig.priorities.length === 0 && (
                       <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
-                        <strong>No selection</strong> - This workflow will match{" "}
-                        <strong>all priorities</strong> (generic/fallback
-                        behavior)
+                        <strong>{t("common.noSelection")}</strong>
+                        {t("workflows.thisWorkflowWillMatch")}{" "}
+                        <strong>{t("workflows.allPriorities")}</strong>
+                        {t("workflows.genericFallbackBehavior")}
                       </div>
                     )}
                   </div>
@@ -2249,14 +2256,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                           clipRule="evenodd"
                         />
                       </svg>
-                      Fully Generic Workflow
+                      {t("workflows.fullyGenericWorkflow")}
                     </h3>
                     <p className="text-xs text-amber-800">
-                      This workflow has NO matching rules configured. It will
-                      match <strong>ALL incidents</strong> and may conflict with
-                      other workflows. Consider adding at least one rule
-                      (source, priority, classification, or location) to make it
-                      more specific.
+                      {t("workflows.thisWorkflowHasNoMatchingRulesConfigured")}
+                      <strong>{t("workflows.allIncidents")}</strong>
+                      {t("workflows.andMayConflictWithOtherWorkflowsConsider")}
                     </p>
                   </div>
                 )}
@@ -2268,7 +2273,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   isLoading={updateMatchingMutation.isPending}
                   leftIcon={<Check className="w-4 h-4" />}
                 >
-                  Save Matching Rules
+                  {t("workflows.saveMatchingRules")}
                 </Button>
               </div>
             </div>
@@ -2279,17 +2284,16 @@ export const WorkflowDesignerPage: React.FC = () => {
             <div className="space-y-6">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <h3 className="text-sm font-medium text-amber-800 mb-1">
-                  Required Form Fields
+                  {t("workflows.requiredFormFields")}
                 </h3>
                 <p className="text-xs text-amber-700">
-                  Configure which fields are mandatory when creating incidents
-                  using this workflow. Title and Workflow are always required.
+                  {t("workflows.configureWhichFieldsAreMandatoryWhenCreating")}
                 </p>
               </div>
 
               <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
                 <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
-                  Select Required Fields
+                  {t("workflows.selectRequiredFields")}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {availableFormFields.map((item) => (
@@ -2332,14 +2336,14 @@ export const WorkflowDesignerPage: React.FC = () => {
               {/* Summary */}
               <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4">
                 <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                  Required Fields Summary
+                  {t("workflows.requiredFieldsSummary")}
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
-                    Title (always)
+                    {t("workflows.titleAlways")}
                   </span>
                   <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
-                    Workflow (always)
+                    {t("workflows.workflowAlways")}
                   </span>
                   {requiredFields.map((field) => {
                     const fieldConfig = availableFormFields.find(
@@ -2356,7 +2360,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   })}
                   {requiredFields.length === 0 && (
                     <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                      No additional required fields
+                      {t("common.noAdditionalRequiredFields")}
                     </span>
                   )}
                 </div>
@@ -2371,7 +2375,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   isLoading={updateRequiredFieldsMutation.isPending}
                   leftIcon={<Check className="w-4 h-4" />}
                 >
-                  Save Required Fields
+                  {t("workflows.saveRequiredFields")}
                 </Button>
               </div>
 
@@ -2379,17 +2383,16 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="mt-8 pt-8 border-t border-[hsl(var(--border))]">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Convert to Request Permissions
+                    {t("workflows.convertToRequestPermissions")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    Configure which roles can convert incidents to requests. If
-                    no roles are selected, all users will be able to convert.
+                    {t("workflows.configureWhichRolesCanConvertIncidentsTo")}
                   </p>
                 </div>
 
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
-                    Allowed Roles
+                    {t("workflows.allowedRoles")}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {roles.map((role) => (
@@ -2437,12 +2440,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Summary */}
                 <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 mt-4">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                    Selected Roles
+                    {t("workflows.selectedRoles")}
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {convertToRequestRoleIds.length === 0 ? (
                       <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                        No roles selected - All users can convert incidents
+                        {t("common.noRolesSelectedAllUsersCanConvert")}
                       </span>
                     ) : (
                       convertToRequestRoleIds.map((roleId) => {
@@ -2471,7 +2474,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     isLoading={updateConvertToRequestRolesMutation.isPending}
                     leftIcon={<Check className="w-4 h-4" />}
                   >
-                    Save Convert to Request Permissions
+                    {t("workflows.saveConvertToRequestPermissions")}
                   </Button>
                 </div>
               </div>
@@ -2480,17 +2483,16 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="mt-8 pt-8 border-t border-[hsl(var(--border))]">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Merge Incident Permissions
+                    {t("workflows.mergeIncidentPermissions")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    Configure which roles can merge incidents. If no roles are
-                    selected, all users will be able to merge.
+                    {t("workflows.configureWhichRolesCanMergeIncidentsIf")}
                   </p>
                 </div>
 
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
-                    Allowed Roles
+                    {t("workflows.allowedRoles")}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {roles.map((role) => (
@@ -2538,12 +2540,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Summary */}
                 <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 mt-4">
                   <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                    Selected Roles
+                    {t("workflows.selectedRoles")}
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {mergeAllowedRoleIds.length === 0 ? (
                       <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                        No roles selected - All users can merge incidents
+                        {t("common.noRolesSelectedAllUsersCanMerge")}
                       </span>
                     ) : (
                       mergeAllowedRoleIds.map((roleId) => {
@@ -2572,7 +2574,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     isLoading={updateMergeAllowedRolesMutation.isPending}
                     leftIcon={<Check className="w-4 h-4" />}
                   >
-                    Save Merge Permissions
+                    {t("workflows.saveMergePermissions")}
                   </Button>
                 </div>
               </div>
@@ -2612,7 +2614,7 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="p-6 space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Name
+                    {t("common.name")}
                   </label>
                   <input
                     type="text"
@@ -2629,7 +2631,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Code
+                    {t("departments.code")}
                   </label>
                   <input
                     type="text"
@@ -2646,7 +2648,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Description
+                    {t("workflows.description")}
                   </label>
                   <textarea
                     value={stateFormData.description}
@@ -2662,7 +2664,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    State Type
+                    {t("common.stateType")}
                   </label>
                   <select
                     value={stateFormData.state_type}
@@ -2674,14 +2676,18 @@ export const WorkflowDesignerPage: React.FC = () => {
                     }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                   >
-                    <option value="initial">Initial (Starting state)</option>
-                    <option value="normal">Normal</option>
-                    <option value="terminal">Terminal (End state)</option>
+                    <option value="initial">
+                      {t("workflows.initialStartingState")}
+                    </option>
+                    <option value="normal">{t("common.normal")}</option>
+                    <option value="terminal">
+                      {t("workflows.terminalEndState")}
+                    </option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Color
+                    {t("workflows.stateColor")}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {STATE_COLORS.map((color) => (
@@ -2708,7 +2714,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    SLA Duration (optional)
+                    {t("workflows.slaDurationOptional")}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -2724,7 +2730,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       }
                       className="flex-1 px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       min="1"
-                      placeholder="e.g. 8"
+                      placeholder={t("workflows.escalationHoursExample")}
                     />
                     <select
                       value={stateFormData.sla_unit}
@@ -2736,19 +2742,23 @@ export const WorkflowDesignerPage: React.FC = () => {
                       }
                       className="px-3 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     >
-                      <option value="minutes">Minutes</option>
-                      <option value="hours">Hours</option>
-                      <option value="days">Days</option>
-                      <option value="months">Months</option>
+                      <option value="minutes">
+                        {t("classifications.minutes")}
+                      </option>
+                      <option value="hours">
+                        {t("classifications.hours")}
+                      </option>
+                      <option value="days">{t("workflows.days")}</option>
+                      <option value="months">{t("workflows.months")}</option>
                     </select>
                   </div>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                    Maximum time an incident should remain in this state
+                    {t("workflows.maximumTimeAnIncidentShouldRemainIn")}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Escalation Policy (optional)
+                    {t("workflows.escalationPolicyOptional")}
                   </label>
                   <select
                     value={stateFormData.escalation_policy_id || ""}
@@ -2760,7 +2770,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                   >
-                    <option value="">— None —</option>
+                    <option value="">{t("common.none")}</option>
                     {escalationPolicies
                       .filter((p) => p.is_active)
                       .map((p) => (
@@ -2770,7 +2780,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       ))}
                   </select>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                    Policy to fire when this state's SLA is breached
+                    {t("workflows.policyToFireWhenThisStateS")}
                   </p>
                 </div>
                 <div>
@@ -2787,11 +2797,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                       className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                     />
                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      Mergable Status
+                      {t("workflows.mergableStatus")}
                     </span>
                   </label>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
-                    Allow incidents in this status to be merged together
+                    {t("workflows.allowIncidentsInThisStatusToBe")}
                   </p>
                 </div>
                 {/* Ready to Close */}
@@ -2809,20 +2819,19 @@ export const WorkflowDesignerPage: React.FC = () => {
                       className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                     />
                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      Ready to Close
+                      {t("workflows.readyToClose")}
                     </span>
                   </label>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
-                    Requires a duration selection when entering this state.
-                    Incident reverts automatically if not closed in time.
+                    {t("workflows.requiresADurationSelectionWhenEnteringThis")}
                   </p>
                 </div>
                 {stateFormData.is_ready_to_close && (
                   <div className="ml-7">
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                      Duration Options
+                      {t("workflows.durationOptions")}
                       <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                        (comma-separated, leave empty to use global defaults)
+                        {t("workflows.commaSeparatedLeaveEmptyToUseGlobal")}
                       </span>
                     </label>
                     <input
@@ -2834,7 +2843,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                           duration_options: e.target.value,
                         })
                       }
-                      placeholder="e.g. 1 Day, 2 Days, 1 Week, 2 Weeks"
+                      placeholder={t("workflows.durationExample")}
                       className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     />
                   </div>
@@ -2842,9 +2851,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Viewable Roles */}
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Viewable Roles
+                    {t("workflows.viewableRoles")}
                     <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                      (leave empty to show to all roles)
+                      {t("workflows.leaveEmptyToShowToAllRoles")}
                     </span>
                   </label>
                   <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
@@ -2878,9 +2887,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Editable Roles */}
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Editable Roles
+                    {t("workflows.editableRoles")}
                     <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                      (leave empty to allow all roles to edit)
+                      {t("workflows.leaveEmptyToAllowAllRolesTo")}
                     </span>
                   </label>
                   <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
@@ -2914,7 +2923,7 @@ export const WorkflowDesignerPage: React.FC = () => {
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
                 <Button variant="ghost" type="button" onClick={closeStateModal}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -2970,7 +2979,7 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="p-6 space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Name
+                    {t("common.name")}
                   </label>
                   <input
                     type="text"
@@ -2982,14 +2991,14 @@ export const WorkflowDesignerPage: React.FC = () => {
                       })
                     }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    placeholder="e.g., Start Working"
+                    placeholder={t("workflows.eGStartWorking")}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Code
+                    {t("departments.code")}
                   </label>
                   <input
                     type="text"
@@ -3001,14 +3010,14 @@ export const WorkflowDesignerPage: React.FC = () => {
                       })
                     }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    placeholder="e.g., start_working"
+                    placeholder={t("workflows.stateKeyExample")}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Description
+                    {t("common.description")}
                   </label>
                   <textarea
                     value={transitionFormData.description}
@@ -3026,7 +3035,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      From State
+                      {t("workflows.fromState")}
                     </label>
                     <select
                       value={transitionFormData.from_state_id}
@@ -3039,7 +3048,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       required
                     >
-                      <option value="">Select state...</option>
+                      <option value="">{t("workflows.selectState")}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
                           {state.name}
@@ -3049,7 +3058,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      To State
+                      {t("workflows.toState")}
                     </label>
                     <select
                       value={transitionFormData.to_state_id}
@@ -3062,7 +3071,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       required
                     >
-                      <option value="">Select state...</option>
+                      <option value="">{t("workflows.selectState")}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
                           {state.name}
@@ -3075,9 +3084,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Allowed Roles */}
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Allowed Roles
+                    {t("workflows.allowedRoles")}
                     <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                      (leave empty to allow all roles)
+                      {t("workflows.leaveEmptyToAllowAllRoles")}
                     </span>
                   </label>
                   <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
@@ -3111,7 +3120,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* Department Assignment */}
                 <div className="border-t border-[hsl(var(--border))] pt-5">
                   <label className="block text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
-                    Department Assignment
+                    {t("incidents.departmentAssignment")}
                   </label>
 
                   <div className="space-y-3">
@@ -3132,11 +3141,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                       />
                       <div>
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          Auto-detect based on classification & location
+                          {t("incidents.autoDetectDeptLocation")}
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          If one match: auto-assign. If multiple: prompt user
-                          during transition
+                          {t("workflows.ifOneMatchAutoAssignIfMultiple")}
                         </p>
                       </div>
                     </label>
@@ -3144,7 +3152,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     {transitionFormData.auto_detect_department && (
                       <div>
                         <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                          Department type to show:
+                          {t("workflows.departmentTypeToShow")}
                         </label>
                         <div className="flex gap-2">
                           {(
@@ -3182,7 +3190,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     {!transitionFormData.auto_detect_department && (
                       <div>
                         <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                          Or select specific department:
+                          {t("workflows.orSelectSpecificDepartment")}
                         </label>
                         <select
                           value={transitionFormData.assign_department_id}
@@ -3194,7 +3202,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                           }
                           className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                         >
-                          <option value="">No department assignment</option>
+                          <option value="">
+                            {t("common.noDepartmentAssignment")}
+                          </option>
                           {departments.map((dept) => (
                             <option key={dept.id} value={dept.id}>
                               {dept.name} ({dept.type || "internal"})
@@ -3209,7 +3219,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {/* User Assignment */}
                 <div className="border-t border-[hsl(var(--border))] pt-5">
                   <label className="block text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
-                    User Assignment
+                    {t("incidents.userAssignment")}
                   </label>
 
                   <div className="space-y-3">
@@ -3236,10 +3246,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                       />
                       <div>
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          No user assignment
+                          {t("common.noUserAssignment")}
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          Don't change the incident assignee
+                          {t("workflows.donTChangeTheIncidentAssignee")}
                         </p>
                       </div>
                     </label>
@@ -3265,11 +3275,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                       />
                       <div>
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          Auto-assign all matching users
+                          {t("workflows.autoAssignAllMatchingUsers")}
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          Automatically assigns ALL users matching role +
-                          incident criteria
+                          {t(
+                            "workflows.automaticallyAssignsAllUsersMatchingRoleIncident",
+                          )}
                         </p>
                       </div>
                     </label>
@@ -3292,11 +3303,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                       />
                       <div>
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          Manual selection during transition
+                          {t("workflows.manualSelectionDuringTransition")}
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          Performer selects from matching users when executing
-                          transition
+                          {t(
+                            "workflows.performerSelectsFromMatchingUsersWhenExecuting",
+                          )}
                         </p>
                       </div>
                     </label>
@@ -3323,10 +3335,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                       />
                       <div>
                         <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          Assign specific user
+                          {t("workflows.assignSpecificUser")}
                         </span>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          Always assign to a specific user
+                          {t("workflows.alwaysAssignToASpecificUser")}
                         </p>
                       </div>
                     </label>
@@ -3336,7 +3348,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       transitionFormData.manual_select_user) && (
                       <div className="ml-7">
                         <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                          Roles to match (select one or more):
+                          {t("incidents.rolesToMatchSelectOneOrMore")}
                         </label>
                         <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden bg-[hsl(var(--background))]">
                           {roles.map((role) => {
@@ -3377,11 +3389,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                         </div>
                         {transitionFormData.assignment_role_ids.length > 0 && (
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                            {transitionFormData.assignment_role_ids.length} role
+                            {transitionFormData.assignment_role_ids.length}
+                            {t("workflows.role")}
                             {transitionFormData.assignment_role_ids.length > 1
                               ? "s"
                               : ""}{" "}
-                            selected
+                            {t("workflows.selected")}
                           </p>
                         )}
                       </div>
@@ -3392,7 +3405,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       !transitionFormData.manual_select_user && (
                         <div className="ml-7">
                           <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                            Select user:
+                            {t("workflows.selectUser")}
                           </label>
                           <select
                             value={transitionFormData.assign_user_id}
@@ -3404,7 +3417,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                             }
                             className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                           >
-                            <option value="">No user assignment</option>
+                            <option value="">
+                              {t("common.noUserAssignment")}
+                            </option>
                             {users.map((user) => (
                               <option key={user.id} value={user.id}>
                                 {user.first_name} {user.last_name} ({user.email}
@@ -3434,12 +3449,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                   />
                   <div>
                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      Mark as Rejection Transition
+                      {t("workflows.markAsRejectionTransition")}
                     </span>
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                      When enabled, executing this transition will create a
-                      detailed rejection log record used for SLA tracking,
-                      analytics, and Power BI reports.
+                      {t(
+                        "workflows.whenEnabledExecutingThisTransitionWillCreate",
+                      )}
                     </p>
                   </div>
                 </label>
@@ -3451,7 +3466,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   type="button"
                   onClick={closeTransitionModal}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -3487,7 +3502,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Configure Transition
+                    {t("workflows.configureTransition")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
                     {configuringTransition.name}
@@ -3510,7 +3525,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <FileText className="w-5 h-5 text-blue-500" />
                       <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        Requirements
+                        {t("workflows.requirements")}
                       </label>
                     </div>
                     <Button
@@ -3519,13 +3534,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                       onClick={addRequirement}
                       leftIcon={<Plus className="w-4 h-4" />}
                     >
-                      Add
+                      {t("common.add")}
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {requirements.length === 0 ? (
                       <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
-                        No requirements configured
+                        {t("common.noRequirementsConfigured")}
                       </p>
                     ) : (
                       requirements.map((req, index) => (
@@ -3545,15 +3560,17 @@ export const WorkflowDesignerPage: React.FC = () => {
                               }
                               className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                             >
-                              <option value="comment">Comment Required</option>
+                              <option value="comment">
+                                {t("workflows.commentRequired")}
+                              </option>
                               <option value="attachment">
-                                Attachment Required
+                                {t("workflows.attachmentRequired")}
                               </option>
                               <option value="feedback">
-                                Feedback Required
+                                {t("workflows.feedbackRequired")}
                               </option>
                               <option value="field_value">
-                                Field Value Required
+                                {t("workflows.fieldValueRequired")}
                               </option>
                             </select>
                             <button
@@ -3578,13 +3595,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                               />
                               <span className="text-sm text-[hsl(var(--foreground))]">
-                                Mandatory
+                                {t("workflows.mandatory")}
                               </span>
                             </label>
                           </div>
                           <input
                             type="text"
-                            placeholder="Error message (optional)"
+                            placeholder={t("workflows.errorMessageOptional")}
                             value={req.error_message || ""}
                             onChange={(e) =>
                               updateRequirement(
@@ -3614,7 +3631,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--background))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors disabled:opacity-40"
                               >
                                 <Settings className="w-3.5 h-3.5" />
-                                Configure{" "}
+                                {t("workflows.configure")}{" "}
                                 {req.requirement_type === "feedback"
                                   ? "feedback"
                                   : "comments"}
@@ -3633,10 +3650,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <PenLine className="w-5 h-5 text-violet-500" />
                       <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        Field Changes
+                        {t("incidents.fieldChanges")}
                       </label>
                       <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                        — fields the user can edit during this transition
+                        {t("workflows.fieldsTheUserCanEditDuringThis")}
                       </span>
                     </div>
                     <Button
@@ -3645,13 +3662,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                       onClick={addFieldChange}
                       leftIcon={<Plus className="w-4 h-4" />}
                     >
-                      Add
+                      {t("common.add")}
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {fieldChanges.length === 0 ? (
                       <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
-                        No field changes configured
+                        {t("common.noFieldChangesConfigured")}
                       </p>
                     ) : (
                       fieldChanges.map((fc, index) => (
@@ -3687,14 +3704,24 @@ export const WorkflowDesignerPage: React.FC = () => {
                               }}
                               className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                             >
-                              <option value="priority">Priority</option>
-                              <option value="department_id">Department</option>
-                              <option value="location_id">Location</option>
-                              <option value="classification_id">
-                                Classification
+                              <option value="priority">
+                                {t("common.priority")}
                               </option>
-                              <option value="title">Title</option>
-                              <option value="description">Description</option>
+                              <option value="department_id">
+                                {t("common.department")}
+                              </option>
+                              <option value="location_id">
+                                {t("common.location")}
+                              </option>
+                              <option value="classification_id">
+                                {t("common.classification")}
+                              </option>
+                              <option value="title">
+                                {t("incidents.incidentTitle")}
+                              </option>
+                              <option value="description">
+                                {t("common.description")}
+                              </option>
                             </select>
                             <button
                               onClick={() => removeFieldChange(index)}
@@ -3705,7 +3732,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                           </div>
                           <input
                             type="text"
-                            placeholder="Label (e.g. 'Select Department')"
+                            placeholder={t("workflows.labelEGSelectDepartment")}
                             value={fc.label || ""}
                             onChange={(e) =>
                               updateFieldChange(index, "label", e.target.value)
@@ -3726,13 +3753,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                               className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                             />
                             <span className="text-sm text-[hsl(var(--foreground))]">
-                              Required
+                              {t("common.required")}
                             </span>
                           </label>
                           {fc.field_name === "department_id" && (
                             <div>
                               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                                Department type to show:
+                                {t("workflows.departmentTypeToShow")}
                               </label>
                               <div className="flex gap-2">
                                 {(
@@ -3778,7 +3805,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Zap className="w-5 h-5 text-emerald-500" />
                       <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        Automation Actions
+                        {t("workflows.automationActions")}
                       </label>
                     </div>
                     <Button
@@ -3787,13 +3814,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                       onClick={addAction}
                       leftIcon={<Plus className="w-4 h-4" />}
                     >
-                      Add
+                      {t("common.add")}
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {actions.length === 0 ? (
                       <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
-                        No actions configured
+                        {t("common.noActionsConfigured")}
                       </p>
                     ) : (
                       actions.map((action, index) => {
@@ -3876,12 +3903,16 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                               >
                                 <option value="notification">
-                                  Send Notification
+                                  {t("workflows.sendNotification")}
                                 </option>
-                                <option value="email">Send Email</option>
-                                <option value="webhook">Call Webhook</option>
+                                <option value="email">
+                                  {t("workflows.sendEmail")}
+                                </option>
+                                <option value="webhook">
+                                  {t("workflows.callWebhook")}
+                                </option>
                                 <option value="field_update">
-                                  Update Field
+                                  {t("workflows.updateField")}
                                 </option>
                               </select>
                               <button
@@ -3893,7 +3924,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             </div>
                             <input
                               type="text"
-                              placeholder="Action name"
+                              placeholder={t("workflows.actionName")}
                               value={action.name}
                               onChange={(e) =>
                                 updateAction(index, "name", e.target.value)
@@ -3906,13 +3937,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                               <div className="space-y-4 pt-2">
                                 <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
                                   <Mail className="w-4 h-4" />
-                                  Email Notification Settings
+                                  {t("workflows.emailNotificationSettings")}
                                 </div>
 
                                 {/* Recipients */}
                                 <div>
                                   <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
-                                    Email Recipients
+                                    {t("workflows.emailRecipients")}
                                   </label>
                                   <div className="grid grid-cols-2 gap-2">
                                     {EMAIL_RECIPIENTS.map((recipient) => (
@@ -3956,11 +3987,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 {emailConfig.recipients?.includes("custom") && (
                                   <div>
                                     <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                      Custom Email Addresses
+                                      {t("workflows.customEmailAddresses")}
                                     </label>
                                     <input
                                       type="text"
-                                      placeholder="email1@example.com, email2@example.com"
+                                      placeholder={t(
+                                        "workflows.email1ExampleComEmail2ExampleCom",
+                                      )}
                                       value={
                                         emailConfig.custom_emails?.join(", ") ||
                                         ""
@@ -3976,7 +4009,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                                       className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                                     />
                                     <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
-                                      Separate multiple emails with commas
+                                      {t(
+                                        "workflows.separateMultipleEmailsWithCommas",
+                                      )}
                                     </p>
                                   </div>
                                 )}
@@ -3984,11 +4019,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 {/* Subject template */}
                                 <div>
                                   <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                    Subject Template
+                                    {t("workflows.subjectTemplate")}
                                   </label>
                                   <input
                                     type="text"
-                                    placeholder="e.g., [{{incident_number}}] Status changed to {{new_state}}"
+                                    placeholder={t(
+                                      "workflows.eGIncidentNumberStatusChangedTo",
+                                    )}
                                     value={emailConfig.subject_template || ""}
                                     onChange={(e) =>
                                       updateEmailConfig({
@@ -3998,7 +4035,8 @@ export const WorkflowDesignerPage: React.FC = () => {
                                     className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                                   />
                                   <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
-                                    Use {"{{incident_number}}"}, {"{{title}}"},{" "}
+                                    {t("workflows.use")}
+                                    {"{{incident_number}}"}, {"{{title}}"},{" "}
                                     {"{{new_state}}"}, {"{{old_state}}"}
                                   </p>
                                 </div>
@@ -4006,10 +4044,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 {/* Body template */}
                                 <div>
                                   <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                    Body Template (optional)
+                                    {t("workflows.bodyTemplateOptional")}
                                   </label>
                                   <textarea
-                                    placeholder="Custom email body template..."
+                                    placeholder={t(
+                                      "workflows.customEmailBodyTemplate",
+                                    )}
                                     value={emailConfig.body_template || ""}
                                     onChange={(e) =>
                                       updateEmailConfig({
@@ -4024,7 +4064,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 {/* Include options */}
                                 <div>
                                   <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
-                                    Include in Email
+                                    {t("workflows.includeInEmail")}
                                   </label>
                                   <div className="flex flex-wrap gap-3">
                                     <label className="flex items-center gap-2">
@@ -4043,7 +4083,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                         className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
                                       />
                                       <span className="text-xs text-[hsl(var(--foreground))]">
-                                        Incident Details
+                                        {t("workflows.incidentDetails")}
                                       </span>
                                     </label>
                                     <label className="flex items-center gap-2">
@@ -4062,7 +4102,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                         className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
                                       />
                                       <span className="text-xs text-[hsl(var(--foreground))]">
-                                        Transition Info
+                                        {t("incidents.transitionInfo")}
                                       </span>
                                     </label>
                                     <label className="flex items-center gap-2">
@@ -4079,7 +4119,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                         className="w-4 h-4 text-blue-600 border-[hsl(var(--border))] rounded"
                                       />
                                       <span className="text-xs text-[hsl(var(--foreground))]">
-                                        Comments
+                                        {t("incidents.comments")}
                                       </span>
                                     </label>
                                   </div>
@@ -4088,7 +4128,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             ) : (
                               /* Non-email actions get the generic config textarea */
                               <textarea
-                                placeholder="Configuration (JSON)"
+                                placeholder={t("workflows.configurationJson")}
                                 value={action.config || ""}
                                 onChange={(e) =>
                                   updateAction(index, "config", e.target.value)
@@ -4113,7 +4153,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                                 />
                                 <span className="text-sm text-[hsl(var(--foreground))]">
-                                  Run Async
+                                  {t("workflows.runAsync")}
                                 </span>
                               </label>
                               <label className="flex items-center gap-2">
@@ -4130,7 +4170,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
                                 />
                                 <span className="text-sm text-[hsl(var(--foreground))]">
-                                  Active
+                                  {t("workflows.active")}
                                 </span>
                               </label>
                             </div>
@@ -4148,7 +4188,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   type="button"
                   onClick={closeConfigModal}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={handleSaveConfig}
@@ -4167,7 +4207,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ) : undefined
                   }
                 >
-                  Save Configuration
+                  {t("workflows.saveConfiguration")}
                 </Button>
               </div>
             </div>
@@ -4186,11 +4226,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Delete State
+                    {t("workflows.deleteState")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    This will also delete all transitions connected to this
-                    state.
+                    {t("workflows.thisWillAlsoDeleteAllTransitionsConnected")}
                   </p>
                 </div>
               </div>
@@ -4199,14 +4238,14 @@ export const WorkflowDesignerPage: React.FC = () => {
                   variant="ghost"
                   onClick={() => setDeleteStateConfirm(null)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={() => deleteStateMutation.mutate(deleteStateConfirm)}
                   isLoading={deleteStateMutation.isPending}
                 >
-                  Delete State
+                  {t("workflows.deleteState")}
                 </Button>
               </div>
             </div>
@@ -4225,10 +4264,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Delete Transition
+                    {t("workflows.deleteTransition")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    Are you sure you want to delete this transition?
+                    {t("workflows.areYouSureYouWantToDelete")}
                   </p>
                 </div>
               </div>
@@ -4237,7 +4276,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   variant="ghost"
                   onClick={() => setDeleteTransitionConfirm(null)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   variant="destructive"
@@ -4246,7 +4285,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   }
                   isLoading={deleteTransitionMutation.isPending}
                 >
-                  Delete Transition
+                  {t("workflows.deleteTransition")}
                 </Button>
               </div>
             </div>
@@ -4260,9 +4299,9 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-[hsl(var(--primary))]" />
                 <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                  Configure{" "}
+                  {t("workflows.configure")}{" "}
                   {templateModal.type === "feedback" ? "feedback" : "comment"}{" "}
-                  options
+                  {t("workflows.options")}
                 </h3>
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
                   · {templateModal.transitionName}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Search,
@@ -37,6 +38,7 @@ interface ExportFilters {
 }
 
 const ReportTemplatesListPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -233,9 +235,9 @@ const ReportTemplatesListPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Report Templates</h1>
+          <h1 className="text-2xl font-bold">{t("reports.templates")}</h1>
           <p className="text-gray-500 mt-1">
-            Create and manage customizable report templates
+            {t("reports.createAndManageCustomizableReportTemplates")}
           </p>
         </div>
         <Button
@@ -243,7 +245,7 @@ const ReportTemplatesListPage: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2"
         >
           <Plus className="h-5 w-5" />
-          New Template
+          {t("goals.templates.newTemplate")}
         </Button>
       </div>
 
@@ -259,7 +261,7 @@ const ReportTemplatesListPage: React.FC = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search templates..."
+              placeholder={t("goals.templates.searchPlaceholder")}
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -273,16 +275,16 @@ const ReportTemplatesListPage: React.FC = () => {
         ) : templates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500">
             <FileText className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">No templates found</p>
-            <p className="text-sm mt-1">
-              Create your first report template to get started
+            <p className="text-lg font-medium">
+              {t("reports.noTemplatesFound")}
             </p>
+            <p className="text-sm mt-1">{t("reports.createFirstTemplate")}</p>
             <Button
               className="mt-4"
               onClick={() => navigate("/reports/templates/new/edit")}
             >
               <Plus className="h-5 w-5" />
-              Create Template
+              {t("reports.createTemplate")}
             </Button>
           </div>
         ) : (
@@ -302,12 +304,12 @@ const ReportTemplatesListPage: React.FC = () => {
                       {template.is_default && (
                         <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
                           <Star className="h-3 w-3" />
-                          Default
+                          {t("common.default")}
                         </span>
                       )}
                       {template.is_public && (
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                          Public
+                          {t("reports.public")}
                         </span>
                       )}
                     </div>
@@ -315,7 +317,9 @@ const ReportTemplatesListPage: React.FC = () => {
                       {template.description || "No description"}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Created by {template.created_by?.username || "Unknown"} on{" "}
+                      {t("reports.createdBy")}
+                      {template.created_by?.username || "Unknown"}
+                      {t("reports.on")}{" "}
                       {new Date(template.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -327,14 +331,14 @@ const ReportTemplatesListPage: React.FC = () => {
                       navigate(`/reports/templates/${template.id}/edit`)
                     }
                     className="p-2 hover:bg-gray-200 rounded-lg"
-                    title="Edit"
+                    title={t("reports.edit")}
                   >
                     <Edit className="h-5 w-5 text-gray-600" />
                   </button>
                   <button
                     onClick={() => openExportModal(template)}
                     className="p-2 hover:bg-gray-200 rounded-lg"
-                    title="Export with filters"
+                    title={t("reports.exportWithFilters")}
                   >
                     <Download className="h-5 w-5 text-gray-600" />
                   </button>
@@ -363,14 +367,14 @@ const ReportTemplatesListPage: React.FC = () => {
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Edit className="h-4 w-4" />
-                            Edit
+                            {t("common.edit")}
                           </button>
                           <button
                             onClick={() => handleDuplicate(template.id)}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Copy className="h-4 w-4" />
-                            Duplicate
+                            {t("reports.duplicate")}
                           </button>
                           {!template.is_default && (
                             <button
@@ -378,7 +382,7 @@ const ReportTemplatesListPage: React.FC = () => {
                               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             >
                               <Star className="h-4 w-4" />
-                              Set as Default
+                              {t("reports.setAsDefault")}
                             </button>
                           )}
                           <button
@@ -386,14 +390,14 @@ const ReportTemplatesListPage: React.FC = () => {
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Filter className="h-4 w-4" />
-                            Export with Filters
+                            {t("reports.exportWithFilters")}
                           </button>
                           <button
                             onClick={() => handleQuickExport(template)}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Download className="h-4 w-4" />
-                            Quick Export PDF
+                            {t("reports.quickExportPdf")}
                           </button>
                           <hr className="my-1" />
                           <button
@@ -401,7 +405,7 @@ const ReportTemplatesListPage: React.FC = () => {
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4" />
-                            Delete
+                            {t("reports.delete")}
                           </button>
                         </div>
                       </>
@@ -417,8 +421,12 @@ const ReportTemplatesListPage: React.FC = () => {
         {totalPages > 1 && (
           <div className="p-4 border-t flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1} to{" "}
-              {Math.min(page * limit, total)} of {total} templates
+              {t("reports.reportPreview.showing")}
+              {(page - 1) * limit + 1}
+              {t("reports.filterBuilder.to")} {Math.min(page * limit, total)}
+              {t("reports.of")}
+              {total}
+              {t("reports.templatesCount")}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -426,17 +434,20 @@ const ReportTemplatesListPage: React.FC = () => {
                 disabled={page === 1}
                 className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Previous
+                {t("common.previous")}
               </button>
               <span className="px-3 py-1">
-                Page {page} of {totalPages}
+                {t("reports.reportPreview.page")}
+                {page}
+                {t("common.of")}
+                {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next
+                {t("common.next")}
               </button>
             </div>
           </div>
@@ -452,7 +463,9 @@ const ReportTemplatesListPage: React.FC = () => {
           />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">Export Report</h3>
+              <h3 className="text-lg font-semibold">
+                {t("reports.exportReport")}
+              </h3>
               <button
                 onClick={() => setShowExportModal(false)}
                 className="p-1 hover:bg-gray-100 rounded"
@@ -464,7 +477,7 @@ const ReportTemplatesListPage: React.FC = () => {
             <div className="p-4 space-y-4">
               {/* Template Info */}
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm text-gray-500">Template</p>
+                <p className="text-sm text-gray-500">{t("common.template")}</p>
                 <p className="font-medium">{selectedTemplate.name}</p>
               </div>
 
@@ -473,7 +486,7 @@ const ReportTemplatesListPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <Calendar className="h-4 w-4 inline mr-1" />
-                    From Date
+                    {t("reports.fromDate")}
                   </label>
                   <input
                     type="date"
@@ -490,7 +503,7 @@ const ReportTemplatesListPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <Calendar className="h-4 w-4 inline mr-1" />
-                    To Date
+                    {t("reports.filterBuilder.toDate")}
                   </label>
                   <input
                     type="date"
@@ -509,7 +522,7 @@ const ReportTemplatesListPage: React.FC = () => {
               {/* Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status (optional)
+                  {t("reports.statusOptional")}
                 </label>
                 <select
                   value={exportFilters.status || ""}
@@ -521,19 +534,25 @@ const ReportTemplatesListPage: React.FC = () => {
                   }
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">All Statuses</option>
-                  <option value="open">Open</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="pending">Pending</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
+                  <option value="">
+                    {t("goals.detail.evidence.allStatuses")}
+                  </option>
+                  <option value="open">{t("incidents.open")}</option>
+                  <option value="in_progress">
+                    {t("incidents.inProgress")}
+                  </option>
+                  <option value="pending">
+                    {t("goals.approvals.tabPending")}
+                  </option>
+                  <option value="resolved">{t("incidents.resolved")}</option>
+                  <option value="closed">{t("common.closed")}</option>
                 </select>
               </div>
 
               {/* Export Format */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Export Format
+                  {t("reports.exportDialog.exportFormat")}
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -547,7 +566,9 @@ const ReportTemplatesListPage: React.FC = () => {
                       }
                       className="text-primary"
                     />
-                    <span className="text-sm">PDF</span>
+                    <span className="text-sm">
+                      {t("reports.exportDialog.pdf")}
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -574,7 +595,7 @@ const ReportTemplatesListPage: React.FC = () => {
                 onClick={() => setShowExportModal(false)}
                 className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
               >
-                Cancel
+                {t("reports.exportDialog.cancel")}
               </button>
               <button
                 onClick={handleExportWithFilters}
@@ -584,12 +605,12 @@ const ReportTemplatesListPage: React.FC = () => {
                 {exporting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    Exporting...
+                    {t("reports.exportDialog.exporting")}
                   </>
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Export
+                    {t("reports.export")}
                   </>
                 )}
               </button>

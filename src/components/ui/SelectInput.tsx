@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, X, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ export function Select({
   className,
   size = "md",
 }: SelectProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -192,7 +194,7 @@ export function Select({
               type="button"
               onClick={handleClear}
               className="opacity-40 hover:opacity-80 transition-opacity rounded p-0.5 hover:bg-[hsl(var(--muted))]"
-              aria-label="Clear selection"
+              aria-label={t("goals.components.bulk.clearTitle")}
             >
               <X className="w-3.5 h-3.5 text-[hsl(var(--foreground))]" />
             </button>
@@ -245,7 +247,7 @@ export function Select({
           <div className="max-h-56 overflow-y-auto overscroll-contain py-1">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                No options found
+                {t("common.noOptionsFound")}
               </div>
             ) : (
               filteredOptions.map((option) => {

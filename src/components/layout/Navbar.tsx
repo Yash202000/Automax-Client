@@ -295,11 +295,11 @@ export const Navbar: React.FC = () => {
                       {/* Header */}
                       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                         <h3 className="text-sm font-semibold text-gray-900">
-                          Notifications
+                          {t("settings.notifications")}
                         </h3>
                         {unreadCount > 0 && (
                           <span className="text-xs text-gray-500">
-                            {unreadCount} unread
+                            {unreadCount} {t("navigation.unread")}
                           </span>
                         )}
                       </div>
@@ -310,7 +310,7 @@ export const Navbar: React.FC = () => {
                           <div className="flex flex-col items-center justify-center py-10 text-center">
                             <Bell className="w-8 h-8 text-gray-300 mb-2" />
                             <p className="text-sm text-gray-500">
-                              No notifications
+                              {t("navigation.noNotifications")}
                             </p>
                           </div>
                         ) : (

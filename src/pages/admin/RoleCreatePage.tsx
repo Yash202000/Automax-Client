@@ -6,10 +6,7 @@ import { ArrowLeft, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 import { permissionApi, roleApi } from "../../api/admin";
 import type { RoleCreateRequest } from "../../types";
-import {
-  PermissionsEditor,
-  type PermissionFilterMode,
-} from "./RoleFormParts";
+import { PermissionsEditor, type PermissionFilterMode } from "./RoleFormParts";
 
 interface RoleFormData {
   name: string;
@@ -132,12 +129,11 @@ export const RoleCreatePage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleName")}{" "}
-                <span className="text-red-500">*</span>
+                {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g., Content Manager"
+                placeholder={t("roles.eGContentManager")}
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -148,12 +144,11 @@ export const RoleCreatePage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleCode")}{" "}
-                <span className="text-red-500">*</span>
+                {t("roles.roleCode")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g., content_manager"
+                placeholder={t("roles.roleKeyExample")}
                 value={formData.code}
                 onChange={(e) =>
                   setFormData({ ...formData, code: e.target.value })
@@ -170,7 +165,7 @@ export const RoleCreatePage: React.FC = () => {
                 {t("common.description")}
               </label>
               <textarea
-                placeholder="Describe what this role is for..."
+                placeholder={t("roles.describeWhatThisRoleIsFor")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })

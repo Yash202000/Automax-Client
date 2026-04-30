@@ -310,19 +310,16 @@ export const QueriesPage: React.FC = () => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            {t("queries.failedToLoad", "Failed to Load")}
+            {t("queries.failedToLoad")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            {t(
-              "queries.errorLoading",
-              "There was an error loading the queries. Please try again.",
-            )}
+            {t("queries.errorLoading")}
           </p>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            {t("common.tryAgain", "Try Again")}
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -340,14 +337,14 @@ export const QueriesPage: React.FC = () => {
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {statusFilter
-                ? `${statusFilter} ${t("queries.title", "Queries")}`
-                : t("queries.title", "Queries")}
+                ? `${statusFilter} ${t("queries.title")}`
+                : t("queries.title")}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {statusFilter
-              ? `${t("queries.showingStatus", "Showing status")}: ${statusFilter}`
-              : t("queries.subtitle", "Manage citizen queries and feedback")}
+              ? `${t("queries.showingStatus")}: ${statusFilter}`
+              : t("queries.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -360,7 +357,7 @@ export const QueriesPage: React.FC = () => {
               !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
             }
           >
-            {t("common.refresh", "Refresh")}
+            {t("common.refresh")}
           </Button>
           {canCreateQuery && (
             <Button
@@ -368,7 +365,7 @@ export const QueriesPage: React.FC = () => {
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => setShowCreateModal(true)}
             >
-              {t("queries.createQuery", "Create Query")}
+              {t("queries.createQuery")}
             </Button>
           )}
         </div>
@@ -381,10 +378,7 @@ export const QueriesPage: React.FC = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
             <input
               type="text"
-              placeholder={t(
-                "queries.searchPlaceholder",
-                "Search by title or query number...",
-              )}
+              placeholder={t("queries.searchPlaceholder")}
               value={filter.search || ""}
               onChange={(e) =>
                 handleFilterChange("search", e.target.value || undefined)
@@ -399,14 +393,14 @@ export const QueriesPage: React.FC = () => {
               leftIcon={<Filter className="w-4 h-4" />}
               onClick={() => setShowFilters(!showFilters)}
             >
-              {t("common.filters", "Filters")}
+              {t("common.filters")}
               {hasActiveFilters && (
                 <span className="ml-1 w-2 h-2 rounded-full bg-primary" />
               )}
             </Button>
             {hasActiveFilters && canViewAllQueries && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                {t("common.clear", "Clear")}
+                {t("common.clear")}
               </Button>
             )}
             {/* Column Configuration */}
@@ -417,7 +411,7 @@ export const QueriesPage: React.FC = () => {
                 leftIcon={<Settings2 className="w-4 h-4" />}
                 onClick={() => setShowColumnConfig(!showColumnConfig)}
               >
-                {t("common.columns", "Columns")}
+                {t("common.columns")}
                 <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
                   ({visibleColumnCount})
                 </span>
@@ -426,13 +420,10 @@ export const QueriesPage: React.FC = () => {
                 <div className="absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
                     <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                      {t("common.configureColumns", "Configure Columns")}
+                      {t("common.configureColumns")}
                     </p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                      {t(
-                        "common.toggleColumnVisibility",
-                        "Toggle column visibility",
-                      )}
+                      {t("common.toggleColumnVisibility")}
                     </p>
                   </div>
                   <div className="py-2 max-h-64 overflow-y-auto">
@@ -472,7 +463,7 @@ export const QueriesPage: React.FC = () => {
                         </span>
                         {col.required && (
                           <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {t("common.required", "Required")}
+                            {t("common.required")}
                           </span>
                         )}
                       </button>
@@ -483,7 +474,7 @@ export const QueriesPage: React.FC = () => {
                       onClick={() => setColumns(defaultColumns)}
                       className="text-xs text-primary hover:text-primary/90 font-medium"
                     >
-                      {t("common.resetToDefaults", "Reset to defaults")}
+                      {t("common.resetToDefaults")}
                     </button>
                   </div>
                 </div>
@@ -497,7 +488,7 @@ export const QueriesPage: React.FC = () => {
           <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.workflow", "Workflow")}
+                {t("common.workflow")}
               </label>
               <select
                 value={filter.workflow_id || ""}
@@ -506,9 +497,7 @@ export const QueriesPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
-                <option value="">
-                  {t("common.allWorkflows", "All Workflows")}
-                </option>
+                <option value="">{t("common.allWorkflows")}</option>
                 {workflowsData?.data?.map((workflow: Workflow) => (
                   <option key={workflow.id} value={workflow.id}>
                     {workflow.name}
@@ -518,7 +507,7 @@ export const QueriesPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.state", "State")}
+                {t("common.state")}
               </label>
               <select
                 value={filter.current_state_id || ""}
@@ -536,7 +525,7 @@ export const QueriesPage: React.FC = () => {
                     "opacity-60 cursor-not-allowed",
                 )}
               >
-                <option value="">{t("common.allStates", "All States")}</option>
+                <option value="">{t("common.allStates")}</option>
                 {uniqueStates.map((state: WorkflowState) => (
                   <option key={state.id} value={state.id}>
                     {state.name}
@@ -546,7 +535,7 @@ export const QueriesPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.channel", "Channel")}
+                {t("common.channel")}
               </label>
               <select
                 value={filter.channel || ""}
@@ -555,23 +544,17 @@ export const QueriesPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
-                <option value="">
-                  {t("common.allChannels", "All Channels")}
-                </option>
-                <option value="phone">{t("channels.phone", "Phone")}</option>
-                <option value="email">{t("channels.email", "Email")}</option>
-                <option value="web">{t("channels.web", "Web")}</option>
-                <option value="mobile">
-                  {t("channels.mobile", "Mobile App")}
-                </option>
-                <option value="in_person">
-                  {t("channels.inPerson", "In Person")}
-                </option>
+                <option value="">{t("common.allChannels")}</option>
+                <option value="phone">{t("channels.phone")}</option>
+                <option value="email">{t("channels.email")}</option>
+                <option value="web">{t("channels.web")}</option>
+                <option value="mobile">{t("channels.mobile")}</option>
+                <option value="in_person">{t("channels.inPerson")}</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.assignee", "Assignee")}
+                {t("common.assignee")}
               </label>
               <select
                 value={filter.assignee_id || ""}
@@ -580,9 +563,7 @@ export const QueriesPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
-                <option value="">
-                  {t("common.allAssignees", "All Assignees")}
-                </option>
+                <option value="">{t("common.allAssignees")}</option>
                 {usersData?.data?.map((user: UserType) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name
@@ -636,7 +617,7 @@ export const QueriesPage: React.FC = () => {
             />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.priority", "Priority")}
+                {t("common.priority")}
               </label>
               <select
                 value={filter.priority ?? ""}
@@ -648,16 +629,12 @@ export const QueriesPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
               >
-                <option value="">
-                  {t("common.allPriorities", "All Priorities")}
-                </option>
-                <option value="1">
-                  {t("priorities.critical", "Critical")}
-                </option>
-                <option value="2">{t("priorities.high", "High")}</option>
-                <option value="3">{t("priorities.medium", "Medium")}</option>
-                <option value="4">{t("priorities.low", "Low")}</option>
-                <option value="5">{t("priorities.veryLow", "Very Low")}</option>
+                <option value="">{t("common.allPriorities")}</option>
+                <option value="1">{t("priorities.critical")}</option>
+                <option value="2">{t("priorities.high")}</option>
+                <option value="3">{t("priorities.medium")}</option>
+                <option value="4">{t("priorities.low")}</option>
+                <option value="5">{t("priorities.veryLow")}</option>
               </select>
             </div>
           </div>
@@ -672,7 +649,7 @@ export const QueriesPage: React.FC = () => {
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">
-              {t("queries.loading", "Loading queries...")}
+              {t("queries.loading")}
             </p>
           </div>
         ) : queries.length === 0 ? (
@@ -681,16 +658,16 @@ export const QueriesPage: React.FC = () => {
               <HelpCircle className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-              {t("queries.noQueriesFound", "No Queries Found")}
+              {t("queries.noQueriesFound")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {hasActiveFilters
-                ? t("queries.tryAdjustingFilters", "Try adjusting your filters")
-                : t("queries.noQueriesYet", "No queries have been created yet")}
+                ? t("queries.tryAdjustingFilters")
+                : t("queries.noQueriesYet")}
             </p>
             {hasActiveFilters ? (
               <Button variant="outline" onClick={clearFilters}>
-                {t("common.clearFilters", "Clear Filters")}
+                {t("common.clearFilters")}
               </Button>
             ) : canCreateQuery ? (
               <Button
@@ -698,7 +675,7 @@ export const QueriesPage: React.FC = () => {
                 onClick={() => setShowCreateModal(true)}
                 className="bg-linear-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent"
               >
-                {t("queries.createFirstQuery", "Create First Query")}
+                {t("queries.createFirstQuery")}
               </Button>
             ) : null}
           </div>
@@ -711,70 +688,70 @@ export const QueriesPage: React.FC = () => {
                     {isColumnVisible("query") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("queries.query", "Query")}
+                          {t("queries.query")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("channel") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.channel", "Channel")}
+                          {t("common.channel")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_by") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("queries.createdBy", "Created By")}
+                          {t("queries.createdBy")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("source") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("queries.sourceIncident", "Source Incident")}
+                          {t("queries.sourceIncident")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("state") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.state", "State")}
+                          {t("common.state")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("assignee") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.assignee", "Assignee")}
+                          {t("common.assignee")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("department") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.department", "Department")}
+                          {t("common.department")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_at") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.created", "Created")}
+                          {t("common.created")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("evaluation") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("queries.evaluations", "Evaluations")}
+                          {t("queries.evaluations")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("actions") && (
                       <th className="px-6 py-4 text-end">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.actions", "Actions")}
+                          {t("common.actions")}
                         </span>
                       </th>
                     )}
@@ -851,7 +828,7 @@ export const QueriesPage: React.FC = () => {
                               className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
-                              {t("queries.viewSource", "View Source")}
+                              {t("queries.viewSource")}
                             </Link>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -909,7 +886,7 @@ export const QueriesPage: React.FC = () => {
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                               <User className="w-4 h-4" />
-                              {t("common.unassigned", "Unassigned")}
+                              {t("common.unassigned")}
                             </span>
                           )}
                         </td>
@@ -961,7 +938,7 @@ export const QueriesPage: React.FC = () => {
                               navigate(`/queries/${query.id}`);
                             }}
                           >
-                            {t("common.view", "View")}
+                            {t("common.view")}
                           </Button>
                         </td>
                       )}
@@ -974,22 +951,22 @@ export const QueriesPage: React.FC = () => {
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t("common.showing", "Showing")}{" "}
+                {t("common.showing")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {((filter.page || 1) - 1) * (filter.limit || 10) + 1}
                 </span>{" "}
-                {t("common.to", "to")}{" "}
+                {t("common.to")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {Math.min(
                     (filter.page || 1) * (filter.limit || 10),
                     totalItems,
                   )}
                 </span>{" "}
-                {t("common.of", "of")}{" "}
+                {t("common.of")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {totalItems}
                 </span>{" "}
-                {t("queries.queries", "queries")}
+                {t("queries.queries")}
               </p>
 
               <div className="flex items-center gap-2">

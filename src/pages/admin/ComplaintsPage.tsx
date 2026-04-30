@@ -310,19 +310,16 @@ export const ComplaintsPage: React.FC = () => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            {t("complaints.failedToLoad", "Failed to Load")}
+            {t("complaints.failedToLoad")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            {t(
-              "complaints.errorLoading",
-              "There was an error loading the complaints. Please try again.",
-            )}
+            {t("complaints.errorLoading")}
           </p>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            {t("common.tryAgain", "Try Again")}
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -340,17 +337,14 @@ export const ComplaintsPage: React.FC = () => {
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {statusFilter
-                ? `${statusFilter} ${t("complaints.title", "Complaints")}`
-                : t("complaints.title", "Complaints")}
+                ? `${statusFilter} ${t("complaints.title")}`
+                : t("complaints.title")}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {statusFilter
-              ? `${t("complaints.showingStatus", "Showing status")}: ${statusFilter}`
-              : t(
-                  "complaints.subtitle",
-                  "Manage citizen complaints and feedback",
-                )}
+              ? `${t("complaints.showingStatus")}: ${statusFilter}`
+              : t("complaints.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -363,7 +357,7 @@ export const ComplaintsPage: React.FC = () => {
               !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
             }
           >
-            {t("common.refresh", "Refresh")}
+            {t("common.refresh")}
           </Button>
           {canCreateComplaint && (
             <Button
@@ -372,7 +366,7 @@ export const ComplaintsPage: React.FC = () => {
               onClick={() => setShowCreateModal(true)}
               className="bg-linear-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
             >
-              {t("complaints.createComplaint", "Create Complaint")}
+              {t("complaints.createComplaint")}
             </Button>
           )}
         </div>
@@ -385,10 +379,7 @@ export const ComplaintsPage: React.FC = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
             <input
               type="text"
-              placeholder={t(
-                "complaints.searchPlaceholder",
-                "Search by title or complaint number...",
-              )}
+              placeholder={t("complaints.searchPlaceholder")}
               value={filter.search || ""}
               onChange={(e) =>
                 handleFilterChange("search", e.target.value || undefined)
@@ -403,14 +394,14 @@ export const ComplaintsPage: React.FC = () => {
               leftIcon={<Filter className="w-4 h-4" />}
               onClick={() => setShowFilters(!showFilters)}
             >
-              {t("common.filters", "Filters")}
+              {t("common.filters")}
               {hasActiveFilters && (
                 <span className="ml-1 w-2 h-2 rounded-full bg-amber-500" />
               )}
             </Button>
             {hasActiveFilters && canViewAllComplaints && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                {t("common.clear", "Clear")}
+                {t("common.clear")}
               </Button>
             )}
             {/* Column Configuration */}
@@ -421,7 +412,7 @@ export const ComplaintsPage: React.FC = () => {
                 leftIcon={<Settings2 className="w-4 h-4" />}
                 onClick={() => setShowColumnConfig(!showColumnConfig)}
               >
-                {t("common.columns", "Columns")}
+                {t("common.columns")}
                 <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
                   ({visibleColumnCount})
                 </span>
@@ -430,13 +421,10 @@ export const ComplaintsPage: React.FC = () => {
                 <div className="absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
                     <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                      {t("common.configureColumns", "Configure Columns")}
+                      {t("common.configureColumns")}
                     </p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                      {t(
-                        "common.toggleColumnVisibility",
-                        "Toggle column visibility",
-                      )}
+                      {t("common.toggleColumnVisibility")}
                     </p>
                   </div>
                   <div className="py-2 max-h-64 overflow-y-auto">
@@ -476,7 +464,7 @@ export const ComplaintsPage: React.FC = () => {
                         </span>
                         {col.required && (
                           <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {t("common.required", "Required")}
+                            {t("common.required")}
                           </span>
                         )}
                       </button>
@@ -487,7 +475,7 @@ export const ComplaintsPage: React.FC = () => {
                       onClick={() => setColumns(defaultColumns)}
                       className="text-xs text-amber-500 hover:text-amber-600 font-medium"
                     >
-                      {t("common.resetToDefaults", "Reset to defaults")}
+                      {t("common.resetToDefaults")}
                     </button>
                   </div>
                 </div>
@@ -501,7 +489,7 @@ export const ComplaintsPage: React.FC = () => {
           <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.workflow", "Workflow")}
+                {t("common.workflow")}
               </label>
               <select
                 value={filter.workflow_id || ""}
@@ -510,9 +498,7 @@ export const ComplaintsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               >
-                <option value="">
-                  {t("common.allWorkflows", "All Workflows")}
-                </option>
+                <option value="">{t("common.allWorkflows")}</option>
                 {workflowsData?.data?.map((workflow: Workflow) => (
                   <option key={workflow.id} value={workflow.id}>
                     {workflow.name}
@@ -522,7 +508,7 @@ export const ComplaintsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.state", "State")}
+                {t("common.state")}
               </label>
               <select
                 value={filter.current_state_id || ""}
@@ -540,7 +526,7 @@ export const ComplaintsPage: React.FC = () => {
                     "opacity-60 cursor-not-allowed",
                 )}
               >
-                <option value="">{t("common.allStates", "All States")}</option>
+                <option value="">{t("common.allStates")}</option>
                 {uniqueStates.map((state: WorkflowState) => (
                   <option key={state.id} value={state.id}>
                     {state.name}
@@ -550,7 +536,7 @@ export const ComplaintsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.channel", "Channel")}
+                {t("common.channel")}
               </label>
               <select
                 value={filter.channel || ""}
@@ -559,23 +545,17 @@ export const ComplaintsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               >
-                <option value="">
-                  {t("common.allChannels", "All Channels")}
-                </option>
-                <option value="phone">{t("channels.phone", "Phone")}</option>
-                <option value="email">{t("channels.email", "Email")}</option>
-                <option value="web">{t("channels.web", "Web")}</option>
-                <option value="mobile">
-                  {t("channels.mobile", "Mobile App")}
-                </option>
-                <option value="in_person">
-                  {t("channels.inPerson", "In Person")}
-                </option>
+                <option value="">{t("common.allChannels")}</option>
+                <option value="phone">{t("channels.phone")}</option>
+                <option value="email">{t("channels.email")}</option>
+                <option value="web">{t("channels.web")}</option>
+                <option value="mobile">{t("channels.mobile")}</option>
+                <option value="in_person">{t("channels.inPerson")}</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.assignee", "Assignee")}
+                {t("common.assignee")}
               </label>
               <select
                 value={filter.assignee_id || ""}
@@ -584,9 +564,7 @@ export const ComplaintsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               >
-                <option value="">
-                  {t("common.allAssignees", "All Assignees")}
-                </option>
+                <option value="">{t("common.allAssignees")}</option>
                 {usersData?.data?.map((user: UserType) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name
@@ -640,7 +618,7 @@ export const ComplaintsPage: React.FC = () => {
             />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.priority", "Priority")}
+                {t("common.priority")}
               </label>
               <select
                 value={filter.priority ?? ""}
@@ -652,16 +630,12 @@ export const ComplaintsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               >
-                <option value="">
-                  {t("common.allPriorities", "All Priorities")}
-                </option>
-                <option value="1">
-                  {t("priorities.critical", "Critical")}
-                </option>
-                <option value="2">{t("priorities.high", "High")}</option>
-                <option value="3">{t("priorities.medium", "Medium")}</option>
-                <option value="4">{t("priorities.low", "Low")}</option>
-                <option value="5">{t("priorities.veryLow", "Very Low")}</option>
+                <option value="">{t("common.allPriorities")}</option>
+                <option value="1">{t("priorities.critical")}</option>
+                <option value="2">{t("priorities.high")}</option>
+                <option value="3">{t("priorities.medium")}</option>
+                <option value="4">{t("priorities.low")}</option>
+                <option value="5">{t("priorities.veryLow")}</option>
               </select>
             </div>
           </div>
@@ -676,7 +650,7 @@ export const ComplaintsPage: React.FC = () => {
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">
-              {t("complaints.loading", "Loading complaints...")}
+              {t("complaints.loading")}
             </p>
           </div>
         ) : complaints.length === 0 ? (
@@ -685,22 +659,16 @@ export const ComplaintsPage: React.FC = () => {
               <MessageSquareWarning className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-              {t("complaints.noComplaintsFound", "No Complaints Found")}
+              {t("complaints.noComplaintsFound")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {hasActiveFilters
-                ? t(
-                    "complaints.tryAdjustingFilters",
-                    "Try adjusting your filters",
-                  )
-                : t(
-                    "complaints.noComplaintsYet",
-                    "No complaints have been created yet",
-                  )}
+                ? t("complaints.tryAdjustingFilters")
+                : t("complaints.noComplaintsYet")}
             </p>
             {hasActiveFilters ? (
               <Button variant="outline" onClick={clearFilters}>
-                {t("common.clearFilters", "Clear Filters")}
+                {t("common.clearFilters")}
               </Button>
             ) : canCreateComplaint ? (
               <Button
@@ -708,7 +676,7 @@ export const ComplaintsPage: React.FC = () => {
                 onClick={() => setShowCreateModal(true)}
                 className="bg-linear-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
               >
-                {t("complaints.createFirstComplaint", "Create First Complaint")}
+                {t("complaints.createFirstComplaint")}
               </Button>
             ) : null}
           </div>
@@ -721,70 +689,70 @@ export const ComplaintsPage: React.FC = () => {
                     {isColumnVisible("complaint") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("complaints.complaint", "Complaint")}
+                          {t("complaints.complaint")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("channel") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.channel", "Channel")}
+                          {t("common.channel")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_by") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("complaints.createdBy", "Created By")}
+                          {t("complaints.createdBy")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("source") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("complaints.sourceIncident", "Source Incident")}
+                          {t("complaints.sourceIncident")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("state") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.state", "State")}
+                          {t("common.state")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("assignee") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.assignee", "Assignee")}
+                          {t("common.assignee")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("department") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.department", "Department")}
+                          {t("common.department")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_at") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.created", "Created")}
+                          {t("common.created")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("evaluation") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("complaints.evaluations", "Evaluations")}
+                          {t("complaints.evaluations")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("actions") && (
                       <th className="px-6 py-4 text-end">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.actions", "Actions")}
+                          {t("common.actions")}
                         </span>
                       </th>
                     )}
@@ -861,7 +829,7 @@ export const ComplaintsPage: React.FC = () => {
                               className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
-                              {t("complaints.viewSource", "View Source")}
+                              {t("complaints.viewSource")}
                             </Link>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -919,7 +887,7 @@ export const ComplaintsPage: React.FC = () => {
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                               <User className="w-4 h-4" />
-                              {t("common.unassigned", "Unassigned")}
+                              {t("common.unassigned")}
                             </span>
                           )}
                         </td>
@@ -972,7 +940,7 @@ export const ComplaintsPage: React.FC = () => {
                               navigate(`/complaints/${complaint.id}`);
                             }}
                           >
-                            {t("common.view", "View")}
+                            {t("common.view")}
                           </Button>
                         </td>
                       )}
@@ -985,22 +953,22 @@ export const ComplaintsPage: React.FC = () => {
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t("common.showing", "Showing")}{" "}
+                {t("common.showing")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {((filter.page || 1) - 1) * (filter.limit || 10) + 1}
                 </span>{" "}
-                {t("common.to", "to")}{" "}
+                {t("common.to")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {Math.min(
                     (filter.page || 1) * (filter.limit || 10),
                     totalItems,
                   )}
                 </span>{" "}
-                {t("common.of", "of")}{" "}
+                {t("common.of")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {totalItems}
                 </span>{" "}
-                {t("complaints.complaints", "complaints")}
+                {t("complaints.complaints")}
               </p>
 
               <div className="flex items-center gap-2">

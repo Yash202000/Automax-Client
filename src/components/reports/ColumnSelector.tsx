@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { ReportFieldDefinition } from '../../types';
-import { groupFieldsByCategory } from '../../constants/reportFields';
-import { Info } from 'lucide-react';
+import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Check, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { ReportFieldDefinition } from "../../types";
+import { groupFieldsByCategory } from "../../constants/reportFields";
+import { Info } from "lucide-react";
 
 interface ColumnSelectorProps {
   fields: ReportFieldDefinition[];
-  selectedColumns: { field: string, label: string }[];
-  onChange: (columns: { field: string, label: string }[]) => void;
+  selectedColumns: { field: string; label: string }[];
+  onChange: (columns: { field: string; label: string }[]) => void;
 }
 
 export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
@@ -18,8 +18,10 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   onChange,
 }) => {
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Group fields by category
   const groupedFields = useMemo(() => groupFieldsByCategory(fields), [fields]);
@@ -36,7 +38,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       const matchingFields = categoryFields.filter(
         (f) =>
           f.label.toLowerCase().includes(searchLower) ||
-          f.field.toLowerCase().includes(searchLower)
+          f.field.toLowerCase().includes(searchLower),
       );
       if (matchingFields.length > 0) {
         filtered[category] = matchingFields;
@@ -57,7 +59,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   };
 
   const toggleColumn = (field: string) => {
-    const found = selectedColumns.findIndex((c) => c.field === field)
+    const found = selectedColumns.findIndex((c) => c.field === field);
     if (found !== -1) {
       onChange(selectedColumns.filter((c) => c.field !== field));
     } else {
@@ -74,12 +76,16 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   };
 
   const selectDefaults = () => {
-    onChange(fields.filter((f) => f.defaultSelected).map((f) => ({ field: f.field, label: f.label })));
+    onChange(
+      fields
+        .filter((f) => f.defaultSelected)
+        .map((f) => ({ field: f.field, label: f.label })),
+    );
   };
 
   const updateLabel = (field: string, label: string) => {
     const updatedColumns = selectedColumns.map((c) =>
-      c.field === field ? { ...c, label } : c
+      c.field === field ? { ...c, label } : c,
     );
     onChange(updatedColumns);
   };
@@ -101,7 +107,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('reports.columnSelector.searchColumns')}
+            placeholder={t("reports.columnSelector.searchColumns")}
             className="w-full ltr:pl-9 ltr:pr-4 rtl:pr-9 rtl:pl-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
           />
         </div>
@@ -111,38 +117,39 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
             onClick={selectAll}
             className="px-3 py-2 text-xs font-medium text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
           >
-            {t('reports.columnSelector.all')}
+            {t("reports.columnSelector.all")}
           </button>
           <button
             type="button"
             onClick={selectNone}
             className="px-3 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
           >
-            {t('reports.columnSelector.none')}
+            {t("reports.columnSelector.none")}
           </button>
           <button
             type="button"
             onClick={selectDefaults}
             className="px-3 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
           >
-            {t('reports.columnSelector.defaults')}
+            {t("reports.columnSelector.defaults")}
           </button>
         </div>
       </div>
 
       {/* Selected count */}
       <div className="flex items-center justify-between">
-        <span className='text-xs text-[hsl(var(--muted-foreground))]'>
-          {selectedColumns.length} {t('reports.columnSelector.columnsSelected', { total: fields.length })}
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {selectedColumns.length}{" "}
+          {t("reports.columnSelector.columnsSelected", {
+            total: fields.length,
+          })}
         </span>
-        {
-          selectedColumns.length > 10 && (
-            <span className="text-red-500 text-xs flex gap-1 items-center">
-              <Info className='w-4 h-4' />
-              Please Note that if you select more than 10 columns, PDF will be disabled
-            </span>
-          )
-        }
+        {selectedColumns.length > 10 && (
+          <span className="text-red-500 text-xs flex gap-1 items-center">
+            <Info className="w-4 h-4" />
+            {t("reports.pleaseNoteThatIfYouSelectMore")}
+          </span>
+        )}
       </div>
 
       {/* Column list grouped by category */}
@@ -152,8 +159,8 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
           if (!categoryFields || categoryFields.length === 0) return null;
 
           const isExpanded = expandedCategories.has(category) || search.trim();
-          const selectedInCategory = categoryFields.filter((f) =>
-            selectedColumns.findIndex((c) => c.field === f.field) !== -1
+          const selectedInCategory = categoryFields.filter(
+            (f) => selectedColumns.findIndex((c) => c.field === f.field) !== -1,
           ).length;
 
           return (
@@ -183,8 +190,13 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
               {isExpanded && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1 p-2 bg-[hsl(var(--card))]">
                   {categoryFields.map((field) => {
-                    const isSelected = selectedColumns.findIndex((c) => c.field === field.field) !== -1;
-                    const labelVal = selectedColumns.find((c) => c.field === field.field);
+                    const isSelected =
+                      selectedColumns.findIndex(
+                        (c) => c.field === field.field,
+                      ) !== -1;
+                    const labelVal = selectedColumns.find(
+                      (c) => c.field === field.field,
+                    );
                     return (
                       <label
                         key={field.field}
@@ -192,7 +204,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                           "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all",
                           isSelected
                             ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
-                            : "hover:bg-[hsl(var(--muted)/0.5)] text-[hsl(var(--foreground))]"
+                            : "hover:bg-[hsl(var(--muted)/0.5)] text-[hsl(var(--foreground))]",
                         )}
                       >
                         <div
@@ -200,24 +212,38 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                             "w-4 h-4 rounded border flex items-center justify-center transition-colors",
                             isSelected
                               ? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
-                              : "border-[hsl(var(--border))]"
+                              : "border-[hsl(var(--border))]",
                           )}
                         >
-                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                          {isSelected && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
                         </div>
-                        <div className='flex flex-col gap-2'>
-                          <div className='flex gap-2 items-center'>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2 items-center">
                             <input
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleColumn(field.field)}
                               className="sr-only"
                             />
-                            <span className="text-sm truncate" title={field.label}>
+                            <span
+                              className="text-sm truncate"
+                              title={field.label}
+                            >
                               {field.label}
                             </span>
                           </div>
-                          <input type="text" value={labelVal?.label} onChange={(e) => updateLabel(field.field, e.target.value)} placeholder='Label Name' disabled={!isSelected} className='border border-gray-300 text-gray-700 rounded-sm text-sm px-2 py-2 w-full' />
+                          <input
+                            type="text"
+                            value={labelVal?.label}
+                            onChange={(e) =>
+                              updateLabel(field.field, e.target.value)
+                            }
+                            placeholder={t("reports.labelName")}
+                            disabled={!isSelected}
+                            className="border border-gray-300 text-gray-700 rounded-sm text-sm px-2 py-2 w-full"
+                          />
                         </div>
                       </label>
                     );

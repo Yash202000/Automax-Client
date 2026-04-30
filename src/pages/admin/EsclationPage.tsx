@@ -161,7 +161,7 @@ const PoliciesTab: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => escalationPolicyApi.delete(id),
     onSuccess: () => {
-      toast.success(t("escalation.policy.deletedSuccess", "Policy deleted"));
+      toast.success(t("escalation.policy.deletedSuccess"));
       setDeleteTarget(null);
       refetch();
     },
@@ -228,10 +228,7 @@ const PoliciesTab: React.FC = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t(
-                "escalation.policy.searchPlaceholder",
-                "Search policies...",
-              )}
+              placeholder={t("escalation.policy.searchPlaceholder")}
               className="w-full pl-9 pr-3 h-9 text-sm rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
             />
           </div>
@@ -250,7 +247,7 @@ const PoliciesTab: React.FC = () => {
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => setShowModal(true)}
             >
-              {t("escalation.policy.addNew", "New Policy")}
+              {t("escalation.policy.addNew")}
             </Button>
           )}
         </div>
@@ -268,16 +265,10 @@ const PoliciesTab: React.FC = () => {
             <div className="p-12 text-center">
               <ListChecks className="w-10 h-10 text-[hsl(var(--muted-foreground))] mx-auto mb-3" />
               <h3 className="font-semibold text-[hsl(var(--foreground))] mb-1">
-                {t(
-                  "escalation.policy.noPolicies",
-                  "No escalation policies yet",
-                )}
+                {t("escalation.policy.noPolicies")}
               </h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t(
-                  "escalation.policy.noPoliciesHint",
-                  "Create reusable escalation policies and attach them to workflow states or classification criticalities.",
-                )}
+                {t("escalation.policy.noPoliciesHint")}
               </p>
             </div>
           ) : (
@@ -333,7 +324,7 @@ const PoliciesTab: React.FC = () => {
                         <span className="inline-flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                           <Clock className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                           {policy.steps?.length ?? 0}{" "}
-                          {t("escalation.policy.stepCount", "steps")}
+                          {t("escalation.policy.stepCount")}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
@@ -631,7 +622,8 @@ const GroupsTab: React.FC = () => {
                                 {directCount + targetCount > 2 && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] border border-[hsl(var(--border))]">
                                     <Users className="w-3 h-3" />+
-                                    {directCount + targetCount - 2} more
+                                    {directCount + targetCount - 2}{" "}
+                                    {t("profile.more")}
                                   </span>
                                 )}
                               </div>
@@ -853,10 +845,7 @@ const BreachLogTab: React.FC = () => {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t(
-              "escalation.breachLog.search",
-              "Search by incident or type...",
-            )}
+            placeholder={t("escalation.breachLog.search")}
             className="w-full pl-9 pr-3 h-9 text-sm rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
           />
         </div>
@@ -883,13 +872,10 @@ const BreachLogTab: React.FC = () => {
           <div className="p-12 text-center">
             <AlertTriangle className="w-10 h-10 text-[hsl(var(--muted-foreground))] mx-auto mb-3" />
             <h3 className="font-semibold text-[hsl(var(--foreground))] mb-1">
-              {t("escalation.breachLog.noRecords", "No breach records found")}
+              {t("escalation.breachLog.noRecords")}
             </h3>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              {t(
-                "escalation.breachLog.noRecordsHint",
-                "Escalation actions fired on SLA breaches will appear here.",
-              )}
+              {t("escalation.breachLog.noRecordsHint")}
             </p>
           </div>
         ) : (
@@ -990,13 +976,10 @@ export const EscalationConfigPage: React.FC = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-            {t("escalation.managementTitle", "Escalation Management")}
+            {t("escalation.managementTitle")}
           </h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-0.5">
-            {t(
-              "escalation.managementDescription",
-              "Configure policies, groups, and review SLA breach activity",
-            )}
+            {t("escalation.managementDescription")}
           </p>
         </div>
       </div>

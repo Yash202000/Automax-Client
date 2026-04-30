@@ -1,8 +1,9 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Loader2 } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] [&_svg]:pointer-events-none [&_svg]:shrink-0",
@@ -21,8 +22,7 @@ const buttonVariants = cva(
           "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary)/0.8)]",
         ghost:
           "hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] text-[hsl(var(--muted-foreground))]",
-        link:
-          "text-[hsl(var(--primary))] underline-offset-4 hover:underline",
+        link: "text-[hsl(var(--primary))] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-5 py-2.5",
@@ -37,34 +37,39 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-  VariantProps<typeof buttonVariants> {
-  asChild?: boolean
-  isLoading?: boolean
-  leftIcon?: React.ReactNode
-  rightIcon?: React.ReactNode
-  fullWidth?: boolean
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  isLoading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  fullWidth?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({
-    className,
-    variant,
-    size,
-    asChild = false,
-    isLoading = false,
-    leftIcon,
-    rightIcon,
-    fullWidth = false,
-    children,
-    disabled,
-    ...props
-  }, ref) => {
-    const Comp = asChild ? Slot : "button"
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      isLoading = false,
+      leftIcon,
+      rightIcon,
+      fullWidth = false,
+      children,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
+    const { t } = useTranslation();
+    const Comp = asChild ? Slot : "button";
 
     const iconSize = {
       xs: "w-3.5 h-3.5",
@@ -73,13 +78,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: "w-5 h-5",
       xl: "w-5 h-5",
       icon: "w-5 h-5",
-    }[size || "default"]
+    }[size || "default"];
 
     return (
       <Comp
         className={cn(
           buttonVariants({ variant, size, className }),
-          fullWidth && "w-full"
+          fullWidth && "w-full",
         )}
         ref={ref}
         disabled={disabled || isLoading}
@@ -88,7 +93,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <>
             <Loader2 className={cn(iconSize, "animate-spin")} />
-            <span>Loading...</span>
+            <span>{t("common.loading")}</span>
           </>
         ) : (
           <>
@@ -98,9 +103,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           </>
         )}
       </Comp>
-    )
-  }
-)
-Button.displayName = "Button"
+    );
+  },
+);
+Button.displayName = "Button";
 
-export { Button, buttonVariants }
+// eslint-disable-next-line react-refresh/only-export-components
+export { Button, buttonVariants };

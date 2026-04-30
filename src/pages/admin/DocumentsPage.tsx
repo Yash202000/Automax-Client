@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   FolderOpen,
@@ -155,6 +156,7 @@ function FileDetailPanel({
   file: DmsFile;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<
     "info" | "comments" | "tags" | "versions"
   >("info");
@@ -306,14 +308,14 @@ function FileDetailPanel({
           <button
             onClick={handlePreview}
             className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            title="Preview"
+            title={t("reports.preview")}
           >
             <Eye size={16} />
           </button>
           <button
             onClick={handleDownload}
             className="p-2 rounded-lg text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-            title="Download"
+            title={t("common.download")}
           >
             <Download size={16} />
           </button>
@@ -328,29 +330,32 @@ function FileDetailPanel({
 
       {/* Tabs */}
       <div className="flex gap-1 p-2 border-b border-slate-200 dark:border-slate-700/60">
-        <button className={tabClass("info")} onClick={() => setActiveTab("info")}>
-          Info
+        <button
+          className={tabClass("info")}
+          onClick={() => setActiveTab("info")}
+        >
+          {t("documents.info")}
         </button>
         <button
           className={tabClass("comments")}
           onClick={() => setActiveTab("comments")}
         >
           <MessageSquare size={14} className="inline mr-1" />
-          Comments
+          {t("incidents.comments")}
         </button>
         <button
           className={tabClass("tags")}
           onClick={() => setActiveTab("tags")}
         >
           <Tag size={14} className="inline mr-1" />
-          Tags
+          {t("documents.tags")}
         </button>
         <button
           className={tabClass("versions")}
           onClick={() => setActiveTab("versions")}
         >
           <History size={14} className="inline mr-1" />
-          Versions
+          {t("goals.components.evidence.versions")}
         </button>
       </div>
 
@@ -359,24 +364,32 @@ function FileDetailPanel({
         {activeTab === "info" && (
           <dl className="space-y-3 text-sm">
             <div>
-              <dt className="text-slate-500 dark:text-slate-400">Name</dt>
+              <dt className="text-slate-500 dark:text-slate-400">
+                {t("common.name")}
+              </dt>
               <dd className="text-slate-900 dark:text-white">{file.name}</dd>
             </div>
             <div>
-              <dt className="text-slate-500 dark:text-slate-400">Type</dt>
+              <dt className="text-slate-500 dark:text-slate-400">
+                {t("common.type")}
+              </dt>
               <dd className="text-slate-900 dark:text-white">
                 {file.mime_type || file.type}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500 dark:text-slate-400">Size</dt>
+              <dt className="text-slate-500 dark:text-slate-400">
+                {t("documents.size")}
+              </dt>
               <dd className="text-slate-900 dark:text-white tabular-nums">
                 {formatFileSize(file.size)}
               </dd>
             </div>
             {file.created_at && (
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Created</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  {t("common.created")}
+                </dt>
                 <dd className="text-slate-900 dark:text-white">
                   {new Date(file.created_at).toLocaleString()}
                 </dd>
@@ -384,7 +397,9 @@ function FileDetailPanel({
             )}
             {file.updated_at && (
               <div>
-                <dt className="text-slate-500 dark:text-slate-400">Modified</dt>
+                <dt className="text-slate-500 dark:text-slate-400">
+                  {t("documents.modified")}
+                </dt>
                 <dd className="text-slate-900 dark:text-white">
                   {new Date(file.updated_at).toLocaleString()}
                 </dd>
@@ -402,7 +417,7 @@ function FileDetailPanel({
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                placeholder="Add a comment..."
+                placeholder={t("common.addComment")}
                 className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -442,7 +457,7 @@ function FileDetailPanel({
               </div>
             ) : (
               <p className="text-sm text-slate-400 text-center py-4">
-                No comments yet
+                {t("incidents.noComments")}
               </p>
             )}
           </div>
@@ -461,7 +476,7 @@ function FileDetailPanel({
                   <div>
                     <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                       <Lock size={10} />
-                      System Tags
+                      {t("documents.systemTags")}
                     </h4>
                     <div className="space-y-1">
                       {systemTags
@@ -486,7 +501,7 @@ function FileDetailPanel({
                 {/* Custom Tags (editable) */}
                 <div>
                   <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Custom Tags
+                    {t("documents.customTags")}
                   </h4>
 
                   {/* Add custom tag */}
@@ -495,7 +510,7 @@ function FileDetailPanel({
                       type="text"
                       value={newTagKey}
                       onChange={(e) => setNewTagKey(e.target.value)}
-                      placeholder="Key"
+                      placeholder={t("documents.key")}
                       className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <input
@@ -503,7 +518,7 @@ function FileDetailPanel({
                       value={newTagValue}
                       onChange={(e) => setNewTagValue(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                      placeholder="Value"
+                      placeholder={t("documents.value")}
                       className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
@@ -521,22 +536,22 @@ function FileDetailPanel({
 
                   {customTags.length > 0 ? (
                     <div className="space-y-1">
-                      {customTags.map((t) => (
+                      {customTags.map((tag) => (
                         <div
-                          key={t.key}
+                          key={tag.key}
                           className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 group"
                         >
                           <span className="text-xs font-mono text-slate-600 dark:text-slate-400">
-                            {t.key}
+                            {tag.key}
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-slate-900 dark:text-white">
-                              {t.value}
+                              {tag.value}
                             </span>
                             <button
-                              onClick={() => handleDeleteTag(t.key)}
+                              onClick={() => handleDeleteTag(tag.key)}
                               className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Remove tag"
+                              title={t("documents.removeTag")}
                             >
                               <Trash2 size={12} />
                             </button>
@@ -546,7 +561,7 @@ function FileDetailPanel({
                     </div>
                   ) : (
                     <p className="text-xs text-slate-400 text-center py-2">
-                      No custom tags
+                      {t("documents.noCustomTags")}
                     </p>
                   )}
                 </div>
@@ -560,20 +575,18 @@ function FileDetailPanel({
             {/* Upload New Version */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Upload New Version
+                {t("documents.uploadNewVersion")}
               </h4>
               <input
                 ref={versionFileInputRef}
                 type="file"
-                onChange={(e) =>
-                  setVersionFile(e.target.files?.[0] ?? null)
-                }
+                onChange={(e) => setVersionFile(e.target.files?.[0] ?? null)}
                 className="w-full text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-600 dark:file:bg-blue-900/30 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/40"
               />
               <textarea
                 value={versionDescription}
                 onChange={(e) => setVersionDescription(e.target.value)}
-                placeholder="Version description (optional)"
+                placeholder={t("documents.versionDescriptionOptional")}
                 rows={2}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
@@ -587,7 +600,7 @@ function FileDetailPanel({
                 ) : (
                   <Upload size={14} />
                 )}
-                Upload Version
+                {t("documents.uploadVersion")}
               </button>
             </div>
 
@@ -610,7 +623,7 @@ function FileDetailPanel({
                         </span>
                         {v.is_current && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                            Current
+                            {t("incidents.current")}
                           </span>
                         )}
                       </div>
@@ -626,18 +639,16 @@ function FileDetailPanel({
                     <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
                       <span>{v.created_by_name || v.created_by}</span>
                       <span>&middot;</span>
-                      <span>
-                        {new Date(v.created_at).toLocaleDateString()}
-                      </span>
+                      <span>{new Date(v.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDownloadVersion(v.uuid)}
                         className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                        title="Download this version"
+                        title={t("common.downloadThisVersion")}
                       >
                         <Download size={12} />
-                        Download
+                        {t("common.download")}
                       </button>
                       {!v.is_current && (
                         <>
@@ -649,30 +660,27 @@ function FileDetailPanel({
                                 className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
                               >
                                 {rollbackVersion.isPending ? (
-                                  <Loader2
-                                    size={12}
-                                    className="animate-spin"
-                                  />
+                                  <Loader2 size={12} className="animate-spin" />
                                 ) : (
                                   <RotateCcw size={12} />
                                 )}
-                                Confirm
+                                {t("common.confirm")}
                               </button>
                               <button
                                 onClick={() => setRollbackConfirm(null)}
                                 className="px-2 py-1 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                               >
-                                Cancel
+                                {t("common.cancel")}
                               </button>
                             </div>
                           ) : (
                             <button
                               onClick={() => setRollbackConfirm(v.uuid)}
                               className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-                              title="Rollback to this version"
+                              title={t("documents.rollbackToThisVersion")}
                             >
                               <RotateCcw size={12} />
-                              Rollback
+                              {t("documents.rollback")}
                             </button>
                           )}
                         </>
@@ -683,7 +691,7 @@ function FileDetailPanel({
               </div>
             ) : (
               <p className="text-sm text-slate-400 text-center py-4">
-                No versions available
+                {t("documents.noVersionsAvailable")}
               </p>
             )}
           </div>
@@ -704,6 +712,7 @@ function TagFilterBar({
   tags: Record<string, string>;
   onChange: (tags: Record<string, string>) => void;
 }) {
+  const { t } = useTranslation();
   const [filterKey, setFilterKey] = useState("");
   const [filterValue, setFilterValue] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -737,7 +746,7 @@ function TagFilterBar({
       >
         <span className="flex items-center gap-2">
           <Filter size={14} />
-          Filter by Tags
+          {t("documents.filterByTags")}
           {activeFilters.length > 0 && (
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold">
               {activeFilters.length}
@@ -775,7 +784,7 @@ function TagFilterBar({
               type="text"
               value={filterKey}
               onChange={(e) => setFilterKey(e.target.value)}
-              placeholder="Tag key"
+              placeholder={t("documents.tagKey")}
               className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
@@ -783,7 +792,7 @@ function TagFilterBar({
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              placeholder="Tag value"
+              placeholder={t("documents.tagValue")}
               className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
@@ -791,7 +800,7 @@ function TagFilterBar({
               disabled={!filterKey.trim() || !filterValue.trim()}
               className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              Add
+              {t("common.add")}
             </button>
           </div>
 
@@ -818,7 +827,7 @@ function TagFilterBar({
                 onClick={() => onChange({})}
                 className="text-xs text-slate-400 hover:text-red-500"
               >
-                Clear all
+                {t("goals.okr.clearAll")}
               </button>
             </div>
           )}
@@ -833,6 +842,7 @@ function TagFilterBar({
 // ──────────────────────────────────────────────────
 
 export function DocumentsPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [folderPath, setFolderPath] = useState<BreadcrumbItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -959,10 +969,10 @@ export function DocumentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Documents
+            {t("documents.documents")}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Browse and manage files in the Automax document management system
+            {t("documents.browseAndManageFilesInTheAutomax")}
           </p>
         </div>
       </div>
@@ -978,7 +988,7 @@ export function DocumentsPage() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search files and folders..."
+            placeholder={t("documents.searchFilesAndFolders")}
             className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -986,7 +996,7 @@ export function DocumentsPage() {
           type="submit"
           className="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
         >
-          Search
+          {t("common.search")}
         </button>
         {isSearching && (
           <button
@@ -994,7 +1004,7 @@ export function DocumentsPage() {
             onClick={clearSearch}
             className="px-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
-            Clear
+            {t("common.clear")}
           </button>
         )}
       </form>
@@ -1014,14 +1024,24 @@ export function DocumentsPage() {
             className="flex items-center gap-1 hover:text-blue-600"
           >
             <ArrowLeft size={14} />
-            Back to browsing
+            {t("documents.backToBrowsing")}
           </button>
           <span>
-            &middot; {searchResults?.total ?? sortedFiles.length} result
+            &middot; {searchResults?.total ?? sortedFiles.length}
+            {t("documents.result")}
             {(searchResults?.total ?? sortedFiles.length) !== 1 ? "s" : ""}
-            {searchQuery && <> for &ldquo;{searchQuery}&rdquo;</>}
-            {hasTagFilters && !searchQuery && <> matching tag filters</>}
-            {hasTagFilters && searchQuery && <> with tag filters</>}
+            {searchQuery && (
+              <>
+                {t("documents.for")}
+                {searchQuery}&rdquo;
+              </>
+            )}
+            {hasTagFilters && !searchQuery && (
+              <>{t("documents.matchingTagFilters")}</>
+            )}
+            {hasTagFilters && searchQuery && (
+              <>{t("documents.withTagFilters")}</>
+            )}
           </span>
         </div>
       )}
@@ -1037,7 +1057,7 @@ export function DocumentsPage() {
                   size={24}
                   className="animate-spin text-slate-400 mr-2"
                 />
-                <span className="text-slate-500">Loading...</span>
+                <span className="text-slate-500">{t("common.loading")}</span>
               </div>
             ) : sortedFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-slate-400">
