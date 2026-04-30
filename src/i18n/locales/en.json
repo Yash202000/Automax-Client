@@ -153,7 +153,9 @@
     "hasAccount": "Already have an account?",
     "loginError": "Login failed. Please try again.",
     "invalidCredentials": "Invalid email or password",
-    "sessionExpired": "Session expired. Please login again."
+    "sessionExpired": "Session expired. Please login again.",
+    "recordNotFound": "Record not found",
+    "invalidOtp": "Invalid OTP. Please check and try again."
   },
   "nav": {
     "dashboard": "Dashboard",

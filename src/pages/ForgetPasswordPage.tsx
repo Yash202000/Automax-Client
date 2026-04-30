@@ -22,8 +22,20 @@ type Step = 1 | 2 | 3 | 4;
 function resolveError(
   status: number | undefined,
   t: (k: string, fallback: string) => string,
+  message: string | undefined,
 ): string {
   switch (status) {
+    case 400:
+      if (message?.toLowerCase().includes("record not found")) {
+        return t("auth.recordNotFound", "Record not found");
+      } else if (message?.toLowerCase().includes("otp")) {
+        return t("auth.invalidOtp", "Invalid OTP. Please check and try again.");
+      }
+
+      return (
+        message ||
+        t("auth.errorGeneric", "Something went wrong. Please try again.")
+      );
     case 404:
       return t(
         "auth.errorNotFound",
@@ -133,7 +145,9 @@ export function ForgotPasswordPage() {
       startTimer();
     },
     onError: (err: any) => {
-      setFieldError(resolveError(err?.response?.status, t));
+      setFieldError(
+        resolveError(err?.response?.status, t, err?.response?.data?.error),
+      );
     },
   });
 
@@ -147,7 +161,9 @@ export function ForgotPasswordPage() {
       startTimer();
     },
     onError: (err: any) => {
-      setFieldError(resolveError(err?.response?.status, t));
+      setFieldError(
+        resolveError(err?.response?.status, t, err?.response?.data?.error),
+      );
     },
   });
 
@@ -163,7 +179,9 @@ export function ForgotPasswordPage() {
       goTo(3);
     },
     onError: (err: any) => {
-      setFieldError(resolveError(err?.response?.status, t));
+      setFieldError(
+        resolveError(err?.response?.status, t, err?.response?.data?.error),
+      );
     },
   });
 
@@ -172,7 +190,9 @@ export function ForgotPasswordPage() {
       authApi.resetPassword(payload),
     onSuccess: () => goTo(4),
     onError: (err: any) => {
-      setFieldError(resolveError(err?.response?.status, t));
+      setFieldError(
+        resolveError(err?.response?.status, t, err?.response?.data?.error),
+      );
     },
   });
 
