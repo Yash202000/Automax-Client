@@ -315,6 +315,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     return priorityLookup?.sort_order;
   }, [requestLookupCategories, lookupValues]);
 
+  const priority = useMemo(() => getPriorityValue(), [getPriorityValue]);
+
   // Filter workflows based on selected criteria with exclusion logic
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const filteredWorkflows = useMemo(() => {
@@ -360,14 +362,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     if (matching.length === 0) return requestWorkflows;
     return matching;
     // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  }, [
-    workflows,
-    classificationId,
-    locationId,
-    source,
-    lookupValues,
-    getPriorityValue,
-  ]);
+  }, [workflows, classificationId, locationId, source, lookupValues, priority]);
 
   // Auto-match workflow when criteria change via backend API
   useEffect(() => {
@@ -525,19 +520,13 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!title.trim()) {
-      newErrors.title = t("requests.titleRequired", "Title is required");
+      newErrors.title = t("requests.titleRequired");
     }
     if (!classificationId) {
-      newErrors.classification = t(
-        "requests.classificationRequired",
-        "Classification is required",
-      );
+      newErrors.classification = t("requests.classificationRequired");
     }
     if (!workflowId) {
-      newErrors.workflow = t(
-        "requests.workflowRequired",
-        "Workflow is required",
-      );
+      newErrors.workflow = t("requests.workflowRequired");
     }
 
     // Always require classification, location, source, and priority on web
@@ -573,22 +562,22 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     // Check workflow required fields (skip already validated ones)
     if (workflowRequiredFields.includes("description") && !description.trim()) {
       newErrors.description = t("requests.fieldRequired", {
-        field: t("requests.description", "Description"),
+        field: t("requests.description"),
       });
     }
     if (workflowRequiredFields.includes("comment") && !comment.trim()) {
       newErrors.comment = t("requests.fieldRequired", {
-        field: t("requests.comment", "Comment"),
+        field: t("requests.comment"),
       });
     }
     if (workflowRequiredFields.includes("channel") && !channel.trim()) {
       newErrors.channel = t("requests.fieldRequired", {
-        field: t("requests.channel", "Channel"),
+        field: t("requests.channel"),
       });
     }
     if (workflowRequiredFields.includes("location_id") && !locationId) {
       newErrors.location = t("requests.fieldRequired", {
-        field: t("requests.location", "Location"),
+        field: t("requests.location"),
       });
     }
     if (
@@ -596,17 +585,17 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       !selectedDepartment
     ) {
       newErrors.department = t("requests.fieldRequired", {
-        field: t("requests.department", "Department"),
+        field: t("requests.department"),
       });
     }
     if (workflowRequiredFields.includes("assignee_id") && !selectedAssignee) {
       newErrors.assignee = t("requests.fieldRequired", {
-        field: t("requests.assignee", "Assignee"),
+        field: t("requests.assignee"),
       });
     }
     if (workflowRequiredFields.includes("due_date") && !dueDate) {
       newErrors.due_date = t("requests.fieldRequired", {
-        field: t("requests.dueDate", "Due Date"),
+        field: t("requests.dueDate"),
       });
     }
     if (
@@ -614,7 +603,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       (latitude === undefined || longitude === undefined)
     ) {
       newErrors.geolocation = t("requests.fieldRequired", {
-        field: t("requests.geolocation", "Geolocation"),
+        field: t("requests.geolocation"),
       });
     }
     if (
@@ -623,7 +612,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       attachments.length === 0
     ) {
       newErrors.attachments = t("requests.fieldRequired", {
-        field: t("requests.attachments", "Attachments"),
+        field: t("requests.attachments"),
       });
     }
 
@@ -726,13 +715,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t("requests.createRequest", "Create Request")}
+                {t("requests.createRequest")}
               </h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t(
-                  "requests.createRequestDescription",
-                  "Create a new request record",
-                )}
+                {t("requests.createRequestDescription")}
               </p>
             </div>
           </div>
@@ -750,14 +736,14 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           <div className="space-y-3 p-4 bg-[hsl(var(--muted)/0.3)] rounded-lg border border-[hsl(var(--border))]">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Workflow className="w-4 h-4" />
-              {t("requests.matchingCriteria", "Matching Criteria")}
+              {t("requests.matchingCriteria")}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Classification */}
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <Tags className="w-3 h-3 inline mr-1" />
-                  {t("requests.classification", "Classification")}{" "}
+                  {t("requests.classification")}{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 {classificationsLoading ? (
@@ -769,16 +755,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                     data={classificationTreeData}
                     value={classificationId}
                     onChange={(id) => setClassificationId(id)}
-                    placeholder={t(
-                      "requests.selectClassification",
-                      "Select classification...",
-                    )}
+                    placeholder={t("requests.selectClassification")}
                     error={errors.classification}
                     leafOnly={true}
-                    emptyMessage={t(
-                      "requests.noClassifications",
-                      "No request classifications found.",
-                    )}
+                    emptyMessage={t("requests.noClassifications")}
                     maxHeight="200px"
                   />
                 )}
@@ -787,30 +767,23 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <MapPin className="w-3 h-3 inline mr-1" />
-                  {t("requests.location", "Location")}{" "}
+                  {t("requests.location")}{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <TreeSelect
                   data={locationTree}
                   value={locationId || ""}
                   onChange={(id) => setLocationId(id)}
-                  placeholder={t(
-                    "requests.selectLocation",
-                    "Select location...",
-                  )}
+                  placeholder={t("requests.selectLocation")}
                   error={errors.location}
                   leafOnly={true}
-                  emptyMessage={t(
-                    "requests.noLocations",
-                    "No locations available",
-                  )}
+                  emptyMessage={t("requests.noLocations")}
                 />
               </div>
               {/* Source */}
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  {t("requests.source", "Source")}{" "}
-                  <span className="text-red-500">*</span>
+                  {t("requests.source")} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={source || ""}
@@ -824,9 +797,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                       : "border-[hsl(var(--border))]",
                   )}
                 >
-                  <option value="">
-                    {t("requests.selectSource", "Select source...")}
-                  </option>
+                  <option value="">{t("requests.selectSource")}</option>
                   {INCIDENT_SOURCES.map((s) => (
                     <option key={s.value} value={s.value}>
                       {s.label}
@@ -860,9 +831,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                           : "border-[hsl(var(--border))]",
                       )}
                     >
-                      <option value="">
-                        {t("common.select", "Select...")}
-                      </option>
+                      <option value="">{t("common.select")}</option>
                       {(category.values || []).map((v) => (
                         <option key={v.id} value={v.id}>
                           {i18n.language === "ar" && v.name_ar
@@ -885,14 +854,13 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {t("requests.basicInfo", "Basic Information")}
+              {t("requests.basicInfo")}
             </h4>
 
             {/* Title - Auto-generated */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t("requests.title", "Title")}{" "}
-                <span className="text-red-500">*</span>
+                {t("requests.title")} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -901,7 +869,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   type="text"
                   value={title}
                   readOnly
-                  placeholder="Auto-generated from classification, location, and area"
+                  placeholder={t("incidents.autoGeneratedTitle")}
                   className="w-full px-4 py-2 pe-10 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"
                 />
                 <svg
@@ -919,8 +887,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 </svg>
               </div>
               <p className="text-xs text-[hsl(var(--muted-foreground))] italic mt-1">
-                Title is automatically generated from selected classification,
-                location, and area
+                {t("incidents.autoGeneratedTitleHint")}
               </p>
               {errors.title && (
                 <p className="text-xs text-red-500 mt-1">{errors.title}</p>
@@ -930,7 +897,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t("requests.description", "Description")}
+                {t("requests.description")}
                 {workflowRequiredFields.includes("description") && (
                   <span className="text-red-500 ms-1">*</span>
                 )}
@@ -938,10 +905,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t(
-                  "requests.descriptionPlaceholder",
-                  "Describe the request...",
-                )}
+                placeholder={t("requests.descriptionPlaceholder")}
                 rows={3}
                 className={cn(
                   "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none",
@@ -962,16 +926,13 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           {workflowRequiredFields.includes("comment") && (
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t("requests.comment", "Comment")}
+                {t("requests.comment")}
                 <span className="text-red-500 ms-1">*</span>
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder={t(
-                  "requests.commentPlaceholder",
-                  "Add a comment...",
-                )}
+                placeholder={t("requests.commentPlaceholder")}
                 rows={3}
                 className={cn(
                   "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none",
@@ -992,12 +953,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 <Radio className="w-3 h-3 inline me-1" />
-                {t("requests.channel", "Channel")}
+                {t("requests.channel")}
                 {workflowRequiredFields.includes("channel") ? (
                   <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))] ms-1">
-                    ({t("common.optional", "Optional")})
+                    ({t("common.optional")})
                   </span>
                 )}
               </label>
@@ -1005,10 +966,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 type="text"
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
-                placeholder={t(
-                  "requests.channelPlaceholder",
-                  "e.g., Phone, Email, Web",
-                )}
+                placeholder={t("requests.channelPlaceholder")}
                 className={cn(
                   "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                   errors.channel
@@ -1026,9 +984,9 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              {t("requests.sourceIncident", "Source Incident/Request")}
+              {t("requests.sourceIncident")}
               <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                ({t("common.optional", "Optional")})
+                ({t("common.optional")})
               </span>
             </h4>
 
@@ -1062,10 +1020,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                       setShowIncidentSearch(true);
                     }}
                     onFocus={() => setShowIncidentSearch(true)}
-                    placeholder={t(
-                      "requests.searchSourceIncident",
-                      "Search for incident/request number or title...",
-                    )}
+                    placeholder={t("requests.searchSourceIncident")}
                     className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
@@ -1079,7 +1034,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                       </div>
                     ) : searchedIncidents.length === 0 ? (
                       <div className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("requests.noRequests", "No requests found")}
+                        {t("requests.noRequests")}
                       </div>
                     ) : (
                       searchedIncidents.map((incident) => (
@@ -1126,8 +1081,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Workflow className="w-4 h-4" />
-              {t("requests.workflow", "Workflow")}{" "}
-              <span className="text-red-500">*</span>
+              {t("requests.workflow")} <span className="text-red-500">*</span>
             </h4>
 
             {workflowsLoading ? (
@@ -1138,9 +1092,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center gap-2 text-blue-700">
                   <AlertTriangle className="w-4 h-4" />
-                  <p className="text-xs">
-                    {t("requests.noWorkflows", "No request workflows found.")}
-                  </p>
+                  <p className="text-xs">{t("requests.noWorkflows")}</p>
                 </div>
               </div>
             ) : (
@@ -1226,9 +1178,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                             : "border-[hsl(var(--border))]",
                         )}
                       >
-                        <option value="">
-                          {t("common.select", "Select...")}
-                        </option>
+                        <option value="">{t("common.select")}</option>
                         {(category.values || []).map((v) => (
                           <option key={v.id} value={v.id}>
                             {i18n.language === "ar" && v.name_ar
@@ -1253,11 +1203,11 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             <div>
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
-                {t("requests.geolocation", "Geolocation")}
+                {t("requests.geolocation")}
                 <span className="text-red-500 ms-1">*</span>
               </h4>
               <LocationPicker
-                label={t("requests.geolocation", "Geolocation")}
+                label={t("requests.geolocation")}
                 value={
                   latitude !== undefined && longitude !== undefined
                     ? {
@@ -1284,12 +1234,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
-                {t("requests.department", "Department")}
+                {t("requests.department")}
                 {workflowRequiredFields.includes("department_id") ? (
                   <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t("common.optional", "Optional")})
+                    ({t("common.optional")})
                   </span>
                 )}
               </h4>
@@ -1307,9 +1257,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                     : "border-[hsl(var(--border))]",
                 )}
               >
-                <option value="">
-                  {t("requests.selectDepartment", "Select department...")}
-                </option>
+                <option value="">{t("requests.selectDepartment")}</option>
                 {flattenDepartments(departments).map((dept) => (
                   <option key={dept.id} value={dept.id}>
                     {"—".repeat(dept.level)} {dept.name}
@@ -1325,12 +1273,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <User className="w-4 h-4" />
-                {t("requests.assignee", "Assignee")}
+                {t("requests.assignee")}
                 {workflowRequiredFields.includes("assignee_id") ? (
                   <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t("common.optional", "Optional")})
+                    ({t("common.optional")})
                   </span>
                 )}
               </h4>
@@ -1348,9 +1296,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                     : "border-[hsl(var(--border))]",
                 )}
               >
-                <option value="">
-                  {t("requests.selectAssignee", "Select assignee...")}
-                </option>
+                <option value="">{t("requests.selectAssignee")}</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name} {user.last_name} ({user.username})
@@ -1366,12 +1312,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                {t("requests.dueDate", "Due Date")}
+                {t("requests.dueDate")}
                 {workflowRequiredFields.includes("due_date") ? (
                   <span className="text-red-500 ms-1">*</span>
                 ) : (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    ({t("common.optional", "Optional")})
+                    ({t("common.optional")})
                   </span>
                 )}
               </h4>
@@ -1396,7 +1342,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
               <Paperclip className="w-4 h-4" />
-              {t("requests.attachments", "Attachments")}
+              {t("requests.attachments")}
               {(workflowRequiredFields.includes("attachments") ||
                 workflowRequiredFields.includes("attachment")) && (
                 <span className="text-red-500">*</span>
@@ -1417,7 +1363,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                           {file.name}
                         </span>
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                          ({(file.size / 1024).toFixed(1)} KB)
+                          ({(file.size / 1024).toFixed(1)} {t("common.kb")})
                         </span>
                       </div>
                       <button
@@ -1445,7 +1391,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               >
                 <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t("requests.clickToUpload", "Click to upload files")}
+                  {t("requests.clickToUpload")}
                 </span>
                 <input
                   type="file"
@@ -1476,7 +1422,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 <AlertTriangle className="w-4 h-4" />
                 <p className="text-sm">
                   {(createMutation.error as Error)?.message ||
-                    t("requests.createError", "Failed to create request")}
+                    t("requests.createError")}
                 </p>
               </div>
             </div>
@@ -1490,7 +1436,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             onClick={onClose}
             disabled={createMutation.isPending}
           >
-            {t("common.cancel", "Cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -1502,7 +1448,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               ) : undefined
             }
           >
-            {t("requests.create", "Create Request")}
+            {t("requests.create")}
           </Button>
         </div>
       </div>

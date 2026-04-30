@@ -372,7 +372,9 @@ export function LocationPicker({
             )
           }
         >
-          {isLoading ? "Getting location..." : "Get Current Location"}
+          {isLoading
+            ? t("locationPicker.gettingLocation")
+            : t("locationPicker.getCurrentLocation")}
         </Button>
 
         {value && (

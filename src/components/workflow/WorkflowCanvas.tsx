@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ReactFlow,
   Background,
@@ -68,6 +69,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   onTransitionConfigure,
   onLayoutSave,
 }) => {
+  const { t } = useTranslation();
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
 
@@ -332,7 +334,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             onClick={onStateAdd}
             leftIcon={<Plus className="w-4 h-4" />}
           >
-            Add State
+            {t("workflows.addState")}
           </Button>
           <Button
             size="sm"
@@ -340,7 +342,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             onClick={autoArrange}
             leftIcon={<RotateCcw className="w-4 h-4" />}
           >
-            Auto Arrange
+            {t("workflows.autoArrange")}
           </Button>
           <Button
             size="sm"
@@ -348,7 +350,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             onClick={saveLayout}
             leftIcon={<Save className="w-4 h-4" />}
           >
-            Save Layout
+            {t("workflows.saveLayout")}
           </Button>
         </Panel>
 
@@ -359,7 +361,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
               {selectedState && (
                 <>
                   <h4 className="font-semibold text-slate-800 mb-3">
-                    Selected State
+                    {t("workflows.selectedState")}
                   </h4>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -375,11 +377,12 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                       {selectedState.code}
                     </p>
                     <p className="text-xs text-slate-500 capitalize">
-                      Type: {selectedState.state_type}
+                      {t("workflows.type")}
+                      {selectedState.state_type}
                     </p>
                     {selectedState.sla_hours && (
                       <p className="text-xs text-slate-500">
-                        SLA: {selectedState.sla_hours}{" "}
+                        {t("workflows.sla")} {selectedState.sla_hours}{" "}
                         {selectedState.sla_unit || "hours"}
                       </p>
                     )}
@@ -390,7 +393,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                         onClick={() => onStateEdit(selectedState)}
                         className="flex-1"
                       >
-                        Edit
+                        {t("common.edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -398,7 +401,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                         onClick={() => onStateDelete(selectedState.id)}
                         className="flex-1"
                       >
-                        Delete
+                        {t("common.delete")}
                       </Button>
                     </div>
                   </div>
@@ -407,7 +410,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
               {selectedTransition && (
                 <>
                   <h4 className="font-semibold text-slate-800 mb-3">
-                    Selected Transition
+                    {t("workflows.selectedTransition")}
                   </h4>
                   <div className="space-y-2">
                     <span className="font-medium text-slate-700">
@@ -453,12 +456,14 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                       )}
                       {(selectedTransition.actions?.length || 0) > 0 && (
                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded">
-                          {selectedTransition.actions?.length} actions
+                          {selectedTransition.actions?.length}{" "}
+                          {t("workflows.actions")}
                         </span>
                       )}
                       {(selectedTransition.allowed_roles?.length || 0) > 0 && (
                         <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
-                          {selectedTransition.allowed_roles?.length} roles
+                          {selectedTransition.allowed_roles?.length}{" "}
+                          {t("workflows.roles")}
                         </span>
                       )}
                     </div>
@@ -469,7 +474,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                         onClick={() => onTransitionEdit(selectedTransition)}
                         className="flex-1"
                       >
-                        Edit
+                        {t("common.edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -479,7 +484,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                         }
                         className="flex-1"
                       >
-                        Configure
+                        {t("workflows.configure")}
                       </Button>
                     </div>
                   </div>
@@ -492,8 +497,8 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
         {/* Help Panel */}
         <Panel position="bottom-left">
           <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-slate-500 border border-slate-200">
-            <span className="font-medium">Tips:</span> Double-click to edit •
-            Drag between nodes to create transitions • Drag nodes to reposition
+            <span className="font-medium">{t("workflows.tips")}</span>
+            {t("workflows.doubleClickToEditDragBetweenNodes")}
           </div>
         </Panel>
       </ReactFlow>

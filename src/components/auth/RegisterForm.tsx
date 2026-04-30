@@ -96,7 +96,6 @@ export const RegisterForm: React.FC = () => {
     setError("");
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {
         confirmPassword: _confirmPassword,
         terms: _terms,
@@ -238,13 +237,13 @@ export const RegisterForm: React.FC = () => {
             label="I agree to the terms"
             description={
               <span>
-                By creating an account, you agree to our{" "}
+                {t("auth.byCreatingAnAccountYouAgreeTo")}{" "}
                 <Link to="/terms" className="text-blue-600 hover:underline">
-                  Terms of Service
+                  {t("auth.termsOfService")}
                 </Link>{" "}
-                and{" "}
+                {t("auth.and")}{" "}
                 <Link to="/privacy" className="text-blue-600 hover:underline">
-                  Privacy Policy
+                  {t("auth.privacyPolicy")}
                 </Link>
               </span>
             }

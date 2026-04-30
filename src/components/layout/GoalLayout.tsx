@@ -121,7 +121,7 @@ export const GoalLayout: React.FC = () => {
       <nav className="flex-1 py-6 px-3 overflow-y-auto">
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            Goal Management
+            {t("goals.goalManagement")}
           </p>
         )}
 
@@ -139,7 +139,9 @@ export const GoalLayout: React.FC = () => {
                 )}
                 <UserCircle size={20} className="flex-shrink-0" />
                 {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">My Goals</span>
+                  <span className="ms-3 font-medium text-sm">
+                    {t("goals.myGoalsTitle")}
+                  </span>
                 )}
               </>
             )}
@@ -159,7 +161,9 @@ export const GoalLayout: React.FC = () => {
                 )}
                 <Target size={20} className="flex-shrink-0" />
                 {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">All Goals</span>
+                  <span className="ms-3 font-medium text-sm">
+                    {t("goals.allGoals")}
+                  </span>
                 )}
               </>
             )}
@@ -178,7 +182,9 @@ export const GoalLayout: React.FC = () => {
                 )}
                 <BarChart3 size={20} className="flex-shrink-0" />
                 {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">Analytics</span>
+                  <span className="ms-3 font-medium text-sm">
+                    {t("goals.analytics")}
+                  </span>
                 )}
               </>
             )}
@@ -198,7 +204,7 @@ export const GoalLayout: React.FC = () => {
                 <GitBranch size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    OKR Alignment
+                    {t("goals.okr.title")}
                   </span>
                 )}
               </>
@@ -219,7 +225,9 @@ export const GoalLayout: React.FC = () => {
                   )}
                   <ClipboardCheck size={20} className="flex-shrink-0" />
                   {!collapsed && (
-                    <span className="ms-3 font-medium text-sm">Reviews</span>
+                    <span className="ms-3 font-medium text-sm">
+                      {t("goals.reviews")}
+                    </span>
                   )}
                 </>
               )}
@@ -241,7 +249,7 @@ export const GoalLayout: React.FC = () => {
                   <CheckCheck size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      My Approvals
+                      {t("goals.myApprovals")}
                     </span>
                   )}
                 </>
@@ -265,7 +273,7 @@ export const GoalLayout: React.FC = () => {
                   <FolderOpen size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      Documents
+                      {t("goals.documents")}
                     </span>
                   )}
                 </>
@@ -288,7 +296,7 @@ export const GoalLayout: React.FC = () => {
                   <FileSpreadsheet size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      Metric Imports
+                      {t("goals.metricImport.title")}
                     </span>
                   )}
                 </>
@@ -309,7 +317,9 @@ export const GoalLayout: React.FC = () => {
                 )}
                 <FileText size={20} className="flex-shrink-0" />
                 {!collapsed && (
-                  <span className="ms-3 font-medium text-sm">Templates</span>
+                  <span className="ms-3 font-medium text-sm">
+                    {t("goals.templates")}
+                  </span>
                 )}
               </>
             )}
@@ -327,7 +337,7 @@ export const GoalLayout: React.FC = () => {
           <Home size={20} />
           {!collapsed && (
             <span className="ms-3 font-medium text-sm">
-              {t("workflows.backToHome", "Back to Home")}
+              {t("workflows.backToHome")}
             </span>
           )}
         </NavLink>
@@ -370,7 +380,7 @@ export const GoalLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t("workflows.signOut", "Sign Out")}
+              {t("workflows.signOut")}
             </button>
           </div>
         )}
@@ -421,10 +431,12 @@ export const GoalLayout: React.FC = () => {
             </button>
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <Target className="w-4 h-4 text-blue-500" />
-              <span className="text-slate-400">Goal Management</span>
+              <span className="text-slate-400">
+                {t("goals.goalManagement")}
+              </span>
             </div>
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
-              Goals
+              {t("goals.title")}
             </h1>
           </div>
 
@@ -433,11 +445,11 @@ export const GoalLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-              title={t("workflows.backToHome", "Back to Home")}
+              title={t("workflows.backToHome")}
             >
               <Home className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
-                {t("workflows.backToHome", "Back to Home")}
+                {t("workflows.backToHome")}
               </span>
             </Link>
 
@@ -562,7 +574,7 @@ export const GoalLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t("workflows.backToHome", "Back to Home")}
+                        {t("workflows.backToHome")}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -574,7 +586,7 @@ export const GoalLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t("workflows.signOut", "Sign Out")}
+                        {t("workflows.signOut")}
                       </button>
                     </div>
                   </div>

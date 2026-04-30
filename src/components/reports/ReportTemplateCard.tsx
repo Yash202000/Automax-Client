@@ -552,20 +552,20 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   <span className="text-xs font-bold text-[hsl(var(--foreground))] uppercase tracking-widest">
-                    Live Preview
+                    {t("reports.livePreview")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="px-3 py-1 rounded-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] text-xs font-bold">
                     {previewData.length.toLocaleString()}{" "}
                     <span className="text-[hsl(var(--muted-foreground))] font-medium">
-                      RECORDS FOUND
+                      {t("reports.recordsFound")}
                     </span>
                   </div>
                   {previewData.length < dbTotalCount && (
                     <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full uppercase tracking-wider">
                       <AlertCircle className="w-3 h-3" />
-                      Partial Results
+                      {t("reports.partialResults")}
                     </div>
                   )}
                 </div>

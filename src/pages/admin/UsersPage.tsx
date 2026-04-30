@@ -285,17 +285,13 @@ export const UsersPage: React.FC = () => {
       userApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success(
-        t("users.userUpdatedSuccessfully", "User updated successfully"),
-      );
+      toast.success(t("users.userUpdatedSuccessfully"));
       closeModal();
     },
     onError: (error: any) => {
       const errorMessage =
-        error.response?.data?.error ||
-        error.message ||
-        t("users.updateFailed", "Failed to update user");
-      toast.error(t("common.error", "Error"), {
+        error.response?.data?.error || error.message || t("users.updateFailed");
+      toast.error(t("common.error"), {
         description: errorMessage,
       });
     },
@@ -306,17 +302,13 @@ export const UsersPage: React.FC = () => {
       userApi.create(params.data, params.avatar),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success(
-        t("users.userCreatedSuccessfully", "User created successfully"),
-      );
+      toast.success(t("users.userCreatedSuccessfully"));
       closeCreateModal();
     },
     onError: (error: any) => {
       const errorMessage =
-        error.response?.data?.error ||
-        error.message ||
-        t("users.createFailed", "Failed to create user");
-      toast.error(t("common.error", "Error"), {
+        error.response?.data?.error || error.message || t("users.createFailed");
+      toast.error(t("common.error"), {
         description: errorMessage,
       });
     },
@@ -326,17 +318,13 @@ export const UsersPage: React.FC = () => {
     mutationFn: (id: string) => userApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success(
-        t("users.userDeletedSuccessfully", "User deleted successfully"),
-      );
+      toast.success(t("users.userDeletedSuccessfully"));
       closeDropdown();
     },
     onError: (error: any) => {
       const errorMessage =
-        error.response?.data?.error ||
-        error.message ||
-        t("users.deleteFailed", "Failed to delete user");
-      toast.error(t("common.error", "Error"), {
+        error.response?.data?.error || error.message || t("users.deleteFailed");
+      toast.error(t("common.error"), {
         description: errorMessage,
       });
     },
@@ -582,7 +570,7 @@ export const UsersPage: React.FC = () => {
             onClick={handleExport}
             isLoading={isExporting}
           >
-            {isExporting ? "Exporting..." : t("common.export")}
+            {isExporting ? t("common.exporting") : t("common.export")}
           </Button>
           <label className="inline-flex">
             <Button
@@ -591,7 +579,7 @@ export const UsersPage: React.FC = () => {
               leftIcon={<Upload className="w-4 h-4" />}
               disabled={isImporting}
             >
-              {isImporting ? "Importing..." : "Import"}
+              {isImporting ? t("common.importing") : t("common.import")}
             </Button>
             <input
               type="file"
@@ -652,7 +640,7 @@ export const UsersPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg border border-transparent transition-all"
               >
                 <X className="w-3.5 h-3.5" />
-                Clear
+                {t("common.clear")}
               </button>
             )}
             <Button
@@ -691,7 +679,7 @@ export const UsersPage: React.FC = () => {
                     }}
                     className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
                   >
-                    Clear
+                    {t("common.clear")}
                   </button>
                 )}
               </div>
@@ -715,7 +703,7 @@ export const UsersPage: React.FC = () => {
                 ))}
                 {!rolesData?.data?.length && (
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    No roles available
+                    {t("users.noRolesAvailable")}
                   </span>
                 )}
               </div>
@@ -743,7 +731,7 @@ export const UsersPage: React.FC = () => {
                       }}
                       className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
                     >
-                      Clear
+                      {t("common.clear")}
                     </button>
                   )}
                 </div>
@@ -751,7 +739,7 @@ export const UsersPage: React.FC = () => {
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                   <input
                     type="text"
-                    placeholder="Search departments..."
+                    placeholder={t("incidents.searchDepartments")}
                     value={deptSearch}
                     onChange={(e) => setDeptSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
@@ -789,7 +777,7 @@ export const UsersPage: React.FC = () => {
                       }}
                       className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
                     >
-                      Clear
+                      {t("common.clear")}
                     </button>
                   )}
                 </div>
@@ -797,7 +785,7 @@ export const UsersPage: React.FC = () => {
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                   <input
                     type="text"
-                    placeholder="Search locations..."
+                    placeholder={t("users.searchLocations")}
                     value={locSearch}
                     onChange={(e) => setLocSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
@@ -836,7 +824,7 @@ export const UsersPage: React.FC = () => {
                       }}
                       className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
                     >
-                      Clear
+                      {t("common.clear")}
                     </button>
                   )}
                 </div>
@@ -844,7 +832,7 @@ export const UsersPage: React.FC = () => {
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                   <input
                     type="text"
-                    placeholder="Search classifications..."
+                    placeholder={t("users.searchClassifications")}
                     value={classSearch}
                     onChange={(e) => setClassSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
@@ -884,37 +872,37 @@ export const UsersPage: React.FC = () => {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.user")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.email")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Extension
+                        {t("users.extension")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.roles")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.department")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.location")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.status")}
                       </span>
@@ -1211,15 +1199,7 @@ export const UsersPage: React.FC = () => {
                 const user = filteredUsers?.find(
                   (u: User) => u.id === activeDropdown,
                 );
-                if (
-                  user &&
-                  window.confirm(
-                    t(
-                      "users.confirmDelete",
-                      "Are you sure you want to delete this user?",
-                    ),
-                  )
-                ) {
+                if (user && window.confirm(t("users.confirmDelete"))) {
                   deleteMutation.mutate(user.id);
                 }
               }}
@@ -1273,7 +1253,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., John"
+                      placeholder={"e.g., John"}
                       value={formData.first_name}
                       onChange={(e) =>
                         setFormData({ ...formData, first_name: e.target.value })
@@ -1287,7 +1267,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., Doe"
+                      placeholder={"e.g., Doe"}
                       value={formData.last_name}
                       onChange={(e) =>
                         setFormData({ ...formData, last_name: e.target.value })
@@ -1304,7 +1284,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., johndoe"
+                      placeholder={"e.g., johndoe"}
                       value={formData.username}
                       onChange={(e) =>
                         setFormData({ ...formData, username: e.target.value })
@@ -1318,7 +1298,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., +1 234 567 890"
+                      placeholder={"e.g., +1 234 567 890"}
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
@@ -1330,11 +1310,11 @@ export const UsersPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Extension
+                    {t("users.extension")}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., 1001"
+                    placeholder={"e.g., 1001"}
                     value={formData.extension}
                     onChange={(e) =>
                       setFormData({ ...formData, extension: e.target.value })
@@ -1569,7 +1549,7 @@ export const UsersPage: React.FC = () => {
                       <div className="relative">
                         <img
                           src={avatarPreview}
-                          alt="Avatar preview"
+                          alt={t("users.avatarPreview")}
                           className="w-24 h-24 rounded-full object-cover ring-4 ring-[hsl(var(--primary)/0.2)]"
                         />
                         <button
@@ -1611,7 +1591,7 @@ export const UsersPage: React.FC = () => {
                     <input
                       type="email"
                       required
-                      placeholder="e.g., john@example.com"
+                      placeholder={"e.g., john@example.com"}
                       value={createFormData.email}
                       onChange={(e) =>
                         setCreateFormData({
@@ -1630,7 +1610,7 @@ export const UsersPage: React.FC = () => {
                     <input
                       type="text"
                       required
-                      placeholder="e.g., johndoe"
+                      placeholder={"e.g., johndoe"}
                       value={createFormData.username}
                       onChange={(e) =>
                         setCreateFormData({
@@ -1652,7 +1632,7 @@ export const UsersPage: React.FC = () => {
                   <input
                     type="password"
                     required
-                    placeholder="Enter password"
+                    placeholder={t("users.enterPassword")}
                     value={createFormData.password}
                     onChange={(e) =>
                       setCreateFormData({
@@ -1672,7 +1652,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., John"
+                      placeholder={"e.g., John"}
                       value={createFormData.first_name}
                       onChange={(e) =>
                         setCreateFormData({
@@ -1689,7 +1669,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., Doe"
+                      placeholder={"e.g., Doe"}
                       value={createFormData.last_name}
                       onChange={(e) =>
                         setCreateFormData({
@@ -1709,7 +1689,7 @@ export const UsersPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., +1 234 567 890"
+                    placeholder={"e.g., +1 234 567 890"}
                     value={createFormData.phone}
                     onChange={(e) =>
                       setCreateFormData({
@@ -1724,11 +1704,11 @@ export const UsersPage: React.FC = () => {
                 {/* Extension */}
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    Extension
+                    {t("users.extension")}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., 1001"
+                    placeholder={"e.g., 1001"}
                     value={createFormData.extension}
                     onChange={(e) =>
                       setCreateFormData({
@@ -1969,7 +1949,7 @@ export const UsersPage: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                    Extension
+                    {t("users.extension")}
                   </p>
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-[hsl(var(--primary))]" />
@@ -2177,21 +2157,21 @@ export const UsersPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Import Complete
+                    {t("goals.components.import.completedHeading")}
                   </h3>
                   <div className="mt-3 space-y-2">
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
                       <span className="font-medium text-[hsl(var(--success))]">
                         {importResult.imported}
                       </span>{" "}
-                      users imported successfully
+                      {t("users.usersImportedSuccessfully")}
                     </p>
                     {importResult.skipped > 0 && (
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
                         <span className="font-medium text-[hsl(var(--warning))]">
                           {importResult.skipped}
                         </span>{" "}
-                        users skipped
+                        {t("users.usersSkipped")}
                       </p>
                     )}
                     {importResult.note && (
@@ -2204,7 +2184,7 @@ export const UsersPage: React.FC = () => {
                     {importResult.errors.length > 0 && (
                       <div className="mt-3 max-h-40 overflow-y-auto">
                         <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">
-                          Errors:
+                          {t("users.errors")}
                         </p>
                         <ul className="space-y-1">
                           {importResult.errors.map((error, index) => (
@@ -2222,7 +2202,9 @@ export const UsersPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={() => setImportResult(null)}>Close</Button>
+                <Button onClick={() => setImportResult(null)}>
+                  {t("common.close")}
+                </Button>
               </div>
             </div>
           </div>

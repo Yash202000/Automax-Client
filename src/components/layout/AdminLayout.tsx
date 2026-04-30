@@ -473,11 +473,11 @@ export const AdminLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-              title={t("sidebar.backToHome", "Back to Home")}
+              title={t("sidebar.backToHome")}
             >
               <Home className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
-                {t("sidebar.backToHome", "Back to Home")}
+                {t("sidebar.backToHome")}
               </span>
             </Link>
 

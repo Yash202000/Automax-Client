@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { settingsApi } from "../../api/settings";
+import { useTranslation } from "react-i18next";
 import {
   Save,
   Settings as SettingsIcon,
@@ -16,6 +17,7 @@ import {
 import { Button } from "@/components/ui";
 
 export const SettingsManagementPage: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -112,7 +114,7 @@ export const SettingsManagementPage: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-[hsl(var(--muted-foreground))]">
-            Loading settings...
+            {t("settings.loadingSettings")}
           </p>
         </div>
       </div>
@@ -129,10 +131,12 @@ export const SettingsManagementPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">
-              System Settings
+              {t("settings.systemSettings")}
             </h1>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Configure application branding, logos, and system preferences
+              {t(
+                "settings.configureApplicationBrandingLogosAndSystemPreferences",
+              )}
             </p>
           </div>
         </div>
@@ -144,14 +148,14 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <FileText className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-              Application Branding
+              {t("settings.applicationBranding")}
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Application Name *
+                {t("settings.applicationName")}
               </label>
               <input
                 type="text"
@@ -159,14 +163,14 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.app_name}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="e.g., Automax"
+                placeholder={t("settings.eGAutomax")}
                 required
               />
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Tagline
+                {t("settings.tagline")}
               </label>
               <input
                 type="text"
@@ -174,13 +178,13 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.app_tagline}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="e.g., Streamline your workflow automation"
+                placeholder={t("settings.eGStreamlineYourWorkflowAutomation")}
               />
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Description
+                {t("common.description")}
               </label>
               <textarea
                 name="app_description"
@@ -188,7 +192,7 @@ export const SettingsManagementPage: React.FC = () => {
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Short description of your application"
+                placeholder={t("settings.shortDescriptionOfYourApplication")}
               />
             </div>
           </div>
@@ -199,14 +203,14 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <Image className="w-5 h-5 text-blue-600" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-              Logo Configuration
+              {t("settings.logoConfiguration")}
             </h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Main Logo URL
+                {t("settings.mainLogoUrl")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -215,21 +219,21 @@ export const SettingsManagementPage: React.FC = () => {
                   value={formData.logo_url}
                   onChange={handleChange}
                   className="flex-1 px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="/logo.png or https://cdn.example.com/logo.png"
+                  placeholder={t("settings.logoPngOrHttpsCdnExampleCom")}
                 />
                 <Button
                   type="button"
                   className="px-4 py-2  text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  Upload
+                  {t("common.upload")}
                 </Button>
               </div>
               {formData.logo_url && (
                 <div className="mt-2">
                   <img
                     src={formData.logo_url}
-                    alt="Logo preview"
+                    alt={t("settings.logoPreview")}
                     className="h-16 object-contain"
                   />
                 </div>
@@ -238,7 +242,7 @@ export const SettingsManagementPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Small Logo URL (Optional)
+                {t("settings.smallLogoUrlOptional")}
               </label>
               <input
                 type="text"
@@ -246,13 +250,13 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.logo_small_url}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Compact logo for mobile/small screens"
+                placeholder={t("settings.compactLogoForMobileSmallScreens")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Favicon URL
+                {t("settings.faviconUrl")}
               </label>
               <input
                 type="text"
@@ -260,13 +264,13 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.favicon_url}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="/favicon.ico"
+                placeholder={t("settings.faviconIco")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Logo Alt Text
+                {t("settings.logoAltText")}
               </label>
               <input
                 type="text"
@@ -274,7 +278,7 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.logo_alt_text}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="For accessibility (e.g., Company Logo)"
+                placeholder={t("settings.forAccessibilityEGCompanyLogo")}
               />
             </div>
           </div>
@@ -285,14 +289,14 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <Palette className="w-5 h-5 text-emerald-600" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-              Theme Colors
+              {t("settings.themeColors")}
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Primary Color
+                {t("settings.primaryColor")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -316,7 +320,7 @@ export const SettingsManagementPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Secondary Color
+                {t("settings.secondaryColor")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -343,7 +347,7 @@ export const SettingsManagementPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Accent Color
+                {t("settings.accentColor")}
               </label>
               <div className="flex gap-2">
                 <input
@@ -372,7 +376,7 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <Globe className="w-5 h-5 text-amber-600" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-              Contact Information
+              {t("common.contactInfo")}
             </h2>
           </div>
 
@@ -380,7 +384,7 @@ export const SettingsManagementPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                Contact Email
+                {t("settings.contactEmail")}
               </label>
               <input
                 type="email"
@@ -388,14 +392,14 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.contact_email}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                placeholder="contact@example.com"
+                placeholder={t("settings.contactExampleCom")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2 flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                Contact Phone
+                {t("settings.contactPhone")}
               </label>
               <input
                 type="tel"
@@ -409,7 +413,7 @@ export const SettingsManagementPage: React.FC = () => {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Copyright Text
+                {t("settings.copyrightText")}
               </label>
               <input
                 type="text"
@@ -417,7 +421,7 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.copyright_text}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                placeholder="© 2024 Company Name. All rights reserved."
+                placeholder={t("settings.2024CompanyNameAllRightsReserved")}
               />
             </div>
           </div>
@@ -428,7 +432,7 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <FileText className="w-5 h-5 text-rose-600" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-              Feature Highlights (Login Page)
+              {t("settings.featureHighlightsLoginPage")}
             </h2>
           </div>
 
@@ -436,12 +440,13 @@ export const SettingsManagementPage: React.FC = () => {
             {[1, 2, 3].map((num) => (
               <div key={num} className="p-4 bg-[hsl(var(--muted))] rounded-lg">
                 <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3">
-                  Feature {num}
+                  {t("settings.feature")}
+                  {num}
                 </h3>
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                      Title
+                      {t("incidents.incidentTitle")}
                     </label>
                     <input
                       type="text"
@@ -451,12 +456,12 @@ export const SettingsManagementPage: React.FC = () => {
                       }
                       onChange={handleChange}
                       className="w-full px-3 py-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] text-sm"
-                      placeholder="Feature title"
+                      placeholder={t("settings.featureTitle")}
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                      Description
+                      {t("common.description")}
                     </label>
                     <textarea
                       name={`feature${num}_description`}
@@ -468,7 +473,7 @@ export const SettingsManagementPage: React.FC = () => {
                       onChange={handleChange}
                       rows={2}
                       className="w-full px-3 py-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] text-sm"
-                      placeholder="Feature description"
+                      placeholder={t("settings.featureDescription")}
                     />
                   </div>
                 </div>
@@ -482,14 +487,14 @@ export const SettingsManagementPage: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <SettingsIcon className="w-5 h-5 text-indigo-600" />
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-              System Configuration
+              {t("settings.systemConfiguration")}
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Date Format
+                {t("settings.dateFormat")}
               </label>
               <input
                 type="text"
@@ -497,13 +502,13 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.date_format}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="YYYY-MM-DD"
+                placeholder={t("settings.yyyyMmDd")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Time Format
+                {t("settings.timeFormat")}
               </label>
               <input
                 type="text"
@@ -511,13 +516,13 @@ export const SettingsManagementPage: React.FC = () => {
                 value={formData.time_format}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="HH:mm:ss"
+                placeholder={t("settings.hhMmSs")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Default Language
+                {t("settings.defaultLanguage")}
               </label>
               <select
                 name="default_language"
@@ -525,8 +530,8 @@ export const SettingsManagementPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                <option value="en">English</option>
-                <option value="ar">Arabic</option>
+                <option value="en">{t("settings.english")}</option>
+                <option value="ar">{t("settings.arabic")}</option>
               </select>
             </div>
           </div>

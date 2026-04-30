@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
-import { authApi } from '../api/auth';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
+import { authApi } from "../api/auth";
+import { useTranslation } from "react-i18next";
 
 /**
  * SSOCompletePage — receives a redirected SSO session from the backend.
@@ -15,23 +16,24 @@ import { authApi } from '../api/auth';
  * before navigating to the dashboard.
  */
 const SSOCompletePage = () => {
+  const { t } = useTranslation();
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const refresh = params.get('refresh');
+    const token = params.get("token");
+    const refresh = params.get("refresh");
 
     if (!token) {
-      navigate('/login', { replace: true });
+      navigate("/login", { replace: true });
       return;
     }
 
     // Store the tokens first so the API client can use them
-    localStorage.setItem('token', token);
+    localStorage.setItem("token", token);
     if (refresh) {
-      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem("refreshToken", refresh);
     }
 
     // Fetch the full user profile (the SSO callback only gives us basic claims)
@@ -39,23 +41,23 @@ const SSOCompletePage = () => {
       .getProfile()
       .then((response) => {
         const user = response.data;
-        if (!user) throw new Error('No user in profile response');
+        if (!user) throw new Error("No user in profile response");
         setAuth(user, token, refresh ?? undefined);
-        navigate('/dashboard', { replace: true });
+        navigate("/dashboard", { replace: true });
       })
       .catch(() => {
         // Fall back to decoding the JWT payload if the profile fetch fails
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
+          const payload = JSON.parse(atob(token.split(".")[1]));
           setAuth(
             {
-              id: payload.user_id ?? payload.sub ?? '',
-              email: payload.email ?? '',
-              username: payload.email ?? '',
-              first_name: '',
-              last_name: '',
-              phone: '',
-              avatar: '',
+              id: payload.user_id ?? payload.sub ?? "",
+              email: payload.email ?? "",
+              username: payload.email ?? "",
+              first_name: "",
+              last_name: "",
+              phone: "",
+              avatar: "",
               department_id: null,
               location_id: null,
               roles: [],
@@ -66,11 +68,11 @@ const SSOCompletePage = () => {
               created_at: new Date().toISOString(),
             },
             token,
-            refresh ?? undefined
+            refresh ?? undefined,
           );
-          navigate('/dashboard', { replace: true });
+          navigate("/dashboard", { replace: true });
         } catch {
-          navigate('/login', { replace: true });
+          navigate("/login", { replace: true });
         }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -79,7 +81,9 @@ const SSOCompletePage = () => {
     <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
       <div className="flex flex-col items-center gap-4">
         <div className="w-8 h-8 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">Completing sign-in…</p>
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          {t("citizen.completingSignIn")}
+        </p>
       </div>
     </div>
   );

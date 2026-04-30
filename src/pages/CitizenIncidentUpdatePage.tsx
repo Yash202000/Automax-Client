@@ -88,7 +88,7 @@ export function CitizenIncidentUpdatePage() {
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
-        t("citizen.submitError", "Failed to submit update. Please try again.");
+        t("citizen.submitError");
       setErrors((prev) => ({ ...prev, submit: message }));
     },
   });
@@ -100,9 +100,7 @@ export function CitizenIncidentUpdatePage() {
     const valid: File[] = [];
     Array.from(files).forEach((f) => {
       if (!isAllowedType(f)) {
-        invalid.push(
-          `${f.name} — ${t("citizen.unsupportedType", "unsupported type")}`,
-        );
+        invalid.push(`${f.name} — ${t("citizen.unsupportedType")}`);
       } else if (f.size > MAX_MB * 1024 * 1024) {
         invalid.push(
           `${f.name} — ${t("citizen.tooLarge", `exceeds ${MAX_MB}MB`)}`,
@@ -125,16 +123,10 @@ export function CitizenIncidentUpdatePage() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!location) {
-      e.location = t(
-        "citizen.locationRequired",
-        "Please select a location on the map.",
-      );
+      e.location = t("citizen.locationRequired");
     }
     if (!comment.trim()) {
-      e.comment = t(
-        "citizen.commentRequired",
-        "Please add a comment about the incident.",
-      );
+      e.comment = t("citizen.commentRequired");
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -170,37 +162,26 @@ export function CitizenIncidentUpdatePage() {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            {t("citizen.successTitle", "Update submitted")}
+            {t("citizen.successTitle")}
           </h2>
           <p className="mt-2 text-gray-600 text-sm leading-relaxed">
-            {t(
-              "citizen.successBody",
-              "Thank you! Your location and details have been saved to incident",
-            )}{" "}
+            {t("citizen.successBody")}{" "}
             <span className="font-semibold text-blue-600">
               #{incident.incident_number}
             </span>
-            .{" "}
-            {t(
-              "citizen.successNote",
-              "Our team has been notified and will follow up as needed.",
-            )}
+            . {t("citizen.successNote")}
           </p>
         </div>
         <Card className="w-full p-4 text-left">
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500">
-                {t("citizen.reference", "Reference")}
-              </dt>
+              <dt className="text-gray-500">{t("citizen.reference")}</dt>
               <dd className="font-semibold text-gray-900">
                 #{incident.incident_number}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">
-                {t("citizen.submittedAt", "Submitted at")}
-              </dt>
+              <dt className="text-gray-500">{t("citizen.submittedAt")}</dt>
               <dd className="font-semibold text-gray-900">
                 {new Date().toLocaleTimeString([], {
                   hour: "2-digit",
@@ -209,18 +190,16 @@ export function CitizenIncidentUpdatePage() {
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">{t("citizen.status", "Status")}</dt>
+              <dt className="text-gray-500">{t("citizen.status")}</dt>
               <dd>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {t("citizen.inProgress", "In Progress")}
+                  {t("citizen.inProgress")}
                 </span>
               </dd>
             </div>
           </dl>
         </Card>
-        <p className="text-xs text-gray-400">
-          {t("citizen.closePage", "You may safely close this page.")}
-        </p>
+        <p className="text-xs text-gray-400">{t("citizen.closePage")}</p>
       </div>
     );
   }
@@ -231,7 +210,7 @@ export function CitizenIncidentUpdatePage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          {t("citizen.updateTitle", "Add incident details")}
+          {t("citizen.updateTitle")}
         </h1>
       </div>
 
@@ -242,12 +221,12 @@ export function CitizenIncidentUpdatePage() {
         <Card className="p-6">
           <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-4">
             <MapPin className="w-4 h-4 text-blue-600" />
-            {t("citizen.locationSection", "Incident location")}
+            {t("citizen.locationSection")}
             <span className="text-red-500">*</span>
           </h2>
 
           <LocationPicker
-            label={t("incidents.geolocation", "Geolocation")}
+            label={t("incidents.geolocation")}
             value={location}
             onChange={(loc) => {
               setLocation(loc);
@@ -273,9 +252,9 @@ export function CitizenIncidentUpdatePage() {
         <Card className="p-6">
           <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-4">
             <Paperclip className="w-4 h-4 text-blue-600" />
-            {t("incidents.attachments", "Attachments")}
+            {t("incidents.attachments")}
             <span className="text-xs font-normal text-gray-400">
-              ({t("common.optional", "optional")})
+              ({t("common.optional")})
             </span>
           </h2>
 
@@ -292,7 +271,7 @@ export function CitizenIncidentUpdatePage() {
                       {file.name}
                     </span>
                     <span className="text-xs text-gray-400 flex-shrink-0">
-                      ({(file.size / 1024).toFixed(1)} KB)
+                      ({(file.size / 1024).toFixed(1)} {t("common.kb")})
                     </span>
                   </div>
                   <button
@@ -316,13 +295,13 @@ export function CitizenIncidentUpdatePage() {
             <Upload className="w-6 h-6 text-gray-400" />
             <p className="text-sm text-gray-600 text-center">
               <span className="font-medium text-blue-600">
-                {t("incidents.clickToUpload", "Click to upload")}
+                {t("incidents.clickToUpload")}
               </span>{" "}
-              {t("common.orDragAndDrop", "or drag and drop")}
+              {t("common.orDragAndDrop")}
             </p>
             <p className="text-xs text-gray-400">
-              JPG, PNG, MP4, PDF &middot; {t("citizen.maxSize", "Max")} {MAX_MB}
-              MB
+              {t("citizen.supportedAttachmentTypes")} &middot;{" "}
+              {t("citizen.maxSize")} {MAX_MB} MB
             </p>
             <input
               ref={fileInputRef}
@@ -345,7 +324,7 @@ export function CitizenIncidentUpdatePage() {
         {/* ── Comment ── */}
         <Card className="p-6">
           <Textarea
-            label={t("incidents.comment", "Comment")}
+            label={t("incidents.comment")}
             value={comment}
             onChange={(e) => {
               setComment(e.target.value);
@@ -353,10 +332,7 @@ export function CitizenIncidentUpdatePage() {
                 setErrors((p) => ({ ...p, comment: "" }));
               }
             }}
-            placeholder={t(
-              "citizen.commentPlaceholder",
-              "Describe what happened, any hazards, or anything else that may help our team respond...",
-            )}
+            placeholder={t("citizen.commentPlaceholder")}
             rows={4}
             required
             error={errors.comment}
@@ -379,7 +355,7 @@ export function CitizenIncidentUpdatePage() {
             leftIcon={<Send className="w-4 h-4" />}
             isLoading={submitMutation.isPending}
           >
-            {t("citizen.submitUpdate", "Submit update")}
+            {t("citizen.submitUpdate")}
           </Button>
         </div>
       </form>

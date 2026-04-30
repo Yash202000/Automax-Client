@@ -91,10 +91,10 @@ export const CallCentreLayout: React.FC = () => {
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold text-white tracking-tight">
-                {t("sidebar.callCentre", "Call Centre")}
+                {t("sidebar.callCentre")}
               </h1>
               <p className="text-[10px] text-slate-400 uppercase tracking-widest">
-                {t("sidebar.management", "Management")}
+                {t("sidebar.management")}
               </p>
             </div>
           )}
@@ -136,7 +136,7 @@ export const CallCentreLayout: React.FC = () => {
                 <List size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("sidebar.contacts", "Contacts")}
+                    {t("sidebar.contacts")}
                   </span>
                 )}
               </>
@@ -163,7 +163,7 @@ export const CallCentreLayout: React.FC = () => {
                 <Phone size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("sidebar.callHistory", "Call History")}
+                    {t("sidebar.callHistory")}
                   </span>
                 )}
               </>
@@ -190,7 +190,7 @@ export const CallCentreLayout: React.FC = () => {
                 <Mail size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("sidebar.email", "Email")}
+                    {t("sidebar.email")}
                   </span>
                 )}
               </>
@@ -217,7 +217,7 @@ export const CallCentreLayout: React.FC = () => {
                 <MessageSquare size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("sidebar.sms", "SMS")}
+                    {t("sidebar.sms")}
                   </span>
                 )}
               </>
@@ -233,7 +233,7 @@ export const CallCentreLayout: React.FC = () => {
           <Home size={20} />
           {!collapsed && (
             <span className="ms-3 font-medium text-sm">
-              {t("sidebar.backToHome", "Back to Home")}
+              {t("sidebar.backToHome")}
             </span>
           )}
         </NavLink>
@@ -276,7 +276,7 @@ export const CallCentreLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t("sidebar.signOut", "Sign Out")}
+              {t("sidebar.signOut")}
             </button>
           </div>
         )}
@@ -334,16 +334,14 @@ export const CallCentreLayout: React.FC = () => {
 
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-400">
-                {t("sidebar.callCentre", "Call Centre")}
-              </span>
+              <span className="text-slate-400">{t("sidebar.callCentre")}</span>
               <span className="text-slate-300">/</span>
               <span className="font-semibold text-muted-foreground">
-                {t("sidebar.management", "Management")}
+                {t("sidebar.management")}
               </span>
             </div>
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
-              {t("sidebar.callCentre", "Call Centre")}
+              {t("sidebar.callCentre")}
             </h1>
           </div>
 
@@ -351,11 +349,11 @@ export const CallCentreLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-              title={t("sidebar.backToHome", "Back to Home")}
+              title={t("sidebar.backToHome")}
             >
               <Home className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
-                {t("sidebar.backToHome", "Back to Home")}
+                {t("sidebar.backToHome")}
               </span>
             </Link>
             {/* Softphone Toggle */}
@@ -376,7 +374,7 @@ export const CallCentreLayout: React.FC = () => {
                 <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={t('sidebar.searchQueries', 'Search queries...')}
+                  placeholder={t('sidebar.searchQueries')}
                   className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all placeholder:text-slate-400"
                 />
               </div>
@@ -387,7 +385,7 @@ export const CallCentreLayout: React.FC = () => {
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-1.5 p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-                title={t("settings.language", "Language")}
+                title={t("settings.language")}
               >
                 <Languages className="w-5 h-5" />
                 <span className="text-xs font-medium uppercase">
@@ -399,7 +397,7 @@ export const CallCentreLayout: React.FC = () => {
                 <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-xs font-medium text-slate-500 uppercase">
-                      {t("settings.selectLanguage", "Select Language")}
+                      {t("settings.selectLanguage")}
                     </p>
                   </div>
                   {supportedLanguages.map((lang) => (
@@ -461,8 +459,8 @@ export const CallCentreLayout: React.FC = () => {
                       <Sparkles className="w-3 h-3 text-primary" />
                     )}
                     {user?.is_super_admin
-                      ? t("profile.superAdmin", "Super Admin")
-                      : t("sidebar.user", "User")}
+                      ? t("profile.superAdmin")
+                      : t("sidebar.user")}
                   </p>
                 </div>
                 <ChevronDown
@@ -490,7 +488,7 @@ export const CallCentreLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t("sidebar.backToHome", "Back to Home")}
+                        {t("sidebar.backToHome")}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -502,7 +500,7 @@ export const CallCentreLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t("sidebar.signOut", "Sign Out")}
+                        {t("sidebar.signOut")}
                       </button>
                     </div>
                   </div>

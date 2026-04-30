@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   ChevronLeft,
@@ -43,6 +44,7 @@ export const AttachmentPreview = ({
   initialIndex: number;
   onClose: () => void;
 }) => {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState(initialIndex);
   const file = attachments[current];
   const category = getFileCategory(file);
@@ -121,13 +123,13 @@ export const AttachmentPreview = ({
           ) : (
             <div className="flex flex-col items-center gap-4 p-12 text-muted-foreground">
               <FileIcon file={file} className="w-16 h-16" />
-              <p className="text-sm">Preview not available</p>
+              <p className="text-sm">{t("common.previewNotAvailable")}</p>
               <a
                 href={objectUrl}
                 download={file.name}
                 className="text-xs text-primary hover:underline"
               >
-                Download file
+                {t("goals.components.evidence.downloadTitle")}
               </a>
             </div>
           )}

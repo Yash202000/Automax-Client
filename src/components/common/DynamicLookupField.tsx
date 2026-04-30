@@ -1,5 +1,7 @@
-import React from 'react';
-import type { LookupCategory, ValidationRules } from '../../types';
+import React from "react";
+import type { LookupCategory, ValidationRules } from "../../types";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 interface DynamicLookupFieldProps {
   category: LookupCategory;
@@ -16,7 +18,10 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
   required = false,
   error,
 }) => {
-  const fieldType = category.field_type || 'select';
+  const { t } = useTranslation();
+  const fieldType = category.field_type || "select";
+  const fieldLabel =
+    i18n.language === "ar" ? category.name_ar || category.name : category.name;
 
   // Parse validation rules
   let validationRules: ValidationRules = {};
@@ -32,80 +37,85 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
     onChange(category.id, newValue);
   };
 
-  const commonClasses = "w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all";
-  const errorClasses = error ? "border-red-500 focus:ring-red-500/20 focus:border-red-500" : "";
+  const commonClasses =
+    "w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all";
+  const errorClasses = error
+    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+    : "";
 
   switch (fieldType) {
-    case 'text':
+    case "text":
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {category.name} {required && <span className="text-red-500">*</span>}
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           <input
             type="text"
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => handleChange(e.target.value)}
             required={required || validationRules.required}
             minLength={validationRules.minLength}
             maxLength={validationRules.maxLength}
             pattern={validationRules.pattern}
             className={`${commonClasses} ${errorClasses}`}
-            placeholder={category.description || `Enter ${category.name}`}
+            placeholder={category.description || `Enter ${fieldLabel}`}
           />
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
       );
 
-    case 'textarea':
+    case "textarea":
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {category.name} {required && <span className="text-red-500">*</span>}
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           <textarea
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => handleChange(e.target.value)}
             required={required || validationRules.required}
             minLength={validationRules.minLength}
             maxLength={validationRules.maxLength}
             rows={4}
             className={`${commonClasses} ${errorClasses} resize-none`}
-            placeholder={category.description || `Enter ${category.name}`}
+            placeholder={category.description || `Enter ${fieldLabel}`}
           />
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
       );
 
-    case 'number':
+    case "number":
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {category.name} {required && <span className="text-red-500">*</span>}
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           <input
             type="number"
-            value={value || ''}
-            onChange={(e) => handleChange(e.target.value ? parseFloat(e.target.value) : null)}
+            value={value || ""}
+            onChange={(e) =>
+              handleChange(e.target.value ? parseFloat(e.target.value) : null)
+            }
             required={required || validationRules.required}
             min={validationRules.minValue}
             max={validationRules.maxValue}
             className={`${commonClasses} ${errorClasses}`}
-            placeholder={category.description || `Enter ${category.name}`}
+            placeholder={category.description || `Enter ${fieldLabel}`}
           />
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
       );
 
-    case 'date':
+    case "date":
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {category.name} {required && <span className="text-red-500">*</span>}
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           <input
             type="datetime-local"
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => handleChange(e.target.value)}
             required={required || validationRules.required}
             min={validationRules.minDate}
@@ -116,7 +126,7 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
         </div>
       );
 
-    case 'checkbox':
+    case "checkbox":
       return (
         <div className="flex items-center gap-3">
           <input
@@ -126,61 +136,73 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
             onChange={(e) => handleChange(e.target.checked)}
             className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
           />
-          <label htmlFor={`lookup_${category.id}`} className="text-sm text-[hsl(var(--foreground))]">
-            {category.name} {required && <span className="text-red-500">*</span>}
+          <label
+            htmlFor={`lookup_${category.id}`}
+            className="text-sm text-[hsl(var(--foreground))]"
+          >
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           {error && <p className="ml-7 text-xs text-red-500">{error}</p>}
         </div>
       );
 
-    case 'select':
+    case "select":
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {category.name} {required && <span className="text-red-500">*</span>}
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           <select
-            value={value || ''}
+            value={value || ""}
             onChange={(e) => handleChange(e.target.value)}
             required={required || validationRules.required}
             className={`${commonClasses} ${errorClasses}`}
           >
-            <option value="">Select {category.name}</option>
-            {category.values?.filter(v => v.is_active).map((lookupValue) => (
-              <option key={lookupValue.id} value={lookupValue.id}>
-                {lookupValue.name}
-              </option>
-            ))}
+            <option value="">
+              {t("common.select")} {fieldLabel}
+            </option>
+            {category.values
+              ?.filter((v) => v.is_active)
+              .map((lookupValue) => (
+                <option key={lookupValue.id} value={lookupValue.id}>
+                  {lookupValue.name}
+                </option>
+              ))}
           </select>
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
       );
 
-    case 'multiselect':
+    case "multiselect":
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {category.name} {required && <span className="text-red-500">*</span>}
+            {fieldLabel} {required && <span className="text-red-500">*</span>}
           </label>
           <select
             multiple
             value={Array.isArray(value) ? value : []}
             onChange={(e) => {
-              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+              const selectedOptions = Array.from(
+                e.target.selectedOptions,
+                (option) => option.value,
+              );
               handleChange(selectedOptions);
             }}
             required={required || validationRules.required}
             className={`${commonClasses} ${errorClasses}`}
             size={Math.min(category.values?.length || 3, 5)}
           >
-            {category.values?.filter(v => v.is_active).map((lookupValue) => (
-              <option key={lookupValue.id} value={lookupValue.id}>
-                {lookupValue.name}
-              </option>
-            ))}
+            {category.values
+              ?.filter((v) => v.is_active)
+              .map((lookupValue) => (
+                <option key={lookupValue.id} value={lookupValue.id}>
+                  {lookupValue.name}
+                </option>
+              ))}
           </select>
           <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-            Hold Ctrl/Cmd to select multiple options
+            {t("lookups.holdCtrlCmdToSelectMultipleOptions")}
           </p>
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Circle, Play, Flag } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface StateNodeData extends Record<string, unknown> {
   id: string;
@@ -14,6 +15,7 @@ export interface StateNodeData extends Record<string, unknown> {
 }
 
 function StateNode({ data, selected }: NodeProps) {
+  const { t } = useTranslation();
   const nodeData = data as StateNodeData;
 
   const getStateIcon = () => {
@@ -90,7 +92,7 @@ function StateNode({ data, selected }: NodeProps) {
       {nodeData.sla_hours && (
         <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
           <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
-            SLA: {nodeData.sla_hours} {nodeData.sla_unit || "h"}
+            {t("workflows.sla")} {nodeData.sla_hours} {nodeData.sla_unit || "h"}
           </span>
         </div>
       )}

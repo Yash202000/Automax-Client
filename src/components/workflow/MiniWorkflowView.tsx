@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { ChevronRight, Circle, Play, Flag } from 'lucide-react';
-import type { Workflow, WorkflowState } from '../../types';
+import React, { useMemo } from "react";
+import { ChevronRight, Circle, Play, Flag } from "lucide-react";
+import type { Workflow, WorkflowState } from "../../types";
+import { useTranslation } from "react-i18next";
 
 interface MiniWorkflowViewProps {
   workflow: Workflow;
@@ -13,15 +14,16 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
   currentStateId,
   onStateClick,
 }) => {
+  const { t } = useTranslation();
   const states = workflow.states || [];
   const transitions = workflow.transitions || [];
 
   // Group states by type and sort
   const { initialStates, normalStates, terminalStates } = useMemo(() => {
     return {
-      initialStates: states.filter((s) => s.state_type === 'initial'),
-      normalStates: states.filter((s) => s.state_type === 'normal'),
-      terminalStates: states.filter((s) => s.state_type === 'terminal'),
+      initialStates: states.filter((s) => s.state_type === "initial"),
+      normalStates: states.filter((s) => s.state_type === "normal"),
+      terminalStates: states.filter((s) => s.state_type === "terminal"),
     };
   }, [states]);
 
@@ -45,13 +47,15 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
     return reachable;
   };
 
-  const reachableFromCurrent = currentStateId ? getReachableStates(currentStateId) : new Set<string>();
+  const reachableFromCurrent = currentStateId
+    ? getReachableStates(currentStateId)
+    : new Set<string>();
 
   const getStateIcon = (stateType: string) => {
     switch (stateType) {
-      case 'initial':
+      case "initial":
         return <Play className="w-3 h-3" />;
-      case 'terminal':
+      case "terminal":
         return <Flag className="w-3 h-3" />;
       default:
         return <Circle className="w-3 h-3" />;
@@ -68,17 +72,18 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
         onClick={() => onStateClick?.(state)}
         className={`
           relative flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all cursor-pointer
-          ${isCurrent
-            ? 'ring-2 ring-offset-2 ring-blue-500 shadow-lg scale-105'
-            : isReachable
-              ? 'opacity-100 hover:scale-102'
-              : 'opacity-50'
+          ${
+            isCurrent
+              ? "ring-2 ring-offset-2 ring-blue-500 shadow-lg scale-105"
+              : isReachable
+                ? "opacity-100 hover:scale-102"
+                : "opacity-50"
           }
-          ${onStateClick ? 'hover:shadow-md' : ''}
+          ${onStateClick ? "hover:shadow-md" : ""}
         `}
         style={{
           borderColor: state.color,
-          backgroundColor: isCurrent ? `${state.color}15` : 'white',
+          backgroundColor: isCurrent ? `${state.color}15` : "white",
         }}
       >
         <div
@@ -88,7 +93,9 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
           {getStateIcon(state.state_type)}
         </div>
         <div className="min-w-0">
-          <p className={`text-xs font-medium truncate ${isCurrent ? 'text-gray-900 dark:text-gray-300' : 'text-gray-700'}`}>
+          <p
+            className={`text-xs font-medium truncate ${isCurrent ? "text-gray-900 dark:text-gray-300" : "text-gray-700"}`}
+          >
             {state.name}
           </p>
         </div>
@@ -117,7 +124,7 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
   if (states.length === 0) {
     return (
       <div className="text-center py-4 text-gray-500 text-sm">
-        No states configured in this workflow
+        {t("workflows.noStatesConfiguredInThisWorkflow")}
       </div>
     );
   }
@@ -131,7 +138,10 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
             .sort((a, b) => {
               // Sort: initial first, then normal, then terminal
               const order = { initial: 0, normal: 1, terminal: 2 };
-              return (order[a.state_type as keyof typeof order] || 1) - (order[b.state_type as keyof typeof order] || 1);
+              return (
+                (order[a.state_type as keyof typeof order] || 1) -
+                (order[b.state_type as keyof typeof order] || 1)
+              );
             })
             .map((state, index) => (
               <React.Fragment key={state.id}>
@@ -145,9 +155,9 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
       ) : (
         /* Grouped view for complex workflows */
         <div className="space-y-4">
-          {renderStateRow(initialStates, 'Start')}
-          {renderStateRow(normalStates, 'In Progress')}
-          {renderStateRow(terminalStates, 'End')}
+          {renderStateRow(initialStates, "Start")}
+          {renderStateRow(normalStates, "In Progress")}
+          {renderStateRow(terminalStates, "End")}
         </div>
       )}
 
@@ -156,11 +166,15 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
         <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            Current: <span className="font-medium text-gray-700 dark:text-gray-300">{states.find((s) => s.id === currentStateId)?.name}</span>
+            {t("goals.components.metric.updateModal.currentLabel")}{" "}
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {states.find((s) => s.id === currentStateId)?.name}
+            </span>
           </span>
           {reachableFromCurrent.size > 0 && (
             <span className="text-xs text-gray-400">
-              • {reachableFromCurrent.size} possible next state{reachableFromCurrent.size > 1 ? 's' : ''}
+              • {reachableFromCurrent.size} {t("workflows.possibleNextState")}
+              {reachableFromCurrent.size > 1 ? "s" : ""}
             </span>
           )}
         </div>

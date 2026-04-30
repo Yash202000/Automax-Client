@@ -1,7 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Volume2, VolumeX, AlertCircle } from 'lucide-react';
-import { Button } from '../ui';
-import { cn } from '@/lib/utils';
+import { useState, useRef, useEffect } from "react";
+import {
+  Play,
+  Pause,
+  Download,
+  Volume2,
+  VolumeX,
+  AlertCircle,
+} from "lucide-react";
+import { Button } from "../ui";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface AudioPlayerProps {
   src: string;
@@ -10,7 +18,13 @@ interface AudioPlayerProps {
   className?: string;
 }
 
-export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlayerProps) {
+export function AudioPlayer({
+  src,
+  fileName,
+  onDownload,
+  className,
+}: AudioPlayerProps) {
+  const { t } = useTranslation();
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
@@ -41,7 +55,7 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
     };
 
     const handleError = () => {
-      setError('Failed to load audio');
+      setError("Failed to load audio");
       setIsLoading(false);
     };
 
@@ -49,18 +63,18 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
       setIsLoading(false);
     };
 
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("canplay", handleCanPlay);
 
     return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("canplay", handleCanPlay);
     };
   }, []);
 
@@ -118,19 +132,19 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return '00:00';
+    if (isNaN(time)) return "00:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const handleDownload = () => {
     if (onDownload) {
       onDownload();
     } else {
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = src;
-      link.download = fileName || 'audio';
+      link.download = fileName || "audio";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -142,7 +156,12 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
 
   if (error) {
     return (
-      <div className={cn("flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400", className)}>
+      <div
+        className={cn(
+          "flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400",
+          className,
+        )}
+      >
         <AlertCircle className="h-4 w-4" />
         <span className="text-sm">{error}</span>
       </div>
@@ -150,7 +169,12 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
   }
 
   return (
-    <div className={cn("flex items-center gap-3 p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-3 p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg",
+        className,
+      )}
+    >
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Play/Pause Button */}
@@ -186,7 +210,7 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
             onClick={handleProgressClick}
             className={cn(
               "flex-1 h-2 bg-[hsl(var(--border))] rounded-full cursor-pointer relative overflow-hidden",
-              isLoading && "opacity-50 cursor-not-allowed"
+              isLoading && "opacity-50 cursor-not-allowed",
             )}
           >
             <div
@@ -202,11 +226,7 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
 
       {/* Volume Control */}
       <div className="hidden sm:flex items-center gap-1">
-        <Button
-          variant="ghost"
-          onClick={toggleMute}
-          className="h-8 w-8 p-0"
-        >
+        <Button variant="ghost" onClick={toggleMute} className="h-8 w-8 p-0">
           {isMuted ? (
             <VolumeX className="h-4 w-4" />
           ) : (
@@ -231,7 +251,7 @@ export function AudioPlayer({ src, fileName, onDownload, className }: AudioPlaye
         variant="ghost"
         onClick={handleDownload}
         className="h-8 w-8 shrink-0 p-0"
-        title="Download"
+        title={t("common.download")}
       >
         <Download className="h-4 w-4" />
       </Button>

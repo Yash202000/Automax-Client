@@ -342,19 +342,16 @@ export const RequestsPage: React.FC = () => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            {t("requests.failedToLoad", "Failed to Load")}
+            {t("requests.failedToLoad")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            {t(
-              "requests.errorLoading",
-              "There was an error loading the requests. Please try again.",
-            )}
+            {t("requests.errorLoading")}
           </p>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            {t("common.tryAgain", "Try Again")}
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -376,24 +373,18 @@ export const RequestsPage: React.FC = () => {
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {filter.sla_breached
-                ? t("requests.slaBreached", "SLA Breached Requests")
+                ? t("requests.slaBreached")
                 : statusFilter
-                  ? `${statusFilter} ${t("requests.title", "Requests")}`
-                  : t("requests.title", "Requests")}
+                  ? `${statusFilter} ${t("requests.title")}`
+                  : t("requests.title")}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {filter.sla_breached
-              ? t(
-                  "requests.showingSlaBreach",
-                  "Showing requests with breached SLA",
-                )
+              ? t("requests.showingSlaBreach")
               : statusFilter
-                ? `${t("requests.showingStatus", "Showing status")}: ${statusFilter}`
-                : t(
-                    "requests.subtitle",
-                    "Manage service requests converted from incidents",
-                  )}
+                ? `${t("requests.showingStatus")}: ${statusFilter}`
+                : t("requests.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -402,7 +393,7 @@ export const RequestsPage: React.FC = () => {
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => setCreateModalOpen(true)}
             >
-              {t("requests.createRequest", "Create Request")}
+              {t("requests.createRequest")}
             </Button>
           )}
           <Button
@@ -414,7 +405,7 @@ export const RequestsPage: React.FC = () => {
               !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
             }
           >
-            {t("common.refresh", "Refresh")}
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -426,10 +417,7 @@ export const RequestsPage: React.FC = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
             <input
               type="text"
-              placeholder={t(
-                "requests.searchPlaceholder",
-                "Search by title or request number...",
-              )}
+              placeholder={t("requests.searchPlaceholder")}
               value={filter.search || ""}
               onChange={(e) =>
                 handleFilterChange("search", e.target.value || undefined)
@@ -444,14 +432,14 @@ export const RequestsPage: React.FC = () => {
               leftIcon={<Filter className="w-4 h-4" />}
               onClick={() => setShowFilters(!showFilters)}
             >
-              {t("common.filters", "Filters")}
+              {t("common.filters")}
               {hasActiveFilters && (
                 <span className="ml-1 w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />
               )}
             </Button>
             {hasActiveFilters && canViewAllRequests && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                {t("common.clear", "Clear")}
+                {t("common.clear")}
               </Button>
             )}
             {/* Column Configuration */}
@@ -462,7 +450,7 @@ export const RequestsPage: React.FC = () => {
                 leftIcon={<Settings2 className="w-4 h-4" />}
                 onClick={() => setShowColumnConfig(!showColumnConfig)}
               >
-                {t("common.columns", "Columns")}
+                {t("common.columns")}
                 <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
                   ({visibleColumnCount})
                 </span>
@@ -471,13 +459,10 @@ export const RequestsPage: React.FC = () => {
                 <div className="absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
                     <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                      {t("common.configureColumns", "Configure Columns")}
+                      {t("common.configureColumns")}
                     </p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                      {t(
-                        "common.toggleColumnVisibility",
-                        "Toggle column visibility",
-                      )}
+                      {t("common.toggleColumnVisibility")}
                     </p>
                   </div>
                   <div className="py-2 max-h-64 overflow-y-auto">
@@ -517,7 +502,7 @@ export const RequestsPage: React.FC = () => {
                         </span>
                         {col.required && (
                           <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {t("common.required", "Required")}
+                            {t("common.required")}
                           </span>
                         )}
                       </button>
@@ -528,7 +513,7 @@ export const RequestsPage: React.FC = () => {
                       onClick={() => setColumns(defaultColumns)}
                       className="text-xs text-[hsl(var(--primary))] hover:text-[hsl(var(--primary)/0.8)] font-medium"
                     >
-                      {t("common.resetToDefaults", "Reset to defaults")}
+                      {t("common.resetToDefaults")}
                     </button>
                   </div>
                 </div>
@@ -542,7 +527,7 @@ export const RequestsPage: React.FC = () => {
           <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.workflow", "Workflow")}
+                {t("common.workflow")}
               </label>
               <select
                 value={filter.workflow_id || ""}
@@ -551,9 +536,7 @@ export const RequestsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">
-                  {t("common.allWorkflows", "All Workflows")}
-                </option>
+                <option value="">{t("common.allWorkflows")}</option>
                 {workflowsData?.data?.map((workflow: Workflow) => (
                   <option key={workflow.id} value={workflow.id}>
                     {workflow.name}
@@ -563,7 +546,7 @@ export const RequestsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.state", "State")}
+                {t("common.state")}
               </label>
               <select
                 value={filter.current_state_id || ""}
@@ -581,7 +564,7 @@ export const RequestsPage: React.FC = () => {
                     "opacity-60 cursor-not-allowed",
                 )}
               >
-                <option value="">{t("common.allStates", "All States")}</option>
+                <option value="">{t("common.allStates")}</option>
                 {uniqueStates.map((state: WorkflowState) => (
                   <option key={state.id} value={state.id}>
                     {state.name}
@@ -591,7 +574,7 @@ export const RequestsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.assignee", "Assignee")}
+                {t("common.assignee")}
               </label>
               <select
                 value={filter.assignee_id || ""}
@@ -600,9 +583,7 @@ export const RequestsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">
-                  {t("common.allAssignees", "All Assignees")}
-                </option>
+                <option value="">{t("common.allAssignees")}</option>
                 {usersData?.data?.map((user: UserType) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name
@@ -656,7 +637,7 @@ export const RequestsPage: React.FC = () => {
             />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.priority", "Priority")}
+                {t("common.priority")}
               </label>
               <select
                 value={filter.priority ?? ""}
@@ -668,21 +649,17 @@ export const RequestsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">
-                  {t("common.allPriorities", "All Priorities")}
-                </option>
-                <option value="1">
-                  {t("priorities.critical", "Critical")}
-                </option>
-                <option value="2">{t("priorities.high", "High")}</option>
-                <option value="3">{t("priorities.medium", "Medium")}</option>
-                <option value="4">{t("priorities.low", "Low")}</option>
-                <option value="5">{t("priorities.veryLow", "Very Low")}</option>
+                <option value="">{t("common.allPriorities")}</option>
+                <option value="1">{t("priorities.critical")}</option>
+                <option value="2">{t("priorities.high")}</option>
+                <option value="3">{t("priorities.medium")}</option>
+                <option value="4">{t("priorities.low")}</option>
+                <option value="5">{t("priorities.veryLow")}</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.slaStatus", "SLA Status")}
+                {t("common.slaStatus")}
               </label>
               <select
                 value={
@@ -706,9 +683,9 @@ export const RequestsPage: React.FC = () => {
                     "opacity-60 cursor-not-allowed",
                 )}
               >
-                <option value="">{t("common.all", "All")}</option>
-                <option value="true">{t("common.breached", "Breached")}</option>
-                <option value="false">{t("common.onTrack", "On Track")}</option>
+                <option value="">{t("common.all")}</option>
+                <option value="true">{t("common.breached")}</option>
+                <option value="false">{t("common.onTrack")}</option>
               </select>
             </div>
           </div>
@@ -723,7 +700,7 @@ export const RequestsPage: React.FC = () => {
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">
-              {t("requests.loading", "Loading requests...")}
+              {t("requests.loading")}
             </p>
           </div>
         ) : requests.length === 0 ? (
@@ -732,29 +709,23 @@ export const RequestsPage: React.FC = () => {
               <FileText className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-              {t("requests.noRequestsFound", "No Requests Found")}
+              {t("requests.noRequestsFound")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {hasActiveFilters
-                ? t(
-                    "requests.tryAdjustingFilters",
-                    "Try adjusting your filters",
-                  )
-                : t(
-                    "requests.noRequestsYet",
-                    "Requests will appear here when incidents are converted",
-                  )}
+                ? t("requests.tryAdjustingFilters")
+                : t("requests.noRequestsYet")}
             </p>
             {hasActiveFilters ? (
               <Button variant="outline" onClick={clearFilters}>
-                {t("common.clearFilters", "Clear Filters")}
+                {t("common.clearFilters")}
               </Button>
             ) : canCreateRequest ? (
               <Button
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => setCreateModalOpen(true)}
               >
-                {t("requests.createFirstRequest", "Create First Request")}
+                {t("requests.createFirstRequest")}
               </Button>
             ) : null}
           </div>
@@ -767,70 +738,70 @@ export const RequestsPage: React.FC = () => {
                     {isColumnVisible("request") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("requests.request", "Request")}
+                          {t("requests.request")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("source") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("requests.sourceIncident", "Source Incident")}
+                          {t("requests.sourceIncident")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("state") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.state", "State")}
+                          {t("common.state")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("priority") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.priority", "Priority")}
+                          {t("common.priority")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("assignee") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.assignee", "Assignee")}
+                          {t("common.assignee")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("department") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.department", "Department")}
+                          {t("common.department")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("due_date") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.dueDate", "Due Date")}
+                          {t("common.dueDate")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("created_at") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.created", "Created")}
+                          {t("common.created")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("sla") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.sla", "SLA")}
+                          {t("common.sla")}
                         </span>
                       </th>
                     )}
                     {isColumnVisible("actions") && (
                       <th className="px-6 py-4 text-end">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.actions", "Actions")}
+                          {t("common.actions")}
                         </span>
                       </th>
                     )}
@@ -916,7 +887,7 @@ export const RequestsPage: React.FC = () => {
                                 className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                {t("requests.viewSource", "View Source")}
+                                {t("requests.viewSource")}
                               </Link>
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -993,7 +964,7 @@ export const RequestsPage: React.FC = () => {
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-1">
                                 <User className="w-4 h-4" />
-                                {t("common.unassigned", "Unassigned")}
+                                {t("common.unassigned")}
                               </span>
                             )}
                           </td>
@@ -1033,12 +1004,12 @@ export const RequestsPage: React.FC = () => {
                             {request.sla_breached ? (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
                                 <AlertTriangle className="w-3 h-3" />
-                                {t("common.breached", "Breached")}
+                                {t("common.breached")}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-600">
                                 <CheckCircle2 className="w-3 h-3" />
-                                {t("common.onTrack", "On Track")}
+                                {t("common.onTrack")}
                               </span>
                             )}
                           </td>
@@ -1054,7 +1025,7 @@ export const RequestsPage: React.FC = () => {
                                 navigate(`/requests/${request.id}`);
                               }}
                             >
-                              {t("common.view", "View")}
+                              {t("common.view")}
                             </Button>
                           </td>
                         )}
@@ -1068,22 +1039,22 @@ export const RequestsPage: React.FC = () => {
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t("common.showing", "Showing")}{" "}
+                {t("common.showing")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {((filter.page || 1) - 1) * (filter.limit || 10) + 1}
                 </span>{" "}
-                {t("common.to", "to")}{" "}
+                {t("common.to")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {Math.min(
                     (filter.page || 1) * (filter.limit || 10),
                     totalItems,
                   )}
                 </span>{" "}
-                {t("common.of", "of")}{" "}
+                {t("common.of")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {totalItems}
                 </span>{" "}
-                {t("requests.requests", "requests")}
+                {t("requests.requests")}
               </p>
 
               <div className="flex items-center gap-2">

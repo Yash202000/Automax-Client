@@ -156,7 +156,7 @@ export const ComplaintsLayout: React.FC = () => {
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t("sidebar.actions", "Actions")}
+            {t("sidebar.actions")}
           </p>
         )}
         <div className="space-y-1">
@@ -184,7 +184,7 @@ export const ComplaintsLayout: React.FC = () => {
                     <List size={20} className="flex-shrink-0" />
                     {!collapsed && (
                       <span className="ms-3 font-medium text-sm">
-                        {t("sidebar.allComplaints", "All Complaints")}
+                        {t("sidebar.allComplaints")}
                       </span>
                     )}
                   </>
@@ -204,7 +204,7 @@ export const ComplaintsLayout: React.FC = () => {
               <Plus size={20} className="flex-shrink-0" />
               {!collapsed && (
                 <span className="ms-3 font-medium text-sm">
-                  {t("sidebar.newComplaint", "New Complaint")}
+                  {t("sidebar.newComplaint")}
                 </span>
               )}
             </button>
@@ -221,7 +221,7 @@ export const ComplaintsLayout: React.FC = () => {
                 {!collapsed && (
                   <>
                     <span className="ms-3 font-medium text-sm flex-1 text-start">
-                      {t("sidebar.myComplaints", "My Complaints")}
+                      {t("sidebar.myComplaints")}
                     </span>
                     <ChevronRight
                       size={16}
@@ -246,7 +246,7 @@ export const ComplaintsLayout: React.FC = () => {
                     >
                       <UserCheck size={16} className="flex-shrink-0" />
                       <span className="ms-2 font-medium text-sm">
-                        {t("sidebar.assignedToMe", "Assigned to Me")}
+                        {t("sidebar.assignedToMe")}
                       </span>
                     </NavLink>
                   )}
@@ -264,7 +264,7 @@ export const ComplaintsLayout: React.FC = () => {
                     >
                       <PenLine size={16} className="flex-shrink-0" />
                       <span className="ms-2 font-medium text-sm">
-                        {t("sidebar.createdByMe", "Created by Me")}
+                        {t("sidebar.createdByMe")}
                       </span>
                     </NavLink>
                   )}
@@ -283,7 +283,7 @@ export const ComplaintsLayout: React.FC = () => {
               <Link2 size={20} className="flex-shrink-0" />
               {!collapsed && (
                 <span className="ms-3 font-medium text-sm">
-                  {t("sidebar.viewIncidents", "View Incidents")}
+                  {t("sidebar.viewIncidents")}
                 </span>
               )}
             </NavLink>
@@ -297,7 +297,7 @@ export const ComplaintsLayout: React.FC = () => {
               <>
                 <div className="my-6 border-t border-white/5" />
                 <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                  {t("sidebar.byStatus", "By Status")}
+                  {t("sidebar.byStatus")}
                 </p>
               </>
             )}
@@ -360,7 +360,7 @@ export const ComplaintsLayout: React.FC = () => {
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t("sidebar.overview", "Overview")}
+              {t("sidebar.overview")}
             </p>
             <div className="px-3 space-y-3">
               {canViewAllComplaints ? (
@@ -378,7 +378,7 @@ export const ComplaintsLayout: React.FC = () => {
                   <span
                     className={!currentStatus ? "text-white" : "text-slate-400"}
                   >
-                    {t("sidebar.total", "Total")}
+                    {t("sidebar.total")}
                   </span>
                   <span className="text-white font-semibold">
                     {statsData.data.total || 0}
@@ -386,9 +386,7 @@ export const ComplaintsLayout: React.FC = () => {
                 </NavLink>
               ) : (
                 <div className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2">
-                  <span className="text-slate-400">
-                    {t("sidebar.total", "Total")}
-                  </span>
+                  <span className="text-slate-400">{t("sidebar.total")}</span>
                   <span className="text-white font-semibold">
                     {statsData.data.total || 0}
                   </span>
@@ -402,7 +400,7 @@ export const ComplaintsLayout: React.FC = () => {
           <>
             <div className="my-6 border-t border-white/5" />
             <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-              {t("sidebar.quickLinks", "Quick Links")}
+              {t("sidebar.quickLinks")}
             </p>
           </>
         )}
@@ -415,7 +413,7 @@ export const ComplaintsLayout: React.FC = () => {
           <Home size={20} />
           {!collapsed && (
             <span className="ms-3 font-medium text-sm">
-              {t("sidebar.backToHome", "Back to Home")}
+              {t("sidebar.backToHome")}
             </span>
           )}
         </NavLink>
@@ -458,7 +456,7 @@ export const ComplaintsLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t("sidebar.signOut", "Sign Out")}
+              {t("sidebar.signOut")}
             </button>
           </div>
         )}
@@ -516,16 +514,14 @@ export const ComplaintsLayout: React.FC = () => {
 
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-400">
-                {t("sidebar.complaints", "Complaints")}
-              </span>
+              <span className="text-slate-400">{t("sidebar.complaints")}</span>
               <span className="text-slate-300">/</span>
               <span className="font-semibold text-muted-foreground">
-                {t("sidebar.management", "Management")}
+                {t("sidebar.management")}
               </span>
             </div>
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
-              {t("sidebar.complaints", "Complaints")}
+              {t("sidebar.complaints")}
             </h1>
           </div>
 
@@ -536,7 +532,7 @@ export const ComplaintsLayout: React.FC = () => {
                 <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={t('sidebar.searchComplaints', 'Search complaints...')}
+                  placeholder={t('sidebar.searchComplaints')}
                   className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-amber-400 transition-all placeholder:text-slate-400"
                 />
               </div>
@@ -547,11 +543,11 @@ export const ComplaintsLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-              title={t("sidebar.backToHome", "Back to Home")}
+              title={t("sidebar.backToHome")}
             >
               <Home className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
-                {t("sidebar.backToHome", "Back to Home")}
+                {t("sidebar.backToHome")}
               </span>
             </Link>
 
@@ -560,7 +556,7 @@ export const ComplaintsLayout: React.FC = () => {
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="flex items-center gap-1.5 p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-                title={t("settings.language", "Language")}
+                title={t("settings.language")}
               >
                 <Languages className="w-5 h-5" />
                 <span className="text-xs font-medium uppercase">
@@ -572,7 +568,7 @@ export const ComplaintsLayout: React.FC = () => {
                 <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-xs font-medium text-slate-500 uppercase">
-                      {t("settings.selectLanguage", "Select Language")}
+                      {t("settings.selectLanguage")}
                     </p>
                   </div>
                   {supportedLanguages.map((lang) => (
@@ -648,8 +644,8 @@ export const ComplaintsLayout: React.FC = () => {
                       <Sparkles className="w-3 h-3 text-primary" />
                     )}
                     {user?.is_super_admin
-                      ? t("profile.superAdmin", "Super Admin")
-                      : user?.roles?.[0]?.name || t("sidebar.user", "User")}
+                      ? t("profile.superAdmin")
+                      : user?.roles?.[0]?.name || t("sidebar.user")}
                   </p>
                 </div>
                 <ChevronDown
@@ -677,7 +673,7 @@ export const ComplaintsLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t("sidebar.backToHome", "Back to Home")}
+                        {t("sidebar.backToHome")}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -689,7 +685,7 @@ export const ComplaintsLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t("sidebar.signOut", "Sign Out")}
+                        {t("sidebar.signOut")}
                       </button>
                     </div>
                   </div>

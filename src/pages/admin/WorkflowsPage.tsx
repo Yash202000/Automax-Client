@@ -346,7 +346,7 @@ export const WorkflowsPage: React.FC = () => {
               onClick={() => setIsImportModalOpen(true)}
               leftIcon={<Upload className="w-4 h-4" />}
             >
-              Import
+              {t("common.import")}
             </Button>
             <Button
               onClick={openCreateModal}
@@ -441,7 +441,7 @@ export const WorkflowsPage: React.FC = () => {
                           exportMutation.mutate(workflow.id);
                         }}
                         className="p-2 text-[hsl(var(--muted-foreground))] hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-colors"
-                        title="Export Workflow"
+                        title={t("workflows.exportWorkflow")}
                       >
                         <Download className="w-4 h-4" />
                       </button>
@@ -555,7 +555,7 @@ export const WorkflowsPage: React.FC = () => {
           className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           <Archive className="w-4 h-4" />
-          {t("workflows.deletedWorkflows", "Deleted Workflows")}
+          {t("workflows.deletedWorkflows")}
           {showDeleted ? (
             <ChevronUp className="w-4 h-4" />
           ) : (
@@ -579,7 +579,7 @@ export const WorkflowsPage: React.FC = () => {
               <div className="bg-[hsl(var(--muted)/0.3)] rounded-xl p-6 text-center">
                 <Archive className="w-8 h-8 text-[hsl(var(--muted-foreground))] mx-auto mb-2" />
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t("workflows.noDeletedWorkflows", "No deleted workflows")}
+                  {t("workflows.noDeletedWorkflows")}
                 </p>
               </div>
             ) : (
@@ -590,7 +590,7 @@ export const WorkflowsPage: React.FC = () => {
                     className="relative bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 opacity-75"
                   >
                     <div className="absolute top-3 right-3 px-2 py-1 text-xs font-medium bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))] rounded-lg">
-                      {t("workflows.deleted", "Deleted")}
+                      {t("workflows.deleted")}
                     </div>
 
                     <div className="flex items-start gap-3 mb-4">
@@ -620,7 +620,7 @@ export const WorkflowsPage: React.FC = () => {
                         leftIcon={<RotateCcw className="w-4 h-4" />}
                         className="flex-1"
                       >
-                        {t("workflows.restore", "Restore")}
+                        {t("workflows.restore")}
                       </Button>
                       <Button
                         size="sm"
@@ -629,7 +629,7 @@ export const WorkflowsPage: React.FC = () => {
                         leftIcon={<Trash2 className="w-4 h-4" />}
                         className="flex-1"
                       >
-                        {t("workflows.permanentDelete", "Delete Forever")}
+                        {t("workflows.permanentDelete")}
                       </Button>
                     </div>
                   </div>
@@ -654,10 +654,7 @@ export const WorkflowsPage: React.FC = () => {
                     {t("workflows.deleteWorkflow")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    {t(
-                      "workflows.softDeleteMessage",
-                      "This workflow will be moved to the deleted section. You can restore it later or permanently delete it.",
-                    )}
+                    {t("workflows.softDeleteMessage")}
                   </p>
                 </div>
               </div>
@@ -691,16 +688,10 @@ export const WorkflowsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {t(
-                      "workflows.permanentDeleteTitle",
-                      "Permanently Delete Workflow",
-                    )}
+                    {t("workflows.permanentDeleteTitle")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    {t(
-                      "workflows.permanentDeleteMessage",
-                      "This action cannot be undone. The workflow and all its states, transitions, and configurations will be permanently removed from the database.",
-                    )}
+                    {t("workflows.permanentDeleteMessage")}
                   </p>
                 </div>
               </div>
@@ -720,7 +711,7 @@ export const WorkflowsPage: React.FC = () => {
                 >
                   {permanentDeleteMutation.isPending
                     ? t("workflows.deleting")
-                    : t("workflows.permanentDelete", "Delete Forever")}
+                    : t("workflows.permanentDelete")}
                 </Button>
               </div>
             </div>
@@ -822,12 +813,10 @@ export const WorkflowsPage: React.FC = () => {
                     <Settings2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
-                        Configure Later
+                        {t("workflows.configureLater")}
                       </p>
                       <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
-                        After creating the workflow, you can configure matching
-                        rules (classifications, locations), states, transitions,
-                        and required fields in the Workflow Designer.
+                        {t("workflows.afterCreatingTheWorkflowYouCanConfigure")}
                       </p>
                     </div>
                   </div>
@@ -962,11 +951,11 @@ export const WorkflowsPage: React.FC = () => {
                     <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
                   </div>
                   <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                    Import Workflow
+                    {t("common.importWorkflow")}
                   </h3>
                 </div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
-                  Upload a JSON file to import workflow
+                  {t("workflows.uploadAJsonFileToImportWorkflow")}
                 </p>
               </div>
               <button
@@ -983,7 +972,7 @@ export const WorkflowsPage: React.FC = () => {
             <div className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  Select JSON File
+                  {t("workflows.selectJsonFile")}
                 </label>
                 <input
                   type="file"
@@ -993,8 +982,8 @@ export const WorkflowsPage: React.FC = () => {
                 />
                 {importFile && (
                   <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-                    Selected: {importFile.name} (
-                    {(importFile.size / 1024).toFixed(2)} KB)
+                    {t("common.selected")}: {importFile.name} (
+                    {(importFile.size / 1024).toFixed(2)} {t("common.kb")})
                   </p>
                 )}
               </div>
@@ -1004,16 +993,20 @@ export const WorkflowsPage: React.FC = () => {
                   <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-[hsl(var(--muted-foreground))]">
                     <p className="font-medium text-[hsl(var(--foreground))] mb-1">
-                      Import Notes:
+                      {t("common.importNotes")}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>File must be a valid JSON workflow export</li>
-                      <li>Max file size: 10MB</li>
+                      <li>{t("workflows.fileMustBeAValidJsonWorkflow")}</li>
+                      <li>{t("workflows.maxFileSize10mb")}</li>
                       <li>
-                        Duplicate workflow codes will be renamed automatically
+                        {t(
+                          "workflows.duplicateWorkflowCodesWillBeRenamedAutomatically",
+                        )}
                       </li>
                       <li>
-                        Missing roles or classifications will show warnings
+                        {t(
+                          "workflows.missingRolesOrClassificationsWillShowWarnings",
+                        )}
                       </li>
                     </ul>
                   </div>
@@ -1029,7 +1022,7 @@ export const WorkflowsPage: React.FC = () => {
                   setImportFile(null);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={() => {
@@ -1063,11 +1056,11 @@ export const WorkflowsPage: React.FC = () => {
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
                   </div>
                   <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                    Import Warnings
+                    {t("common.importWarnings")}
                   </h3>
                 </div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
-                  Workflow imported with warnings
+                  {t("workflows.workflowImportedWithWarnings")}
                 </p>
               </div>
               <button
@@ -1093,7 +1086,9 @@ export const WorkflowsPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
-              <Button onClick={() => setImportWarnings([])}>Close</Button>
+              <Button onClick={() => setImportWarnings([])}>
+                {t("common.close")}
+              </Button>
             </div>
           </div>
         </div>

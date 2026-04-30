@@ -832,7 +832,7 @@ export function IncidentEditPage() {
             {/* Attachments */}
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">
-                {t("incidents.attachments", "Attachments")}
+                {t("incidents.attachments")}
                 {workflowRequiredFields.includes("attachments") && (
                   <span className="text-red-500 ml-1">*</span>
                 )}
@@ -841,7 +841,7 @@ export function IncidentEditPage() {
                 {attachments.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
-                      New Uploads
+                      {t("incidents.newUploads")}
                     </p>
 
                     {attachments.map((file, index) => (
@@ -855,7 +855,7 @@ export function IncidentEditPage() {
                             {file.name}
                           </span>
                           <span className="text-xs text-gray-500">
-                            ({(file.size / 1024).toFixed(1)} KB)
+                            ({(file.size / 1024).toFixed(1)} {t("common.kb")})
                           </span>
                         </div>
 
@@ -892,7 +892,8 @@ export function IncidentEditPage() {
                               {file.file_name}
                             </span>
                             <span className="text-xs text-gray-500">
-                              ({(file.file_size / 1024).toFixed(1)} KB)
+                              ({(file.file_size / 1024).toFixed(1)}{" "}
+                              {t("common.kb")})
                             </span>
                           </div>
                           {file?.uploaded_by?.id === user?.id ? (
@@ -956,17 +957,11 @@ export function IncidentEditPage() {
                 </h2>
               </div>
               <div className="px-3 py-2 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--foreground))]">
-                {incident.workflow?.name ||
-                  t("incidents.noWorkflow", "No workflow")}
+                {incident.workflow?.name || t("incidents.noWorkflow")}
               </div>
               <p className="mt-2 flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                 <Info className="w-3 h-3" />
-                <span>
-                  {t(
-                    "incidents.workflowCannotChange",
-                    "Workflow cannot be changed after creation",
-                  )}
-                </span>
+                <span>{t("incidents.workflowCannotChange")}</span>
               </p>
             </Card>
 
@@ -1043,8 +1038,10 @@ export function IncidentEditPage() {
         onClose={() => {}}
       >
         <ModalHeader>
-          <ModalTitle>Select Location</ModalTitle>
-          <ModalDescription>Please select a location</ModalDescription>
+          <ModalTitle>{t("incidents.selectLocationModal")}</ModalTitle>
+          <ModalDescription>
+            {t("incidents.selectLocationModalDesc")}
+          </ModalDescription>
         </ModalHeader>
         <ModalBody>
           <div className="flex flex-col gap-2">

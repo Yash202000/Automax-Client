@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { Bell, CheckCheck } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { emailApi, incidentApi } from "../../api/admin";
+import { useTranslation } from "react-i18next";
 
 export const NotificationBell: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { user } = useAuthStore();
@@ -91,11 +93,11 @@ export const NotificationBell: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <h3 className="text-sm font-semibold text-slate-900">
-              Notifications
+              {t("settings.notifications")}
             </h3>
             {unreadCount > 0 && (
               <span className="text-xs text-slate-500">
-                {unreadCount} unread
+                {unreadCount} {t("common.unread")}
               </span>
             )}
           </div>
@@ -105,7 +107,9 @@ export const NotificationBell: React.FC = () => {
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <Bell className="w-8 h-8 text-slate-300 mb-2" />
-                <p className="text-sm text-slate-500">No notifications</p>
+                <p className="text-sm text-slate-500">
+                  {t("common.noNotifications")}
+                </p>
               </div>
             ) : (
               notifications.map((notif) => (

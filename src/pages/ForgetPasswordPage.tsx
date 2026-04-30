@@ -201,13 +201,13 @@ export function ForgotPasswordPage() {
     setFieldError("");
     if (channel === "sms") {
       if (phone.trim().length < 6) {
-        setFieldError(t("auth.invalidPhone", "Enter a valid mobile number."));
+        setFieldError(t("auth.invalidPhone"));
         return;
       }
       sendOtpMutation.mutate({ value: "+" + phone.trim(), channel: "sms" });
     } else {
       if (!email.trim().includes("@")) {
-        setFieldError(t("auth.invalidEmail", "Enter a valid email address."));
+        setFieldError(t("auth.invalidEmail"));
         return;
       }
       sendOtpMutation.mutate({ value: email.trim(), channel: "email" });
@@ -218,7 +218,7 @@ export function ForgotPasswordPage() {
     e.preventDefault();
     const otp = digits.join("");
     if (otp.length < 6) {
-      setFieldError(t("auth.enterAllDigits", "Please enter all 6 digits."));
+      setFieldError(t("auth.enterAllDigits"));
       return;
     }
     verifyOtpMutation.mutate({
@@ -233,29 +233,23 @@ export function ForgotPasswordPage() {
     e.preventDefault();
     setFieldError("");
     if (password.length < 8) {
-      setFieldError(
-        t("auth.pwTooShort", "Password must be at least 8 characters."),
-      );
+      setFieldError(t("auth.pwTooShort"));
       return;
     }
     if (!/[A-Z]/.test(password)) {
-      setFieldError(
-        t("auth.pwUppercase", "Include at least one uppercase letter."),
-      );
+      setFieldError(t("auth.pwUppercase"));
       return;
     }
     if (!/[0-9]/.test(password)) {
-      setFieldError(t("auth.pwNumber", "Include at least one number."));
+      setFieldError(t("auth.pwNumber"));
       return;
     }
     if (!/[^A-Za-z0-9]/.test(password)) {
-      setFieldError(
-        t("auth.pwSpecial", "Include at least one special character."),
-      );
+      setFieldError(t("auth.pwSpecial"));
       return;
     }
     if (password !== confirmPassword) {
-      setFieldError(t("auth.pwMismatch", "Passwords do not match."));
+      setFieldError(t("auth.pwMismatch"));
       return;
     }
     resetPasswordMutation.mutate({ resetToken, newPassword: password });
@@ -285,7 +279,7 @@ export function ForgotPasswordPage() {
       className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
     >
       <ChevronLeft className="w-4 h-4" />
-      {t("common.back", "Back")}
+      {t("common.back")}
     </button>
   );
 
@@ -304,14 +298,9 @@ export function ForgotPasswordPage() {
       {step === 1 && (
         <>
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">
-              {t("auth.forgotPassword", "Forgot password")}
-            </h1>
+            <h1 className="text-3xl font-bold">{t("auth.forgotPassword")}</h1>
             <p className="mt-2 text-muted-foreground">
-              {t(
-                "auth.forgotSubtitle",
-                "Choose how you'd like to receive your verification code.",
-              )}
+              {t("auth.forgotSubtitle")}
             </p>
           </div>
 
@@ -333,7 +322,7 @@ export function ForgotPasswordPage() {
 
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t("auth.sendCodeVia", "Send code via")}
+              {t("auth.sendCodeVia")}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {(["sms", "email"] as Channel[]).map((ch) => (
@@ -355,9 +344,7 @@ export function ForgotPasswordPage() {
                   ) : (
                     <Mail className="w-4 h-4" />
                   )}
-                  {ch === "sms"
-                    ? t("auth.smsPhone", "SMS / Phone")
-                    : t("auth.email", "Email")}
+                  {ch === "sms" ? t("auth.smsPhone") : t("auth.email")}
                 </button>
               ))}
             </div>
@@ -367,7 +354,7 @@ export function ForgotPasswordPage() {
             {channel === "sms" ? (
               <div className="mb-5">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t("auth.mobileNumber", "Mobile number")}
+                  {t("auth.mobileNumber")}
                 </label>
                 <div className="flex">
                   <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
@@ -389,7 +376,7 @@ export function ForgotPasswordPage() {
             ) : (
               <div className="mb-5">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t("auth.emailAddress", "Email address")}
+                  {t("auth.emailAddress")}
                 </label>
                 <input
                   type="email"
@@ -412,17 +399,17 @@ export function ForgotPasswordPage() {
                 !sendOtpMutation.isPending && <ArrowRight className="w-5 h-5" />
               }
             >
-              {t("auth.sendCode", "Send verification code")}
+              {t("auth.sendCode")}
             </Button>
           </form>
 
           <p className="mt-8 text-center text-sm text-gray-600">
-            {t("auth.rememberPassword", "Remember your password?")}{" "}
+            {t("auth.rememberPassword")}{" "}
             <Link
               to="/login"
               className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
             >
-              {t("auth.signIn", "Sign in")}
+              {t("auth.signIn")}
             </Link>
           </p>
         </>
@@ -433,19 +420,11 @@ export function ForgotPasswordPage() {
           {BackButton({ to: 1 })}
 
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">
-              {t("auth.enterCode", "Enter verification code")}
-            </h1>
+            <h1 className="text-3xl font-bold">{t("auth.enterCode")}</h1>
             <p className="mt-2 text-muted-foreground">
               {channel === "sms"
-                ? t(
-                    "auth.otpSentPhone",
-                    "We sent a 6-digit code to your phone number.",
-                  )
-                : t(
-                    "auth.otpSentEmail",
-                    "We sent a 6-digit code to your email address.",
-                  )}
+                ? t("auth.otpSentPhone")
+                : t("auth.otpSentEmail")}
             </p>
           </div>
 
@@ -455,7 +434,7 @@ export function ForgotPasswordPage() {
           <form onSubmit={handleVerifyOtp} noValidate>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t("auth.verificationCode", "Verification code")}
+                {t("auth.verificationCode")}
               </label>
 
               <div
@@ -489,7 +468,7 @@ export function ForgotPasswordPage() {
                             : "border-gray-300 bg-white text-gray-900"
                       }
                     `}
-                    aria-label={`${t("auth.digit", "Digit")} ${i + 1}`}
+                    aria-label={`${t("auth.digit")} ${i + 1}`}
                   />
                 ))}
               </div>
@@ -506,15 +485,15 @@ export function ForgotPasswordPage() {
                 )
               }
             >
-              {t("auth.verifyCode", "Verify code")}
+              {t("auth.verifyCode")}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-gray-600">
-            {t("auth.didntReceive", "Didn't receive it?")}{" "}
+            {t("auth.didntReceive")}{" "}
             {timer > 0 ? (
               <span className="text-muted-foreground">
-                {t("auth.resendIn", "Resend in")}{" "}
+                {t("auth.resendIn")}{" "}
                 <span className="font-semibold text-gray-900 tabular-nums">
                   {timer}s
                 </span>
@@ -529,8 +508,8 @@ export function ForgotPasswordPage() {
                 className="font-semibold text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50"
               >
                 {resendOtpMutation.isPending
-                  ? t("auth.resending", "Resending…")
-                  : t("auth.resend", "Resend")}
+                  ? t("auth.resending")
+                  : t("auth.resend")}
               </button>
             )}
           </p>
@@ -542,14 +521,9 @@ export function ForgotPasswordPage() {
           {BackButton({ to: 2 })}
 
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">
-              {t("auth.setNewPassword", "Set new password")}
-            </h1>
+            <h1 className="text-3xl font-bold">{t("auth.setNewPassword")}</h1>
             <p className="mt-2 text-muted-foreground">
-              {t(
-                "auth.setNewPasswordSubtitle",
-                "Choose a strong password for your account.",
-              )}
+              {t("auth.setNewPasswordSubtitle")}
             </p>
           </div>
 
@@ -559,7 +533,7 @@ export function ForgotPasswordPage() {
           <form onSubmit={handleResetPassword} noValidate className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t("auth.newPassword", "New password")}
+                {t("auth.newPassword")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -585,7 +559,7 @@ export function ForgotPasswordPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t("auth.confirmPassword", "Confirm password")}
+                {t("auth.confirmPassword")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -619,7 +593,7 @@ export function ForgotPasswordPage() {
                 )
               }
             >
-              {t("auth.resetPassword", "Reset password")}
+              {t("auth.resetPassword")}
             </Button>
           </form>
         </>
@@ -631,20 +605,17 @@ export function ForgotPasswordPage() {
             <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold mb-2">
-            {t("auth.passwordUpdated", "Password updated!")}
+            {t("auth.passwordUpdated")}
           </h1>
           <p className="text-muted-foreground mb-8">
-            {t(
-              "auth.passwordUpdatedSubtitle",
-              "Your password has been reset successfully.",
-            )}
+            {t("auth.passwordUpdatedSubtitle")}
           </p>
           <Button
             className="w-full"
             rightIcon={<ArrowRight className="w-5 h-5" />}
             onClick={() => navigate("/login")}
           >
-            {t("auth.backToLogin", "Back to login")}
+            {t("auth.backToLogin")}
           </Button>
         </div>
       )}

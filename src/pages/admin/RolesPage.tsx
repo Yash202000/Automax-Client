@@ -132,11 +132,14 @@ export const RolesPage: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            {isExporting ? "Exporting..." : "Export"}
+            {isExporting ? t("common.exporting") : t("common.export")}
           </button>
           <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
             <Upload className="w-4 h-4" />
-            <span>{isImporting ? "Importing..." : "Import"}</span>
+            <span>
+              {" "}
+              {isImporting ? t("common.importing") : t("common.import")}{" "}
+            </span>
             <input
               type="file"
               accept=".json"
@@ -362,27 +365,27 @@ export const RolesPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-                    Import Complete
+                    {t("goals.components.import.completedHeading")}
                   </h3>
                   <div className="space-y-1">
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
                       <span className="font-medium text-[hsl(var(--success))]">
                         {importResult.imported}
                       </span>{" "}
-                      roles imported successfully
+                      {t("roles.rolesImportedSuccessfully")}
                     </p>
                     {importResult.skipped > 0 && (
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
                         <span className="font-medium text-[hsl(var(--warning))]">
                           {importResult.skipped}
                         </span>{" "}
-                        roles skipped
+                        {t("roles.rolesSkipped")}
                       </p>
                     )}
                     {importResult.errors.length > 0 && (
                       <div className="mt-3 max-h-40 overflow-y-auto">
                         <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">
-                          Errors:
+                          {t("roles.errors")}
                         </p>
                         <ul className="space-y-1">
                           {importResult.errors.map((error, index) => (
@@ -400,7 +403,9 @@ export const RolesPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={() => setImportResult(null)}>Close</Button>
+                <Button onClick={() => setImportResult(null)}>
+                  {t("common.close")}
+                </Button>
               </div>
             </div>
           </div>

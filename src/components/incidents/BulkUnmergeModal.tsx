@@ -79,10 +79,7 @@ export const BulkUnmergeModal: React.FC<BulkUnmergeModalProps> = ({
                 </h4>
                 <p className="text-sm text-amber-700">
                   {incidents.length}{" "}
-                  {t(
-                    "incidents.merge.incidentsWillBeUnmerged",
-                    "incident(s) will be unmerged from this master.",
-                  )}
+                  {t("incidents.merge.incidentsWillBeUnmerged")}
                 </p>
               </div>
             </div>

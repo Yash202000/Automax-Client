@@ -1427,7 +1427,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                             {file.name}
                           </span>
                           <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            ({(file.size / 1024).toFixed(1)} KB)
+                            ({(file.size / 1024).toFixed(1)} {t("common.kb")})
                           </span>
                         </div>
                         <button

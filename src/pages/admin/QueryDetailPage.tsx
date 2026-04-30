@@ -330,7 +330,7 @@ export const QueryDetailPage: React.FC = () => {
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
           <p className="text-[hsl(var(--muted-foreground))]">
-            {t("queries.loading", "Loading query...")}
+            {t("queries.loading")}
           </p>
         </div>
       </div>
@@ -345,19 +345,16 @@ export const QueryDetailPage: React.FC = () => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            {t("queries.notFound", "Query Not Found")}
+            {t("queries.notFound")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6">
-            {t(
-              "queries.notFoundDesc",
-              "The query you are looking for does not exist.",
-            )}
+            {t("queries.notFoundDesc")}
           </p>
           <Button
             onClick={() => navigate("/queries")}
             leftIcon={<ArrowLeft className="w-4 h-4" />}
           >
-            {t("common.backToList", "Back to List")}
+            {t("common.backToList")}
           </Button>
         </div>
       </div>
@@ -374,7 +371,7 @@ export const QueryDetailPage: React.FC = () => {
             className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-3 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {t("common.backToQueries", "Back to Queries")}
+            {t("common.backToQueries")}
           </button>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-sm font-medium text-[hsl(var(--primary))]">
@@ -427,8 +424,7 @@ export const QueryDetailPage: React.FC = () => {
               isLoading={evaluateMutation.isPending}
               leftIcon={<ThumbsUp className="w-4 h-4" />}
             >
-              {t("queries.evaluate", "Evaluate")} ({query.evaluation_count || 0}
-              )
+              {t("queries.evaluate")} ({query.evaluation_count || 0})
             </Button>
           )}
           <Button
@@ -438,7 +434,7 @@ export const QueryDetailPage: React.FC = () => {
             isLoading={isRefetching}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            {t("common.refresh", "Refresh")}
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -449,11 +445,10 @@ export const QueryDetailPage: React.FC = () => {
           {/* Description */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-              {t("common.description", "Description")}
+              {t("common.description")}
             </h2>
             <p className="text-[hsl(var(--foreground))] whitespace-pre-wrap">
-              {query.description ||
-                t("common.noDescription", "No description provided.")}
+              {query.description || t("common.noDescription")}
             </p>
           </div>
 
@@ -505,7 +500,7 @@ export const QueryDetailPage: React.FC = () => {
                 <div className="space-y-4">
                   {history.length === 0 ? (
                     <p className="text-center text-[hsl(var(--muted-foreground))] py-8">
-                      {t("common.noActivity", "No activity yet.")}
+                      {t("common.noActivity")}
                     </p>
                   ) : (
                     <div className="space-y-4">
@@ -525,7 +520,7 @@ export const QueryDetailPage: React.FC = () => {
                                   "System"}
                               </span>
                               <span className="text-[hsl(var(--muted-foreground))]">
-                                {t("common.transitionedTo", "transitioned to")}
+                                {t("common.transitionedTo")}
                               </span>
                               <span
                                 className="px-2 py-0.5 rounded text-xs font-medium"
@@ -565,7 +560,7 @@ export const QueryDetailPage: React.FC = () => {
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder={t("common.addComment", "Add a comment...")}
+                      placeholder={t("common.addComment")}
                       className="flex-1 px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                       rows={2}
                     />
@@ -576,7 +571,7 @@ export const QueryDetailPage: React.FC = () => {
                       leftIcon={<Send className="w-4 h-4" />}
                       className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
                     >
-                      {t("common.send", "Send")}
+                      {t("common.send")}
                     </Button>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -591,17 +586,14 @@ export const QueryDetailPage: React.FC = () => {
                       htmlFor="internal"
                       className="text-[hsl(var(--muted-foreground))]"
                     >
-                      {t(
-                        "common.internalComment",
-                        "Internal comment (not visible to reporter)",
-                      )}
+                      {t("common.internalComment")}
                     </label>
                   </div>
 
                   {/* Comments List */}
                   {comments.length === 0 ? (
                     <p className="text-center text-[hsl(var(--muted-foreground))] py-8">
-                      {t("common.noComments", "No comments yet.")}
+                      {t("common.noComments")}
                     </p>
                   ) : (
                     <div className="space-y-4 mt-6">
@@ -625,7 +617,7 @@ export const QueryDetailPage: React.FC = () => {
                               </span>
                               {comment.is_internal && (
                                 <span className="px-1.5 py-0.5 text-xs bg-yellow-500/10 text-yellow-600 rounded">
-                                  {t("common.internal", "Internal")}
+                                  {t("common.internal")}
                                 </span>
                               )}
                             </div>
@@ -648,7 +640,7 @@ export const QueryDetailPage: React.FC = () => {
                 <div className="space-y-4">
                   {attachments.length === 0 ? (
                     <p className="text-center text-[hsl(var(--muted-foreground))] py-8">
-                      {t("common.noAttachments", "No attachments yet.")}
+                      {t("common.noAttachments")}
                     </p>
                   ) : (
                     <>
@@ -656,7 +648,7 @@ export const QueryDetailPage: React.FC = () => {
                       {imageAttachments.length > 0 && (
                         <div className="space-y-2">
                           <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                            {t("common.images", "Images")}
+                            {t("common.images")}
                           </h3>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {imageAttachments.map((attachment, index) => (
@@ -703,7 +695,7 @@ export const QueryDetailPage: React.FC = () => {
                       {audioAttachments.length > 0 && (
                         <div className="space-y-2">
                           <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                            {t("common.audio", "Audio")}
+                            {t("common.audio")}
                           </h3>
                           {audioAttachments.map((attachment) => (
                             <div
@@ -757,7 +749,7 @@ export const QueryDetailPage: React.FC = () => {
                                 )}
                                 preload="metadata"
                               >
-                                Your browser does not support the audio element.
+                                {t("queries.yourBrowserDoesNotSupportTheAudio")}
                               </audio>
                             </div>
                           ))}
@@ -768,7 +760,7 @@ export const QueryDetailPage: React.FC = () => {
                       {otherAttachments.length > 0 && (
                         <div className="space-y-2">
                           <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                            {t("common.files", "Files")}
+                            {t("common.files")}
                           </h3>
                           <div className="space-y-2">
                             {otherAttachments.map((attachment) => (
@@ -824,7 +816,7 @@ export const QueryDetailPage: React.FC = () => {
           {/* Query Info */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-              {t("queries.details", "Query Details")}
+              {t("queries.details")}
             </h2>
             <div className="space-y-4">
               {/* Channel */}
@@ -835,7 +827,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("common.channel", "Channel")}
+                      {t("common.channel")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">
                       {query.channel}
@@ -852,7 +844,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("queries.createdBy", "Created By")}
+                      {t("queries.createdBy")}
                     </p>
                     {query.created_by_name && (
                       <p className="text-sm font-medium text-[hsl(var(--foreground))]">
@@ -877,14 +869,14 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("queries.sourceIncident", "Source Incident")}
+                      {t("queries.sourceIncident")}
                     </p>
                     <Link
                       to={`/incidents/${query.source_incident_id}`}
                       className="text-sm font-medium text-violet-500 hover:underline flex items-center gap-1"
                     >
                       {query.source_incident?.incident_number ||
-                        t("queries.viewIncident", "View Incident")}
+                        t("queries.viewIncident")}
                       <ExternalLink className="w-3 h-3" />
                     </Link>
                   </div>
@@ -899,7 +891,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("common.classification", "Classification")}
+                      {t("common.classification")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                       {query.classification.name}
@@ -915,7 +907,7 @@ export const QueryDetailPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {t("common.assignee", "Assignee")}
+                    {t("common.assignee")}
                   </p>
                   {query.assignee ? (
                     <div className="flex items-center gap-2 mt-1">
@@ -939,7 +931,7 @@ export const QueryDetailPage: React.FC = () => {
                     </div>
                   ) : (
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {t("common.unassigned", "Unassigned")}
+                      {t("common.unassigned")}
                     </p>
                   )}
                 </div>
@@ -953,7 +945,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("common.department", "Department")}
+                      {t("common.department")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                       {query.department.name}
@@ -970,7 +962,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("queries.source", "Source")}
+                      {t("queries.source")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">
                       {query.source.replace("_", " ")}
@@ -986,7 +978,7 @@ export const QueryDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {t("common.created", "Created")}
+                    {t("common.created")}
                   </p>
                   <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                     {formatDate(query.created_at)}
@@ -1002,7 +994,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("common.closed", "Closed")}
+                      {t("common.closed")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                       {formatDate(query.closed_at)}
@@ -1019,7 +1011,7 @@ export const QueryDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("queries.evaluations", "Evaluations")}
+                      {t("queries.evaluations")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                       {query.evaluation_count || 0}
@@ -1035,7 +1027,7 @@ export const QueryDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="w-4 h-4 text-violet-500" />
                       <h3 className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {t("queries.geolocation", "Geolocation")}
+                        {t("queries.geolocation")}
                       </h3>
                     </div>
                     <div className="space-y-2">
@@ -1092,7 +1084,7 @@ export const QueryDetailPage: React.FC = () => {
           {query.workflow && (
             <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-                {t("queries.workflow", "Workflow")}
+                {t("queries.workflow")}
               </h3>
               <p className="text-sm text-[hsl(var(--foreground))]">
                 {query.workflow.name}
@@ -1136,23 +1128,17 @@ export const QueryDetailPage: React.FC = () => {
                 selectedTransition.requirements.length > 0 && (
                   <div className="p-3 bg-violet-500/10 rounded-lg text-sm">
                     <p className="font-medium text-violet-600 mb-2">
-                      {t("common.requirements", "Requirements")}:
+                      {t("common.requirements")}:
                     </p>
                     <ul className="list-disc list-inside text-violet-700 space-y-1">
                       {selectedTransition.requirements.map((req) => (
                         <li key={req.id}>
                           {req.requirement_type === "comment" &&
-                            t("common.commentRequired", "Comment is required")}
+                            t("common.commentRequired")}
                           {req.requirement_type === "attachment" &&
-                            t(
-                              "common.attachmentRequired",
-                              "Attachment is required",
-                            )}
+                            t("common.attachmentRequired")}
                           {req.requirement_type === "feedback" &&
-                            t(
-                              "common.feedbackRequired",
-                              "Feedback is required",
-                            )}
+                            t("common.feedbackRequired")}
                         </li>
                       ))}
                     </ul>
@@ -1162,7 +1148,7 @@ export const QueryDetailPage: React.FC = () => {
               {/* Comment */}
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                  {t("common.comment", "Comment")}
+                  {t("common.comment")}
                   {selectedTransition.requirements?.some(
                     (r) => r.requirement_type === "comment" && r.is_mandatory,
                   ) && <span className="text-red-500 ml-1">*</span>}
@@ -1172,10 +1158,7 @@ export const QueryDetailPage: React.FC = () => {
                   onChange={(e) => setTransitionComment(e.target.value)}
                   rows={3}
                   className="w-full px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-                  placeholder={t(
-                    "common.addOptionalComment",
-                    "Add an optional comment...",
-                  )}
+                  placeholder={t("common.addOptionalComment")}
                 />
               </div>
 
@@ -1185,7 +1168,7 @@ export const QueryDetailPage: React.FC = () => {
               ) && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                    {t("common.attachment", "Attachment")}
+                    {t("common.attachment")}
                     {selectedTransition.requirements?.some(
                       (r) =>
                         r.requirement_type === "attachment" && r.is_mandatory,
@@ -1199,7 +1182,8 @@ export const QueryDetailPage: React.FC = () => {
                           {transitionAttachment.name}
                         </span>
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                          ({(transitionAttachment.size / 1024).toFixed(1)} KB)
+                          ({(transitionAttachment.size / 1024).toFixed(1)}{" "}
+                          {t("common.kb")})
                         </span>
                       </div>
                       <button
@@ -1214,7 +1198,7 @@ export const QueryDetailPage: React.FC = () => {
                     <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-violet-500 hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                       <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("common.clickToUpload", "Click to upload")}
+                        {t("common.clickToUpload")}
                       </span>
                       <input
                         type="file"
@@ -1237,7 +1221,7 @@ export const QueryDetailPage: React.FC = () => {
               ) && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                    {t("common.rating", "Rating")}
+                    {t("common.rating")}
                   </label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((rating) => (
@@ -1268,10 +1252,7 @@ export const QueryDetailPage: React.FC = () => {
                     }
                     rows={2}
                     className="w-full mt-2 px-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-                    placeholder={t(
-                      "common.feedbackComment",
-                      "Add feedback comment...",
-                    )}
+                    placeholder={t("common.feedbackComment")}
                   />
                 </div>
               )}
@@ -1281,7 +1262,7 @@ export const QueryDetailPage: React.FC = () => {
                 variant="outline"
                 onClick={() => setTransitionModalOpen(false)}
               >
-                {t("common.cancel", "Cancel")}
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={executeTransition}
@@ -1289,8 +1270,8 @@ export const QueryDetailPage: React.FC = () => {
                 className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
               >
                 {transitionUploading
-                  ? t("common.uploading", "Uploading...")
-                  : t("common.confirm", "Confirm")}
+                  ? t("common.uploading")
+                  : t("common.confirm")}
               </Button>
             </div>
           </div>

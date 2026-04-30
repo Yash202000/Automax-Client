@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { applicationLinkApi } from "../../api/applicationLinks";
 import type {
   ApplicationLink,
@@ -65,6 +66,7 @@ const AVAILABLE_COLORS = [
 ];
 
 const ApplicationLinksPage: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const canCreate =
@@ -106,13 +108,13 @@ const ApplicationLinksPage: React.FC = () => {
         queryKey: ["admin", "application-links"],
       });
       queryClient.invalidateQueries({ queryKey: ["application-links"] });
-      toast.success("Application link created successfully");
+      toast.success(t("applicationLinks.createdSuccess"));
       resetForm();
       setIsCreating(false);
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.error || "Failed to create application link",
+        error.response?.data?.error || t("applicationLinks.createError"),
       );
     },
   });
@@ -131,13 +133,13 @@ const ApplicationLinksPage: React.FC = () => {
         queryKey: ["admin", "application-links"],
       });
       queryClient.invalidateQueries({ queryKey: ["application-links"] });
-      toast.success("Application link updated successfully");
+      toast.success(t("applicationLinks.updatedSuccess"));
       resetForm();
       setEditingId(null);
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.error || "Failed to update application link",
+        error.response?.data?.error || t("applicationLinks.updateError"),
       );
     },
   });
@@ -150,11 +152,11 @@ const ApplicationLinksPage: React.FC = () => {
         queryKey: ["admin", "application-links"],
       });
       queryClient.invalidateQueries({ queryKey: ["application-links"] });
-      toast.success("Application link deleted successfully");
+      toast.success(t("applicationLinks.deletedSuccess"));
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.error || "Failed to delete application link",
+        error.response?.data?.error || t("applicationLinks.deleteError"),
       );
     },
   });
@@ -169,10 +171,12 @@ const ApplicationLinksPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["application-links"] });
       setImageLoadError(false);
       setFormData((prev) => ({ ...prev, image_url: "" }));
-      toast.success("Logo removed successfully");
+      toast.success(t("applicationLinks.logoRemovedSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to remove logo");
+      toast.error(
+        error.response?.data?.error || t("applicationLinks.logoRemoveError"),
+      );
     },
   });
 
@@ -191,7 +195,7 @@ const ApplicationLinksPage: React.FC = () => {
           ...prev,
           image_url: response.data?.link.image_url || "",
         }));
-        toast.success("Logo uploaded successfully");
+        toast.success(t("applicationLinks.logoUploadedSuccess"));
       }
       // Reset file input so same file can be re-selected after an error
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -200,7 +204,9 @@ const ApplicationLinksPage: React.FC = () => {
       error: // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any,
     ) => {
-      toast.error(error.response?.data?.error || "Failed to upload logo");
+      toast.error(
+        error.response?.data?.error || t("applicationLinks.logoUploadError"),
+      );
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
   });
@@ -211,7 +217,7 @@ const ApplicationLinksPage: React.FC = () => {
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
+      toast.error(t("applicationLinks.fileSizeError"));
       return;
     }
 
@@ -224,7 +230,7 @@ const ApplicationLinksPage: React.FC = () => {
       "image/svg+xml",
     ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, GIF, WebP, and SVG images are allowed");
+      toast.error(t("applicationLinks.fileTypeError"));
       return;
     }
 
@@ -275,7 +281,7 @@ const ApplicationLinksPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.sso_enabled && !formData.sso_callback_url?.trim()) {
-      toast.error("SSO Callback URL is required when SSO is enabled.");
+      toast.error(t("applicationLinks.ssoCallbackRequiredError"));
       return;
     }
     if (editingId) {
@@ -286,7 +292,7 @@ const ApplicationLinksPage: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
+    if (window.confirm(`${t("common.confirmDelete")} "${name}"?`)) {
       deleteMutation.mutate(id);
     }
   };
@@ -294,7 +300,9 @@ const ApplicationLinksPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[hsl(var(--muted-foreground))]">Loading...</div>
+        <div className="text-[hsl(var(--muted-foreground))]">
+          {t("applicationLinks.loading")}
+        </div>
       </div>
     );
   }
@@ -305,10 +313,10 @@ const ApplicationLinksPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-            Application Links
+            {t("applicationLinks.title")}
           </h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-            Manage external application shortcuts displayed on the dashboard
+            {t("applicationLinks.subtitle")}
           </p>
         </div>
         {!isCreating && !editingId && canCreate && (
@@ -317,7 +325,7 @@ const ApplicationLinksPage: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
-            Add Application Link
+            {t("applicationLinks.addApplicationLink")}
           </button>
         )}
       </div>
@@ -326,13 +334,15 @@ const ApplicationLinksPage: React.FC = () => {
       {(isCreating || editingId) && (canCreate || canUpdate) && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
           <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-            {editingId ? "Edit Application Link" : "Create Application Link"}
+            {editingId
+              ? t("applicationLinks.editApplicationLink")
+              : t("applicationLinks.createApplicationLink")}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  Name *
+                  {t("applicationLinks.name")} *
                 </label>
                 <input
                   type="text"
@@ -342,13 +352,13 @@ const ApplicationLinksPage: React.FC = () => {
                   }
                   required
                   className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-                  placeholder="e.g., Email System"
+                  placeholder={t("applicationLinks.namePlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  URL *
+                  {t("applicationLinks.url")} *
                 </label>
                 <input
                   type="url"
@@ -358,14 +368,14 @@ const ApplicationLinksPage: React.FC = () => {
                   }
                   required
                   className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-                  placeholder="https://example.com"
+                  placeholder={t("applicationLinks.urlPlaceholder")}
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                Description
+                {t("applicationLinks.description")}
               </label>
               <textarea
                 value={formData.description}
@@ -374,24 +384,23 @@ const ApplicationLinksPage: React.FC = () => {
                 }
                 rows={2}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-                placeholder="Optional description"
+                placeholder={t("applicationLinks.descriptionPlaceholder")}
               />
             </div>
 
             {isCreating && !editingId ? (
               <div className="bg-[hsl(var(--muted))] p-4 rounded-lg text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
-                Save the link first, then edit it to upload a logo image.
+                {t("applicationLinks.saveFirstInfo")}
               </div>
             ) : (
               editingId && (
                 <div className="bg-[hsl(var(--muted))] p-4 rounded-lg space-y-3">
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
-                    Logo Image (Optional)
+                    {t("applicationLinks.logoImage")}
                   </label>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    Upload a custom logo image. Max 5MB. Supports JPG, PNG, GIF,
-                    WebP, SVG.
+                    {t("applicationLinks.uploadLogoHelp")}
                   </p>
 
                   {/* Preview */}
@@ -404,7 +413,7 @@ const ApplicationLinksPage: React.FC = () => {
                       ) : (
                         <img
                           src={resolveImageUrl(formData.image_url || "")}
-                          alt="Logo preview"
+                          alt={t("applicationLinks.logoPreview")}
                           className="w-16 h-16 object-contain bg-white rounded border border-[hsl(var(--border))]"
                           onError={() => setImageLoadError(true)}
                           onLoad={() => setImageLoadError(false)}
@@ -414,12 +423,10 @@ const ApplicationLinksPage: React.FC = () => {
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">
                           {imageLoadError ? (
                             <span className="text-red-500 font-medium">
-                              Logo uploaded but cannot be previewed — the
-                              storage URL may not be publicly accessible. The
-                              logo will still be saved.
+                              {t("applicationLinks.logoLoadError")}
                             </span>
                           ) : (
-                            "Current logo"
+                            t("applicationLinks.currentLogo")
                           )}
                         </p>
                         <button
@@ -432,8 +439,8 @@ const ApplicationLinksPage: React.FC = () => {
                         >
                           <X className="w-3 h-3" />
                           {removeImageMutation.isPending
-                            ? "Removing…"
-                            : "Remove logo"}
+                            ? t("applicationLinks.removing")
+                            : t("applicationLinks.removeLogo")}
                         </button>
                       </div>
                     </div>
@@ -443,7 +450,7 @@ const ApplicationLinksPage: React.FC = () => {
                   <div className="relative">
                     {uploadImageMutation.isPending && (
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2 animate-pulse">
-                        Uploading…
+                        {t("applicationLinks.uploading")}
                       </p>
                     )}
                     <input
@@ -468,7 +475,7 @@ const ApplicationLinksPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  Icon
+                  {t("applicationLinks.icon")}
                 </label>
                 <select
                   value={formData.icon}
@@ -487,7 +494,7 @@ const ApplicationLinksPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  Color
+                  {t("applicationLinks.color")}
                 </label>
                 <select
                   value={formData.color}
@@ -506,7 +513,7 @@ const ApplicationLinksPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  Sort Order
+                  {t("applicationLinks.sortOrder")}
                 </label>
                 <input
                   type="number"
@@ -541,7 +548,7 @@ const ApplicationLinksPage: React.FC = () => {
                 htmlFor="is_active"
                 className="text-sm text-[hsl(var(--foreground))]"
               >
-                Active (visible on dashboard)
+                {t("applicationLinks.active")}
               </label>
             </div>
 
@@ -561,13 +568,14 @@ const ApplicationLinksPage: React.FC = () => {
                   htmlFor="sso_enabled"
                   className="text-sm font-medium text-[hsl(var(--foreground))]"
                 >
-                  Enable SSO (Single Sign-On)
+                  {t("applicationLinks.enableSSO")}
                 </label>
               </div>
               {formData.sso_enabled && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                    SSO Callback URL <span className="text-red-500">*</span>
+                    {t("applicationLinks.ssoCallbackUrl")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="url"
@@ -583,17 +591,17 @@ const ApplicationLinksPage: React.FC = () => {
                         ? "border-red-400 focus:ring-red-300"
                         : "border-[hsl(var(--border))]"
                     }`}
-                    placeholder="https://target.app/sso/callback"
+                    placeholder={t(
+                      "applicationLinks.ssoCallbackUrlPlaceholder",
+                    )}
                   />
                   {!formData.sso_callback_url?.trim() ? (
                     <p className="text-xs text-red-500 mt-1">
-                      Callback URL is required — without it, users clicking this
-                      app will see no redirection.
+                      {t("applicationLinks.ssoCallbackRequired")}
                     </p>
                   ) : (
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                      The URL on the target application that receives the SSO
-                      JWT token.
+                      {t("applicationLinks.ssoCallbackHelp")}
                     </p>
                   )}
                 </div>
@@ -607,7 +615,9 @@ const ApplicationLinksPage: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-linear-to-br from-primary to-accent text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                {editingId ? "Update" : "Create"}
+                {editingId
+                  ? t("applicationLinks.update")
+                  : t("applicationLinks.create")}
               </button>
               <button
                 type="button"
@@ -615,7 +625,7 @@ const ApplicationLinksPage: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-lg hover:opacity-90 transition-opacity"
               >
                 <X className="w-4 h-4" />
-                Cancel
+                {t("applicationLinks.cancel")}
               </button>
             </div>
           </form>
@@ -629,23 +639,23 @@ const ApplicationLinksPage: React.FC = () => {
             <thead className="bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))]">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                  Name
+                  {t("applicationLinks.tableNameHeader")}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                  URL
+                  {t("applicationLinks.tableUrlHeader")}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                  Icon / Color
+                  {t("applicationLinks.tableIconColorHeader")}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                  Order
+                  {t("applicationLinks.tableOrderHeader")}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                  Status
+                  {t("applicationLinks.tableStatusHeader")}
                 </th>
                 {(canUpdate || canDelete) && (
                   <th className="px-6 py-4 text-right text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                    Actions
+                    {t("applicationLinks.tableActionsHeader")}
                   </th>
                 )}
               </tr>
@@ -657,10 +667,8 @@ const ApplicationLinksPage: React.FC = () => {
                     colSpan={canUpdate || canDelete ? 6 : 5}
                     className="px-6 py-12 text-center text-[hsl(var(--muted-foreground))]"
                   >
-                    No application links yet.
-                    {canCreate
-                      ? ' Click "Add Application Link" to create one.'
-                      : ""}
+                    {t("applicationLinks.noLinksYet")}
+                    {canCreate ? ` ${t("applicationLinks.createOneNow")}` : ""}
                   </td>
                 </tr>
               ) : (
@@ -719,7 +727,7 @@ const ApplicationLinksPage: React.FC = () => {
                         {link.sso_enabled && !link.sso_callback_url && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                             <AlertTriangle className="w-3 h-3" />
-                            SSO: No callback URL
+                            {t("applicationLinks.ssoNoCallback")}
                           </span>
                         )}
                       </div>
@@ -731,7 +739,7 @@ const ApplicationLinksPage: React.FC = () => {
                             <button
                               onClick={() => handleEdit(link)}
                               className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Edit"
+                              title={t("applicationLinks.editTitle")}
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -740,7 +748,7 @@ const ApplicationLinksPage: React.FC = () => {
                             <button
                               onClick={() => handleDelete(link.id, link.name)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete"
+                              title={t("applicationLinks.deleteTitle")}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

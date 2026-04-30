@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { ChevronRight, ChevronDown, Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export interface TreeNode {
   id: string;
@@ -251,6 +252,8 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   colorScheme = "primary",
   leafOnly = false,
 }) => {
+  const { t } = useTranslation();
+
   const [expandedIds, setExpandedIds] = useState<string[]>(() => {
     // Auto-expand nodes that have selected children
     const expanded: string[] = [];
@@ -371,7 +374,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
               colorBadgeClasses[colorScheme],
             )}
           >
-            {selectedCount} selected
+            {selectedCount} {t("common.selected")}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -380,14 +383,14 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
             onClick={expandAll}
             className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
           >
-            Expand
+            {t("common.expand")}
           </button>
           <button
             type="button"
             onClick={collapseAll}
             className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
           >
-            Collapse
+            {t("common.collapse")}
           </button>
           <span className="text-[hsl(var(--border))]">|</span>
           <button
@@ -395,14 +398,14 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
             onClick={selectAll}
             className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
           >
-            All
+            {t("common.all")}
           </button>
           <button
             type="button"
             onClick={deselectAll}
             className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
           >
-            None
+            {t("common.none")}
           </button>
         </div>
       </div>

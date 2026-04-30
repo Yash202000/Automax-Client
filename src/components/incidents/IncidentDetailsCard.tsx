@@ -1,12 +1,14 @@
 import { Card } from "@/components/ui";
+import { useTranslation } from "react-i18next";
 
 const IncidentDetailsCard = ({ incident }: { incident: any }) => {
+  const { t } = useTranslation();
   return (
     <Card className="p-6 mb-6">
       {/* Top Section */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <p className="text-xs text-gray-500">Incident ID</p>
+          <p className="text-xs text-gray-500">{t("incidents.incidentId")}</p>
           <h2 className="text-xl font-bold text-gray-900">
             #{incident.incident_number}
           </h2>

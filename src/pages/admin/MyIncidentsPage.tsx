@@ -323,9 +323,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
               )
             }
           >
-            {showMap
-              ? t("common.hideMap", "Hide Map")
-              : t("common.showMap", "Show Map")}
+            {showMap ? t("common.hideMap") : t("common.showMap")}
           </Button>
           {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
@@ -610,20 +608,22 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
                               {isMasterIncident && (
                                 <span
                                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300"
-                                  title="Master incident (has merged child tickets)"
+                                  title={t(
+                                    "incidents.masterIncidentHasMergedChildTickets",
+                                  )}
                                 >
                                   <GitMerge className="w-3 h-3" />
-                                  Master
+                                  {t("incidents.master")}
                                 </span>
                               )}
                               {/* Child incident icon */}
                               {isChildIncident && (
                                 <span
                                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300"
-                                  title="Child incident (merged)"
+                                  title={t("incidents.childIncidentMerged")}
                                 >
                                   <Link2 className="w-3 h-3" />
-                                  Child
+                                  {t("incidents.child")}
                                 </span>
                               )}
                               <p

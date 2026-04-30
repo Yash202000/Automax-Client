@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown, X, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ export function MultiSelect({
   size = "md",
   showFooter,
 }: MultiSelectProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -308,7 +310,7 @@ export function MultiSelect({
                 onChange([]);
               }}
               className="opacity-40 hover:opacity-80 transition-opacity rounded p-0.5 hover:bg-[hsl(var(--muted))]"
-              aria-label="Clear all"
+              aria-label={t("goals.okr.clearAll")}
             >
               <X className="w-3.5 h-3.5 text-[hsl(var(--foreground))]" />
             </button>
@@ -380,7 +382,7 @@ export function MultiSelect({
           <div className="max-h-56 overflow-y-auto overscroll-contain py-1">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                No options found
+                {t("common.noOptionsFound")}
               </div>
             ) : (
               filteredOptions.map((option) => {
@@ -457,7 +459,7 @@ export function MultiSelect({
           {showFooter && value.length > 0 && (
             <div className="px-3 py-2 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] flex items-center justify-between">
               <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                {value.length} selected
+                {value.length} {t("reports.selected")}{" "}
                 {maxSelect > 0 && ` / ${maxSelect} max`}
               </span>
               <button
@@ -468,7 +470,7 @@ export function MultiSelect({
                 }}
                 className="text-xs text-[hsl(var(--destructive))] hover:underline transition-all"
               >
-                Clear
+                {t("common.clear")}
               </button>
             </div>
           )}

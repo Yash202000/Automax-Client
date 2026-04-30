@@ -115,7 +115,7 @@ export const ReportsLayout: React.FC = () => {
       <nav className="flex-1 py-6 px-3 overflow-y-auto">
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            {t("reports.title", "Reports")}
+            {t("reports.title")}
           </p>
         )}
 
@@ -135,7 +135,7 @@ export const ReportsLayout: React.FC = () => {
                 <List size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("reports.allReports", "All Reports")}
+                    {t("reports.allReports")}
                   </span>
                 )}
               </>
@@ -157,7 +157,7 @@ export const ReportsLayout: React.FC = () => {
                   <Plus size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("reports.newReport", "New Report")}
+                      {t("reports.newReport")}
                     </span>
                   )}
                 </>
@@ -179,7 +179,7 @@ export const ReportsLayout: React.FC = () => {
                 <LayoutTemplate size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("reports.templates", "Templates")}
+                    {t("reports.templates")}
                   </span>
                 )}
               </>
@@ -198,7 +198,7 @@ export const ReportsLayout: React.FC = () => {
           <Home size={20} />
           {!collapsed && (
             <span className="ms-3 font-medium text-sm">
-              {t("workflows.backToHome", "Back to Home")}
+              {t("workflows.backToHome")}
             </span>
           )}
         </NavLink>
@@ -241,7 +241,7 @@ export const ReportsLayout: React.FC = () => {
               className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
               <LogOut size={16} />
-              {t("workflows.signOut", "Sign Out")}
+              {t("workflows.signOut")}
             </button>
           </div>
         )}
@@ -292,12 +292,10 @@ export const ReportsLayout: React.FC = () => {
             </button>
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <FileBarChart className="w-4 h-4 text-blue-500" />
-              <span className="text-slate-400">
-                {t("reports.title", "Reports")}
-              </span>
+              <span className="text-slate-400">{t("reports.title")}</span>
             </div>
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
-              {t("reports.title", "Reports")}
+              {t("reports.title")}
             </h1>
           </div>
 
@@ -306,11 +304,11 @@ export const ReportsLayout: React.FC = () => {
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
-              title={t("workflows.backToHome", "Back to Home")}
+              title={t("workflows.backToHome")}
             >
               <Home className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
-                {t("workflows.backToHome", "Back to Home")}
+                {t("workflows.backToHome")}
               </span>
             </Link>
 
@@ -431,7 +429,7 @@ export const ReportsLayout: React.FC = () => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Home className="w-4 h-4" />
-                        {t("workflows.backToHome", "Back to Home")}
+                        {t("workflows.backToHome")}
                       </NavLink>
                     </div>
                     <div className="border-t border-slate-100 pt-2">
@@ -443,7 +441,7 @@ export const ReportsLayout: React.FC = () => {
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        {t("workflows.signOut", "Sign Out")}
+                        {t("workflows.signOut")}
                       </button>
                     </div>
                   </div>

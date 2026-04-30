@@ -660,9 +660,7 @@ export const IncidentsPage: React.FC = () => {
               )
             }
           >
-            {showMap
-              ? t("common.hideMap", "Hide Map")
-              : t("common.showMap", "Show Map")}
+            {showMap ? t("common.hideMap") : t("common.showMap")}
           </Button>
           {selectedIncidents?.length >= 2 && canMergeIncidents && (
             <>
@@ -747,7 +745,7 @@ export const IncidentsPage: React.FC = () => {
                   {stats.total}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  {t("incidents.total", "Total")}
+                  {t("incidents.total")}
                 </p>
               </div>
             </div>
@@ -762,7 +760,7 @@ export const IncidentsPage: React.FC = () => {
                   {stats.open}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  {t("incidents.initial", "Initial")}
+                  {t("incidents.initial")}
                 </p>
               </div>
             </div>
@@ -777,7 +775,7 @@ export const IncidentsPage: React.FC = () => {
                   {stats.in_progress}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  {t("incidents.inProgress", "In Progress")}
+                  {t("incidents.inProgress")}
                 </p>
               </div>
             </div>
@@ -795,7 +793,7 @@ export const IncidentsPage: React.FC = () => {
                   {stats.sla_breached}
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  {t("incidents.slaBreached", "SLA Breached")}
+                  {t("incidents.slaBreached")}
                 </p>
               </div>
             </div>
@@ -997,7 +995,7 @@ export const IncidentsPage: React.FC = () => {
                   )}
                 >
                   {isTransitionsLoading ? (
-                    <option>Loading...</option>
+                    <option>{t("common.loading")}</option>
                   ) : (
                     <>
                       <option value="">{t("incidents.allTransitions")}</option>
@@ -1071,7 +1069,7 @@ export const IncidentsPage: React.FC = () => {
             />
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.priority", "Priority")}
+                {t("common.priority")}
               </label>
               <select
                 value={filter.priority ?? ""}
@@ -1083,16 +1081,12 @@ export const IncidentsPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               >
-                <option value="">
-                  {t("common.allPriorities", "All Priorities")}
-                </option>
-                <option value="1">
-                  {t("priorities.critical", "Critical")}
-                </option>
-                <option value="2">{t("priorities.high", "High")}</option>
-                <option value="3">{t("priorities.medium", "Medium")}</option>
-                <option value="4">{t("priorities.low", "Low")}</option>
-                <option value="5">{t("priorities.veryLow", "Very Low")}</option>
+                <option value="">{t("common.allPriorities")}</option>
+                <option value="1">{t("priorities.critical")}</option>
+                <option value="2">{t("priorities.high")}</option>
+                <option value="3">{t("priorities.medium")}</option>
+                <option value="4">{t("priorities.low")}</option>
+                <option value="5">{t("priorities.veryLow")}</option>
               </select>
             </div>
             <div>
@@ -1148,15 +1142,12 @@ export const IncidentsPage: React.FC = () => {
             </div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
               {isShortSearch
-                ? t("search.minCharsTitle", "Keep Typing…")
+                ? t("search.minCharsTitle")
                 : t("incidents.noIncidents")}
             </h3>
             <p className="text-[hsl(var(--muted-foreground))] mb-6">
               {isShortSearch
-                ? t(
-                    "search.minCharsDesc",
-                    "Enter at least 3 characters to search",
-                  )
+                ? t("search.minCharsDesc")
                 : hasActiveFilters
                   ? t("incidents.adjustFilters")
                   : t("incidents.noIncidentsDesc")}
@@ -1301,20 +1292,24 @@ export const IncidentsPage: React.FC = () => {
                                 {isMasterIncident && (
                                   <span
                                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300"
-                                    title="Master incident (has merged child tickets)"
+                                    title={t(
+                                      "incidentMerge.masterIncidentTitle",
+                                    )}
                                   >
                                     <GitMerge className="w-3 h-3" />
-                                    Master
+                                    {t("incidentMerge.master")}
                                   </span>
                                 )}
                                 {/* Child incident icon */}
                                 {isChildIncident && (
                                   <span
                                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300"
-                                    title="Child incident (merged)"
+                                    title={t(
+                                      "incidentMerge.childIncidentTitle",
+                                    )}
                                   >
                                     <Link2 className="w-3 h-3" />
-                                    Child
+                                    {t("incidentMerge.child")}
                                   </span>
                                 )}
                                 <p
@@ -1335,7 +1330,9 @@ export const IncidentsPage: React.FC = () => {
                                   incident.active_viewers > 0 && (
                                     <span
                                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300"
-                                      title={`${incident.active_viewers} user${incident.active_viewers > 1 ? "s" : ""} currently viewing`}
+                                      title={t("incidents.activeViewersTitle", {
+                                        count: incident.active_viewers,
+                                      })}
                                     >
                                       <svg
                                         className="w-3 h-3"
@@ -1479,11 +1476,17 @@ export const IncidentsPage: React.FC = () => {
                               {isExpiringSoon && rtcHours !== null && (
                                 <span
                                   className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-700"
-                                  title={`Ready to Close expires at ${new Date(incident.ready_to_close_expires_at!).toLocaleString()}`}
+                                  title={t("incidents.readyToCloseExpiresAt", {
+                                    time: new Date(
+                                      incident.ready_to_close_expires_at!,
+                                    ).toLocaleString(),
+                                  })}
                                 >
                                   <Clock className="w-3 h-3" />
-                                  RTC: {Math.floor(rtcHours)}h{" "}
-                                  {Math.round((rtcHours % 1) * 60)}m left
+                                  {t("incidents.rtcTimeLeft", {
+                                    hours: Math.floor(rtcHours),
+                                    minutes: Math.round((rtcHours % 1) * 60),
+                                  })}
                                 </span>
                               )}
                             </div>

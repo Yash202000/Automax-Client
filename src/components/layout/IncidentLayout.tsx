@@ -372,7 +372,7 @@ export const IncidentLayout: React.FC = () => {
                   <FileText size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("sidebar.requests", "Requests")}
+                      {t("sidebar.requests")}
                     </span>
                   )}
                 </>
@@ -391,7 +391,7 @@ export const IncidentLayout: React.FC = () => {
               <Plus size={20} className="flex-shrink-0" />
               {!collapsed && (
                 <span className="ms-3 font-medium text-sm">
-                  {t("sidebar.newRequest", "New Request")}
+                  {t("sidebar.newRequest")}
                 </span>
               )}
             </button>
@@ -588,7 +588,7 @@ export const IncidentLayout: React.FC = () => {
                 <Bot size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("admin.qualityAudit", "Quality Audit")}
+                    {t("admin.qualityAudit")}
                   </span>
                 )}
               </>
@@ -816,11 +816,12 @@ export const IncidentLayout: React.FC = () => {
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                     <h3 className="text-sm font-semibold text-slate-900">
-                      Notifications
+                      {t("settings.notifications")}
                     </h3>
                     {unreadCount > 0 && (
                       <span className="text-xs text-slate-500">
-                        {unreadCount} unread
+                        {unreadCount}
+                        {t("incidents.unread")}
                       </span>
                     )}
                   </div>
@@ -831,7 +832,7 @@ export const IncidentLayout: React.FC = () => {
                       <div className="flex flex-col items-center justify-center py-10 text-center">
                         <Bell className="w-8 h-8 text-slate-300 mb-2" />
                         <p className="text-sm text-slate-500">
-                          No notifications
+                          {t("incidents.noNotifications")}
                         </p>
                       </div>
                     ) : (

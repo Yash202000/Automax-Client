@@ -268,7 +268,7 @@ export const RequestDetailPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center">
           <div className="w-12 h-12 border-3 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4" />
           <p className="text-[hsl(var(--muted-foreground))]">
-            {t("requests.loading", "Loading request...")}
+            {t("requests.loading")}
           </p>
         </div>
       </div>
@@ -283,19 +283,16 @@ export const RequestDetailPage: React.FC = () => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            {t("requests.requestNotFound", "Request not found")}
+            {t("requests.requestNotFound")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6">
-            {t(
-              "requests.requestNotFoundDesc",
-              "The request you are looking for does not exist.",
-            )}
+            {t("requests.requestNotFoundDesc")}
           </p>
           <Button
             onClick={() => navigate("/requests")}
             leftIcon={<ArrowLeft className="w-4 h-4" />}
           >
-            {t("requests.backToRequests", "Back to Requests")}
+            {t("requests.backToRequests")}
           </Button>
         </div>
       </div>
@@ -316,7 +313,7 @@ export const RequestDetailPage: React.FC = () => {
             className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-3 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {t("requests.backToRequests", "Back to Requests")}
+            {t("requests.backToRequests")}
           </button>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-sm font-medium text-emerald-600">
@@ -339,11 +336,11 @@ export const RequestDetailPage: React.FC = () => {
             {request.sla_breached && (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-600">
                 <AlertTriangle className="w-3 h-3" />
-                {t("requests.slaBreached", "SLA Breached")}
+                {t("requests.slaBreached")}
               </span>
             )}
             <span className="px-2 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-700">
-              {t("requests.request", "Request")}
+              {t("requests.request")}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
@@ -354,7 +351,7 @@ export const RequestDetailPage: React.FC = () => {
           {request.source_incidents && request.source_incidents.length > 0 ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t("requests.convertedFrom", "Converted from")}:
+                {t("requests.convertedFrom")}:
               </span>
 
               {request.source_incidents.map((incident: any) => (
@@ -373,7 +370,7 @@ export const RequestDetailPage: React.FC = () => {
           ) : request.source_incident_id ? (
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t("requests.convertedFrom", "Converted from")}:
+                {t("requests.convertedFrom")}:
               </span>
               <Link
                 to={`/incidents/${request.source_incident_id}`}
@@ -381,7 +378,7 @@ export const RequestDetailPage: React.FC = () => {
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 {request.source_incident?.incident_number ||
-                  t("requests.viewSourceIncident", "View Source Incident")}
+                  t("requests.viewSourceIncident")}
               </Link>
             </div>
           ) : null}
@@ -409,7 +406,7 @@ export const RequestDetailPage: React.FC = () => {
             isLoading={isRefetching}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            {t("common.refresh", "Refresh")}
+            {t("common.refresh")}
           </Button>
           {canEditRequest && (
             <Button
@@ -417,7 +414,7 @@ export const RequestDetailPage: React.FC = () => {
               size="sm"
               leftIcon={<Edit2 className="w-4 h-4" />}
             >
-              {t("common.edit", "Edit")}
+              {t("common.edit")}
             </Button>
           )}
         </div>
@@ -429,11 +426,10 @@ export const RequestDetailPage: React.FC = () => {
           {/* Description */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-              {t("requests.description", "Description")}
+              {t("requests.description")}
             </h3>
             <p className="text-[hsl(var(--foreground))] whitespace-pre-wrap">
-              {request.description ||
-                t("requests.noDescription", "No description provided")}
+              {request.description || t("requests.noDescription")}
             </p>
           </div>
 
@@ -451,7 +447,7 @@ export const RequestDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <Clock className="w-4 h-4" />
-                  {t("requests.activity", "Activity")}
+                  {t("requests.activity")}
                 </span>
               </button>
               <button
@@ -465,7 +461,7 @@ export const RequestDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <MessageSquare className="w-4 h-4" />
-                  {t("requests.comments", "Comments")} ({comments.length})
+                  {t("requests.comments")} ({comments.length})
                 </span>
               </button>
               <button
@@ -479,8 +475,7 @@ export const RequestDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <Paperclip className="w-4 h-4" />
-                  {t("requests.attachments", "Attachments")} (
-                  {attachments.length})
+                  {t("requests.attachments")} ({attachments.length})
                 </span>
               </button>
               <button
@@ -494,7 +489,7 @@ export const RequestDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <History className="w-4 h-4" />
-                  {t("requests.revisions", "Revisions")}
+                  {t("requests.revisions")}
                 </span>
               </button>
             </div>
@@ -505,7 +500,7 @@ export const RequestDetailPage: React.FC = () => {
                 <div className="space-y-4">
                   {history.length === 0 ? (
                     <p className="text-center text-[hsl(var(--muted-foreground))] py-8">
-                      {t("requests.noActivity", "No activity yet")}
+                      {t("requests.noActivity")}
                     </p>
                   ) : (
                     <div className="relative">
@@ -554,7 +549,7 @@ export const RequestDetailPage: React.FC = () => {
                               </div>
                               {item.performed_by && (
                                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
-                                  by{" "}
+                                  {t("incidents.by")}{" "}
                                   {item.performed_by.first_name ||
                                     item.performed_by.username}
                                 </p>
@@ -581,10 +576,7 @@ export const RequestDetailPage: React.FC = () => {
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder={t(
-                        "requests.writeComment",
-                        "Write a comment...",
-                      )}
+                      placeholder={t("requests.writeComment")}
                       rows={3}
                       className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
                     />
@@ -598,7 +590,7 @@ export const RequestDetailPage: React.FC = () => {
                           }
                           className="w-4 h-4 rounded border-[hsl(var(--border))] text-emerald-500 focus:ring-emerald-500/20"
                         />
-                        {t("requests.internalComment", "Internal comment")}
+                        {t("requests.internalComment")}
                       </label>
                       <Button
                         size="sm"
@@ -614,7 +606,7 @@ export const RequestDetailPage: React.FC = () => {
                         }
                         className="bg-emerald-600 hover:bg-emerald-700"
                       >
-                        {t("requests.addComment", "Add Comment")}
+                        {t("requests.addComment")}
                       </Button>
                     </div>
                   </div>
@@ -623,7 +615,7 @@ export const RequestDetailPage: React.FC = () => {
                   <div className="space-y-4 mt-6">
                     {comments.length === 0 ? (
                       <p className="text-center text-[hsl(var(--muted-foreground))] py-8">
-                        {t("requests.noComments", "No comments yet")}
+                        {t("requests.noComments")}
                       </p>
                     ) : (
                       comments.map((comment) => (
@@ -653,7 +645,7 @@ export const RequestDetailPage: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   {comment.is_internal && (
                                     <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                                      {t("requests.internal", "Internal")}
+                                      {t("requests.internal")}
                                     </span>
                                   )}
                                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -678,7 +670,7 @@ export const RequestDetailPage: React.FC = () => {
                 <div className="space-y-4">
                   {attachments.length === 0 ? (
                     <p className="text-center text-[hsl(var(--muted-foreground))] py-8">
-                      {t("requests.noAttachments", "No attachments")}
+                      {t("requests.noAttachments")}
                     </p>
                   ) : (
                     <>
@@ -747,7 +739,7 @@ export const RequestDetailPage: React.FC = () => {
                                     className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
                                   >
                                     <Download className="w-3 h-3" />
-                                    {t("common.download", "Download")}
+                                    {t("common.download")}
                                   </button>
                                 </div>
                               </div>
@@ -772,14 +764,14 @@ export const RequestDetailPage: React.FC = () => {
           {/* Quick Info */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-              {t("requests.details", "Details")}
+              {t("requests.details")}
             </h3>
             <div className="space-y-4">
               {/* Priority */}
               {priority && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t("requests.priority", "Priority")}
+                    {t("requests.priority")}
                   </span>
                   <span
                     className="px-2.5 py-1 rounded-md text-xs font-medium text-white"
@@ -793,7 +785,7 @@ export const RequestDetailPage: React.FC = () => {
               {/* Assignee */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t("requests.assignee", "Assignee")}
+                  {t("requests.assignee")}
                 </span>
                 {request.assignee ? (
                   <div className="flex items-center gap-2">
@@ -820,7 +812,7 @@ export const RequestDetailPage: React.FC = () => {
                     onClick={() => setAssignModalOpen(true)}
                     className="text-sm text-emerald-600 hover:text-emerald-700"
                   >
-                    {t("requests.assign", "Assign")}
+                    {t("requests.assign")}
                   </button>
                 )}
               </div>
@@ -829,7 +821,7 @@ export const RequestDetailPage: React.FC = () => {
               {request.department && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t("requests.department", "Department")}
+                    {t("requests.department")}
                   </span>
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
                     <Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -842,7 +834,7 @@ export const RequestDetailPage: React.FC = () => {
               {request.location && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t("requests.location", "Location")}
+                    {t("requests.location")}
                   </span>
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
                     <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -855,7 +847,7 @@ export const RequestDetailPage: React.FC = () => {
               {request.classification && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t("requests.classification", "Classification")}
+                    {t("requests.classification")}
                   </span>
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
                     <Tags className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -868,7 +860,7 @@ export const RequestDetailPage: React.FC = () => {
               {request.source && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t("requests.source", "Source")}
+                    {t("requests.source")}
                   </span>
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1 capitalize">
                     <Radio className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -881,7 +873,7 @@ export const RequestDetailPage: React.FC = () => {
               {request.due_date && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t("requests.dueDate", "Due Date")}
+                    {t("requests.dueDate")}
                   </span>
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
                     <Calendar className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -893,7 +885,7 @@ export const RequestDetailPage: React.FC = () => {
               {/* Created At */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t("requests.created", "Created")}
+                  {t("requests.created")}
                 </span>
                 <span className="text-sm text-[hsl(var(--foreground))]">
                   {formatDate(request.created_at)}
@@ -906,7 +898,7 @@ export const RequestDetailPage: React.FC = () => {
           {request.workflow && (
             <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
-                {t("requests.workflow", "Workflow")}
+                {t("requests.workflow")}
               </h3>
               <MiniWorkflowView
                 workflow={request.workflow}
@@ -978,7 +970,7 @@ export const RequestDetailPage: React.FC = () => {
               ) && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("requests.feedback", "Feedback")}
+                    {t("requests.feedback")}
                     {selectedTransition.requirements.some(
                       (r) =>
                         r.requirement_type === "feedback" && r.is_mandatory,
@@ -987,7 +979,7 @@ export const RequestDetailPage: React.FC = () => {
                   <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
                     <div>
                       <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                        {t("requests.rateExperience", "Rate your experience")}
+                        {t("requests.rateExperience")}
                       </span>
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -1018,10 +1010,7 @@ export const RequestDetailPage: React.FC = () => {
                       onChange={(e) =>
                         setTransitionFeedbackComment(e.target.value)
                       }
-                      placeholder={t(
-                        "requests.feedbackComment",
-                        "Add feedback comments...",
-                      )}
+                      placeholder={t("requests.feedbackComment")}
                       rows={2}
                       className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
                     />
@@ -1035,7 +1024,7 @@ export const RequestDetailPage: React.FC = () => {
               ) && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("requests.comment", "Comment")}
+                    {t("requests.comment")}
                     {selectedTransition.requirements.some(
                       (r) => r.requirement_type === "comment" && r.is_mandatory,
                     ) && <span className="text-red-500 ml-1">*</span>}
@@ -1043,7 +1032,7 @@ export const RequestDetailPage: React.FC = () => {
                   <textarea
                     value={transitionComment}
                     onChange={(e) => setTransitionComment(e.target.value)}
-                    placeholder={t("requests.addComment", "Add a comment...")}
+                    placeholder={t("requests.addComment")}
                     rows={3}
                     className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
                   />
@@ -1056,7 +1045,7 @@ export const RequestDetailPage: React.FC = () => {
               ) && (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("requests.attachment", "Attachment")}
+                    {t("requests.attachment")}
                     {selectedTransition.requirements.some(
                       (r) =>
                         r.requirement_type === "attachment" && r.is_mandatory,
@@ -1081,7 +1070,7 @@ export const RequestDetailPage: React.FC = () => {
                     <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-emerald-500 transition-colors">
                       <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("requests.clickToUpload", "Click to upload")}
+                        {t("requests.clickToUpload")}
                       </span>
                       <input
                         type="file"
@@ -1106,7 +1095,7 @@ export const RequestDetailPage: React.FC = () => {
                     setTransitionAttachment(null);
                   }}
                 >
-                  {t("common.cancel", "Cancel")}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={() => transitionMutation.mutate()}
@@ -1116,7 +1105,7 @@ export const RequestDetailPage: React.FC = () => {
                   disabled={transitionMutation.isPending || transitionUploading}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
-                  {t("requests.executeTransition", "Execute Transition")}
+                  {t("requests.executeTransition")}
                 </Button>
               </div>
             </div>
@@ -1130,7 +1119,7 @@ export const RequestDetailPage: React.FC = () => {
           <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t("requests.assignRequest", "Assign Request")}
+                {t("requests.assignRequest")}
               </h3>
               <button
                 onClick={() => {
@@ -1146,16 +1135,14 @@ export const RequestDetailPage: React.FC = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("requests.selectAssignee", "Select Assignee")}
+                  {t("requests.selectAssignee")}
                 </label>
                 <select
                   value={selectedAssignee}
                   onChange={(e) => setSelectedAssignee(e.target.value)}
                   className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                 >
-                  <option value="">
-                    {t("requests.selectUser", "Select a user...")}
-                  </option>
+                  <option value="">{t("requests.selectUser")}</option>
                   {users.map((user: UserType) => (
                     <option key={user.id} value={user.id}>
                       {user.first_name
@@ -1174,7 +1161,7 @@ export const RequestDetailPage: React.FC = () => {
                     setSelectedAssignee("");
                   }}
                 >
-                  {t("common.cancel", "Cancel")}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={() => assignMutation.mutate(selectedAssignee)}
@@ -1182,7 +1169,7 @@ export const RequestDetailPage: React.FC = () => {
                   isLoading={assignMutation.isPending}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
-                  {t("requests.assign", "Assign")}
+                  {t("requests.assign")}
                 </Button>
               </div>
             </div>

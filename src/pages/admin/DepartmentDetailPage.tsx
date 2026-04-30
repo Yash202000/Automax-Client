@@ -612,7 +612,7 @@ export const DepartmentDetailPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {tempLocationIds.length} selected
+                    {tempLocationIds.length} {t("reports.selected")}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -761,7 +761,7 @@ export const DepartmentDetailPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {tempClassificationIds.length} selected
+                    {tempClassificationIds.length} {t("reports.selected")}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -937,7 +937,8 @@ export const DepartmentDetailPage: React.FC = () => {
                           </p>
                         </div>
                         <span className="text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] px-1.5 py-0.5 rounded flex-shrink-0">
-                          {role.permissions?.length || 0} perms
+                          {role.permissions?.length || 0}{" "}
+                          {t("departments.perms")}
                         </span>
                       </div>
                     );
@@ -945,7 +946,7 @@ export const DepartmentDetailPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {tempRoleIds.length} selected
+                    {tempRoleIds.length} {t("reports.selected")}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1079,7 +1080,7 @@ export const DepartmentDetailPage: React.FC = () => {
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                   <input
                     type="text"
-                    placeholder="Search users to add..."
+                    placeholder={t("roles.searchUsersToAdd")}
                     value={userSearchTerm}
                     onChange={(e) => setUserSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
@@ -1092,7 +1093,7 @@ export const DepartmentDetailPage: React.FC = () => {
                   <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-40 overflow-y-auto">
                     {!userSearchFetching && userSearchResults.length === 0 ? (
                       <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
-                        No users found
+                        {t("users.noUsers")}
                       </p>
                     ) : (
                       userSearchResults.map((user: User) => (
@@ -1129,7 +1130,8 @@ export const DepartmentDetailPage: React.FC = () => {
                             disabled={addUserMutation.isPending}
                             className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors disabled:opacity-50 flex-shrink-0"
                           >
-                            <Plus className="w-3.5 h-3.5" /> Add
+                            <Plus className="w-3.5 h-3.5" />
+                            {t("common.add")}
                           </button>
                         </div>
                       ))
@@ -1172,7 +1174,7 @@ export const DepartmentDetailPage: React.FC = () => {
                           type="button"
                           onClick={() => removeUserMutation.mutate({ user })}
                           disabled={removeUserMutation.isPending}
-                          title="Remove from department"
+                          title={t("departments.removeFromDepartment")}
                           className="p-1.5 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-50"
                         >
                           <UserMinus className="w-4 h-4" />
@@ -1300,7 +1302,7 @@ export const DepartmentDetailPage: React.FC = () => {
                 )}
               >
                 <Building2 className="w-4 h-4" />
-                Details
+                {t("incidents.details")}
               </button>
               <button
                 type="button"
@@ -1313,7 +1315,7 @@ export const DepartmentDetailPage: React.FC = () => {
                 )}
               >
                 <UsersIcon className="w-4 h-4" />
-                Users
+                {t("departments.users")}
                 <span className="px-1.5 py-0.5 text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded">
                   {((deptUsersData?.data as unknown as User[]) ?? []).length}
                 </span>
@@ -1329,7 +1331,7 @@ export const DepartmentDetailPage: React.FC = () => {
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                     <input
                       type="text"
-                      placeholder="Search users to add..."
+                      placeholder={t("roles.searchUsersToAdd")}
                       value={userSearchTerm}
                       onChange={(e) => setUserSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
@@ -1342,7 +1344,7 @@ export const DepartmentDetailPage: React.FC = () => {
                     <div className="mt-2 border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-48 overflow-y-auto">
                       {!userSearchFetching && userSearchResults.length === 0 ? (
                         <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-5">
-                          No users found
+                          {t("users.noUsers")}
                         </p>
                       ) : (
                         userSearchResults.map((user: User) => (
@@ -1380,7 +1382,7 @@ export const DepartmentDetailPage: React.FC = () => {
                               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:bg-[hsl(var(--primary)/0.9)] transition-colors disabled:opacity-50 flex-shrink-0"
                             >
                               <Plus className="w-3.5 h-3.5" />
-                              Add
+                              {t("common.add")}
                             </button>
                           </div>
                         ))
@@ -1393,7 +1395,7 @@ export const DepartmentDetailPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-[hsl(var(--border))]" />
                   <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                    Current members (
+                    {t("departments.currentMembers")}{" "}
                     {((deptUsersData?.data as unknown as User[]) ?? []).length})
                   </span>
                   <div className="flex-1 h-px bg-[hsl(var(--border))]" />
@@ -1421,7 +1423,7 @@ export const DepartmentDetailPage: React.FC = () => {
                       <UsersIcon className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                     </div>
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      No users assigned yet
+                      {t("roles.noUsersAssignedYet")}
                     </p>
                   </div>
                 ) : (
@@ -1471,7 +1473,7 @@ export const DepartmentDetailPage: React.FC = () => {
                           type="button"
                           onClick={() => removeUserMutation.mutate({ user })}
                           disabled={removeUserMutation.isPending}
-                          title="Remove from department"
+                          title={t("departments.removeFromDepartment")}
                           className="p-1.5 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-50"
                         >
                           <UserMinus className="w-4 h-4" />
@@ -1578,7 +1580,7 @@ export const DepartmentDetailPage: React.FC = () => {
                         {t("departments.locations")}
                       </label>
                       <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-md">
-                        {editForm.location_ids.length} selected
+                        {editForm.location_ids.length} {t("reports.selected")}
                       </span>
                     </div>
                     <div className="border border-[hsl(var(--border))] rounded-xl max-h-48 overflow-y-auto p-1">
@@ -1604,7 +1606,8 @@ export const DepartmentDetailPage: React.FC = () => {
                         {t("departments.classifications")}
                       </label>
                       <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-md">
-                        {editForm.classification_ids.length} selected
+                        {editForm.classification_ids.length}{" "}
+                        {t("reports.selected")}
                       </span>
                     </div>
                     <div className="border border-[hsl(var(--border))] rounded-xl max-h-48 overflow-y-auto p-1">
@@ -1634,7 +1637,7 @@ export const DepartmentDetailPage: React.FC = () => {
                         {t("departments.roles")}
                       </label>
                       <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-md">
-                        {editForm.role_ids.length} selected
+                        {editForm.role_ids.length} {t("reports.selected")}
                       </span>
                     </div>
                     <div className="border border-[hsl(var(--border))] rounded-xl max-h-32 overflow-y-auto p-3 flex flex-wrap gap-2">

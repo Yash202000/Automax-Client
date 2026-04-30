@@ -69,7 +69,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   const [attachment, setAttachment] = useState<File | null>(null);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState(
-    t("incidents.missingIncidentInformation", "Missing Incident Information"),
+    t("incidents.missingIncidentInformation"),
   );
 
   // --- Execution State ---
@@ -309,12 +309,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
           uploadedAttachments = [uploadRes.data.id];
         }
       } catch {
-        toast.error(
-          t(
-            "incidents.failedToUploadAttachment",
-            "Failed to upload attachment",
-          ),
-        );
+        toast.error(t("incidents.failedToUploadAttachment"));
       }
     }
 
@@ -400,12 +395,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
         }),
       );
     } else {
-      toast.error(
-        t(
-          "incidents.bulkTransitionFailed",
-          "Bulk transition failed for all selected incidents",
-        ),
-      );
+      toast.error(t("incidents.bulkTransitionFailed"));
     }
   };
 
@@ -506,11 +496,11 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <div>
             <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-              {t("incidents.bulkTransition", "Bulk Transition")}
+              {t("incidents.bulkTransition")}
             </h3>
             {selectedTransition && currentStep !== "executing" && (
               <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                {t("incidents.stepOf", "Step {{current}} of {{total}}", {
+                {t("incidents.stepOf", {
                   current: currentStepIndex + 1,
                   total: transitionSteps.length,
                 })}
@@ -605,16 +595,13 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
           ) : currentStep === "select" ? (
             <div className="space-y-4">
               <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
-                {t("incidents.selectTransition", "Select Transition")}
+                {t("incidents.selectTransition")}
               </label>
               {isLoadingTransitions ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3">
                   <div className="w-8 h-8 border-3 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t(
-                      "incidents.loadingTransitions",
-                      "Loading available transitions...",
-                    )}
+                    {t("incidents.loadingTransitions")}
                   </p>
                 </div>
               ) : availableTransitions.length === 0 ? (
@@ -709,10 +696,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t(
-                      "incidents.selectDepartmentForBulk",
-                      "Select a department that will be assigned to all selected incidents.",
-                    )}
+                    {t("incidents.selectDepartmentForBulk")}
                   </p>
                   {isMatchLoading ? (
                     <div className="flex items-center gap-2 text-sm">
@@ -745,10 +729,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                       ) : (
                         <div className="space-y-2">
                           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {t(
-                              "incidents.chooseFromHierarchy",
-                              "Or choose from the hierarchy:",
-                            )}
+                            {t("incidents.chooseFromHierarchy")}
                           </p>
                           <TreeSelect
                             data={
@@ -795,20 +776,14 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {t(
-                      "incidents.selectUserForBulk",
-                      "Select a user that will be assigned to all selected incidents.",
-                    )}
+                    {t("incidents.selectUserForBulk")}
                   </p>
                   <div className="space-y-3">
                     {isUserMatchLoading || isUsersByRolesLoading ? (
                       <div className="flex flex-col items-center justify-center py-8 gap-3">
                         <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                          {t(
-                            "incidents.searchingUsers",
-                            "Searching for users...",
-                          )}
+                          {t("incidents.searchingUsers")}
                         </p>
                       </div>
                     ) : (
@@ -846,10 +821,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                         {transition?.manual_select_user && (
                           <div className="space-y-2">
                             <p className="text-xs text-[hsl(var(--muted-foreground))] font-medium mt-4">
-                              {t(
-                                "incidents.allEligibleUsers",
-                                "All Eligible Staff (Role Based):",
-                              )}
+                              {t("incidents.allEligibleUsers")}
                             </p>
                             <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 border border-[hsl(var(--border))] rounded-lg p-2 bg-[hsl(var(--muted)/0.1)]">
                               {usersByRolesData?.data &&
@@ -880,10 +852,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                                 ))
                               ) : (
                                 <p className="text-xs text-[hsl(var(--muted-foreground))] p-4 text-center italic">
-                                  {t(
-                                    "incidents.noEligibleUsersFound",
-                                    "No active users found with the required roles.",
-                                  )}
+                                  {t("incidents.noEligibleUsersFound")}
                                 </p>
                               )}
                             </div>
@@ -900,16 +869,10 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                               <User className="w-8 h-8 opacity-50" />
                               <div className="space-y-1">
                                 <p className="font-semibold text-sm">
-                                  {t(
-                                    "incidents.noUserExists",
-                                    "No user exists",
-                                  )}
+                                  {t("incidents.noUserExists")}
                                 </p>
                                 <p className="text-xs opacity-80">
-                                  {t(
-                                    "incidents.noUserExistsDesc",
-                                    "No eligible users found. You can skip user assignment and continue.",
-                                  )}
+                                  {t("incidents.noUserExistsDesc")}
                                 </p>
                               </div>
                             </div>
@@ -925,7 +888,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <Tags className="w-5 h-5 text-[hsl(var(--primary))]" />
                 <h4 className="font-semibold">
-                  {t("incidents.fieldChanges", "Field Changes")}
+                  {t("incidents.fieldChanges")}
                   {isMandatory && (
                     <span className="text-[hsl(var(--destructive))] ml-1">
                       *
@@ -1034,10 +997,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               </div>
               <div className="space-y-4">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t(
-                    "incidents.readyToCloseDesc",
-                    "Select how long the incident should stay in 'Ready to Close' state before being automatically closed.",
-                  )}
+                  {t("incidents.readyToCloseDesc")}
                 </p>
                 <Select
                   options={(durationOptionsData?.data || []).map((opt) => ({
@@ -1046,10 +1006,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                   }))}
                   value={readyToCloseDuration}
                   onChange={(val) => setReadyToCloseDuration(val.target.value)}
-                  placeholder={t(
-                    "incidents.selectDurationPlaceholder",
-                    "Select duration...",
-                  )}
+                  placeholder={t("incidents.selectDurationPlaceholder")}
                 />
               </div>
             </div>
@@ -1091,10 +1048,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 <textarea
                   value={feedbackComment}
                   onChange={(e) => setFeedbackComment(e.target.value)}
-                  placeholder={t(
-                    "incidents.additionalFeedbackPlaceholder",
-                    "Additional feedback...",
-                  )}
+                  placeholder={t("incidents.additionalFeedbackPlaceholder")}
                   className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] resize-none"
                   rows={3}
                 />
@@ -1115,10 +1069,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               </div>
               <div className="space-y-4">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t(
-                    "incidents.uploadAttachmentDesc",
-                    "Please upload any required documentation for this transition.",
-                  )}
+                  {t("incidents.uploadAttachmentDesc")}
                 </p>
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-[hsl(var(--border))] border-dashed rounded-lg hover:border-[hsl(var(--primary)/0.5)] transition-colors cursor-pointer group relative">
                   <input
@@ -1149,17 +1100,12 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                         <Upload className="mx-auto h-8 w-8 text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--primary))]" />
                         <div className="flex text-sm text-[hsl(var(--muted-foreground))]">
                           <span className="relative cursor-pointer bg-[hsl(var(--background))] rounded-md font-medium text-[hsl(var(--primary))] hover:text-[hsl(var(--primary)/0.8)] focus-within:outline-none">
-                            {t("incidents.uploadAFile", "Upload a file")}
+                            {t("incidents.uploadAFile")}
                           </span>
-                          <p className="pl-1">
-                            {t("incidents.orDragAndDrop", "or drag and drop")}
-                          </p>
+                          <p className="pl-1">{t("incidents.orDragAndDrop")}</p>
                         </div>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          {t(
-                            "incidents.uploadLimits",
-                            "PNG, JPG, PDF up to 10MB",
-                          )}
+                          {t("incidents.uploadLimits")}
                         </p>
                       </>
                     )}
@@ -1193,10 +1139,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder={t(
-                      "incidents.enterTransitionComment",
-                      "Enter comment for all incidents...",
-                    )}
+                    placeholder={t("incidents.enterTransitionComment")}
                     rows={4}
                     className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] resize-none"
                   />

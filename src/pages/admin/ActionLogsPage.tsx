@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   ChevronLeft,
@@ -206,6 +207,7 @@ const exportToExcel = (logs: ActionLog[]) => {
 };
 
 export const ActionLogsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { hasPermission } = usePermissions();
   const [filter, setFilter] = useState<ActionLogFilter>({
     page: 1,
@@ -288,16 +290,16 @@ export const ActionLogsPage: React.FC = () => {
             <XCircle className="w-8 h-8 text-[hsl(var(--destructive))]" />
           </div>
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            Failed to Load Action Logs
+            {t("actionLogs.failedToLoadActionLogs")}
           </h3>
           <p className="text-[hsl(var(--muted-foreground))] mb-6 text-center max-w-sm">
-            There was an error loading the action logs. Please try again.
+            {t("actionLogs.thereWasAnErrorLoadingTheAction")}
           </p>
           <Button
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            Try Again
+            {t("common.tryAgain")}
           </Button>
         </div>
       </div>
@@ -314,11 +316,11 @@ export const ActionLogsPage: React.FC = () => {
               <Activity className="w-5 h-5 text-[hsl(var(--primary))]" />
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-              Action Logs
+              {t("reports.dataSources.actionLogs")}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
-            Track and monitor all user actions in the system
+            {t("actionLogs.trackAndMonitorAllUserActionsIn")}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -337,7 +339,7 @@ export const ActionLogsPage: React.FC = () => {
               leftIcon={<Download className="w-4 h-4" />}
               onClick={() => handleExport("csv")}
             >
-              Export CSV
+              {t("actionLogs.exportCsv")}
             </Button>
           )}
           {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
@@ -347,7 +349,7 @@ export const ActionLogsPage: React.FC = () => {
               leftIcon={<Download className="w-4 h-4" />}
               onClick={() => handleExport("excel")}
             >
-              Export Excel
+              {t("actionLogs.exportExcel")}
             </Button>
           )}
         </div>
@@ -363,7 +365,7 @@ export const ActionLogsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Total Actions
+                  {t("actionLogs.totalActions")}
                 </p>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
                   {statsData.data.total_actions.toLocaleString()}
@@ -378,7 +380,7 @@ export const ActionLogsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Today's Actions
+                  {t("actionLogs.todaySActions")}
                 </p>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
                   {statsData.data.today_actions.toLocaleString()}
@@ -393,7 +395,7 @@ export const ActionLogsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Success Rate
+                  {t("actionLogs.successRate")}
                 </p>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
                   {statsData.data.success_rate.toFixed(1)}%
@@ -408,7 +410,7 @@ export const ActionLogsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Modules
+                  {t("actionLogs.modules")}
                 </p>
                 <p className="text-2xl font-bold text-[hsl(var(--foreground))]">
                   {Object.keys(statsData.data.actions_by_module).length}
@@ -427,7 +429,7 @@ export const ActionLogsPage: React.FC = () => {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search by description or IP address..."
+                placeholder={t("actionLogs.searchByDescriptionOrIpAddress")}
                 value={filter.search || ""}
                 onChange={(e) =>
                   setFilter({ ...filter, search: e.target.value, page: 1 })
@@ -442,7 +444,7 @@ export const ActionLogsPage: React.FC = () => {
                 leftIcon={<Filter className="w-4 h-4" />}
                 onClick={() => setShowFilters(!showFilters)}
               >
-                Filters
+                {t("common.filters")}
                 {hasActiveFilters && (
                   <span className="ml-1 px-1.5 py-0.5 text-xs bg-[hsl(var(--primary-foreground))] text-[hsl(var(--primary))] rounded-full">
                     !
@@ -451,7 +453,7 @@ export const ActionLogsPage: React.FC = () => {
               </Button>
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Clear
+                  {t("common.clear")}
                 </Button>
               )}
               <Button
@@ -463,7 +465,7 @@ export const ActionLogsPage: React.FC = () => {
                   !isFetching ? <RefreshCw className="w-4 h-4" /> : undefined
                 }
               >
-                Refresh
+                {t("common.refresh")}
               </Button>
             </div>
           </div>
@@ -474,7 +476,7 @@ export const ActionLogsPage: React.FC = () => {
               {/* Module Filter */}
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                  Module
+                  {t("actionLogs.module")}
                 </label>
                 <div className="relative">
                   <select
@@ -484,7 +486,7 @@ export const ActionLogsPage: React.FC = () => {
                     }
                     className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] appearance-none"
                   >
-                    <option value="">All Modules</option>
+                    <option value="">{t("actionLogs.allModules")}</option>
                     {filterOptionsData?.data?.modules?.map((module) => (
                       <option key={module} value={module}>
                         {module}
@@ -498,7 +500,7 @@ export const ActionLogsPage: React.FC = () => {
               {/* Action Filter */}
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                  Action
+                  {t("actionLogs.action")}
                 </label>
                 <div className="relative">
                   <select
@@ -508,7 +510,7 @@ export const ActionLogsPage: React.FC = () => {
                     }
                     className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] appearance-none"
                   >
-                    <option value="">All Actions</option>
+                    <option value="">{t("actionLogs.allActions")}</option>
                     {filterOptionsData?.data?.actions?.map((action) => (
                       <option key={action} value={action}>
                         {action}
@@ -522,7 +524,7 @@ export const ActionLogsPage: React.FC = () => {
               {/* Status Filter */}
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                  Status
+                  {t("common.status")}
                 </label>
                 <div className="relative">
                   <select
@@ -532,9 +534,11 @@ export const ActionLogsPage: React.FC = () => {
                     }
                     className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] appearance-none"
                   >
-                    <option value="">All Statuses</option>
-                    <option value="success">Success</option>
-                    <option value="failed">Failed</option>
+                    <option value="">
+                      {t("goals.detail.evidence.allStatuses")}
+                    </option>
+                    <option value="success">{t("common.success")}</option>
+                    <option value="failed">{t("common.failed")}</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
@@ -543,7 +547,7 @@ export const ActionLogsPage: React.FC = () => {
               {/* Start Date */}
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                  Start Date
+                  {t("goals.create.fields.startDate")}
                 </label>
                 <input
                   type="date"
@@ -562,7 +566,7 @@ export const ActionLogsPage: React.FC = () => {
               {/* End Date */}
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                  End Date
+                  {t("actionLogs.endDate")}
                 </label>
                 <input
                   type="date"
@@ -586,7 +590,7 @@ export const ActionLogsPage: React.FC = () => {
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Loading action logs...
+              {t("actionLogs.loadingActionLogs")}
             </p>
           </div>
         ) : data?.data?.length === 0 ? (
@@ -595,7 +599,7 @@ export const ActionLogsPage: React.FC = () => {
               <Activity className="w-6 h-6 text-[hsl(var(--muted-foreground))]" />
             </div>
             <p className="text-[hsl(var(--foreground))] font-medium mb-1">
-              No action logs found
+              {t("actionLogs.noActionLogsFound")}
             </p>
             <p className="text-[hsl(var(--muted-foreground))] text-sm">
               {hasActiveFilters
@@ -609,39 +613,39 @@ export const ActionLogsPage: React.FC = () => {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Time
+                        {t("actionLogs.time")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        User
+                        {t("users.user")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Action
+                        {t("actionLogs.action")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Module
+                        {t("actionLogs.module")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Description
+                        {t("common.description")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Status
+                        {t("common.status")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-right">
+                    <th className="px-6 py-4 text-end">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        Actions
+                        {t("actionLogs.actions")}
                       </span>
                     </th>
                   </tr>
@@ -720,7 +724,7 @@ export const ActionLogsPage: React.FC = () => {
                         <button
                           onClick={() => setSelectedLog(log)}
                           className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
-                          title="View Details"
+                          title={t("users.viewDetails")}
                         >
                           <Eye className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                         </button>
@@ -734,22 +738,22 @@ export const ActionLogsPage: React.FC = () => {
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[hsl(var(--muted)/0.3)]">
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Showing{" "}
+                {t("common.showing")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {((filter.page || 1) - 1) * (filter.limit || 20) + 1}
                 </span>{" "}
-                to{" "}
+                {t("common.to")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {Math.min(
                     (filter.page || 1) * (filter.limit || 20),
                     data?.total_items || 0,
                   )}
                 </span>{" "}
-                of{" "}
+                {t("common.of")}{" "}
                 <span className="font-semibold text-[hsl(var(--foreground))]">
                   {data?.total_items || 0}
                 </span>{" "}
-                logs
+                {t("actionLogs.logs")}
               </p>
 
               <div className="flex items-center gap-2">
@@ -826,7 +830,7 @@ export const ActionLogsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    Action Log Details
+                    {t("actionLogs.actionLogDetails")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
                     {formatDate(selectedLog.created_at)}
@@ -850,7 +854,7 @@ export const ActionLogsPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    Action Performed By
+                    {t("actionLogs.actionPerformedBy")}
                   </p>
                   <p className="font-semibold text-[hsl(var(--foreground))] text-lg">
                     {selectedLog.user?.first_name && selectedLog.user?.last_name
@@ -874,7 +878,7 @@ export const ActionLogsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    Action
+                    {t("actionLogs.action")}
                   </p>
                   <span
                     className={cn(
@@ -888,7 +892,7 @@ export const ActionLogsPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    Status
+                    {t("common.status")}
                   </p>
                   <span
                     className={cn(
@@ -907,7 +911,7 @@ export const ActionLogsPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    Module
+                    {t("actionLogs.module")}
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))] capitalize">
                     {selectedLog.module}
@@ -918,7 +922,7 @@ export const ActionLogsPage: React.FC = () => {
               {/* Description */}
               <div>
                 <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                  Description
+                  {t("common.description")}
                 </p>
                 <p className="text-sm text-[hsl(var(--foreground))]">
                   {selectedLog.description}
@@ -929,7 +933,7 @@ export const ActionLogsPage: React.FC = () => {
               {selectedLog.resource_id && (
                 <div>
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    Resource ID
+                    {t("actionLogs.resourceId")}
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))] font-mono bg-[hsl(var(--muted))] px-3 py-2 rounded-lg">
                     {selectedLog.resource_id}
@@ -943,7 +947,7 @@ export const ActionLogsPage: React.FC = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <Globe className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                     <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                      IP Address
+                      {t("actionLogs.ipAddress")}
                     </p>
                   </div>
                   <p className="text-sm text-[hsl(var(--foreground))] font-mono">
@@ -952,7 +956,7 @@ export const ActionLogsPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                    User Agent
+                    {t("users.userAgent")}
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))] text-wrap break-all bg-[hsl(var(--muted)/0.5)] px-3 py-2 rounded-lg">
                     {selectedLog.user_agent}
@@ -964,7 +968,7 @@ export const ActionLogsPage: React.FC = () => {
               {selectedLog.error_msg && (
                 <div>
                   <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-1">
-                    Error Message
+                    {t("actionLogs.errorMessage")}
                   </p>
                   <p className="text-sm text-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] px-3 py-2 rounded-lg">
                     {selectedLog.error_msg}
@@ -987,18 +991,18 @@ export const ActionLogsPage: React.FC = () => {
                 return (
                   <div>
                     <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
-                      Changes
+                      {t("actionLogs.changes")}
                     </p>
                     <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl border border-[hsl(var(--border))] overflow-hidden">
                       <div className="grid grid-cols-3 gap-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-4 py-2">
                         <div className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">
-                          Field
+                          {t("actionLogs.field")}
                         </div>
                         <div className="text-xs font-semibold text-[hsl(var(--destructive))]">
-                          Old Value
+                          {t("goals.metricImport.detail.itemsTable.oldValue")}
                         </div>
                         <div className="text-xs font-semibold text-[hsl(var(--success))]">
-                          New Value
+                          {t("goals.metricImport.detail.itemsTable.newValue")}
                         </div>
                       </div>
                       <div className="divide-y divide-[hsl(var(--border))]">
@@ -1112,13 +1116,13 @@ export const ActionLogsPage: React.FC = () => {
                               rows
                             ) : (
                               <div className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))] text-center">
-                                No changes detected
+                                {t("actionLogs.noChangesDetected")}
                               </div>
                             );
                           } catch {
                             return (
                               <div className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
-                                Unable to parse change data
+                                {t("actionLogs.unableToParseChangeData")}
                               </div>
                             );
                           }
@@ -1133,7 +1137,7 @@ export const ActionLogsPage: React.FC = () => {
             {/* Modal Footer */}
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
               <Button variant="ghost" onClick={() => setSelectedLog(null)}>
-                Close
+                {t("common.close")}
               </Button>
             </div>
           </div>

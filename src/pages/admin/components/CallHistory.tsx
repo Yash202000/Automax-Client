@@ -102,11 +102,9 @@ export const CallHistory: React.FC = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">
-            {t("callCentre.callHistory", "Call History")}
-          </h1>
+          <h1 className="text-2xl font-bold">{t("callCentre.callHistory")}</h1>
           <p className="text-slate-500 mt-1">
-            {t("callCentre.historySubtitle", "View your recent calls")}
+            {t("callCentre.historySubtitle")}
           </p>
         </div>
         <button
@@ -117,38 +115,40 @@ export const CallHistory: React.FC = () => {
           <RefreshCw
             className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
           />
-          <span className="text-sm font-medium">Refresh</span>
+          <span className="text-sm font-medium">{t("common.refresh")}</span>
         </button>
       </div>
 
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="text-lg font-semibold ">
-            {t("callCentre.recentCalls", "Recent Calls")}
+            {t("callCentre.recentCalls")}
           </h2>
         </div>
         {isLoading ? (
           <div className="p-12 text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-slate-500">Loading call history...</p>
+            <p className="text-slate-500">{t("users.loadingCallHistory")}</p>
           </div>
         ) : isPermissionError ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShieldAlert className="w-8 h-8 text-red-500" />
             </div>
-            <h3 className="text-lg font-semibold  mb-2">Access Denied</h3>
+            <h3 className="text-lg font-semibold  mb-2">
+              {t("users.accessDenied")}
+            </h3>
             <p className="text-slate-500">
-              You don't have permission to view call logs.
+              {t("users.youDonTHavePermissionToView")}
             </p>
             <p className="text-sm text-slate-400 mt-2">
-              Contact your administrator for access.
+              {t("users.contactYourAdministratorForAccess")}
             </p>
           </div>
         ) : calls.length === 0 ? (
           <div className="p-12 text-center">
             <Phone className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">No call history yet</p>
+            <p className="text-slate-500">{t("users.noCallHistoryYet")}</p>
           </div>
         ) : (
           <>
@@ -254,7 +254,10 @@ export const CallHistory: React.FC = () => {
             {data?.total_pages > 1 && (
               <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
                 <p className="text-sm text-slate-500">
-                  Page {page} of {data.total_pages}
+                  {t("common.page")}
+                  {page}
+                  {t("common.of")}
+                  {data.total_pages}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
