@@ -277,7 +277,9 @@
     "and": "and",
     "privacyPolicy": "Privacy Policy",
     "recordNotFound": "Record not found",
-    "invalidOtp": "Invalid OTP. Please check and try again."
+    "invalidOtp": "Invalid OTP. Please check and try again.",
+    "failedToSendOtp": "Failed to send OTP. Please try again later.",
+    "userNotFound": "User not found."
   },
   "nav": {
     "dashboard": "Dashboard",

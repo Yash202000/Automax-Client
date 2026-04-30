@@ -27,9 +27,19 @@ function resolveError(
   switch (status) {
     case 400:
       if (message?.toLowerCase().includes("record not found")) {
-        return t("auth.recordNotFound", "Record not found");
-      } else if (message?.toLowerCase().includes("otp")) {
+        return t("auth.userNotFound", "User not found");
+      } else if (message?.toLowerCase().includes("invalid otp")) {
         return t("auth.invalidOtp", "Invalid OTP. Please check and try again.");
+      } else if (message?.toLowerCase().includes("failed to send OTP")) {
+        return t(
+          "auth.failedToSendOtp",
+          "Failed to send OTP. Please try again later.",
+        );
+      } else if (message?.toLocaleLowerCase().includes("otp expired")) {
+        return t(
+          "auth.errorExpired",
+          "This code has expired. Please request a new one.",
+        );
       }
 
       return (
