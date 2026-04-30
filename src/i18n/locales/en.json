@@ -1830,7 +1830,9 @@
     "escalationHoursExample": "e.g. 8",
     "stateKeyExample": "e.g., start_working",
     "workflowCodePlaceholder": "e.g., it_support",
-    "workflowNamePlaceholder": "e.g., IT Support Workflow"
+    "workflowNamePlaceholder": "e.g., IT Support Workflow",
+    "feedbackMustBeUnique": "Feedback should be unique",
+    "commentMustBeUnique": "Comment should be unique"
   },
   "lookups": {
     "title": "Master Data",

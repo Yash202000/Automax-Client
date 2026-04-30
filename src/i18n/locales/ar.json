@@ -1726,7 +1726,9 @@
     "escalationHoursExample": "مثال: 8",
     "stateKeyExample": "مثال: start_working",
     "workflowCodePlaceholder": "مثال: it_support",
-    "workflowNamePlaceholder": "مثال: سير عمل دعم تقنية المعلومات"
+    "workflowNamePlaceholder": "مثال: سير عمل دعم تقنية المعلومات",
+    "feedbackMustBeUnique": "Feedback should be unique",
+    "commentMustBeUnique": "Comment should be unique"
   },
   "lookups": {
     "title": "البيانات الرئيسية",
