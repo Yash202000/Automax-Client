@@ -226,6 +226,18 @@ const TemplateModalBody: React.FC<{
   const [editingText, setEditingText] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { t } = useTranslation();
+  const [error, setError] = useState<string | null>(null);
+
+  const isDuplicate = (text: string, excludeId?: string) => {
+    const value = text.trim().toLowerCase();
+
+    return templates.some((tpl) => {
+      const existing =
+        type === "feedback" ? tpl.feedback_text : tpl.comment_text;
+
+      return existing?.trim().toLowerCase() === value && tpl.id !== excludeId;
+    });
+  };
 
   const queryKey =
     type === "feedback"
@@ -313,11 +325,31 @@ const TemplateModalBody: React.FC<{
                   type="text"
                   value={editingText}
                   autoFocus
-                  onChange={(e) => setEditingText(e.target.value)}
+                  onChange={(e) => {
+                    setEditingText(e.target.value);
+                    if (error) setError(null);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      const t = editingText.trim();
-                      if (t) updateMutation.mutate({ id: tpl.id, text: t });
+                      const eText = editingText.trim();
+                      if (!eText) return;
+
+                      if (isDuplicate(eText, tpl.id)) {
+                        setError(
+                          t(
+                            type === "feedback"
+                              ? "workflows.feedbackMustBeUnique"
+                              : "workflows.commentMustBeUnique",
+                            type === "feedback"
+                              ? "Feedback should be unique"
+                              : "Comment should be unique",
+                          ),
+                        );
+                        return;
+                      }
+
+                      setError(null);
+                      updateMutation.mutate({ id: tpl.id, text: eText });
                     }
                     if (e.key === "Escape") setEditingId(null);
                   }}
@@ -326,8 +358,25 @@ const TemplateModalBody: React.FC<{
                 <button
                   type="button"
                   onClick={() => {
-                    const t = editingText.trim();
-                    if (t) updateMutation.mutate({ id: tpl.id, text: t });
+                    const eText = editingText.trim();
+                    if (!eText) return;
+
+                    if (isDuplicate(eText, tpl.id)) {
+                      setError(
+                        t(
+                          type === "feedback"
+                            ? "workflows.feedbackMustBeUnique"
+                            : "workflows.commentMustBeUnique",
+                          type === "feedback"
+                            ? "Feedback should be unique"
+                            : "Comment should be unique",
+                        ),
+                      );
+                      return;
+                    }
+
+                    setError(null);
+                    updateMutation.mutate({ id: tpl.id, text: eText });
                   }}
                   className="p-1 text-emerald-600 hover:bg-emerald-500/10 rounded"
                 >
@@ -381,22 +430,62 @@ const TemplateModalBody: React.FC<{
           </div>
         ))
       )}
-
+      {error && <p className="text-sm text-red-500 px-1">{error}</p>}
       <div className="flex items-center gap-2 pt-1">
         <input
           type="text"
           placeholder={`New ${label} option...`}
           value={newText}
-          onChange={(e) => setNewText(e.target.value)}
+          onChange={(e) => {
+            setNewText(e.target.value);
+            if (error) setError(null);
+          }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && newText.trim())
-              createMutation.mutate(newText.trim());
+            if (e.key === "Enter") {
+              const value = newText.trim();
+              if (!value) return;
+
+              if (isDuplicate(value)) {
+                setError(
+                  t(
+                    type === "feedback"
+                      ? "workflows.feedbackMustBeUnique"
+                      : "workflows.commentMustBeUnique",
+                    type === "feedback"
+                      ? "Feedback should be unique"
+                      : "Comment should be unique",
+                  ),
+                );
+                return;
+              }
+
+              setError(null);
+              createMutation.mutate(value);
+            }
           }}
           className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
         />
         <Button
           onClick={() => {
-            if (newText.trim()) createMutation.mutate(newText.trim());
+            const value = newText.trim();
+            if (!value) return;
+
+            if (isDuplicate(value)) {
+              setError(
+                t(
+                  type === "feedback"
+                    ? "workflows.feedbackMustBeUnique"
+                    : "workflows.commentMustBeUnique",
+                  type === "feedback"
+                    ? "Feedback should be unique"
+                    : "Comment should be unique",
+                ),
+              );
+              return;
+            }
+
+            setError(null);
+            createMutation.mutate(value);
           }}
           disabled={!newText.trim()}
           isLoading={createMutation.isPending}
