@@ -275,7 +275,9 @@
     "byCreatingAnAccountYouAgreeTo": "By creating an account, you agree to our",
     "termsOfService": "Terms of Service",
     "and": "and",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "recordNotFound": "Record not found",
+    "invalidOtp": "Invalid OTP. Please check and try again."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -3484,5 +3486,6 @@
     "fieldRequired": "{{field}} is required",
     "location": "Location"
   },
-  "linkToRequestConfirmation": "This action will link the incident to the selected existing request."
+  "linkToRequestConfirmation": "This action will link the incident to the selected existing request.",
+  "myGoalsSubtitle": "Goals you own or collaborate on"
 }
