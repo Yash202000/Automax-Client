@@ -86,6 +86,13 @@ export function ForgotPasswordPage() {
 
   const goTo = (s: Step) => {
     setFieldError("");
+    if (s === 1) {
+      setDigits(Array(6).fill(""));
+      setSessionId("");
+      setFpValue("");
+      setTimer(0);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
     setStep(s);
   };
 
@@ -185,7 +192,7 @@ export function ForgotPasswordPage() {
       otp: string;
     }) => authApi.verifyResetOtp(payload),
     onSuccess: (res) => {
-      setResetToken(res.data?.resetToken ?? res.data?.resetToken ?? "");
+      setResetToken(res.data?.resetToken ?? "");
       goTo(3);
     },
     onError: (err: any) => {
@@ -528,7 +535,7 @@ export function ForgotPasswordPage() {
 
       {step === 3 && (
         <>
-          {BackButton({ to: 2 })}
+          {BackButton({ to: 1 })}
 
           <div className="mb-8">
             <h1 className="text-3xl font-bold">{t("auth.setNewPassword")}</h1>

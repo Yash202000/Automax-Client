@@ -144,9 +144,8 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionUploading, setTransitionUploading] = useState(false);
   const [transitionFeedbackRating, setTransitionFeedbackRating] =
     useState<number>(0);
-  const [transitionFeedbackComment, setTransitionFeedbackComment] = useState(
-    "Missing Incident Information",
-  );
+  const [transitionFeedbackComment, setTransitionFeedbackComment] =
+    useState("");
   const [transitionFieldValues, setTransitionFieldValues] = useState<
     Record<string, string>
   >({});
