@@ -39,7 +39,6 @@ import {
   ArrowRight,
   Bot,
   ShieldCheck,
-  List,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
@@ -4113,16 +4112,11 @@ export const IncidentDetailPage: React.FC = () => {
                                 {t("common.selectFeedback")}
                               </option>
 
-                              {feedbackTemplates.map(
-                                (tpl: any, index: number) => (
-                                  <option
-                                    key={tpl.id}
-                                    value={tpl.feedback_text}
-                                  >
-                                    {tpl.feedback_text}
-                                  </option>
-                                ),
-                              )}
+                              {feedbackTemplates.map((tpl: any) => (
+                                <option key={tpl.id} value={tpl.feedback_text}>
+                                  {tpl.feedback_text}
+                                </option>
+                              ))}
                             </select>
                           )}
 
