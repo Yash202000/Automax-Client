@@ -151,7 +151,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             {isExpanded ? (
               <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+              <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
             )}
           </button>
         ) : (

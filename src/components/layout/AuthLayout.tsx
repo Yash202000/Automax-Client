@@ -80,9 +80,9 @@ export const AuthLayout: React.FC = () => {
             {/* Features */}
             <div className="space-y-4">
               {[
-                "Role-based access control",
-                "Hierarchical organization management",
-                "Real-time analytics dashboard",
+                t("navigation.roleBasedAccessControl"),
+                t("navigation.hierarchicalOrganizationManagement"),
+                t("navigation.realTimeAnalyticsDashboard"),
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">

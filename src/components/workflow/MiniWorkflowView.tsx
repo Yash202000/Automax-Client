@@ -155,9 +155,9 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
       ) : (
         /* Grouped view for complex workflows */
         <div className="space-y-4">
-          {renderStateRow(initialStates, "Start")}
-          {renderStateRow(normalStates, "In Progress")}
-          {renderStateRow(terminalStates, "End")}
+          {renderStateRow(initialStates, t("workflows.startStates"))}
+          {renderStateRow(normalStates, t("workflows.inProgressStates"))}
+          {renderStateRow(terminalStates, t("workflows.endStates"))}
         </div>
       )}
 

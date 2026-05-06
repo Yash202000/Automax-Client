@@ -295,7 +295,7 @@ export function ForgotPasswordPage() {
       onClick={() => goTo(to)}
       className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
     >
-      <ChevronLeft className="w-4 h-4" />
+      <ChevronLeft className="w-4 h-4 rtl:-rotate-180" />
       {t("common.back")}
     </button>
   );
@@ -373,8 +373,8 @@ export function ForgotPasswordPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   {t("auth.mobileNumber")}
                 </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                <div dir="ltr" className="flex ">
+                  <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm ">
                     +
                   </span>
                   <input
@@ -386,7 +386,7 @@ export function ForgotPasswordPage() {
                       setPhone(e.target.value.replace(/\D/g, ""));
                       setFieldError("");
                     }}
-                    className="flex-1 h-10 px-3 rounded-r-xl border border-gray-300 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+                    className="flex-1 h-10 px-3 rounded-r-xl border border-gray-300 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 "
                   />
                 </div>
               </div>
@@ -397,7 +397,7 @@ export function ForgotPasswordPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={"you@example.com"}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -413,7 +413,9 @@ export function ForgotPasswordPage() {
               className="w-full"
               isLoading={sendOtpMutation.isPending}
               rightIcon={
-                !sendOtpMutation.isPending && <ArrowRight className="w-5 h-5" />
+                !sendOtpMutation.isPending && (
+                  <ArrowRight className="w-5 h-5 rtl:rotate-180 ml-2 rtl:mr-2" />
+                )
               }
             >
               {t("auth.sendCode")}
@@ -455,7 +457,7 @@ export function ForgotPasswordPage() {
               </label>
 
               <div
-                className="flex w-full gap-2"
+                className="flex rtl:flex-row-reverse w-full gap-2"
                 onPaste={handlePaste}
                 dir="ltr"
               >
@@ -498,7 +500,7 @@ export function ForgotPasswordPage() {
               disabled={!allDigitsFilled || verifyOtpMutation.isPending}
               rightIcon={
                 !verifyOtpMutation.isPending && (
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5 rtl:rotate-180 ml-2 rtl:mr-2" />
                 )
               }
             >
@@ -553,10 +555,10 @@ export function ForgotPasswordPage() {
                 {t("auth.newPassword")}
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rtl:left-auto rtl:right-3" />
                 <input
                   type={showPw1 ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder={t("auth.passwordPlaceholder", "••••••••")}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -567,7 +569,7 @@ export function ForgotPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw1((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 rtl:right-auto rtl:left-3"
                 >
                   {showPw1 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -579,10 +581,10 @@ export function ForgotPasswordPage() {
                 {t("auth.confirmPassword")}
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rtl:left-auto rtl:right-3" />
                 <input
                   type={showPw2 ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder={t("auth.passwordPlaceholder", "••••••••")}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
@@ -593,7 +595,7 @@ export function ForgotPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw2((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 rtl:right-auto rtl:left-3"
                 >
                   {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -606,7 +608,7 @@ export function ForgotPasswordPage() {
               isLoading={resetPasswordMutation.isPending}
               rightIcon={
                 !resetPasswordMutation.isPending && (
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5 rtl:rotate-180 ml-2 rtl:mr-2" />
                 )
               }
             >
@@ -629,7 +631,9 @@ export function ForgotPasswordPage() {
           </p>
           <Button
             className="w-full"
-            rightIcon={<ArrowRight className="w-5 h-5" />}
+            rightIcon={
+              <ArrowRight className="w-5 h-5 rtl:rotate-180 ml-2 rtl:mr-2" />
+            }
             onClick={() => navigate("/login")}
           >
             {t("auth.backToLogin")}

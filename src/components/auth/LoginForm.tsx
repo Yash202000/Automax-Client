@@ -10,13 +10,6 @@ import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../stores/authStore";
 import type { User } from "../../types";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
-
 export const LoginForm: React.FC = () => {
   const { t } = useTranslation();
   const [error, setError] = useState("");
@@ -25,6 +18,13 @@ export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const setUser = useAuthStore((state) => state.setUser);
+
+  type LoginFormData = z.infer<typeof loginSchema>;
+
+  const loginSchema = z.object({
+    email: z.string().email(t("auth.invalidEmail")),
+    password: z.string().min(6, t("auth.passwordMinLength")),
+  });
 
   const {
     register,
