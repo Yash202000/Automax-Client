@@ -192,7 +192,9 @@
     "importWorkflow": "استيراد سير العمل",
     "importNotes": "ملاحظات الاستيراد:",
     "importWarnings": "تحذيرات الاستيراد",
-    "template": "قالب"
+    "template": "قالب",
+    "selectFeedback": "اختر تقييمًا",
+    "selectComment": "اختر تعليقًا"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
