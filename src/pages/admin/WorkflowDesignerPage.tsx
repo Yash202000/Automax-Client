@@ -84,6 +84,11 @@ interface StateFormData {
   duration_options: string; // comma-separated input string
   viewable_role_ids: string[];
   editable_role_ids: string[];
+  // Creation-time assignment
+  assign_user_id: string;
+  assignment_role_ids: string[];
+  auto_match_user: boolean;
+  manual_select_user: boolean;
 }
 
 interface TransitionFormData {
@@ -119,6 +124,11 @@ const initialStateFormData: StateFormData = {
   duration_options: "",
   viewable_role_ids: [],
   editable_role_ids: [],
+  // Creation-time assignment
+  assign_user_id: "",
+  assignment_role_ids: [],
+  auto_match_user: false,
+  manual_select_user: false,
 };
 
 const initialTransitionFormData: TransitionFormData = {
@@ -954,6 +964,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       duration_options: (state.duration_options || []).join(", "),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
       editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
+      // Creation-time assignment
+      assign_user_id: state.assign_user_id || "",
+      assignment_role_ids: state.assignment_roles?.map((r) => r.id) || [],
+      auto_match_user: state.auto_match_user || false,
+      manual_select_user: state.manual_select_user || false,
     });
     setIsStateModalOpen(true);
   };
@@ -1066,6 +1081,11 @@ export const WorkflowDesignerPage: React.FC = () => {
         : [],
       viewable_role_ids: stateFormData.viewable_role_ids,
       editable_role_ids: stateFormData.editable_role_ids,
+      // Creation-time assignment
+      assign_user_id: stateFormData.assign_user_id || null,
+      assignment_role_ids: stateFormData.assignment_role_ids,
+      auto_match_user: stateFormData.auto_match_user,
+      manual_select_user: stateFormData.manual_select_user,
     };
 
     if (editingState) {
@@ -1212,6 +1232,15 @@ export const WorkflowDesignerPage: React.FC = () => {
       editable_role_ids: prev.editable_role_ids.includes(roleId)
         ? prev.editable_role_ids.filter((id) => id !== roleId)
         : [...prev.editable_role_ids, roleId],
+    }));
+  };
+
+  const toggleStateAssignmentRole = (roleId: string) => {
+    setStateFormData((prev) => ({
+      ...prev,
+      assignment_role_ids: prev.assignment_role_ids.includes(roleId)
+        ? prev.assignment_role_ids.filter((id) => id !== roleId)
+        : [...prev.assignment_role_ids, roleId],
     }));
   };
 
@@ -3008,6 +3037,206 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Creation-time Assignment — only for initial states */}
+                {stateFormData.state_type === "initial" && (
+                  <div className="border-t border-[hsl(var(--border))] pt-5">
+                    <label className="block text-sm font-semibold text-[hsl(var(--foreground))] mb-1">
+                      {t("incidents.userAssignment")}
+                    </label>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                      {t("workflows.appliedWhenIncidentIsCreated")}
+                    </p>
+                    <div className="space-y-3">
+                      {/* No allocation */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={
+                            !stateFormData.auto_match_user &&
+                            !stateFormData.manual_select_user &&
+                            !stateFormData.assign_user_id
+                          }
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: false,
+                              manual_select_user: false,
+                              assign_user_id: "",
+                              assignment_role_ids: [],
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("common.noUserAssignment")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t("workflows.donTChangeTheIncidentAssignee")}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Auto-match */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={
+                            stateFormData.auto_match_user &&
+                            !stateFormData.manual_select_user
+                          }
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: true,
+                              manual_select_user: false,
+                              assign_user_id: "",
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.autoAssignAllMatchingUsers")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t(
+                              "workflows.automaticallyAssignsAllUsersMatchingRoleIncident",
+                            )}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Manual selection */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={stateFormData.manual_select_user}
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: false,
+                              manual_select_user: true,
+                              assign_user_id: "",
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.manualSelectionDuringTransition")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t(
+                              "workflows.performerSelectsFromMatchingUsersWhenExecuting",
+                            )}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Assign specific user */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={
+                            !stateFormData.auto_match_user &&
+                            !stateFormData.manual_select_user &&
+                            !!stateFormData.assign_user_id
+                          }
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: false,
+                              manual_select_user: false,
+                              assignment_role_ids: [],
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.assignSpecificUser")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t("workflows.alwaysAssignToASpecificUser")}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Role selector for auto-match or manual */}
+                      {(stateFormData.auto_match_user ||
+                        stateFormData.manual_select_user) && (
+                        <div className="ml-7">
+                          <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                            {t("incidents.rolesToMatchSelectOneOrMore")}
+                          </label>
+                          <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden bg-[hsl(var(--background))]">
+                            {roles.map((role) => {
+                              const isSelected =
+                                stateFormData.assignment_role_ids.includes(
+                                  role.id,
+                                );
+                              return (
+                                <label
+                                  key={role.id}
+                                  className="flex items-center gap-2 px-3 py-2 hover:bg-[hsl(var(--muted)/0.4)] cursor-pointer border-b border-[hsl(var(--border))] last:border-b-0"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() =>
+                                      toggleStateAssignmentRole(role.id)
+                                    }
+                                    className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                  />
+                                  <span className="text-sm text-[hsl(var(--foreground))]">
+                                    {role.name}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Specific user dropdown */}
+                      {!stateFormData.auto_match_user &&
+                        !stateFormData.manual_select_user && (
+                          <div className="ml-7">
+                            <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                              {t("incidents.selectUser")}
+                            </label>
+                            <select
+                              value={stateFormData.assign_user_id}
+                              onChange={(e) =>
+                                setStateFormData({
+                                  ...stateFormData,
+                                  assign_user_id: e.target.value,
+                                })
+                              }
+                              className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+                            >
+                              <option value="">
+                                {t("common.none")} (
+                                {t("common.noUserAssignment")})
+                              </option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.first_name} {user.last_name}
+                                  {user.email ? ` (${user.email})` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">

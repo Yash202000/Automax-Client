@@ -736,6 +736,12 @@ export interface WorkflowState {
   is_active: boolean;
   viewable_roles?: Role[];
   editable_roles?: Role[];
+  // Creation-time assignment
+  assign_user_id?: string;
+  assign_user?: User;
+  assignment_roles?: Role[];
+  auto_match_user: boolean;
+  manual_select_user: boolean;
   created_at: string;
 }
 

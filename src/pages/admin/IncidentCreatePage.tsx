@@ -140,6 +140,44 @@ export function IncidentCreatePage() {
     queryFn: () => lookupApi.listCategories(),
   });
 
+  // Fetch initial state of the selected workflow to detect creation-time assignment config
+  const { data: initialStateData } = useQuery({
+    queryKey: ["admin", "workflows", formData.workflow_id, "initial-state"],
+    queryFn: () => workflowApi.getInitialState(formData.workflow_id),
+    enabled: !!formData.workflow_id,
+  });
+  const initialState = initialStateData?.data;
+  const initialStateAssignmentMode: "none" | "auto" | "manual" | "specific" =
+    initialState?.assign_user_id
+      ? "specific"
+      : initialState?.auto_match_user
+        ? "auto"
+        : initialState?.manual_select_user
+          ? "manual"
+          : "none";
+
+  // Fetch matching users for manual-select mode — re-fetches when filter values change
+  const { data: matchingUsersData } = useQuery({
+    queryKey: [
+      "admin",
+      "workflows",
+      formData.workflow_id,
+      "initial-state",
+      "matching-users",
+      formData.classification_id,
+      formData.location_id,
+      formData.department_id,
+    ],
+    queryFn: () =>
+      workflowApi.getInitialStateMatchingUsers(formData.workflow_id, {
+        classification_id: formData.classification_id || undefined,
+        location_id: formData.location_id || undefined,
+        department_id: formData.department_id || undefined,
+      }),
+    enabled: !!formData.workflow_id && initialStateAssignmentMode === "manual",
+  });
+  const matchingUsers: User[] = matchingUsersData?.data || [];
+
   const workflows: Workflow[] = useMemo(
     () => workflowsData?.data || [],
     [workflowsData?.data],
@@ -1284,7 +1322,10 @@ export function IncidentCreatePage() {
               )}
             </Card>
 
-            {(workflowRequiredFields.includes("assignee_id") ||
+            {(initialStateAssignmentMode === "manual" ||
+              initialStateAssignmentMode === "auto" ||
+              initialStateAssignmentMode === "specific" ||
+              workflowRequiredFields.includes("assignee_id") ||
               workflowRequiredFields.includes("department_id") ||
               workflowRequiredFields.includes("due_date")) && (
               <Card className="p-6">
@@ -1292,18 +1333,53 @@ export function IncidentCreatePage() {
                   {t("incidents.assignment")}
                 </h2>
                 <div className="space-y-4">
-                  {workflowRequiredFields.includes("assignee_id") && (
+                  {/* Manual-select: operator must pick from role-matching users */}
+                  {initialStateAssignmentMode === "manual" && (
                     <Select
                       label={t("incidents.assignee")}
                       value={formData.assignee_id || ""}
                       onChange={(e) =>
                         handleChange("assignee_id", e.target.value)
                       }
-                      options={userOptions}
+                      options={[
+                        { value: "", label: t("incidents.selectAssignee") },
+                        ...matchingUsers.map((u) => ({
+                          value: u.id,
+                          label: `${u.first_name} ${u.last_name}${u.email ? ` (${u.email})` : ""}`,
+                        })),
+                      ]}
                       required
                       error={errors.assignee_id}
                     />
                   )}
+                  {/* Auto-match: backend handles — show info badge */}
+                  {initialStateAssignmentMode === "auto" && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+                      <Info className="w-4 h-4 shrink-0" />
+                      <span>{t("incidents.autoAssignedOnCreation")}</span>
+                    </div>
+                  )}
+                  {/* Specific user: backend handles — show info badge */}
+                  {initialStateAssignmentMode === "specific" && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+                      <Info className="w-4 h-4 shrink-0" />
+                      <span>{t("incidents.specificUserWillBeAssigned")}</span>
+                    </div>
+                  )}
+                  {/* Fallback: show assignee dropdown if workflow required_fields includes it and no assignment mode is configured */}
+                  {initialStateAssignmentMode === "none" &&
+                    workflowRequiredFields.includes("assignee_id") && (
+                      <Select
+                        label={t("incidents.assignee")}
+                        value={formData.assignee_id || ""}
+                        onChange={(e) =>
+                          handleChange("assignee_id", e.target.value)
+                        }
+                        options={userOptions}
+                        required
+                        error={errors.assignee_id}
+                      />
+                    )}
                   {workflowRequiredFields.includes("department_id") && (
                     <Select
                       label={t("incidents.department")}
