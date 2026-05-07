@@ -126,17 +126,6 @@ export const Navbar: React.FC = () => {
     navigate("/login");
   };
 
-  const hasAdminAccess =
-    user?.is_super_admin ||
-    user?.permissions?.some(
-      (p) =>
-        p.includes(":view") ||
-        p.includes(":create") ||
-        p.includes(":update") ||
-        p.includes(":delete") ||
-        p.includes(":manage"),
-    );
-
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -429,13 +418,14 @@ export const Navbar: React.FC = () => {
                           <Settings className="w-4 h-4 text-gray-400" />
                           {t("nav.settings")}
                         </Link>
-                        {hasAdminAccess && (
+                        {(hasAnyPermission(["dashboard:admin"]) ||
+                          user?.is_super_admin) && (
                           <Link
                             to="/admin"
                             onClick={() => setIsProfileOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
-                            <Shield className="w-4 h-4 text-gray-400" />
+                            <Shield className="w-4 h-4" />
                             {t("nav.admin")}
                           </Link>
                         )}
