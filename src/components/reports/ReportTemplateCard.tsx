@@ -99,6 +99,36 @@ const dataSourceInfo: Record<
     color:
       "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
   },
+  locations_by_count: {
+    labelKey: "reports.dataSources.locationsByCount",
+    icon: "MapPin",
+    color:
+      "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  locations_by_status: {
+    labelKey: "reports.dataSources.locationsByStatus",
+    icon: "MapPin",
+    color:
+      "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  classifications_by_count: {
+    labelKey: "reports.dataSources.classificationsByCount",
+    icon: "Users",
+    color:
+      "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  classifications_by_status: {
+    labelKey: "reports.dataSources.classificationsByStatus",
+    icon: "Users",
+    color:
+      "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  users_performance: {
+    labelKey: "reports.dataSources.usersPerformance",
+    icon: "Users",
+    color:
+      "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400",
+  },
   workflows: {
     labelKey: "reports.dataSources.workflows",
     icon: "GitBranch",
