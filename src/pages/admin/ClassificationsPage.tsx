@@ -45,7 +45,9 @@ import { PERMISSIONS } from "../../constants/permissions";
 
 interface ClassificationFormData {
   name: string;
+  name_ar: string;
   description: string;
+  description_ar: string;
   parent_id: string;
   parent_name: string;
   sort_order: number;
@@ -55,7 +57,9 @@ interface ClassificationFormData {
 
 const initialFormData: ClassificationFormData = {
   name: "",
+  name_ar: "",
   description: "",
+  description_ar: "",
   parent_id: "",
   parent_name: "",
   sort_order: 0,
@@ -160,10 +164,15 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   t,
 }) => {
   const [expanded, setExpanded] = useState(true);
+  const { i18n } = useTranslation();
   const hasChildren =
     classification.children && classification.children.length > 0;
   const gradient = levelGradients[level % levelGradients.length];
   const badgeColor = levelBadgeColors[level % levelBadgeColors.length];
+  const displayName =
+    i18n.language === "ar" && classification.name_ar
+      ? classification.name_ar
+      : classification.name;
 
   return (
     <div>
@@ -196,7 +205,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">
-              {classification.name}
+              {displayName}
             </h4>
             {classification.description && (
               <p className="text-xs text-[hsl(var(--muted-foreground))] line-clamp-1">
@@ -250,7 +259,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             </button>
             {canCreate && (
               <button
-                onClick={() => onAdd(classification.id, classification.name)}
+                onClick={() => onAdd(classification.id, displayName)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)] rounded-lg transition-colors"
                 title={t("classifications.addChildClassification")}
               >
@@ -302,7 +311,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const ClassificationsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -447,7 +456,9 @@ export const ClassificationsPage: React.FC = () => {
 
     setFormData({
       name: classification.name,
+      name_ar: classification.name_ar || "",
       description: classification.description,
+      description_ar: classification.description_ar || "",
       parent_id: classification.parent_id || "",
       parent_name: parentCls?.name || "",
       sort_order: classification.sort_order,
@@ -514,7 +525,9 @@ export const ClassificationsPage: React.FC = () => {
 
     const payload = {
       name: formData.name,
+      name_ar: formData.name_ar || undefined,
       description: formData.description,
+      description_ar: formData.description_ar || undefined,
       parent_id: formData.parent_id || undefined,
       sort_order: formData.sort_order,
       types: formData.types,
@@ -721,7 +734,9 @@ export const ClassificationsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {viewingClassification.name}
+                    {i18n.language === "ar" && viewingClassification.name_ar
+                      ? viewingClassification.name_ar
+                      : viewingClassification.name}
                   </h3>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
                     {t("classifications.level")}
@@ -1047,20 +1062,37 @@ export const ClassificationsPage: React.FC = () => {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("classifications.name")}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t("classifications.namePlaceholder")}
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("classifications.name")}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t("classifications.namePlaceholder")}
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("classifications.nameAr", "Name (Arabic)")}
+                  </label>
+                  <input
+                    type="text"
+                    dir="rtl"
+                    placeholder="الاسم بالعربية"
+                    value={formData.name_ar}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name_ar: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
               </div>
 
               {/* Only show parent selector when editing */}
@@ -1084,26 +1116,49 @@ export const ClassificationsPage: React.FC = () => {
                       )
                       .map((cls: Classification) => (
                         <option key={cls.id} value={cls.id}>
-                          {"—".repeat(cls.level)} {cls.name}
+                          {"—".repeat(cls.level)}{" "}
+                          {i18n.language === "ar" && cls.name_ar
+                            ? cls.name_ar
+                            : cls.name}
                         </option>
                       ))}
                   </select>
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("classifications.description")}
-                </label>
-                <textarea
-                  placeholder={t("classifications.descriptionPlaceholder")}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("classifications.description")}
+                  </label>
+                  <textarea
+                    placeholder={t("classifications.descriptionPlaceholder")}
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("classifications.descriptionAr", "Description (Arabic)")}
+                  </label>
+                  <textarea
+                    dir="rtl"
+                    placeholder="الوصف بالعربية"
+                    value={formData.description_ar}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_ar: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                  />
+                </div>
               </div>
 
               <MultiSelect

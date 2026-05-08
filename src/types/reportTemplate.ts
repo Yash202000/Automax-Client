@@ -1,8 +1,8 @@
 // Report Template Types
 
 export interface PageSettings {
-  size: 'A4' | 'Letter' | 'Legal' | 'A3';
-  orientation: 'portrait' | 'landscape';
+  size: "A4" | "Letter" | "Legal" | "A3";
+  orientation: "portrait" | "landscape";
   margin_top: number;
   margin_right: number;
   margin_bottom: number;
@@ -32,7 +32,14 @@ export interface FooterConfig {
 export interface ElementPosition {
   x: number;
   y: number;
-  anchor: 'top-left' | 'top-center' | 'top-right' | 'center' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+  anchor:
+    | "top-left"
+    | "top-center"
+    | "top-right"
+    | "center"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right";
   relative: boolean;
   parent_id?: string;
 }
@@ -44,7 +51,7 @@ export interface ElementSize {
   min_height?: number;
   max_width?: number;
   max_height?: number;
-  unit: 'mm' | 'px' | 'percent';
+  unit: "mm" | "px" | "percent";
   auto_height?: boolean;
 }
 
@@ -53,7 +60,7 @@ export interface ElementStyle {
   background_image?: string;
   border_width?: number;
   border_color?: string;
-  border_style?: 'solid' | 'dashed' | 'dotted';
+  border_style?: "solid" | "dashed" | "dotted";
   border_radius?: number;
   shadow?: boolean;
   shadow_color?: string;
@@ -70,8 +77,8 @@ export interface ElementStyle {
 export interface FontConfig {
   family: string;
   size: number;
-  weight: 'normal' | 'bold';
-  style: 'normal' | 'italic';
+  weight: "normal" | "bold";
+  style: "normal" | "italic";
   color: string;
   line_height?: number;
 }
@@ -84,7 +91,15 @@ export interface GlobalStyles {
   default_font: FontConfig;
 }
 
-export type ElementType = 'text' | 'image' | 'table' | 'shape' | 'line' | 'spacer' | 'dynamic_field' | 'chart';
+export type ElementType =
+  | "text"
+  | "image"
+  | "table"
+  | "shape"
+  | "line"
+  | "spacer"
+  | "dynamic_field"
+  | "chart";
 
 export interface TemplateElement {
   id: string;
@@ -92,7 +107,14 @@ export interface TemplateElement {
   position: ElementPosition;
   size: ElementSize;
   style: ElementStyle;
-  content: TextContent | ImageContent | TableContent | ShapeContent | LineContent | DynamicFieldContent | ChartContent;
+  content:
+    | TextContent
+    | ImageContent
+    | TableContent
+    | ShapeContent
+    | LineContent
+    | DynamicFieldContent
+    | ChartContent;
   locked: boolean;
   visible: boolean;
   z_index: number;
@@ -101,8 +123,8 @@ export interface TemplateElement {
 export interface TextContent {
   text: string;
   font: FontConfig;
-  alignment: 'left' | 'center' | 'right' | 'justify';
-  v_alignment: 'top' | 'middle' | 'bottom';
+  alignment: "left" | "center" | "right" | "justify";
+  v_alignment: "top" | "middle" | "bottom";
   word_wrap: boolean;
   truncate: boolean;
   max_lines?: number;
@@ -110,18 +132,18 @@ export interface TextContent {
 
 export interface ImageContent {
   source: string;
-  source_type: 'url' | 'base64' | 'file';
+  source_type: "url" | "base64" | "file";
   alt?: string;
-  fit: 'contain' | 'cover' | 'fill' | 'none';
-  position: 'center' | 'top' | 'bottom' | 'left' | 'right';
+  fit: "contain" | "cover" | "fill" | "none";
+  position: "center" | "top" | "bottom" | "left" | "right";
 }
 
 export interface TableColumn {
   field: string;
   label: string;
   width: number;
-  width_unit: 'mm' | 'percent';
-  alignment: 'left' | 'center' | 'right';
+  width_unit: "mm" | "percent";
+  alignment: "left" | "center" | "right";
   format?: string;
   style?: TableCellStyle;
 }
@@ -133,7 +155,7 @@ export interface TableCellStyle {
   border_width?: number;
   border_color?: string;
   padding?: number;
-  v_alignment?: 'top' | 'middle' | 'bottom';
+  v_alignment?: "top" | "middle" | "bottom";
 }
 
 export interface TableContent {
@@ -160,44 +182,51 @@ export interface ReportFilterConfig {
 
 export interface ReportSortConfig {
   field: string;
-  direction: 'asc' | 'desc';
+  direction: "asc" | "desc";
 }
 
 export interface ShapeContent {
-  shape_type: 'rectangle' | 'circle' | 'ellipse' | 'triangle';
+  shape_type: "rectangle" | "circle" | "ellipse" | "triangle";
   fill_color?: string;
   stroke_color?: string;
   stroke_width?: number;
 }
 
 export interface LineContent {
-  direction: 'horizontal' | 'vertical';
+  direction: "horizontal" | "vertical";
   start_x: number;
   start_y: number;
   end_x: number;
   end_y: number;
   stroke_color: string;
   stroke_width: number;
-  stroke_style: 'solid' | 'dashed' | 'dotted';
+  stroke_style: "solid" | "dashed" | "dotted";
 }
 
 export interface DynamicFieldContent {
-  field: 'date' | 'datetime' | 'page_number' | 'total_pages' | 'user_name' | 'report_name' | 'custom';
+  field:
+    | "date"
+    | "datetime"
+    | "page_number"
+    | "total_pages"
+    | "user_name"
+    | "report_name"
+    | "custom";
   format?: string;
   prefix?: string;
   suffix?: string;
   font: FontConfig;
-  alignment: 'left' | 'center' | 'right';
+  alignment: "left" | "center" | "right";
   custom_value?: string;
 }
 
 export interface ChartContent {
-  chart_type: 'bar' | 'line' | 'pie' | 'doughnut';
+  chart_type: "bar" | "line" | "pie" | "doughnut";
   data_source: string;
   x_field: string;
   y_field: string;
   group_field?: string;
-  aggregation: 'count' | 'sum' | 'avg';
+  aggregation: "count" | "sum" | "avg";
   colors: string[];
   show_legend: boolean;
   show_labels: boolean;
@@ -216,7 +245,9 @@ export interface TemplateConfig {
 export interface ReportTemplate {
   id: string;
   name: string;
+  name_ar?: string;
   description: string;
+  description_ar?: string;
   template: TemplateConfig;
   is_default: boolean;
   is_public: boolean;
@@ -233,14 +264,18 @@ export interface ReportTemplate {
 
 export interface ReportTemplateCreateRequest {
   name: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   template: TemplateConfig;
   is_public?: boolean;
 }
 
 export interface ReportTemplateUpdateRequest {
   name?: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   template?: TemplateConfig;
   is_public?: boolean;
   is_default?: boolean;
@@ -266,15 +301,15 @@ export interface GenerateReportRequest {
   data_source: string;
   filters?: ReportFilterConfig[];
   sorting?: ReportSortConfig[];
-  format: 'pdf' | 'xlsx';
+  format: "pdf" | "xlsx";
   file_name?: string;
   overrides?: TemplateOverrides;
 }
 
 // Default values
 export const DEFAULT_PAGE_SETTINGS: PageSettings = {
-  size: 'A4',
-  orientation: 'portrait',
+  size: "A4",
+  orientation: "portrait",
   margin_top: 15,
   margin_right: 15,
   margin_bottom: 15,
@@ -282,37 +317,37 @@ export const DEFAULT_PAGE_SETTINGS: PageSettings = {
 };
 
 export const DEFAULT_FONT: FontConfig = {
-  family: 'Arial',
+  family: "Arial",
   size: 12,
-  weight: 'normal',
-  style: 'normal',
-  color: '#000000',
+  weight: "normal",
+  style: "normal",
+  color: "#000000",
   line_height: 1.5,
 };
 
 export const DEFAULT_HEADER_STYLE: TableCellStyle = {
-  background_color: '#3B82F6',
-  text_color: '#FFFFFF',
-  font: { ...DEFAULT_FONT, weight: 'bold', size: 10 },
+  background_color: "#3B82F6",
+  text_color: "#FFFFFF",
+  font: { ...DEFAULT_FONT, weight: "bold", size: 10 },
   border_width: 1,
-  border_color: '#2563EB',
+  border_color: "#2563EB",
   padding: 4,
-  v_alignment: 'middle',
+  v_alignment: "middle",
 };
 
 export const DEFAULT_ROW_STYLE: TableCellStyle = {
-  background_color: '#FFFFFF',
-  text_color: '#1F2937',
+  background_color: "#FFFFFF",
+  text_color: "#1F2937",
   font: { ...DEFAULT_FONT, size: 9 },
   border_width: 0.5,
-  border_color: '#E5E7EB',
+  border_color: "#E5E7EB",
   padding: 3,
-  v_alignment: 'middle',
+  v_alignment: "middle",
 };
 
 export const DEFAULT_ALT_ROW_STYLE: TableCellStyle = {
   ...DEFAULT_ROW_STYLE,
-  background_color: '#F9FAFB',
+  background_color: "#F9FAFB",
 };
 
 // Helper to create unique element IDs
@@ -321,17 +356,20 @@ export const generateElementId = (type: ElementType): string => {
 };
 
 // Helper to create default elements
-export const createDefaultTextElement = (x: number, y: number): TemplateElement => ({
-  id: generateElementId('text'),
-  type: 'text',
-  position: { x, y, anchor: 'top-left', relative: false },
-  size: { width: 100, height: 20, unit: 'mm' },
+export const createDefaultTextElement = (
+  x: number,
+  y: number,
+): TemplateElement => ({
+  id: generateElementId("text"),
+  type: "text",
+  position: { x, y, anchor: "top-left", relative: false },
+  size: { width: 100, height: 20, unit: "mm" },
   style: {},
   content: {
-    text: 'New Text',
+    text: "New Text",
     font: DEFAULT_FONT,
-    alignment: 'left',
-    v_alignment: 'top',
+    alignment: "left",
+    v_alignment: "top",
     word_wrap: true,
     truncate: false,
   } as TextContent,
@@ -340,28 +378,35 @@ export const createDefaultTextElement = (x: number, y: number): TemplateElement 
   z_index: 0,
 });
 
-export const createDefaultImageElement = (x: number, y: number): TemplateElement => ({
-  id: generateElementId('image'),
-  type: 'image',
-  position: { x, y, anchor: 'top-left', relative: false },
-  size: { width: 50, height: 50, unit: 'mm' },
+export const createDefaultImageElement = (
+  x: number,
+  y: number,
+): TemplateElement => ({
+  id: generateElementId("image"),
+  type: "image",
+  position: { x, y, anchor: "top-left", relative: false },
+  size: { width: 50, height: 50, unit: "mm" },
   style: {},
   content: {
-    source: '',
-    source_type: 'url',
-    fit: 'contain',
-    position: 'center',
+    source: "",
+    source_type: "url",
+    fit: "contain",
+    position: "center",
   } as ImageContent,
   locked: false,
   visible: true,
   z_index: 0,
 });
 
-export const createDefaultTableElement = (x: number, y: number, dataSource: string): TemplateElement => ({
-  id: generateElementId('table'),
-  type: 'table',
-  position: { x, y, anchor: 'top-left', relative: true },
-  size: { width: 0, height: 0, unit: 'mm', auto_height: true },
+export const createDefaultTableElement = (
+  x: number,
+  y: number,
+  dataSource: string,
+): TemplateElement => ({
+  id: generateElementId("table"),
+  type: "table",
+  position: { x, y, anchor: "top-left", relative: true },
+  size: { width: 0, height: 0, unit: "mm", auto_height: true },
   style: {},
   content: {
     data_source: dataSource,
@@ -381,16 +426,20 @@ export const createDefaultTableElement = (x: number, y: number, dataSource: stri
   z_index: 0,
 });
 
-export const createDefaultDynamicFieldElement = (x: number, y: number, field: DynamicFieldContent['field']): TemplateElement => ({
-  id: generateElementId('dynamic_field'),
-  type: 'dynamic_field',
-  position: { x, y, anchor: 'top-left', relative: false },
-  size: { width: 50, height: 10, unit: 'mm' },
+export const createDefaultDynamicFieldElement = (
+  x: number,
+  y: number,
+  field: DynamicFieldContent["field"],
+): TemplateElement => ({
+  id: generateElementId("dynamic_field"),
+  type: "dynamic_field",
+  position: { x, y, anchor: "top-left", relative: false },
+  size: { width: 50, height: 10, unit: "mm" },
   style: {},
   content: {
     field,
     font: { ...DEFAULT_FONT, size: 10 },
-    alignment: 'left',
+    alignment: "left",
   } as DynamicFieldContent,
   locked: false,
   visible: true,
@@ -399,22 +448,22 @@ export const createDefaultDynamicFieldElement = (x: number, y: number, field: Dy
 
 export const createDefaultShapeElement = (
   x: number,
-  y: number
+  y: number,
 ): TemplateElement => ({
-  id: generateElementId('shape'),
-  type: 'shape',
-  position: { x, y, anchor: 'top-left', relative: false },
-  size: { width: 40, height: 30, unit: 'mm' },
+  id: generateElementId("shape"),
+  type: "shape",
+  position: { x, y, anchor: "top-left", relative: false },
+  size: { width: 40, height: 30, unit: "mm" },
   style: {
-    background_color: '#e5e7eb',
+    background_color: "#e5e7eb",
     border_width: 1,
-    border_color: '#000000',
-    border_style: 'solid',
+    border_color: "#000000",
+    border_style: "solid",
     border_radius: 0,
     opacity: 1,
   },
   content: {
-    shape_type: 'rectangle', // rectangle | circle
+    shape_type: "rectangle", // rectangle | circle
   },
   locked: false,
   visible: true,
@@ -423,26 +472,26 @@ export const createDefaultShapeElement = (
 
 export const createDefaultLineElement = (
   x: number,
-  y: number
+  y: number,
 ): TemplateElement => ({
-  id: generateElementId('line'),
-  type: 'line',
-  position: { x, y, anchor: 'top-left', relative: false },
-  size: { width: 60, height: 0, unit: 'mm' }, // height 0 for horizontal line
+  id: generateElementId("line"),
+  type: "line",
+  position: { x, y, anchor: "top-left", relative: false },
+  size: { width: 60, height: 0, unit: "mm" }, // height 0 for horizontal line
   style: {
     border_width: 1,
-    border_color: '#000000',
-    border_style: 'solid',
+    border_color: "#000000",
+    border_style: "solid",
   },
-  content:{
-    direction: 'horizontal',
+  content: {
+    direction: "horizontal",
     start_x: 0,
     start_y: 0,
     end_x: 60,
     end_y: 0,
-    stroke_color: '#000000',
+    stroke_color: "#000000",
     stroke_width: 1,
-    stroke_style: 'solid',
+    stroke_style: "solid",
   },
   locked: false,
   visible: true,
@@ -452,50 +501,44 @@ export const createDefaultLineElement = (
 export const createDefaultChartElement = (
   x: number,
   y: number,
-  dataSource: string
+  dataSource: string,
 ): TemplateElement => ({
-  id: generateElementId('chart'),
-  type: 'chart',
-  position: { x, y, anchor: 'top-left', relative: false },
+  id: generateElementId("chart"),
+  type: "chart",
+  position: { x, y, anchor: "top-left", relative: false },
 
   size: {
     width: 120,
     height: 70,
-    unit: 'mm',
+    unit: "mm",
   },
 
   style: {
     border_width: 1,
-    border_color: '#e5e7eb',
-    border_style: 'solid',
+    border_color: "#e5e7eb",
+    border_style: "solid",
     border_radius: 4,
-    background_color: '#ffffff',
+    background_color: "#ffffff",
   },
 
   content: {
-    chart_type: 'bar',
+    chart_type: "bar",
 
     data_source: dataSource,
 
     // Default empty fields — user must configure
-    x_field: '',
-    y_field: '',
+    x_field: "",
+    y_field: "",
     group_field: undefined,
 
-    aggregation: 'count',
+    aggregation: "count",
 
-    colors: [
-      '#3b82f6',
-      '#10b981',
-      '#f59e0b',
-      '#ef4444',
-      '#8b5cf6',
-    ],
+    colors: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"],
 
     show_legend: true,
     show_labels: true,
 
-    title: 'Chart Title',
+    title: "Chart Title",
 
     filters: [],
   } as ChartContent,
@@ -504,4 +547,3 @@ export const createDefaultChartElement = (
   visible: true,
   z_index: 0,
 });
-

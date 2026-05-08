@@ -48,8 +48,10 @@ import { toast } from "sonner";
 
 interface DepartmentFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   type: "internal" | "external";
   parent_id: string;
   parent_name: string;
@@ -60,8 +62,10 @@ interface DepartmentFormData {
 
 const initialFormData: DepartmentFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   type: "internal",
   parent_id: "",
   parent_name: "",
@@ -82,6 +86,7 @@ function LocationTreeCheckbox({
   onToggle: (id: string) => void;
   depth: number;
 }) {
+  const { i18n } = useTranslation();
   return (
     <>
       {nodes.map((node) => (
@@ -98,7 +103,9 @@ function LocationTreeCheckbox({
             />
             <MapPin className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
             <span className="text-sm text-[hsl(var(--foreground))]">
-              {node.name}
+              {i18n.language === "ar" && node.name_ar
+                ? node.name_ar
+                : node.name}
             </span>
           </label>
           {node.children && node.children.length > 0 && (
@@ -126,6 +133,7 @@ function ClassificationTreeCheckbox({
   onToggle: (id: string) => void;
   depth: number;
 }) {
+  const { i18n } = useTranslation();
   return (
     <>
       {nodes.map((node) => (
@@ -142,7 +150,9 @@ function ClassificationTreeCheckbox({
             />
             <FolderTree className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
             <span className="text-sm text-[hsl(var(--foreground))]">
-              {node.name}
+              {i18n.language === "ar" && node.name_ar
+                ? node.name_ar
+                : node.name}
             </span>
           </label>
           {node.children && node.children.length > 0 && (
@@ -193,8 +203,13 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   t,
 }) => {
   const [expanded, setExpanded] = useState(true);
+  const { i18n } = useTranslation();
   const hasChildren = department.children && department.children.length > 0;
   const gradient = levelGradients[level % levelGradients.length];
+  const displayName =
+    i18n.language === "ar" && department.name_ar
+      ? department.name_ar
+      : department.name;
 
   return (
     <div>
@@ -231,7 +246,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             className="text-start hover:opacity-80 transition-opacity"
           >
             <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors">
-              {department.name}
+              {displayName}
             </h4>
             <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
               {department.code}
@@ -254,7 +269,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {canCreate && (
               <button
-                onClick={() => onAdd(department.id, department.name)}
+                onClick={() => onAdd(department.id, displayName)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)] rounded-lg transition-colors"
                 title={t("departments.addChildDepartment")}
               >
@@ -313,7 +328,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const DepartmentsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -349,8 +364,10 @@ export const DepartmentsPage: React.FC = () => {
       setEditingDepartment(dept);
       setFormData({
         name: dept.name,
+        name_ar: dept.name_ar || "",
         code: dept.code,
         description: dept.description || "",
+        description_ar: dept.description_ar || "",
         type: (dept.type as "internal" | "external") || "internal",
         parent_id: dept.parent_id || "",
         parent_name: "",
@@ -506,8 +523,10 @@ export const DepartmentsPage: React.FC = () => {
     setEditingDepartment(department);
     setFormData({
       name: department.name,
+      name_ar: department.name_ar || "",
       code: department.code,
       description: department.description,
+      description_ar: department.description_ar || "",
       type: (department.type as "internal" | "external") || "internal",
       parent_id: department.parent_id || "",
       parent_name: parentDept?.name || "",
@@ -532,8 +551,10 @@ export const DepartmentsPage: React.FC = () => {
     e.preventDefault();
     const payload = {
       name: formData.name,
+      name_ar: formData.name_ar || undefined,
       code: formData.code,
       description: formData.description,
+      description_ar: formData.description_ar || undefined,
       type: formData.type,
       parent_id: formData.parent_id || undefined,
       location_ids: formData.location_ids,
@@ -1135,6 +1156,24 @@ export const DepartmentsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                        {t("departments.nameAr", "Name (Arabic)")}
+                      </label>
+                      <input
+                        type="text"
+                        dir="rtl"
+                        placeholder="الاسم بالعربية"
+                        value={formData.name_ar}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name_ar: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                         {t("departments.code")}
                       </label>
                       <input
@@ -1202,29 +1241,51 @@ export const DepartmentsPage: React.FC = () => {
                           )
                           .map((dept: Department) => (
                             <option key={dept.id} value={dept.id}>
-                              {dept.name}
+                              {i18n.language === "ar" && dept.name_ar
+                                ? dept.name_ar
+                                : dept.name}
                             </option>
                           ))}
                       </select>
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t("departments.description")}
-                    </label>
-                    <textarea
-                      placeholder={t("departments.descriptionPlaceholder")}
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={2}
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                        {t("departments.description")}
+                      </label>
+                      <textarea
+                        placeholder={t("departments.descriptionPlaceholder")}
+                        value={formData.description}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
+                        }
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                        {t("departments.descriptionAr", "Description (Arabic)")}
+                      </label>
+                      <textarea
+                        dir="rtl"
+                        placeholder="الوصف بالعربية"
+                        value={formData.description_ar}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            description_ar: e.target.value,
+                          })
+                        }
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                      />
+                    </div>
                   </div>
 
                   {/* Locations */}

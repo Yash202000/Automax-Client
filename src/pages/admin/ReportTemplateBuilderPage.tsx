@@ -85,7 +85,9 @@ const ReportTemplateBuilderPage: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [templateName, setTemplateName] = useState("New Report Template");
+  const [templateNameAr, setTemplateNameAr] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [templateDescriptionAr, setTemplateDescriptionAr] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [dataSource, setDataSource] = useState("incidents");
 
@@ -137,7 +139,9 @@ const ReportTemplateBuilderPage: React.FC = () => {
     try {
       const template = await getTemplate(templateId);
       setTemplateName(template.name);
+      setTemplateNameAr(template.name_ar || "");
       setTemplateDescription(template.description);
+      setTemplateDescriptionAr(template.description_ar || "");
       setIsPublic(template.is_public);
       setPageSettings(template.template.page_settings);
       if (template.template.header) setHeader(template.template.header);
@@ -184,7 +188,9 @@ const ReportTemplateBuilderPage: React.FC = () => {
       if (id && id !== "new") {
         await updateTemplate(id, {
           name: templateName,
+          name_ar: templateNameAr,
           description: templateDescription,
+          description_ar: templateDescriptionAr,
           template: templateConfig,
           is_public: isPublic,
         });
@@ -193,7 +199,9 @@ const ReportTemplateBuilderPage: React.FC = () => {
       } else {
         const newTemplate = await createTemplate({
           name: templateName,
+          name_ar: templateNameAr,
           description: templateDescription,
+          description_ar: templateDescriptionAr,
           template: templateConfig,
           is_public: isPublic,
         });
@@ -459,10 +467,26 @@ const ReportTemplateBuilderPage: React.FC = () => {
             />
             <input
               type="text"
+              dir="rtl"
+              value={templateNameAr}
+              onChange={(e) => setTemplateNameAr(e.target.value)}
+              className="text-sm border-none focus:ring-0 p-0 bg-transparent block w-full text-gray-400"
+              placeholder={t("common.nameArPlaceholder")}
+            />
+            <input
+              type="text"
               value={templateDescription}
               onChange={(e) => setTemplateDescription(e.target.value)}
               className="text-sm text-gray-500 dark:text-gray-300 border-none focus:ring-0 p-0 bg-transparent block w-full"
               placeholder={t("reports.addDescription")}
+            />
+            <input
+              type="text"
+              dir="rtl"
+              value={templateDescriptionAr}
+              onChange={(e) => setTemplateDescriptionAr(e.target.value)}
+              className="text-sm text-gray-400 border-none focus:ring-0 p-0 bg-transparent block w-full"
+              placeholder={t("common.descriptionArPlaceholder")}
             />
           </div>
         </div>

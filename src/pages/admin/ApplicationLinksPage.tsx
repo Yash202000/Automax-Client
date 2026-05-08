@@ -86,7 +86,7 @@ type ApplicationLinkFormErrors = Partial<
 >;
 
 const ApplicationLinksPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const canCreate =
@@ -105,7 +105,9 @@ const ApplicationLinksPage: React.FC = () => {
   const [formErrors, setFormErrors] = useState<ApplicationLinkFormErrors>({});
   const [formData, setFormData] = useState<ApplicationLinkCreateRequest>({
     name: "",
+    name_ar: "",
     description: "",
+    description_ar: "",
     url: "",
     icon: "ExternalLink",
     color: "blue",
@@ -269,7 +271,9 @@ const ApplicationLinksPage: React.FC = () => {
     setFormErrors({});
     setFormData({
       name: "",
+      name_ar: "",
       description: "",
+      description_ar: "",
       url: "",
       icon: "ExternalLink",
       image_url: "",
@@ -287,7 +291,9 @@ const ApplicationLinksPage: React.FC = () => {
     setEditingId(link.id);
     setFormData({
       name: link.name,
+      name_ar: link.name_ar || "",
       description: link.description,
+      description_ar: link.description_ar || "",
       url: link.url,
       icon: link.icon,
       image_url: link.image_url || "",
@@ -434,6 +440,42 @@ const ApplicationLinksPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                  {t("common.nameAr")}
+                </label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  value={formData.name_ar}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name_ar: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  placeholder={t("common.nameArPlaceholder")}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                  {t("common.nameAr")}
+                </label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  value={formData.name_ar}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name_ar: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  placeholder={t("common.nameArPlaceholder")}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                   {t("applicationLinks.url")}{" "}
                   <span className="text-[hsl(var(--destructive))]">*</span>
                 </label>
@@ -455,21 +497,39 @@ const ApplicationLinksPage: React.FC = () => {
                 />
                 {renderFieldError(formErrors.url)}
               </div>
+              <div />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                {t("applicationLinks.description")}
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={2}
-                className={getInputClassName()}
-                placeholder={t("applicationLinks.descriptionPlaceholder")}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                  {t("applicationLinks.description")}
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  rows={2}
+                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  placeholder={t("applicationLinks.descriptionPlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                  {t("common.descriptionAr")}
+                </label>
+                <textarea
+                  dir="rtl"
+                  value={formData.description_ar}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description_ar: e.target.value })
+                  }
+                  rows={2}
+                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  placeholder={t("common.descriptionArPlaceholder")}
+                />
+              </div>
             </div>
 
             {isCreating && !editingId ? (
@@ -773,11 +833,15 @@ const ApplicationLinksPage: React.FC = () => {
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {link.name}
+                          {i18n.language === "ar" && link.name_ar
+                            ? link.name_ar
+                            : link.name}
                         </div>
-                        {link.description && (
+                        {(link.description || link.description_ar) && (
                           <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                            {link.description}
+                            {i18n.language === "ar" && link.description_ar
+                              ? link.description_ar
+                              : link.description}
                           </div>
                         )}
                       </div>

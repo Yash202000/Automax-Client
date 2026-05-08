@@ -72,8 +72,10 @@ type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
 
 interface StateFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   state_type: "initial" | "normal" | "terminal";
   color: string;
   sla_hours: number | undefined;
@@ -93,8 +95,10 @@ interface StateFormData {
 
 interface TransitionFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   from_state_id: string;
   to_state_id: string;
   role_ids: string[];
@@ -112,8 +116,10 @@ interface TransitionFormData {
 
 const initialStateFormData: StateFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   state_type: "normal",
   color: "#6366f1",
   sla_hours: undefined,
@@ -133,8 +139,10 @@ const initialStateFormData: StateFormData = {
 
 const initialTransitionFormData: TransitionFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   from_state_id: "",
   to_state_id: "",
   role_ids: [],
@@ -511,7 +519,7 @@ const TemplateModalBody: React.FC<{
 };
 
 export const WorkflowDesignerPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -952,8 +960,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     setEditingState(state);
     setStateFormData({
       name: state.name,
+      name_ar: state.name_ar || "",
       code: state.code,
       description: state.description,
+      description_ar: state.description_ar || "",
       state_type: state.state_type as "initial" | "normal" | "terminal",
       color: state.color,
       sla_hours: state.sla_hours || undefined,
@@ -990,8 +1000,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     setEditingTransition(transition);
     setTransitionFormData({
       name: transition.name,
+      name_ar: transition.name_ar || "",
       code: transition.code,
       description: transition.description,
+      description_ar: transition.description_ar || "",
       from_state_id: transition.from_state_id,
       to_state_id: transition.to_state_id,
       role_ids: transition.allowed_roles?.map((r) => r.id) || [],
@@ -1064,8 +1076,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     e.preventDefault();
     const data = {
       name: stateFormData.name,
+      name_ar: stateFormData.name_ar,
       code: stateFormData.code,
       description: stateFormData.description,
+      description_ar: stateFormData.description_ar,
       state_type: stateFormData.state_type,
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
@@ -1099,8 +1113,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     e.preventDefault();
     const data = {
       name: transitionFormData.name,
+      name_ar: transitionFormData.name_ar,
       code: transitionFormData.code,
       description: transitionFormData.description,
+      description_ar: transitionFormData.description_ar,
       from_state_id: transitionFormData.from_state_id,
       to_state_id: transitionFormData.to_state_id,
       role_ids: transitionFormData.role_ids,
@@ -1246,7 +1262,8 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   const getStateName = (stateId: string) => {
     const state = states.find((s) => s.id === stateId);
-    return state?.name || "Unknown";
+    if (!state) return "Unknown";
+    return i18n.language === "ar" && state.name_ar ? state.name_ar : state.name;
   };
 
   const getStateColor = (stateId: string) => {
@@ -1367,7 +1384,9 @@ export const WorkflowDesignerPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-                {workflow.name}
+                {i18n.language === "ar" && workflow.name_ar
+                  ? workflow.name_ar
+                  : workflow.name}
               </h2>
               <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
                 {workflow.code}
@@ -1540,7 +1559,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 style={{ backgroundColor: state.color }}
                               />
                               <span className="font-medium text-[hsl(var(--foreground))]">
-                                {state.name}
+                                {i18n.language === "ar" && state.name_ar
+                                  ? state.name_ar
+                                  : state.name}
                               </span>
                             </div>
                           </td>
@@ -1718,7 +1739,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                           <td className="py-3 px-4">
                             <div>
                               <span className="font-medium text-[hsl(var(--foreground))]">
-                                {transition.name}
+                                {i18n.language === "ar" && transition.name_ar
+                                  ? transition.name_ar
+                                  : transition.name}
                               </span>
                               <p className="text-xs font-mono text-[hsl(var(--muted-foreground))]">
                                 {transition.code}
@@ -2730,22 +2753,41 @@ export const WorkflowDesignerPage: React.FC = () => {
               noValidate
             >
               <div className="p-6 space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("common.name")}
-                  </label>
-                  <input
-                    type="text"
-                    value={stateFormData.name}
-                    onChange={(e) =>
-                      setStateFormData({
-                        ...stateFormData,
-                        name: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.name")}
+                    </label>
+                    <input
+                      type="text"
+                      value={stateFormData.name}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.nameAr")}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      value={stateFormData.name_ar}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          name_ar: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2764,21 +2806,40 @@ export const WorkflowDesignerPage: React.FC = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.description")}
-                  </label>
-                  <textarea
-                    value={stateFormData.description}
-                    onChange={(e) =>
-                      setStateFormData({
-                        ...stateFormData,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("workflows.description")}
+                    </label>
+                    <textarea
+                      value={stateFormData.description}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.descriptionAr")}
+                    </label>
+                    <textarea
+                      dir="rtl"
+                      value={stateFormData.description_ar}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          description_ar: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -3295,23 +3356,42 @@ export const WorkflowDesignerPage: React.FC = () => {
               noValidate
             >
               <div className="p-6 space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("common.name")}
-                  </label>
-                  <input
-                    type="text"
-                    value={transitionFormData.name}
-                    onChange={(e) =>
-                      setTransitionFormData({
-                        ...transitionFormData,
-                        name: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    placeholder={t("workflows.eGStartWorking")}
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.name")}
+                    </label>
+                    <input
+                      type="text"
+                      value={transitionFormData.name}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      placeholder={t("workflows.eGStartWorking")}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.nameAr")}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      value={transitionFormData.name_ar}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          name_ar: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -3333,21 +3413,40 @@ export const WorkflowDesignerPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("common.description")}
-                  </label>
-                  <textarea
-                    value={transitionFormData.description}
-                    onChange={(e) =>
-                      setTransitionFormData({
-                        ...transitionFormData,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.description")}
+                    </label>
+                    <textarea
+                      value={transitionFormData.description}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.descriptionAr")}
+                    </label>
+                    <textarea
+                      dir="rtl"
+                      value={transitionFormData.description_ar}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          description_ar: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -3369,7 +3468,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <option value="">{t("workflows.selectState")}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
-                          {state.name}
+                          {i18n.language === "ar" && state.name_ar
+                            ? state.name_ar
+                            : state.name}
                         </option>
                       ))}
                     </select>
@@ -3392,7 +3493,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <option value="">{t("workflows.selectState")}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
-                          {state.name}
+                          {i18n.language === "ar" && state.name_ar
+                            ? state.name_ar
+                            : state.name}
                         </option>
                       ))}
                     </select>
@@ -3823,7 +3926,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                     {t("workflows.configureTransition")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {configuringTransition.name}
+                    {i18n.language === "ar" && configuringTransition.name_ar
+                      ? configuringTransition.name_ar
+                      : configuringTransition.name}
                   </p>
                 </div>
               </div>

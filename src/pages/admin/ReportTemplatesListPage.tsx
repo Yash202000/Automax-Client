@@ -38,7 +38,7 @@ interface ExportFilters {
 }
 
 const ReportTemplatesListPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -299,7 +299,11 @@ const ReportTemplatesListPage: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{template.name}</h3>
+                      <h3 className="font-medium">
+                        {i18n.language === "ar" && template.name_ar
+                          ? template.name_ar
+                          : template.name}
+                      </h3>
                       {template.is_default && (
                         <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
                           <Star className="h-3 w-3" />
@@ -477,7 +481,11 @@ const ReportTemplatesListPage: React.FC = () => {
               {/* Template Info */}
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-500">{t("common.template")}</p>
-                <p className="font-medium">{selectedTemplate.name}</p>
+                <p className="font-medium">
+                  {i18n.language === "ar" && selectedTemplate.name_ar
+                    ? selectedTemplate.name_ar
+                    : selectedTemplate.name}
+                </p>
               </div>
 
               {/* Date Range */}

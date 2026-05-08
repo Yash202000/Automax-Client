@@ -210,7 +210,11 @@
     "selectFeedback": "Select a Feedback",
     "selectComment": "Select a Comment",
     "notAvailable": "N/A",
-    "failedToLoadAudio": "Failed to load audio"
+    "failedToLoadAudio": "Failed to load audio",
+    "nameAr": "Name (Arabic)",
+    "nameArPlaceholder": "الاسم بالعربية",
+    "descriptionAr": "Description (Arabic)",
+    "descriptionArPlaceholder": "الوصف بالعربية"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -1127,7 +1131,9 @@
     "departmentsSkipped": "departments skipped",
     "errors": "Errors:",
     "codePlaceholder": "e.g., ENG",
-    "namePlaceholder": "e.g., Engineering"
+    "namePlaceholder": "e.g., Engineering",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "locations": {
     "title": "Locations",
@@ -1190,7 +1196,9 @@
     "withoutCoordinates": "without coordinates)",
     "legend": "Legend:",
     "codePlaceholder": "e.g., NY-OFF",
-    "namePlaceholder": "e.g., New York Office"
+    "namePlaceholder": "e.g., New York Office",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "classifications": {
     "title": "Classifications",
@@ -1264,7 +1272,9 @@
     "classificationsImportedSuccessfully": "classifications imported successfully",
     "classificationsSkipped": "classifications skipped",
     "errors": "Errors:",
-    "namePlaceholder": "e.g., Hardware Issues"
+    "namePlaceholder": "e.g., Hardware Issues",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "reports": {
     "title": "Reports",
@@ -3332,7 +3342,9 @@
     "activeHelp": "Inactive categories are hidden from goal selection but remain on existing goals.",
     "saving": "Saving…",
     "codePlaceholder": "e.g. strategic, revenue_growth",
-    "namePlaceholder": "e.g. Strategic, Revenue Growth"
+    "namePlaceholder": "e.g. Strategic, Revenue Growth",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "applicationLinks": {
     "title": "Application Links",

@@ -210,7 +210,11 @@
     "alignLeft": "محاذاة لليسار",
     "alignCenter": "محاذاة للوسط",
     "alignRight": "محاذاة لليمين",
-    "failedToLoadAudio": "فشل تحميل الصوت"
+    "failedToLoadAudio": "فشل تحميل الصوت",
+    "nameAr": "الاسم (بالعربية)",
+    "nameArPlaceholder": "الاسم بالعربية",
+    "descriptionAr": "الوصف (بالعربية)",
+    "descriptionArPlaceholder": "الوصف بالعربية"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -1127,7 +1131,9 @@
     "departmentsSkipped": "تم تخطي بعض الأقسام",
     "errors": "الأخطاء:",
     "codePlaceholder": "مثال: ENG",
-    "namePlaceholder": "مثال: الهندسة"
+    "namePlaceholder": "مثال: الهندسة",
+    "nameAr": "الاسم (بالعربية)",
+    "descriptionAr": "الوصف (بالعربية)"
   },
   "locations": {
     "title": "المواقع",
@@ -1190,7 +1196,9 @@
     "withoutCoordinates": "بدون إحداثيات",
     "legend": "مفتاح الخريطة:",
     "codePlaceholder": "مثال: NY-OFF",
-    "namePlaceholder": "مثال: مكتب نيويورك"
+    "namePlaceholder": "مثال: مكتب نيويورك",
+    "nameAr": "الاسم (بالعربية)",
+    "descriptionAr": "الوصف (بالعربية)"
   },
   "classifications": {
     "title": "التصنيفات",
@@ -1264,7 +1272,9 @@
     "classificationsImportedSuccessfully": "تم استيراد التصنيفات بنجاح",
     "classificationsSkipped": "تم تخطي بعض التصنيفات",
     "errors": "الأخطاء:",
-    "namePlaceholder": "مثال: مشاكل الأجهزة"
+    "namePlaceholder": "مثال: مشاكل الأجهزة",
+    "nameAr": "الاسم (بالعربية)",
+    "descriptionAr": "الوصف (بالعربية)"
   },
   "reports": {
     "title": "التقارير",
