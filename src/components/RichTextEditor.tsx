@@ -22,10 +22,11 @@ interface RichTextEditorProps {
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
-  placeholder = "Write your message here...",
+  placeholder,
   className = "",
 }) => {
   const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("common.writeYourMessageHere");
   const editorRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false);
 
@@ -56,21 +57,37 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const createLink = () => {
-    const url = prompt("Enter URL:");
+    const url = prompt(t("common.enterUrl"));
     if (url) {
       execCommand("createLink", url);
     }
   };
 
   const toolbarButtons = [
-    { icon: Bold, command: "bold", title: "Bold" },
-    { icon: Italic, command: "italic", title: "Italic" },
-    { icon: Underline, command: "underline", title: "Underline" },
-    { icon: List, command: "insertUnorderedList", title: "Bullet List" },
-    { icon: ListOrdered, command: "insertOrderedList", title: "Numbered List" },
-    { icon: AlignLeft, command: "justifyLeft", title: "Align Left" },
-    { icon: AlignCenter, command: "justifyCenter", title: "Align Center" },
-    { icon: AlignRight, command: "justifyRight", title: "Align Right" },
+    { icon: Bold, command: "bold", title: t("common.bold") },
+    { icon: Italic, command: "italic", title: t("common.italic") },
+    { icon: Underline, command: "underline", title: t("common.underline") },
+    {
+      icon: List,
+      command: "insertUnorderedList",
+      title: t("common.bulletList"),
+    },
+    {
+      icon: ListOrdered,
+      command: "insertOrderedList",
+      title: t("common.numberedList"),
+    },
+    { icon: AlignLeft, command: "justifyLeft", title: t("common.alignLeft") },
+    {
+      icon: AlignCenter,
+      command: "justifyCenter",
+      title: t("common.alignCenter"),
+    },
+    {
+      icon: AlignRight,
+      command: "justifyRight",
+      title: t("common.alignRight"),
+    },
   ];
 
   return (
@@ -107,7 +124,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         onInput={handleInput}
         className="flex-1 p-3 min-h-[200px] outline-none overflow-y-auto prose prose-sm max-w-none "
         style={{ lineHeight: "1.6" }}
-        data-placeholder={placeholder}
+        data-placeholder={resolvedPlaceholder}
       />
 
       <style>{`

@@ -397,7 +397,7 @@ export function ForgotPasswordPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder={"you@example.com"}
+                  placeholder={t("auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);

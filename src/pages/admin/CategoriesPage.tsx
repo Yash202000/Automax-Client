@@ -42,6 +42,8 @@ interface CategoryFormData {
   is_active: boolean;
 }
 
+type CategoryFormErrors = Partial<Record<"name" | "code", string>>;
+
 const initialFormData: CategoryFormData = {
   name: "",
   code: "",
@@ -221,6 +223,7 @@ export const CategoriesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>(initialFormData);
+  const [formErrors, setFormErrors] = useState<CategoryFormErrors>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -258,6 +261,7 @@ export const CategoriesPage: React.FC = () => {
       parent_id: parentId,
       parent_name: parentName,
     });
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -273,6 +277,7 @@ export const CategoriesPage: React.FC = () => {
       sort_order: category.sort_order,
       is_active: category.is_active,
     });
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -280,14 +285,33 @@ export const CategoriesPage: React.FC = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     setFormData(initialFormData);
+    setFormErrors({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nextErrors: CategoryFormErrors = {};
+
+    if (!formData.name.trim()) {
+      nextErrors.name = t("validation.fieldRequired", {
+        field: t("categories.name", "Name"),
+      });
+    }
+
+    if (!editingCategory && !formData.code.trim()) {
+      nextErrors.code = t("validation.fieldRequired", {
+        field: t("categories.code", "Code"),
+      });
+    }
+
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
 
     if (editingCategory) {
       const payload: CategoryUpdateRequest = {
-        name: formData.name,
+        name: formData.name.trim(),
         description: formData.description,
         sort_order: formData.sort_order,
         is_active: formData.is_active,
@@ -303,8 +327,8 @@ export const CategoriesPage: React.FC = () => {
       }
     } else {
       const payload: CategoryCreateRequest = {
-        name: formData.name,
-        code: formData.code,
+        name: formData.name.trim(),
+        code: formData.code.trim(),
         description: formData.description || undefined,
         parent_id: formData.parent_id || undefined,
         sort_order: formData.sort_order,
@@ -328,6 +352,22 @@ export const CategoriesPage: React.FC = () => {
       setDeleteConfirm(null);
     }
   };
+
+  const inputClassName = (hasError?: boolean, extraClassName = "") =>
+    cn(
+      "w-full px-4 py-2.5 bg-[hsl(var(--background))] border rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all",
+      hasError
+        ? "border-[hsl(var(--destructive))]"
+        : "border-[hsl(var(--border))]",
+      extraClassName,
+    );
+
+  const renderFieldError = (message?: string) =>
+    message ? (
+      <p className="mt-1 text-xs font-medium text-[hsl(var(--destructive))]">
+        {message}
+      </p>
+    ) : null;
 
   const rootCount = filteredTree.length;
 
@@ -544,6 +584,7 @@ export const CategoriesPage: React.FC = () => {
             <form
               onSubmit={handleSubmit}
               className="p-6 space-y-4 overflow-y-auto flex-1"
+              noValidate
             >
               {/* Parent Info Banner */}
               {!editingCategory && formData.parent_name && (
@@ -585,13 +626,20 @@ export const CategoriesPage: React.FC = () => {
                     "e.g. Strategic, Revenue Growth",
                   )}
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (formErrors.name) {
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        name: undefined,
+                      }));
+                    }
+                  }}
+                  className={inputClassName(!!formErrors.name)}
                   required
                   maxLength={100}
                 />
+                {renderFieldError(formErrors.name)}
               </div>
 
               {/* Code (create only) */}
@@ -611,13 +659,20 @@ export const CategoriesPage: React.FC = () => {
                       "e.g. strategic, revenue_growth",
                     )}
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all font-mono"
+                    onChange={(e) => {
+                      setFormData({ ...formData, code: e.target.value });
+                      if (formErrors.code) {
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          code: undefined,
+                        }));
+                      }
+                    }}
+                    className={inputClassName(!!formErrors.code, "font-mono")}
                     required
                     maxLength={50}
                   />
+                  {renderFieldError(formErrors.code)}
                   <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                     {t(
                       "categories.codeHelp",
@@ -661,7 +716,7 @@ export const CategoriesPage: React.FC = () => {
                         parent_name: parent?.name ?? "",
                       });
                     }}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    className={inputClassName()}
                   >
                     <option value="">
                       {t("categories.noneRootLevel", "— Root level —")}
@@ -694,7 +749,7 @@ export const CategoriesPage: React.FC = () => {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   rows={3}
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                  className={inputClassName(false, "resize-none")}
                 />
               </div>
 
@@ -712,7 +767,7 @@ export const CategoriesPage: React.FC = () => {
                       sort_order: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  className={inputClassName()}
                   min={0}
                 />
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">

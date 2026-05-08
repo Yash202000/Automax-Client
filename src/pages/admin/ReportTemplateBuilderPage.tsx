@@ -153,7 +153,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
         setDataSource(tableContent.data_source);
       }
     } catch {
-      setError("Failed to load template");
+      setError(t("reportTemplates.failedToLoadTemplate"));
       setTimeout(() => setError(null), 3000);
     } finally {
       setLoading(false);
@@ -172,7 +172,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!templateName.trim()) {
-      setError("Template name is required");
+      setError(t("reportTemplates.templateNameRequired"));
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -188,7 +188,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
           template: templateConfig,
           is_public: isPublic,
         });
-        setSuccessMessage("Template updated successfully");
+        setSuccessMessage(t("reportTemplates.templateUpdatedSuccessfully"));
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         const newTemplate = await createTemplate({
@@ -197,14 +197,14 @@ const ReportTemplateBuilderPage: React.FC = () => {
           template: templateConfig,
           is_public: isPublic,
         });
-        setSuccessMessage("Template created successfully");
+        setSuccessMessage(t("reportTemplates.templateCreatedSuccessfully"));
         setTimeout(() => setSuccessMessage(null), 3000);
         navigate(`/reports/templates/${newTemplate.id}/edit`, {
           replace: true,
         });
       }
     } catch {
-      setError("Failed to save template");
+      setError(t("reportTemplates.failedToSaveTemplate"));
       setTimeout(() => setError(null), 3000);
     } finally {
       setSaving(false);
@@ -216,14 +216,14 @@ const ReportTemplateBuilderPage: React.FC = () => {
       const templateConfig = getTemplateConfig();
       await previewTemplateInWindow(templateConfig, dataSource, 20);
     } catch {
-      setError("Failed to generate preview");
+      setError(t("reportTemplates.failedToGeneratePreview"));
       setTimeout(() => setError(null), 3000);
     }
   };
 
   const handleExport = async () => {
     if (!id || id === "new") {
-      setError("Please save the template first");
+      setError(t("reportTemplates.saveTemplateFirst"));
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -235,10 +235,10 @@ const ReportTemplateBuilderPage: React.FC = () => {
         format: "pdf",
         file_name: templateName,
       });
-      setSuccessMessage("Report downloaded");
+      setSuccessMessage(t("reportTemplates.reportDownloaded"));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
-      setError("Failed to export report");
+      setError(t("reportTemplates.failedToExportReport"));
       setTimeout(() => setError(null), 3000);
     }
   };

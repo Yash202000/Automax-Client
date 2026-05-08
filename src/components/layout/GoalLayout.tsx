@@ -181,7 +181,7 @@ export const GoalLayout: React.FC = () => {
                 <BarChart3 size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("goals.analytics")}
+                    {t("goals.analytics.title")}
                   </span>
                 )}
               </>
@@ -224,7 +224,7 @@ export const GoalLayout: React.FC = () => {
                   <ClipboardCheck size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("goals.reviews")}
+                      {t("goals.reviews.title")}
                     </span>
                   )}
                 </>
@@ -316,7 +316,7 @@ export const GoalLayout: React.FC = () => {
                 <FileText size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("goals.templates")}
+                    {t("goals.templates.title")}
                   </span>
                 )}
               </>

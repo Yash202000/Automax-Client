@@ -70,11 +70,11 @@ const ReportTemplatesListPage: React.FC = () => {
     mutationFn: deleteTemplate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-templates"] });
-      setSuccessMessage("Template deleted successfully");
+      setSuccessMessage(t("reportTemplates.templateDeletedSuccessfully"));
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError("Failed to delete template");
+      setError(t("reportTemplates.failedToDeleteTemplate"));
       setTimeout(() => setError(null), 3000);
     },
   });
@@ -83,11 +83,11 @@ const ReportTemplatesListPage: React.FC = () => {
     mutationFn: duplicateTemplate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-templates"] });
-      setSuccessMessage("Template duplicated successfully");
+      setSuccessMessage(t("reportTemplates.templateDuplicatedSuccessfully"));
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError("Failed to duplicate template");
+      setError(t("reportTemplates.failedToDuplicateTemplate"));
       setTimeout(() => setError(null), 3000);
     },
   });
@@ -96,18 +96,17 @@ const ReportTemplatesListPage: React.FC = () => {
     mutationFn: setDefaultTemplate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-templates"] });
-      setSuccessMessage("Default template updated");
+      setSuccessMessage(t("reportTemplates.defaultTemplateUpdated"));
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError("Failed to set default template");
+      setError(t("reportTemplates.failedToSetDefaultTemplate"));
       setTimeout(() => setError(null), 3000);
     },
   });
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this template?"))
-      return;
+    if (!window.confirm(t("reportTemplates.deleteTemplateConfirm"))) return;
     deleteMutation.mutate(id);
     setOpenMenuId(null);
   };
@@ -179,12 +178,12 @@ const ReportTemplatesListPage: React.FC = () => {
       };
 
       await downloadReport(request);
-      setSuccessMessage("Report downloaded successfully");
+      setSuccessMessage(t("reportTemplates.reportDownloadedSuccessfully"));
       setTimeout(() => setSuccessMessage(null), 3000);
       setShowExportModal(false);
       setSelectedTemplate(null);
     } catch {
-      setError("Failed to export report");
+      setError(t("reportTemplates.failedToExportReport"));
       setTimeout(() => setError(null), 3000);
     } finally {
       setExporting(false);
@@ -206,10 +205,10 @@ const ReportTemplatesListPage: React.FC = () => {
         format: "pdf",
         file_name: template.name,
       });
-      setSuccessMessage("Report downloaded");
+      setSuccessMessage(t("reportTemplates.reportDownloaded"));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
-      setError("Failed to export report");
+      setError(t("reportTemplates.failedToExportReport"));
       setTimeout(() => setError(null), 3000);
     }
     setOpenMenuId(null);

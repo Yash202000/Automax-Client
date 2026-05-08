@@ -5,6 +5,7 @@ import {
   HierarchicalTreeSelect,
   type TreeNode,
 } from "./HierarchicalTreeSelect";
+import { useTranslation } from "react-i18next";
 
 interface MultiTreeSelectProps {
   data: TreeNode[];
@@ -36,12 +37,13 @@ export const MultiTreeSelect: React.FC<MultiTreeSelectProps> = ({
   selectedIds,
   onSelectionChange,
   label,
-  placeholder = "All",
+  placeholder,
   leafOnly = true,
   colorScheme = "primary",
   maxHeight = "240px",
   className,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -61,10 +63,10 @@ export const MultiTreeSelect: React.FC<MultiTreeSelectProps> = ({
   const selectedNames = findNames(data, selectedIds);
   const displayText =
     selectedIds.length === 0
-      ? placeholder
+      ? (placeholder ?? t("common.all"))
       : selectedIds.length === 1
-        ? selectedNames[0] || "1 selected"
-        : `${selectedIds.length} selected`;
+        ? selectedNames[0] || t("common.selectedCount", { count: 1 })
+        : t("common.selectedCount", { count: selectedIds.length });
 
   const hasSelection = selectedIds.length > 0;
 

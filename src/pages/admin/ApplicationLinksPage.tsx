@@ -49,21 +49,41 @@ const AVAILABLE_ICONS = [
 ];
 
 const AVAILABLE_COLORS = [
-  { name: "Blue", value: "blue", gradient: "from-blue-500 to-blue-600" },
   {
-    name: "Violet",
+    nameKey: "applicationLinks.colors.blue",
+    value: "blue",
+    gradient: "from-blue-500 to-blue-600",
+  },
+  {
+    nameKey: "applicationLinks.colors.violet",
     value: "violet",
     gradient: "from-violet-500 to-purple-600",
   },
   {
-    name: "Emerald",
+    nameKey: "applicationLinks.colors.emerald",
     value: "emerald",
     gradient: "from-emerald-500 to-teal-600",
   },
-  { name: "Amber", value: "amber", gradient: "from-amber-500 to-orange-600" },
-  { name: "Rose", value: "rose", gradient: "from-rose-500 to-pink-600" },
-  { name: "Orange", value: "orange", gradient: "from-orange-500 to-red-600" },
+  {
+    nameKey: "applicationLinks.colors.amber",
+    value: "amber",
+    gradient: "from-amber-500 to-orange-600",
+  },
+  {
+    nameKey: "applicationLinks.colors.rose",
+    value: "rose",
+    gradient: "from-rose-500 to-pink-600",
+  },
+  {
+    nameKey: "applicationLinks.colors.orange",
+    value: "orange",
+    gradient: "from-orange-500 to-red-600",
+  },
 ];
+
+type ApplicationLinkFormErrors = Partial<
+  Record<"name" | "url" | "sso_callback_url", string>
+>;
 
 const ApplicationLinksPage: React.FC = () => {
   const { t } = useTranslation();
@@ -78,7 +98,11 @@ const ApplicationLinksPage: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<ApplicationLink | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formErrors, setFormErrors] = useState<ApplicationLinkFormErrors>({});
   const [formData, setFormData] = useState<ApplicationLinkCreateRequest>({
     name: "",
     description: "",
@@ -153,6 +177,7 @@ const ApplicationLinksPage: React.FC = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["application-links"] });
       toast.success(t("applicationLinks.deletedSuccess"));
+      setDeleteConfirm(null);
     },
     onError: (error: any) => {
       toast.error(
@@ -241,6 +266,7 @@ const ApplicationLinksPage: React.FC = () => {
 
   const resetForm = () => {
     setImageLoadError(false);
+    setFormErrors({});
     setFormData({
       name: "",
       description: "",
@@ -257,6 +283,7 @@ const ApplicationLinksPage: React.FC = () => {
 
   const handleEdit = (link: ApplicationLink) => {
     setImageLoadError(false);
+    setFormErrors({});
     setEditingId(link.id);
     setFormData({
       name: link.name,
@@ -280,21 +307,62 @@ const ApplicationLinksPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const nextErrors: ApplicationLinkFormErrors = {};
+
+    if (!formData.name.trim()) {
+      nextErrors.name = t("validation.fieldRequired", {
+        field: t("applicationLinks.name"),
+      });
+    }
+
+    if (!formData.url.trim()) {
+      nextErrors.url = t("validation.fieldRequired", {
+        field: t("applicationLinks.url"),
+      });
+    }
+
     if (formData.sso_enabled && !formData.sso_callback_url?.trim()) {
-      toast.error(t("applicationLinks.ssoCallbackRequiredError"));
+      nextErrors.sso_callback_url = t(
+        "applicationLinks.ssoCallbackRequiredError",
+      );
+    }
+
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
+
+    const payload = {
+      ...formData,
+      name: formData.name.trim(),
+      url: formData.url.trim(),
+      sso_callback_url: formData.sso_callback_url?.trim() || "",
+    };
+
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
+      updateMutation.mutate({ id: editingId, data: payload });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`${t("common.confirmDelete")} "${name}"?`)) {
-      deleteMutation.mutate(id);
-    }
+  const getInputClassName = (hasError?: boolean, extraClassName = "") =>
+    `w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] ${
+      hasError
+        ? "border-[hsl(var(--destructive))]"
+        : "border-[hsl(var(--border))]"
+    } ${extraClassName}`;
+
+  const renderFieldError = (message?: string) =>
+    message ? (
+      <p className="mt-1 text-xs font-medium text-[hsl(var(--destructive))]">
+        {message}
+      </p>
+    ) : null;
+
+  const handleDelete = () => {
+    if (!deleteConfirm) return;
+    deleteMutation.mutate(deleteConfirm.id);
   };
 
   if (isLoading) {
@@ -342,34 +410,50 @@ const ApplicationLinksPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  {t("applicationLinks.name")} *
+                  {t("applicationLinks.name")}{" "}
+                  <span className="text-[hsl(var(--destructive))]">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (formErrors.name) {
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        name: undefined,
+                      }));
+                    }
+                  }}
                   required
-                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  className={getInputClassName(!!formErrors.name)}
                   placeholder={t("applicationLinks.namePlaceholder")}
                 />
+                {renderFieldError(formErrors.name)}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  {t("applicationLinks.url")} *
+                  {t("applicationLinks.url")}{" "}
+                  <span className="text-[hsl(var(--destructive))]">*</span>
                 </label>
                 <input
                   type="url"
                   value={formData.url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, url: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, url: e.target.value });
+                    if (formErrors.url) {
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        url: undefined,
+                      }));
+                    }
+                  }}
                   required
-                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  className={getInputClassName(!!formErrors.url)}
                   placeholder={t("applicationLinks.urlPlaceholder")}
                 />
+                {renderFieldError(formErrors.url)}
               </div>
             </div>
 
@@ -383,7 +467,7 @@ const ApplicationLinksPage: React.FC = () => {
                   setFormData({ ...formData, description: e.target.value })
                 }
                 rows={2}
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                className={getInputClassName()}
                 placeholder={t("applicationLinks.descriptionPlaceholder")}
               />
             </div>
@@ -482,7 +566,7 @@ const ApplicationLinksPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, icon: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  className={getInputClassName()}
                 >
                   {AVAILABLE_ICONS.map((icon) => (
                     <option key={icon} value={icon}>
@@ -501,11 +585,11 @@ const ApplicationLinksPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, color: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  className={getInputClassName()}
                 >
                   {AVAILABLE_COLORS.map((color) => (
                     <option key={color.value} value={color.value}>
-                      {color.name}
+                      {t(color.nameKey)}
                     </option>
                   ))}
                 </select>
@@ -529,7 +613,7 @@ const ApplicationLinksPage: React.FC = () => {
                     })
                   }
                   placeholder="0"
-                  className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  className={getInputClassName()}
                 />
               </div>
             </div>
@@ -559,9 +643,18 @@ const ApplicationLinksPage: React.FC = () => {
                   type="checkbox"
                   id="sso_enabled"
                   checked={formData.sso_enabled}
-                  onChange={(e) =>
-                    setFormData({ ...formData, sso_enabled: e.target.checked })
-                  }
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      sso_enabled: e.target.checked,
+                    });
+                    if (!e.target.checked && formErrors.sso_callback_url) {
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        sso_callback_url: undefined,
+                      }));
+                    }
+                  }}
                   className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--ring))]"
                 />
                 <label
@@ -580,25 +673,25 @@ const ApplicationLinksPage: React.FC = () => {
                   <input
                     type="url"
                     value={formData.sso_callback_url}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         sso_callback_url: e.target.value,
-                      })
-                    }
-                    className={`w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] ${
-                      !formData.sso_callback_url?.trim()
-                        ? "border-red-400 focus:ring-red-300"
-                        : "border-[hsl(var(--border))]"
-                    }`}
+                      });
+                      if (formErrors.sso_callback_url) {
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          sso_callback_url: undefined,
+                        }));
+                      }
+                    }}
+                    className={getInputClassName(!!formErrors.sso_callback_url)}
                     placeholder={t(
                       "applicationLinks.ssoCallbackUrlPlaceholder",
                     )}
                   />
-                  {!formData.sso_callback_url?.trim() ? (
-                    <p className="text-xs text-red-500 mt-1">
-                      {t("applicationLinks.ssoCallbackRequired")}
-                    </p>
+                  {formErrors.sso_callback_url ? (
+                    renderFieldError(formErrors.sso_callback_url)
                   ) : (
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
                       {t("applicationLinks.ssoCallbackHelp")}
@@ -638,23 +731,23 @@ const ApplicationLinksPage: React.FC = () => {
           <table className="w-full">
             <thead className="bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))]">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                <th className="px-6 py-4 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("applicationLinks.tableNameHeader")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                <th className="px-6 py-4 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("applicationLinks.tableUrlHeader")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                <th className="px-6 py-4 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("applicationLinks.tableIconColorHeader")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                <th className="px-6 py-4 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("applicationLinks.tableOrderHeader")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                <th className="px-6 py-4 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("applicationLinks.tableStatusHeader")}
                 </th>
                 {(canUpdate || canDelete) && (
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-end text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                     {t("applicationLinks.tableActionsHeader")}
                   </th>
                 )}
@@ -722,7 +815,9 @@ const ApplicationLinksPage: React.FC = () => {
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {link.is_active ? "Active" : "Inactive"}
+                          {link.is_active
+                            ? t("applicationLinks.statusActive")
+                            : t("applicationLinks.statusInactive")}
                         </span>
                         {link.sso_enabled && !link.sso_callback_url && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
@@ -746,7 +841,7 @@ const ApplicationLinksPage: React.FC = () => {
                           )}
                           {canDelete && (
                             <button
-                              onClick={() => handleDelete(link.id, link.name)}
+                              onClick={() => setDeleteConfirm(link)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                               title={t("applicationLinks.deleteTitle")}
                             >
@@ -763,6 +858,50 @@ const ApplicationLinksPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-[hsl(var(--destructive)/0.1)] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-[hsl(var(--destructive))]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    {t("applicationLinks.deleteTitle")}
+                  </h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                    {t("applicationLinks.deleteDescription", {
+                      name: deleteConfirm.name,
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={deleteMutation.isPending}
+                  className="px-4 py-2 bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {t("applicationLinks.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                  className="px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {deleteMutation.isPending
+                    ? t("applicationLinks.deleting")
+                    : t("applicationLinks.deleteTitle")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

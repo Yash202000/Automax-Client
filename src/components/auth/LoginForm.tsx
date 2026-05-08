@@ -63,11 +63,11 @@ export const LoginForm: React.FC = () => {
         }
         navigate("/dashboard");
       } else {
-        setError(response.error || "Login failed. Please try again.");
+        setError(response.error || t("auth.loginError"));
       }
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "An error occurred during login";
+        err instanceof Error ? err.message : t("auth.loginError");
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setError(axiosError.response?.data?.error || errorMessage);
@@ -106,7 +106,7 @@ export const LoginForm: React.FC = () => {
         <Input
           label={t("auth.email")}
           type="email"
-          placeholder="you@example.com"
+          placeholder={t("auth.emailPlaceholder")}
           error={errors.email?.message}
           leftIcon={<Mail className="w-5 h-5" />}
           {...register("email")}
@@ -115,7 +115,7 @@ export const LoginForm: React.FC = () => {
         <Input
           label={t("auth.password")}
           type="password"
-          placeholder="••••••••"
+          placeholder={t("auth.passwordPlaceholder")}
           error={errors.password?.message}
           leftIcon={<Lock className="w-5 h-5" />}
           {...register("password")}

@@ -2640,7 +2640,7 @@ export const IncidentDetailPage: React.FC = () => {
                     <div className="flex items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
                       <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                       <span className="text-sm">
-                        {t("incidents.loadingAIQualityReport")}
+                        {t("incidents.loadingAiQualityReport")}
                       </span>
                     </div>
                   ) : !aiQualityData?.data ? (

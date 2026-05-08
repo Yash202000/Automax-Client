@@ -121,9 +121,9 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = "Select options",
+  placeholder,
   searchable = false,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   maxTagCount,
   maxSelect = 0,
   disabled = false,
@@ -136,6 +136,8 @@ export function MultiSelect({
   showFooter,
 }: MultiSelectProps) {
   const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("common.selectOptions");
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t("common.search");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -280,7 +282,7 @@ export function MultiSelect({
                 size === "lg" && "text-base",
               )}
             >
-              {placeholder}
+              {resolvedPlaceholder}
             </span>
           ) : (
             <>
@@ -345,7 +347,7 @@ export function MultiSelect({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={searchPlaceholder}
+                  placeholder={resolvedSearchPlaceholder}
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
                     "w-full pl-8 pr-3 py-1.5 text-sm rounded-md",

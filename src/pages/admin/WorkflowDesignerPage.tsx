@@ -319,9 +319,9 @@ const TemplateModalBody: React.FC<{
         </div>
       ) : templates.length === 0 ? (
         <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center py-4">
-          {t("common.no")}
-          {label}
-          {t("workflows.optionsYet")}
+          {type === "feedback"
+            ? t("workflows.noFeedbackOptionsYet")
+            : t("workflows.noCommentOptionsYet")}
         </p>
       ) : (
         templates.map((tpl) => (

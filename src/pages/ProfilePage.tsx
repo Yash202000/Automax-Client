@@ -36,7 +36,7 @@ import { authApi } from "../api/auth";
 import { otpApi } from "../api/otp";
 
 const profileSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters").max(50),
+  username: z.string().min(3, "auth.usernameTooShort").max(50),
   first_name: z.string().max(100).optional(),
   last_name: z.string().max(100).optional(),
   phone: z.string().optional(),
@@ -62,7 +62,7 @@ export const ProfilePage: React.FC = () => {
 
   const handleSendOtp = async () => {
     if (!user?.phone) {
-      setError("Please add and save a phone number first.");
+      setError(t("profile.addPhoneFirst"));
       return;
     }
 
@@ -82,14 +82,14 @@ export const ProfilePage: React.FC = () => {
       if (response.session_id) {
         setSessionId(response.session_id);
       } else {
-        setOtpError("Failed to send OTP. Please try again.");
+        setOtpError(t("auth.failedToSendOtp"));
       }
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         err?.message ||
-        "An error occurred while sending OTP";
+        t("auth.failedToSendOtp");
       setOtpError(msg);
     } finally {
       setOtpLoading(false);
@@ -98,7 +98,7 @@ export const ProfilePage: React.FC = () => {
 
   const handleVerifyOtp = async () => {
     if (!otp || otp.length < 6) {
-      setOtpError("Please enter a valid 6-digit OTP");
+      setOtpError(t("profile.validOtpRequired"));
       return;
     }
 
@@ -137,18 +137,18 @@ export const ProfilePage: React.FC = () => {
           setUser({ ...response.data.user, mobile_verified: true });
         }
 
-        setSuccess("Phone number verified successfully!");
+        setSuccess(t("profile.phoneVerifiedSuccessfully"));
         setIsOtpModalOpen(false);
         setOtp("");
       } else {
-        setOtpError(response.message || "Invalid OTP. Please try again.");
+        setOtpError(response.message || t("auth.invalidOtp"));
       }
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         err?.message ||
-        "Invalid OTP. Please try again.";
+        t("auth.invalidOtp");
       setOtpError(msg);
     } finally {
       setOtpLoading(false);
@@ -538,8 +538,12 @@ export const ProfilePage: React.FC = () => {
 
                 <Input
                   label={t("profile.username")}
-                  placeholder="johndoe"
-                  error={errors.username?.message}
+                  placeholder={t("auth.usernamePlaceholder")}
+                  error={
+                    errors.username?.message
+                      ? t(errors.username.message)
+                      : undefined
+                  }
                   leftIcon={<User className="w-5 h-5" />}
                   {...register("username")}
                 />
@@ -547,13 +551,13 @@ export const ProfilePage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label={t("profile.firstName")}
-                    placeholder="John"
+                    placeholder={t("auth.firstNamePlaceholder")}
                     error={errors.first_name?.message}
                     {...register("first_name")}
                   />
                   <Input
                     label={t("profile.lastName")}
-                    placeholder="Doe"
+                    placeholder={t("auth.lastNamePlaceholder")}
                     error={errors.last_name?.message}
                     {...register("last_name")}
                   />
@@ -561,18 +565,18 @@ export const ProfilePage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label="Phone Number"
-                    placeholder="+1 (555) 123-4567"
+                    label={t("profile.phoneNumber")}
+                    placeholder={t("users.phonePlaceholder")}
                     error={errors.phone?.message}
                     leftIcon={<Phone className="w-5 h-5" />}
                     {...register("phone")}
                   />
                   <Input
-                    label="Extension"
-                    placeholder="1001"
+                    label={t("users.extension")}
+                    placeholder={t("users.extensionPlaceholder")}
                     error={errors.extension?.message}
                     leftIcon={<Tag className="w-5 h-5" />}
-                    hint="Your SIP extension number"
+                    hint={t("profile.extensionHint")}
                     {...register("extension")}
                   />
                 </div>
@@ -805,8 +809,8 @@ export const ProfilePage: React.FC = () => {
 
                 <div className="space-y-4">
                   <Input
-                    label="OTP Code"
-                    placeholder="000000"
+                    label={t("profile.otpCode")}
+                    placeholder={t("profile.otpPlaceholder")}
                     value={otp}
                     onChange={(e) =>
                       setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))

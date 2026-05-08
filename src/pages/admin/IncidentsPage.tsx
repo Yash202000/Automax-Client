@@ -194,7 +194,7 @@ export const IncidentsPage: React.FC = () => {
       });
     } catch (err: any) {
       console.error(
-        err.response?.data?.error || t("incidentMerge.validationFailed"),
+        err.response?.data?.error || t("incidents.merge.validationFailed"),
       );
     } finally {
       setIsValidationLoading(false);
@@ -292,7 +292,7 @@ export const IncidentsPage: React.FC = () => {
     clearSelection();
     setShowMergeModal(false);
     refetch();
-    toast.success(t("incidentMerge.mergeSuccess"));
+    toast.success(t("incidents.merge.mergeSuccess"));
   };
 
   // Queries - only fetch incident-type workflows
@@ -703,7 +703,7 @@ export const IncidentsPage: React.FC = () => {
                 leftIcon={<ArrowRightLeft className="w-4 h-4" />}
                 disabled={isMergeDisabled}
               >
-                {t("incidentMerge.title")}
+                {t("incidents.merge.title")}
               </Button>
             </>
           )}
