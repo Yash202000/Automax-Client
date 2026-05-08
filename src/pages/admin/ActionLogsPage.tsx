@@ -498,7 +498,7 @@ export const ActionLogsPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
+                  <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
               </div>
 
@@ -522,7 +522,7 @@ export const ActionLogsPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
+                  <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
               </div>
 
@@ -545,7 +545,7 @@ export const ActionLogsPage: React.FC = () => {
                     <option value="success">{t("common.success")}</option>
                     <option value="failed">{t("common.failed")}</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
+                  <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
               </div>
 
@@ -664,7 +664,10 @@ export const ActionLogsPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                          <span className="text-sm text-[hsl(var(--foreground))] whitespace-nowrap">
+                          <span
+                            dir="ltr"
+                            className="text-sm text-[hsl(var(--foreground))] whitespace-nowrap"
+                          >
                             {formatDate(log.created_at)}
                           </span>
                         </div>

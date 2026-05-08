@@ -164,6 +164,13 @@ export const LicensePage: React.FC = () => {
     });
   };
 
+  const formatLicenseType = () => {
+    if (!license) return "";
+    return t(`license.types.${license.license_type}`, {
+      defaultValue: license.license_type,
+    });
+  };
+
   const formatExpirySummary = () => {
     if (!license || license.days_remaining == null) return "—";
     if (license.days_remaining > 0) {
@@ -384,7 +391,7 @@ export const LicensePage: React.FC = () => {
               <span
                 className={`inline-block px-3 py-1.5 rounded-full text-sm font-semibold capitalize ${LICENSE_TYPE_COLORS[license.license_type] || "bg-slate-100 text-slate-700"}`}
               >
-                {license.license_type}
+                {formatLicenseType()}
               </span>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
                 {t("license.id")}
@@ -474,10 +481,19 @@ export const LicensePage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {allFeatures.map((feature) => {
                 const isLicensed = license.features?.includes(feature.code);
+                const featureName = t(`license.features.${feature.code}.name`, {
+                  defaultValue: feature.name,
+                });
+                const featureDescription = t(
+                  `license.features.${feature.code}.description`,
+                  {
+                    defaultValue: feature.description || featureName,
+                  },
+                );
                 return (
                   <div
                     key={feature.code}
-                    title={feature.description}
+                    title={featureDescription}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
                       isLicensed
                         ? "border-emerald-200 dark:border-emerald-700/40 bg-emerald-50 dark:bg-emerald-900/10"
@@ -496,7 +512,7 @@ export const LicensePage: React.FC = () => {
                           : "text-slate-500 dark:text-slate-400"
                       }`}
                     >
-                      {feature.name}
+                      {featureName}
                     </span>
                   </div>
                 );

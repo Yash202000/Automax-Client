@@ -747,6 +747,16 @@
     "strong": "Strong",
     "updatePassword": "Update Password",
     "passwordChangedSuccess": "Password changed successfully",
+    "passwordChangedLogout": "Password changed successfully. Logging you out...",
+    "currentPasswordRequired": "Current password is required",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordUppercaseRequired": "Password must contain at least one uppercase letter",
+    "passwordLowercaseRequired": "Password must contain at least one lowercase letter",
+    "passwordNumberRequired": "Password must contain at least one number",
+    "passwordsDontMatch": "Passwords don't match",
+    "changePasswordFailed": "Failed to change password",
+    "deleteAccountFailed": "Failed to delete account",
+    "genericError": "An error occurred",
     "emailNotifications": "Email Notifications",
     "emailNotificationsDesc": "Receive updates via email",
     "pushNotifications": "Push Notifications",
@@ -808,9 +818,7 @@
     "faviconIco": "/favicon.ico",
     "hhMmSs": "HH:mm:ss",
     "logoPngOrHttpsCdnExampleCom": "/logo.png or https://cdn.example.com/logo.png",
-    "yyyyMmDd": "YYYY-MM-DD",
-    "primaryColorPlaceholder": "#2563eb",
-    "secondaryColorPlaceholder": "#7c3aed"
+    "yyyyMmDd": "YYYY-MM-DD"
   },
   "profile": {
     "title": "Profile",
@@ -1880,7 +1888,9 @@
     "feedbackMustBeUnique": "Feedback should be unique",
     "commentMustBeUnique": "Comment should be unique",
     "severityPriorityRange": "Severity & Priority Range",
-    "severityRange": "Severity Range (1=Critical, 5=Cosmetic)"
+    "severityRange": "Severity Range (1=Critical, 5=Cosmetic)",
+    "noFeedbackOptionsYet": "No feedback options yet",
+    "noCommentOptionsYet": "No comment options yet"
   },
   "lookups": {
     "title": "Master Data",
@@ -3321,13 +3331,7 @@
     "activeHelp": "Inactive categories are hidden from goal selection but remain on existing goals.",
     "saving": "Saving…",
     "codePlaceholder": "e.g. strategic, revenue_growth",
-    "namePlaceholder": "e.g. Strategic, Revenue Growth",
-    "createdSuccess": "Category created successfully",
-    "createFailed": "Failed to create category",
-    "updatedSuccess": "Category updated successfully",
-    "updateFailed": "Failed to update category",
-    "deletedSuccess": "Category deleted successfully",
-    "deleteFailed": "Failed to delete category"
+    "namePlaceholder": "e.g. Strategic, Revenue Growth"
   },
   "applicationLinks": {
     "title": "Application Links",
@@ -3374,8 +3378,6 @@
     "ssoNoCallback": "SSO: No callback URL",
     "editTitle": "Edit",
     "deleteTitle": "Delete",
-    "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
-    "deleting": "Deleting...",
     "fileSizeError": "File size must be less than 5MB",
     "fileTypeError": "Only JPEG, PNG, GIF, WebP, and SVG images are allowed",
     "ssoCallbackRequiredError": "SSO Callback URL is required when SSO is enabled.",
@@ -3521,6 +3523,12 @@
     "deactivatedSuccess": "License deactivated",
     "deactivateFailed": "Failed to deactivate license",
     "statusGracePeriod": "Grace Period",
+    "types": {
+      "trial": "Trial",
+      "standard": "Standard",
+      "professional": "Professional",
+      "enterprise": "Enterprise"
+    },
     "statuses": {
       "valid": "Valid",
       "expired": "Expired",
