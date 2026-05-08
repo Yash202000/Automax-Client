@@ -624,7 +624,7 @@
     "durationRequired": "Please select a duration",
     "escalationActions": "Escalation Actions",
     "expiresAt": "Expires at",
-    "feedbackRequired": "Please provide a rating",
+    "feedbackRequired": "Feedback is required",
     "generating": "Generating...",
     "loadingAIQualityReport": "Loading AI quality report...",
     "loadingDepartments": "Loading departments...",

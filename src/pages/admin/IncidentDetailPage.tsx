@@ -4084,7 +4084,7 @@ export const IncidentDetailPage: React.FC = () => {
                       <div className="p-2 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
                         {/* Feedback Comment */}
                         <div className="space-y-3">
-                          {!!feedbackTemplates?.length && (
+                          {feedbackTemplates?.length ? (
                             <select
                               value={
                                 feedbackTemplates.some(
@@ -4117,34 +4117,34 @@ export const IncidentDetailPage: React.FC = () => {
                                 </option>
                               ))}
                             </select>
+                          ) : (
+                            <textarea
+                              value={transitionFeedbackComment}
+                              onChange={(e) => {
+                                setTransitionFeedbackComment(e.target.value);
+
+                                if (transitionErrors.feedbackComment) {
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    feedbackComment: "",
+                                  }));
+                                }
+                              }}
+                              placeholder={t(
+                                "incidents.feedbackCommentPlaceholder",
+                              )}
+                              rows={3}
+                              className={`w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${
+                                transitionErrors.feedback
+                                  ? "border-red-500"
+                                  : "border-[hsl(var(--border))]"
+                              }`}
+                            />
                           )}
 
-                          <textarea
-                            value={transitionFeedbackComment}
-                            onChange={(e) => {
-                              setTransitionFeedbackComment(e.target.value);
-
-                              if (transitionErrors.feedbackComment) {
-                                setTransitionErrors((prev) => ({
-                                  ...prev,
-                                  feedbackComment: "",
-                                }));
-                              }
-                            }}
-                            placeholder={t(
-                              "incidents.feedbackCommentPlaceholder",
-                            )}
-                            rows={3}
-                            className={`w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${
-                              transitionErrors.feedbackComment
-                                ? "border-red-500"
-                                : "border-[hsl(var(--border))]"
-                            }`}
-                          />
-
-                          {transitionErrors.feedbackComment && (
-                            <p className="text-xs text-red-500 mt-1">
-                              {transitionErrors.feedbackComment}
+                          {transitionErrors.feedback && (
+                            <p className="text-xs text-red-500 ">
+                              {transitionErrors.feedback}
                             </p>
                           )}
                         </div>
@@ -4449,7 +4449,7 @@ export const IncidentDetailPage: React.FC = () => {
                       />
 
                       {transitionErrors.comment && (
-                        <p className="text-xs text-red-500 mt-1">
+                        <p className="text-xs text-red-500">
                           {transitionErrors.comment}
                         </p>
                       )}
