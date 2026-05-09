@@ -1126,7 +1126,7 @@ export const IncidentsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("Incidents.FromDate")}
+                {t("incidents.fromDate")}
               </label>
               <input
                 type="date"
@@ -1139,7 +1139,7 @@ export const IncidentsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("Incidents.ToDate")}
+                {t("incidents.toDate")}
               </label>
               <input
                 type="date"
