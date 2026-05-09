@@ -21,7 +21,6 @@ import {
   X,
   History,
   Tags,
-  Star,
   ExternalLink,
   Phone,
   ThumbsUp,

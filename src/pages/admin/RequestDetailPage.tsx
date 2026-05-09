@@ -24,7 +24,6 @@ import {
   Upload,
   History,
   Tags,
-  Star,
   ExternalLink,
   Radio,
 } from "lucide-react";
