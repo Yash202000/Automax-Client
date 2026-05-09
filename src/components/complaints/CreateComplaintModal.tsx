@@ -342,8 +342,10 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     return matching;
   }, [workflows, classificationId]);
 
-  // Auto-match workflow when criteria change via backend API
+  // Auto-match workflow when criteria change via backend API (only if not manually selected)
   useEffect(() => {
+    if (workflowId) return; // Don't override user's manual selection
+
     const priorityCategory = requestLookupCategories.find(
       (c) => c.code === "PRIORITY",
     );
@@ -375,6 +377,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     source,
     lookupValues,
     requestLookupCategories,
+    workflowId,
   ]);
 
   // Create request mutation

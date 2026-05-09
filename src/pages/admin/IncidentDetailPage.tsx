@@ -232,9 +232,26 @@ export const IncidentDetailPage: React.FC = () => {
     enabled: !!id,
   });
 
-  const { data: commentsData, refetch: refetchComments } = useQuery({
-    queryKey: ["incident", id, "comments"],
-    queryFn: () => incidentApi.listComments(id!),
+  const { data: combinedCommentData, refetch: refetchComments } = useQuery({
+    queryKey: ["incident", id, "activity"],
+    queryFn: async () => {
+      const [commentsRes, feedbacksRes] = await Promise.all([
+        incidentApi.listComments(id!),
+        incidentApi.listFeedbacks(id!),
+      ]);
+
+      const feedbacks = (feedbacksRes?.data || []).map((item: any) => ({
+        ...item,
+        author: item?.created_by,
+        content: item?.comment,
+        type: "feedback",
+      }));
+
+      return [...(commentsRes?.data || []), ...feedbacks].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    },
     enabled: !!id,
   });
 
@@ -667,7 +684,7 @@ export const IncidentDetailPage: React.FC = () => {
 
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
-  const comments = commentsData?.data || [];
+  const comments = combinedCommentData || [];
 
   const attachments = attachmentsData?.data || [];
   const fullWorkflow = fullWorkflowData?.data;
@@ -1968,6 +1985,11 @@ export const IncidentDetailPage: React.FC = () => {
                                 "{item.comment}"
                               </p>
                             )}
+                            {item.feedbacks?.comment && (
+                              <p className="mt-2 text-sm text-[hsl(var(--foreground))] italic">
+                                "{item.feedbacks.comment}"
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -2067,14 +2089,16 @@ export const IncidentDetailPage: React.FC = () => {
                               <span className="text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(comment.created_at)}
                               </span>
-                              <button
-                                onClick={() =>
-                                  deleteCommentMutation.mutate(comment.id)
-                                }
-                                className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {comment.type !== "feedback" ? (
+                                <button
+                                  onClick={() =>
+                                    deleteCommentMutation.mutate(comment.id)
+                                  }
+                                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              ) : null}
                             </div>
                           </div>
                           <p className="text-sm text-[hsl(var(--foreground))] whitespace-pre-wrap">

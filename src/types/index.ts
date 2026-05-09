@@ -1068,6 +1068,7 @@ export interface IncidentComment {
   is_internal: boolean;
   transition_history_id?: string;
   created_at: string;
+  type?: string;
 }
 
 export interface IncidentAttachment {
@@ -1119,6 +1120,7 @@ export interface TransitionHistory {
   new_values?: string;
   action_results?: string;
   transitioned_at: string;
+  feedbacks?: any;
 }
 
 // Incident Revision Types

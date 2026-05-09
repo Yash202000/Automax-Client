@@ -1374,6 +1374,13 @@ export const incidentApi = {
     return response.data;
   },
 
+  listFeedbacks: async (incidentId: string): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(
+      `/incidents/${incidentId}/feedbacks`,
+    );
+    return response.data;
+  },
+
   updateComment: async (
     incidentId: string,
     commentId: string,
@@ -1702,6 +1709,13 @@ export const complaintApi = {
   ): Promise<ApiResponse<IncidentComment[]>> => {
     const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
       `/complaints/${complaintId}/comments`,
+    );
+    return response.data;
+  },
+
+  listFeedbacks: async (complaintId: string): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(
+      `/complaints/${complaintId}/feedbacks`,
     );
     return response.data;
   },
@@ -2091,6 +2105,15 @@ export const requestApi = {
   ): Promise<ApiResponse<IncidentComment[]>> => {
     const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
       `/incidents/${requestId}/comments`,
+    );
+    return response.data;
+  },
+
+  listFeedbacks: async (
+    requestId: string,
+  ): Promise<ApiResponse<IncidentComment[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
+      `/incidents/${requestId}/feedbacks`,
     );
     return response.data;
   },
