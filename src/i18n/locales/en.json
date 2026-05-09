@@ -702,7 +702,9 @@
     "department_id": "Department",
     "severity": "Severity",
     "aiQualityReport": "AI Quality Report",
-    "appliedWhenIncidentIsCreated": "Applied when the incident is created in this state"
+    "appliedWhenIncidentIsCreated": "Applied when the incident is created in this state",
+    "fromDate": "From Date",
+    "toDate": "To Date"
   },
   "priorities": {
     "critical": "Critical",

@@ -375,6 +375,8 @@ export const IncidentsPage: React.FC = () => {
 
       current_state_id: currentStateId,
       transition_id: searchParams.get("transition_id") || undefined,
+      start_date: searchParams.get("start_date") || undefined,
+      end_date: searchParams.get("end_date") || undefined,
     };
   }, [searchParams, uniqueStates]);
 
@@ -518,7 +520,9 @@ export const IncidentsPage: React.FC = () => {
     filter.assignee_id ||
     (filter.department_ids && filter.department_ids.length > 0) ||
     filter.sla_breached !== undefined ||
-    filter.priority !== undefined
+    filter.priority !== undefined ||
+    !!filter.start_date ||
+    !!filter.end_date
   );
 
   const getLookupValue = (incident: Incident, categoryCode: string) => {
@@ -1119,6 +1123,33 @@ export const IncidentsPage: React.FC = () => {
                 <option value="4">{t("priorities.low", "Low")}</option>
                 <option value="5">{t("priorities.veryLow", "Very Low")}</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                {t("incidents.fromDate")}
+              </label>
+              <input
+                type="date"
+                value={filter.start_date || ""}
+                onChange={(e) =>
+                  handleFilterChange("start_date", e.target.value || undefined)
+                }
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                {t("incidents.toDate")}
+              </label>
+              <input
+                type="date"
+                value={filter.end_date || ""}
+                min={filter.start_date || undefined}
+                onChange={(e) =>
+                  handleFilterChange("end_date", e.target.value || undefined)
+                }
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
