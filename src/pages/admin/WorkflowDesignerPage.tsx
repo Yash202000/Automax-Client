@@ -112,6 +112,8 @@ interface TransitionFormData {
   auto_match_user: boolean;
   manual_select_user: boolean;
   is_rejection: boolean;
+  is_not_belong: boolean;
+  is_missing_info: boolean;
 }
 
 const initialStateFormData: StateFormData = {
@@ -156,6 +158,8 @@ const initialTransitionFormData: TransitionFormData = {
   auto_match_user: false,
   manual_select_user: false,
   is_rejection: false,
+  is_not_belong: false,
+  is_missing_info: false,
 };
 
 const STATE_COLORS = [
@@ -1019,6 +1023,8 @@ export const WorkflowDesignerPage: React.FC = () => {
       auto_match_user: transition.auto_match_user || false,
       manual_select_user: transition.manual_select_user || false,
       is_rejection: transition.is_rejection || false,
+      is_not_belong: transition.is_not_belong || false,
+      is_missing_info: transition.is_missing_info || false,
     });
     setIsTransitionModalOpen(true);
   };
@@ -1132,6 +1138,8 @@ export const WorkflowDesignerPage: React.FC = () => {
       auto_match_user: transitionFormData.auto_match_user,
       manual_select_user: transitionFormData.manual_select_user,
       is_rejection: transitionFormData.is_rejection,
+      is_not_belong: transitionFormData.is_not_belong,
+      is_missing_info: transitionFormData.is_missing_info,
     };
 
     if (editingTransition) {
@@ -3876,6 +3884,56 @@ export const WorkflowDesignerPage: React.FC = () => {
                       {t(
                         "workflows.whenEnabledExecutingThisTransitionWillCreate",
                       )}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Not Belong */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-warning focus:ring-warning"
+                    checked={transitionFormData.is_not_belong}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        is_not_belong: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {t("workflows.markAsNotBelongTransition")}
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      {t("workflows.whenEnabledNotBelongWillSendSMS")}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Missing Incident Information */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-orange-500 focus:ring-orange-500"
+                    checked={transitionFormData.is_missing_info}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        is_missing_info: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {t("workflows.markAsMissingInfoTransition")}
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      {t("workflows.whenEnabledMissingInfoWillSendSMS")}
                     </p>
                   </div>
                 </label>
