@@ -113,7 +113,7 @@ export const IncidentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { hasPermission, isSuperAdmin } = usePermissions();
+  const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
   const { users } = useAppSelector((state) => state.users);
 
   const canViewReports =
@@ -1448,33 +1448,40 @@ export const IncidentDetailPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {(!incident?.is_merged ||
-            (incident?.is_merged &&
-              incident?.master_incident_id === incident?.id)) &&
-            availableTransitions
-              .filter((t) => t.can_execute)
-              .map((transition) => (
-                <Button
-                  key={transition.transition.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleTransitionClick(transition)}
-                  leftIcon={<Play className="w-4 h-4" />}
-                >
-                  {transition.transition.name}
-                </Button>
-              ))}
-          {(!incident.record_type || incident.record_type === "incident") &&
-            canConvertToRequest && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConvertModalOpen(true)}
-                leftIcon={<ArrowRightLeft className="w-4 h-4" />}
-              >
-                {t("incidents.convertToRequest", "Convert to Request")}
-              </Button>
-            )}
+          {(canViewAllIncidents() ||
+            incident?.assignees?.some(
+              (assignee) => assignee.id === user?.id,
+            )) && (
+            <>
+              {(!incident?.is_merged ||
+                (incident?.is_merged &&
+                  incident?.master_incident_id === incident?.id)) &&
+                availableTransitions
+                  .filter((t) => t.can_execute)
+                  .map((transition) => (
+                    <Button
+                      key={transition.transition.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTransitionClick(transition)}
+                      leftIcon={<Play className="w-4 h-4" />}
+                    >
+                      {transition.transition.name}
+                    </Button>
+                  ))}
+              {(!incident.record_type || incident.record_type === "incident") &&
+                canConvertToRequest && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConvertModalOpen(true)}
+                    leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                  >
+                    {t("incidents.convertToRequest", "Convert to Request")}
+                  </Button>
+                )}
+            </>
+          )}
           {canViewReports && (
             <Button
               variant="outline"
