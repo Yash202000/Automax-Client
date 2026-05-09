@@ -2644,6 +2644,7 @@
         "priority": "Priority",
         "owner": "Owner",
         "selectOwner": "Select owner",
+        "searchOwner": "Search by name or email...",
         "department": "Department",
         "noDepartment": "No department",
         "startDate": "Start Date",
@@ -2653,6 +2654,11 @@
       "errors": {
         "titleRequired": "Title is required",
         "ownerRequired": "Owner is required",
+        "priorityRequired": "Priority is required",
+        "descriptionRequired": "Description is required",
+        "startDateRequired": "Start date is required",
+        "targetDateRequired": "Target date is required",
+        "pastDateNotAllowed": "Past dates are not allowed",
         "metricCreateFailed": "Failed to create metric: {{name}}"
       }
     },

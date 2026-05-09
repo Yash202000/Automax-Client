@@ -2644,6 +2644,7 @@
         "priority": "الأولوية",
         "owner": "المالك",
         "selectOwner": "اختر المالك",
+        "searchOwner": "البحث بالاسم أو البريد الإلكتروني...",
         "department": "القسم",
         "noDepartment": "بدون قسم",
         "startDate": "تاريخ البدء",
@@ -2653,6 +2654,11 @@
       "errors": {
         "titleRequired": "العنوان مطلوب",
         "ownerRequired": "المالك مطلوب",
+        "priorityRequired": "الأولوية مطلوبة",
+        "descriptionRequired": "الوصف مطلوب",
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "targetDateRequired": "تاريخ الاستحقاق مطلوب",
+        "pastDateNotAllowed": "التواريخ السابقة غير مسموحة",
         "metricCreateFailed": "فشل إنشاء المقياس: {{name}}"
       }
     },
