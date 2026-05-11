@@ -1127,8 +1127,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       to_state_id: transitionFormData.to_state_id,
       role_ids: transitionFormData.role_ids,
       // Department Assignment
-      assign_department_id:
-        transitionFormData.assign_department_id || undefined,
+      assign_department_id: transitionFormData.assign_department_id || "",
       auto_detect_department: transitionFormData.auto_detect_department,
       department_type_filter:
         transitionFormData.department_type_filter || undefined,
