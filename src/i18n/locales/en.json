@@ -3457,7 +3457,9 @@
     "historySubtitle": "View your recent calls",
     "recentCalls": "Recent Calls",
     "subtitle": "Manage calls and view contacts",
-    "title": "Call Centre"
+    "title": "Call Centre",
+    "showRecording": "Show Recording",
+    "hideRecording": "Hide Recording"
   },
   "citizen": {
     "closePage": "You may safely close this page.",
