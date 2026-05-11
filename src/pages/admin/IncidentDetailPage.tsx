@@ -1466,9 +1466,8 @@ export const IncidentDetailPage: React.FC = () => {
 
         <div className="flex items-center gap-2 flex-wrap">
           {(canViewAllIncidents() ||
-            incident?.assignees?.some(
-              (assignee) => assignee.id === user?.id,
-            )) && (
+            incident?.assignees?.some((assignee) => assignee.id === user?.id) ||
+            incident?.assignee?.id === user?.id) && (
             <>
               {(!incident?.is_merged ||
                 (incident?.is_merged &&

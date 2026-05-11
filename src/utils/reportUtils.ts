@@ -13,11 +13,16 @@ export const getValidFilters = (filters: ReportFilter[]) => {
     if (f.value === null || f.value === undefined || f.value === "")
       return false;
 
-    // Handle empty arrays (multi-select)
-    if (Array.isArray(f.value) && f.value.length === 0) return false;
+    if (Array.isArray(f.value)) {
+      return f.value.length > 0;
+    }
 
     // Handle range objects (between)
-    if (typeof f.value === "object" && f.value !== null) {
+    if (
+      typeof f.value === "object" &&
+      f.value !== null &&
+      !Array.isArray(f.value)
+    ) {
       const v = f.value as { from?: string; to?: string };
       // For range filters, at least one of from/to should be present
       if (!v.from && !v.to) return false;

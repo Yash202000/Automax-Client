@@ -111,7 +111,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+    <div className="border border-[hsl(var(--border))] rounded-xl">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -133,7 +133,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         {badge}
       </button>
       {isExpanded && (
-        <div className="p-4 bg-[hsl(var(--card))]">{children}</div>
+        <div className="p-4 bg-[hsl(var(--card))] min-h-0 ">{children}</div>
       )}
     </div>
   );
@@ -297,6 +297,15 @@ export const ReportBuilderPage: React.FC = () => {
   // Generate report — fetches recordLimit rows in a single request, no server pagination
   const generateReport = useCallback(async () => {
     if (!dataSource || selectedColumns.length === 0) return;
+    console.log(
+      "filters",
+      filters,
+      getValidFilters(filters).map(({ field, value }) => ({
+        field,
+        operator: "equals",
+        value,
+      })),
+    );
 
     setIsPreviewLoading(true);
     setDisplayPage(1);
@@ -304,9 +313,9 @@ export const ReportBuilderPage: React.FC = () => {
       const request: ReportQueryRequest = {
         data_source: dataSource,
         columns: selectedColumns,
-        filters: getValidFilters(filters).map(({ field, operator, value }) => ({
+        filters: getValidFilters(filters).map(({ field, value }) => ({
           field,
-          operator,
+          operator: "equals",
           value,
         })),
         sorting,

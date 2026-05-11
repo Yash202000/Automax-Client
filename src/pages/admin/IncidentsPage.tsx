@@ -163,6 +163,8 @@ export const IncidentsPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+  const canViewIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
 
   // Check if all selected incidents belong to the same workflow
   const selectedWorkflowId =
@@ -1009,15 +1011,12 @@ export const IncidentsPage: React.FC = () => {
                       e.target.value || undefined,
                     )
                   }
-                  disabled={
-                    isTransitionsLoading ||
-                    (!canViewAllIncidents && hasUrlFilter)
-                  }
+                  disabled={isTransitionsLoading || !canViewIncident}
                   className={cn(
                     "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
-                    (isTransitionsLoading ||
-                      (!canViewAllIncidents && hasUrlFilter)) &&
-                      "opacity-60 cursor-not-allowed",
+                    isTransitionsLoading || !canViewIncident
+                      ? "opacity-60 cursor-not-allowed"
+                      : "",
                   )}
                 >
                   {isTransitionsLoading ? (

@@ -144,6 +144,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: true,
     dynamicOptions: "classifications",
     canBeColumn: false,
+    multiselect: true,
   },
   {
     field: "department_id",
@@ -164,6 +165,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: true,
     dynamicOptions: "locations",
     canBeColumn: false,
+    multiselect: true,
   },
   {
     field: "latitude",
@@ -310,6 +312,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: true,
     filterable: true,
+    multiselect: true,
     options: [
       { value: "web", label: "Web Portal" },
       { value: "mobile", label: "Mobile App" },
@@ -577,6 +580,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: true,
     filterable: true,
+    multiselect: true,
   },
   {
     field: "department_name",
@@ -593,6 +597,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: true,
     filterable: true,
+    multiselect: true,
   },
   // { field: "attachment_id", label: "Attachment Id", type: "string", category: "Core", sortable: false, filterable: false },
   {
@@ -832,6 +837,22 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "attachments",
     label: "Attachments",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "total_closing_duration",
+    label: "Total Closing Duration",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "closed_feedback",
+    label: "Closed Feedback",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1489,6 +1510,14 @@ export const locationFields: ReportFieldDefinition[] = [
     category: "Basic Info",
     canBeColumn: false,
   },
+  {
+    field: "percentage",
+    label: "Percentage",
+    type: "string",
+    filterable: false,
+    sortable: false,
+    category: "Basic Info",
+  },
 ];
 
 export const locationCountBasedFields: ReportFieldDefinition[] = [
@@ -1581,6 +1610,14 @@ export const classificationFields: ReportFieldDefinition[] = [
     sortable: true,
     category: "Basic Info",
     canBeColumn: false,
+  },
+  {
+    field: "percentage",
+    label: "Percentage",
+    type: "string",
+    filterable: false,
+    sortable: false,
+    category: "Basic Info",
   },
 ];
 

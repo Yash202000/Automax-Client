@@ -252,7 +252,7 @@ export const ReportTemplatesPage: React.FC = () => {
         <span className="text-sm text-[hsl(var(--muted-foreground))]">
           {templates.length !== 1
             ? t("reports.templates_count", { count: templates.length })
-            : t("reports.template")}
+            : t("reports.template", { count: templates.length })}
         </span>
       </div>
 

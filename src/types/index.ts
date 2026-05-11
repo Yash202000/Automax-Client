@@ -1521,6 +1521,7 @@ export interface ReportFieldDefinition {
   description?: string;
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
   canBeColumn?: boolean;
+  multiselect?: boolean;
 }
 
 // Data Source Definition
