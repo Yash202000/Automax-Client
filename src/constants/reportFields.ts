@@ -1511,15 +1511,7 @@ export const locationFields: ReportFieldDefinition[] = [
     canBeColumn: false,
   },
   {
-    field: "total",
-    label: "Total",
-    type: "string",
-    filterable: false,
-    sortable: false,
-    category: "Basic Info",
-  },
-  {
-    field: "Percentage",
+    field: "percentage",
     label: "Percentage",
     type: "string",
     filterable: false,
@@ -1620,15 +1612,7 @@ export const classificationFields: ReportFieldDefinition[] = [
     canBeColumn: false,
   },
   {
-    field: "total",
-    label: "Total",
-    type: "string",
-    filterable: false,
-    sortable: false,
-    category: "Basic Info",
-  },
-  {
-    field: "Percentage",
+    field: "percentage",
     label: "Percentage",
     type: "string",
     filterable: false,
