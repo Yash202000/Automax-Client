@@ -11,9 +11,12 @@ import {
   PhoneOff,
   PhoneOutgoing,
   PhoneIncoming,
+  Headphones,
 } from "lucide-react";
 import { callLogApi } from "../../../api/admin";
 import { useAuthStore } from "@/stores/authStore";
+import { AudioPlayer } from "../../../components/common/AudioPlayer";
+import { cn } from "@/lib/utils";
 
 export const CallHistory: React.FC = () => {
   const { user } = useAuthStore();
@@ -153,101 +156,18 @@ export const CallHistory: React.FC = () => {
         ) : (
           <>
             <div className="divide-y divide-slate-100">
-              {calls.map((call: any) => {
-                const isFailed =
-                  call.status === "missed" ||
-                  call.status === "rejected" ||
-                  call.status === "failed";
-                const isAnswered =
-                  call.status === "completed" || call.status === "answered";
-                const Icon = getCallIcon(call);
-
-                return (
-                  <div
-                    key={call.id}
-                    className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isFailed
-                            ? "bg-red-50"
-                            : isAnswered
-                              ? "bg-green-50"
-                              : "bg-slate-100"
-                        }`}
-                      >
-                        <Icon
-                          className={`w-4 h-4 ${
-                            isFailed
-                              ? "text-red-500"
-                              : isAnswered
-                                ? "text-green-500"
-                                : "text-slate-400"
-                          }`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3
-                            className={`font-medium ${getStatusColor(call.status)}`}
-                          >
-                            {call.other_party_name || "Unknown"}
-                          </h3>
-                          {call.other_party_extension && (
-                            <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                              Ext. {call.other_party_extension}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-                          <span className="capitalize">{call.status}</span>
-                          {/* <span>•</span>
-                          <span className="text-xs text-slate-400 truncate">
-                            {call.call_uuid}
-                          </span> */}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
-                      <p className="text-sm font-medium text-slate-900">
-                        {formatTimestamp(call.created_at)}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {call.duration > 0
-                          ? formatDuration(call.duration)
-                          : "—"}
-                      </p>
-                    </div>
-                    <div className="ml-4">
-                      <button
-                        onClick={() => {
-                          const extension =
-                            (user as any).extension || user?.phone;
-                          if (extension) {
-                            window.dispatchEvent(
-                              new CustomEvent("initiate-call", {
-                                detail: { number: extension },
-                              }),
-                            );
-                          }
-                        }}
-                        disabled={!(user as any).extension && !user?.phone}
-                        className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
-                        title={
-                          (user as any).extension
-                            ? `Call ext. ${(user as any).extension}`
-                            : user?.phone
-                              ? `Call ${user.phone}`
-                              : "No extension"
-                        }
-                      >
-                        <Phone className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {calls.map((call: any) => (
+                <CallHistoryItem
+                  key={call.id}
+                  call={call}
+                  user={user}
+                  getStatusColor={getStatusColor}
+                  getCallIcon={getCallIcon}
+                  formatTimestamp={formatTimestamp}
+                  formatDuration={formatDuration}
+                  t={t}
+                />
+              ))}
             </div>
 
             {/* Pagination */}
@@ -282,6 +202,131 @@ export const CallHistory: React.FC = () => {
           </>
         )}
       </div>
+    </div>
+  );
+};
+
+const CallHistoryItem: React.FC<{
+  call: any;
+  user: any;
+  getStatusColor: (status: string) => string;
+  getCallIcon: (call: any) => any;
+  formatTimestamp: (dateString: string) => string;
+  formatDuration: (seconds?: number) => string;
+  t: any;
+}> = ({
+  call,
+  user,
+  getStatusColor,
+  getCallIcon,
+  formatTimestamp,
+  formatDuration,
+  t,
+}) => {
+  const [showRecording, setShowRecording] = useState(false);
+  const isFailed =
+    call.status === "missed" ||
+    call.status === "rejected" ||
+    call.status === "failed";
+  const isAnswered = call.status === "completed" || call.status === "answered";
+  const Icon = getCallIcon(call);
+
+  return (
+    <div className="p-4 hover:bg-slate-50 transition-colors group">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 flex-1">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${isFailed ? "bg-red-50" : isAnswered ? "bg-green-50" : "bg-slate-100"}`}
+          >
+            {/* <Icon
+                className={`w-4 h-4 ${isFailed ? "text-red-500" : isAnswered ? "text-green-500" : "text-slate-400"}`}
+              /> */}
+            {React.createElement(Icon, {
+              className: `w-4 h-4 ${
+                isFailed
+                  ? "text-red-500"
+                  : isAnswered
+                    ? "text-green-500"
+                    : "text-slate-400"
+              }`,
+            })}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className={`font-medium ${getStatusColor(call.status)}`}>
+                {call.other_party_name || "Unknown"}
+              </h3>
+              {call.other_party_extension && (
+                <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                  Ext. {call.other_party_extension}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
+              <span className="capitalize">{call.status}</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right ml-4">
+          <p className="text-sm font-medium text-slate-900">
+            {formatTimestamp(call.created_at)}
+          </p>
+          <p className="text-sm text-slate-500">
+            {call.duration > 0 ? formatDuration(call.duration) : "—"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 ml-4">
+          {call.recording_url && (
+            <button
+              onClick={() => setShowRecording(!showRecording)}
+              className={cn(
+                "p-2 rounded-xl transition-colors inline-flex items-center gap-2",
+                showRecording
+                  ? "bg-primary text-white"
+                  : "text-slate-400 hover:bg-primary/10 hover:text-primary",
+              )}
+              title={
+                showRecording
+                  ? t("callCentre.hideRecording")
+                  : t("callCentre.showRecording")
+              }
+            >
+              <Headphones className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => {
+              const extension = (user as any).extension || user?.phone;
+              if (extension) {
+                window.dispatchEvent(
+                  new CustomEvent("initiate-call", {
+                    detail: { number: extension },
+                  }),
+                );
+              }
+            }}
+            disabled={!(user as any).extension && !user?.phone}
+            className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            title={
+              (user as any).extension
+                ? `Call ext. ${(user as any).extension}`
+                : user?.phone
+                  ? `Call ${user.phone}`
+                  : "No extension"
+            }
+          >
+            <Phone className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      {showRecording && call.recording_url && (
+        <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <AudioPlayer
+            src={call.recording_url}
+            fileName={`recording-${call.id}.mp3`}
+          />
+        </div>
+      )}
     </div>
   );
 };
