@@ -1573,7 +1573,7 @@ export const departmentFields: ReportFieldDefinition[] = [
 export const locationFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
-    label: "Location",
+    label: "Location Name",
     type: "enum",
     filterable: false,
     dynamicOptions: "locations",
@@ -1611,13 +1611,23 @@ export const locationFields: ReportFieldDefinition[] = [
   },
   {
     field: "location_id",
-    label: "Location",
+    label: "Location ID",
     type: "enum",
     filterable: true,
     dynamicOptions: "locations",
     sortable: true,
     category: "Basic Info",
-    canBeColumn: false,
+    canBeColumn: true,
+  },
+  {
+    field: "classification_id",
+    label: "Classification ID",
+    type: "enum",
+    filterable: true,
+    dynamicOptions: "classifications",
+    sortable: true,
+    category: "Basic Info",
+    canBeColumn: true,
   },
   {
     field: "percentage",
@@ -1718,7 +1728,17 @@ export const classificationFields: ReportFieldDefinition[] = [
     dynamicOptions: "classifications",
     sortable: true,
     category: "Basic Info",
-    canBeColumn: false,
+    canBeColumn: true,
+  },
+  {
+    field: "location_id",
+    label: "Location ID",
+    type: "enum",
+    filterable: true,
+    dynamicOptions: "locations",
+    sortable: true,
+    category: "Basic Info",
+    canBeColumn: true,
   },
   {
     field: "percentage",
