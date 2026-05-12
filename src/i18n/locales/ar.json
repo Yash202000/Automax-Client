@@ -1405,6 +1405,10 @@
       },
       "toDate": "إلى تاريخ"
     },
+    "errors": {
+      "invalidDateRange": "كلا التاريخين (من وإلى) مطلوبان",
+      "fromDateAfterToDate": "تاريخ (من) لا يمكن أن يكون بعد تاريخ (إلى)"
+    },
     "sortingConfig": {
       "noSortableFields": "لا توجد حقول قابلة للترتيب",
       "noSortingConfigured": "لم يُكوّن ترتيب. ستستخدم النتائج الترتيب الافتراضي.",

@@ -967,14 +967,6 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: false,
     filterable: false,
   },
-  {
-    field: "closed_feedback",
-    label: "Closed Feedback",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-  },
 ];
 
 export const requestFields: ReportFieldDefinition[] = [
