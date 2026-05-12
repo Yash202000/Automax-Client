@@ -297,20 +297,23 @@ export const ComplaintDetailPage: React.FC = () => {
 
   const validateTransition = (): boolean => {
     const errors: Record<string, string> = {};
-    if (
-      selectedTransition?.requirements?.some(
-        (r) => r.requirement_type === "comment",
-      ) &&
-      !transitionComment?.trim()
-    ) {
+
+    const commentRequirement = selectedTransition?.requirements?.find(
+      (r) => r.requirement_type === "comment",
+    );
+
+    const feedbackRequirement = selectedTransition?.requirements?.find(
+      (r) => r.requirement_type === "feedback",
+    );
+
+    if (commentRequirement?.is_mandatory && !transitionComment?.trim()) {
       errors.comment = t("complaints.fieldRequired", {
         field: t("common.comment", "Comment"),
       });
     }
+
     if (
-      selectedTransition?.requirements?.some(
-        (r) => r.requirement_type === "feedback",
-      ) &&
+      feedbackRequirement?.is_mandatory &&
       !transitionFeedbackComment?.trim()
     ) {
       errors.feedback = t("complaints.fieldRequired", {
@@ -322,6 +325,7 @@ export const ComplaintDetailPage: React.FC = () => {
       setCommentErrors(errors);
       return false;
     }
+
     return true;
   };
 
@@ -367,6 +371,20 @@ export const ComplaintDetailPage: React.FC = () => {
     const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i;
     return audioExtensions.test(fileName);
   };
+
+  const commentRequirement = selectedTransition?.requirements?.find(
+    (r) => r.requirement_type === "comment",
+  );
+
+  const feedbackRequirement = selectedTransition?.requirements?.find(
+    (r) => r.requirement_type === "feedback",
+  );
+
+  const showComment = !!commentRequirement;
+  const isCommentRequired = commentRequirement?.is_mandatory;
+
+  const showFeedback = !!feedbackRequirement;
+  const isFeedbackRequired = feedbackRequirement?.is_mandatory;
 
   if (isLoading) {
     return (
@@ -1056,77 +1074,75 @@ export const ComplaintDetailPage: React.FC = () => {
             </div>
             <div className="p-6 space-y-4">
               {/* Comment */}
-              <div>
-                <label
-                  className={cn(
-                    "block text-sm font-medium mb-1.5",
-                    selectedTransition.requirements?.some(
-                      (r) => r.requirement_type === "comment",
-                    )
-                      ? "text-[hsl(var(--foreground))]"
-                      : "text-[hsl(var(--muted-foreground))]",
-                  )}
-                >
-                  {t("common.comment", "Comment")}
-                  {selectedTransition.requirements?.some(
-                    (r) => r.requirement_type === "comment",
-                  ) && <span className="text-red-500 ml-1">*</span>}
-                </label>
+              {showComment ? (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5 text-[hsl(var(--foreground))]">
+                    {t("common.comment", "Comment")}
+                    {isCommentRequired ? (
+                      <span className="text-red-500 ml-1">*</span>
+                    ) : null}
+                  </label>
 
-                {commentTemplates.length > 0 && (
-                  <select
-                    value={selectedCommentTemplate}
-                    onChange={(e) =>
-                      handleCommentTemplateChange(e.target.value)
-                    }
-                    className="w-full mb-3 px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  >
-                    <option value="">
-                      {t("common.selectComment", "Select template...")}
-                    </option>
-                    {commentTemplates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.comment_text}
-                      </option>
-                    ))}
-                    <option value="other">{t("common.other", "Other")}</option>
-                  </select>
-                )}
-
-                {(showCommentTextarea || commentTemplates.length === 0) && (
-                  <textarea
-                    value={transitionComment}
-                    onChange={(e) => {
-                      setTransitionComment(e.target.value);
-                      if (commentErrors.comment) {
-                        setCommentErrors((prev) => ({ ...prev, comment: "" }));
+                  {commentTemplates.length > 0 && (
+                    <select
+                      value={selectedCommentTemplate}
+                      onChange={(e) =>
+                        handleCommentTemplateChange(e.target.value)
                       }
-                    }}
-                    rows={3}
-                    className={cn(
-                      "w-full px-4 py-3 bg-[hsl(var(--muted)/0.5)] border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                      commentErrors.comment
-                        ? "border-red-500"
-                        : "border-[hsl(var(--border))]",
-                    )}
-                    placeholder={t("common.addComment", "Add a comment...")}
-                  />
-                )}
-                {commentErrors.comment && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {commentErrors.comment}
-                  </p>
-                )}
-              </div>
+                      className="w-full mb-3 px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="">
+                        {t("common.selectComment", "Select template...")}
+                      </option>
+                      {commentTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.comment_text}
+                        </option>
+                      ))}
+                      <option value="other">
+                        {t("common.other", "Other")}
+                      </option>
+                    </select>
+                  )}
+
+                  {(showCommentTextarea || commentTemplates.length === 0) && (
+                    <textarea
+                      value={transitionComment}
+                      onChange={(e) => {
+                        setTransitionComment(e.target.value);
+                        if (commentErrors.comment) {
+                          setCommentErrors((prev) => ({
+                            ...prev,
+                            comment: "",
+                          }));
+                        }
+                      }}
+                      rows={3}
+                      className={cn(
+                        "w-full px-4 py-3 bg-[hsl(var(--muted)/0.5)] border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                        commentErrors.comment
+                          ? "border-red-500"
+                          : "border-[hsl(var(--border))]",
+                      )}
+                      placeholder={t("common.addComment", "Add a comment...")}
+                    />
+                  )}
+                  {commentErrors.comment && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {commentErrors.comment}
+                    </p>
+                  )}
+                </div>
+              ) : null}
 
               {/* Feedback (if required) */}
-              {selectedTransition.requirements?.some(
-                (r) => r.requirement_type === "feedback",
-              ) && (
+              {showFeedback ? (
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
                     {t("common.feedback", "Feedback")}
-                    <span className="text-red-500 ml-1">*</span>
+                    {isFeedbackRequired ? (
+                      <span className="text-red-500 ml-1">*</span>
+                    ) : null}
                   </label>
 
                   {feedbackTemplates.length > 0 && (
@@ -1182,7 +1198,7 @@ export const ComplaintDetailPage: React.FC = () => {
                     </p>
                   )}
                 </div>
-              )}
+              ) : null}
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-[hsl(var(--border))]">
               <Button
