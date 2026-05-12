@@ -1407,6 +1407,10 @@
       },
       "toDate": "To Date"
     },
+    "errors": {
+      "invalidDateRange": "Both From and To dates are required",
+      "fromDateAfterToDate": "From date cannot be after To date"
+    },
     "sortingConfig": {
       "noSortableFields": "No sortable fields available",
       "noSortingConfigured": "No sorting configured. Results will use default order.",
