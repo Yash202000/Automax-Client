@@ -60,10 +60,7 @@ type CallStatus =
   | "connected"
   | "ended";
 
-/* -------------------- Audio -------------------- */
-
-const ring = new Audio(ringtone);
-ring.loop = true;
+/* -------------------- Audio Utils -------------------- */
 
 // Create a persistent audio element for remote stream (singleton)
 let remoteAudioElement: HTMLAudioElement | null = null;
@@ -286,6 +283,37 @@ export default function SoftPhone({
   const [, setMissingExtension] = useState<boolean>(false);
 
   const canCreateSentimentRef = useRef(false);
+  const ringRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize ringtone audio and prime it on first interaction
+  useEffect(() => {
+    const audio = new Audio(ringtone);
+    audio.loop = true;
+    ringRef.current = audio;
+
+    const primeAudio = () => {
+      console.log("🔔 Priming softphone audio...");
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          console.log("🔔 Softphone audio primed successfully");
+        })
+        .catch((err) => {
+          console.log("🔔 Softphone audio prime deferred:", err.message);
+        });
+      document.removeEventListener("click", primeAudio);
+    };
+
+    document.addEventListener("click", primeAudio);
+
+    return () => {
+      document.removeEventListener("click", primeAudio);
+      audio.pause();
+      ringRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     canCreateSentimentRef.current = canCreateSentiment;
@@ -574,19 +602,23 @@ export default function SoftPhone({
 
   /* ---------------- AUDIO ---------------- */
 
-  const playRingtone = async (): Promise<void> => {
+  const playRingtone = useCallback(async (): Promise<void> => {
+    if (!ringRef.current) return;
     try {
-      ring.currentTime = 0;
-      await ring.play();
-    } catch {
-      // autoplay may be blocked
+      console.log("🔔 Playing ringtone...");
+      ringRef.current.currentTime = 0;
+      await ringRef.current.play();
+    } catch (err) {
+      console.warn("🔔 Failed to play ringtone:", err);
     }
-  };
+  }, []);
 
-  const stopRingtone = (): void => {
-    ring.pause();
-    ring.currentTime = 0;
-  };
+  const stopRingtone = useCallback((): void => {
+    if (!ringRef.current) return;
+    console.log("🔔 Stopping ringtone");
+    ringRef.current.pause();
+    ringRef.current.currentTime = 0;
+  }, []);
 
   /* ---------------- DRAG HANDLERS ---------------- */
 
