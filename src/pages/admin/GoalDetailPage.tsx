@@ -100,7 +100,7 @@ export const GoalDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isSuperAdmin } = usePermissions();
   const user = useAuthStore((state) => state.user);
 
   // Real-time WebSocket updates
@@ -166,10 +166,7 @@ export const GoalDetailPage: React.FC = () => {
   // content and tags — not just the file-name LIKE match the backend goal
   // service does. Empty query → hook is disabled, listing falls back to the
   // standard evidence query.
-  const dmsSearchTags = useMemo(
-    () => (id ? { goal_id: id } : undefined),
-    [id],
-  );
+  const dmsSearchTags = useMemo(() => (id ? { goal_id: id } : undefined), [id]);
   const { data: dmsSearchResults, isLoading: dmsSearchLoading } =
     useDocumentSearch(
       debouncedEvidenceSearch,
@@ -221,7 +218,9 @@ export const GoalDetailPage: React.FC = () => {
   const goal = goalData?.data;
   const allEvidences = evidenceData?.data ?? [];
   const canEdit = hasPermission(PERMISSIONS.GOALS_UPDATE);
-  const canDelete = hasPermission(PERMISSIONS.GOALS_DELETE);
+  //const canDelete = hasPermission(PERMISSIONS.GOALS_DELETE);
+  const isGoalOwner = !!goal && !!user && goal.owner_id === user.id;
+  const canDelete = isSuperAdmin || (isGoalOwner && goal?.status === "Draft");
   const metricToUpdate = metricUpdateId
     ? (goal?.metrics?.find((m: GoalMetric) => m.id === metricUpdateId) ?? null)
     : null;
@@ -239,8 +238,7 @@ export const GoalDetailPage: React.FC = () => {
   const evidences = useMemo(() => {
     if (!dmsHitFileIds) return allEvidences;
     return allEvidences.filter(
-      (e) =>
-        e.documenta_file_id && dmsHitFileIds.has(e.documenta_file_id),
+      (e) => e.documenta_file_id && dmsHitFileIds.has(e.documenta_file_id),
     );
   }, [allEvidences, dmsHitFileIds]);
 
