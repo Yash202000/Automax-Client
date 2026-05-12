@@ -100,7 +100,7 @@ export const GoalDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isSuperAdmin } = usePermissions();
   const user = useAuthStore((state) => state.user);
 
   // Real-time WebSocket updates
@@ -218,7 +218,9 @@ export const GoalDetailPage: React.FC = () => {
   const goal = goalData?.data;
   const allEvidences = evidenceData?.data ?? [];
   const canEdit = hasPermission(PERMISSIONS.GOALS_UPDATE);
-  const canDelete = hasPermission(PERMISSIONS.GOALS_DELETE);
+  //const canDelete = hasPermission(PERMISSIONS.GOALS_DELETE);
+  const isGoalOwner = !!goal && !!user && goal.owner_id === user.id;
+  const canDelete = isSuperAdmin || (isGoalOwner && goal?.status === "Draft");
   const metricToUpdate = metricUpdateId
     ? (goal?.metrics?.find((m: GoalMetric) => m.id === metricUpdateId) ?? null)
     : null;
