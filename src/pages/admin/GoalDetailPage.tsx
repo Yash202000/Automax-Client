@@ -166,10 +166,7 @@ export const GoalDetailPage: React.FC = () => {
   // content and tags — not just the file-name LIKE match the backend goal
   // service does. Empty query → hook is disabled, listing falls back to the
   // standard evidence query.
-  const dmsSearchTags = useMemo(
-    () => (id ? { goal_id: id } : undefined),
-    [id],
-  );
+  const dmsSearchTags = useMemo(() => (id ? { goal_id: id } : undefined), [id]);
   const { data: dmsSearchResults, isLoading: dmsSearchLoading } =
     useDocumentSearch(
       debouncedEvidenceSearch,
@@ -239,8 +236,7 @@ export const GoalDetailPage: React.FC = () => {
   const evidences = useMemo(() => {
     if (!dmsHitFileIds) return allEvidences;
     return allEvidences.filter(
-      (e) =>
-        e.documenta_file_id && dmsHitFileIds.has(e.documenta_file_id),
+      (e) => e.documenta_file_id && dmsHitFileIds.has(e.documenta_file_id),
     );
   }, [allEvidences, dmsHitFileIds]);
 
@@ -1091,25 +1087,22 @@ export const GoalDetailPage: React.FC = () => {
                 <option value="">
                   {t("goals.detail.evidence.allStatuses")}
                 </option>
-                <option value="draft">
+                <option value="Draft">
                   {t("goals.detail.evidence.statusDraft")}
                 </option>
-                <option value="submitted">
+                <option value="Submitted">
                   {t("goals.detail.evidence.statusSubmitted")}
                 </option>
-                <option value="l1_review">
+                <option value="In_Review">
                   {t("goals.detail.evidence.statusL1Review")}
                 </option>
-                <option value="l2_review">
-                  {t("goals.detail.evidence.statusL2Review")}
-                </option>
-                <option value="approved">
+                <option value="Approved">
                   {t("goals.detail.evidence.statusApproved")}
                 </option>
-                <option value="rejected">
+                <option value="Rejected">
                   {t("goals.detail.evidence.statusRejected")}
                 </option>
-                <option value="changes_requested">
+                <option value="Changes_Requested">
                   {t("goals.detail.evidence.statusChangesRequested")}
                 </option>
               </select>
