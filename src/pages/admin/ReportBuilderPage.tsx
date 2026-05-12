@@ -28,6 +28,7 @@ import {
   locationApi,
   classificationApi,
   userApi,
+  workflowApi,
 } from "../../api/admin";
 import { getValidFilters } from "@/utils/reportUtils";
 import {
@@ -150,6 +151,7 @@ export const ReportBuilderPage: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<
     { field: string; label: string }[]
   >([]);
+  const [stateFields, setStateFields] = useState<Array<any>>([]);
   const [filters, setFilters] = useState<ReportFilter[]>([]);
   const [sorting, setSorting] = useState<ReportSort[]>([]);
   // recordLimit — how many rows the query should return (sent as the API limit)
@@ -232,7 +234,7 @@ export const ReportBuilderPage: React.FC = () => {
     const baseFields = dataSource ? getFieldsForDataSource(dataSource) : [];
 
     // Enhance fields with dynamic options
-    return baseFields.map((field) => {
+    return [...baseFields, ...stateFields].map((field) => {
       if (field.dynamicOptions && dynamicOptionsMap[field.dynamicOptions]) {
         return {
           ...field,
@@ -241,7 +243,7 @@ export const ReportBuilderPage: React.FC = () => {
       }
       return field;
     });
-  }, [dataSource, dynamicOptionsMap]);
+  }, [dataSource, dynamicOptionsMap, stateFields]);
 
   // Get data source definition
   const dataSourceDef = useMemo(() => {
@@ -292,7 +294,34 @@ export const ReportBuilderPage: React.FC = () => {
     setDbTotalCount(0);
     setDisplayPage(1);
     setLoadedTemplate(null);
+    if (
+      source === "classifications_by_status" ||
+      source === "locations_by_status"
+    ) {
+      getStatesFromWorkflow();
+    } else {
+      setStateFields([]);
+    }
   }, []);
+
+  const getStatesFromWorkflow = async () => {
+    const workflows: any = await workflowApi.list(true, "incident");
+    if (workflows.success) {
+      const states = workflows.data[0].states;
+      setStateFields(
+        states.map((x: any) => ({
+          field: x.code,
+          label: x.name,
+          type: "string",
+          category: "States",
+          sortable: false,
+          filterable: false,
+          defaultSelected: true,
+          canBeColumn: true,
+        })),
+      );
+    }
+  };
 
   // Generate report — fetches recordLimit rows in a single request, no server pagination
   const generateReport = useCallback(async () => {
