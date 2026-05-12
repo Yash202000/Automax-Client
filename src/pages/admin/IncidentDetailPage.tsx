@@ -3118,6 +3118,67 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Caller Information - form-entered contact */}
+              {(incident.reporter_name ||
+                incident.reporter_email ||
+                incident.reporter_phone) && (
+                <div className="pt-2 border-t border-[hsl(var(--border))]">
+                  <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                    {t("incidents.callerInformation", "Caller Information")}
+                  </label>
+                  <div className="mt-1 space-y-1.5">
+                    {incident.reporter_name && (
+                      <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                        {incident.reporter_name}
+                      </span>
+                    )}
+                    {incident.reporter_email && (
+                      <a
+                        href={`mailto:${incident.reporter_email}`}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
+                        </svg>
+                        {incident.reporter_email}
+                      </a>
+                    )}
+                    {incident.reporter_phone && (
+                      <a
+                        href={`tel:${incident.reporter_phone}`}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                          />
+                        </svg>
+                        {incident.reporter_phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Reporter - compact */}
               <div className="pt-2 border-t border-[hsl(var(--border))]">
                 <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -3153,9 +3214,9 @@ export const IncidentDetailPage: React.FC = () => {
                       {incident.reporter_email || incident.reporter?.email}
                     </a>
                   )}
-                  {incident.reporter?.phone && (
+                  {(incident.reporter_phone || incident.reporter?.phone) && (
                     <a
-                      href={`tel:${incident.reporter.phone}`}
+                      href={`tel:${incident.reporter_phone || incident.reporter?.phone}`}
                       className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
                     >
                       <svg
@@ -3171,7 +3232,7 @@ export const IncidentDetailPage: React.FC = () => {
                           d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                         />
                       </svg>
-                      {incident.reporter.phone}
+                      {incident.reporter_phone || incident.reporter?.phone}
                     </a>
                   )}
                 </div>

@@ -691,6 +691,7 @@ export type IncidentFormField =
   | "due_date"
   | "reporter_name"
   | "reporter_email"
+  | "reporter_phone"
   | "attachments"
   | "attachment"
   | "comment"
@@ -710,6 +711,7 @@ export interface Workflow {
   record_type: ClassificationType;
   canvas_layout?: string;
   required_fields?: IncidentFormField[];
+  optional_fields?: IncidentFormField[];
   states?: WorkflowState[];
   transitions?: WorkflowTransition[];
   classifications?: Classification[];
@@ -872,6 +874,7 @@ export interface WorkflowUpdateRequest {
   sources?: IncidentSource[];
   priorities?: number[];
   required_fields?: IncidentFormField[];
+  optional_fields?: IncidentFormField[];
 }
 
 export interface WorkflowStateCreateRequest {
@@ -1223,6 +1226,7 @@ export interface IncidentCreateRequest {
   due_date?: string;
   reporter_email?: string;
   reporter_name?: string;
+  reporter_phone?: string;
   custom_fields?: string;
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;

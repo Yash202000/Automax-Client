@@ -219,13 +219,18 @@ const baseFormFields: {
   { field: "due_date", label: "Due Date", description: "Resolution deadline" },
   {
     field: "reporter_name",
-    label: "Reporter Name",
-    description: "Name of person reporting",
+    label: "Caller Name",
+    description: "Name of caller",
   },
   {
     field: "reporter_email",
-    label: "Reporter Email",
-    description: "Email of person reporting",
+    label: "Caller Email",
+    description: "Email of caller",
+  },
+  {
+    field: "reporter_phone",
+    label: "Caller Phone Number",
+    description: "Phone number of caller",
   },
   {
     field: "attachments",
@@ -580,6 +585,7 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
+  const [optionalFields, setOptionalFields] = useState<IncidentFormField[]>([]);
 
   // Convert to request role IDs
   const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<
@@ -703,6 +709,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
 
       setRequiredFields(workflow.required_fields || []);
+      setOptionalFields(workflow.optional_fields || []);
 
       setConvertToRequestRoleIds(
         workflow.convert_to_request_roles?.map((r) => r.id) || [],
@@ -752,11 +759,18 @@ export const WorkflowDesignerPage: React.FC = () => {
     },
   });
 
-  // Required fields mutation
+  // Required/optional fields mutation
   const updateRequiredFieldsMutation = useMutation({
-    mutationFn: (fields: IncidentFormField[]) =>
+    mutationFn: ({
+      required,
+      optional,
+    }: {
+      required: IncidentFormField[];
+      optional: IncidentFormField[];
+    }) =>
       workflowApi.update(id!, {
-        required_fields: fields,
+        required_fields: required,
+        optional_fields: optional,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
@@ -2440,77 +2454,148 @@ export const WorkflowDesignerPage: React.FC = () => {
               </div>
 
               <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-1">
                   {t("workflows.selectRequiredFields")}
                 </h4>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">
+                  {t("workflows.fieldStateHidden")} →{" "}
+                  {t("workflows.fieldStateOptional")} →{" "}
+                  {t("workflows.fieldStateRequired")}
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {availableFormFields.map((item) => (
-                    <label
-                      key={item.field}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
-                        requiredFields.includes(item.field)
-                          ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
-                          : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={requiredFields.includes(item.field)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setRequiredFields((prev) => [...prev, item.field]);
-                          } else {
-                            setRequiredFields((prev) =>
-                              prev.filter((f) => f !== item.field),
-                            );
-                          }
-                        }}
-                        className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {item.label}
-                        </span>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                          {item.description}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
+                  {availableFormFields.map((item) => {
+                    const isRequired = requiredFields.includes(item.field);
+                    const isOptional =
+                      !isRequired && optionalFields.includes(item.field);
+
+                    const cycleState = () => {
+                      if (!isRequired && !isOptional) {
+                        // hidden → optional
+                        setOptionalFields((prev) => [...prev, item.field]);
+                      } else if (isOptional) {
+                        // optional → required
+                        setOptionalFields((prev) =>
+                          prev.filter((f) => f !== item.field),
+                        );
+                        setRequiredFields((prev) => [...prev, item.field]);
+                      } else {
+                        // required → hidden
+                        setRequiredFields((prev) =>
+                          prev.filter((f) => f !== item.field),
+                        );
+                      }
+                    };
+
+                    return (
+                      <button
+                        key={item.field}
+                        type="button"
+                        onClick={cycleState}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg transition-colors border text-left w-full",
+                          isRequired
+                            ? "bg-amber-50 border-amber-400"
+                            : isOptional
+                              ? "bg-blue-50 border-blue-400"
+                              : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
+                        )}
+                      >
+                        <div className="mt-0.5 flex-shrink-0">
+                          {isRequired ? (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold">
+                              !
+                            </span>
+                          ) : isOptional ? (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold">
+                              ?
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border-2 border-[hsl(var(--border))]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                              {item.label}
+                            </span>
+                            {isRequired && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
+                                {t("workflows.fieldStateRequired")}
+                              </span>
+                            )}
+                            {isOptional && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                {t("workflows.fieldStateOptional")}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                            {item.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Summary */}
-              <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                  {t("workflows.requiredFieldsSummary")}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
-                    {t("workflows.titleAlways")}
-                  </span>
-                  <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
-                    {t("workflows.workflowAlways")}
-                  </span>
-                  {requiredFields.map((field) => {
-                    const fieldConfig = availableFormFields.find(
-                      (f) => f.field === field,
-                    );
-                    return (
-                      <span
-                        key={field}
-                        className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded"
-                      >
-                        {fieldConfig?.label || field}
-                      </span>
-                    );
-                  })}
-                  {requiredFields.length === 0 && (
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("common.noAdditionalRequiredFields")}
+              <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.requiredFieldsSummary")}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded">
+                      {t("workflows.titleAlways")}
                     </span>
-                  )}
+                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded">
+                      {t("workflows.workflowAlways")}
+                    </span>
+                    {requiredFields.map((field) => {
+                      const fieldConfig = availableFormFields.find(
+                        (f) => f.field === field,
+                      );
+                      return (
+                        <span
+                          key={field}
+                          className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded"
+                        >
+                          {fieldConfig?.label || field}
+                        </span>
+                      );
+                    })}
+                    {requiredFields.length === 0 && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("common.noAdditionalRequiredFields")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.optionalFieldsSummary")}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {optionalFields.map((field) => {
+                      const fieldConfig = availableFormFields.find(
+                        (f) => f.field === field,
+                      );
+                      return (
+                        <span
+                          key={field}
+                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded"
+                        >
+                          {fieldConfig?.label || field}
+                        </span>
+                      );
+                    })}
+                    {optionalFields.length === 0 && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.noOptionalFields")}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2518,7 +2603,10 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="flex justify-end">
                 <Button
                   onClick={() =>
-                    updateRequiredFieldsMutation.mutate(requiredFields)
+                    updateRequiredFieldsMutation.mutate({
+                      required: requiredFields,
+                      optional: optionalFields,
+                    })
                   }
                   isLoading={updateRequiredFieldsMutation.isPending}
                   leftIcon={<Check className="w-4 h-4" />}
