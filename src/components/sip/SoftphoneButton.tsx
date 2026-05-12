@@ -12,7 +12,14 @@ export const SoftphoneButton: React.FC<SoftphoneButtonProps> = ({
   className,
   iconClassName,
 }) => {
-  const { isOpen, toggle, isConnected, isConnecting } = useSoftphoneStore();
+  const { isOpen, toggle, isConnected, isConnecting, shouldConnect } =
+    useSoftphoneStore();
+
+  const status = isConnected
+    ? "connected"
+    : isConnecting || (shouldConnect && !isConnected)
+      ? "connecting"
+      : "disconnected";
 
   return (
     <div className="relative inline-flex">
@@ -31,9 +38,9 @@ export const SoftphoneButton: React.FC<SoftphoneButtonProps> = ({
       <div
         className={cn(
           "absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-sidebar shadow-sm",
-          isConnected
+          status === "connected"
             ? "bg-green-500"
-            : isConnecting
+            : status === "connecting"
               ? "bg-yellow-500 animate-pulse"
               : "bg-red-500",
         )}

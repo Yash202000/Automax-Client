@@ -251,6 +251,10 @@ const sipService = {
       cleanup();
     }
   },
+
+  isInitialized(): boolean {
+    return ua !== null;
+  },
 };
 
 /* -------------------- Cleanup -------------------- */
