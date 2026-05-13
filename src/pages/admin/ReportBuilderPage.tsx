@@ -326,16 +326,6 @@ export const ReportBuilderPage: React.FC = () => {
   // Generate report — fetches recordLimit rows in a single request, no server pagination
   const generateReport = useCallback(async () => {
     if (!dataSource || selectedColumns.length === 0) return;
-    console.log(
-      "filters",
-      filters,
-      getValidFilters(filters).map(({ field, value }) => ({
-        field,
-        operator: "equals",
-        value,
-      })),
-    );
-
     setIsPreviewLoading(true);
     setDisplayPage(1);
     try {

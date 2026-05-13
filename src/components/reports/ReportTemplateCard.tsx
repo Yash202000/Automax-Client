@@ -227,6 +227,9 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     let updatedFilters: ReportFilter[] = [...filters];
 
     if (fromDate && toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
       updatedFilters = updatedFilters.filter((f) => f.field !== "created_at");
       updatedFilters.push({
         id: "created_at",
@@ -234,7 +237,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
         operator: "between",
         value: {
           from: new Date(fromDate).toISOString(),
-          to: new Date(toDate).toISOString(),
+          to: endOfDay.toISOString(),
         },
       });
     }
