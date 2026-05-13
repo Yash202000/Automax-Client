@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import sipService from "../../lib/services/sipService";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
-import ringtone from "@/assets/phone_ring.mp3";
+import ringtone from "/phone_ring.mp3";
 import {
   Phone,
   PhoneOff,
