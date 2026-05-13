@@ -1,9 +1,15 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { ReportFilter, ReportFieldDefinition, FilterOperator, FilterValue } from '../../types';
-import { getOperatorsForFieldType } from '../../constants/reportFields';
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type {
+  ReportFilter,
+  ReportFieldDefinition,
+  // FilterOperator,
+  FilterValue,
+} from "../../types";
+import { getOperatorsForFieldType } from "../../constants/reportFields";
+import { MultiSelect } from "../../components/ui/MultiSelect";
 
 interface FilterBuilderProps {
   fields: ReportFieldDefinition[];
@@ -22,33 +28,44 @@ interface FilterRowProps {
 }
 
 // Generate a unique ID for new filters
-const generateFilterId = () => `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateFilterId = () =>
+  `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // Filter Row Component
-const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, onChange, onRemove, t }) => {
+const FilterRow: React.FC<FilterRowProps> = ({
+  filter,
+  fields,
+  enableAddFilter,
+  onChange,
+  onRemove,
+  t,
+}) => {
   const selectedField = fields.find((f) => f.field === filter.field);
-  const fieldType = selectedField?.type || 'string';
-  const operators = getOperatorsForFieldType(fieldType);
+  const fieldType = selectedField?.type || "string";
+  // const operators = getOperatorsForFieldType(fieldType);
 
   const handleFieldChange = (field: string) => {
     const newField = fields.find((f) => f.field === field);
-    const newOperators = getOperatorsForFieldType(newField?.type || 'string');
-    const newOperator = newOperators[0]?.value || 'equals';
+    // For multi-select fields, always use "in" operator
+    const newOperator = newField?.multiselect
+      ? "in"
+      : getOperatorsForFieldType(newField?.type || "string")[0]?.value ||
+        "equals";
     onChange({ ...filter, field, operator: newOperator, value: null });
   };
 
-  const handleOperatorChange = (operator: FilterOperator) => {
-    let newValue: FilterValue = filter.value;
-    // Reset value for certain operator types
-    if (operator === 'between') {
-      newValue = { from: '', to: '' };
-    } else if (operator === 'in' || operator === 'not_in') {
-      newValue = [];
-    } else if (operator === 'is_empty' || operator === 'is_not_empty') {
-      newValue = null;
-    }
-    onChange({ ...filter, operator, value: newValue });
-  };
+  // const handleOperatorChange = (operator: FilterOperator) => {
+  //   let newValue: FilterValue = filter.value;
+  //   // Reset value for certain operator types
+  //   if (operator === "between") {
+  //     newValue = { from: "", to: "" };
+  //   } else if (operator === "in" || operator === "not_in") {
+  //     newValue = [];
+  //   } else if (operator === "is_empty" || operator === "is_not_empty") {
+  //     newValue = null;
+  //   }
+  //   onChange({ ...filter, operator, value: newValue });
+  // };
 
   const handleValueChange = (value: FilterValue) => {
     onChange({ ...filter, value });
@@ -57,30 +74,54 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
   // Render value input based on field type and operator
   const renderValueInput = () => {
     // No value input needed for these operators
-    if (filter.operator === 'is_empty' || filter.operator === 'is_not_empty') {
+    if (filter.operator === "is_empty" || filter.operator === "is_not_empty") {
       return null;
     }
 
+    // Multi-select field
+    if (selectedField?.multiselect && selectedField?.options) {
+      const selectedValues: Array<string | number> = Array.isArray(filter.value)
+        ? (filter.value as Array<string | number>)
+        : [];
+      return (
+        <MultiSelect
+          options={selectedField.options.map((opt) => ({
+            label: opt.label,
+            value: String(opt.value),
+          }))}
+          value={selectedValues.map(String)}
+          onChange={(values) => handleValueChange(values)}
+          placeholder={t("reports.filterBuilder.selectValue")}
+          searchable
+          maxTagCount={2}
+        />
+      );
+    }
+
     // Boolean field
-    if (fieldType === 'boolean') {
+    if (fieldType === "boolean") {
       return (
         <select
-          value={String(filter.value ?? '')}
-          onChange={(e) => handleValueChange(e.target.value === 'true')}
+          value={String(filter.value ?? "")}
+          onChange={(e) => handleValueChange(e.target.value === "true")}
           className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
         >
-          <option value="">{t('reports.filterBuilder.selectValue')}</option>
-          <option value="true">{t('reports.filterBuilder.yes')}</option>
-          <option value="false">{t('reports.filterBuilder.no')}</option>
+          <option value="">{t("reports.filterBuilder.selectValue")}</option>
+          <option value="true">{t("reports.filterBuilder.yes")}</option>
+          <option value="false">{t("reports.filterBuilder.no")}</option>
         </select>
       );
     }
 
     // Enum field with options
-    if (fieldType === 'enum' && selectedField?.options) {
-      if (filter.operator === 'in' || filter.operator === 'not_in') {
+    if (fieldType === "enum" && selectedField?.options) {
+      if (filter.operator === "in" || filter.operator === "not_in") {
         // Multi-select for 'in' / 'not_in'
-        const selectedValues: Array<string | number> = Array.isArray(filter.value) ? (filter.value as Array<string | number>) : [];
+        const selectedValues: Array<string | number> = Array.isArray(
+          filter.value,
+        )
+          ? (filter.value as Array<string | number>)
+          : [];
         return (
           <div className="flex-1 flex flex-wrap gap-1 p-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg min-h-[38px]">
             {selectedField.options.map((opt) => {
@@ -91,16 +132,24 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
                   type="button"
                   onClick={() => {
                     if (isSelected) {
-                      handleValueChange(selectedValues.filter((v) => v !== opt.value) as (string | number)[]);
+                      handleValueChange(
+                        selectedValues.filter((v) => v !== opt.value) as (
+                          | string
+                          | number
+                        )[],
+                      );
                     } else {
-                      handleValueChange([...selectedValues, opt.value] as (string | number)[]);
+                      handleValueChange([...selectedValues, opt.value] as (
+                        | string
+                        | number
+                      )[]);
                     }
                   }}
                   className={cn(
                     "px-2 py-1 text-xs rounded-md transition-colors",
                     isSelected
                       ? "bg-[hsl(var(--primary))] text-white"
-                      : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.8)]"
+                      : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.8)]",
                   )}
                 >
                   {opt.label}
@@ -114,15 +163,17 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
       // Single select dropdown
       return (
         <select
-          style={enableAddFilter ? { width: '100%' } : { width: '25%' }}
-          value={String(filter.value ?? '')}
+          style={enableAddFilter ? { width: "100%" } : { width: "25%" }}
+          value={String(filter.value ?? "")}
           onChange={(e) => {
-            const opt = selectedField.options?.find((o) => String(o.value) === e.target.value);
+            const opt = selectedField.options?.find(
+              (o) => String(o.value) === e.target.value,
+            );
             handleValueChange(opt?.value ?? e.target.value);
           }}
           className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
         >
-          <option value="">{t('reports.filterBuilder.selectValue')}</option>
+          <option value="">{t("reports.filterBuilder.selectValue")}</option>
           {selectedField.options.map((opt) => (
             <option key={String(opt.value)} value={String(opt.value)}>
               {opt.label}
@@ -133,24 +184,43 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
     }
 
     // Between operator - two inputs
-    if (filter.operator === 'between') {
+    if (filter.operator === "between") {
       const rangeValue = filter.value as { from: string; to: string } | null;
-      const inputType = fieldType === 'number' ? 'number' : fieldType === 'date' ? 'date' : fieldType === 'datetime' ? 'datetime-local' : 'text';
+      const inputType =
+        fieldType === "number"
+          ? "number"
+          : fieldType === "date"
+            ? "date"
+            : fieldType === "datetime"
+              ? "datetime-local"
+              : "text";
       return (
         <div className="flex-1 flex items-center gap-2">
           <input
             type={inputType}
-            value={rangeValue?.from || ''}
-            onChange={(e) => handleValueChange({ from: e.target.value, to: rangeValue?.to || '' })}
-            placeholder={t('reports.filterBuilder.from')}
+            value={rangeValue?.from || ""}
+            onChange={(e) =>
+              handleValueChange({
+                from: e.target.value,
+                to: rangeValue?.to || "",
+              })
+            }
+            placeholder={t("reports.filterBuilder.from")}
             className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
           />
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">{t('reports.filterBuilder.to')}</span>
+          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+            {t("reports.filterBuilder.to")}
+          </span>
           <input
             type={inputType}
-            value={rangeValue?.to || ''}
-            onChange={(e) => handleValueChange({ from: rangeValue?.from || '', to: e.target.value })}
-            placeholder={t('reports.filterBuilder.to')}
+            value={rangeValue?.to || ""}
+            onChange={(e) =>
+              handleValueChange({
+                from: rangeValue?.from || "",
+                to: e.target.value,
+              })
+            }
+            placeholder={t("reports.filterBuilder.to")}
             className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
           />
         </div>
@@ -158,12 +228,12 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
     }
 
     // Date/datetime field
-    if (fieldType === 'date' || fieldType === 'datetime') {
-      const inputType = fieldType === 'date' ? 'date' : 'datetime-local';
+    if (fieldType === "date" || fieldType === "datetime") {
+      const inputType = fieldType === "date" ? "date" : "datetime-local";
       return (
         <input
           type={inputType}
-          value={String(filter.value ?? '')}
+          value={String(filter.value ?? "")}
           onChange={(e) => handleValueChange(e.target.value)}
           className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
         />
@@ -171,13 +241,15 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
     }
 
     // Number field
-    if (fieldType === 'number') {
+    if (fieldType === "number") {
       return (
         <input
           type="number"
-          value={String(filter.value ?? '')}
-          onChange={(e) => handleValueChange(e.target.value ? Number(e.target.value) : null)}
-          placeholder={t('reports.filterBuilder.enterValue')}
+          value={String(filter.value ?? "")}
+          onChange={(e) =>
+            handleValueChange(e.target.value ? Number(e.target.value) : null)
+          }
+          placeholder={t("reports.filterBuilder.enterValue")}
           className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
         />
       );
@@ -187,39 +259,41 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
     return (
       <input
         type="text"
-        style={enableAddFilter ? { width: '100%' } : { width: '25%' }}
-        value={String(filter.value ?? '')}
+        style={enableAddFilter ? { width: "100%" } : { width: "25%" }}
+        value={String(filter.value ?? "")}
         onChange={(e) => handleValueChange(e.target.value)}
-        placeholder={t('reports.filterBuilder.enterValue')}
+        placeholder={t("reports.filterBuilder.enterValue")}
         className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
       />
     );
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg">
+    <div className="relative flex items-center gap-2 p-3 bg-[hsl(var(--muted)/0.3)] rounded-lg overflow-visible">
       {/* Field selector */}
-      {
-        enableAddFilter ?
-          <select
-            value={filter.field}
-            onChange={(e) => handleFieldChange(e.target.value)}
-            className="w-40 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
-          >
-            <option value="">{t('reports.filterBuilder.selectField')}</option>
-            {fields
-              .filter((f) => f.filterable)
-              .map((f) => (
-                <option key={f.field} value={f.field}>
-                  {f.label}
-                </option>
-              ))}
-          </select> :
-          <span className="text-sm text-[hsl(var(--muted-foreground))] flex-1">{fields.find((f) => f.field === filter.field)?.label}</span>
-      }
+      {enableAddFilter ? (
+        <select
+          value={filter.field}
+          onChange={(e) => handleFieldChange(e.target.value)}
+          className="w-40 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+        >
+          <option value="">{t("reports.filterBuilder.selectField")}</option>
+          {fields
+            .filter((f) => f.filterable)
+            .map((f) => (
+              <option key={f.field} value={f.field}>
+                {f.label}
+              </option>
+            ))}
+        </select>
+      ) : (
+        <span className="text-sm text-[hsl(var(--muted-foreground))] flex-1">
+          {fields.find((f) => f.field === filter.field)?.label}
+        </span>
+      )}
 
       {/* Operator selector */}
-      <select
+      {/* <select
         value={filter.operator}
         onChange={(e) => handleOperatorChange(e.target.value as FilterOperator)}
         className={`w-36 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]`}
@@ -229,14 +303,13 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
             {op.label}
           </option>
         ))}
-      </select>
+      </select> */}
 
       {/* Value input */}
       {renderValueInput()}
 
       {/* Remove button */}
-      {
-        enableAddFilter &&
+      {enableAddFilter && (
         <button
           type="button"
           onClick={onRemove}
@@ -244,7 +317,7 @@ const FilterRow: React.FC<FilterRowProps> = ({ filter, fields, enableAddFilter, 
         >
           <Trash2 className="w-4 h-4" />
         </button>
-      }
+      )}
     </div>
   );
 };
@@ -266,7 +339,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
     const newFilter: ReportFilter = {
       id: generateFilterId(),
       field: firstFilterableField.field,
-      operator: operators[0]?.value || 'equals',
+      operator: operators[0]?.value || "equals",
       value: null,
     };
     onChange([...filters, newFilter]);
@@ -291,7 +364,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
   if (filterableFields.length === 0) {
     return (
       <div className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
-        {t('reports.filterBuilder.noFilterableFields')}
+        {t("reports.filterBuilder.noFilterableFields")}
       </div>
     );
   }
@@ -301,11 +374,11 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
       {/* Filters list */}
       {filters.length === 0 ? (
         <div className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4 border border-dashed border-[hsl(var(--border))] rounded-lg">
-          {
-            enableAddFilter ?
-              t('reports.filterBuilder.noFiltersAdded') + " " + t('reports.filterBuilder.clickAddFilter')
-              : t('reports.filterBuilder.noFiltersAdded')
-          }
+          {enableAddFilter
+            ? t("reports.filterBuilder.noFiltersAdded") +
+              " " +
+              t("reports.filterBuilder.clickAddFilter")
+            : t("reports.filterBuilder.noFiltersAdded")}
         </div>
       ) : (
         <div className="">
@@ -324,8 +397,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
       )}
 
       {/* Actions */}
-      {
-        enableAddFilter &&
+      {enableAddFilter && (
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -333,7 +405,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {t('reports.filterBuilder.addFilter')}
+            {t("reports.filterBuilder.addFilter")}
           </button>
           {filters.length > 0 && (
             <button
@@ -341,11 +413,11 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
               onClick={clearAllFilters}
               className="px-3 py-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
             >
-              {t('reports.filterBuilder.clearAll')}
+              {t("reports.filterBuilder.clearAll")}
             </button>
           )}
         </div>
-      }
+      )}
     </div>
   );
 };

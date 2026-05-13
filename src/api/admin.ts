@@ -1135,6 +1135,33 @@ export const workflowApi = {
     return response.data;
   },
 
+  // Get the initial state of a workflow (with assignment config)
+  getInitialState: async (
+    workflowId: string,
+  ): Promise<ApiResponse<import("../types").WorkflowState>> => {
+    const response = await apiClient.get<
+      ApiResponse<import("../types").WorkflowState>
+    >(`/admin/workflows/${workflowId}/initial-state`);
+    return response.data;
+  },
+
+  // Get matching users for a workflow's initial state (manual-select creation assignment)
+  getInitialStateMatchingUsers: async (
+    workflowId: string,
+    params: {
+      classification_id?: string;
+      location_id?: string;
+      department_id?: string;
+    },
+  ): Promise<ApiResponse<import("../types").User[]>> => {
+    const response = await apiClient.get<
+      ApiResponse<import("../types").User[]>
+    >(`/admin/workflows/${workflowId}/initial-state/matching-users`, {
+      params,
+    });
+    return response.data;
+  },
+
   // Match workflow via backend API based on incident criteria
   matchWorkflow: async (criteria: {
     classification_id?: string;
@@ -1343,6 +1370,13 @@ export const incidentApi = {
   ): Promise<ApiResponse<IncidentComment[]>> => {
     const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
       `/incidents/${incidentId}/comments`,
+    );
+    return response.data;
+  },
+
+  listFeedbacks: async (incidentId: string): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(
+      `/incidents/${incidentId}/feedbacks`,
     );
     return response.data;
   },
@@ -1686,6 +1720,13 @@ export const complaintApi = {
   ): Promise<ApiResponse<IncidentComment[]>> => {
     const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
       `/complaints/${complaintId}/comments`,
+    );
+    return response.data;
+  },
+
+  listFeedbacks: async (complaintId: string): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(
+      `/complaints/${complaintId}/feedbacks`,
     );
     return response.data;
   },
@@ -2075,6 +2116,15 @@ export const requestApi = {
   ): Promise<ApiResponse<IncidentComment[]>> => {
     const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
       `/incidents/${requestId}/comments`,
+    );
+    return response.data;
+  },
+
+  listFeedbacks: async (
+    requestId: string,
+  ): Promise<ApiResponse<IncidentComment[]>> => {
+    const response = await apiClient.get<ApiResponse<IncidentComment[]>>(
+      `/incidents/${requestId}/feedbacks`,
     );
     return response.data;
   },

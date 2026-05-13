@@ -38,7 +38,7 @@ interface ExportFilters {
 }
 
 const ReportTemplatesListPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -70,11 +70,11 @@ const ReportTemplatesListPage: React.FC = () => {
     mutationFn: deleteTemplate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-templates"] });
-      setSuccessMessage("Template deleted successfully");
+      setSuccessMessage(t("reportTemplates.templateDeletedSuccessfully"));
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError("Failed to delete template");
+      setError(t("reportTemplates.failedToDeleteTemplate"));
       setTimeout(() => setError(null), 3000);
     },
   });
@@ -83,11 +83,11 @@ const ReportTemplatesListPage: React.FC = () => {
     mutationFn: duplicateTemplate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-templates"] });
-      setSuccessMessage("Template duplicated successfully");
+      setSuccessMessage(t("reportTemplates.templateDuplicatedSuccessfully"));
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError("Failed to duplicate template");
+      setError(t("reportTemplates.failedToDuplicateTemplate"));
       setTimeout(() => setError(null), 3000);
     },
   });
@@ -96,18 +96,17 @@ const ReportTemplatesListPage: React.FC = () => {
     mutationFn: setDefaultTemplate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-templates"] });
-      setSuccessMessage("Default template updated");
+      setSuccessMessage(t("reportTemplates.defaultTemplateUpdated"));
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: () => {
-      setError("Failed to set default template");
+      setError(t("reportTemplates.failedToSetDefaultTemplate"));
       setTimeout(() => setError(null), 3000);
     },
   });
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this template?"))
-      return;
+    if (!window.confirm(t("reportTemplates.deleteTemplateConfirm"))) return;
     deleteMutation.mutate(id);
     setOpenMenuId(null);
   };
@@ -179,12 +178,12 @@ const ReportTemplatesListPage: React.FC = () => {
       };
 
       await downloadReport(request);
-      setSuccessMessage("Report downloaded successfully");
+      setSuccessMessage(t("reportTemplates.reportDownloadedSuccessfully"));
       setTimeout(() => setSuccessMessage(null), 3000);
       setShowExportModal(false);
       setSelectedTemplate(null);
     } catch {
-      setError("Failed to export report");
+      setError(t("reportTemplates.failedToExportReport"));
       setTimeout(() => setError(null), 3000);
     } finally {
       setExporting(false);
@@ -206,10 +205,10 @@ const ReportTemplatesListPage: React.FC = () => {
         format: "pdf",
         file_name: template.name,
       });
-      setSuccessMessage("Report downloaded");
+      setSuccessMessage(t("reportTemplates.reportDownloaded"));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
-      setError("Failed to export report");
+      setError(t("reportTemplates.failedToExportReport"));
       setTimeout(() => setError(null), 3000);
     }
     setOpenMenuId(null);
@@ -300,7 +299,11 @@ const ReportTemplatesListPage: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{template.name}</h3>
+                      <h3 className="font-medium">
+                        {i18n.language === "ar" && template.name_ar
+                          ? template.name_ar
+                          : template.name}
+                      </h3>
                       {template.is_default && (
                         <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
                           <Star className="h-3 w-3" />
@@ -478,7 +481,11 @@ const ReportTemplatesListPage: React.FC = () => {
               {/* Template Info */}
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-500">{t("common.template")}</p>
-                <p className="font-medium">{selectedTemplate.name}</p>
+                <p className="font-medium">
+                  {i18n.language === "ar" && selectedTemplate.name_ar
+                    ? selectedTemplate.name_ar
+                    : selectedTemplate.name}
+                </p>
               </div>
 
               {/* Date Range */}

@@ -15,7 +15,6 @@ import {
   LayoutTemplate,
   FileBarChart,
   Languages,
-  Phone,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -29,7 +28,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
-import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
 
 export const ReportsLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -38,11 +37,10 @@ export const ReportsLayout: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const { isOpen, toggle } = useSoftphoneStore();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
-  const { hasPermission, isSuperAdmin } = usePermissions();
+  const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canCreateReport =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
 
@@ -355,16 +353,9 @@ export const ReportsLayout: React.FC = () => {
             </div>
 
             {/* Softphone */}
-            <button
-              onClick={toggle}
-              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                isOpen
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Phone className="w-5 h-5" />
-            </button>
+            {(isSuperAdmin || hasAnyPermission?.(["dashboard:ccm"])) && (
+              <SoftphoneButton />
+            )}
 
             {/* Notifications */}
             <NotificationBell />

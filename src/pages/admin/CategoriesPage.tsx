@@ -34,18 +34,24 @@ import { PERMISSIONS } from "../../constants/permissions";
 
 interface CategoryFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   parent_id: string;
   parent_name: string;
   sort_order: number;
   is_active: boolean;
 }
 
+type CategoryFormErrors = Partial<Record<"name" | "code", string>>;
+
 const initialFormData: CategoryFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   parent_id: "",
   parent_name: "",
   sort_order: 0,
@@ -92,9 +98,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   t,
 }) => {
   const [expanded, setExpanded] = useState(true);
+  const { i18n } = useTranslation();
   const hasChildren = category.children && category.children.length > 0;
   const gradient = levelGradients[level % levelGradients.length];
   const badgeColor = levelBadgeColors[level % levelBadgeColors.length];
+  const displayName =
+    i18n.language === "ar" && category.name_ar
+      ? category.name_ar
+      : category.name;
 
   return (
     <div>
@@ -128,7 +139,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
-                {category.name}
+                {displayName}
               </h4>
               <span className="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
                 {category.code}
@@ -165,7 +176,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {canCreate && (
               <button
-                onClick={() => onAdd(category.id, category.name)}
+                onClick={() => onAdd(category.id, displayName)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)] rounded-lg transition-colors"
                 title={t("categories.addChild", "Add sub-category")}
               >
@@ -216,11 +227,12 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const CategoriesPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>(initialFormData);
+  const [formErrors, setFormErrors] = useState<CategoryFormErrors>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -258,6 +270,7 @@ export const CategoriesPage: React.FC = () => {
       parent_id: parentId,
       parent_name: parentName,
     });
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -266,13 +279,16 @@ export const CategoriesPage: React.FC = () => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
+      name_ar: category.name_ar ?? "",
       code: category.code,
       description: category.description ?? "",
+      description_ar: category.description_ar ?? "",
       parent_id: category.parent_id ?? "",
       parent_name: parentCat?.name ?? "",
       sort_order: category.sort_order,
       is_active: category.is_active,
     });
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -280,15 +296,36 @@ export const CategoriesPage: React.FC = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     setFormData(initialFormData);
+    setFormErrors({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nextErrors: CategoryFormErrors = {};
+
+    if (!formData.name.trim()) {
+      nextErrors.name = t("validation.fieldRequired", {
+        field: t("categories.name", "Name"),
+      });
+    }
+
+    if (!editingCategory && !formData.code.trim()) {
+      nextErrors.code = t("validation.fieldRequired", {
+        field: t("categories.code", "Code"),
+      });
+    }
+
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
 
     if (editingCategory) {
       const payload: CategoryUpdateRequest = {
-        name: formData.name,
+        name: formData.name.trim(),
+        name_ar: formData.name_ar || undefined,
         description: formData.description,
+        description_ar: formData.description_ar || undefined,
         sort_order: formData.sort_order,
         is_active: formData.is_active,
       };
@@ -303,9 +340,11 @@ export const CategoriesPage: React.FC = () => {
       }
     } else {
       const payload: CategoryCreateRequest = {
-        name: formData.name,
-        code: formData.code,
+        name: formData.name.trim(),
+        name_ar: formData.name_ar || undefined,
+        code: formData.code.trim(),
         description: formData.description || undefined,
+        description_ar: formData.description_ar || undefined,
         parent_id: formData.parent_id || undefined,
         sort_order: formData.sort_order,
       };
@@ -328,6 +367,22 @@ export const CategoriesPage: React.FC = () => {
       setDeleteConfirm(null);
     }
   };
+
+  const inputClassName = (hasError?: boolean, extraClassName = "") =>
+    cn(
+      "w-full px-4 py-2.5 bg-[hsl(var(--background))] border rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all",
+      hasError
+        ? "border-[hsl(var(--destructive))]"
+        : "border-[hsl(var(--border))]",
+      extraClassName,
+    );
+
+  const renderFieldError = (message?: string) =>
+    message ? (
+      <p className="mt-1 text-xs font-medium text-[hsl(var(--destructive))]">
+        {message}
+      </p>
+    ) : null;
 
   const rootCount = filteredTree.length;
 
@@ -544,6 +599,7 @@ export const CategoriesPage: React.FC = () => {
             <form
               onSubmit={handleSubmit}
               className="p-6 space-y-4 overflow-y-auto flex-1"
+              noValidate
             >
               {/* Parent Info Banner */}
               {!editingCategory && formData.parent_name && (
@@ -573,25 +629,43 @@ export const CategoriesPage: React.FC = () => {
               )}
 
               {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("categories.name", "Name")}{" "}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder={t(
-                    "categories.namePlaceholder",
-                    "e.g. Strategic, Revenue Growth",
-                  )}
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                  required
-                  maxLength={100}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("categories.name", "Name")}{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t(
+                      "categories.namePlaceholder",
+                      "e.g. Strategic, Revenue Growth",
+                    )}
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    required
+                    maxLength={255}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("categories.nameAr", "Name (Arabic)")}
+                  </label>
+                  <input
+                    type="text"
+                    dir="rtl"
+                    placeholder="مثال: استراتيجي"
+                    value={formData.name_ar}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name_ar: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    maxLength={255}
+                  />
+                </div>
               </div>
 
               {/* Code (create only) */}
@@ -611,13 +685,20 @@ export const CategoriesPage: React.FC = () => {
                       "e.g. strategic, revenue_growth",
                     )}
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all font-mono"
+                    onChange={(e) => {
+                      setFormData({ ...formData, code: e.target.value });
+                      if (formErrors.code) {
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          code: undefined,
+                        }));
+                      }
+                    }}
+                    className={inputClassName(!!formErrors.code, "font-mono")}
                     required
                     maxLength={50}
                   />
+                  {renderFieldError(formErrors.code)}
                   <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                     {t(
                       "categories.codeHelp",
@@ -661,7 +742,7 @@ export const CategoriesPage: React.FC = () => {
                         parent_name: parent?.name ?? "",
                       });
                     }}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    className={inputClassName()}
                   >
                     <option value="">
                       {t("categories.noneRootLevel", "— Root level —")}
@@ -672,7 +753,10 @@ export const CategoriesPage: React.FC = () => {
                       .map((cat) => (
                         <option key={cat.id} value={cat.id}>
                           {"— ".repeat(cat.level)}
-                          {cat.name} ({cat.code})
+                          {i18n.language === "ar" && cat.name_ar
+                            ? cat.name_ar
+                            : cat.name}{" "}
+                          ({cat.code})
                         </option>
                       ))}
                   </select>
@@ -680,22 +764,42 @@ export const CategoriesPage: React.FC = () => {
               )}
 
               {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("categories.description", "Description")}
-                </label>
-                <textarea
-                  placeholder={t(
-                    "categories.descriptionPlaceholder",
-                    "Optional description for this category",
-                  )}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("categories.description", "Description")}
+                  </label>
+                  <textarea
+                    placeholder={t(
+                      "categories.descriptionPlaceholder",
+                      "Optional description for this category",
+                    )}
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("categories.descriptionAr", "Description (Arabic)")}
+                  </label>
+                  <textarea
+                    dir="rtl"
+                    placeholder="وصف اختياري بالعربية"
+                    value={formData.description_ar}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_ar: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                  />
+                </div>
               </div>
 
               {/* Sort Order */}
@@ -712,7 +816,7 @@ export const CategoriesPage: React.FC = () => {
                       sort_order: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  className={inputClassName()}
                   min={0}
                 />
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">

@@ -24,7 +24,6 @@ import {
   Upload,
   History,
   Tags,
-  Star,
   ExternalLink,
   Radio,
 } from "lucide-react";
@@ -32,7 +31,12 @@ import { Button } from "../../components/ui";
 import { MiniWorkflowView } from "../../components/workflow";
 import { RevisionHistory } from "../../components/incidents";
 import { AudioPlayer } from "../../components/common/AudioPlayer";
-import { incidentApi, userApi } from "../../api/admin";
+import {
+  incidentApi,
+  userApi,
+  commentTemplateApi,
+  feedbackTemplateApi,
+} from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type {
   AvailableTransition,
@@ -71,6 +75,15 @@ export const RequestDetailPage: React.FC = () => {
     useState<number>(0);
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
+  const [commentTemplates, setCommentTemplates] = useState<any[]>([]);
+  const [feedbackTemplates, setFeedbackTemplates] = useState<any[]>([]);
+  const [selectedCommentTemplate, setSelectedCommentTemplate] = useState("");
+  const [selectedFeedbackTemplate, setSelectedFeedbackTemplate] = useState("");
+  const [showCommentTextarea, setShowCommentTextarea] = useState(false);
+  const [showFeedbackTextarea, setShowFeedbackTextarea] = useState(false);
+  const [commentErrors, setCommentErrors] = useState<Record<string, string>>(
+    {},
+  );
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>("");
 
@@ -99,9 +112,26 @@ export const RequestDetailPage: React.FC = () => {
     enabled: !!id,
   });
 
-  const { data: commentsData, refetch: refetchComments } = useQuery({
-    queryKey: ["request", id, "comments"],
-    queryFn: () => incidentApi.listComments(id!),
+  const { data: combinedCommentData, refetch: refetchComments } = useQuery({
+    queryKey: ["complaint", id, "activity"],
+    queryFn: async () => {
+      const [commentsRes, feedbacksRes] = await Promise.all([
+        incidentApi.listComments(id!),
+        incidentApi.listFeedbacks(id!),
+      ]);
+
+      const feedbacks = (feedbacksRes?.data || []).map((item: any) => ({
+        ...item,
+        author: item?.created_by,
+        content: item?.comment,
+        type: "feedback",
+      }));
+
+      return [...(commentsRes?.data || []), ...feedbacks].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    },
     enabled: !!id,
   });
 
@@ -119,7 +149,7 @@ export const RequestDetailPage: React.FC = () => {
   const request = requestData?.data;
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
-  const comments = commentsData?.data || [];
+  const comments = combinedCommentData || [];
   const attachments = attachmentsData?.data || [];
   const users = usersData?.data || [];
 
@@ -170,6 +200,22 @@ export const RequestDetailPage: React.FC = () => {
   };
 
   // Mutations
+  const handleCloseTransitionModal = () => {
+    setTransitionModalOpen(false);
+    setSelectedTransition(null);
+    setTransitionComment("");
+    setTransitionAttachment(null);
+    setTransitionFeedbackRating(0);
+    setTransitionFeedbackComment("");
+    setSelectedCommentTemplate("");
+    setSelectedFeedbackTemplate("");
+    setShowCommentTextarea(false);
+    setShowFeedbackTextarea(false);
+    setCommentErrors({});
+    setCommentTemplates([]);
+    setFeedbackTemplates([]);
+  };
+
   const transitionMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTransition) return;
@@ -191,13 +237,12 @@ export const RequestDetailPage: React.FC = () => {
         transition_id: selectedTransition.transition.id,
         comment: transitionComment || undefined,
         attachments: attachmentIds,
-        feedback:
-          transitionFeedbackRating > 0
-            ? {
-                rating: transitionFeedbackRating,
-                comment: transitionFeedbackComment || undefined,
-              }
-            : undefined,
+        feedback: transitionFeedbackComment
+          ? {
+              rating: transitionFeedbackRating || 1,
+              comment: transitionFeedbackComment || undefined,
+            }
+          : undefined,
         version: request?.version || 1,
       });
     },
@@ -207,14 +252,64 @@ export const RequestDetailPage: React.FC = () => {
       refetchComments();
       queryClient.invalidateQueries({ queryKey: ["request", id, "history"] });
       queryClient.invalidateQueries({ queryKey: ["requests", "stats"] });
-      setTransitionModalOpen(false);
-      setSelectedTransition(null);
-      setTransitionComment("");
-      setTransitionAttachment(null);
-      setTransitionFeedbackRating(0);
-      setTransitionFeedbackComment("");
+      handleCloseTransitionModal();
     },
   });
+
+  const validateTransition = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (
+      selectedTransition?.requirements?.some(
+        (r) => r.requirement_type === "comment",
+      ) &&
+      !transitionComment?.trim()
+    ) {
+      errors.comment = t("complaints.fieldRequired", {
+        field: t("common.comment", "Comment"),
+      });
+    }
+    if (
+      selectedTransition?.requirements?.some(
+        (r) => r.requirement_type === "feedback",
+      ) &&
+      !transitionFeedbackComment?.trim()
+    ) {
+      errors.feedback = t("complaints.fieldRequired", {
+        field: t("common.feedback", "Feedback"),
+      });
+    }
+    if (Object.keys(errors).length > 0) {
+      setCommentErrors(errors);
+      return false;
+    }
+    return true;
+  };
+
+  const handleConfirmTransition = () => {
+    if (validateTransition()) {
+      transitionMutation.mutate();
+    }
+  };
+
+  const fetchTemplates = async (transitionId: string) => {
+    try {
+      const [commentRes, feedbackRes] = await Promise.all([
+        commentTemplateApi.listByTransition(transitionId),
+        feedbackTemplateApi.listByTransition(transitionId),
+      ]);
+      setCommentTemplates(commentRes.data || []);
+      setFeedbackTemplates(feedbackRes.data || []);
+      setSelectedCommentTemplate("");
+      setSelectedFeedbackTemplate("");
+      setShowCommentTextarea(false);
+      setShowFeedbackTextarea(false);
+      setTransitionComment("");
+      setTransitionFeedbackComment("");
+      setCommentErrors({});
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+    }
+  };
 
   const addCommentMutation = useMutation({
     mutationFn: () =>
@@ -244,6 +339,35 @@ export const RequestDetailPage: React.FC = () => {
   const handleTransitionClick = (transition: AvailableTransition) => {
     setSelectedTransition(transition);
     setTransitionModalOpen(true);
+    fetchTemplates(transition.transition.id);
+  };
+
+  const handleCommentTemplateChange = (templateId: string) => {
+    setSelectedCommentTemplate(templateId);
+    if (templateId === "other") {
+      setShowCommentTextarea(true);
+      setTransitionComment("");
+    } else if (templateId) {
+      const template = commentTemplates.find((t) => t.id === templateId);
+      if (template) {
+        setTransitionComment(template.comment_text);
+        setShowCommentTextarea(false);
+      }
+    }
+  };
+
+  const handleFeedbackTemplateChange = (templateId: string) => {
+    setSelectedFeedbackTemplate(templateId);
+    if (templateId === "other") {
+      setShowFeedbackTextarea(true);
+      setTransitionFeedbackComment("");
+    } else if (templateId) {
+      const template = feedbackTemplates.find((t) => t.id === templateId);
+      if (template) {
+        setTransitionFeedbackComment(template.feedback_text);
+        setShowFeedbackTextarea(false);
+      }
+    }
   };
 
   const getLookupLabel = (value?: LookupValue) => {
@@ -557,6 +681,11 @@ export const RequestDetailPage: React.FC = () => {
                               {item.comment && (
                                 <p className="text-sm text-[hsl(var(--foreground))] mt-2 italic">
                                   "{item.comment}"
+                                </p>
+                              )}
+                              {item.feedbacks?.comment && (
+                                <p className="mt-2 text-sm text-[hsl(var(--foreground))] italic">
+                                  "{item.feedbacks.comment}"
                                 </p>
                               )}
                             </div>
@@ -918,12 +1047,7 @@ export const RequestDetailPage: React.FC = () => {
                 {selectedTransition.transition.name}
               </h3>
               <button
-                onClick={() => {
-                  setTransitionModalOpen(false);
-                  setSelectedTransition(null);
-                  setTransitionComment("");
-                  setTransitionAttachment(null);
-                }}
+                onClick={handleCloseTransitionModal}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -976,45 +1100,54 @@ export const RequestDetailPage: React.FC = () => {
                         r.requirement_type === "feedback" && r.is_mandatory,
                     ) && <span className="text-red-500 ml-1">*</span>}
                   </label>
-                  <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
-                    <div>
-                      <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                        {t("requests.rateExperience")}
-                      </span>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setTransitionFeedbackRating(star)}
-                            className={`p-1 transition-colors ${
-                              star <= transitionFeedbackRating
-                                ? "text-yellow-400"
-                                : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
-                            }`}
-                          >
-                            <Star
-                              className="w-6 h-6"
-                              fill={
-                                star <= transitionFeedbackRating
-                                  ? "currentColor"
-                                  : "none"
-                              }
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  {feedbackTemplates.length > 0 && (
+                    <select
+                      value={selectedFeedbackTemplate}
+                      onChange={(e) =>
+                        handleFeedbackTemplateChange(e.target.value)
+                      }
+                      className="w-full mb-3 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="">
+                        {t("common.selectFeedback", "Select template...")}
+                      </option>
+                      {feedbackTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.feedback_text}
+                        </option>
+                      ))}
+                      <option value="other">
+                        {t("common.other", "Other")}
+                      </option>
+                    </select>
+                  )}
+                  {(showFeedbackTextarea || feedbackTemplates.length === 0) && (
                     <textarea
                       value={transitionFeedbackComment}
-                      onChange={(e) =>
-                        setTransitionFeedbackComment(e.target.value)
-                      }
+                      onChange={(e) => {
+                        setTransitionFeedbackComment(e.target.value);
+                        if (commentErrors.feedback) {
+                          setCommentErrors((prev) => ({
+                            ...prev,
+                            feedback: "",
+                          }));
+                        }
+                      }}
                       placeholder={t("requests.feedbackComment")}
-                      rows={2}
-                      className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
+                      rows={3}
+                      className={cn(
+                        "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm resize-none",
+                        commentErrors.feedback
+                          ? "border-red-500"
+                          : "border-[hsl(var(--border))]",
+                      )}
                     />
-                  </div>
+                  )}
+                  {commentErrors.feedback && (
+                    <p className="text-xs text-red-500">
+                      {commentErrors.feedback}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1029,13 +1162,54 @@ export const RequestDetailPage: React.FC = () => {
                       (r) => r.requirement_type === "comment" && r.is_mandatory,
                     ) && <span className="text-red-500 ml-1">*</span>}
                   </label>
-                  <textarea
-                    value={transitionComment}
-                    onChange={(e) => setTransitionComment(e.target.value)}
-                    placeholder={t("requests.addComment")}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
-                  />
+                  {commentTemplates.length > 0 && (
+                    <select
+                      value={selectedCommentTemplate}
+                      onChange={(e) =>
+                        handleCommentTemplateChange(e.target.value)
+                      }
+                      className="w-full mb-3 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="">
+                        {t("common.selectComment", "Select template...")}
+                      </option>
+                      {commentTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.comment_text}
+                        </option>
+                      ))}
+                      <option value="other">
+                        {t("common.other", "Other")}
+                      </option>
+                    </select>
+                  )}
+                  {(showCommentTextarea || commentTemplates.length === 0) && (
+                    <textarea
+                      value={transitionComment}
+                      onChange={(e) => {
+                        setTransitionComment(e.target.value);
+                        if (commentErrors.comment) {
+                          setCommentErrors((prev) => ({
+                            ...prev,
+                            comment: "",
+                          }));
+                        }
+                      }}
+                      placeholder={t("requests.addComment")}
+                      rows={3}
+                      className={cn(
+                        "w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm resize-none",
+                        commentErrors.comment
+                          ? "border-red-500"
+                          : "border-[hsl(var(--border))]",
+                      )}
+                    />
+                  )}
+                  {commentErrors.comment && (
+                    <p className="text-xs text-red-500">
+                      {commentErrors.comment}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1086,19 +1260,11 @@ export const RequestDetailPage: React.FC = () => {
               )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-[hsl(var(--border))]">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setTransitionModalOpen(false);
-                    setSelectedTransition(null);
-                    setTransitionComment("");
-                    setTransitionAttachment(null);
-                  }}
-                >
+                <Button variant="ghost" onClick={handleCloseTransitionModal}>
                   {t("common.cancel")}
                 </Button>
                 <Button
-                  onClick={() => transitionMutation.mutate()}
+                  onClick={handleConfirmTransition}
                   isLoading={
                     transitionMutation.isPending || transitionUploading
                   }

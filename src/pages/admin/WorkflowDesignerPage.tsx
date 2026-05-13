@@ -72,8 +72,10 @@ type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
 
 interface StateFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   state_type: "initial" | "normal" | "terminal";
   color: string;
   sla_hours: number | undefined;
@@ -84,12 +86,19 @@ interface StateFormData {
   duration_options: string; // comma-separated input string
   viewable_role_ids: string[];
   editable_role_ids: string[];
+  // Creation-time assignment
+  assign_user_id: string;
+  assignment_role_ids: string[];
+  auto_match_user: boolean;
+  manual_select_user: boolean;
 }
 
 interface TransitionFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   from_state_id: string;
   to_state_id: string;
   role_ids: string[];
@@ -103,12 +112,16 @@ interface TransitionFormData {
   auto_match_user: boolean;
   manual_select_user: boolean;
   is_rejection: boolean;
+  is_not_belong: boolean;
+  is_missing_info: boolean;
 }
 
 const initialStateFormData: StateFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   state_type: "normal",
   color: "#6366f1",
   sla_hours: undefined,
@@ -119,12 +132,19 @@ const initialStateFormData: StateFormData = {
   duration_options: "",
   viewable_role_ids: [],
   editable_role_ids: [],
+  // Creation-time assignment
+  assign_user_id: "",
+  assignment_role_ids: [],
+  auto_match_user: false,
+  manual_select_user: false,
 };
 
 const initialTransitionFormData: TransitionFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   from_state_id: "",
   to_state_id: "",
   role_ids: [],
@@ -138,6 +158,8 @@ const initialTransitionFormData: TransitionFormData = {
   auto_match_user: false,
   manual_select_user: false,
   is_rejection: false,
+  is_not_belong: false,
+  is_missing_info: false,
 };
 
 const STATE_COLORS = [
@@ -197,13 +219,18 @@ const baseFormFields: {
   { field: "due_date", label: "Due Date", description: "Resolution deadline" },
   {
     field: "reporter_name",
-    label: "Reporter Name",
-    description: "Name of person reporting",
+    label: "Caller Name",
+    description: "Name of caller",
   },
   {
     field: "reporter_email",
-    label: "Reporter Email",
-    description: "Email of person reporting",
+    label: "Caller Email",
+    description: "Email of caller",
+  },
+  {
+    field: "reporter_phone",
+    label: "Caller Phone Number",
+    description: "Phone number of caller",
   },
   {
     field: "attachments",
@@ -309,9 +336,9 @@ const TemplateModalBody: React.FC<{
         </div>
       ) : templates.length === 0 ? (
         <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center py-4">
-          {t("common.no")}
-          {label}
-          {t("workflows.optionsYet")}
+          {type === "feedback"
+            ? t("workflows.noFeedbackOptionsYet")
+            : t("workflows.noCommentOptionsYet")}
         </p>
       ) : (
         templates.map((tpl) => (
@@ -501,7 +528,7 @@ const TemplateModalBody: React.FC<{
 };
 
 export const WorkflowDesignerPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -558,6 +585,7 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
+  const [optionalFields, setOptionalFields] = useState<IncidentFormField[]>([]);
 
   // Convert to request role IDs
   const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<
@@ -681,6 +709,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
 
       setRequiredFields(workflow.required_fields || []);
+      setOptionalFields(workflow.optional_fields || []);
 
       setConvertToRequestRoleIds(
         workflow.convert_to_request_roles?.map((r) => r.id) || [],
@@ -730,11 +759,18 @@ export const WorkflowDesignerPage: React.FC = () => {
     },
   });
 
-  // Required fields mutation
+  // Required/optional fields mutation
   const updateRequiredFieldsMutation = useMutation({
-    mutationFn: (fields: IncidentFormField[]) =>
+    mutationFn: ({
+      required,
+      optional,
+    }: {
+      required: IncidentFormField[];
+      optional: IncidentFormField[];
+    }) =>
       workflowApi.update(id!, {
-        required_fields: fields,
+        required_fields: required,
+        optional_fields: optional,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "workflow", id] });
@@ -942,8 +978,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     setEditingState(state);
     setStateFormData({
       name: state.name,
+      name_ar: state.name_ar || "",
       code: state.code,
       description: state.description,
+      description_ar: state.description_ar || "",
       state_type: state.state_type as "initial" | "normal" | "terminal",
       color: state.color,
       sla_hours: state.sla_hours || undefined,
@@ -954,6 +992,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       duration_options: (state.duration_options || []).join(", "),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
       editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
+      // Creation-time assignment
+      assign_user_id: state.assign_user_id || "",
+      assignment_role_ids: state.assignment_roles?.map((r) => r.id) || [],
+      auto_match_user: state.auto_match_user || false,
+      manual_select_user: state.manual_select_user || false,
     });
     setIsStateModalOpen(true);
   };
@@ -975,8 +1018,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     setEditingTransition(transition);
     setTransitionFormData({
       name: transition.name,
+      name_ar: transition.name_ar || "",
       code: transition.code,
       description: transition.description,
+      description_ar: transition.description_ar || "",
       from_state_id: transition.from_state_id,
       to_state_id: transition.to_state_id,
       role_ids: transition.allowed_roles?.map((r) => r.id) || [],
@@ -992,6 +1037,8 @@ export const WorkflowDesignerPage: React.FC = () => {
       auto_match_user: transition.auto_match_user || false,
       manual_select_user: transition.manual_select_user || false,
       is_rejection: transition.is_rejection || false,
+      is_not_belong: transition.is_not_belong || false,
+      is_missing_info: transition.is_missing_info || false,
     });
     setIsTransitionModalOpen(true);
   };
@@ -1049,8 +1096,10 @@ export const WorkflowDesignerPage: React.FC = () => {
     e.preventDefault();
     const data = {
       name: stateFormData.name,
+      name_ar: stateFormData.name_ar,
       code: stateFormData.code,
       description: stateFormData.description,
+      description_ar: stateFormData.description_ar,
       state_type: stateFormData.state_type,
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
@@ -1066,6 +1115,11 @@ export const WorkflowDesignerPage: React.FC = () => {
         : [],
       viewable_role_ids: stateFormData.viewable_role_ids,
       editable_role_ids: stateFormData.editable_role_ids,
+      // Creation-time assignment
+      assign_user_id: stateFormData.assign_user_id || null,
+      assignment_role_ids: stateFormData.assignment_role_ids,
+      auto_match_user: stateFormData.auto_match_user,
+      manual_select_user: stateFormData.manual_select_user,
     };
 
     if (editingState) {
@@ -1079,14 +1133,15 @@ export const WorkflowDesignerPage: React.FC = () => {
     e.preventDefault();
     const data = {
       name: transitionFormData.name,
+      name_ar: transitionFormData.name_ar,
       code: transitionFormData.code,
       description: transitionFormData.description,
+      description_ar: transitionFormData.description_ar,
       from_state_id: transitionFormData.from_state_id,
       to_state_id: transitionFormData.to_state_id,
       role_ids: transitionFormData.role_ids,
       // Department Assignment
-      assign_department_id:
-        transitionFormData.assign_department_id || undefined,
+      assign_department_id: transitionFormData.assign_department_id || "",
       auto_detect_department: transitionFormData.auto_detect_department,
       department_type_filter:
         transitionFormData.department_type_filter || undefined,
@@ -1096,6 +1151,8 @@ export const WorkflowDesignerPage: React.FC = () => {
       auto_match_user: transitionFormData.auto_match_user,
       manual_select_user: transitionFormData.manual_select_user,
       is_rejection: transitionFormData.is_rejection,
+      is_not_belong: transitionFormData.is_not_belong,
+      is_missing_info: transitionFormData.is_missing_info,
     };
 
     if (editingTransition) {
@@ -1215,9 +1272,19 @@ export const WorkflowDesignerPage: React.FC = () => {
     }));
   };
 
+  const toggleStateAssignmentRole = (roleId: string) => {
+    setStateFormData((prev) => ({
+      ...prev,
+      assignment_role_ids: prev.assignment_role_ids.includes(roleId)
+        ? prev.assignment_role_ids.filter((id) => id !== roleId)
+        : [...prev.assignment_role_ids, roleId],
+    }));
+  };
+
   const getStateName = (stateId: string) => {
     const state = states.find((s) => s.id === stateId);
-    return state?.name || "Unknown";
+    if (!state) return "Unknown";
+    return i18n.language === "ar" && state.name_ar ? state.name_ar : state.name;
   };
 
   const getStateColor = (stateId: string) => {
@@ -1338,7 +1405,9 @@ export const WorkflowDesignerPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-                {workflow.name}
+                {i18n.language === "ar" && workflow.name_ar
+                  ? workflow.name_ar
+                  : workflow.name}
               </h2>
               <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
                 {workflow.code}
@@ -1511,7 +1580,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 style={{ backgroundColor: state.color }}
                               />
                               <span className="font-medium text-[hsl(var(--foreground))]">
-                                {state.name}
+                                {i18n.language === "ar" && state.name_ar
+                                  ? state.name_ar
+                                  : state.name}
                               </span>
                             </div>
                           </td>
@@ -1689,7 +1760,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                           <td className="py-3 px-4">
                             <div>
                               <span className="font-medium text-[hsl(var(--foreground))]">
-                                {transition.name}
+                                {i18n.language === "ar" && transition.name_ar
+                                  ? transition.name_ar
+                                  : transition.name}
                               </span>
                               <p className="text-xs font-mono text-[hsl(var(--muted-foreground))]">
                                 {transition.code}
@@ -2381,77 +2454,148 @@ export const WorkflowDesignerPage: React.FC = () => {
               </div>
 
               <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-4">
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-1">
                   {t("workflows.selectRequiredFields")}
                 </h4>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">
+                  {t("workflows.fieldStateHidden")} →{" "}
+                  {t("workflows.fieldStateOptional")} →{" "}
+                  {t("workflows.fieldStateRequired")}
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {availableFormFields.map((item) => (
-                    <label
-                      key={item.field}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
-                        requiredFields.includes(item.field)
-                          ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary))]"
-                          : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={requiredFields.includes(item.field)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setRequiredFields((prev) => [...prev, item.field]);
-                          } else {
-                            setRequiredFields((prev) =>
-                              prev.filter((f) => f !== item.field),
-                            );
-                          }
-                        }}
-                        className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {item.label}
-                        </span>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                          {item.description}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
+                  {availableFormFields.map((item) => {
+                    const isRequired = requiredFields.includes(item.field);
+                    const isOptional =
+                      !isRequired && optionalFields.includes(item.field);
+
+                    const cycleState = () => {
+                      if (!isRequired && !isOptional) {
+                        // hidden → optional
+                        setOptionalFields((prev) => [...prev, item.field]);
+                      } else if (isOptional) {
+                        // optional → required
+                        setOptionalFields((prev) =>
+                          prev.filter((f) => f !== item.field),
+                        );
+                        setRequiredFields((prev) => [...prev, item.field]);
+                      } else {
+                        // required → hidden
+                        setRequiredFields((prev) =>
+                          prev.filter((f) => f !== item.field),
+                        );
+                      }
+                    };
+
+                    return (
+                      <button
+                        key={item.field}
+                        type="button"
+                        onClick={cycleState}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg transition-colors border text-left w-full",
+                          isRequired
+                            ? "bg-amber-50 border-amber-400"
+                            : isOptional
+                              ? "bg-blue-50 border-blue-400"
+                              : "bg-[hsl(var(--background))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)]",
+                        )}
+                      >
+                        <div className="mt-0.5 flex-shrink-0">
+                          {isRequired ? (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold">
+                              !
+                            </span>
+                          ) : isOptional ? (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold">
+                              ?
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border-2 border-[hsl(var(--border))]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                              {item.label}
+                            </span>
+                            {isRequired && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
+                                {t("workflows.fieldStateRequired")}
+                              </span>
+                            )}
+                            {isOptional && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                {t("workflows.fieldStateOptional")}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                            {item.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Summary */}
-              <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
-                  {t("workflows.requiredFieldsSummary")}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
-                    {t("workflows.titleAlways")}
-                  </span>
-                  <span className="px-2 py-1 bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] text-xs font-medium rounded">
-                    {t("workflows.workflowAlways")}
-                  </span>
-                  {requiredFields.map((field) => {
-                    const fieldConfig = availableFormFields.find(
-                      (f) => f.field === field,
-                    );
-                    return (
-                      <span
-                        key={field}
-                        className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded"
-                      >
-                        {fieldConfig?.label || field}
-                      </span>
-                    );
-                  })}
-                  {requiredFields.length === 0 && (
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("common.noAdditionalRequiredFields")}
+              <div className="bg-[hsl(var(--muted)/0.5)] rounded-xl p-4 space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.requiredFieldsSummary")}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded">
+                      {t("workflows.titleAlways")}
                     </span>
-                  )}
+                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded">
+                      {t("workflows.workflowAlways")}
+                    </span>
+                    {requiredFields.map((field) => {
+                      const fieldConfig = availableFormFields.find(
+                        (f) => f.field === field,
+                      );
+                      return (
+                        <span
+                          key={field}
+                          className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded"
+                        >
+                          {fieldConfig?.label || field}
+                        </span>
+                      );
+                    })}
+                    {requiredFields.length === 0 && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("common.noAdditionalRequiredFields")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-2">
+                    {t("workflows.optionalFieldsSummary")}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {optionalFields.map((field) => {
+                      const fieldConfig = availableFormFields.find(
+                        (f) => f.field === field,
+                      );
+                      return (
+                        <span
+                          key={field}
+                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded"
+                        >
+                          {fieldConfig?.label || field}
+                        </span>
+                      );
+                    })}
+                    {optionalFields.length === 0 && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("workflows.noOptionalFields")}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2459,7 +2603,10 @@ export const WorkflowDesignerPage: React.FC = () => {
               <div className="flex justify-end">
                 <Button
                   onClick={() =>
-                    updateRequiredFieldsMutation.mutate(requiredFields)
+                    updateRequiredFieldsMutation.mutate({
+                      required: requiredFields,
+                      optional: optionalFields,
+                    })
                   }
                   isLoading={updateRequiredFieldsMutation.isPending}
                   leftIcon={<Check className="w-4 h-4" />}
@@ -2701,22 +2848,41 @@ export const WorkflowDesignerPage: React.FC = () => {
               noValidate
             >
               <div className="p-6 space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("common.name")}
-                  </label>
-                  <input
-                    type="text"
-                    value={stateFormData.name}
-                    onChange={(e) =>
-                      setStateFormData({
-                        ...stateFormData,
-                        name: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.name")}
+                    </label>
+                    <input
+                      type="text"
+                      value={stateFormData.name}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.nameAr")}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      value={stateFormData.name_ar}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          name_ar: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2735,21 +2901,40 @@ export const WorkflowDesignerPage: React.FC = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.description")}
-                  </label>
-                  <textarea
-                    value={stateFormData.description}
-                    onChange={(e) =>
-                      setStateFormData({
-                        ...stateFormData,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("workflows.description")}
+                    </label>
+                    <textarea
+                      value={stateFormData.description}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.descriptionAr")}
+                    </label>
+                    <textarea
+                      dir="rtl"
+                      value={stateFormData.description_ar}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          description_ar: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -3008,6 +3193,206 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Creation-time Assignment — only for initial states */}
+                {stateFormData.state_type === "initial" && (
+                  <div className="border-t border-[hsl(var(--border))] pt-5">
+                    <label className="block text-sm font-semibold text-[hsl(var(--foreground))] mb-1">
+                      {t("incidents.userAssignment")}
+                    </label>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                      {t("workflows.appliedWhenIncidentIsCreated")}
+                    </p>
+                    <div className="space-y-3">
+                      {/* No allocation */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={
+                            !stateFormData.auto_match_user &&
+                            !stateFormData.manual_select_user &&
+                            !stateFormData.assign_user_id
+                          }
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: false,
+                              manual_select_user: false,
+                              assign_user_id: "",
+                              assignment_role_ids: [],
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("common.noUserAssignment")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t("workflows.donTChangeTheIncidentAssignee")}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Auto-match */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={
+                            stateFormData.auto_match_user &&
+                            !stateFormData.manual_select_user
+                          }
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: true,
+                              manual_select_user: false,
+                              assign_user_id: "",
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.autoAssignAllMatchingUsers")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t(
+                              "workflows.automaticallyAssignsAllUsersMatchingRoleIncident",
+                            )}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Manual selection */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={stateFormData.manual_select_user}
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: false,
+                              manual_select_user: true,
+                              assign_user_id: "",
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.manualSelectionDuringTransition")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t(
+                              "workflows.performerSelectsFromMatchingUsersWhenExecuting",
+                            )}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Assign specific user */}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="state_user_assignment_mode"
+                          checked={
+                            !stateFormData.auto_match_user &&
+                            !stateFormData.manual_select_user &&
+                            !!stateFormData.assign_user_id
+                          }
+                          onChange={() =>
+                            setStateFormData({
+                              ...stateFormData,
+                              auto_match_user: false,
+                              manual_select_user: false,
+                              assignment_role_ids: [],
+                            })
+                          }
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.assignSpecificUser")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t("workflows.alwaysAssignToASpecificUser")}
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Role selector for auto-match or manual */}
+                      {(stateFormData.auto_match_user ||
+                        stateFormData.manual_select_user) && (
+                        <div className="ml-7">
+                          <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                            {t("incidents.rolesToMatchSelectOneOrMore")}
+                          </label>
+                          <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden bg-[hsl(var(--background))]">
+                            {roles.map((role) => {
+                              const isSelected =
+                                stateFormData.assignment_role_ids.includes(
+                                  role.id,
+                                );
+                              return (
+                                <label
+                                  key={role.id}
+                                  className="flex items-center gap-2 px-3 py-2 hover:bg-[hsl(var(--muted)/0.4)] cursor-pointer border-b border-[hsl(var(--border))] last:border-b-0"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() =>
+                                      toggleStateAssignmentRole(role.id)
+                                    }
+                                    className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                  />
+                                  <span className="text-sm text-[hsl(var(--foreground))]">
+                                    {role.name}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Specific user dropdown */}
+                      {!stateFormData.auto_match_user &&
+                        !stateFormData.manual_select_user && (
+                          <div className="ml-7">
+                            <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                              {t("incidents.selectUser")}
+                            </label>
+                            <select
+                              value={stateFormData.assign_user_id}
+                              onChange={(e) =>
+                                setStateFormData({
+                                  ...stateFormData,
+                                  assign_user_id: e.target.value,
+                                })
+                              }
+                              className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+                            >
+                              <option value="">
+                                {t("common.none")} (
+                                {t("common.noUserAssignment")})
+                              </option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.first_name} {user.last_name}
+                                  {user.email ? ` (${user.email})` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
@@ -3066,23 +3451,42 @@ export const WorkflowDesignerPage: React.FC = () => {
               noValidate
             >
               <div className="p-6 space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("common.name")}
-                  </label>
-                  <input
-                    type="text"
-                    value={transitionFormData.name}
-                    onChange={(e) =>
-                      setTransitionFormData({
-                        ...transitionFormData,
-                        name: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    placeholder={t("workflows.eGStartWorking")}
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.name")}
+                    </label>
+                    <input
+                      type="text"
+                      value={transitionFormData.name}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      placeholder={t("workflows.eGStartWorking")}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.nameAr")}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      value={transitionFormData.name_ar}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          name_ar: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -3104,21 +3508,40 @@ export const WorkflowDesignerPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("common.description")}
-                  </label>
-                  <textarea
-                    value={transitionFormData.description}
-                    onChange={(e) =>
-                      setTransitionFormData({
-                        ...transitionFormData,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.description")}
+                    </label>
+                    <textarea
+                      value={transitionFormData.description}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.descriptionAr")}
+                    </label>
+                    <textarea
+                      dir="rtl"
+                      value={transitionFormData.description_ar}
+                      onChange={(e) =>
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          description_ar: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -3140,7 +3563,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <option value="">{t("workflows.selectState")}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
-                          {state.name}
+                          {i18n.language === "ar" && state.name_ar
+                            ? state.name_ar
+                            : state.name}
                         </option>
                       ))}
                     </select>
@@ -3163,7 +3588,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                       <option value="">{t("workflows.selectState")}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
-                          {state.name}
+                          {i18n.language === "ar" && state.name_ar
+                            ? state.name_ar
+                            : state.name}
                         </option>
                       ))}
                     </select>
@@ -3549,6 +3976,56 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </label>
               </div>
 
+              {/* Not Belong */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-warning focus:ring-warning"
+                    checked={transitionFormData.is_not_belong}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        is_not_belong: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {t("workflows.markAsNotBelongTransition")}
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      {t("workflows.whenEnabledNotBelongWillSendSMS")}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Missing Incident Information */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-orange-500 focus:ring-orange-500"
+                    checked={transitionFormData.is_missing_info}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        is_missing_info: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {t("workflows.markAsMissingInfoTransition")}
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      {t("workflows.whenEnabledMissingInfoWillSendSMS")}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
                 <Button
                   variant="ghost"
@@ -3594,7 +4071,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                     {t("workflows.configureTransition")}
                   </h3>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {configuringTransition.name}
+                    {i18n.language === "ar" && configuringTransition.name_ar
+                      ? configuringTransition.name_ar
+                      : configuringTransition.name}
                   </p>
                 </div>
               </div>

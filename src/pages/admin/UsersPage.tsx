@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import i18n from "@/i18n";
 
 interface UserFormData {
   first_name: string;
@@ -59,6 +60,10 @@ interface UserFormData {
   role_ids: string[];
   is_active: boolean;
 }
+
+type UserFieldErrors = Partial<
+  Record<"email" | "username" | "password" | "form", string>
+>;
 
 const initialFormData: UserFormData = {
   first_name: "",
@@ -94,6 +99,7 @@ export const UsersPage: React.FC = () => {
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
     right: number;
+    left: number;
   } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -101,6 +107,7 @@ export const UsersPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
+  const [formErrors, setFormErrors] = useState<UserFieldErrors>({});
   const [createFormData, setCreateFormData] = useState({
     email: "",
     username: "",
@@ -116,6 +123,7 @@ export const UsersPage: React.FC = () => {
     classification_ids: [] as string[],
     role_ids: [] as string[],
   });
+  const [createFormErrors, setCreateFormErrors] = useState<UserFieldErrors>({});
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -267,6 +275,7 @@ export const UsersPage: React.FC = () => {
           setDropdownPosition({
             top: rect.bottom + 4,
             right: window.innerWidth - rect.right,
+            left: rect.left,
           });
         }
         setActiveDropdown(userId);
@@ -280,6 +289,49 @@ export const UsersPage: React.FC = () => {
     setDropdownPosition(null);
   }, []);
 
+  const getApiErrorMessage = useCallback(
+    (error: any, fallback: string) =>
+      error.response?.data?.error || error.message || fallback,
+    [],
+  );
+
+  const getApiFieldErrors = useCallback((message: string): UserFieldErrors => {
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes("email")) {
+      return { email: message };
+    }
+
+    if (lowerMessage.includes("user")) {
+      return { username: message };
+    }
+
+    if (lowerMessage.includes("password")) {
+      return { password: message };
+    }
+
+    return { form: message };
+  }, []);
+
+  const getInputClassName = useCallback(
+    (hasError?: boolean, extraClassName = "") =>
+      cn(
+        "w-full px-4 py-2.5 bg-[hsl(var(--background))] border rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all",
+        hasError
+          ? "border-[hsl(var(--destructive))]"
+          : "border-[hsl(var(--border))]",
+        extraClassName,
+      ),
+    [],
+  );
+
+  const renderFieldError = (message?: string) =>
+    message ? (
+      <p className="mt-1 text-xs font-medium text-[hsl(var(--destructive))]">
+        {message}
+      </p>
+    ) : null;
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProfileRequest }) =>
       userApi.update(id, data),
@@ -289,11 +341,8 @@ export const UsersPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error || error.message || t("users.updateFailed");
-      toast.error(t("common.error"), {
-        description: errorMessage,
-      });
+      const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
+      setFormErrors(getApiFieldErrors(errorMessage));
     },
   });
 
@@ -306,11 +355,8 @@ export const UsersPage: React.FC = () => {
       closeCreateModal();
     },
     onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error || error.message || t("users.createFailed");
-      toast.error(t("common.error"), {
-        description: errorMessage,
-      });
+      const errorMessage = getApiErrorMessage(error, t("users.createFailed"));
+      setCreateFormErrors(getApiFieldErrors(errorMessage));
     },
   });
 
@@ -348,6 +394,7 @@ export const UsersPage: React.FC = () => {
     });
     setAvatarFile(null);
     setAvatarPreview(null);
+    setCreateFormErrors({});
     setIsCreateModalOpen(true);
   };
 
@@ -370,10 +417,40 @@ export const UsersPage: React.FC = () => {
     });
     setAvatarFile(null);
     setAvatarPreview(null);
+    setCreateFormErrors({});
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: UserFieldErrors = {};
+
+    if (!createFormData.email.trim()) {
+      errors.email = t("validation.fieldRequired", {
+        field: t("users.email"),
+      });
+    } else if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createFormData.email.trim())
+    ) {
+      errors.email = t("auth.invalidEmail");
+    }
+
+    if (!createFormData.username.trim()) {
+      errors.username = t("validation.fieldRequired", {
+        field: t("users.username"),
+      });
+    }
+
+    if (!createFormData.password.trim()) {
+      errors.password = t("validation.fieldRequired", {
+        field: t("auth.password"),
+      });
+    }
+
+    setCreateFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
     createMutation.mutate({
       data: createFormData,
       avatar: avatarFile || undefined,
@@ -411,6 +488,7 @@ export const UsersPage: React.FC = () => {
     const locationIds = user.locations?.map((l) => l.id) || [];
 
     setEditingUser(user);
+    setFormErrors({});
     setFormData({
       first_name: user.first_name || "",
       last_name: user.last_name || "",
@@ -433,6 +511,7 @@ export const UsersPage: React.FC = () => {
     setIsModalOpen(false);
     setEditingUser(null);
     setFormData(initialFormData);
+    setFormErrors({});
   };
 
   const openViewModal = (user: User) => {
@@ -449,6 +528,19 @@ export const UsersPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    const errors: UserFieldErrors = {};
+
+    if (!formData.username.trim()) {
+      errors.username = t("validation.fieldRequired", {
+        field: t("users.username"),
+      });
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
     let phoneChanged = false;
     if (editingUser.phone !== formData.phone) {
       phoneChanged = true;
@@ -1161,7 +1253,9 @@ export const UsersPage: React.FC = () => {
             className="fixed w-48 bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] py-1.5 z-[70] animate-scale-in origin-top-right"
             style={{
               top: dropdownPosition.top,
-              right: dropdownPosition.right,
+              ...(i18n.language === "ar"
+                ? { left: dropdownPosition.left }
+                : { right: dropdownPosition.right }),
             }}
           >
             <button
@@ -1243,6 +1337,7 @@ export const UsersPage: React.FC = () => {
             <form
               onSubmit={handleSubmit}
               className="overflow-y-auto max-h-[calc(90vh-140px)]"
+              noValidate
             >
               <div className="p-6 space-y-5">
                 {/* Basic Info */}
@@ -1253,12 +1348,12 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder={"e.g., John"}
+                      placeholder={t("users.firstNamePlaceholder")}
                       value={formData.first_name}
                       onChange={(e) =>
                         setFormData({ ...formData, first_name: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      className={getInputClassName()}
                     />
                   </div>
                   <div>
@@ -1267,12 +1362,12 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder={"e.g., Doe"}
+                      placeholder={t("users.lastNamePlaceholder")}
                       value={formData.last_name}
                       onChange={(e) =>
                         setFormData({ ...formData, last_name: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      className={getInputClassName()}
                     />
                   </div>
                 </div>
@@ -1284,13 +1379,24 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder={"e.g., johndoe"}
+                      placeholder={t("users.usernamePlaceholder")}
                       value={formData.username}
-                      onChange={(e) =>
-                        setFormData({ ...formData, username: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      onChange={(e) => {
+                        setFormData({ ...formData, username: e.target.value });
+                        if (formErrors.username || formErrors.form) {
+                          setFormErrors((prev) => ({
+                            ...prev,
+                            username: undefined,
+                            form: undefined,
+                          }));
+                        }
+                      }}
+                      className={getInputClassName(
+                        !!formErrors.username || !!formErrors.form,
+                        "font-mono",
+                      )}
                     />
+                    {renderFieldError(formErrors.username || formErrors.form)}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -1298,12 +1404,12 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder={"e.g., +1 234 567 890"}
+                      placeholder={t("users.phonePlaceholder")}
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      className={getInputClassName()}
                     />
                   </div>
                 </div>
@@ -1314,12 +1420,12 @@ export const UsersPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder={"e.g., 1001"}
+                    placeholder={t("users.extensionPlaceholder")}
                     value={formData.extension}
                     onChange={(e) =>
                       setFormData({ ...formData, extension: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    className={getInputClassName()}
                   />
                 </div>
 
@@ -1540,6 +1646,7 @@ export const UsersPage: React.FC = () => {
             <form
               onSubmit={handleCreateSubmit}
               className="overflow-y-auto max-h-[calc(90vh-140px)]"
+              noValidate
             >
               <div className="p-6 space-y-5">
                 {/* Avatar Upload */}
@@ -1591,16 +1698,24 @@ export const UsersPage: React.FC = () => {
                     <input
                       type="email"
                       required
-                      placeholder={"e.g., john@example.com"}
+                      placeholder={t("users.emailPlaceholder")}
                       value={createFormData.email}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setCreateFormData({
                           ...createFormData,
                           email: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                        });
+                        if (createFormErrors.email || createFormErrors.form) {
+                          setCreateFormErrors((prev) => ({
+                            ...prev,
+                            email: undefined,
+                            form: undefined,
+                          }));
+                        }
+                      }}
+                      className={getInputClassName(!!createFormErrors.email)}
                     />
+                    {renderFieldError(createFormErrors.email)}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -1610,16 +1725,32 @@ export const UsersPage: React.FC = () => {
                     <input
                       type="text"
                       required
-                      placeholder={"e.g., johndoe"}
+                      placeholder={t("users.usernamePlaceholder")}
                       value={createFormData.username}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setCreateFormData({
                           ...createFormData,
                           username: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                        });
+                        if (
+                          createFormErrors.username ||
+                          createFormErrors.form
+                        ) {
+                          setCreateFormErrors((prev) => ({
+                            ...prev,
+                            username: undefined,
+                            form: undefined,
+                          }));
+                        }
+                      }}
+                      className={getInputClassName(
+                        !!createFormErrors.username || !!createFormErrors.form,
+                        "font-mono",
+                      )}
                     />
+                    {renderFieldError(
+                      createFormErrors.username || createFormErrors.form,
+                    )}
                   </div>
                 </div>
 
@@ -1634,14 +1765,22 @@ export const UsersPage: React.FC = () => {
                     required
                     placeholder={t("users.enterPassword")}
                     value={createFormData.password}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setCreateFormData({
                         ...createFormData,
                         password: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      });
+                      if (createFormErrors.password || createFormErrors.form) {
+                        setCreateFormErrors((prev) => ({
+                          ...prev,
+                          password: undefined,
+                          form: undefined,
+                        }));
+                      }
+                    }}
+                    className={getInputClassName(!!createFormErrors.password)}
                   />
+                  {renderFieldError(createFormErrors.password)}
                 </div>
 
                 {/* Name Fields */}
@@ -1652,7 +1791,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder={"e.g., John"}
+                      placeholder={t("users.firstNamePlaceholder")}
                       value={createFormData.first_name}
                       onChange={(e) =>
                         setCreateFormData({
@@ -1660,7 +1799,7 @@ export const UsersPage: React.FC = () => {
                           first_name: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      className={getInputClassName()}
                     />
                   </div>
                   <div>
@@ -1669,7 +1808,7 @@ export const UsersPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder={"e.g., Doe"}
+                      placeholder={t("users.lastNamePlaceholder")}
                       value={createFormData.last_name}
                       onChange={(e) =>
                         setCreateFormData({
@@ -1677,7 +1816,7 @@ export const UsersPage: React.FC = () => {
                           last_name: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      className={getInputClassName()}
                     />
                   </div>
                 </div>
@@ -1689,7 +1828,7 @@ export const UsersPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder={"e.g., +1 234 567 890"}
+                    placeholder={t("users.phonePlaceholder")}
                     value={createFormData.phone}
                     onChange={(e) =>
                       setCreateFormData({
@@ -1697,7 +1836,7 @@ export const UsersPage: React.FC = () => {
                         phone: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    className={getInputClassName()}
                   />
                 </div>
 
@@ -1708,7 +1847,7 @@ export const UsersPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder={"e.g., 1001"}
+                    placeholder={t("users.extensionPlaceholder")}
                     value={createFormData.extension}
                     onChange={(e) =>
                       setCreateFormData({
@@ -1716,7 +1855,7 @@ export const UsersPage: React.FC = () => {
                         extension: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    className={getInputClassName()}
                   />
                 </div>
 

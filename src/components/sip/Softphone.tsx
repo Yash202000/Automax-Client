@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import sipService from "../../lib/services/sipService";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
-import ringtone from "./phone_ring.mp3";
+import ringtone from "/phone_ring.mp3";
 import {
   Phone,
   PhoneOff,
@@ -60,10 +60,7 @@ type CallStatus =
   | "connected"
   | "ended";
 
-/* -------------------- Audio -------------------- */
-
-const ring = new Audio(ringtone);
-ring.loop = true;
+/* -------------------- Audio Utils -------------------- */
 
 // Create a persistent audio element for remote stream (singleton)
 let remoteAudioElement: HTMLAudioElement | null = null;
@@ -239,8 +236,14 @@ export default function SoftPhone({
   const dragRef = useRef<HTMLDivElement | null>(null);
   const { hasPermission } = usePermissions();
 
-  const [sipConnected, setSipConnected] = useState<boolean>(false);
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const {
+    isConnected: sipConnected,
+    setConnected: setSipConnected,
+    isConnecting,
+    setConnecting: setIsConnecting,
+    shouldConnect,
+    setShouldConnect,
+  } = useSoftphoneStore();
 
   const [dialedNumber, setDialedNumber] = useState<string>("");
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
@@ -282,6 +285,37 @@ export default function SoftPhone({
   const [, setMissingExtension] = useState<boolean>(false);
 
   const canCreateSentimentRef = useRef(false);
+  const ringRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize ringtone audio and prime it on first interaction
+  useEffect(() => {
+    const audio = new Audio(ringtone);
+    audio.loop = true;
+    ringRef.current = audio;
+
+    const primeAudio = () => {
+      console.log("🔔 Priming softphone audio...");
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          console.log("🔔 Softphone audio primed successfully");
+        })
+        .catch((err) => {
+          console.log("🔔 Softphone audio prime deferred:", err.message);
+        });
+      document.removeEventListener("click", primeAudio);
+    };
+
+    document.addEventListener("click", primeAudio);
+
+    return () => {
+      document.removeEventListener("click", primeAudio);
+      audio.pause();
+      ringRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     canCreateSentimentRef.current = canCreateSentiment;
@@ -304,38 +338,28 @@ export default function SoftPhone({
   const socketURL = settings?.socketURL ?? "";
   const domain = settings?.domain ?? "";
 
-  useEffect(() => {
-    if (!sipConnected && !isConnecting) {
-      tryConnect();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [extension, socketURL, domain]);
-
-  const tryConnect = (): void => {
-    if (sipConnected || isConnecting) return;
+  const tryConnect = useCallback((): void => {
+    // Only return if we're already connecting OR if we're connected AND the service is active
+    if (isConnecting) return;
+    if (sipConnected && sipService.isInitialized()) return;
 
     if (!extension) {
       setMissingExtension(true);
-      // Show the toast at most once per mount so we don't spam the user
-      // if the effect re-runs due to settings hydration.
       if (!missingExtensionToastShownRef.current) {
         missingExtensionToastShownRef.current = true;
         toast.error(
           "No extension configured for your account. Please contact your administrator to set up your extension.",
         );
       }
-      // Do NOT call onClose here — flipping parent state on a config error
-      // creates a re-render cycle and hides the error from the user. The
-      // panel stays mounted in a read-only "missing extension" state.
       return;
     }
 
     setMissingExtension(false);
-    // Use default password "51234" if not set
     const password = sipPassword || "51234";
 
     if (socketURL && domain) {
       setIsConnecting(true);
+      setShouldConnect(true); // Remember we want to be connected
       sipService.init({
         username: extension,
         password,
@@ -343,6 +367,37 @@ export default function SoftPhone({
         socketUrl: socketURL,
       });
     }
+  }, [
+    sipConnected,
+    isConnecting,
+    extension,
+    socketURL,
+    domain,
+    sipPassword,
+    setIsConnecting,
+    setShouldConnect,
+  ]);
+
+  // Auto-connect on mount or when credentials become available if shouldConnect is true
+  useEffect(() => {
+    if (
+      shouldConnect &&
+      !sipConnected &&
+      !isConnecting &&
+      extension &&
+      socketURL &&
+      domain
+    ) {
+      tryConnect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldConnect, extension, socketURL, domain]);
+
+  const handleDisconnect = (): void => {
+    sipService.stop();
+    setSipConnected(false);
+    setIsConnecting(false);
+    setShouldConnect(false); // Explicitly reset the auto-connect flag
   };
 
   /* ---------------- SIP EVENTS ---------------- */
@@ -571,19 +626,23 @@ export default function SoftPhone({
 
   /* ---------------- AUDIO ---------------- */
 
-  const playRingtone = async (): Promise<void> => {
+  const playRingtone = useCallback(async (): Promise<void> => {
+    if (!ringRef.current) return;
     try {
-      ring.currentTime = 0;
-      await ring.play();
-    } catch {
-      // autoplay may be blocked
+      console.log("🔔 Playing ringtone...");
+      ringRef.current.currentTime = 0;
+      await ringRef.current.play();
+    } catch (err) {
+      console.warn("🔔 Failed to play ringtone:", err);
     }
-  };
+  }, []);
 
-  const stopRingtone = (): void => {
-    ring.pause();
-    ring.currentTime = 0;
-  };
+  const stopRingtone = useCallback((): void => {
+    if (!ringRef.current) return;
+    console.log("🔔 Stopping ringtone");
+    ringRef.current.pause();
+    ringRef.current.currentTime = 0;
+  }, []);
 
   /* ---------------- DRAG HANDLERS ---------------- */
 
@@ -710,7 +769,7 @@ export default function SoftPhone({
               className={`w-2 h-2 rounded-full ${
                 sipConnected
                   ? "bg-green-500"
-                  : isConnecting
+                  : isConnecting || (shouldConnect && !sipConnected)
                     ? "bg-yellow-500 animate-pulse"
                     : "bg-red-500"
               }`}
@@ -718,12 +777,31 @@ export default function SoftPhone({
             <span className="text-xs text-gray-600">
               {sipConnected
                 ? t("softphone.connected")
-                : isConnecting
+                : isConnecting || (shouldConnect && !sipConnected)
                   ? t("softphone.connecting")
                   : t("softphone.disconnected")}
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {!sipConnected && !isConnecting && !shouldConnect ? (
+              <button
+                onClick={tryConnect}
+                disabled={isConnecting}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-3 py-1 rounded-full font-medium transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isConnecting
+                  ? t("softphone.connecting")
+                  : t("softphone.reconnect")}
+              </button>
+            ) : (
+              <button
+                onClick={handleDisconnect}
+                className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-3 py-1 rounded-full font-medium transition-colors shadow-sm"
+              >
+                {t("softphone.disconnect")}
+              </button>
+            )}
+
             <button
               onClick={() => setShowPasswordPrompt(true)}
               className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
@@ -731,14 +809,6 @@ export default function SoftPhone({
             >
               <Settings className="w-3.5 h-3.5" />
             </button>
-            {!sipConnected && !isConnecting && (
-              <button
-                onClick={tryConnect}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                {t("softphone.reconnect")}
-              </button>
-            )}
           </div>
         </div>
         {auth?.user?.extension && (

@@ -120,8 +120,10 @@ export function useCreateGoal() {
       queryClient.invalidateQueries({ queryKey: goalAnalyticsKeys.all });
       toast.success("Goal created successfully");
     },
-    onError: () => {
-      toast.error("Failed to create goal");
+    // Error handling
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || "Failed to create goal";
+      toast.error(msg);
     },
   });
 }
@@ -362,9 +364,7 @@ export function useUpdateMetricValue() {
       // The metric isn't mutated until the value-change is approved, but we
       // still invalidate so the "Pending: <value>" hint shows up immediately.
       queryClient.invalidateQueries({ queryKey: goalKeys.all });
-      toast.success(
-        "Value change submitted for approval — pending review",
-      );
+      toast.success("Value change submitted for approval — pending review");
     },
     onError: () => {
       toast.error("Failed to submit metric value change");

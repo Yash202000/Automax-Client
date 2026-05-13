@@ -9,40 +9,6 @@ import { Button, Input, Checkbox } from "../ui";
 import { authApi } from "../../api/auth";
 import { useAuthStore } from "../../stores/authStore";
 
-const registerSchema = z
-  .object({
-    email: z.string().email("Please enter a valid email address"),
-    username: z
-      .string()
-      .min(3, "Username must be at least 3 characters")
-      .max(50, "Username must be less than 50 characters")
-      .regex(
-        /^[a-zA-Z0-9_]+$/,
-        "Username can only contain letters, numbers, and underscores",
-      ),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
-    confirmPassword: z.string(),
-    first_name: z.string().max(100).optional(),
-    last_name: z.string().max(100).optional(),
-    terms: z
-      .boolean()
-      .refine(
-        (val) => val === true,
-        "You must accept the terms and conditions",
-      ),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
-
 export const RegisterForm: React.FC = () => {
   const { t } = useTranslation();
   const [error, setError] = useState("");
@@ -50,6 +16,31 @@ export const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
+  const registerSchema = z
+    .object({
+      email: z.string().email(t("auth.invalidEmail")),
+      username: z
+        .string()
+        .min(3, t("auth.usernameTooShort"))
+        .max(50, t("auth.usernameTooLong"))
+        .regex(/^[a-zA-Z0-9_]+$/, t("auth.usernameInvalidChars")),
+      password: z
+        .string()
+        .min(8, t("auth.pwTooShort"))
+        .regex(/[A-Z]/, t("auth.pwUppercase"))
+        .regex(/[a-z]/, t("auth.pwLowercase"))
+        .regex(/[0-9]/, t("auth.pwNumber")),
+      confirmPassword: z.string(),
+      first_name: z.string().max(100).optional(),
+      last_name: z.string().max(100).optional(),
+      terms: z.boolean().refine((val) => val === true, t("auth.acceptTerms")),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t("auth.pwMismatch"),
+      path: ["confirmPassword"],
+    });
+
+  type RegisterFormData = z.infer<typeof registerSchema>;
   const {
     register,
     handleSubmit,
@@ -110,13 +101,11 @@ export const RegisterForm: React.FC = () => {
         );
         navigate("/dashboard");
       } else {
-        setError(response.error || "Registration failed. Please try again.");
+        setError(response.error || t("auth.registrationFailed"));
       }
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "An error occurred during registration";
+        err instanceof Error ? err.message : t("auth.registrationError");
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setError(axiosError.response?.data?.error || errorMessage);
@@ -158,13 +147,13 @@ export const RegisterForm: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t("auth.firstName")}
-            placeholder="John"
+            placeholder={t("auth.firstNamePlaceholder")}
             error={errors.first_name?.message}
             {...register("first_name")}
           />
           <Input
             label={t("auth.lastName")}
-            placeholder="Doe"
+            placeholder={t("auth.lastNamePlaceholder")}
             error={errors.last_name?.message}
             {...register("last_name")}
           />
@@ -172,7 +161,7 @@ export const RegisterForm: React.FC = () => {
 
         <Input
           label={t("auth.username")}
-          placeholder="johndoe"
+          placeholder={t("auth.usernamePlaceholder")}
           error={errors.username?.message}
           leftIcon={<User className="w-5 h-5" />}
           {...register("username")}
@@ -181,7 +170,7 @@ export const RegisterForm: React.FC = () => {
         <Input
           label={t("auth.email")}
           type="email"
-          placeholder="you@example.com"
+          placeholder={t("auth.emailPlaceholder")}
           error={errors.email?.message}
           leftIcon={<Mail className="w-5 h-5" />}
           {...register("email")}
@@ -234,7 +223,7 @@ export const RegisterForm: React.FC = () => {
 
         <div>
           <Checkbox
-            label="I agree to the terms"
+            label={t("auth.agreeToTerms")}
             description={
               <span>
                 {t("auth.byCreatingAnAccountYouAgreeTo")}{" "}
@@ -259,7 +248,11 @@ export const RegisterForm: React.FC = () => {
           size="lg"
           fullWidth
           isLoading={isLoading}
-          rightIcon={!isLoading && <ArrowRight className="w-5 h-5" />}
+          rightIcon={
+            !isLoading && (
+              <ArrowRight className="w-5 h-5 rtl:rotate-180 ml-2 rtl:mr-2" />
+            )
+          }
         >
           {isLoading ? t("auth.creatingAccount") : t("auth.signUp")}
         </Button>

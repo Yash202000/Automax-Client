@@ -177,15 +177,17 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   value,
   onChange,
   label,
-  placeholder = "Select...",
+  placeholder,
   error,
   required,
   disabled,
-  emptyMessage = "No items available",
+  emptyMessage,
   maxHeight = "300px",
   leafOnly = true,
 }) => {
   const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("common.select");
+  const resolvedEmptyMessage = emptyMessage ?? t("common.noItemsAvailable");
   const [isOpen, setIsOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -316,7 +318,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
             ? selectedPath.length > 1
               ? selectedPath.join(" > ")
               : selectedNode.name
-            : placeholder}
+            : resolvedPlaceholder}
         </span>
         <div className="flex items-center gap-1 ml-2">
           {value && !disabled && (
@@ -367,7 +369,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
           <div className="overflow-y-auto p-2" style={{ maxHeight }}>
             {data.length === 0 ? (
               <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
-                {emptyMessage}
+                {resolvedEmptyMessage}
               </p>
             ) : (
               data.map((node) => (

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "../types";
+import { useSoftphoneStore } from "./softphoneStore";
+import sipService from "../lib/services/sipService";
 
 interface AuthState {
   user: User | null;
@@ -47,6 +49,11 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("rememberMe");
         localStorage.removeItem("auth-storage"); // Clear zustand persisted state
+
+        // Reset softphone state and stop SIP service
+        useSoftphoneStore.getState().reset();
+        sipService.stop();
+
         set({
           user: null,
           token: null,

@@ -95,18 +95,18 @@ const getChangedValues = (oldValue?: string, newValue?: string) => {
   }
 };
 
-const exportToCSV = (logs: ActionLog[]) => {
+const exportToCSV = (logs: ActionLog[], t: (key: string) => string) => {
   const headers = [
-    "Time",
-    "User",
-    "Username",
-    "Action",
-    "Module",
-    "Description",
-    "Old Value",
-    "New Value",
-    "Status",
-    "IP Address",
+    t("actionLogs.time"),
+    t("users.user"),
+    t("auth.username"),
+    t("actionLogs.action"),
+    t("actionLogs.module"),
+    t("common.description"),
+    t("actionLogs.oldValue"),
+    t("actionLogs.newValue"),
+    t("common.status"),
+    t("actionLogs.ipAddress"),
   ];
 
   const rows = logs.map((log) => [
@@ -147,22 +147,23 @@ const exportToCSV = (logs: ActionLog[]) => {
   URL.revokeObjectURL(url);
 };
 
-const exportToExcel = (logs: ActionLog[]) => {
+const exportToExcel = (logs: ActionLog[], t: (key: string) => string) => {
   const formattedData = logs.map((log) => ({
-    Time: new Date(log?.created_at).toLocaleString(),
-    User: `${log?.user?.first_name || ""} ${log?.user?.last_name || ""}`,
-    Username: log?.user?.username,
-    Action: log?.action,
-    Module: log?.module,
-    Description: log?.description,
-    "Old Value": log?.old_value
+    [t("actionLogs.time")]: new Date(log?.created_at).toLocaleString(),
+    [t("users.user")]:
+      `${log?.user?.first_name || ""} ${log?.user?.last_name || ""}`,
+    [t("auth.username")]: log?.user?.username,
+    [t("actionLogs.action")]: log?.action,
+    [t("actionLogs.module")]: log?.module,
+    [t("common.description")]: log?.description,
+    [t("actionLogs.oldValue")]: log?.old_value
       ? getChangedValues(log.old_value, log.new_value).oldText
       : "",
-    "New Value": log?.new_value
+    [t("actionLogs.newValue")]: log?.new_value
       ? getChangedValues(log.old_value, log.new_value).newText
       : "",
-    Status: log?.status,
-    "IP Address": log?.ip_address,
+    [t("common.status")]: log?.status,
+    [t("actionLogs.ipAddress")]: log?.ip_address,
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(formattedData);
@@ -182,7 +183,11 @@ const exportToExcel = (logs: ActionLog[]) => {
 
   const workbook = XLSX.utils.book_new();
 
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Action Logs");
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    t("reports.dataSources.actionLogs"),
+  );
 
   const excelBuffer = XLSX.write(workbook, {
     bookType: "xlsx",
@@ -271,9 +276,9 @@ export const ActionLogsPage: React.FC = () => {
     if (!data?.data || data.data.length === 0) return;
 
     if (format === "csv") {
-      exportToCSV(data.data);
+      exportToCSV(data.data, t);
     } else {
-      exportToExcel(data.data);
+      exportToExcel(data.data, t);
     }
   };
 
@@ -330,7 +335,7 @@ export const ActionLogsPage: React.FC = () => {
             leftIcon={<BarChart3 className="w-4 h-4" />}
             onClick={() => setShowStats(!showStats)}
           >
-            {showStats ? "Hide Stats" : "Show Stats"}
+            {showStats ? t("actionLogs.hideStats") : t("actionLogs.showStats")}
           </Button>
           {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
             <Button
@@ -493,7 +498,7 @@ export const ActionLogsPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
+                  <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
               </div>
 
@@ -517,7 +522,7 @@ export const ActionLogsPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
+                  <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
               </div>
 
@@ -540,7 +545,7 @@ export const ActionLogsPage: React.FC = () => {
                     <option value="success">{t("common.success")}</option>
                     <option value="failed">{t("common.failed")}</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
+                  <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
               </div>
 
@@ -603,8 +608,8 @@ export const ActionLogsPage: React.FC = () => {
             </p>
             <p className="text-[hsl(var(--muted-foreground))] text-sm">
               {hasActiveFilters
-                ? "Try adjusting your filters"
-                : "User actions will appear here"}
+                ? t("actionLogs.tryAdjustingFilters")
+                : t("actionLogs.userActionsWillAppearHere")}
             </p>
           </div>
         ) : (
@@ -659,7 +664,10 @@ export const ActionLogsPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                          <span className="text-sm text-[hsl(var(--foreground))] whitespace-nowrap">
+                          <span
+                            dir="ltr"
+                            className="text-sm text-[hsl(var(--foreground))] whitespace-nowrap"
+                          >
                             {formatDate(log.created_at)}
                           </span>
                         </div>
@@ -691,7 +699,9 @@ export const ActionLogsPage: React.FC = () => {
                               "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
                           )}
                         >
-                          {log.action}
+                          {t(`actionLogs.actionTypes.${log.action}`, {
+                            defaultValue: log.action,
+                          })}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -717,7 +727,9 @@ export const ActionLogsPage: React.FC = () => {
                           ) : (
                             <XCircle className="w-3.5 h-3.5" />
                           )}
-                          {log.status}
+                          {t(`actionLogs.statuses.${log.status}`, {
+                            defaultValue: log.status,
+                          })}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -859,11 +871,11 @@ export const ActionLogsPage: React.FC = () => {
                   <p className="font-semibold text-[hsl(var(--foreground))] text-lg">
                     {selectedLog.user?.first_name && selectedLog.user?.last_name
                       ? `${selectedLog.user.first_name} ${selectedLog.user.last_name}`
-                      : selectedLog.user?.username || "Unknown User"}
+                      : selectedLog.user?.username || t("users.unknownUser")}
                   </p>
                   <div className="flex items-center gap-4 mt-1">
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {selectedLog.user?.email || "N/A"}
+                      {selectedLog.user?.email || t("common.notAvailable")}
                     </p>
                     {selectedLog.user?.username && (
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -887,7 +899,9 @@ export const ActionLogsPage: React.FC = () => {
                         "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
                     )}
                   >
-                    {selectedLog.action}
+                    {t(`actionLogs.actionTypes.${selectedLog.action}`, {
+                      defaultValue: selectedLog.action,
+                    })}
                   </span>
                 </div>
                 <div>
@@ -906,7 +920,9 @@ export const ActionLogsPage: React.FC = () => {
                     ) : (
                       <XCircle className="w-4 h-4" />
                     )}
-                    {selectedLog.status}
+                    {t(`actionLogs.statuses.${selectedLog.status}`, {
+                      defaultValue: selectedLog.status,
+                    })}
                   </span>
                 </div>
                 <div>
@@ -1042,7 +1058,7 @@ export const ActionLogsPage: React.FC = () => {
                             const formatValue = (val: any) => {
                               if (val === null || val === undefined) return "-";
                               if (typeof val === "boolean")
-                                return val ? "Yes" : "No";
+                                return val ? t("common.yes") : t("common.no");
                               if (typeof val === "number")
                                 return val.toString();
                               if (Array.isArray(val)) {

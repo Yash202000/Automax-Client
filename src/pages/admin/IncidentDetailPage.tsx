@@ -39,7 +39,6 @@ import {
   ArrowRight,
   Bot,
   ShieldCheck,
-  List,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
@@ -114,7 +113,7 @@ export const IncidentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { hasPermission, isSuperAdmin } = usePermissions();
+  const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
   const { users } = useAppSelector((state) => state.users);
 
   const canViewReports =
@@ -142,8 +141,6 @@ export const IncidentDetailPage: React.FC = () => {
     null,
   );
   const [transitionUploading, setTransitionUploading] = useState(false);
-  const [transitionFeedbackRating, setTransitionFeedbackRating] =
-    useState<number>(0);
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
   const [transitionFieldValues, setTransitionFieldValues] = useState<
@@ -209,7 +206,6 @@ export const IncidentDetailPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<IncidentAttachment | null>(
     null,
   );
-  const [toggleMode, setToggleMode] = useState<"text" | "list">("text");
 
   // Queries
   const {
@@ -236,9 +232,26 @@ export const IncidentDetailPage: React.FC = () => {
     enabled: !!id,
   });
 
-  const { data: commentsData, refetch: refetchComments } = useQuery({
-    queryKey: ["incident", id, "comments"],
-    queryFn: () => incidentApi.listComments(id!),
+  const { data: combinedCommentData, refetch: refetchComments } = useQuery({
+    queryKey: ["incident", id, "activity"],
+    queryFn: async () => {
+      const [commentsRes, feedbacksRes] = await Promise.all([
+        incidentApi.listComments(id!),
+        incidentApi.listFeedbacks(id!),
+      ]);
+
+      const feedbacks = (feedbacksRes?.data || []).map((item: any) => ({
+        ...item,
+        author: item?.created_by,
+        content: item?.comment,
+        type: "feedback",
+      }));
+
+      return [...(commentsRes?.data || []), ...feedbacks].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    },
     enabled: !!id,
   });
 
@@ -434,7 +447,6 @@ export const IncidentDetailPage: React.FC = () => {
         setSelectedTransition(null);
         setTransitionComment("");
         setTransitionAttachment(null);
-        setTransitionFeedbackRating(0);
         setTransitionFeedbackComment("");
         setReadyToCloseDuration("");
         setDepartmentMatchResult(null);
@@ -552,7 +564,7 @@ export const IncidentDetailPage: React.FC = () => {
         comment,
         attachments,
         feedback: {
-          rating: 1,
+          rating: 5, // Hardcoded rating for now - as it's required by the API.
           comment: feedback?.comment,
         },
         department_id,
@@ -570,7 +582,6 @@ export const IncidentDetailPage: React.FC = () => {
       setSelectedTransition(null);
       setTransitionComment("");
       setTransitionAttachment(null);
-      setTransitionFeedbackRating(0);
       setTransitionFeedbackComment("");
       setTransitionFieldValues({});
       setReadyToCloseDuration("");
@@ -691,7 +702,7 @@ export const IncidentDetailPage: React.FC = () => {
 
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
-  const comments = commentsData?.data || [];
+  const comments = combinedCommentData || [];
 
   const attachments = attachmentsData?.data || [];
   const fullWorkflow = fullWorkflowData?.data;
@@ -849,7 +860,6 @@ export const IncidentDetailPage: React.FC = () => {
     setSelectedTransition(null);
     setTransitionComment("");
     setTransitionAttachment(null);
-    setTransitionFeedbackRating(0);
     setTransitionFeedbackComment("");
     setTransitionFieldValues({});
     setReadyToCloseDuration("");
@@ -917,11 +927,11 @@ export const IncidentDetailPage: React.FC = () => {
         selectedTransition.requirements?.some(
           (r) => r.requirement_type === "feedback" && r.is_mandatory,
         ) &&
-        transitionFeedbackRating === 0
+        transitionFeedbackComment === ""
       )
         newErrors.feedback = t(
           "incidents.feedbackRequired",
-          "Please provide a rating",
+          "Please provide feedback",
         );
     } else if (stepKey === "comment") {
       if (
@@ -1014,7 +1024,6 @@ export const IncidentDetailPage: React.FC = () => {
             classification_id: incident.classification?.id,
             location_id: incident.location?.id,
             department_id: incident.department?.id,
-            exclude_user_id: incident.assignee?.id,
           });
           if (userResult.success && userResult.data) {
             setUserMatchResult(userResult.data);
@@ -1246,13 +1255,12 @@ export const IncidentDetailPage: React.FC = () => {
         transitionId: selectedTransition.transition.id,
         comment: transitionComment || undefined,
         attachments: attachmentIds,
-        feedback:
-          transitionFeedbackRating > 0
-            ? {
-                rating: transitionFeedbackRating,
-                comment: transitionFeedbackComment || undefined,
-              }
-            : undefined,
+        feedback: transitionFeedbackComment
+          ? {
+              rating: 0,
+              comment: transitionFeedbackComment || undefined,
+            }
+          : undefined,
         department_id: departmentId,
         user_ids: userIds,
         field_changes:
@@ -1515,6 +1523,39 @@ export const IncidentDetailPage: React.FC = () => {
                 {t("incidents.requestInfo", "Request Information")}
               </Button>
             )}
+          {(canViewAllIncidents() ||
+            incident?.assignees?.some((assignee) => assignee.id === user?.id) ||
+            incident?.assignee?.id === user?.id) && (
+            <>
+              {(!incident?.is_merged ||
+                (incident?.is_merged &&
+                  incident?.master_incident_id === incident?.id)) &&
+                availableTransitions
+                  .filter((t) => t.can_execute)
+                  .map((transition) => (
+                    <Button
+                      key={transition.transition.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTransitionClick(transition)}
+                      leftIcon={<Play className="w-4 h-4" />}
+                    >
+                      {transition.transition.name}
+                    </Button>
+                  ))}
+              {(!incident.record_type || incident.record_type === "incident") &&
+                canConvertToRequest && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConvertModalOpen(true)}
+                    leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+                  >
+                    {t("incidents.convertToRequest", "Convert to Request")}
+                  </Button>
+                )}
+            </>
+          )}
           {canViewReports && (
             <Button
               variant="outline"
@@ -2001,6 +2042,11 @@ export const IncidentDetailPage: React.FC = () => {
                                 "{item.comment}"
                               </p>
                             )}
+                            {item.feedbacks?.comment && (
+                              <p className="mt-2 text-sm text-[hsl(var(--foreground))] italic">
+                                "{item.feedbacks.comment}"
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -2100,14 +2146,16 @@ export const IncidentDetailPage: React.FC = () => {
                               <span className="text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(comment.created_at)}
                               </span>
-                              <button
-                                onClick={() =>
-                                  deleteCommentMutation.mutate(comment.id)
-                                }
-                                className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {comment.type !== "feedback" ? (
+                                <button
+                                  onClick={() =>
+                                    deleteCommentMutation.mutate(comment.id)
+                                  }
+                                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              ) : null}
                             </div>
                           </div>
                           <p className="text-sm text-[hsl(var(--foreground))] whitespace-pre-wrap">
@@ -2680,7 +2728,7 @@ export const IncidentDetailPage: React.FC = () => {
                     <div className="flex items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
                       <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                       <span className="text-sm">
-                        {t("incidents.loadingAIQualityReport")}
+                        {t("incidents.loadingAiQualityReport")}
                       </span>
                     </div>
                   ) : !aiQualityData?.data ? (
@@ -3128,6 +3176,67 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Caller Information - form-entered contact */}
+              {(incident.reporter_name ||
+                incident.reporter_email ||
+                incident.reporter_phone) && (
+                <div className="pt-2 border-t border-[hsl(var(--border))]">
+                  <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                    {t("incidents.callerInformation", "Caller Information")}
+                  </label>
+                  <div className="mt-1 space-y-1.5">
+                    {incident.reporter_name && (
+                      <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                        {incident.reporter_name}
+                      </span>
+                    )}
+                    {incident.reporter_email && (
+                      <a
+                        href={`mailto:${incident.reporter_email}`}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
+                        </svg>
+                        {incident.reporter_email}
+                      </a>
+                    )}
+                    {incident.reporter_phone && (
+                      <a
+                        href={`tel:${incident.reporter_phone}`}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                          />
+                        </svg>
+                        {incident.reporter_phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Reporter - compact */}
               <div className="pt-2 border-t border-[hsl(var(--border))]">
                 <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -3163,9 +3272,9 @@ export const IncidentDetailPage: React.FC = () => {
                       {incident.reporter_email || incident.reporter?.email}
                     </a>
                   )}
-                  {incident.reporter?.phone && (
+                  {(incident.reporter_phone || incident.reporter?.phone) && (
                     <a
-                      href={`tel:${incident.reporter.phone}`}
+                      href={`tel:${incident.reporter_phone || incident.reporter?.phone}`}
                       className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
                     >
                       <svg
@@ -3181,7 +3290,7 @@ export const IncidentDetailPage: React.FC = () => {
                           d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                         />
                       </svg>
-                      {incident.reporter.phone}
+                      {incident.reporter_phone || incident.reporter?.phone}
                     </a>
                   )}
                 </div>
@@ -3334,9 +3443,7 @@ export const IncidentDetailPage: React.FC = () => {
               trans.manual_select_user &&
               !trans.assign_user_id) ||
             currentStepKey === "duration";
-          const showModeToggle =
-            (currentStepKey === "comment" && commentTemplates?.length) ||
-            (currentStepKey === "feedback" && feedbackTemplates?.length);
+
           return (
             <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in flex flex-col max-h-[90vh]">
@@ -3423,33 +3530,6 @@ export const IncidentDetailPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    {showModeToggle ? (
-                      <div className="inline-flex border border-border rounded-md overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setToggleMode("text")}
-                          className={`px-3 py-1.5 text-sm transition-colors ${
-                            toggleMode === "text"
-                              ? "bg-background text-primary border border-primary rounded-l-md"
-                              : "bg-muted/0.6 text-muted-foreground"
-                          }`}
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setToggleMode("list")}
-                          className={`px-3 py-1.5 text-sm transition-colors ${
-                            toggleMode === "list"
-                              ? "bg-background text-primary border rounded-r-md border-primary"
-                              : "bg-muted/0.6 text-muted-foreground border-l border-border"
-                          }`}
-                        >
-                          <List className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : null}
                   </div>
 
                   {/* ── DEPARTMENT STEP ── */}
@@ -4151,119 +4231,71 @@ export const IncidentDetailPage: React.FC = () => {
                   {currentStepKey === "feedback" && (
                     <div>
                       <div className="p-2 bg-[hsl(var(--muted)/0.5)] rounded-lg space-y-3">
-                        {/* Star Rating */}
-                        <div>
-                          <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 block">
-                            {t("incidents.rateExperience")}
-                          </span>
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() =>
-                                  setTransitionFeedbackRating(star)
-                                }
-                                className={`p-1 transition-colors ${
-                                  star <= transitionFeedbackRating
-                                    ? "text-yellow-400"
-                                    : "text-[hsl(var(--muted-foreground))] hover:text-yellow-300"
-                                }`}
-                              >
-                                <Star
-                                  className="w-6 h-6"
-                                  fill={
-                                    star <= transitionFeedbackRating
-                                      ? "currentColor"
-                                      : "none"
-                                  }
-                                />
-                              </button>
-                            ))}
-                            {transitionFeedbackRating > 0 && (
-                              <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))] self-center">
-                                {transitionFeedbackRating}/5
-                              </span>
-                            )}
-                          </div>
-                        </div>
                         {/* Feedback Comment */}
-                        <div>
-                          {showModeToggle && toggleMode === "list" ? (
-                            <div className="border rounded-lg overflow-hidden">
-                              {feedbackTemplates.length === 0 ? (
-                                <p className="p-3 text-sm text-[hsl(var(--muted-foreground))]">
-                                  {t("incidents.noTemplatesAvailable")}
-                                </p>
-                              ) : (
-                                <>
-                                  <label className="flex items-center gap-2 px-3 py-2 border-b cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]">
-                                    <input
-                                      type="radio"
-                                      checked={!transitionFeedbackComment}
-                                      onChange={() => {
-                                        setTransitionFeedbackComment("");
-                                        if (transitionErrors.feedbackComment)
-                                          setTransitionErrors((prev) => ({
-                                            ...prev,
-                                            feedbackComment: "",
-                                          }));
-                                      }}
-                                    />
-                                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                      {t("common.none")}
-                                    </span>
-                                  </label>
-                                  {feedbackTemplates.map((tpl: any) => (
-                                    <label
-                                      key={tpl.id}
-                                      className="flex items-center gap-2 px-3 py-2 border-b last:border-0 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]"
-                                    >
-                                      <input
-                                        type="radio"
-                                        checked={
-                                          transitionFeedbackComment ===
-                                          tpl.feedback_text
-                                        }
-                                        onChange={() => {
-                                          setTransitionFeedbackComment(
-                                            tpl.feedback_text,
-                                          );
-                                          if (transitionErrors.feedbackComment)
-                                            setTransitionErrors((prev) => ({
-                                              ...prev,
-                                              feedbackComment: "",
-                                            }));
-                                        }}
-                                      />
-                                      <span className="text-sm">
-                                        {tpl.feedback_text}
-                                      </span>
-                                    </label>
-                                  ))}
-                                </>
-                              )}
-                            </div>
+                        <div className="space-y-3">
+                          {feedbackTemplates?.length ? (
+                            <select
+                              value={
+                                feedbackTemplates.some(
+                                  (tpl: any) =>
+                                    tpl.feedback_text ===
+                                    transitionFeedbackComment,
+                                )
+                                  ? transitionFeedbackComment
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                setTransitionFeedbackComment(e.target.value);
+
+                                if (transitionErrors.feedbackComment) {
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    feedbackComment: "",
+                                  }));
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                            >
+                              <option value="">
+                                {t("common.selectFeedback")}
+                              </option>
+
+                              {feedbackTemplates.map((tpl: any) => (
+                                <option key={tpl.id} value={tpl.feedback_text}>
+                                  {tpl.feedback_text}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <textarea
                               value={transitionFeedbackComment}
-                              onChange={(e) =>
-                                setTransitionFeedbackComment(e.target.value)
-                              }
+                              onChange={(e) => {
+                                setTransitionFeedbackComment(e.target.value);
+
+                                if (transitionErrors.feedbackComment) {
+                                  setTransitionErrors((prev) => ({
+                                    ...prev,
+                                    feedbackComment: "",
+                                  }));
+                                }
+                              }}
                               placeholder={t(
                                 "incidents.feedbackCommentPlaceholder",
                               )}
-                              rows={2}
-                              className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
+                              rows={3}
+                              className={`w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${
+                                transitionErrors.feedback
+                                  ? "border-red-500"
+                                  : "border-[hsl(var(--border))]"
+                              }`}
                             />
                           )}
-                          {/* <select
-                        className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none"
-                        value={transitionFeedbackComment}
-                        onChange={(e) => setTransitionFeedbackComment(e.target.value)}
-                      >
-                        <option value="Missing Incident Information">Missing Incident Information</option>
-                      </select> */}
+
+                          {transitionErrors.feedback && (
+                            <p className="text-xs text-red-500 ">
+                              {transitionErrors.feedback}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -4519,76 +4551,54 @@ export const IncidentDetailPage: React.FC = () => {
                   {/* Comment */}
                   {currentStepKey === "comment" && (
                     <>
-                      {showModeToggle && toggleMode === "list" ? (
-                        <div className="border rounded-lg overflow-hidden">
-                          {commentTemplates.length === 0 ? (
-                            <p className="p-3 text-sm text-[hsl(var(--muted-foreground))]">
-                              {t("incidents.noTemplatesAvailable")}
-                            </p>
-                          ) : (
-                            <>
-                              <label className="flex items-center gap-2 px-3 py-2 border-b cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]">
-                                <input
-                                  type="radio"
-                                  checked={!transitionComment}
-                                  onChange={() => {
-                                    setTransitionComment("");
-                                    if (transitionErrors.comment)
-                                      setTransitionErrors((prev) => ({
-                                        ...prev,
-                                        comment: "",
-                                      }));
-                                  }}
-                                />
-                                <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                  {t("common.none")}
-                                </span>
-                              </label>
-                              {commentTemplates.map((tpl: any) => (
-                                <label
-                                  key={tpl.id}
-                                  className="flex items-center gap-2 px-3 py-2 border-b last:border-0 cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]"
-                                >
-                                  <input
-                                    type="radio"
-                                    checked={
-                                      transitionComment === tpl.comment_text
-                                    }
-                                    onChange={() => {
-                                      setTransitionComment(tpl.comment_text);
-                                      if (transitionErrors.comment)
-                                        setTransitionErrors((prev) => ({
-                                          ...prev,
-                                          comment: "",
-                                        }));
-                                    }}
-                                  />
-                                  <span className="text-sm">
-                                    {tpl.comment_text}
-                                  </span>
-                                </label>
-                              ))}
-                            </>
-                          )}
+                      {!!commentTemplates?.length && (
+                        <div className="mb-3">
+                          <select
+                            value={transitionComment}
+                            onChange={(e) => {
+                              setTransitionComment(e.target.value);
+                              if (transitionErrors.comment)
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  comment: "",
+                                }));
+                            }}
+                            className="w-full px-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                          >
+                            <option value="">
+                              {t("common.selectComment")}
+                            </option>
+
+                            {commentTemplates.map((tpl: any) => (
+                              <option key={tpl.id} value={tpl.comment_text}>
+                                {tpl.comment_text}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                      ) : (
-                        <textarea
-                          value={transitionComment}
-                          onChange={(e) => {
-                            setTransitionComment(e.target.value);
-                            if (transitionErrors.comment)
-                              setTransitionErrors((prev) => ({
-                                ...prev,
-                                comment: "",
-                              }));
-                          }}
-                          placeholder={t("incidents.addCommentForTransition")}
-                          rows={3}
-                          className={`w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${transitionErrors.comment ? "border-red-500" : "border-[hsl(var(--border))]"}`}
-                        />
                       )}
+
+                      <textarea
+                        value={transitionComment}
+                        onChange={(e) => {
+                          setTransitionComment(e.target.value);
+                          if (transitionErrors.comment)
+                            setTransitionErrors((prev) => ({
+                              ...prev,
+                              comment: "",
+                            }));
+                        }}
+                        placeholder={t("incidents.addCommentForTransition")}
+                        rows={3}
+                        className={`w-full px-4 py-3 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] resize-none ${
+                          transitionErrors.comment
+                            ? "border-red-500"
+                            : "border-[hsl(var(--border))]"
+                        }`}
+                      />
+
                       {transitionErrors.comment && (
-                        <p className="text-xs text-red-500 mt-1">
+                        <p className="text-xs text-red-500">
                           {transitionErrors.comment}
                         </p>
                       )}

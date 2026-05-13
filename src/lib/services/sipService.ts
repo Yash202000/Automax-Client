@@ -243,6 +243,18 @@ const sipService = {
   getSession(): any {
     return session;
   },
+
+  stop(): void {
+    if (ua) {
+      ua.stop();
+      ua = null;
+      cleanup();
+    }
+  },
+
+  isInitialized(): boolean {
+    return ua !== null;
+  },
 };
 
 /* -------------------- Cleanup -------------------- */

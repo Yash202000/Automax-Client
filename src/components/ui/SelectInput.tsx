@@ -48,9 +48,9 @@ export function Select({
   options,
   value,
   onChange,
-  placeholder = "Select an option",
+  placeholder,
   searchable = false,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   clearable = false,
   disabled = false,
   label,
@@ -60,6 +60,8 @@ export function Select({
   size = "md",
 }: SelectProps) {
   const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("common.selectAnOption");
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t("common.search");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -182,7 +184,7 @@ export function Select({
             <span
               className={cn("text-[hsl(var(--muted-foreground))]", textSize)}
             >
-              {placeholder}
+              {resolvedPlaceholder}
             </span>
           )}
         </div>
@@ -229,7 +231,7 @@ export function Select({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={searchPlaceholder}
+                  placeholder={resolvedSearchPlaceholder}
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
                     "w-full pl-8 pr-3 py-1.5 text-sm rounded-md",

@@ -1,4 +1,5 @@
-import axios from 'axios';
+import i18n from "@/i18n";
+import axios from "axios";
 
 // Runtime config from window.APP_CONFIG (set by docker-entrypoint.sh)
 // Falls back to import.meta.env for local development, then to default
@@ -15,12 +16,12 @@ declare global {
 export const API_URL =
   window.APP_CONFIG?.API_URL ||
   import.meta.env.VITE_API_URL ||
-  'http://localhost:8080/api/v1';
+  "http://localhost:8080/api/v1";
 
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -51,19 +52,19 @@ export const setLoggingOut = (value: boolean) => {
 
 const redirectToLogin = () => {
   // Clear all auth-related storage
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('auth-storage'); // Clear zustand persisted auth state
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+  localStorage.removeItem("auth-storage"); // Clear zustand persisted auth state
 
-  if (!window.location.pathname.includes('/login')) {
-    window.location.href = '/login';
+  if (!window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
   }
 };
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -71,7 +72,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 apiClient.interceptors.response.use(
@@ -80,7 +81,11 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // If no config or error is not 401 or request already retried, reject
-    if (!originalRequest || error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      !originalRequest ||
+      error.response?.status !== 401 ||
+      originalRequest._retry
+    ) {
       return Promise.reject(error);
     }
 
@@ -90,12 +95,12 @@ apiClient.interceptors.response.use(
     }
 
     // If this is the logout request failing, don't try to refresh
-    if (originalRequest.url?.includes('/auth/logout')) {
+    if (originalRequest.url?.includes("/auth/logout")) {
       return Promise.reject(error);
     }
 
     // If this is the refresh token request itself failing, redirect to login
-    if (originalRequest.url?.includes('/auth/refresh')) {
+    if (originalRequest.url?.includes("/auth/refresh")) {
       redirectToLogin();
       return Promise.reject(error);
     }
@@ -117,7 +122,7 @@ apiClient.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = localStorage.getItem("refreshToken");
 
     if (!refreshToken) {
       isRefreshing = false;
@@ -132,9 +137,9 @@ apiClient.interceptors.response.use(
 
       const { token, refresh_token } = response.data.data;
 
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
       if (refresh_token) {
-        localStorage.setItem('refreshToken', refresh_token);
+        localStorage.setItem("refreshToken", refresh_token);
       }
 
       apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -150,7 +155,15 @@ apiClient.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
+);
+
+apiClient.interceptors.request.use(
+  (config) => {
+    config.headers["Accept-Language"] = i18n.language;
+    return config;
+  },
+  (error) => Promise.reject(error),
 );
 
 export default apiClient;

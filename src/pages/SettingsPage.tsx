@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,23 +23,11 @@ import { useAuthStore } from "../stores/authStore";
 import { authApi } from "../api/auth";
 import { setLanguage, getCurrentLanguage, supportedLanguages } from "../i18n";
 
-const passwordSchema = z
-  .object({
-    old_password: z.string().min(1, "Current password is required"),
-    new_password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
-    confirm_password: z.string(),
-  })
-  .refine((data) => data.new_password === data.confirm_password, {
-    message: "Passwords don't match",
-    path: ["confirm_password"],
-  });
-
-type PasswordFormData = z.infer<typeof passwordSchema>;
+interface PasswordFormData {
+  old_password: string;
+  new_password: string;
+  confirm_password: string;
+}
 
 export const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -54,6 +42,28 @@ export const SettingsPage: React.FC = () => {
 
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+
+  const passwordSchema = useMemo(
+    () =>
+      z
+        .object({
+          old_password: z
+            .string()
+            .min(1, t("settings.currentPasswordRequired")),
+          new_password: z
+            .string()
+            .min(8, t("settings.passwordMinLength"))
+            .regex(/[A-Z]/, t("settings.passwordUppercaseRequired"))
+            .regex(/[a-z]/, t("settings.passwordLowercaseRequired"))
+            .regex(/[0-9]/, t("settings.passwordNumberRequired")),
+          confirm_password: z.string(),
+        })
+        .refine((data) => data.new_password === data.confirm_password, {
+          message: t("settings.passwordsDontMatch"),
+          path: ["confirm_password"],
+        }),
+    [t],
+  );
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) return;
@@ -108,7 +118,7 @@ export const SettingsPage: React.FC = () => {
         new_password: data.new_password,
       });
       if (response.success) {
-        setPasswordSuccess("Password changed successfully. Logging you out...");
+        setPasswordSuccess(t("settings.passwordChangedLogout"));
         reset();
         setTimeout(async () => {
           try {
@@ -120,11 +130,11 @@ export const SettingsPage: React.FC = () => {
           navigate("/login");
         }, 1500);
       } else {
-        setPasswordError(response.error || "Failed to change password");
+        setPasswordError(response.error || t("settings.changePasswordFailed"));
       }
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
+        err instanceof Error ? err.message : t("settings.genericError");
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as {
           response?: {
@@ -153,11 +163,11 @@ export const SettingsPage: React.FC = () => {
         logout();
         navigate("/login");
       } else {
-        setDeleteError(response.error || "Failed to delete account");
+        setDeleteError(response.error || t("settings.deleteAccountFailed"));
       }
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
+        err instanceof Error ? err.message : t("settings.genericError");
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };
         setDeleteError(axiosError.response?.data?.error || errorMessage);
@@ -477,7 +487,7 @@ export const SettingsPage: React.FC = () => {
                     <span className="text-2xl">
                       {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
                     </span>
-                    <div className="text-left">
+                    <div className="text-start">
                       <p
                         className={`text-sm font-medium ${
                           currentLang === lang.code ? "text-primary" : ""
@@ -485,7 +495,13 @@ export const SettingsPage: React.FC = () => {
                       >
                         {lang.nativeName}
                       </p>
-                      <p className="text-xs text-gray-500">{lang.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {t(
+                          lang.code === "en"
+                            ? "settings.english"
+                            : "settings.arabic",
+                        )}
+                      </p>
                     </div>
                   </div>
                   {currentLang === lang.code && (

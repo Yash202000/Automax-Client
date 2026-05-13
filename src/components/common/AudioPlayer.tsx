@@ -55,7 +55,7 @@ export function AudioPlayer({
     };
 
     const handleError = () => {
-      setError("Failed to load audio");
+      setError(t("common.failedToLoadAudio"));
       setIsLoading(false);
     };
 
@@ -76,7 +76,7 @@ export function AudioPlayer({
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("canplay", handleCanPlay);
     };
-  }, []);
+  }, [t]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;

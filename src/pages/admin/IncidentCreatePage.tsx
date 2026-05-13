@@ -82,6 +82,9 @@ export function IncidentCreatePage() {
     country: undefined,
     postal_code: undefined,
     due_date: "",
+    reporter_name: "",
+    reporter_email: "",
+    reporter_phone: "",
   });
 
   const [comment, setComment] = useState("");
@@ -139,6 +142,44 @@ export function IncidentCreatePage() {
     queryKey: ["admin", "lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
   });
+
+  // Fetch initial state of the selected workflow to detect creation-time assignment config
+  const { data: initialStateData } = useQuery({
+    queryKey: ["admin", "workflows", formData.workflow_id, "initial-state"],
+    queryFn: () => workflowApi.getInitialState(formData.workflow_id!),
+    enabled: !!formData.workflow_id,
+  });
+  const initialState = initialStateData?.data;
+  const initialStateAssignmentMode: "none" | "auto" | "manual" | "specific" =
+    initialState?.assign_user_id
+      ? "specific"
+      : initialState?.auto_match_user
+        ? "auto"
+        : initialState?.manual_select_user
+          ? "manual"
+          : "none";
+
+  // Fetch matching users for manual-select mode — re-fetches when filter values change
+  const { data: matchingUsersData } = useQuery({
+    queryKey: [
+      "admin",
+      "workflows",
+      formData.workflow_id,
+      "initial-state",
+      "matching-users",
+      formData.classification_id,
+      formData.location_id,
+      formData.department_id,
+    ],
+    queryFn: () =>
+      workflowApi.getInitialStateMatchingUsers(formData.workflow_id!, {
+        classification_id: formData.classification_id || undefined,
+        location_id: formData.location_id || undefined,
+        department_id: formData.department_id || undefined,
+      }),
+    enabled: !!formData.workflow_id && initialStateAssignmentMode === "manual",
+  });
+  const matchingUsers: User[] = matchingUsersData?.data || [];
 
   const workflows: Workflow[] = useMemo(
     () => workflowsData?.data || [],
@@ -263,6 +304,9 @@ export function IncidentCreatePage() {
           country: d.data.country,
           postal_code: d.data.postal_code,
           due_date: d.data.due_date,
+          reporter_name: d.data.reporter_name || "",
+          reporter_email: d.data.reporter_email || "",
+          reporter_phone: d.data.reporter_phone || "",
         });
 
         // Clone lookup values
@@ -473,7 +517,11 @@ export function IncidentCreatePage() {
     if (id) {
       fetchIncidentById(id);
       fetchOriginalAttachments(id);
-    } else {
+    }
+  }, [id, fetchIncidentById, fetchOriginalAttachments]);
+
+  useEffect(() => {
+    if (!id) {
       setFormData({
         title: "",
         description: "",
@@ -489,11 +537,14 @@ export function IncidentCreatePage() {
         postal_code: "",
         due_date: "",
         source: "web",
+        reporter_name: "",
+        reporter_email: "",
+        reporter_phone: "",
       });
       setLookupValues({});
       setAttachments([]);
     }
-  }, [id, fetchIncidentById, fetchOriginalAttachments]);
+  }, [id]);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
@@ -712,6 +763,7 @@ export function IncidentCreatePage() {
 
   const selectedWorkflow = workflows.find((w) => w.id === formData.workflow_id);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
+  const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
 
   // List of valid form data fields for validation
   const validFormFields = [
@@ -723,6 +775,9 @@ export function IncidentCreatePage() {
     "location_id",
     "geolocation",
     "due_date",
+    "reporter_name",
+    "reporter_email",
+    "reporter_phone",
   ];
 
   const validate = (): boolean => {
@@ -1011,7 +1066,8 @@ export function IncidentCreatePage() {
                     </p>
                   )}
                 </div>
-                {workflowRequiredFields.includes("description") && (
+                {(workflowRequiredFields.includes("description") ||
+                  workflowOptionalFields.includes("description")) && (
                   <Textarea
                     label={t("incidents.description")}
                     value={formData.description || ""}
@@ -1020,8 +1076,64 @@ export function IncidentCreatePage() {
                     }
                     placeholder={t("incidents.descriptionPlaceholder")}
                     rows={5}
-                    required
+                    required={workflowRequiredFields.includes("description")}
                     error={errors.description}
+                  />
+                )}
+                {(workflowRequiredFields.includes("reporter_name") ||
+                  workflowOptionalFields.includes("reporter_name")) && (
+                  <Input
+                    label={t("incidents.reporterName", "Caller Name")}
+                    value={formData.reporter_name || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "reporter_name",
+                        e.target.value.replace(/[^a-zA-ZÀ-ɏ؀-ۿ\s\-'.]/g, ""),
+                      )
+                    }
+                    placeholder={t(
+                      "incidents.reporterNamePlaceholder",
+                      "Name of caller",
+                    )}
+                    required={workflowRequiredFields.includes("reporter_name")}
+                    error={errors.reporter_name}
+                  />
+                )}
+                {(workflowRequiredFields.includes("reporter_email") ||
+                  workflowOptionalFields.includes("reporter_email")) && (
+                  <Input
+                    label={t("incidents.reporterEmail", "Caller Email")}
+                    type="email"
+                    value={formData.reporter_email || ""}
+                    onChange={(e) =>
+                      handleChange("reporter_email", e.target.value)
+                    }
+                    placeholder={t(
+                      "incidents.reporterEmailPlaceholder",
+                      "caller@example.com",
+                    )}
+                    required={workflowRequiredFields.includes("reporter_email")}
+                    error={errors.reporter_email}
+                  />
+                )}
+                {(workflowRequiredFields.includes("reporter_phone") ||
+                  workflowOptionalFields.includes("reporter_phone")) && (
+                  <Input
+                    label={t("incidents.reporterPhone", "Caller Phone Number")}
+                    type="tel"
+                    value={formData.reporter_phone || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "reporter_phone",
+                        e.target.value.replace(/[^0-9+\-\s()]/g, ""),
+                      )
+                    }
+                    placeholder={t(
+                      "incidents.reporterPhonePlaceholder",
+                      "+971 50 000 0000",
+                    )}
+                    required={workflowRequiredFields.includes("reporter_phone")}
+                    error={errors.reporter_phone}
                   />
                 )}
               </div>
@@ -1083,13 +1195,15 @@ export function IncidentCreatePage() {
               </div>
             </Card>
 
-            {/* Additional Details — other workflow-required fields */}
+            {/* Additional Details — other workflow-required or optional fields */}
             {(incidentLookupCategories.some(
               (cat) =>
                 cat.code !== "PRIORITY" &&
-                workflowRequiredFields.includes(`lookup:${cat.code}` as any),
+                (workflowRequiredFields.includes(`lookup:${cat.code}` as any) ||
+                  workflowOptionalFields.includes(`lookup:${cat.code}` as any)),
             ) ||
-              workflowRequiredFields.includes("geolocation")) && (
+              workflowRequiredFields.includes("geolocation") ||
+              workflowOptionalFields.includes("geolocation")) && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   {t("incidents.additionalDetails")}
@@ -1099,24 +1213,31 @@ export function IncidentCreatePage() {
                     .filter(
                       (category) =>
                         category.code !== "PRIORITY" &&
-                        workflowRequiredFields.includes(
+                        (workflowRequiredFields.includes(
                           `lookup:${category.code}` as any,
-                        ),
+                        ) ||
+                          workflowOptionalFields.includes(
+                            `lookup:${category.code}` as any,
+                          )),
                     )
                     .map((category) => {
                       const lookupFieldKey = `lookup:${category.code}`;
+                      const isRequired = workflowRequiredFields.includes(
+                        lookupFieldKey as any,
+                      );
                       return (
                         <DynamicLookupField
                           key={category.id}
                           category={category}
                           value={lookupValues[category.id]}
                           onChange={handleLookupChange}
-                          required
+                          required={isRequired}
                           error={errors[lookupFieldKey]}
                         />
                       );
                     })}
-                  {workflowRequiredFields.includes("geolocation") && (
+                  {(workflowRequiredFields.includes("geolocation") ||
+                    workflowOptionalFields.includes("geolocation")) && (
                     <div className="col-span-2">
                       <LocationPicker
                         label={t("incidents.geolocation")}
@@ -1135,7 +1256,9 @@ export function IncidentCreatePage() {
                             : undefined
                         }
                         onChange={handleLocationChange}
-                        required
+                        required={workflowRequiredFields.includes(
+                          "geolocation",
+                        )}
                         error={errors.geolocation}
                         onToggleExpand={() => setShowLocationModal(true)}
                       />
@@ -1167,11 +1290,14 @@ export function IncidentCreatePage() {
               </Card>
             )}
 
-            {workflowRequiredFields.includes("comment") && (
+            {(workflowRequiredFields.includes("comment") ||
+              workflowOptionalFields.includes("comment")) && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   {t("incidents.comment")}
-                  <span className="text-red-500 ml-1">*</span>
+                  {workflowRequiredFields.includes("comment") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </h2>
                 <Textarea
                   value={comment}
@@ -1183,11 +1309,14 @@ export function IncidentCreatePage() {
               </Card>
             )}
 
-            {workflowRequiredFields.includes("attachments") && (
+            {(workflowRequiredFields.includes("attachments") ||
+              workflowOptionalFields.includes("attachments")) && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   {t("incidents.attachments")}
-                  <span className="text-red-500 ml-1">*</span>
+                  {workflowRequiredFields.includes("attachments") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </h2>
                 <div className="space-y-4">
                   {attachments.length > 0 && (
@@ -1284,27 +1413,72 @@ export function IncidentCreatePage() {
               )}
             </Card>
 
-            {(workflowRequiredFields.includes("assignee_id") ||
+            {(initialStateAssignmentMode === "manual" ||
+              initialStateAssignmentMode === "auto" ||
+              initialStateAssignmentMode === "specific" ||
+              workflowRequiredFields.includes("assignee_id") ||
               workflowRequiredFields.includes("department_id") ||
-              workflowRequiredFields.includes("due_date")) && (
+              workflowRequiredFields.includes("due_date") ||
+              workflowOptionalFields.includes("assignee_id") ||
+              workflowOptionalFields.includes("department_id") ||
+              workflowOptionalFields.includes("due_date")) && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   {t("incidents.assignment")}
                 </h2>
                 <div className="space-y-4">
-                  {workflowRequiredFields.includes("assignee_id") && (
+                  {/* Manual-select: operator must pick from role-matching users */}
+                  {initialStateAssignmentMode === "manual" && (
                     <Select
                       label={t("incidents.assignee")}
                       value={formData.assignee_id || ""}
                       onChange={(e) =>
                         handleChange("assignee_id", e.target.value)
                       }
-                      options={userOptions}
+                      options={[
+                        { value: "", label: t("incidents.selectAssignee") },
+                        ...matchingUsers.map((u) => ({
+                          value: u.id,
+                          label: `${u.first_name} ${u.last_name}${u.email ? ` (${u.email})` : ""}`,
+                        })),
+                      ]}
                       required
                       error={errors.assignee_id}
                     />
                   )}
-                  {workflowRequiredFields.includes("department_id") && (
+                  {/* Auto-match: backend handles — show info badge */}
+                  {initialStateAssignmentMode === "auto" && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+                      <Info className="w-4 h-4 shrink-0" />
+                      <span>{t("incidents.autoAssignedOnCreation")}</span>
+                    </div>
+                  )}
+                  {/* Specific user: backend handles — show info badge */}
+                  {initialStateAssignmentMode === "specific" && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+                      <Info className="w-4 h-4 shrink-0" />
+                      <span>{t("incidents.specificUserWillBeAssigned")}</span>
+                    </div>
+                  )}
+                  {/* Fallback: show assignee dropdown if workflow required_fields or optional_fields includes it and no assignment mode is configured */}
+                  {initialStateAssignmentMode === "none" &&
+                    (workflowRequiredFields.includes("assignee_id") ||
+                      workflowOptionalFields.includes("assignee_id")) && (
+                      <Select
+                        label={t("incidents.assignee")}
+                        value={formData.assignee_id || ""}
+                        onChange={(e) =>
+                          handleChange("assignee_id", e.target.value)
+                        }
+                        options={userOptions}
+                        required={workflowRequiredFields.includes(
+                          "assignee_id",
+                        )}
+                        error={errors.assignee_id}
+                      />
+                    )}
+                  {(workflowRequiredFields.includes("department_id") ||
+                    workflowOptionalFields.includes("department_id")) && (
                     <Select
                       label={t("incidents.department")}
                       value={formData.department_id || ""}
@@ -1312,17 +1486,20 @@ export function IncidentCreatePage() {
                         handleChange("department_id", e.target.value)
                       }
                       options={departmentOptions}
-                      required
+                      required={workflowRequiredFields.includes(
+                        "department_id",
+                      )}
                       error={errors.department_id}
                     />
                   )}
-                  {workflowRequiredFields.includes("due_date") && (
+                  {(workflowRequiredFields.includes("due_date") ||
+                    workflowOptionalFields.includes("due_date")) && (
                     <Input
                       label={t("incidents.dueDate")}
                       type="datetime-local"
                       value={formData.due_date || ""}
                       onChange={(e) => handleChange("due_date", e.target.value)}
-                      required
+                      required={workflowRequiredFields.includes("due_date")}
                       error={errors.due_date}
                     />
                   )}

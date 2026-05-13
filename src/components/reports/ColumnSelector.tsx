@@ -198,8 +198,9 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                       (c) => c.field === field.field,
                     );
                     return (
-                      <label
+                      <div
                         key={field.field}
+                        onClick={() => toggleColumn(field.field)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all",
                           isSelected
@@ -224,7 +225,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => toggleColumn(field.field)}
+                              readOnly
                               className="sr-only"
                             />
                             <span
@@ -237,15 +238,18 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                           <input
                             type="text"
                             value={labelVal?.label}
-                            onChange={(e) =>
-                              updateLabel(field.field, e.target.value)
-                            }
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateLabel(field.field, e.target.value);
+                            }}
+                            onFocus={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
                             placeholder={t("reports.labelName")}
                             disabled={!isSelected}
                             className="border border-gray-300 text-gray-700 rounded-sm text-sm px-2 py-2 w-full"
                           />
                         </div>
-                      </label>
+                      </div>
                     );
                   })}
                 </div>

@@ -19,8 +19,9 @@ import type {
 } from "../../types/goal";
 import type { Category } from "../../types/category";
 import { ParentGoalSelector } from "../../components/goals/ParentGoalSelector";
+import Select from "../../components/ui/SelectInput";
 
-// Flatten the category tree into a sorted flat list for <option> rendering.
+// Flatten the category tree into a sorted flat list for select rendering.
 const flattenCategories = (
   nodes: Category[],
   depth = 0,
@@ -48,6 +49,9 @@ export const GoalCreatePage: React.FC = () => {
   const [pendingMetrics, setPendingMetrics] = useState<TemplateMetric[]>([]);
   const [parentGoal, setParentGoal] = useState<GoalBrief | null>(null);
   const [parentInitialized, setParentInitialized] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const today = new Date().toISOString().split("T")[0];
   // Default the owner to the current user — users creating a goal usually own it.
   // The field stays editable so admins/managers can reassign at create time.
   const currentUser = useAuthStore((s) => s.user);
@@ -94,11 +98,42 @@ export const GoalCreatePage: React.FC = () => {
   const users = usersData?.data || [];
   const departments = departmentsData?.data || [];
 
+  const templateOptions = activeTemplates.map((tpl) => ({
+    value: tpl.id,
+    label: tpl.name,
+    description: tpl.category,
+  }));
+
+  const categoryOptions = flatCategories.map((cat) => ({
+    value: cat.id,
+    label: `${"- ".repeat(cat.depth)}${cat.name}`,
+  }));
+
+  const priorityOptions = GOAL_PRIORITY_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(`goals.badges.priority.${opt.value}`, { defaultValue: opt.label }),
+  }));
+
+  const ownerOptions = users.map((u) => ({
+    value: u.id,
+    label: `${u.first_name} ${u.last_name} (${u.email})`,
+  }));
+
+  const departmentOptions = departments.map((d) => ({
+    value: d.id,
+    label: d.name,
+  }));
+
   const handleChange = (field: keyof GoalCreateRequest, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplateId(templateId);
     if (!templateId) {
       setPendingMetrics([]);
       return;
@@ -113,25 +148,56 @@ export const GoalCreatePage: React.FC = () => {
     setPendingMetrics(template.default_metrics ?? []);
   };
 
+  const validateForm = (): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+
+    if (!form.title.trim()) {
+      newErrors.title = t("goals.create.errors.titleRequired");
+    }
+    if (!form.description?.trim()) {
+      newErrors.description = t("goals.create.errors.descriptionRequired");
+    }
+    if (!form.priority?.trim()) {
+      newErrors.priority = t("goals.create.errors.priorityRequired");
+    }
+    if (!form.start_date) {
+      newErrors.start_date = t("goals.create.errors.startDateRequired");
+    } else if (
+      new Date(form.start_date) < new Date(new Date().toDateString())
+    ) {
+      newErrors.start_date = t("goals.create.errors.pastDateNotAllowed");
+    }
+    if (!form.target_date) {
+      newErrors.target_date = t("goals.create.errors.targetDateRequired");
+    } else if (
+      new Date(form.target_date) < new Date(new Date().toDateString())
+    ) {
+      newErrors.target_date = t("goals.create.errors.pastDateNotAllowed");
+    }
+    if (!form.owner_id.trim()) {
+      newErrors.owner_id = t("goals.create.errors.ownerRequired");
+    }
+
+    return newErrors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.title.trim()) {
-      toast.error(t("goals.create.errors.titleRequired"));
-      return;
-    }
-    if (!form.owner_id.trim()) {
-      toast.error(t("goals.create.errors.ownerRequired"));
+    const newErrors = validateForm();
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
     const payload: GoalCreateRequest = {
       title: form.title.trim(),
+      description: form.description!.trim(),
       priority: form.priority,
       owner_id: form.owner_id.trim(),
     };
 
-    if (form.description?.trim()) payload.description = form.description.trim();
     if (form.category_id?.trim()) {
       payload.category_id = form.category_id.trim();
       // Clear legacy free-text category when a tree category is selected.
@@ -149,6 +215,7 @@ export const GoalCreatePage: React.FC = () => {
 
     try {
       const result = await createGoal.mutateAsync(payload);
+      setErrors({});
       // Create metrics from template if any
       if (pendingMetrics.length > 0 && result?.data?.id) {
         for (const m of pendingMetrics) {
@@ -208,18 +275,13 @@ export const GoalCreatePage: React.FC = () => {
                     {t("goals.create.template")}
                   </span>
                 </label>
-                <select
-                  onChange={(e) => handleTemplateSelect(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="">{t("goals.create.noTemplate")}</option>
-                  {activeTemplates.map((tpl) => (
-                    <option key={tpl.id} value={tpl.id}>
-                      {tpl.name}
-                      {tpl.category ? ` (${tpl.category})` : ""}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={selectedTemplateId}
+                  onChange={handleTemplateSelect}
+                  options={templateOptions}
+                  placeholder={t("goals.create.noTemplate")}
+                  clearable
+                />
                 {pendingMetrics.length > 0 && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
                     <Info className="w-3.5 h-3.5" />
@@ -242,15 +304,20 @@ export const GoalCreatePage: React.FC = () => {
                 value={form.title}
                 onChange={(e) => handleChange("title", e.target.value)}
                 placeholder={t("goals.create.fields.titlePlaceholder")}
-                required
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
+              {errors.title && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.title}
+                </p>
+              )}
             </div>
 
             {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("goals.create.fields.description")}
+                {t("goals.create.fields.description")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={form.description ?? ""}
@@ -259,6 +326,11 @@ export const GoalCreatePage: React.FC = () => {
                 rows={4}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               />
+              {errors.description && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.description}
+                </p>
+              )}
             </div>
 
             {/* Category (tree-backed) */}
@@ -266,28 +338,27 @@ export const GoalCreatePage: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("goals.create.fields.category")}
               </label>
-              <select
+              <Select
                 value={form.category_id ?? ""}
-                onChange={(e) =>
+                onChange={(value) =>
                   setForm((prev) => ({
                     ...prev,
-                    category_id: e.target.value,
+                    category_id: value,
                   }))
                 }
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="">
-                  {flatCategories.length === 0
+                options={categoryOptions}
+                placeholder={
+                  flatCategories.length === 0
                     ? t("goals.create.fields.noCategories")
-                    : t("goals.create.fields.noneCategory")}
-                </option>
-                {flatCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {"— ".repeat(cat.depth)}
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+                    : t("goals.create.fields.noneCategory")
+                }
+                searchable={flatCategories.length > 8}
+                searchPlaceholder={t("common.searchPlaceholder", {
+                  defaultValue: "Search...",
+                })}
+                clearable
+                disabled={flatCategories.length === 0}
+              />
               {form.category && !form.category_id && (
                 <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                   {t("goals.create.fields.legacyCategoryHint", {
@@ -303,20 +374,19 @@ export const GoalCreatePage: React.FC = () => {
                 {t("goals.create.fields.priority")}{" "}
                 <span className="text-red-500">*</span>
               </label>
-              <select
+              <Select
                 value={form.priority}
-                onChange={(e) =>
-                  handleChange("priority", e.target.value as GoalPriority)
+                onChange={(value) =>
+                  handleChange("priority", value as GoalPriority)
                 }
-                required
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                {GOAL_PRIORITY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                options={priorityOptions}
+                placeholder={t("goals.create.fields.priority")}
+              />
+              {errors.priority && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.priority}
+                </p>
+              )}
             </div>
 
             {/* Owner */}
@@ -325,19 +395,20 @@ export const GoalCreatePage: React.FC = () => {
                 {t("goals.create.fields.owner")}{" "}
                 <span className="text-red-500">*</span>
               </label>
-              <select
+              <Select
                 value={form.owner_id}
-                onChange={(e) => handleChange("owner_id", e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="">{t("goals.create.fields.selectOwner")}</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.first_name} {u.last_name} ({u.email})
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => handleChange("owner_id", value)}
+                options={ownerOptions}
+                placeholder={t("goals.create.fields.selectOwner")}
+                searchable
+                searchPlaceholder={t("goals.create.fields.searchOwner")}
+                clearable
+              />
+              {errors.owner_id && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.owner_id}
+                </p>
+              )}
             </div>
 
             {/* Department */}
@@ -345,20 +416,17 @@ export const GoalCreatePage: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("goals.create.fields.department")}
               </label>
-              <select
+              <Select
                 value={form.department_id ?? ""}
-                onChange={(e) => handleChange("department_id", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value="">
-                  {t("goals.create.fields.noDepartment")}
-                </option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => handleChange("department_id", value)}
+                options={departmentOptions}
+                placeholder={t("goals.create.fields.noDepartment")}
+                searchable={departments.length > 8}
+                searchPlaceholder={t("common.searchPlaceholder", {
+                  defaultValue: "Search...",
+                })}
+                clearable
+              />
             </div>
 
             {/* Parent Goal */}
@@ -376,27 +444,41 @@ export const GoalCreatePage: React.FC = () => {
             {/* Start Date */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("goals.create.fields.startDate")}
+                {t("goals.create.fields.startDate")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 value={form.start_date ?? ""}
                 onChange={(e) => handleChange("start_date", e.target.value)}
+                min={today}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
+              {errors.start_date && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.start_date}
+                </p>
+              )}
             </div>
 
             {/* Target Date */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("goals.create.fields.targetDate")}
+                {t("goals.create.fields.targetDate")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 value={form.target_date ?? ""}
                 onChange={(e) => handleChange("target_date", e.target.value)}
+                min={today}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
+              {errors.target_date && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.target_date}
+                </p>
+              )}
             </div>
 
             {/* Review Date */}

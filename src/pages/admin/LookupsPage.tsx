@@ -444,7 +444,7 @@ export const LookupsPage: React.FC = () => {
                             </span>
                           ) : (
                             <span className="text-xs text-[hsl(var(--muted-foreground))] font-medium">
-                              {category.field_type}
+                              {t(`lookups.${category.field_type}`)}
                             </span>
                           )}
                           <ChevronRight
@@ -543,13 +543,13 @@ export const LookupsPage: React.FC = () => {
                 <p className="text-[hsl(var(--muted-foreground))] mb-2">
                   {t("lookups.thisCategoryUsesFieldType")}{" "}
                   <span className="font-semibold text-[hsl(var(--primary))]">
-                    {selectedCategory.field_type}
+                    {t(`lookups.${selectedCategory.field_type}`)}
                   </span>
                 </p>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t("lookups.valuesAreOnlyRequiredFor")}
-                  <strong>{t("common.select")}</strong>
-                  {t("lookups.and")} <strong>{t("lookups.multiSelect")}</strong>
+                  {t("lookups.valuesAreOnlyRequiredFor")}{" "}
+                  <strong>{t("common.select")}</strong> {t("lookups.and")}{" "}
+                  <strong>{t("lookups.multiSelect")}</strong>{" "}
                   {t("lookups.fieldTypes")}
                 </p>
               </div>
@@ -576,13 +576,13 @@ export const LookupsPage: React.FC = () => {
                 <table className="w-full">
                   <thead className="bg-[hsl(var(--muted)/0.3)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      <th className="px-4 py-3 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("lookups.color")}
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      <th className="px-4 py-3 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("lookups.valueName")}
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      <th className="px-4 py-3 text-start text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("lookups.valueCode")}
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -594,7 +594,7 @@ export const LookupsPage: React.FC = () => {
                       <th className="px-4 py-3 text-center text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("lookups.isActive")}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      <th className="px-4 py-3 text-end text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.actions")}
                       </th>
                     </tr>

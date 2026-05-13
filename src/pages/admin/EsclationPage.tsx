@@ -615,7 +615,8 @@ const GroupsTab: React.FC = () => {
                                       <Users className="w-3 h-3 shrink-0" />
                                       {[tgt.department?.name, tgt.role?.name]
                                         .filter(Boolean)
-                                        .join(" · ") || "All Users"}
+                                        .join(" · ") ||
+                                        t("escalation.allUsers")}
                                     </span>
                                   ))}
                                 {/* Combined overflow count */}
@@ -806,7 +807,7 @@ const BreachLogTab: React.FC = () => {
       const res = await fetch("/api/v1/admin/escalation-sla", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      if (!res.ok) throw new Error("Failed to load breach log");
+      if (!res.ok) throw new Error(t("escalation.breachLog.loadError"));
       return res.json();
     },
     retry: false,
@@ -920,7 +921,11 @@ const BreachLogTab: React.FC = () => {
                       {r.state_name || "—"}
                     </td>
                     <td className="px-5 py-3.5 text-sm text-[hsl(var(--foreground))]">
-                      {r.step_order != null ? `Step ${r.step_order}` : "—"}
+                      {r.step_order != null
+                        ? t("escalation.breachLog.stepNumber", {
+                            count: r.step_order,
+                          })
+                        : "—"}
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))]">

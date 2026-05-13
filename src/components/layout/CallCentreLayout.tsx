@@ -25,19 +25,22 @@ import {
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export const CallCentreLayout: React.FC = () => {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { isOpen, setIsOpen, toggle } = useSoftphoneStore();
+  const { setIsOpen } = useSoftphoneStore();
 
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
+  const { hasAnyPermission, isSuperAdmin } = usePermissions();
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -357,16 +360,9 @@ export const CallCentreLayout: React.FC = () => {
               </span>
             </Link>
             {/* Softphone Toggle */}
-            <button
-              onClick={toggle}
-              className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                isOpen
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              <Phone className="w-5 h-5" />
-            </button>
+            {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
+              <SoftphoneButton />
+            )}
 
             {/* Search */}
             {/* <div className="hidden md:flex items-center">

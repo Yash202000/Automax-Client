@@ -25,7 +25,6 @@ import {
   Sparkles,
   Languages,
   Database,
-  Phone,
   Link2,
   Settings,
   AlertTriangle,
@@ -42,7 +41,7 @@ import {
 } from "../../i18n";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
-import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
 import { PERMISSIONS } from "@/constants/permissions";
 import { LicenseGraceBanner } from "../common/LicenseGraceBanner";
 import { useLicense } from "../../hooks/useLicense";
@@ -168,7 +167,6 @@ export const AdminLayout: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const { isOpen, toggle } = useSoftphoneStore();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -526,16 +524,7 @@ export const AdminLayout: React.FC = () => {
 
             {/* Phone/Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <button
-                onClick={toggle}
-                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                  isOpen
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                }`}
-              >
-                <Phone className="w-5 h-5" />
-              </button>
+              <SoftphoneButton />
             )}
 
             {/* Notifications */}

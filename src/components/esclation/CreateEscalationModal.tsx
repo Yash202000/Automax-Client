@@ -518,9 +518,9 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
 
                 <Select
                   options={[
-                    { label: "SMS", value: "sms" },
-                    { label: "Email", value: "email" },
-                    { label: "Both", value: "both" },
+                    { label: t("escalation.channelSms"), value: "sms" },
+                    { label: t("escalation.channelEmail"), value: "email" },
+                    { label: t("escalation.channelBoth"), value: "both" },
                   ]}
                   value={channel}
                   onChange={(value) => setChannel(value)}

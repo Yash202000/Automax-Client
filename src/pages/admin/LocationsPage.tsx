@@ -36,8 +36,10 @@ import { PERMISSIONS } from "../../constants/permissions";
 
 interface LocationFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   type: string;
   parent_id: string;
   parent_name: string;
@@ -46,8 +48,10 @@ interface LocationFormData {
 
 const initialFormData: LocationFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   type: "office",
   parent_id: "",
   parent_name: "",
@@ -112,10 +116,15 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   t,
 }) => {
   const [expanded, setExpanded] = useState(true);
+  const { i18n } = useTranslation();
   const hasChildren = location.children && location.children.length > 0;
   const gradient =
     typeGradients[location.type] ||
     "from-[hsl(var(--muted-foreground))] to-[hsl(var(--foreground))]";
+  const displayName =
+    i18n.language === "ar" && location.name_ar
+      ? location.name_ar
+      : location.name;
 
   return (
     <div>
@@ -149,7 +158,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                {location.name}
+                {displayName}
               </h4>
               <span
                 className={cn(
@@ -189,7 +198,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             </button>
             {canCreate && (
               <button
-                onClick={() => onAdd(location.id, location.name)}
+                onClick={() => onAdd(location.id, displayName)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)] rounded-lg transition-colors"
                 title={t("locations.addChildLocation")}
               >
@@ -241,7 +250,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const LocationsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -320,8 +329,10 @@ export const LocationsPage: React.FC = () => {
     setEditingLocation(location);
     setFormData({
       name: location.name,
+      name_ar: location.name_ar || "",
       code: location.code,
       description: location.description,
+      description_ar: location.description_ar || "",
       type: location.type,
       parent_id: location.parent_id || "",
       parent_name: parentLoc?.name || "",
@@ -359,8 +370,10 @@ export const LocationsPage: React.FC = () => {
     e.preventDefault();
     const payload = {
       name: formData.name,
+      name_ar: formData.name_ar || undefined,
       code: formData.code,
       description: formData.description,
+      description_ar: formData.description_ar || undefined,
       type: formData.type,
       parent_id: formData.parent_id || undefined,
       address: formData.address,
@@ -681,7 +694,9 @@ export const LocationsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {viewingLocation.name}
+                    {i18n.language === "ar" && viewingLocation.name_ar
+                      ? viewingLocation.name_ar
+                      : viewingLocation.name}
                   </h3>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
                     {viewingLocation.code} · {viewingLocation.type}
@@ -893,20 +908,37 @@ export const LocationsPage: React.FC = () => {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("locations.name")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("locations.namePlaceholder")}
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                    required
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("locations.name")}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t("locations.namePlaceholder")}
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("locations.nameAr", "Name (Arabic)")}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      placeholder="الاسم بالعربية"
+                      value={formData.name_ar}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name_ar: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -963,7 +995,10 @@ export const LocationsPage: React.FC = () => {
                         ?.filter((l: Location) => l.id !== editingLocation?.id)
                         .map((loc: Location) => (
                           <option key={loc.id} value={loc.id}>
-                            {loc.name} ({loc.type})
+                            {i18n.language === "ar" && loc.name_ar
+                              ? loc.name_ar
+                              : loc.name}{" "}
+                            ({loc.type})
                           </option>
                         ))}
                     </select>
@@ -985,19 +1020,42 @@ export const LocationsPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("locations.description")}
-                  </label>
-                  <textarea
-                    placeholder={t("locations.descriptionPlaceholder")}
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("locations.description")}
+                    </label>
+                    <textarea
+                      placeholder={t("locations.descriptionPlaceholder")}
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("locations.descriptionAr", "Description (Arabic)")}
+                    </label>
+                    <textarea
+                      dir="rtl"
+                      placeholder="الوصف بالعربية"
+                      value={formData.description_ar}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description_ar: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                    />
+                  </div>
                 </div>
               </div>
 

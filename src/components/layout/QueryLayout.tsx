@@ -26,7 +26,6 @@ import {
   PenLine,
   Languages,
   Link2,
-  Phone,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -42,7 +41,7 @@ import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
 import { CreateQueryModal } from "@/components/queries/CreateQueryModal";
-import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
 
 export const QueryLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -52,7 +51,6 @@ export const QueryLayout: React.FC = () => {
   const [myQueriesOpen, setMyQueriesOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const { isOpen, toggle } = useSoftphoneStore();
   const [createQueryModalOpen, setCreateQueryModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -95,8 +93,9 @@ export const QueryLayout: React.FC = () => {
 
   // Fetch query stats
   const { data: statsData } = useQuery({
-    queryKey: ["queries", "stats"],
-    queryFn: () => incidentApi.getStats("query"),
+    queryKey: ["queries", "stats", canViewAllQueries ? "all" : "assigned"],
+    queryFn: () =>
+      incidentApi.getStats("query", canViewAllQueries ? undefined : "assigned"),
   });
 
   const handleLogout = async () => {
@@ -595,16 +594,7 @@ export const QueryLayout: React.FC = () => {
 
             {/* Phone/Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <button
-                onClick={toggle}
-                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                  isOpen
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                }`}
-              >
-                <Phone className="w-5 h-5" />
-              </button>
+              <SoftphoneButton />
             )}
             {/* Notifications */}
             <NotificationBell />

@@ -25,6 +25,7 @@ import type {
   ReviewCycleStatus,
   ReviewCycleCreateRequest,
 } from "../../types/review";
+import { Button } from "@/components/ui";
 
 // ── Helpers ────────────────────────────────────────────
 
@@ -37,12 +38,10 @@ const formatDate = (dateStr: string) =>
 
 const statusColor: Record<ReviewCycleStatus, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
-  active:
-    "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   completed:
     "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  archived:
-    "bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-400",
+  archived: "bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-400",
 };
 
 // ── Create Modal ──────────────────────────────────────
@@ -67,7 +66,12 @@ const CreateCycleModal: React.FC<{
     createCycle.mutate(form, {
       onSuccess: () => {
         onClose();
-        setForm({ title: "", period_start: "", period_end: "", description: "" });
+        setForm({
+          title: "",
+          period_start: "",
+          period_end: "",
+          description: "",
+        });
       },
     });
   };
@@ -138,7 +142,15 @@ const CreateCycleModal: React.FC<{
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                setForm({
+                  title: "",
+                  period_start: "",
+                  period_end: "",
+                  description: "",
+                });
+              }}
               className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
               {t("common.cancel")}
@@ -217,13 +229,10 @@ export const ReviewCyclesPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-        >
+        <Button onClick={() => setShowCreate(true)}>
           <Plus size={16} />
           {t("goals.reviews.newCycle")}
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -239,7 +248,9 @@ export const ReviewCyclesPage: React.FC = () => {
           <option value="">{t("goals.reviews.allStatuses")}</option>
           <option value="draft">{t("goals.reviews.statusDraft")}</option>
           <option value="active">{t("goals.reviews.statusActive")}</option>
-          <option value="completed">{t("goals.reviews.statusCompleted")}</option>
+          <option value="completed">
+            {t("goals.reviews.statusCompleted")}
+          </option>
           <option value="archived">{t("goals.reviews.statusArchived")}</option>
         </select>
       </div>
@@ -411,7 +422,10 @@ export const ReviewCyclesPage: React.FC = () => {
         )}
       </div>
 
-      <CreateCycleModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <CreateCycleModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+      />
     </div>
   );
 };

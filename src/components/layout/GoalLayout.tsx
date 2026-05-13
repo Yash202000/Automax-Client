@@ -20,7 +20,6 @@ import {
   GitBranch,
   ClipboardCheck,
   Languages,
-  Phone,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -34,7 +33,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
-import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
 
 export const GoalLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -43,7 +42,6 @@ export const GoalLayout: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const { isOpen, toggle } = useSoftphoneStore();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
@@ -183,7 +181,7 @@ export const GoalLayout: React.FC = () => {
                 <BarChart3 size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("goals.analytics")}
+                    {t("goals.analytics.title")}
                   </span>
                 )}
               </>
@@ -226,7 +224,7 @@ export const GoalLayout: React.FC = () => {
                   <ClipboardCheck size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("goals.reviews")}
+                      {t("goals.reviews.title")}
                     </span>
                   )}
                 </>
@@ -318,7 +316,7 @@ export const GoalLayout: React.FC = () => {
                 <FileText size={20} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="ms-3 font-medium text-sm">
-                    {t("goals.templates")}
+                    {t("goals.templates.title")}
                   </span>
                 )}
               </>
@@ -499,16 +497,7 @@ export const GoalLayout: React.FC = () => {
 
             {/* Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <button
-                onClick={toggle}
-                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                  isOpen
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                }`}
-              >
-                <Phone className="w-5 h-5" />
-              </button>
+              <SoftphoneButton />
             )}
 
             {/* Notifications */}

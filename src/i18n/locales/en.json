@@ -146,6 +146,20 @@
     "collapse": "Collapse",
     "vsLastMonth": "vs last month",
     "noOptionsFound": "No options found",
+    "noItemsAvailable": "No items available",
+    "selectOptions": "Select options",
+    "selectAnOption": "Select an option",
+    "selectedCount": "{{count}} selected",
+    "writeYourMessageHere": "Write your message here...",
+    "enterUrl": "Enter URL:",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "bulletList": "Bullet List",
+    "numberedList": "Numbered List",
+    "alignLeft": "Align Left",
+    "alignCenter": "Align Center",
+    "alignRight": "Align Right",
     "previewNotAvailable": "Preview not available",
     "spacer": "spacer",
     "imageEditor": "Image Editor",
@@ -192,7 +206,15 @@
     "importWorkflow": "Import Workflow",
     "importNotes": "Import Notes:",
     "importWarnings": "Import Warnings",
-    "template": "Template"
+    "template": "Template",
+    "selectFeedback": "Select a Feedback",
+    "selectComment": "Select a Comment",
+    "notAvailable": "N/A",
+    "failedToLoadAudio": "Failed to load audio",
+    "nameAr": "Name (Arabic)",
+    "nameArPlaceholder": "الاسم بالعربية",
+    "descriptionAr": "Description (Arabic)",
+    "descriptionArPlaceholder": "الوصف بالعربية"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -279,7 +301,21 @@
     "recordNotFound": "Record not found",
     "invalidOtp": "Invalid OTP. Please check and try again.",
     "failedToSendOtp": "Failed to send OTP. Please try again later.",
-    "userNotFound": "User not found."
+    "userNotFound": "User not found.",
+    "usernameTooShort": "Username must be at least 3 characters.",
+    "usernameTooLong": "Username must be less than 50 characters.",
+    "usernameInvalidChars": "Username can only contain letters, numbers, and underscores.",
+    "pwLowercase": "Password must contain at least one lowercase letter.",
+    "acceptTerms": "You must accept the terms and conditions.",
+    "registrationFailed": "Registration failed. Please try again.",
+    "registrationError": "An error occurred during registration.",
+    "firstNamePlaceholder": "John",
+    "lastNamePlaceholder": "Doe",
+    "usernamePlaceholder": "johndoe",
+    "emailPlaceholder": "you@example.com",
+    "agreeToTerms": "I agree to the terms",
+    "passwordMinLength": "Password must be at least 8 characters.",
+    "passwordPlaceholder": "********"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -363,6 +399,7 @@
     "department": "Department",
     "assignee": "Assignee",
     "reporter": "Reporter",
+    "callerInformation": "Caller Information",
     "classification": "Classification",
     "workflow": "Workflow",
     "createdAt": "Created At",
@@ -395,11 +432,15 @@
     "autoWorkflowSelection": "Auto-Workflow Selection",
     "autoWorkflowHint": "Select classification, location, or source to automatically match a workflow.",
     "autoMatchedHint": "Auto-matched based on your selections",
-    "reporterInformation": "Reporter Information",
-    "reporterName": "Reporter Name",
-    "reporterEmail": "Reporter Email",
-    "reporterNamePlaceholder": "Name of person reporting",
-    "reporterEmailPlaceholder": "reporter@example.com",
+    "autoAssignedOnCreation": "Users will be automatically assigned based on configured roles when the incident is created.",
+    "specificUserWillBeAssigned": "A specific user is pre-configured and will be assigned automatically on creation.",
+    "reporterInformation": "Caller Information",
+    "reporterName": "Caller Name",
+    "reporterEmail": "Caller Email",
+    "reporterPhone": "Caller Phone Number",
+    "reporterNamePlaceholder": "Name of caller",
+    "reporterEmailPlaceholder": "caller@example.com",
+    "reporterPhonePlaceholder": "+971 50 000 0000",
     "assignment": "Assignment",
     "unassigned": "Unassigned",
     "noDepartment": "No department",
@@ -608,9 +649,8 @@
     "durationRequired": "Please select a duration",
     "escalationActions": "Escalation Actions",
     "expiresAt": "Expires at",
-    "feedbackRequired": "Please provide a rating",
+    "feedbackRequired": "Feedback is required",
     "generating": "Generating...",
-    "loadingAIQualityReport": "Loading AI quality report...",
     "loadingDepartments": "Loading departments...",
     "newAttachments": "New Attachments",
     "notFound": "Incident not found.",
@@ -662,9 +702,13 @@
     "rolesToMatchSelectOneOrMore": "Roles to match (select one or more):",
     "transitionInfo": "Transition Info",
     "transitionSuccess": "Transition completed successfully",
-    "department_id": "Department"
+    "department_id": "Department",
+    "severity": "Severity",
+    "aiQualityReport": "AI Quality Report",
+    "appliedWhenIncidentIsCreated": "Applied when the incident is created in this state",
+    "fromDate": "From Date",
+    "toDate": "To Date"
   },
-
   "priorities": {
     "critical": "Critical",
     "high": "High",
@@ -712,6 +756,16 @@
     "strong": "Strong",
     "updatePassword": "Update Password",
     "passwordChangedSuccess": "Password changed successfully",
+    "passwordChangedLogout": "Password changed successfully. Logging you out...",
+    "currentPasswordRequired": "Current password is required",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordUppercaseRequired": "Password must contain at least one uppercase letter",
+    "passwordLowercaseRequired": "Password must contain at least one lowercase letter",
+    "passwordNumberRequired": "Password must contain at least one number",
+    "passwordsDontMatch": "Passwords don't match",
+    "changePasswordFailed": "Failed to change password",
+    "deleteAccountFailed": "Failed to delete account",
+    "genericError": "An error occurred",
     "emailNotifications": "Email Notifications",
     "emailNotificationsDesc": "Receive updates via email",
     "pushNotifications": "Push Notifications",
@@ -817,7 +871,13 @@
     "enterVerificationCode": "Enter Verification Code",
     "weVeSentA6DigitCode": "We've sent a 6-digit code to",
     "verifyCode": "Verify Code",
-    "didnTReceiveCodeResend": "Didn't receive code? Resend"
+    "didnTReceiveCodeResend": "Didn't receive code? Resend",
+    "addPhoneFirst": "Please add and save a phone number first.",
+    "validOtpRequired": "Please enter a valid 6-digit OTP",
+    "phoneVerifiedSuccessfully": "Phone number verified successfully!",
+    "extensionHint": "Your SIP extension number",
+    "otpCode": "OTP Code",
+    "otpPlaceholder": "000000"
   },
   "admin": {
     "title": "Admin Panel",
@@ -934,11 +994,18 @@
     "searchClassifications": "Search classifications...",
     "avatarPreview": "Avatar preview",
     "enterPassword": "Enter password",
+    "emailPlaceholder": "e.g., john@example.com",
+    "firstNamePlaceholder": "e.g., John",
+    "lastNamePlaceholder": "e.g., Doe",
+    "usernamePlaceholder": "e.g., johndoe",
+    "phonePlaceholder": "e.g., +1 234 567 890",
+    "extensionPlaceholder": "e.g., 1001",
     "usersImportedSuccessfully": "users imported successfully",
     "usersSkipped": "users skipped",
     "errors": "Errors:",
     "userAgent": "User Agent",
-    "51234Default": "51234 (default)"
+    "51234Default": "51234 (default)",
+    "unknownUser": "Unknown User"
   },
   "roles": {
     "title": "Roles",
@@ -1069,7 +1136,9 @@
     "departmentsSkipped": "departments skipped",
     "errors": "Errors:",
     "codePlaceholder": "e.g., ENG",
-    "namePlaceholder": "e.g., Engineering"
+    "namePlaceholder": "e.g., Engineering",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "locations": {
     "title": "Locations",
@@ -1132,7 +1201,9 @@
     "withoutCoordinates": "without coordinates)",
     "legend": "Legend:",
     "codePlaceholder": "e.g., NY-OFF",
-    "namePlaceholder": "e.g., New York Office"
+    "namePlaceholder": "e.g., New York Office",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "classifications": {
     "title": "Classifications",
@@ -1206,7 +1277,9 @@
     "classificationsImportedSuccessfully": "classifications imported successfully",
     "classificationsSkipped": "classifications skipped",
     "errors": "Errors:",
-    "namePlaceholder": "e.g., Hardware Issues"
+    "namePlaceholder": "e.g., Hardware Issues",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "reports": {
     "title": "Reports",
@@ -1255,10 +1328,35 @@
       "actionLogsDesc": "Audit trail & activity",
       "users": "Users",
       "usersDesc": "User accounts",
+      "users_performance": "User Performance",
+      "users_performance_desc": "User performance tracking data",
+      "user_types": {
+        "standard": "Users",
+        "performance": "User Performance"
+      },
       "departments": "Departments",
       "departmentsDesc": "Organization structure",
       "locations": "Locations",
       "locationsDesc": "Location hierarchy",
+      "locations_by_count": "Location Count",
+      "locations_by_status": "Location Status",
+      "classifications_by_status": "Classification Status",
+      "classifications_by_count": "Classification Count",
+      "action_logs": "Action Logs",
+      "location_count_based": "Location Count Based",
+      "location_count_based_desc": "Location-wise record counts",
+      "location_types": {
+        "status": "By Status",
+        "count": "By Count"
+      },
+      "classifications": "Classifications",
+      "classificationsDesc": "Classification hierarchy",
+      "classification_count_based": "Classification Count Based",
+      "classification_count_based_desc": "Classification-wise record counts",
+      "classification_types": {
+        "status": "By Status",
+        "count": "By Count"
+      },
       "workflows": "Workflows",
       "workflowsDesc": "Workflow definitions"
     },
@@ -1308,6 +1406,10 @@
         "isNotEmpty": "Is not empty"
       },
       "toDate": "To Date"
+    },
+    "errors": {
+      "invalidDateRange": "Both From and To dates are required",
+      "fromDateAfterToDate": "From date cannot be after To date"
     },
     "sortingConfig": {
       "noSortableFields": "No sortable fields available",
@@ -1690,6 +1792,9 @@
     "inThisCategory": "in this category",
     "noStatesConfiguredInThisWorkflow": "No states configured in this workflow",
     "possibleNextState": "possible next state",
+    "startStates": "Start",
+    "inProgressStates": "In Progress",
+    "endStates": "End",
     "sla": "SLA:",
     "autoArrange": "Auto Arrange",
     "saveLayout": "Save Layout",
@@ -1728,10 +1833,15 @@
     "allIncidents": "ALL incidents",
     "andMayConflictWithOtherWorkflowsConsider": "and may conflict with other workflows. Consider adding at least one rule (source, priority, classification, or location) to make it more specific.",
     "saveMatchingRules": "Save Matching Rules",
-    "configureWhichFieldsAreMandatoryWhenCreating": "Configure which fields are mandatory when creating incidents using this workflow. Title and Workflow are always required.",
+    "configureWhichFieldsAreMandatoryWhenCreating": "Configure which fields appear in the creation form and whether they are mandatory. Title and Workflow are always required.",
     "titleAlways": "Title (always)",
     "workflowAlways": "Workflow (always)",
-    "saveRequiredFields": "Save Required Fields",
+    "saveRequiredFields": "Save Form Fields",
+    "fieldStateHidden": "Hidden",
+    "fieldStateOptional": "Optional",
+    "fieldStateRequired": "Required",
+    "optionalFieldsSummary": "Optional Fields",
+    "noOptionalFields": "No optional fields",
     "convertToRequestPermissions": "Convert to Request Permissions",
     "configureWhichRolesCanConvertIncidentsTo": "Configure which roles can convert incidents to requests. If no roles are selected, all users will be able to convert.",
     "selectedRoles": "Selected Roles",
@@ -1771,9 +1881,14 @@
     "assignSpecificUser": "Assign specific user",
     "alwaysAssignToASpecificUser": "Always assign to a specific user",
     "rolesToMatchSelectOneOrMore": "Roles to match (select one or more):",
+    "appliedWhenIncidentIsCreated": "Applied when an incident is placed into this state on creation",
     "role": "role",
     "markAsRejectionTransition": "Mark as Rejection Transition",
     "whenEnabledExecutingThisTransitionWillCreate": "When enabled, executing this transition will create a detailed rejection log record used for SLA tracking, analytics, and Power BI reports.",
+    "markAsNotBelongTransition": "Mark as Not Belong Transition",
+    "whenEnabledNotBelongWillSendSMS": "When enabled, executing this transition will send an SMS notification to the citizen informing them that the incident does not belong to the assigned department.",
+    "markAsMissingInfoTransition": "Mark as Missing Incident Information Transition",
+    "whenEnabledMissingInfoWillSendSMS": "When enabled, executing this transition will send an SMS notification to the citizen informing them that the incident was closed due to insufficient information.",
     "configureTransition": "Configure Transition",
     "commentRequired": "Comment Required",
     "attachmentRequired": "Attachment Required",
@@ -1824,7 +1939,11 @@
     "workflowCodePlaceholder": "e.g., it_support",
     "workflowNamePlaceholder": "e.g., IT Support Workflow",
     "feedbackMustBeUnique": "Feedback should be unique",
-    "commentMustBeUnique": "Comment should be unique"
+    "commentMustBeUnique": "Comment should be unique",
+    "severityPriorityRange": "Severity & Priority Range",
+    "severityRange": "Severity Range (1=Critical, 5=Cosmetic)",
+    "noFeedbackOptionsYet": "No feedback options yet",
+    "noCommentOptionsYet": "No comment options yet"
   },
   "lookups": {
     "title": "Master Data",
@@ -2028,7 +2147,8 @@
     "linkIncidentToAnExistingRequest": "Link incident to an existing request",
     "createANewRequest": "Create a new request",
     "selectRequest": "Select Request",
-    "channelPlaceholder": "e.g., Phone, Email, Web"
+    "channelPlaceholder": "e.g., Phone, Email, Web",
+    "severity": "Severity"
   },
   "complaints": {
     "title": "Complaints",
@@ -2171,7 +2291,8 @@
     "connected": "Connected",
     "connecting": "Connecting...",
     "disconnected": "Disconnected",
-    "reconnect": "Reconnect",
+    "reconnect": "Connect",
+    "disconnect": "Disconnect",
     "incomingCallFrom": "Incoming call from",
     "calling": "Calling...",
     "ringing": "Ringing...",
@@ -2380,7 +2501,9 @@
       "type": "Type",
       "state": "State",
       "step": "Step",
-      "sentAt": "Sent At"
+      "sentAt": "Sent At",
+      "loadError": "Failed to load breach log",
+      "stepNumber": "Step {{count}}"
     }
   },
   "goals": {
@@ -2539,6 +2662,7 @@
         "priority": "Priority",
         "owner": "Owner",
         "selectOwner": "Select owner",
+        "searchOwner": "Search by name or email...",
         "department": "Department",
         "noDepartment": "No department",
         "startDate": "Start Date",
@@ -2548,6 +2672,11 @@
       "errors": {
         "titleRequired": "Title is required",
         "ownerRequired": "Owner is required",
+        "priorityRequired": "Priority is required",
+        "descriptionRequired": "Description is required",
+        "startDateRequired": "Start date is required",
+        "targetDateRequired": "Target date is required",
+        "pastDateNotAllowed": "Past dates are not allowed",
         "metricCreateFailed": "Failed to create metric: {{name}}"
       }
     },
@@ -3262,7 +3391,9 @@
     "activeHelp": "Inactive categories are hidden from goal selection but remain on existing goals.",
     "saving": "Saving…",
     "codePlaceholder": "e.g. strategic, revenue_growth",
-    "namePlaceholder": "e.g. Strategic, Revenue Growth"
+    "namePlaceholder": "e.g. Strategic, Revenue Growth",
+    "nameAr": "Name (Arabic)",
+    "descriptionAr": "Description (Arabic)"
   },
   "applicationLinks": {
     "title": "Application Links",
@@ -3323,15 +3454,24 @@
     "logoRemovedSuccess": "Logo removed successfully",
     "logoRemoveError": "Failed to remove logo",
     "loading": "Loading...",
-    "namePlaceholder": "e.g., Email System"
+    "namePlaceholder": "e.g., Email System",
+    "colors": {
+      "blue": "Blue",
+      "violet": "Violet",
+      "emerald": "Emerald",
+      "amber": "Amber",
+      "rose": "Rose",
+      "orange": "Orange"
+    }
   },
-  "": "This action will link the incident to the selected existing request.",
   "callCentre": {
     "callHistory": "Call History",
     "historySubtitle": "View your recent calls",
     "recentCalls": "Recent Calls",
     "subtitle": "Manage calls and view contacts",
-    "title": "Call Centre"
+    "title": "Call Centre",
+    "showRecording": "Show Recording",
+    "hideRecording": "Hide Recording"
   },
   "citizen": {
     "closePage": "You may safely close this page.",
@@ -3390,12 +3530,16 @@
     "processed": "Processed"
   },
   "validation": {
-    "required": "Required"
+    "required": "Required",
+    "fieldRequired": "{{field}} is required"
   },
   "navigation": {
     "streamlineYour": "Streamline your",
     "workflowAutomation": "workflow automation",
     "theCompletePlatformForManagingYourBusiness": "The complete platform for managing your business operations, user access, and organizational structure with enterprise-grade security.",
+    "roleBasedAccessControl": "Role-based access control",
+    "hierarchicalOrganizationManagement": "Hierarchical organization management",
+    "realTimeAnalyticsDashboard": "Real-time analytics dashboard",
     "automaxAllRightsReserved": "Automax. All rights reserved.",
     "unread": "unread",
     "noNotifications": "No notifications"
@@ -3431,13 +3575,48 @@
     "activatedAt": "Activated At",
     "product": "Product",
     "deactivateLicense": "Deactivate License?",
-    "thisWillRemoveTheActiveLicenseAll": "This will remove the active license. All module access restrictions will apply until a new license is activated."
+    "thisWillRemoveTheActiveLicenseAll": "This will remove the active license. All module access restrictions will apply until a new license is activated.",
+    "activateLicense": "Activate License",
+    "activating": "Activating...",
+    "deactivating": "Deactivating...",
+    "licenseKeyAndJwksRequired": "Both the license key and JWKS are required",
+    "jwksMustBeValidJson": "JWKS must be valid JSON",
+    "activatedSuccess": "License activated successfully",
+    "activateFailed": "Failed to activate license",
+    "productMismatch": "This license key is not for the Automax product",
+    "deactivatedSuccess": "License deactivated",
+    "deactivateFailed": "Failed to deactivate license",
+    "statusGracePeriod": "Grace Period",
+    "types": {
+      "trial": "Trial",
+      "standard": "Standard",
+      "professional": "Professional",
+      "enterprise": "Enterprise"
+    },
+    "statuses": {
+      "valid": "Valid",
+      "expired": "Expired",
+      "invalid": "Invalid",
+      "pending": "Pending"
+    },
+    "idCopied": "License ID copied",
+    "daysRemaining": "{{count}} day",
+    "daysRemaining_other": "{{count}} days",
+    "expiresToday": "Expires today",
+    "expiredDaysAgo": "Expired {{count}} day ago",
+    "expiredDaysAgo_other": "Expired {{count}} days ago",
+    "userLimitReached": "User limit reached. Cannot create new users.",
+    "approachingUserLimit": "Approaching user limit.",
+    "moreDays": "{{count}} more day",
+    "moreDays_other": "{{count}} more days",
+    "limitedTime": "a limited time"
   },
   "adminDashboard": {
     "vsLastMonth": "vs last month",
     "latency": "Latency:"
   },
   "actionLogs": {
+    "exportTooltip": "Please select a date range of maximum 1 month to export logs.",
     "failedToLoadActionLogs": "Failed to Load Action Logs",
     "thereWasAnErrorLoadingTheAction": "There was an error loading the action logs. Please try again.",
     "trackAndMonitorAllUserActionsIn": "Track and monitor all user actions in the system",
@@ -3467,7 +3646,30 @@
     "field": "Field",
     "noChangesDetected": "No changes detected",
     "unableToParseChangeData": "Unable to parse change data",
-    "actions": "Actions"
+    "actions": "Actions",
+    "hideStats": "Hide Stats",
+    "showStats": "Show Stats",
+    "tryAdjustingFilters": "Try adjusting your filters",
+    "userActionsWillAppearHere": "User actions will appear here",
+    "oldValue": "Old Value",
+    "newValue": "New Value",
+    "actionTypes": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "login": "Login",
+      "logout": "Logout",
+      "view": "View",
+      "status_change": "Status Change",
+      "role_assignment": "Role Assignment",
+      "department_assignment": "Department Assignment",
+      "location_assignment": "Location Assignment",
+      "classification_assignment": "Classification Assignment"
+    },
+    "statuses": {
+      "success": "Success",
+      "failed": "Failed"
+    }
   },
   "documents": {
     "info": "Info",
@@ -3544,5 +3746,24 @@
     "location": "Location"
   },
   "linkToRequestConfirmation": "This action will link the incident to the selected existing request.",
-  "myGoalsSubtitle": "Goals you own or collaborate on"
+  "myGoalsSubtitle": "Goals you own or collaborate on",
+  "reportTemplates": {
+    "failedToLoadTemplate": "Failed to load template",
+    "templateNameRequired": "Template name is required",
+    "templateUpdatedSuccessfully": "Template updated successfully",
+    "templateCreatedSuccessfully": "Template created successfully",
+    "failedToSaveTemplate": "Failed to save template",
+    "failedToGeneratePreview": "Failed to generate preview",
+    "saveTemplateFirst": "Please save the template first",
+    "reportDownloaded": "Report downloaded",
+    "reportDownloadedSuccessfully": "Report downloaded successfully",
+    "failedToExportReport": "Failed to export report",
+    "templateDeletedSuccessfully": "Template deleted successfully",
+    "failedToDeleteTemplate": "Failed to delete template",
+    "templateDuplicatedSuccessfully": "Template duplicated successfully",
+    "failedToDuplicateTemplate": "Failed to duplicate template",
+    "defaultTemplateUpdated": "Default template updated",
+    "failedToSetDefaultTemplate": "Failed to set default template",
+    "deleteTemplateConfirm": "Are you sure you want to delete this template?"
+  }
 }

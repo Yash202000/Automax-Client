@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { settingsApi } from "../../api/settings";
 import { useTranslation } from "react-i18next";
+import { supportedLanguages } from "../../i18n";
 import {
   Save,
   Settings as SettingsIcon,
@@ -530,8 +531,11 @@ export const SettingsManagementPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                <option value="en">{t("settings.english")}</option>
-                <option value="ar">{t("settings.arabic")}</option>
+                {supportedLanguages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.nativeName} ({lang.name}){lang.rtl ? " ←→" : ""}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

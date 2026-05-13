@@ -38,22 +38,26 @@ import { PERMISSIONS } from "../../constants/permissions";
 
 interface WorkflowFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   is_default: boolean;
   classification_ids: string[];
 }
 
 const initialFormData: WorkflowFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   is_default: false,
   classification_ids: [],
 };
 
 export const WorkflowsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
@@ -243,8 +247,10 @@ export const WorkflowsPage: React.FC = () => {
     setEditingWorkflow(workflow);
     setFormData({
       name: workflow.name,
+      name_ar: workflow.name_ar || "",
       code: workflow.code,
       description: workflow.description,
+      description_ar: workflow.description_ar || "",
       is_default: workflow.is_default,
       classification_ids: workflow.classifications?.map((c) => c.id) || [],
     });
@@ -264,8 +270,10 @@ export const WorkflowsPage: React.FC = () => {
         id: editingWorkflow.id,
         data: {
           name: formData.name,
+          name_ar: formData.name_ar,
           code: formData.code,
           description: formData.description,
+          description_ar: formData.description_ar,
           is_default: formData.is_default,
           classification_ids: formData.classification_ids,
         },
@@ -274,8 +282,10 @@ export const WorkflowsPage: React.FC = () => {
       // When creating, only send basic info. Classifications/locations are configured later in the designer.
       createMutation.mutate({
         name: formData.name,
+        name_ar: formData.name_ar,
         code: formData.code,
         description: formData.description,
+        description_ar: formData.description_ar,
       });
     }
   };
@@ -405,7 +415,9 @@ export const WorkflowsPage: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                          {workflow.name}
+                          {i18n.language === "ar" && workflow.name_ar
+                            ? workflow.name_ar
+                            : workflow.name}
                         </h3>
                         <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
                           {workflow.code}
@@ -456,7 +468,9 @@ export const WorkflowsPage: React.FC = () => {
                   </div>
 
                   <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
-                    {workflow.description || t("workflows.noDescription")}
+                    {i18n.language === "ar" && workflow.description_ar
+                      ? workflow.description_ar
+                      : workflow.description || t("workflows.noDescription")}
                   </p>
 
                   {/* Stats */}
@@ -757,20 +771,37 @@ export const WorkflowsPage: React.FC = () => {
               noValidate
             >
               <div className="p-6 space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.workflowName")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("workflows.workflowNamePlaceholder")}
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("workflows.workflowName")}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t("workflows.workflowNamePlaceholder")}
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.nameAr")}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      placeholder={t("common.nameArPlaceholder")}
+                      value={formData.name_ar}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name_ar: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -792,19 +823,42 @@ export const WorkflowsPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.description")}
-                  </label>
-                  <textarea
-                    placeholder={t("workflows.descriptionPlaceholder")}
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("workflows.description")}
+                    </label>
+                    <textarea
+                      placeholder={t("workflows.descriptionPlaceholder")}
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("common.descriptionAr")}
+                    </label>
+                    <textarea
+                      dir="rtl"
+                      placeholder={t("common.descriptionArPlaceholder")}
+                      value={formData.description_ar}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description_ar: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all resize-none"
+                    />
+                  </div>
                 </div>
 
                 {/* Info message for create mode */}

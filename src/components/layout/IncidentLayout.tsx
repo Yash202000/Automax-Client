@@ -26,7 +26,6 @@ import {
   UserCheck,
   PenLine,
   Languages,
-  Phone,
   FileText,
   CheckCheck,
   Bot,
@@ -40,7 +39,7 @@ import {
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
-import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
@@ -54,7 +53,6 @@ export const IncidentLayout: React.FC = () => {
   const [myIncidentsOpen, setMyIncidentsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const { isOpen, toggle } = useSoftphoneStore();
   const [createRequestModalOpen, setCreateRequestModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -160,8 +158,17 @@ export const IncidentLayout: React.FC = () => {
 
   // Fetch incident stats to get statuses
   const { data: statsData } = useQuery({
-    queryKey: ["incidents", "stats", "incident"],
-    queryFn: () => incidentApi.getStats("incident"),
+    queryKey: [
+      "incidents",
+      "stats",
+      "incident",
+      canViewAllIncidents ? "all" : "assigned",
+    ],
+    queryFn: () =>
+      incidentApi.getStats(
+        "incident",
+        canViewAllIncidents ? undefined : "assigned",
+      ),
   });
 
   const handleLogout = async () => {
@@ -785,16 +792,7 @@ export const IncidentLayout: React.FC = () => {
 
             {/* Phone/Softphone */}
             {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <button
-                onClick={toggle}
-                className={`relative p-2.5 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
-                  isOpen
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                }`}
-              >
-                <Phone className="w-5 h-5" />
-              </button>
+              <SoftphoneButton />
             )}
 
             {/* Notifications */}

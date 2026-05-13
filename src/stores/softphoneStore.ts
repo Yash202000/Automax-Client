@@ -1,13 +1,45 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface SoftphoneState {
   isOpen: boolean;
+  isConnected: boolean;
+  isConnecting: boolean;
+  shouldConnect: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  setConnected: (isConnected: boolean) => void;
+  setConnecting: (isConnecting: boolean) => void;
+  setShouldConnect: (shouldConnect: boolean) => void;
   toggle: () => void;
+  reset: () => void;
 }
 
-export const useSoftphoneStore = create<SoftphoneState>((set) => ({
-  isOpen: false,
-  setIsOpen: (isOpen) => set({ isOpen }),
-  toggle: () => set((state) => ({ isOpen: !state.isOpen })),
-}));
+export const useSoftphoneStore = create<SoftphoneState>()(
+  persist(
+    (set) => ({
+      isOpen: false,
+      isConnected: false,
+      isConnecting: false,
+      shouldConnect: false,
+      setIsOpen: (isOpen) => set({ isOpen }),
+      setConnected: (isConnected) => set({ isConnected }),
+      setConnecting: (isConnecting) => set({ isConnecting }),
+      setShouldConnect: (shouldConnect) => set({ shouldConnect }),
+      toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+      reset: () =>
+        set({
+          isOpen: false,
+          isConnected: false,
+          isConnecting: false,
+          shouldConnect: false,
+        }),
+    }),
+    {
+      name: "softphone-storage",
+      partialize: (state) => ({
+        isOpen: state.isOpen,
+        shouldConnect: state.shouldConnect,
+      }),
+    },
+  ),
+);

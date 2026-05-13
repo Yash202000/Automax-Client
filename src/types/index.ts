@@ -61,7 +61,9 @@ export interface Role {
 export interface Classification {
   id: string;
   name: string;
+  name_ar?: string;
   description: string;
+  description_ar?: string;
   types: string[];
   parent_id: string | null;
   level: number;
@@ -90,8 +92,10 @@ export interface ClassificationCriticality {
 export interface Location {
   id: string;
   name: string;
+  name_ar?: string;
   code: string;
   description: string;
+  description_ar?: string;
   type: string;
   parent_id: string | null;
   level: number;
@@ -108,8 +112,10 @@ export interface Location {
 export interface Department {
   id: string;
   name: string;
+  name_ar?: string;
   code: string;
   description: string;
+  description_ar?: string;
   type: "internal" | "external";
   parent_id: string | null;
   level: number;
@@ -240,7 +246,9 @@ export interface LookupValueUpdateRequest {
 export interface ApplicationLink {
   id: string;
   name: string;
+  name_ar?: string;
   description: string;
+  description_ar?: string;
   url: string;
   icon: string;
   image_url: string;
@@ -255,7 +263,9 @@ export interface ApplicationLink {
 
 export interface ApplicationLinkCreateRequest {
   name: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   url: string;
   icon?: string;
   image_url?: string;
@@ -268,7 +278,9 @@ export interface ApplicationLinkCreateRequest {
 
 export interface ApplicationLinkUpdateRequest {
   name?: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   url?: string;
   icon?: string;
   image_url?: string;
@@ -679,6 +691,7 @@ export type IncidentFormField =
   | "due_date"
   | "reporter_name"
   | "reporter_email"
+  | "reporter_phone"
   | "attachments"
   | "attachment"
   | "comment"
@@ -688,14 +701,17 @@ export type IncidentFormField =
 export interface Workflow {
   id: string;
   name: string;
+  name_ar?: string;
   code: string;
   description: string;
+  description_ar?: string;
   version: number;
   is_active: boolean;
   is_default: boolean;
   record_type: ClassificationType;
   canvas_layout?: string;
   required_fields?: IncidentFormField[];
+  optional_fields?: IncidentFormField[];
   states?: WorkflowState[];
   transitions?: WorkflowTransition[];
   classifications?: Classification[];
@@ -716,8 +732,10 @@ export interface WorkflowState {
   id: string;
   workflow_id: string;
   name: string;
+  name_ar?: string;
   code: string;
   description: string;
+  description_ar?: string;
   state_type: "initial" | "normal" | "terminal";
   color: string;
   position_x: number;
@@ -736,6 +754,12 @@ export interface WorkflowState {
   is_active: boolean;
   viewable_roles?: Role[];
   editable_roles?: Role[];
+  // Creation-time assignment
+  assign_user_id?: string;
+  assign_user?: User;
+  assignment_roles?: Role[];
+  auto_match_user: boolean;
+  manual_select_user: boolean;
   created_at: string;
 }
 
@@ -743,8 +767,10 @@ export interface WorkflowTransition {
   id: string;
   workflow_id: string;
   name: string;
+  name_ar?: string;
   code: string;
   description: string;
+  description_ar?: string;
   from_state_id: string;
   from_state?: WorkflowState;
   to_state_id: string;
@@ -765,6 +791,8 @@ export interface WorkflowTransition {
   manual_select_user: boolean;
 
   is_rejection: boolean;
+  is_not_belong: boolean;
+  is_missing_info: boolean;
 
   requirements?: TransitionRequirement[];
   actions?: TransitionAction[];
@@ -817,8 +845,10 @@ export interface TransitionFieldChangeRequest {
 // Workflow request types
 export interface WorkflowCreateRequest {
   name: string;
+  name_ar?: string;
   code: string;
   description?: string;
+  description_ar?: string;
   record_type?: ClassificationType;
   classification_ids?: string[];
   location_ids?: string[];
@@ -829,8 +859,10 @@ export interface WorkflowCreateRequest {
 
 export interface WorkflowUpdateRequest {
   name?: string;
+  name_ar?: string;
   code?: string;
   description?: string;
+  description_ar?: string;
   record_type?: ClassificationType;
   is_active?: boolean;
   is_default?: boolean;
@@ -842,12 +874,15 @@ export interface WorkflowUpdateRequest {
   sources?: IncidentSource[];
   priorities?: number[];
   required_fields?: IncidentFormField[];
+  optional_fields?: IncidentFormField[];
 }
 
 export interface WorkflowStateCreateRequest {
   name: string;
+  name_ar?: string;
   code: string;
   description?: string;
+  description_ar?: string;
   state_type?: "initial" | "normal" | "terminal";
   color?: string;
   position_x?: number;
@@ -863,8 +898,10 @@ export interface WorkflowStateCreateRequest {
 
 export interface WorkflowStateUpdateRequest {
   name?: string;
+  name_ar?: string;
   code?: string;
   description?: string;
+  description_ar?: string;
   state_type?: "initial" | "normal" | "terminal";
   color?: string;
   position_x?: number;
@@ -881,8 +918,10 @@ export interface WorkflowStateUpdateRequest {
 
 export interface WorkflowTransitionCreateRequest {
   name: string;
+  name_ar?: string;
   code: string;
   description?: string;
+  description_ar?: string;
   from_state_id: string;
   to_state_id: string;
   role_ids?: string[];
@@ -899,12 +938,16 @@ export interface WorkflowTransitionCreateRequest {
   auto_match_user?: boolean;
   manual_select_user?: boolean;
   is_rejection?: boolean;
+  is_not_belong?: boolean;
+  is_missing_info?: boolean;
 }
 
 export interface WorkflowTransitionUpdateRequest {
   name?: string;
+  name_ar?: string;
   code?: string;
   description?: string;
+  description_ar?: string;
   from_state_id?: string;
   to_state_id?: string;
   role_ids?: string[];
@@ -922,6 +965,8 @@ export interface WorkflowTransitionUpdateRequest {
   auto_match_user?: boolean;
   manual_select_user?: boolean;
   is_rejection?: boolean;
+  is_not_belong?: boolean;
+  is_missing_info?: boolean;
 }
 
 export interface WorkflowImportResponse {
@@ -986,6 +1031,7 @@ export interface Incident {
   reporter?: User;
   reporter_email: string;
   reporter_name: string;
+  reporter_phone: string;
   // Complaint-specific fields
   channel?: string;
   created_by_name?: string;
@@ -1026,6 +1072,7 @@ export interface IncidentComment {
   is_internal: boolean;
   transition_history_id?: string;
   created_at: string;
+  type?: string;
 }
 
 export interface IncidentAttachment {
@@ -1077,6 +1124,7 @@ export interface TransitionHistory {
   new_values?: string;
   action_results?: string;
   transitioned_at: string;
+  feedbacks?: any;
 }
 
 // Incident Revision Types
@@ -1179,6 +1227,7 @@ export interface IncidentCreateRequest {
   due_date?: string;
   reporter_email?: string;
   reporter_name?: string;
+  reporter_phone?: string;
   custom_fields?: string;
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
@@ -1415,8 +1464,13 @@ export type ReportDataSource =
   | "requests"
   | "action_logs"
   | "users"
+  | "users_performance"
   | "departments"
+  | "locations_by_status"
+  | "locations_by_count"
   | "locations"
+  | "classifications_by_status"
+  | "classifications_by_count"
   | "workflows";
 
 // Filter Operators
@@ -1472,6 +1526,7 @@ export interface ReportFieldDefinition {
   description?: string;
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
   canBeColumn?: boolean;
+  multiselect?: boolean;
 }
 
 // Data Source Definition

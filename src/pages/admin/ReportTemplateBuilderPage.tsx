@@ -85,7 +85,9 @@ const ReportTemplateBuilderPage: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [templateName, setTemplateName] = useState("New Report Template");
+  const [templateNameAr, setTemplateNameAr] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [templateDescriptionAr, setTemplateDescriptionAr] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [dataSource, setDataSource] = useState("incidents");
 
@@ -137,7 +139,9 @@ const ReportTemplateBuilderPage: React.FC = () => {
     try {
       const template = await getTemplate(templateId);
       setTemplateName(template.name);
+      setTemplateNameAr(template.name_ar || "");
       setTemplateDescription(template.description);
+      setTemplateDescriptionAr(template.description_ar || "");
       setIsPublic(template.is_public);
       setPageSettings(template.template.page_settings);
       if (template.template.header) setHeader(template.template.header);
@@ -153,7 +157,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
         setDataSource(tableContent.data_source);
       }
     } catch {
-      setError("Failed to load template");
+      setError(t("reportTemplates.failedToLoadTemplate"));
       setTimeout(() => setError(null), 3000);
     } finally {
       setLoading(false);
@@ -172,7 +176,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!templateName.trim()) {
-      setError("Template name is required");
+      setError(t("reportTemplates.templateNameRequired"));
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -184,27 +188,31 @@ const ReportTemplateBuilderPage: React.FC = () => {
       if (id && id !== "new") {
         await updateTemplate(id, {
           name: templateName,
+          name_ar: templateNameAr,
           description: templateDescription,
+          description_ar: templateDescriptionAr,
           template: templateConfig,
           is_public: isPublic,
         });
-        setSuccessMessage("Template updated successfully");
+        setSuccessMessage(t("reportTemplates.templateUpdatedSuccessfully"));
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         const newTemplate = await createTemplate({
           name: templateName,
+          name_ar: templateNameAr,
           description: templateDescription,
+          description_ar: templateDescriptionAr,
           template: templateConfig,
           is_public: isPublic,
         });
-        setSuccessMessage("Template created successfully");
+        setSuccessMessage(t("reportTemplates.templateCreatedSuccessfully"));
         setTimeout(() => setSuccessMessage(null), 3000);
         navigate(`/reports/templates/${newTemplate.id}/edit`, {
           replace: true,
         });
       }
     } catch {
-      setError("Failed to save template");
+      setError(t("reportTemplates.failedToSaveTemplate"));
       setTimeout(() => setError(null), 3000);
     } finally {
       setSaving(false);
@@ -216,14 +224,14 @@ const ReportTemplateBuilderPage: React.FC = () => {
       const templateConfig = getTemplateConfig();
       await previewTemplateInWindow(templateConfig, dataSource, 20);
     } catch {
-      setError("Failed to generate preview");
+      setError(t("reportTemplates.failedToGeneratePreview"));
       setTimeout(() => setError(null), 3000);
     }
   };
 
   const handleExport = async () => {
     if (!id || id === "new") {
-      setError("Please save the template first");
+      setError(t("reportTemplates.saveTemplateFirst"));
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -235,10 +243,10 @@ const ReportTemplateBuilderPage: React.FC = () => {
         format: "pdf",
         file_name: templateName,
       });
-      setSuccessMessage("Report downloaded");
+      setSuccessMessage(t("reportTemplates.reportDownloaded"));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
-      setError("Failed to export report");
+      setError(t("reportTemplates.failedToExportReport"));
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -459,25 +467,71 @@ const ReportTemplateBuilderPage: React.FC = () => {
             />
             <input
               type="text"
+              dir="rtl"
+              value={templateNameAr}
+              onChange={(e) => setTemplateNameAr(e.target.value)}
+              className="text-sm border-none focus:ring-0 p-0 bg-transparent block w-full text-gray-400"
+              placeholder={t("common.nameArPlaceholder")}
+            />
+            <input
+              type="text"
               value={templateDescription}
               onChange={(e) => setTemplateDescription(e.target.value)}
               className="text-sm text-gray-500 dark:text-gray-300 border-none focus:ring-0 p-0 bg-transparent block w-full"
               placeholder={t("reports.addDescription")}
             />
+            <input
+              type="text"
+              dir="rtl"
+              value={templateDescriptionAr}
+              onChange={(e) => setTemplateDescriptionAr(e.target.value)}
+              className="text-sm text-gray-400 border-none focus:ring-0 p-0 bg-transparent block w-full"
+              placeholder={t("common.descriptionArPlaceholder")}
+            />
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={dataSource}
-            onChange={(e) => setDataSource(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm "
-          >
-            {DATA_SOURCES.map((ds) => (
-              <option className="text-black" key={ds.key} value={ds.key}>
-                {ds.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col gap-1">
+            <select
+              value={
+                dataSource === "locations_by_status" ||
+                dataSource === "locations_by_count"
+                  ? "locations_by_status"
+                  : dataSource
+              }
+              onChange={(e) => setDataSource(e.target.value)}
+              className="border rounded-lg px-3 py-2 text-sm w-full"
+            >
+              {DATA_SOURCES.filter((ds) => ds.key !== "locations_by_count").map(
+                (ds) => (
+                  <option className="text-black" key={ds.key} value={ds.key}>
+                    {ds.label}
+                  </option>
+                ),
+              )}
+            </select>
+
+            {(dataSource === "locations_by_status" ||
+              dataSource === "locations_by_count") && (
+              <div className="ltr:ml-4 rtl:mr-4 flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold text-gray-400">
+                  Type
+                </span>
+                <select
+                  value={dataSource}
+                  onChange={(e) => setDataSource(e.target.value)}
+                  className="border rounded-md px-2 py-1 text-xs flex-1 bg-gray-50"
+                >
+                  <option value="locations_by_status">
+                    {t("reports.dataSources.location_types.status")}
+                  </option>
+                  <option value="locations_by_count">
+                    {t("reports.dataSources.location_types.count")}
+                  </option>
+                </select>
+              </div>
+            )}
+          </div>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"

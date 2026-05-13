@@ -14,7 +14,6 @@ import {
   X,
   LayoutDashboard,
   Languages,
-  Phone,
   CheckCheck,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
@@ -28,7 +27,7 @@ import {
 } from "../../i18n";
 import ThemeToggle from "../common/ThemeToggle";
 import usePermissions from "@/hooks/usePermissions";
-import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
@@ -42,7 +41,6 @@ export const Navbar: React.FC = () => {
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
-  const { isOpen, toggle } = useSoftphoneStore();
   const profileRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -125,17 +123,6 @@ export const Navbar: React.FC = () => {
 
     navigate("/login");
   };
-
-  const hasAdminAccess =
-    user?.is_super_admin ||
-    user?.permissions?.some(
-      (p) =>
-        p.includes(":view") ||
-        p.includes(":create") ||
-        p.includes(":update") ||
-        p.includes(":delete") ||
-        p.includes(":manage"),
-    );
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -264,16 +251,7 @@ export const Navbar: React.FC = () => {
 
                 {/* Sip */}
                 {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-                  <button
-                    onClick={toggle}
-                    className={`relative p-2 rounded-xl transition-colors ${
-                      isOpen
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    }`}
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
+                  <SoftphoneButton />
                 )}
 
                 {/* Notifications */}
@@ -429,13 +407,14 @@ export const Navbar: React.FC = () => {
                           <Settings className="w-4 h-4 text-gray-400" />
                           {t("nav.settings")}
                         </Link>
-                        {hasAdminAccess && (
+                        {(hasAnyPermission(["dashboard:admin"]) ||
+                          user?.is_super_admin) && (
                           <Link
                             to="/admin"
                             onClick={() => setIsProfileOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
-                            <Shield className="w-4 h-4 text-gray-400" />
+                            <Shield className="w-4 h-4" />
                             {t("nav.admin")}
                           </Link>
                         )}

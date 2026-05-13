@@ -28,8 +28,8 @@ export const LicenseGraceBanner: React.FC = () => {
       <AlertTriangle className="w-4 h-4 inline mr-1.5 -mt-0.5" />
       {t("license.yourLicenseHasExpiredReadOnlyAccess")}{" "}
       {daysRemaining != null
-        ? `${Math.abs(daysRemaining)} more days`
-        : "a limited time"}
+        ? t("license.moreDays", { count: Math.abs(daysRemaining) })
+        : t("license.limitedTime")}
       {t("license.pleaseRenewYourLicense")}
     </div>
   );

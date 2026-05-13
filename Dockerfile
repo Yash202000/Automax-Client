@@ -12,6 +12,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Bake placeholder so docker-entrypoint.sh can sed-replace it at runtime
+ARG VITE_BASE_PATH=/BASEPATHPLACEHOLDER/
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+
 # Build the application
 RUN npm run build
 

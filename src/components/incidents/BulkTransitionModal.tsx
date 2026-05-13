@@ -171,7 +171,6 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
         classification_id: firstIncident?.classification?.id,
         location_id: firstIncident?.location?.id,
         department_id: selectedDepartmentId || firstIncident?.department?.id,
-        exclude_user_id: firstIncident?.assignee?.id,
       }),
     enabled:
       isOpen &&

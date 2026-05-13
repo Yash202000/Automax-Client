@@ -31,6 +31,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
   const [evidenceType, setEvidenceType] = useState<EvidenceType>("Report");
   const [comment, setComment] = useState("");
   const [metricId, setMetricId] = useState("");
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadEvidence = useUploadEvidence();
@@ -60,7 +61,6 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
     }
   };
 
-  const [isDraggingOver, setIsDraggingOver] = React.useState(false);
   const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -85,9 +85,7 @@ export const EvidenceUploadModal: React.FC<EvidenceUploadModalProps> = ({
     e.preventDefault();
 
     if (!file) {
-      toast.error(
-        t("goals.components.evidence.uploadModal.errorSelectFile"),
-      );
+      toast.error(t("goals.components.evidence.uploadModal.errorSelectFile"));
       return;
     }
 
