@@ -83,12 +83,24 @@ export const CallHistory: React.FC = () => {
     if (!dateString) return "—";
     const date = new Date(dateString);
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) {
+    const dateMidnight = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+    const nowMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const diffDays = Math.round(
+      (nowMidnight.getTime() - dateMidnight.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diffDays === 0) {
       return `Today, ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
-    } else if (days === 1) {
+    } else if (diffDays === 1) {
       return `Yesterday, ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
     } else {
       return date.toLocaleDateString("en-US", {

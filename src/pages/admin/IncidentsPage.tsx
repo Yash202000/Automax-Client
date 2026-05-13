@@ -195,9 +195,15 @@ export const IncidentsPage: React.FC = () => {
         masterOptions: data?.master_options || [],
       });
     } catch (err: any) {
-      console.error(
-        err.response?.data?.error || t("incidents.merge.validationFailed"),
-      );
+      const errorMsg =
+        err.response?.data?.error || t("incidents.merge.validationFailed");
+      console.error(errorMsg);
+      toast.error(errorMsg);
+      setValidationResult({
+        canMerge: false,
+        errors: [errorMsg],
+        masterOptions: [],
+      });
     } finally {
       setIsValidationLoading(false);
     }
