@@ -11,6 +11,7 @@ interface SoftphoneState {
   setConnecting: (isConnecting: boolean) => void;
   setShouldConnect: (shouldConnect: boolean) => void;
   toggle: () => void;
+  reset: () => void;
 }
 
 export const useSoftphoneStore = create<SoftphoneState>()(
@@ -25,6 +26,13 @@ export const useSoftphoneStore = create<SoftphoneState>()(
       setConnecting: (isConnecting) => set({ isConnecting }),
       setShouldConnect: (shouldConnect) => set({ shouldConnect }),
       toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+      reset: () =>
+        set({
+          isOpen: false,
+          isConnected: false,
+          isConnecting: false,
+          shouldConnect: false,
+        }),
     }),
     {
       name: "softphone-storage",
