@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -222,6 +222,23 @@ export const ReportTemplatesPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [departmentsTree, locationsTree, classificationsTree, userOptions]);
 
+  const stateFields = useMemo(() => {
+    if (stateOptions?.data && stateOptions.data.length > 0) {
+      const states = stateOptions.data[0].states;
+      return states?.map((x: any) => ({
+        field: x.code,
+        label: x.name,
+        type: "string",
+        category: "States",
+        sortable: false,
+        filterable: false,
+        defaultSelected: true,
+        canBeColumn: true,
+      }));
+    }
+    return [];
+  }, [stateOptions]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -302,6 +319,7 @@ export const ReportTemplatesPage: React.FC = () => {
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
               dynamicOptionsMap={dynamicOptionsMap}
+              stateFields={stateFields}
             />
           ))}
         </div>

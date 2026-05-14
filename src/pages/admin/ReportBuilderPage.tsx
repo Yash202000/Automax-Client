@@ -311,34 +311,56 @@ export const ReportBuilderPage: React.FC = () => {
     setDbTotalCount(0);
     setDisplayPage(1);
     setLoadedTemplate(null);
+  }, []);
+
+  React.useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const workflows: any = await workflowApi.list(true, "incident");
+        if (workflows.success && workflows.data?.[0]?.states) {
+          const states = workflows.data[0].states;
+          const newFields = states.map((x: any) => ({
+            field: x.code,
+            label: x.name,
+            type: "string",
+            category: "States",
+            sortable: false,
+            filterable: false,
+            defaultSelected: true,
+            canBeColumn: true,
+          }));
+          setStateFields(newFields);
+
+          // If no template is loaded (e.g. manual datasource switch),
+          // add these dynamic fields to selected columns if they are defaultSelected
+          if (!loadedTemplate) {
+            const defaultDynamicCols = newFields
+              .filter((f: any) => f.defaultSelected)
+              .map((f: any) => ({ field: f.field, label: f.label }));
+
+            setSelectedColumns((prev) => {
+              const existingFields = new Set(prev.map((c) => c.field));
+              const toAdd = defaultDynamicCols.filter(
+                (c) => !existingFields.has(c.field),
+              );
+              return [...prev, ...toAdd];
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch workflow states:", error);
+      }
+    };
+
     if (
-      source === "classifications_by_status" ||
-      source === "locations_by_status"
+      dataSource === "classifications_by_status" ||
+      dataSource === "locations_by_status"
     ) {
-      getStatesFromWorkflow();
+      fetchStates();
     } else {
       setStateFields([]);
     }
-  }, []);
-
-  const getStatesFromWorkflow = async () => {
-    const workflows: any = await workflowApi.list(true, "incident");
-    if (workflows.success) {
-      const states = workflows.data[0].states;
-      setStateFields(
-        states.map((x: any) => ({
-          field: x.code,
-          label: x.name,
-          type: "string",
-          category: "States",
-          sortable: false,
-          filterable: false,
-          defaultSelected: true,
-          canBeColumn: true,
-        })),
-      );
-    }
-  };
+  }, [dataSource, loadedTemplate]);
 
   // Generate report — fetches recordLimit rows in a single request, no server pagination
   const generateReport = useCallback(async () => {

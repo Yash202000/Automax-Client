@@ -116,54 +116,30 @@ const FilterRow: React.FC<FilterRowProps> = ({
     // Enum field with options
     if (fieldType === "enum" && selectedField?.options) {
       if (filter.operator === "in" || filter.operator === "not_in") {
-        // Multi-select for 'in' / 'not_in'
         const selectedValues: Array<string | number> = Array.isArray(
           filter.value,
         )
           ? (filter.value as Array<string | number>)
           : [];
+
         return (
-          <div className="flex-1 flex flex-wrap gap-1 p-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg min-h-[38px]">
-            {selectedField.options.map((opt) => {
-              const isSelected = selectedValues.some((v) => v === opt.value);
-              return (
-                <button
-                  key={String(opt.value)}
-                  type="button"
-                  onClick={() => {
-                    if (isSelected) {
-                      handleValueChange(
-                        selectedValues.filter((v) => v !== opt.value) as (
-                          | string
-                          | number
-                        )[],
-                      );
-                    } else {
-                      handleValueChange([...selectedValues, opt.value] as (
-                        | string
-                        | number
-                      )[]);
-                    }
-                  }}
-                  className={cn(
-                    "px-2 py-1 text-xs rounded-md transition-colors",
-                    isSelected
-                      ? "bg-[hsl(var(--primary))] text-white"
-                      : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.8)]",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+          <MultiSelect
+            options={selectedField.options.map((opt) => ({
+              label: opt.label,
+              value: String(opt.value),
+            }))}
+            value={selectedValues.map(String)}
+            onChange={(values) => handleValueChange(values)}
+            placeholder={t("reports.filterBuilder.selectValue")}
+            searchable
+            maxTagCount={2}
+          />
         );
       }
 
       // Single select dropdown
       return (
         <select
-          style={enableAddFilter ? { width: "100%" } : { width: "25%" }}
           value={String(filter.value ?? "")}
           onChange={(e) => {
             const opt = selectedField.options?.find(
@@ -259,7 +235,6 @@ const FilterRow: React.FC<FilterRowProps> = ({
     return (
       <input
         type="text"
-        style={enableAddFilter ? { width: "100%" } : { width: "25%" }}
         value={String(filter.value ?? "")}
         onChange={(e) => handleValueChange(e.target.value)}
         placeholder={t("reports.filterBuilder.enterValue")}
@@ -287,8 +262,8 @@ const FilterRow: React.FC<FilterRowProps> = ({
             ))}
         </select>
       ) : (
-        <span className="text-sm text-[hsl(var(--muted-foreground))] flex-1">
-          {fields.find((f) => f.field === filter.field)?.label}
+        <span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider w-1/3 shrink-0 truncate">
+          {fields.find((f) => f.field === filter.field)?.label}:
         </span>
       )}
 
@@ -381,7 +356,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
             : t("reports.filterBuilder.noFiltersAdded")}
         </div>
       ) : (
-        <div className="">
+        <div className="flex flex-col gap-2">
           {filters.map((filter, index) => (
             <FilterRow
               key={filter.id}
