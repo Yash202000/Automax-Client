@@ -188,8 +188,8 @@ export const ReportTemplatesPage: React.FC = () => {
       })) as { value: string; label: string }[];
 
       map.transitions = stateOptions.data[0].transitions?.map((transition) => ({
-        value: transition.name,
-        label: transition.name,
+        value: transition.id,
+        label: transition.name + " (" + transition.code + ")",
       })) as { value: string; label: string }[];
     }
 
@@ -201,8 +201,8 @@ export const ReportTemplatesPage: React.FC = () => {
 
       map.requestTransitions = reqStateOptions.data[0].transitions?.map(
         (transition) => ({
-          value: transition.name,
-          label: transition.name,
+          value: transition.id,
+          label: transition.name + " (" + transition.code + ")",
         }),
       ) as { value: string; label: string }[];
     }
