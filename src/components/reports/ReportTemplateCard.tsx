@@ -51,6 +51,7 @@ interface ReportTemplateCardProps {
   // eslint-disable-next-line no-unused-vars
   onExport?: (_template: ReportTemplate) => void;
   dynamicOptionsMap: Record<string, { value: string; label: string }[]>;
+  stateFields?: any[];
 }
 
 const iconMap: Record<string, React.ElementType> = {
@@ -144,6 +145,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   onDuplicate,
   onExport,
   dynamicOptionsMap,
+  stateFields = [],
 }) => {
   const { t } = useTranslation();
   const [activeMenu, setActiveMenu] = useState(false);
@@ -192,7 +194,13 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
 
   const getFields = (dataSource: ReportDataSource) => {
     const baseFields = dataSource ? getFieldsForDataSource(dataSource) : [];
-    return baseFields.map((field) => {
+    const isByStatus =
+      dataSource === "classifications_by_status" ||
+      dataSource === "locations_by_status";
+
+    const allFields = isByStatus ? [...baseFields, ...stateFields] : baseFields;
+
+    return allFields.map((field) => {
       if (field.dynamicOptions && dynamicOptionsMap[field.dynamicOptions]) {
         return {
           ...field,

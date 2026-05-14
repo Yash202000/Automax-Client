@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -95,8 +95,13 @@ export const ReportTemplatesPage: React.FC = () => {
   });
 
   const { data: stateOptions } = useQuery({
-    queryKey: ["admin", "states", "options"],
+    queryKey: ["admin", "states", "options", "incident"],
     queryFn: () => workflowApi.list(false, "incident"),
+  });
+
+  const { data: reqStateOptions } = useQuery({
+    queryKey: ["admin", "states", "options", "request"],
+    queryFn: () => workflowApi.list(false, "request"),
   });
 
   // Fetch templates
@@ -188,6 +193,20 @@ export const ReportTemplatesPage: React.FC = () => {
       })) as { value: string; label: string }[];
     }
 
+    if (reqStateOptions?.data && reqStateOptions.data.length > 0) {
+      map.requestStates = reqStateOptions.data[0].states?.map((state) => ({
+        value: state.id,
+        label: state.name,
+      })) as { value: string; label: string }[];
+
+      map.requestTransitions = reqStateOptions.data[0].transitions?.map(
+        (transition) => ({
+          value: transition.name,
+          label: transition.name,
+        }),
+      ) as { value: string; label: string }[];
+    }
+
     if (departmentsTree?.data) {
       map.departments = flattenTreeWithLabels(
         departmentsTree.data as (Department & { children?: Department[] })[],
@@ -221,6 +240,23 @@ export const ReportTemplatesPage: React.FC = () => {
     setDynamicOptionsMap(map);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [departmentsTree, locationsTree, classificationsTree, userOptions]);
+
+  const stateFields = useMemo(() => {
+    if (stateOptions?.data && stateOptions.data.length > 0) {
+      const states = stateOptions.data[0].states;
+      return states?.map((x: any) => ({
+        field: x.code,
+        label: x.name,
+        type: "string",
+        category: "States",
+        sortable: false,
+        filterable: false,
+        defaultSelected: true,
+        canBeColumn: true,
+      }));
+    }
+    return [];
+  }, [stateOptions]);
 
   return (
     <div className="space-y-6">
@@ -302,6 +338,7 @@ export const ReportTemplatesPage: React.FC = () => {
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
               dynamicOptionsMap={dynamicOptionsMap}
+              stateFields={stateFields}
             />
           ))}
         </div>
