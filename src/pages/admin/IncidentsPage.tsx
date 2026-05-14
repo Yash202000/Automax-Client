@@ -1055,10 +1055,7 @@ export const IncidentsPage: React.FC = () => {
                         </option>
                       ))}
                       <option value="__converted_to_request__">
-                        {t(
-                          "incidents.convertedToRequest",
-                          "Convert to Request",
-                        )}
+                        {t("incidents.convertToRequest", "Convert to Request")}
                       </option>
                     </>
                   )}
