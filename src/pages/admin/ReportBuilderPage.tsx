@@ -193,8 +193,13 @@ export const ReportBuilderPage: React.FC = () => {
   });
 
   const { data: stateOptions } = useQuery({
-    queryKey: ["admin", "states", "options"],
+    queryKey: ["admin", "states", "options", "incident"],
     queryFn: () => workflowApi.list(false, "incident"),
+  });
+
+  const { data: reqStateOptions } = useQuery({
+    queryKey: ["admin", "states", "options", "request"],
+    queryFn: () => workflowApi.list(false, "request"),
   });
 
   // Build hierarchical options from tree data
@@ -211,6 +216,20 @@ export const ReportBuilderPage: React.FC = () => {
         value: transition.name,
         label: transition.name,
       })) as { value: string; label: string }[];
+    }
+
+    if (reqStateOptions?.data && reqStateOptions.data.length > 0) {
+      map.requestStates = reqStateOptions.data[0].states?.map((state) => ({
+        value: state.id,
+        label: state.name,
+      })) as { value: string; label: string }[];
+
+      map.requestTransitions = reqStateOptions.data[0].transitions?.map(
+        (transition) => ({
+          value: transition.name,
+          label: transition.name,
+        }),
+      ) as { value: string; label: string }[];
     }
 
     if (departmentsTree?.data) {
