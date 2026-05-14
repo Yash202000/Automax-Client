@@ -12,13 +12,14 @@ import {
   Calendar,
   Download,
   Play,
+  GitBranch,
+  ArrowUpDown,
   ChevronDown,
   AlertCircle,
   FileText,
   Users,
   Building2,
   MapPin,
-  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button, Modal, ModalBody, ModalHeader } from "@/components/ui";
@@ -26,12 +27,14 @@ import type {
   ReportTemplate,
   ReportDataSource,
   ReportFilter,
+  ReportSort,
   ReportFieldDefinition,
   ReportQueryRequest,
 } from "@/types";
 import { saveAs } from "file-saver";
 import FilterBuilder from "@/components/reports/FilterBuilder";
-import { DATA_SOURCES } from "@/constants/reportFields";
+import SortingConfig from "@/components/reports/SortingConfig";
+import { DATA_SOURCES, getFieldsForDataSource } from "@/constants/reportFields";
 import { reportApi } from "@/api/admin";
 import ReportPreview from "./ReportPreview";
 import ExportDialog from "./ExportDialog";
@@ -154,6 +157,8 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   const [filters, setFilters] = useState<ReportFilter[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [sorting, setSorting] = useState<ReportSort[]>([]);
+  const [showSorting, setShowSorting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [displayPage, setDisplayPage] = useState(1);
   const [dbTotalCount, setDbTotalCount] = useState(0);
@@ -180,17 +185,17 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
         template.config.filters.map((f, i) => ({ ...f, id: i.toString() })),
       );
     }
-  }, [template]);
+    if (template.config.sorting) {
+      setSorting(template.config.sorting);
+    }
+  }, [template.id]);
+
+  useEffect(() => {
+    console.log(sorting, "sorting");
+  }, [sorting]);
 
   const sourceInfo = dataSourceInfo[template.data_source];
   const Icon = iconMap[sourceInfo.icon] || FileBarChart;
-
-  const getFieldsForDataSource = (
-    dataSource: string,
-  ): ReportFieldDefinition[] => {
-    const source = DATA_SOURCES.find((ds) => ds.key === dataSource);
-    return source?.fields || [];
-  };
 
   const getFields = (dataSource: ReportDataSource) => {
     const baseFields = dataSource ? getFieldsForDataSource(dataSource) : [];
@@ -292,6 +297,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   }, [
     template.data_source,
     template.config.columns,
+    sorting,
     filters,
     fromDate,
     toDate,
@@ -302,7 +308,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
       data_source: template.data_source,
       columns: template.config.columns,
       filters: buildFilters(),
-      sorting: [],
+      sorting: sorting,
       page: 1,
       limit: 100,
     };
@@ -338,7 +344,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
           data_source: template.data_source,
           columns: template.config.columns,
           filters: buildFilters(),
-          sorting: [],
+          sorting: sorting,
           format,
           options: { ...options, title: template.name || "Report" },
         },
@@ -533,6 +539,44 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
                 filters={filters}
                 onChange={setFilters}
                 enableAddFilter={false}
+              />
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowSorting(!showSorting)}
+            className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-[hsl(var(--muted)/0.5)] hover:bg-[hsl(var(--muted))] transition-colors border border-[hsl(var(--border))] group/trigger"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold text-[hsl(var(--foreground))] uppercase tracking-wider">
+              <ChevronDown
+                className={cn(
+                  "w-4 h-4 transition-transform duration-300 text-[hsl(var(--primary))]",
+                  showSorting && "rotate-180",
+                )}
+              />
+              <ArrowUpDown className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+              {t("reports.sorting")}
+              {sorting.length > 0 && (
+                <span className="bg-[hsl(var(--primary))] text-white px-2 py-0.5 rounded-full text-[10px] ml-1">
+                  {sorting.length}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-medium italic group-hover/trigger:text-[hsl(var(--primary))] transition-colors">
+              {showSorting ? t("common.hide") : t("common.view")}
+            </span>
+          </button>
+
+          {showSorting && (
+            <div className="p-4 rounded-xl border border-[hsl(var(--border))] border-dashed bg-[hsl(var(--card))] animate-in slide-in-from-top-2 duration-300">
+              <SortingConfig
+                fields={getFields(template.data_source)}
+                sorting={sorting}
+                onChange={(s) => {
+                  setSorting(s);
+                }}
+                canAddRemove={false}
+                canChangeField={false}
               />
             </div>
           )}
