@@ -74,6 +74,14 @@ export const incidentFields: ReportFieldDefinition[] = [
   },
   {
     field: "workflow_transition_name",
+    label: "Transition Name",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "workflow_transition_id",
     label: "Transition",
     type: "enum",
     dynamicOptions: "transitions",
@@ -535,7 +543,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   },
   {
     field: "source",
-    label: "Source",
+    label: "Channel",
     type: "enum",
     category: "Core",
     sortable: true,
