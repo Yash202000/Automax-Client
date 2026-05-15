@@ -257,7 +257,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
         operator: "between",
         value: {
           from: new Date(fromDate).toISOString(),
-          to: endOfDay.toISOString(),
+          to: new Date(toDate).toISOString(),
         },
       });
     }
@@ -482,7 +482,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             <div className="relative group/input">
               <input
                 id={`from-${template.id}`}
-                type="date"
+                type="datetime-local"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
                 className="w-full border border-[hsl(var(--border))] rounded-xl px-4 py-2.5 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.15)] focus:border-[hsl(var(--primary))] outline-none transition-all shadow-sm group-hover/input:border-[hsl(var(--muted-foreground)/0.5)]"
@@ -499,7 +499,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             <div className="relative group/input">
               <input
                 id={`to-${template.id}`}
-                type="date"
+                type="datetime-local"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
                 className="w-full border border-[hsl(var(--border))] rounded-xl px-4 py-2.5 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.15)] focus:border-[hsl(var(--primary))] outline-none transition-all shadow-sm group-hover/input:border-[hsl(var(--muted-foreground)/0.5)]"

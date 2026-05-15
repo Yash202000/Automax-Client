@@ -392,6 +392,23 @@ export const incidentFields: ReportFieldDefinition[] = [
     multiselect: true,
   },
 
+  {
+    field: "reopen1_comment",
+    label: "Reopened1 comment",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reopen1_feedback",
+    label: "Reopened1 Feedback",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+
   // { field: "custom_fields", label: "Custom Fields", type: "string", category: "Core", sortable: true, filterable: true },
   {
     field: "created_at",
