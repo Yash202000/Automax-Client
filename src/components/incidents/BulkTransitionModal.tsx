@@ -24,6 +24,7 @@ import {
   userApi,
   locationApi,
   classificationApi,
+  lookupApi,
 } from "../../api/admin";
 import type { Incident, AvailableTransition } from "../../types";
 import { cn } from "@/lib/utils";
@@ -230,6 +231,13 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
     queryFn: () => departmentApi.getTree(),
     enabled: isOpen && currentStep === "department",
   });
+
+  const { data: lookupCategoriesData } = useQuery({
+    queryKey: ["admin", "lookups", "categories"],
+    queryFn: () => lookupApi.listCategories(),
+    enabled: isOpen,
+  });
+  const lookupCategories = lookupCategoriesData?.data || [];
 
   // Logic to handle auto-selection
   useEffect(() => {
@@ -964,6 +972,53 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                         leafOnly={false}
                         maxHeight="240px"
                       />
+                    ) : fc.field_name.startsWith("lookup:") ? (
+                      (() => {
+                        const code = fc.field_name.replace("lookup:", "");
+                        const cat = lookupCategories.find(
+                          (c) => c.code === code,
+                        );
+                        const fieldType = cat?.field_type || "text";
+                        const commonProps = {
+                          value: fieldValues[fc.field_name] || "",
+                          onChange: (
+                            e: React.ChangeEvent<
+                              | HTMLInputElement
+                              | HTMLTextAreaElement
+                              | HTMLSelectElement
+                            >,
+                          ) =>
+                            setFieldValues((prev) => ({
+                              ...prev,
+                              [fc.field_name]: e.target.value,
+                            })),
+                          className:
+                            "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]",
+                        };
+                        if (fieldType === "textarea") {
+                          return <textarea {...commonProps} rows={3} />;
+                        }
+                        if (
+                          (fieldType === "select" ||
+                            fieldType === "multiselect") &&
+                          cat?.values?.length
+                        ) {
+                          return (
+                            <select {...commonProps}>
+                              <option value="">{t("common.select")}</option>
+                              {cat.values
+                                .filter((v) => v.is_active)
+                                .sort((a, b) => a.sort_order - b.sort_order)
+                                .map((v) => (
+                                  <option key={v.id} value={v.code}>
+                                    {v.name}
+                                  </option>
+                                ))}
+                            </select>
+                          );
+                        }
+                        return <input type="text" {...commonProps} />;
+                      })()
                     ) : (
                       <input
                         type="text"

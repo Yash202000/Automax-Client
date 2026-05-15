@@ -4481,6 +4481,94 @@ export const IncidentDetailPage: React.FC = () => {
                                 )}
                               </>
                             )}
+                            {fc.field_name.startsWith("lookup:") &&
+                              (() => {
+                                const code = fc.field_name.replace(
+                                  "lookup:",
+                                  "",
+                                );
+                                const cat = lookupCategories.find(
+                                  (c) => c.code === code,
+                                );
+                                const fieldType = cat?.field_type || "text";
+                                const baseClass = `w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`;
+                                const handleChange = (val: string) => {
+                                  setTransitionFieldValues((prev) => ({
+                                    ...prev,
+                                    [fc.field_name]: val,
+                                  }));
+                                  if (transitionErrors[fc.field_name])
+                                    setTransitionErrors((prev) => ({
+                                      ...prev,
+                                      [fc.field_name]: "",
+                                    }));
+                                };
+                                return (
+                                  <>
+                                    {fieldType === "textarea" ? (
+                                      <textarea
+                                        value={
+                                          transitionFieldValues[
+                                            fc.field_name
+                                          ] || ""
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
+                                        rows={3}
+                                        className={`${baseClass} resize-none`}
+                                      />
+                                    ) : (fieldType === "select" ||
+                                        fieldType === "multiselect") &&
+                                      cat?.values?.length ? (
+                                      <select
+                                        value={
+                                          transitionFieldValues[
+                                            fc.field_name
+                                          ] || ""
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
+                                        className={baseClass}
+                                      >
+                                        <option value="">
+                                          {t("common.select")}
+                                        </option>
+                                        {cat.values
+                                          .filter((v) => v.is_active)
+                                          .sort(
+                                            (a, b) =>
+                                              a.sort_order - b.sort_order,
+                                          )
+                                          .map((v) => (
+                                            <option key={v.id} value={v.code}>
+                                              {v.name}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    ) : (
+                                      <input
+                                        type="text"
+                                        value={
+                                          transitionFieldValues[
+                                            fc.field_name
+                                          ] || ""
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
+                                        className={baseClass}
+                                      />
+                                    )}
+                                    {transitionErrors[fc.field_name] && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {transitionErrors[fc.field_name]}
+                                      </p>
+                                    )}
+                                  </>
+                                );
+                              })()}
                           </div>
                         ))}
                       </div>

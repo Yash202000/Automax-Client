@@ -4256,6 +4256,12 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   classification_id: "Classification",
                                   title: "Title",
                                   description: "Description",
+                                  ...Object.fromEntries(
+                                    allLookupCategories.map((cat) => [
+                                      `lookup:${cat.code}`,
+                                      cat.name,
+                                    ]),
+                                  ),
                                 };
                                 // Update both field_name and auto-label in one atomic state write
                                 // to avoid the second setFieldChanges overwriting the first.
@@ -4272,24 +4278,49 @@ export const WorkflowDesignerPage: React.FC = () => {
                               }}
                               className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                             >
-                              <option value="priority">
-                                {t("common.priority")}
-                              </option>
-                              <option value="department_id">
-                                {t("common.department")}
-                              </option>
-                              <option value="location_id">
-                                {t("common.location")}
-                              </option>
-                              <option value="classification_id">
-                                {t("common.classification")}
-                              </option>
-                              <option value="title">
-                                {t("incidents.incidentTitle")}
-                              </option>
-                              <option value="description">
-                                {t("common.description")}
-                              </option>
+                              <optgroup
+                                label={t("IncidentFields") || "Incident Fields"}
+                              >
+                                <option value="priority">
+                                  {t("common.priority")}
+                                </option>
+                                <option value="department_id">
+                                  {t("common.department")}
+                                </option>
+                                <option value="location_id">
+                                  {t("common.location")}
+                                </option>
+                                <option value="classification_id">
+                                  {t("common.classification")}
+                                </option>
+                                <option value="title">
+                                  {t("incidents.incidentTitle")}
+                                </option>
+                                <option value="description">
+                                  {t("common.description")}
+                                </option>
+                              </optgroup>
+                              {allLookupCategories.filter(
+                                (cat) => cat.is_active,
+                              ).length > 0 && (
+                                <optgroup
+                                  label={
+                                    t("MasterDataFields") ||
+                                    "Master Data Fields"
+                                  }
+                                >
+                                  {allLookupCategories
+                                    .filter((cat) => cat.is_active)
+                                    .map((cat) => (
+                                      <option
+                                        key={cat.id}
+                                        value={`lookup:${cat.code}`}
+                                      >
+                                        {cat.name}
+                                      </option>
+                                    ))}
+                                </optgroup>
+                              )}
                             </select>
                             <button
                               onClick={() => removeFieldChange(index)}
