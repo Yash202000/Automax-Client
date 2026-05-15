@@ -145,6 +145,22 @@ export const incidentFields: ReportFieldDefinition[] = [
     ],
   },
   {
+    field: "reopen1_comment",
+    label: "Reopened1 comment",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reopen1_feedback",
+    label: "Reopened Feedback",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
     field: "assignee_id",
     label: "Assignee",
     type: "enum",
