@@ -168,6 +168,7 @@ export const ReportBuilderPage: React.FC = () => {
   const [loadedTemplate, setLoadedTemplate] = useState<ReportTemplate | null>(
     null,
   );
+  const [timestampKey, setTimestampKey] = useState<string>("created_at");
 
   const { user } = useAuthStore();
 
@@ -516,6 +517,7 @@ export const ReportBuilderPage: React.FC = () => {
           description,
           config,
           is_public: isPublic,
+          timestamp_key: timestampKey,
         });
       } else {
         // Create new
@@ -525,6 +527,7 @@ export const ReportBuilderPage: React.FC = () => {
           data_source: dataSource,
           config,
           is_public: isPublic,
+          timestamp_key: timestampKey,
         });
       }
     },
@@ -561,6 +564,7 @@ export const ReportBuilderPage: React.FC = () => {
     );
     setSorting(template.config.sorting);
     setLoadedTemplate(template);
+    setTimestampKey(template.timestamp_key || "created_at");
     setPreviewData([]);
     setDbTotalCount(0);
     setDisplayPage(1);
@@ -701,6 +705,9 @@ export const ReportBuilderPage: React.FC = () => {
               fields={fields}
               filters={filters}
               onChange={setFilters}
+              onTimestampKeyChange={setTimestampKey}
+              timestampKey={timestampKey}
+              showTimestampKey={user?.is_super_admin}
             />
           </CollapsibleSection>
         )}
