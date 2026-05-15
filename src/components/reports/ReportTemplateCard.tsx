@@ -41,6 +41,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import { getValidFilters } from "@/utils/reportUtils";
+import { useAuthStore } from "@/stores/authStore";
 
 interface ReportTemplateCardProps {
   template: ReportTemplate;
@@ -166,6 +167,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthStore();
   const DISPLAY_SIZE = 50;
 
   const displayTotalPages = Math.ceil(previewData.length / DISPLAY_SIZE);
@@ -189,10 +191,6 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     }
   }, [template.id]);
 
-  useEffect(() => {
-    console.log(sorting, "sorting");
-  }, [sorting]);
-
   const sourceInfo = dataSourceInfo[template.data_source];
   const Icon = iconMap[sourceInfo.icon] || FileBarChart;
 
@@ -203,16 +201,26 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
       dataSource === "locations_by_status";
 
     const allFields = isByStatus ? [...baseFields, ...stateFields] : baseFields;
-
-    return allFields.map((field) => {
-      if (field.dynamicOptions && dynamicOptionsMap[field.dynamicOptions]) {
+    const n = allFields.map((field) => {
+      const fieldClone = { ...field };
+      if (
+        !user?.is_super_admin &&
+        fieldClone.field === "workflow_transition_id"
+      ) {
+        fieldClone.hidden = true;
+      }
+      if (
+        fieldClone.dynamicOptions &&
+        dynamicOptionsMap[fieldClone.dynamicOptions]
+      ) {
         return {
-          ...field,
-          options: dynamicOptionsMap[field.dynamicOptions],
+          ...fieldClone,
+          options: dynamicOptionsMap[fieldClone.dynamicOptions],
         };
       }
-      return field;
+      return fieldClone;
     });
+    return n;
   };
 
   const validateDates = useCallback(() => {
@@ -520,9 +528,21 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
                 )}
               />
               {t("reports.filters")}
-              {filters.length > 0 && (
+              {filters.filter((f) => {
+                const fieldDef = getFields(template.data_source).find(
+                  (fd) => fd.field === f.field,
+                );
+                return !fieldDef?.hidden && !f.hidden;
+              }).length > 0 && (
                 <span className="bg-[hsl(var(--primary))] text-white px-2 py-0.5 rounded-full text-[10px] ml-1">
-                  {filters.length}
+                  {
+                    filters.filter((f) => {
+                      const fieldDef = getFields(template.data_source).find(
+                        (fd) => fd.field === f.field,
+                      );
+                      return !fieldDef?.hidden && !f.hidden;
+                    }).length
+                  }
                 </span>
               )}
             </div>

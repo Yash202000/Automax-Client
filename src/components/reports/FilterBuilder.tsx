@@ -253,7 +253,7 @@ const FilterRow: React.FC<FilterRowProps> = ({
         >
           <option value="">{t("reports.filterBuilder.selectField")}</option>
           {fields
-            .filter((f) => f.filterable)
+            .filter((f) => f.filterable && !f.hidden)
             .map((f) => (
               <option key={f.field} value={f.field}>
                 {f.label}
@@ -356,17 +356,21 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filters.map((filter, index) => (
-            <FilterRow
-              key={filter.id}
-              filter={filter}
-              fields={filterableFields}
-              enableAddFilter={enableAddFilter}
-              onChange={(f) => updateFilter(index, f)}
-              onRemove={() => removeFilter(index)}
-              t={t}
-            />
-          ))}
+          {filters.map((filter, index) => {
+            const fieldDef = fields.find((f) => f.field === filter.field);
+            if (fieldDef?.hidden || filter.hidden) return null;
+            return (
+              <FilterRow
+                key={filter.id}
+                filter={filter}
+                fields={filterableFields}
+                enableAddFilter={enableAddFilter}
+                onChange={(f) => updateFilter(index, f)}
+                onRemove={() => removeFilter(index)}
+                t={t}
+              />
+            );
+          })}
         </div>
       )}
 

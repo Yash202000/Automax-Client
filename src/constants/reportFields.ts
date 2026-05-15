@@ -1002,7 +1002,7 @@ export const requestFields: ReportFieldDefinition[] = [
     filterable: true,
   },
   {
-    field: "channel",
+    field: "source",
     label: "Channel",
     type: "enum",
     category: "Core",

@@ -1537,6 +1537,7 @@ export interface ReportFieldDefinition {
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
   canBeColumn?: boolean;
   multiselect?: boolean;
+  hidden?: boolean;
 }
 
 // Data Source Definition
@@ -1550,6 +1551,7 @@ export interface DataSourceDefinition {
 
 // Report Filter
 export interface ReportFilter {
+  hidden?: boolean;
   id: string;
   field: string;
   operator: FilterOperator;
