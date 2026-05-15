@@ -41,10 +41,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "../../components/ui";
-import {
-  TreeSelect,
-  type TreeSelectNode,
-} from "../../components/ui/TreeSelect";
+import { TreeSelect } from "../../components/ui/TreeSelect";
+import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { MiniWorkflowView } from "../../components/workflow";
 import {
   RevisionHistory,
@@ -362,7 +360,6 @@ export const IncidentDetailPage: React.FC = () => {
   const { data: fcDepartmentsData } = useQuery({
     queryKey: ["admin", "departments", "tree"],
     queryFn: () => departmentApi.getTree(),
-    enabled: !!needsDepts,
   });
 
   // Recursively filter department tree by type ('internal' | 'external')
@@ -380,12 +377,10 @@ export const IncidentDetailPage: React.FC = () => {
   const { data: fcLocationsData } = useQuery({
     queryKey: ["admin", "locations", "tree"],
     queryFn: () => locationApi.getTree(),
-    enabled: !!needsLocs,
   });
   const { data: fcClassificationsData } = useQuery({
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
-    enabled: !!needsClassifications,
   });
 
   // Check if user can convert incident to request
@@ -401,6 +396,31 @@ export const IncidentDetailPage: React.FC = () => {
     () => lookupCategoriesData?.data || [],
     [lookupCategoriesData?.data],
   );
+
+  const classificationPath = useMemo(() => {
+    if (!incident?.classification?.id || !fcClassificationsData?.data)
+      return [];
+    return getNodePath(
+      fcClassificationsData.data as unknown as TreeSelectNode[],
+      incident.classification.id,
+    );
+  }, [incident?.classification?.id, fcClassificationsData?.data]);
+
+  const locationPath = useMemo(() => {
+    if (!incident?.location?.id || !fcLocationsData?.data) return [];
+    return getNodePath(
+      fcLocationsData.data as unknown as TreeSelectNode[],
+      incident.location.id,
+    );
+  }, [incident?.location?.id, fcLocationsData?.data]);
+
+  const departmentPath = useMemo(() => {
+    if (!incident?.department?.id || !fcDepartmentsData?.data) return [];
+    return getNodePath(
+      fcDepartmentsData.data as unknown as TreeSelectNode[],
+      incident.department.id,
+    );
+  }, [incident?.department?.id, fcDepartmentsData?.data]);
   const user = useAuthStore((state) => state.user);
 
   // State-level edit restriction: if current state has editable_roles configured,
@@ -2912,16 +2932,37 @@ export const IncidentDetailPage: React.FC = () => {
             </h3>
             <div className="space-y-3">
               {/* Two-column grid for compact display */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 {/* Classification */}
                 {incident.classification && (
                   <div>
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                       {t("incidents.classification")}
                     </label>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                      <Tags className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                      {incident.classification.name}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Tags className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      {classificationPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {classificationPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === classificationPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < classificationPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        incident.classification.name
+                      )}
                     </div>
                   </div>
                 )}
@@ -2932,9 +2973,30 @@ export const IncidentDetailPage: React.FC = () => {
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                       {t("incidents.department")}
                     </label>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                      <Building2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                      {incident.department.name}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Building2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      {departmentPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {departmentPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === departmentPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < departmentPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        incident.department.name
+                      )}
                     </div>
                   </div>
                 )}
@@ -2945,13 +3007,37 @@ export const IncidentDetailPage: React.FC = () => {
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                       {t("incidents.location")}
                     </label>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                      <MapPin className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                      {incident.location.name}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <MapPin className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      {locationPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {locationPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === locationPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < locationPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        incident.location.name
+                      )}
                     </div>
                   </div>
                 )}
+              </div>
 
+              {/* Remaining details in two-column grid */}
+              <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[hsl(var(--border))] border-dashed">
                 {/* Source */}
                 {incident.source && (
                   <div>
@@ -2982,10 +3068,15 @@ export const IncidentDetailPage: React.FC = () => {
 
                 {/* SLA Deadline */}
                 {incident.sla_deadline && (
-                  <div>
-                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      {t("incidents.slaDeadline")}
-                    </label>
+                  <div className="flex justify-center flex-col">
+                    <div className="flex gap-2 items-center">
+                      <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                        {t("incidents.slaDeadline")}
+                      </label>
+                      {incident.sla_breached && (
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                      )}
+                    </div>
                     <div
                       className={cn(
                         "mt-0.5 flex items-center gap-1.5 text-sm",
@@ -2995,10 +3086,7 @@ export const IncidentDetailPage: React.FC = () => {
                       )}
                     >
                       <Clock className="w-3.5 h-3.5" />
-                      {formatDateTime(incident.sla_deadline)}
-                      {incident.sla_breached && (
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                      )}
+                      <span>{formatDateTime(incident.sla_deadline)}</span>
                     </div>
                   </div>
                 )}

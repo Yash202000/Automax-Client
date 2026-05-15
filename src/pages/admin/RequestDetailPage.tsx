@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -36,6 +36,9 @@ import {
   userApi,
   commentTemplateApi,
   feedbackTemplateApi,
+  departmentApi,
+  locationApi,
+  classificationApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type {
@@ -44,6 +47,7 @@ import type {
   TransitionHistory,
   User as UserType,
 } from "../../types";
+import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
@@ -146,12 +150,50 @@ export const RequestDetailPage: React.FC = () => {
     queryFn: () => userApi.list(1, 100),
   });
 
+  const { data: fcDepartmentsData } = useQuery({
+    queryKey: ["admin", "departments", "tree"],
+    queryFn: () => departmentApi.getTree(),
+  });
+
+  const { data: fcLocationsData } = useQuery({
+    queryKey: ["admin", "locations", "tree"],
+    queryFn: () => locationApi.getTree(),
+  });
+
+  const { data: fcClassificationsData } = useQuery({
+    queryKey: ["admin", "classifications", "tree"],
+    queryFn: () => classificationApi.getTree(),
+  });
   const request = requestData?.data;
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
   const comments = combinedCommentData || [];
   const attachments = attachmentsData?.data || [];
   const users = usersData?.data || [];
+
+  const classificationPath = useMemo(() => {
+    if (!request?.classification?.id || !fcClassificationsData?.data) return [];
+    return getNodePath(
+      fcClassificationsData.data as unknown as TreeSelectNode[],
+      request.classification.id,
+    );
+  }, [request?.classification?.id, fcClassificationsData?.data]);
+
+  const locationPath = useMemo(() => {
+    if (!request?.location?.id || !fcLocationsData?.data) return [];
+    return getNodePath(
+      fcLocationsData.data as unknown as TreeSelectNode[],
+      request.location.id,
+    );
+  }, [request?.location?.id, fcLocationsData?.data]);
+
+  const departmentPath = useMemo(() => {
+    if (!request?.department?.id || !fcDepartmentsData?.data) return [];
+    return getNodePath(
+      fcDepartmentsData.data as unknown as TreeSelectNode[],
+      request.department.id,
+    );
+  }, [request?.department?.id, fcDepartmentsData?.data]);
 
   // Helper function to download attachment with authentication
   const downloadAttachment = async (attachmentId: string, fileName: string) => {
@@ -948,40 +990,103 @@ export const RequestDetailPage: React.FC = () => {
 
               {/* Department */}
               {request.department && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1 py-1">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
                     {t("requests.department")}
                   </span>
-                  <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
-                    <Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                    {request.department.name}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1 text-sm text-[hsl(var(--foreground))]">
+                    <Building2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                    {departmentPath.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1">
+                        {departmentPath.map((part, idx) => (
+                          <React.Fragment key={idx}>
+                            <span
+                              className={cn(
+                                idx === departmentPath.length - 1
+                                  ? "font-semibold"
+                                  : "text-[hsl(var(--muted-foreground))]",
+                              )}
+                            >
+                              {part}
+                            </span>
+                            {idx < departmentPath.length - 1 && (
+                              <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    ) : (
+                      request.department.name
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Location */}
               {request.location && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1 py-1">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
                     {t("requests.location")}
                   </span>
-                  <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                    {request.location.name}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1 text-sm text-[hsl(var(--foreground))]">
+                    <MapPin className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                    {locationPath.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1">
+                        {locationPath.map((part, idx) => (
+                          <React.Fragment key={idx}>
+                            <span
+                              className={cn(
+                                idx === locationPath.length - 1
+                                  ? "font-semibold"
+                                  : "text-[hsl(var(--muted-foreground))]",
+                              )}
+                            >
+                              {part}
+                            </span>
+                            {idx < locationPath.length - 1 && (
+                              <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    ) : (
+                      request.location.name
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Classification */}
               {request.classification && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1 py-1">
                   <span className="text-sm text-[hsl(var(--muted-foreground))]">
                     {t("requests.classification")}
                   </span>
-                  <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
-                    <Tags className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                    {request.classification.name}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1 text-sm text-[hsl(var(--foreground))]">
+                    <Tags className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                    {classificationPath.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1">
+                        {classificationPath.map((part, idx) => (
+                          <React.Fragment key={idx}>
+                            <span
+                              className={cn(
+                                idx === classificationPath.length - 1
+                                  ? "font-semibold"
+                                  : "text-[hsl(var(--muted-foreground))]",
+                              )}
+                            >
+                              {part}
+                            </span>
+                            {idx < classificationPath.length - 1 && (
+                              <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    ) : (
+                      request.classification.name
+                    )}
+                  </div>
                 </div>
               )}
 
