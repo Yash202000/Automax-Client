@@ -91,6 +91,22 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: true,
   },
   {
+    field: "workflow_transition_at",
+    label: "Transition At",
+    type: "date",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reopen1_at",
+    label: "Reopened Date",
+    type: "date",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
     field: "incident_number",
     label: "Incident Number",
     type: "string",

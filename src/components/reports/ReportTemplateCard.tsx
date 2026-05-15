@@ -247,9 +247,6 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     let updatedFilters: ReportFilter[] = [...filters];
 
     if (fromDate && toDate) {
-      const endOfDay = new Date(toDate);
-      endOfDay.setHours(23, 59, 59, 999);
-
       updatedFilters = updatedFilters.filter(
         (f) => f.field !== template?.timestamp_key || "created_at",
       );
