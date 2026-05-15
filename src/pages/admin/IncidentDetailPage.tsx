@@ -339,23 +339,6 @@ export const IncidentDetailPage: React.FC = () => {
     : [];
 
   // Tree data for field change selectors — fetch trees so the TreeSelect component can show hierarchy
-  const hasFieldChanges =
-    (selectedTransition?.transition?.field_changes?.length ?? 0) > 0;
-  const needsDepts =
-    hasFieldChanges &&
-    selectedTransition?.transition?.field_changes?.some(
-      (f) => f.field_name === "department_id",
-    );
-  const needsLocs =
-    hasFieldChanges &&
-    selectedTransition?.transition?.field_changes?.some(
-      (f) => f.field_name === "location_id",
-    );
-  const needsClassifications =
-    hasFieldChanges &&
-    selectedTransition?.transition?.field_changes?.some(
-      (f) => f.field_name === "classification_id",
-    );
 
   const { data: fcDepartmentsData } = useQuery({
     queryKey: ["admin", "departments", "tree"],
