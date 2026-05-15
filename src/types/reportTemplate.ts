@@ -242,7 +242,7 @@ export interface TemplateConfig {
   styles?: GlobalStyles;
 }
 
-export interface ReportTemplate {
+export interface VisualReportTemplate {
   id: string;
   name: string;
   name_ar?: string;
@@ -260,18 +260,20 @@ export interface ReportTemplate {
   };
   created_at: string;
   updated_at: string;
+  timestamp_key: string;
 }
 
-export interface ReportTemplateCreateRequest {
+export interface VisualReportTemplateCreateRequest {
   name: string;
   name_ar?: string;
   description?: string;
   description_ar?: string;
   template: TemplateConfig;
   is_public?: boolean;
+  timestamp_key?: string;
 }
 
-export interface ReportTemplateUpdateRequest {
+export interface VisualReportTemplateUpdateRequest {
   name?: string;
   name_ar?: string;
   description?: string;
@@ -279,6 +281,7 @@ export interface ReportTemplateUpdateRequest {
   template?: TemplateConfig;
   is_public?: boolean;
   is_default?: boolean;
+  timestamp_key?: string;
 }
 
 export interface ColumnOverride {

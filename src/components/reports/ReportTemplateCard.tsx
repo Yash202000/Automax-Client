@@ -248,7 +248,7 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
 
     if (fromDate && toDate) {
       updatedFilters = updatedFilters.filter(
-        (f) => f.field !== template?.timestamp_key || "created_at",
+        (f) => f.field !== (template?.timestamp_key || "created_at"),
       );
       updatedFilters.push({
         id: template?.timestamp_key || "created_at",

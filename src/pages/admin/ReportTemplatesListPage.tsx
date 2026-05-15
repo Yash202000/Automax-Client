@@ -25,7 +25,7 @@ import {
   downloadReport,
 } from "../../services/reportTemplateApi";
 import type {
-  ReportTemplate,
+  VisualReportTemplate as ReportTemplate,
   GenerateReportRequest,
 } from "../../types/reportTemplate";
 import { Button } from "@/components/ui";
