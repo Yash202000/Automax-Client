@@ -317,7 +317,21 @@
     "usernamePlaceholder": "ahmedmohamed",
     "emailPlaceholder": "you@example.com",
     "agreeToTerms": "أوافق على الشروط",
-    "passwordPlaceholder": "********"
+    "passwordPlaceholder": "********",
+    "ssoLogin": "دخول SSO",
+    "ssoRegister": "تسجيل SSO",
+    "regularLogin": "دخول عادي",
+    "regularRegister": "تسجيل عادي",
+    "nationalId": "الهوية الوطنية",
+    "nationalIdPlaceholder": "أدخل هويتك الوطنية",
+    "ssoLoginTitle": "دخول SSO",
+    "ssoLoginSubtitle": "تسجيل الدخول باستخدام الهوية الوطنية",
+    "ssoRegisterTitle": "تسجيل SSO",
+    "ssoRegisterSubtitle": "إنشاء حساب SSO بالهوية الوطنية",
+    "switchToSso": "تسجيل الدخول بـ SSO",
+    "switchToRegular": "تسجيل الدخول بالبريد الإلكتروني",
+    "switchToSsoRegister": "التسجيل بـ SSO",
+    "switchToRegularRegister": "التسجيل بالبريد الإلكتروني"
   },
   "nav": {
     "dashboard": "لوحة المعلومات",

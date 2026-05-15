@@ -317,7 +317,21 @@
     "emailPlaceholder": "you@example.com",
     "agreeToTerms": "I agree to the terms",
     "passwordMinLength": "Password must be at least 8 characters.",
-    "passwordPlaceholder": "********"
+    "passwordPlaceholder": "********",
+    "ssoLogin": "SSO Login",
+    "ssoRegister": "SSO Register",
+    "regularLogin": "Regular Login",
+    "regularRegister": "Regular Register",
+    "nationalId": "National ID",
+    "nationalIdPlaceholder": "Enter your national ID",
+    "ssoLoginTitle": "SSO Login",
+    "ssoLoginSubtitle": "Sign in with your national ID",
+    "ssoRegisterTitle": "SSO Registration",
+    "ssoRegisterSubtitle": "Create an SSO account with your national ID",
+    "switchToSso": "Sign in with SSO",
+    "switchToRegular": "Sign in with email",
+    "switchToSsoRegister": "Register with SSO",
+    "switchToRegularRegister": "Register with email"
   },
   "nav": {
     "dashboard": "Dashboard",
