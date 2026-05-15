@@ -34,9 +34,16 @@ import {
 import { Button } from "../../components/ui";
 import { MiniWorkflowView } from "../../components/workflow";
 import { RevisionHistory } from "../../components/incidents";
-import { queryApi, userApi } from "../../api/admin";
+import {
+  queryApi,
+  userApi,
+  departmentApi,
+  locationApi,
+  classificationApi,
+} from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type { AvailableTransition } from "../../types";
+import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { cn } from "@/lib/utils";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import { Icon } from "leaflet";
@@ -128,6 +135,45 @@ export const QueryDetailPage: React.FC = () => {
   const history = historyData?.data || [];
   const comments = commentsData?.data || [];
   const attachments = attachmentsData?.data || [];
+
+  const { data: fcDepartmentsData } = useQuery({
+    queryKey: ["admin", "departments", "tree"],
+    queryFn: () => departmentApi.getTree(),
+  });
+
+  const { data: fcLocationsData } = useQuery({
+    queryKey: ["admin", "locations", "tree"],
+    queryFn: () => locationApi.getTree(),
+  });
+
+  const { data: fcClassificationsData } = useQuery({
+    queryKey: ["admin", "classifications", "tree"],
+    queryFn: () => classificationApi.getTree(),
+  });
+
+  const classificationPath = React.useMemo(() => {
+    if (!query?.classification?.id || !fcClassificationsData?.data) return [];
+    return getNodePath(
+      fcClassificationsData.data as unknown as TreeSelectNode[],
+      query.classification.id,
+    );
+  }, [query?.classification?.id, fcClassificationsData?.data]);
+
+  const locationPath = React.useMemo(() => {
+    if (!query?.location?.id || !fcLocationsData?.data) return [];
+    return getNodePath(
+      fcLocationsData.data as unknown as TreeSelectNode[],
+      query.location.id,
+    );
+  }, [query?.location?.id, fcLocationsData?.data]);
+
+  const departmentPath = React.useMemo(() => {
+    if (!query?.department?.id || !fcDepartmentsData?.data) return [];
+    return getNodePath(
+      fcDepartmentsData.data as unknown as TreeSelectNode[],
+      query.department.id,
+    );
+  }, [query?.department?.id, fcDepartmentsData?.data]);
 
   // Check if query is closed (terminal state)
   const isClosed = query?.current_state?.state_type === "terminal";
@@ -889,13 +935,34 @@ export const QueryDetailPage: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
                     <Tags className="w-4 h-4 text-violet-500" />
                   </div>
-                  <div>
+                  <div className="flex-1 overflow-hidden">
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
                       {t("common.classification")}
                     </p>
-                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      {query.classification.name}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-1 mt-0.5 text-sm text-[hsl(var(--foreground))]">
+                      {classificationPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {classificationPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === classificationPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < classificationPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        query.classification.name
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -943,13 +1010,72 @@ export const QueryDetailPage: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
                     <Building2 className="w-4 h-4 text-violet-500" />
                   </div>
-                  <div>
+                  <div className="flex-1 overflow-hidden">
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
                       {t("common.department")}
                     </p>
-                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      {query.department.name}
+                    <div className="flex flex-wrap items-center gap-1 mt-0.5 text-sm text-[hsl(var(--foreground))]">
+                      {departmentPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {departmentPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === departmentPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < departmentPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        query.department.name
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Location */}
+              {query.location && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-4 h-4 text-violet-500" />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {t("common.location")}
                     </p>
+                    <div className="flex flex-wrap items-center gap-1 mt-0.5 text-sm text-[hsl(var(--foreground))]">
+                      {locationPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {locationPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === locationPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < locationPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        query.location.name
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
