@@ -37,6 +37,7 @@ import { CitizenVerifyPage } from "./pages/CitizenverifyPage";
 import { CitizenIncidentUpdatePage } from "./pages/CitizenIncidentUpdatePage";
 import { UserBootstrap } from "./components/common/UserBootstrap";
 import { ForgotPasswordPage } from "./pages/ForgetPasswordPage";
+import TemplateCRUD from "./pages/admin/TemplatesPage";
 
 // Lazy: admin/feature pages — only fetched when navigated to.
 // We import each page from its own file (NOT the barrel) so Rollup can emit a
@@ -854,6 +855,15 @@ function App() {
                           element={<GoalEditPage />}
                         />
                       </Route>
+                    </Route>
+                  </Route>
+
+                  <Route element={<AdminProtectedRoute />}>
+                    <Route element={<AdminLayout />}>
+                      <Route
+                        path="/admin/templates"
+                        element={<TemplateCRUD />}
+                      />
                     </Route>
                   </Route>
 
