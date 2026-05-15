@@ -111,7 +111,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
       steps.push("user");
     if (trans.field_changes && trans.field_changes.length > 0)
       steps.push("field_changes");
-    if (trans.to_state?.is_ready_to_close) steps.push("duration");
+    if (trans.to_state?.is_partial_close) steps.push("duration");
     if (
       selectedTransition.requirements?.some(
         (r) => r.requirement_type === "attachment",
@@ -986,7 +986,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-5 h-5 text-[hsl(var(--primary))]" />
                 <h4 className="font-semibold">
-                  {t("incidents.readyToCloseDuration")}
+                  {t("incidents.closingDuration", "Duration")}
                   {isMandatory && (
                     <span className="text-[hsl(var(--destructive))] ml-1">
                       *
@@ -996,7 +996,10 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               </div>
               <div className="space-y-4">
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {t("incidents.readyToCloseDesc")}
+                  {t(
+                    "incidents.closingDurationHint",
+                    "The incident will automatically revert if not closed within the selected period.",
+                  )}
                 </p>
                 <Select
                   options={(durationOptionsData?.data || []).map((opt) => ({

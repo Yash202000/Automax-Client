@@ -83,6 +83,7 @@ interface StateFormData {
   escalation_policy_id: string | undefined;
   is_mergable: boolean;
   is_ready_to_close: boolean;
+  is_partial_close: boolean;
   duration_options: string; // comma-separated input string
   viewable_role_ids: string[];
   editable_role_ids: string[];
@@ -129,6 +130,7 @@ const initialStateFormData: StateFormData = {
   escalation_policy_id: undefined,
   is_mergable: false,
   is_ready_to_close: false,
+  is_partial_close: false,
   duration_options: "",
   viewable_role_ids: [],
   editable_role_ids: [],
@@ -989,6 +991,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       escalation_policy_id: state.escalation_policy_id || undefined,
       is_mergable: state.is_mergable || false,
       is_ready_to_close: state.is_ready_to_close || false,
+      is_partial_close: state.is_partial_close || false,
       duration_options: (state.duration_options || []).join(", "),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
       editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
@@ -1107,6 +1110,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       escalation_policy_id: stateFormData.escalation_policy_id || null,
       is_mergable: stateFormData.is_mergable,
       is_ready_to_close: stateFormData.is_ready_to_close,
+      is_partial_close: stateFormData.is_partial_close,
       duration_options: stateFormData.duration_options
         ? stateFormData.duration_options
             .split(",")
@@ -3078,32 +3082,35 @@ export const WorkflowDesignerPage: React.FC = () => {
                     {t("workflows.allowIncidentsInThisStatusToBe")}
                   </p>
                 </div>
-                {/* Ready to Close */}
+                {/* Closing Duration (Partial Close) */}
                 <div>
                   <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
-                      checked={stateFormData.is_ready_to_close}
+                      checked={stateFormData.is_partial_close}
                       onChange={(e) =>
                         setStateFormData({
                           ...stateFormData,
-                          is_ready_to_close: e.target.checked,
+                          is_partial_close: e.target.checked,
                         })
                       }
                       className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                     />
                     <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                      {t("workflows.readyToClose")}
+                      {t("workflows.closingDuration", "Closing Duration")}
                     </span>
                   </label>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
-                    {t("workflows.requiresADurationSelectionWhenEnteringThis")}
+                    {t(
+                      "workflows.closingDurationDesc",
+                      "Requires a duration selection when entering this state. The incident automatically reverts if not closed within the selected period.",
+                    )}
                   </p>
                 </div>
-                {stateFormData.is_ready_to_close && (
-                  <div className="ml-7">
+                {stateFormData.is_partial_close && (
+                  <div className="ml-7 space-y-2">
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                      {t("workflows.durationOptions")}
+                      {t("workflows.durationOptions", "Duration Options")}
                       <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
                         {t("workflows.commaSeparatedLeaveEmptyToUseGlobal")}
                       </span>
@@ -3117,9 +3124,18 @@ export const WorkflowDesignerPage: React.FC = () => {
                           duration_options: e.target.value,
                         })
                       }
-                      placeholder={t("workflows.durationExample")}
+                      placeholder={t(
+                        "workflows.durationExample",
+                        "e.g. 1 Day, 2 Days, 1 Week, 1 Month",
+                      )}
                       className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                     />
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {t(
+                        "workflows.closingDurationHint",
+                        "Leave empty to use the global defaults configured in system settings.",
+                      )}
+                    </p>
                   </div>
                 )}
                 {/* Viewable Roles */}

@@ -320,18 +320,21 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
-  // Fetch global Ready-to-Close duration options (state-specific options come via transition.to_state.duration_options)
+  // Fetch duration options for partial-close transitions only
   const isReadyToCloseTransition =
     selectedTransition?.transition?.to_state?.is_ready_to_close === true;
+  const isPartialCloseTransition =
+    selectedTransition?.transition?.to_state?.is_partial_close === true;
+  const isDurationTransition = isPartialCloseTransition;
   const { data: rtcDurationOptionsData } = useQuery({
     queryKey: ["incidents", "ready-to-close", "duration-options"],
     queryFn: () => incidentApi.getReadyToCloseDurationOptions(),
-    enabled: isReadyToCloseTransition,
+    enabled: isDurationTransition,
     staleTime: 5 * 60 * 1000,
   });
 
   // Merge state-specific options with global defaults (state-specific takes priority)
-  const readyToCloseDurationOptions: string[] = isReadyToCloseTransition
+  const readyToCloseDurationOptions: string[] = isDurationTransition
     ? selectedTransition.transition.to_state?.duration_options?.length
       ? selectedTransition.transition.to_state.duration_options
       : (rtcDurationOptionsData?.data ?? [])
@@ -838,7 +841,7 @@ export const IncidentDetailPage: React.FC = () => {
       steps.push("user");
     if (trans.field_changes && trans.field_changes.length > 0)
       steps.push("field_changes");
-    if (trans.to_state?.is_ready_to_close) steps.push("duration");
+    if (trans.to_state?.is_partial_close) steps.push("duration");
     if (
       selectedTransition.requirements?.some(
         (r) => r.requirement_type === "attachment",
@@ -1160,8 +1163,8 @@ export const IncidentDetailPage: React.FC = () => {
         "Attachment is required",
       );
 
-    // Validate Ready-to-Close duration when required
-    if (isReadyToCloseTransition && !readyToCloseDuration)
+    // Validate duration when required (ready-to-close or partial-close)
+    if (isDurationTransition && !readyToCloseDuration)
       newTransitionErrors.duration = t(
         "incidents.durationRequired",
         "Please select a duration",
@@ -1459,6 +1462,25 @@ export const IncidentDetailPage: React.FC = () => {
                   </span>
                 );
               })()}
+            {incident.partial_close_expires_at &&
+              incident.current_state?.is_partial_close &&
+              (() => {
+                const hoursLeft =
+                  (new Date(incident.partial_close_expires_at).getTime() -
+                    Date.now()) /
+                  (1000 * 60 * 60);
+                const urgent = hoursLeft > 0 && hoursLeft <= 24;
+                return (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${urgent ? "bg-orange-500/20 text-orange-700 animate-pulse" : "bg-orange-500/10 text-orange-600"}`}
+                  >
+                    <Clock className="w-3 h-3" />
+                    {urgent
+                      ? `${t("incidents.partialCloseExpiringIn", "Partial Close — Expiring in")}${Math.floor(hoursLeft)}h ${Math.round((hoursLeft % 1) * 60)}m`
+                      : `${t("incidents.expiresAt") || "Expires"}: ${new Date(incident.partial_close_expires_at).toLocaleDateString()}`}
+                  </span>
+                );
+              })()}
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
             {incident.title}
@@ -1646,6 +1668,38 @@ export const IncidentDetailPage: React.FC = () => {
                   <strong>{expiresAt.toLocaleString()}</strong>.
                   {incident.ready_to_close_duration &&
                     ` Duration selected: ${incident.ready_to_close_duration}.`}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Partial Close pre-expiry warning banner */}
+      {incident.partial_close_expires_at &&
+        incident.current_state?.is_partial_close &&
+        (() => {
+          const expiresAt = new Date(incident.partial_close_expires_at);
+          const hoursLeft =
+            (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60);
+          if (hoursLeft <= 0 || hoursLeft > 24) return null;
+          const h = Math.floor(hoursLeft);
+          const m = Math.round((hoursLeft % 1) * 60);
+          return (
+            <div className="bg-orange-50 border border-orange-300 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+              <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-orange-800">
+                  {t(
+                    "incidents.partialCloseExpiringIn",
+                    "Partial Close — Expiring in",
+                  )}
+                  {h}h {m}m
+                </p>
+                <p className="text-sm text-orange-700 mt-0.5">
+                  {t("incidents.thisIncidentWillAutomaticallyRevertIfNot")}{" "}
+                  <strong>{expiresAt.toLocaleString()}</strong>.
+                  {incident.partial_close_duration &&
+                    ` Duration selected: ${incident.partial_close_duration}.`}
                 </p>
               </div>
             </div>
@@ -3391,7 +3445,7 @@ export const IncidentDetailPage: React.FC = () => {
             department: t("incidents.departmentAssignment"),
             user: t("incidents.userAssignment"),
             field_changes: "Field Changes",
-            duration: t("incidents.readyToCloseDuration"),
+            duration: t("incidents.closingDuration", "Duration"),
             attachment: t("incidents.attachment"),
             feedback: t("incidents.feedback"),
             comment: t("incidents.comment"),
@@ -4486,11 +4540,14 @@ export const IncidentDetailPage: React.FC = () => {
                       </div>
                     )}
 
-                  {/* Ready-to-Close Duration Picker */}
+                  {/* Closing Duration Picker (Partial Close) */}
                   {currentStepKey === "duration" && (
                     <div>
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
-                        {t("incidents.readyToCloseDurationHint")}
+                        {t(
+                          "incidents.closingDurationHint",
+                          "The incident will automatically revert if not closed within the selected period.",
+                        )}
                       </p>
                       <select
                         value={readyToCloseDuration}

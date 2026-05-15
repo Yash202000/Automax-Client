@@ -748,6 +748,8 @@ export interface WorkflowState {
   /** When true this state requires a duration selection before entering
    *  and triggers automatic reversion if not closed in time. */
   is_ready_to_close: boolean;
+  /** When true this state is a Partial Close state requiring a duration selection. */
+  is_partial_close: boolean;
   /** State-specific duration options (overrides global defaults when set). */
   duration_options?: string[];
   sort_order: number;
@@ -890,6 +892,7 @@ export interface WorkflowStateCreateRequest {
   sla_hours?: number;
   is_mergable?: boolean;
   is_ready_to_close?: boolean;
+  is_partial_close?: boolean;
   duration_options?: string[];
   sort_order?: number;
   viewable_role_ids?: string[];
@@ -909,6 +912,7 @@ export interface WorkflowStateUpdateRequest {
   sla_hours?: number;
   is_mergable?: boolean;
   is_ready_to_close?: boolean;
+  is_partial_close?: boolean;
   duration_options?: string[];
   sort_order?: number;
   is_active?: boolean;
@@ -1028,6 +1032,10 @@ export interface Incident {
   ready_to_close_expires_at?: string;
   /** Human-readable duration label selected when transitioning to ready_to_close. */
   ready_to_close_duration?: string;
+  /** Set when the incident is in a partial_close state. */
+  partial_close_expires_at?: string;
+  /** Human-readable duration label selected when transitioning to partial_close. */
+  partial_close_duration?: string;
   reporter?: User;
   reporter_email: string;
   reporter_name: string;
@@ -1201,6 +1209,7 @@ export interface IncidentStats {
   in_progress: number;
   resolved: number;
   closed: number;
+  partial_close: number;
   sla_breached: number;
   by_state: Record<string, number>;
   by_state_details?: StateStatDetail[];
