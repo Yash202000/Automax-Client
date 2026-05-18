@@ -41,10 +41,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "../../components/ui";
-import {
-  TreeSelect,
-  type TreeSelectNode,
-} from "../../components/ui/TreeSelect";
+import { TreeSelect } from "../../components/ui/TreeSelect";
+import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { MiniWorkflowView } from "../../components/workflow";
 import {
   RevisionHistory,
@@ -320,46 +318,31 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
-  // Fetch global Ready-to-Close duration options (state-specific options come via transition.to_state.duration_options)
-  const isReadyToCloseTransition =
-    selectedTransition?.transition?.to_state?.is_ready_to_close === true;
+  // Fetch duration options for partial-close transitions only
+  //const isReadyToCloseTransition =
+  // selectedTransition?.transition?.to_state?.is_ready_to_close === true;
+  const isPartialCloseTransition =
+    selectedTransition?.transition?.to_state?.is_partial_close === true;
+  const isDurationTransition = isPartialCloseTransition;
   const { data: rtcDurationOptionsData } = useQuery({
     queryKey: ["incidents", "ready-to-close", "duration-options"],
     queryFn: () => incidentApi.getReadyToCloseDurationOptions(),
-    enabled: isReadyToCloseTransition,
+    enabled: isDurationTransition,
     staleTime: 5 * 60 * 1000,
   });
 
   // Merge state-specific options with global defaults (state-specific takes priority)
-  const readyToCloseDurationOptions: string[] = isReadyToCloseTransition
+  const readyToCloseDurationOptions: string[] = isDurationTransition
     ? selectedTransition.transition.to_state?.duration_options?.length
       ? selectedTransition.transition.to_state.duration_options
       : (rtcDurationOptionsData?.data ?? [])
     : [];
 
   // Tree data for field change selectors — fetch trees so the TreeSelect component can show hierarchy
-  const hasFieldChanges =
-    (selectedTransition?.transition?.field_changes?.length ?? 0) > 0;
-  const needsDepts =
-    hasFieldChanges &&
-    selectedTransition?.transition?.field_changes?.some(
-      (f) => f.field_name === "department_id",
-    );
-  const needsLocs =
-    hasFieldChanges &&
-    selectedTransition?.transition?.field_changes?.some(
-      (f) => f.field_name === "location_id",
-    );
-  const needsClassifications =
-    hasFieldChanges &&
-    selectedTransition?.transition?.field_changes?.some(
-      (f) => f.field_name === "classification_id",
-    );
 
   const { data: fcDepartmentsData } = useQuery({
     queryKey: ["admin", "departments", "tree"],
     queryFn: () => departmentApi.getTree(),
-    enabled: !!needsDepts,
   });
 
   // Recursively filter department tree by type ('internal' | 'external')
@@ -377,12 +360,10 @@ export const IncidentDetailPage: React.FC = () => {
   const { data: fcLocationsData } = useQuery({
     queryKey: ["admin", "locations", "tree"],
     queryFn: () => locationApi.getTree(),
-    enabled: !!needsLocs,
   });
   const { data: fcClassificationsData } = useQuery({
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
-    enabled: !!needsClassifications,
   });
 
   // Check if user can convert incident to request
@@ -398,6 +379,31 @@ export const IncidentDetailPage: React.FC = () => {
     () => lookupCategoriesData?.data || [],
     [lookupCategoriesData?.data],
   );
+
+  const classificationPath = useMemo(() => {
+    if (!incident?.classification?.id || !fcClassificationsData?.data)
+      return [];
+    return getNodePath(
+      fcClassificationsData.data as unknown as TreeSelectNode[],
+      incident.classification.id,
+    );
+  }, [incident?.classification?.id, fcClassificationsData?.data]);
+
+  const locationPath = useMemo(() => {
+    if (!incident?.location?.id || !fcLocationsData?.data) return [];
+    return getNodePath(
+      fcLocationsData.data as unknown as TreeSelectNode[],
+      incident.location.id,
+    );
+  }, [incident?.location?.id, fcLocationsData?.data]);
+
+  const departmentPath = useMemo(() => {
+    if (!incident?.department?.id || !fcDepartmentsData?.data) return [];
+    return getNodePath(
+      fcDepartmentsData.data as unknown as TreeSelectNode[],
+      incident.department.id,
+    );
+  }, [incident?.department?.id, fcDepartmentsData?.data]);
   const user = useAuthStore((state) => state.user);
 
   // State-level edit restriction: if current state has editable_roles configured,
@@ -838,7 +844,7 @@ export const IncidentDetailPage: React.FC = () => {
       steps.push("user");
     if (trans.field_changes && trans.field_changes.length > 0)
       steps.push("field_changes");
-    if (trans.to_state?.is_ready_to_close) steps.push("duration");
+    if (trans.to_state?.is_partial_close) steps.push("duration");
     if (
       selectedTransition.requirements?.some(
         (r) => r.requirement_type === "attachment",
@@ -1160,8 +1166,8 @@ export const IncidentDetailPage: React.FC = () => {
         "Attachment is required",
       );
 
-    // Validate Ready-to-Close duration when required
-    if (isReadyToCloseTransition && !readyToCloseDuration)
+    // Validate duration when required (ready-to-close or partial-close)
+    if (isDurationTransition && !readyToCloseDuration)
       newTransitionErrors.duration = t(
         "incidents.durationRequired",
         "Please select a duration",
@@ -1459,6 +1465,25 @@ export const IncidentDetailPage: React.FC = () => {
                   </span>
                 );
               })()}
+            {incident.partial_close_expires_at &&
+              incident.current_state?.is_partial_close &&
+              (() => {
+                const hoursLeft =
+                  (new Date(incident.partial_close_expires_at).getTime() -
+                    Date.now()) /
+                  (1000 * 60 * 60);
+                const urgent = hoursLeft > 0 && hoursLeft <= 24;
+                return (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${urgent ? "bg-orange-500/20 text-orange-700 animate-pulse" : "bg-orange-500/10 text-orange-600"}`}
+                  >
+                    <Clock className="w-3 h-3" />
+                    {urgent
+                      ? `${t("incidents.partialCloseExpiringIn", "Partial Close — Expiring in")}${Math.floor(hoursLeft)}h ${Math.round((hoursLeft % 1) * 60)}m`
+                      : `${t("incidents.expiresAt") || "Expires"}: ${new Date(incident.partial_close_expires_at).toLocaleDateString()}`}
+                  </span>
+                );
+              })()}
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
             {incident.title}
@@ -1646,6 +1671,38 @@ export const IncidentDetailPage: React.FC = () => {
                   <strong>{expiresAt.toLocaleString()}</strong>.
                   {incident.ready_to_close_duration &&
                     ` Duration selected: ${incident.ready_to_close_duration}.`}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Partial Close pre-expiry warning banner */}
+      {incident.partial_close_expires_at &&
+        incident.current_state?.is_partial_close &&
+        (() => {
+          const expiresAt = new Date(incident.partial_close_expires_at);
+          const hoursLeft =
+            (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60);
+          if (hoursLeft <= 0 || hoursLeft > 24) return null;
+          const h = Math.floor(hoursLeft);
+          const m = Math.round((hoursLeft % 1) * 60);
+          return (
+            <div className="bg-orange-50 border border-orange-300 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+              <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-orange-800">
+                  {t(
+                    "incidents.partialCloseExpiringIn",
+                    "Partial Close — Expiring in",
+                  )}
+                  {h}h {m}m
+                </p>
+                <p className="text-sm text-orange-700 mt-0.5">
+                  {t("incidents.thisIncidentWillAutomaticallyRevertIfNot")}{" "}
+                  <strong>{expiresAt.toLocaleString()}</strong>.
+                  {incident.partial_close_duration &&
+                    ` Duration selected: ${incident.partial_close_duration}.`}
                 </p>
               </div>
             </div>
@@ -2858,16 +2915,37 @@ export const IncidentDetailPage: React.FC = () => {
             </h3>
             <div className="space-y-3">
               {/* Two-column grid for compact display */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 {/* Classification */}
                 {incident.classification && (
                   <div>
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                       {t("incidents.classification")}
                     </label>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                      <Tags className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                      {incident.classification.name}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Tags className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      {classificationPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {classificationPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === classificationPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < classificationPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        incident.classification.name
+                      )}
                     </div>
                   </div>
                 )}
@@ -2878,9 +2956,30 @@ export const IncidentDetailPage: React.FC = () => {
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                       {t("incidents.department")}
                     </label>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                      <Building2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                      {incident.department.name}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Building2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      {departmentPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {departmentPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === departmentPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < departmentPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        incident.department.name
+                      )}
                     </div>
                   </div>
                 )}
@@ -2891,13 +2990,37 @@ export const IncidentDetailPage: React.FC = () => {
                     <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                       {t("incidents.location")}
                     </label>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                      <MapPin className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                      {incident.location.name}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <MapPin className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      {locationPath.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {locationPath.map((part, idx) => (
+                            <React.Fragment key={idx}>
+                              <span
+                                className={cn(
+                                  idx === locationPath.length - 1
+                                    ? "font-semibold"
+                                    : "text-[hsl(var(--muted-foreground))]",
+                                )}
+                              >
+                                {part}
+                              </span>
+                              {idx < locationPath.length - 1 && (
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      ) : (
+                        incident.location.name
+                      )}
                     </div>
                   </div>
                 )}
+              </div>
 
+              {/* Remaining details in two-column grid */}
+              <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[hsl(var(--border))] border-dashed">
                 {/* Source */}
                 {incident.source && (
                   <div>
@@ -2928,10 +3051,15 @@ export const IncidentDetailPage: React.FC = () => {
 
                 {/* SLA Deadline */}
                 {incident.sla_deadline && (
-                  <div>
-                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      {t("incidents.slaDeadline")}
-                    </label>
+                  <div className="flex justify-center flex-col">
+                    <div className="flex gap-2 items-center">
+                      <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                        {t("incidents.slaDeadline")}
+                      </label>
+                      {incident.sla_breached && (
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                      )}
+                    </div>
                     <div
                       className={cn(
                         "mt-0.5 flex items-center gap-1.5 text-sm",
@@ -2941,10 +3069,7 @@ export const IncidentDetailPage: React.FC = () => {
                       )}
                     >
                       <Clock className="w-3.5 h-3.5" />
-                      {formatDateTime(incident.sla_deadline)}
-                      {incident.sla_breached && (
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                      )}
+                      <span>{formatDateTime(incident.sla_deadline)}</span>
                     </div>
                   </div>
                 )}
@@ -3391,7 +3516,7 @@ export const IncidentDetailPage: React.FC = () => {
             department: t("incidents.departmentAssignment"),
             user: t("incidents.userAssignment"),
             field_changes: "Field Changes",
-            duration: t("incidents.readyToCloseDuration"),
+            duration: t("incidents.closingDuration", "Duration"),
             attachment: t("incidents.attachment"),
             feedback: t("incidents.feedback"),
             comment: t("incidents.comment"),
@@ -4481,16 +4606,107 @@ export const IncidentDetailPage: React.FC = () => {
                                 )}
                               </>
                             )}
+                            {fc.field_name.startsWith("lookup:") &&
+                              (() => {
+                                const code = fc.field_name.replace(
+                                  "lookup:",
+                                  "",
+                                );
+                                const cat = lookupCategories.find(
+                                  (c) => c.code === code,
+                                );
+                                const fieldType = cat?.field_type || "text";
+                                const baseClass = `w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] ${transitionErrors[fc.field_name] ? "border-red-500" : "border-[hsl(var(--border))]"}`;
+                                const handleChange = (val: string) => {
+                                  setTransitionFieldValues((prev) => ({
+                                    ...prev,
+                                    [fc.field_name]: val,
+                                  }));
+                                  if (transitionErrors[fc.field_name])
+                                    setTransitionErrors((prev) => ({
+                                      ...prev,
+                                      [fc.field_name]: "",
+                                    }));
+                                };
+                                return (
+                                  <>
+                                    {fieldType === "textarea" ? (
+                                      <textarea
+                                        value={
+                                          transitionFieldValues[
+                                            fc.field_name
+                                          ] || ""
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
+                                        rows={3}
+                                        className={`${baseClass} resize-none`}
+                                      />
+                                    ) : (fieldType === "select" ||
+                                        fieldType === "multiselect") &&
+                                      cat?.values?.length ? (
+                                      <select
+                                        value={
+                                          transitionFieldValues[
+                                            fc.field_name
+                                          ] || ""
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
+                                        className={baseClass}
+                                      >
+                                        <option value="">
+                                          {t("common.select")}
+                                        </option>
+                                        {cat.values
+                                          .filter((v) => v.is_active)
+                                          .sort(
+                                            (a, b) =>
+                                              a.sort_order - b.sort_order,
+                                          )
+                                          .map((v) => (
+                                            <option key={v.id} value={v.code}>
+                                              {v.name}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    ) : (
+                                      <input
+                                        type="text"
+                                        value={
+                                          transitionFieldValues[
+                                            fc.field_name
+                                          ] || ""
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
+                                        className={baseClass}
+                                      />
+                                    )}
+                                    {transitionErrors[fc.field_name] && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {transitionErrors[fc.field_name]}
+                                      </p>
+                                    )}
+                                  </>
+                                );
+                              })()}
                           </div>
                         ))}
                       </div>
                     )}
 
-                  {/* Ready-to-Close Duration Picker */}
+                  {/* Closing Duration Picker (Partial Close) */}
                   {currentStepKey === "duration" && (
                     <div>
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
-                        {t("incidents.readyToCloseDurationHint")}
+                        {t(
+                          "incidents.closingDurationHint",
+                          "The incident will automatically revert if not closed within the selected period.",
+                        )}
                       </p>
                       <select
                         value={readyToCloseDuration}

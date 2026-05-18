@@ -13,6 +13,7 @@ export type ClassificationType =
 // Base types
 export interface User {
   id: string;
+  national_id?: string;
   email: string;
   username: string;
   first_name: string;
@@ -314,6 +315,7 @@ export interface RoleBasic {
 /** Slim user returned by POST /auth/login. Call GET /users/me for the full object. */
 export interface UserLoginResponse {
   id: string;
+  national_id?: string;
   email: string;
   username: string;
   first_name: string;
@@ -339,6 +341,7 @@ export interface AuthLoginResponse {
   token: string;
   refresh_token?: string;
   expires_in?: number;
+  validation_url?: string;
 }
 
 /** Response for POST /auth/register and POST /auth/refresh — user is full. */
@@ -347,12 +350,32 @@ export interface AuthResponse {
   token: string;
   refresh_token?: string;
   expires_in?: number;
+  validation_url?: string;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
   remember_me?: boolean;
+}
+
+export interface SSORegisterRequest {
+  email: string;
+  username: string;
+  national_id: string;
+  first_name?: string;
+  last_name?: string;
+  phone: string;
+  department_id?: string;
+  location_id?: string;
+  department_ids?: string[];
+  location_ids?: string[];
+  classification_ids?: string[];
+  role_ids?: string[];
+}
+
+export interface SSOLoginRequest {
+  national_id: string;
 }
 
 export interface RegisterRequest {
@@ -748,6 +771,8 @@ export interface WorkflowState {
   /** When true this state requires a duration selection before entering
    *  and triggers automatic reversion if not closed in time. */
   is_ready_to_close: boolean;
+  /** When true this state is a Partial Close state requiring a duration selection. */
+  is_partial_close: boolean;
   /** State-specific duration options (overrides global defaults when set). */
   duration_options?: string[];
   sort_order: number;
@@ -890,6 +915,7 @@ export interface WorkflowStateCreateRequest {
   sla_hours?: number;
   is_mergable?: boolean;
   is_ready_to_close?: boolean;
+  is_partial_close?: boolean;
   duration_options?: string[];
   sort_order?: number;
   viewable_role_ids?: string[];
@@ -909,6 +935,7 @@ export interface WorkflowStateUpdateRequest {
   sla_hours?: number;
   is_mergable?: boolean;
   is_ready_to_close?: boolean;
+  is_partial_close?: boolean;
   duration_options?: string[];
   sort_order?: number;
   is_active?: boolean;
@@ -1028,6 +1055,10 @@ export interface Incident {
   ready_to_close_expires_at?: string;
   /** Human-readable duration label selected when transitioning to ready_to_close. */
   ready_to_close_duration?: string;
+  /** Set when the incident is in a partial_close state. */
+  partial_close_expires_at?: string;
+  /** Human-readable duration label selected when transitioning to partial_close. */
+  partial_close_duration?: string;
   reporter?: User;
   reporter_email: string;
   reporter_name: string;
@@ -1201,6 +1232,7 @@ export interface IncidentStats {
   in_progress: number;
   resolved: number;
   closed: number;
+  partial_close: number;
   sla_breached: number;
   by_state: Record<string, number>;
   by_state_details?: StateStatDetail[];
@@ -1528,6 +1560,7 @@ export interface ReportFieldDefinition {
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
   canBeColumn?: boolean;
   multiselect?: boolean;
+  hidden?: boolean;
 }
 
 // Data Source Definition
@@ -1541,6 +1574,7 @@ export interface DataSourceDefinition {
 
 // Report Filter
 export interface ReportFilter {
+  hidden?: boolean;
   id: string;
   field: string;
   operator: FilterOperator;
@@ -1587,6 +1621,7 @@ export interface ReportTemplate {
   can_edit?: boolean;
   created_at: string;
   updated_at: string;
+  timestamp_key?: string;
 }
 
 // Report Query Request
@@ -1636,6 +1671,7 @@ export interface ReportTemplateCreateRequest {
   data_source: ReportDataSource;
   config: ReportTemplateConfig;
   is_public?: boolean;
+  timestamp_key?: string;
 }
 
 export interface ReportTemplateUpdateRequest {
@@ -1643,6 +1679,7 @@ export interface ReportTemplateUpdateRequest {
   description?: string;
   config?: ReportTemplateConfig;
   is_public?: boolean;
+  timestamp_key?: string;
 }
 
 export interface ReportTemplateShareRequest {

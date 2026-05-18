@@ -6,7 +6,7 @@ import { departmentApi, escalationPolicyApi } from "@/api/admin";
 import type { Department, Role, User } from "@/types";
 import { cn } from "@/lib/utils";
 import { TreeSelect } from "@/components/ui";
-import type { TreeSelectNode } from "@/components/ui/TreeSelect";
+import type { TreeSelectNode } from "../../utils/treeUtils";
 
 export interface TargetEntry {
   department_id?: string;

@@ -1,11 +1,11 @@
-import { apiClient as api } from '../api/client';
+import { apiClient as api } from "../api/client";
 import type {
-  ReportTemplate,
-  ReportTemplateCreateRequest,
-  ReportTemplateUpdateRequest,
+  VisualReportTemplate,
+  VisualReportTemplateCreateRequest,
+  VisualReportTemplateUpdateRequest,
   GenerateReportRequest,
   TemplateConfig,
-} from '../types/reportTemplate';
+} from "../types/reportTemplate";
 
 export interface ListTemplatesParams {
   search?: string;
@@ -15,15 +15,17 @@ export interface ListTemplatesParams {
 }
 
 export interface ListTemplatesResponse {
-  data: ReportTemplate[];
+  data: VisualReportTemplate[];
   total: number;
   page: number;
   limit: number;
 }
 
 // List all templates
-export const listTemplates = async (params?: ListTemplatesParams): Promise<ListTemplatesResponse> => {
-  const response = await api.get('/admin/report-templates', { params });
+export const listTemplates = async (
+  params?: ListTemplatesParams,
+): Promise<ListTemplatesResponse> => {
+  const response = await api.get("/admin/report-templates", { params });
   return {
     data: response.data.data,
     total: response.data.total,
@@ -33,29 +35,37 @@ export const listTemplates = async (params?: ListTemplatesParams): Promise<ListT
 };
 
 // Get a single template by ID
-export const getTemplate = async (id: string): Promise<ReportTemplate> => {
+export const getTemplate = async (
+  id: string,
+): Promise<VisualReportTemplate> => {
   const response = await api.get(`/admin/report-templates/${id}`);
   return response.data.data;
 };
 
 // Get the default template
-export const getDefaultTemplate = async (): Promise<ReportTemplate | null> => {
-  try {
-    const response = await api.get('/admin/report-templates/default');
-    return response.data.data;
-  } catch {
-    return null;
-  }
-};
+export const getDefaultTemplate =
+  async (): Promise<VisualReportTemplate | null> => {
+    try {
+      const response = await api.get("/admin/report-templates/default");
+      return response.data.data;
+    } catch {
+      return null;
+    }
+  };
 
 // Create a new template
-export const createTemplate = async (data: ReportTemplateCreateRequest): Promise<ReportTemplate> => {
-  const response = await api.post('/admin/report-templates', data);
+export const createTemplate = async (
+  data: VisualReportTemplateCreateRequest,
+): Promise<VisualReportTemplate> => {
+  const response = await api.post("/admin/report-templates", data);
   return response.data.data;
 };
 
 // Update an existing template
-export const updateTemplate = async (id: string, data: ReportTemplateUpdateRequest): Promise<ReportTemplate> => {
+export const updateTemplate = async (
+  id: string,
+  data: VisualReportTemplateUpdateRequest,
+): Promise<VisualReportTemplate> => {
   const response = await api.put(`/admin/report-templates/${id}`, data);
   return response.data.data;
 };
@@ -66,7 +76,9 @@ export const deleteTemplate = async (id: string): Promise<void> => {
 };
 
 // Duplicate a template
-export const duplicateTemplate = async (id: string): Promise<ReportTemplate> => {
+export const duplicateTemplate = async (
+  id: string,
+): Promise<VisualReportTemplate> => {
   const response = await api.post(`/admin/report-templates/${id}/duplicate`);
   return response.data.data;
 };
@@ -80,20 +92,22 @@ export const setDefaultTemplate = async (id: string): Promise<void> => {
 export const previewTemplate = async (
   template: TemplateConfig,
   dataSource: string,
-  limit?: number
+  limit?: number,
 ): Promise<Blob> => {
   const response = await api.post(
-    '/admin/report-templates/preview',
+    "/admin/report-templates/preview",
     { template, data_source: dataSource, limit: limit || 10 },
-    { responseType: 'blob' }
+    { responseType: "blob" },
   );
   return response.data;
 };
 
 // Generate a report from a template
-export const generateReport = async (request: GenerateReportRequest): Promise<Blob> => {
-  const response = await api.post('/admin/report-templates/generate', request, {
-    responseType: 'blob',
+export const generateReport = async (
+  request: GenerateReportRequest,
+): Promise<Blob> => {
+  const response = await api.post("/admin/report-templates/generate", request, {
+    responseType: "blob",
   });
   return response.data;
 };
@@ -101,11 +115,11 @@ export const generateReport = async (request: GenerateReportRequest): Promise<Bl
 // Download generated report
 export const downloadReport = async (
   request: GenerateReportRequest,
-  fileName?: string
+  fileName?: string,
 ): Promise<void> => {
   const blob = await generateReport(request);
   const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = fileName || request.file_name || `report.${request.format}`;
   document.body.appendChild(link);
@@ -118,11 +132,11 @@ export const downloadReport = async (
 export const previewTemplateInWindow = async (
   template: TemplateConfig,
   dataSource: string,
-  limit?: number
+  limit?: number,
 ): Promise<void> => {
   const blob = await previewTemplate(template, dataSource, limit);
   const url = window.URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  window.open(url, "_blank");
 };
 
 export default {

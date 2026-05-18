@@ -49,6 +49,7 @@ import type {
 } from "../../types";
 import { saveAs } from "file-saver";
 import i18n from "@/i18n";
+import { useAuthStore } from "@/stores/authStore";
 
 // Helper to build hierarchical label with path
 // const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
@@ -167,6 +168,9 @@ export const ReportBuilderPage: React.FC = () => {
   const [loadedTemplate, setLoadedTemplate] = useState<ReportTemplate | null>(
     null,
   );
+  const [timestampKey, setTimestampKey] = useState<string>("created_at");
+
+  const { user } = useAuthStore();
 
   // Ref used to scroll to the preview section after generating
   const previewRef = useRef<HTMLDivElement>(null);
@@ -271,15 +275,27 @@ export const ReportBuilderPage: React.FC = () => {
 
     // Enhance fields with dynamic options
     return [...baseFields, ...stateFields].map((field) => {
-      if (field.dynamicOptions && dynamicOptionsMap[field.dynamicOptions]) {
+      const fieldClone = { ...field };
+      if (
+        !user?.is_super_admin &&
+        fieldClone.field === "workflow_transition_id"
+      ) {
+        fieldClone.hidden = true;
+      } else {
+        fieldClone.hidden = false;
+      }
+      if (
+        fieldClone.dynamicOptions &&
+        dynamicOptionsMap[fieldClone.dynamicOptions]
+      ) {
         return {
-          ...field,
-          options: dynamicOptionsMap[field.dynamicOptions],
+          ...fieldClone,
+          options: dynamicOptionsMap[fieldClone.dynamicOptions],
         };
       }
-      return field;
+      return fieldClone;
     });
-  }, [dataSource, dynamicOptionsMap, stateFields]);
+  }, [dataSource, dynamicOptionsMap, stateFields, user]);
 
   // Get data source definition
   const dataSourceDef = useMemo(() => {
@@ -501,6 +517,7 @@ export const ReportBuilderPage: React.FC = () => {
           description,
           config,
           is_public: isPublic,
+          timestamp_key: timestampKey,
         });
       } else {
         // Create new
@@ -510,6 +527,7 @@ export const ReportBuilderPage: React.FC = () => {
           data_source: dataSource,
           config,
           is_public: isPublic,
+          timestamp_key: timestampKey,
         });
       }
     },
@@ -546,6 +564,7 @@ export const ReportBuilderPage: React.FC = () => {
     );
     setSorting(template.config.sorting);
     setLoadedTemplate(template);
+    setTimestampKey(template.timestamp_key || "created_at");
     setPreviewData([]);
     setDbTotalCount(0);
     setDisplayPage(1);
@@ -686,6 +705,9 @@ export const ReportBuilderPage: React.FC = () => {
               fields={fields}
               filters={filters}
               onChange={setFilters}
+              onTimestampKeyChange={setTimestampKey}
+              timestampKey={timestampKey}
+              showTimestampKey={user?.is_super_admin}
             />
           </CollapsibleSection>
         )}

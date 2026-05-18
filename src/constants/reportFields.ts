@@ -91,6 +91,22 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: true,
   },
   {
+    field: "workflow_transition_at",
+    label: "Transition At",
+    type: "date",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reopen1_at",
+    label: "Reopened Date",
+    type: "date",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
     field: "incident_number",
     label: "Incident Number",
     type: "string",
@@ -143,6 +159,22 @@ export const incidentFields: ReportFieldDefinition[] = [
       { value: 4, label: "Low" },
       { value: 5, label: "Minimal" },
     ],
+  },
+  {
+    field: "reopen1_comment",
+    label: "Reopened1 comment",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reopen1_feedback",
+    label: "Reopened Feedback",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
   },
   {
     field: "assignee_id",
@@ -390,6 +422,23 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
+  },
+
+  {
+    field: "reopen1_comment",
+    label: "Reopened1 comment",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "reopen1_feedback",
+    label: "Reopened1 Feedback",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
   },
 
   // { field: "custom_fields", label: "Custom Fields", type: "string", category: "Core", sortable: true, filterable: true },
@@ -1002,7 +1051,7 @@ export const requestFields: ReportFieldDefinition[] = [
     filterable: true,
   },
   {
-    field: "channel",
+    field: "source",
     label: "Channel",
     type: "enum",
     category: "Core",

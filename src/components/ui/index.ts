@@ -12,7 +12,7 @@ export {
 export { HierarchicalTreeSelect } from "./HierarchicalTreeSelect";
 export type { TreeNode } from "./HierarchicalTreeSelect";
 export { TreeSelect } from "./TreeSelect";
-export type { TreeSelectNode } from "./TreeSelect";
+export type { TreeSelectNode } from "../../utils/treeUtils";
 export { LocationPicker } from "./LocationPicker";
 export type { LocationData } from "./LocationPicker";
 export { LocationPickerModal } from "./LocationPickerModal";
