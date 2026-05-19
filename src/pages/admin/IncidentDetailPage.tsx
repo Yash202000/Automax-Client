@@ -1543,7 +1543,7 @@ export const IncidentDetailPage: React.FC = () => {
           )}
           {(isSuperAdmin ||
             hasPermission(PERMISSIONS.INCIDENTS_REQUEST_INFO)) &&
-            (incident?.attachments_count ?? 0) === 0 && (
+            incident?.source === "ivr" && (
               <Button
                 variant="outline"
                 size="sm"

@@ -645,6 +645,7 @@ export type IncidentSource =
   | "mobile"
   | "email"
   | "phone"
+  | "ivr"
   | "walk_in"
   | "api"
   | "social_media"
