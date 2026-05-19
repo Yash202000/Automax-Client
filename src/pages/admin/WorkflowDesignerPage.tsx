@@ -63,6 +63,7 @@ import {
   EMAIL_RECIPIENTS,
   type EmailRecipientType,
   type TransitionEmailConfig,
+  type TransitionSmsConfig,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
@@ -4500,6 +4501,37 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                         const emailConfig = getEmailConfig();
 
+                        // SMS config helpers — always derived from action.config
+                        const getSmsConfig = (): TransitionSmsConfig => {
+                          try {
+                            const parsed = action.config
+                              ? JSON.parse(action.config)
+                              : {};
+                            return {
+                              recipients: parsed.recipients || [],
+                              custom_phones: parsed.custom_phones || [],
+                              message_template: parsed.message_template || "",
+                            };
+                          } catch {
+                            return {
+                              recipients: [],
+                              custom_phones: [],
+                              message_template: "",
+                            };
+                          }
+                        };
+                        const updateSmsConfig = (
+                          updates: Partial<TransitionSmsConfig>,
+                        ) => {
+                          const current = getSmsConfig();
+                          updateAction(
+                            index,
+                            "config",
+                            JSON.stringify({ ...current, ...updates }),
+                          );
+                        };
+                        const smsConfig = getSmsConfig();
+
                         return (
                           <div
                             key={index}
@@ -4508,13 +4540,17 @@ export const WorkflowDesignerPage: React.FC = () => {
                             <div className="flex items-center justify-between">
                               <select
                                 value={action.action_type}
-                                onChange={(e) =>
-                                  updateAction(
-                                    index,
-                                    "action_type",
-                                    e.target.value,
-                                  )
-                                }
+                                onChange={(e) => {
+                                  const newType = e.target.value;
+                                  const updated = [...actions];
+                                  updated[index] = {
+                                    ...updated[index],
+                                    action_type:
+                                      newType as TransitionActionRequest["action_type"],
+                                    config: "",
+                                  };
+                                  setActions(updated);
+                                }}
                                 className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                               >
                                 <option value="notification">
@@ -4523,6 +4559,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 <option value="email">
                                   {t("workflows.sendEmail")}
                                 </option>
+                                <option value="sms">Send SMS</option>
                                 <option value="webhook">
                                   {t("workflows.callWebhook")}
                                 </option>
@@ -4740,8 +4777,92 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   </div>
                                 </div>
                               </div>
+                            ) : /* SMS-specific configuration */
+                            action.action_type === "sms" ? (
+                              <div className="space-y-3 pt-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+                                  <span>📱</span>
+                                  SMS Settings
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
+                                    Recipients
+                                  </label>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {(
+                                      [
+                                        "assignee",
+                                        "reporter",
+                                        "creator",
+                                        "custom",
+                                      ] as const
+                                    ).map((r) => (
+                                      <label
+                                        key={r}
+                                        className="flex items-center gap-2 p-2 rounded-lg border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={smsConfig.recipients.includes(
+                                            r,
+                                          )}
+                                          onChange={() => {
+                                            const list = smsConfig.recipients;
+                                            updateSmsConfig({
+                                              recipients: list.includes(r)
+                                                ? list.filter((x) => x !== r)
+                                                : [...list, r],
+                                            });
+                                          }}
+                                          className="w-4 h-4"
+                                        />
+                                        <span className="text-sm capitalize">
+                                          {r.replace("_", " ")}
+                                        </span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                                {smsConfig.recipients.includes("custom") && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                                      Custom Phone Numbers (comma-separated)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={smsConfig.custom_phones.join(", ")}
+                                      onChange={(e) =>
+                                        updateSmsConfig({
+                                          custom_phones: e.target.value
+                                            .split(",")
+                                            .map((p) => p.trim())
+                                            .filter(Boolean),
+                                        })
+                                      }
+                                      placeholder="+1234567890, +0987654321"
+                                      className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                                    Message Template
+                                  </label>
+                                  <textarea
+                                    value={smsConfig.message_template}
+                                    onChange={(e) =>
+                                      updateSmsConfig({
+                                        message_template: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Incident {{incident_number}} status updated to {{to_state}}"
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
+                                  />
+                                </div>
+                              </div>
                             ) : (
-                              /* Non-email actions get the generic config textarea */
+                              /* Generic config textarea for webhook / field_update / notification */
                               <textarea
                                 placeholder={t("workflows.configurationJson")}
                                 value={action.config || ""}

@@ -1010,13 +1010,19 @@ export interface TransitionRequirementRequest {
 }
 
 export interface TransitionActionRequest {
-  action_type: "email" | "field_update" | "webhook" | "notification";
+  action_type: "email" | "field_update" | "webhook" | "notification" | "sms";
   name: string;
   description?: string;
   config?: string;
   execution_order?: number;
   is_async?: boolean;
   is_active?: boolean;
+}
+
+export interface TransitionSmsConfig {
+  recipients: ("assignee" | "reporter" | "creator" | "custom")[];
+  custom_phones: string[];
+  message_template: string;
 }
 
 // Incident types
