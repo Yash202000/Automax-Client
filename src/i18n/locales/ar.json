@@ -929,7 +929,11 @@
     "license": "الترخيص",
     "qualityAudit": "تدقيق الجودة",
     "quality": "الجودة",
-    "escalationManagement": "إدارة التصعيد"
+    "escalationManagement": "إدارة التصعيد",
+    "integrations": "التكاملات",
+    "integrationScripts": "السكريبتات",
+    "integrationVariables": "المتغيرات السرية",
+    "webhookConfigs": "ردود الويب هوك"
   },
   "users": {
     "title": "المستخدمون",

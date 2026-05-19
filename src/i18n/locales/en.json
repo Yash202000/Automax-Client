@@ -931,7 +931,11 @@
     "license": "License",
     "quality": "Quality",
     "qualityAudit": "Quality Audit",
-    "escalationManagement": "Escalation Management"
+    "escalationManagement": "Escalation Management",
+    "integrations": "Integrations",
+    "integrationScripts": "Scripts",
+    "integrationVariables": "Secret Variables",
+    "webhookConfigs": "Webhook Callbacks"
   },
   "users": {
     "title": "Users",

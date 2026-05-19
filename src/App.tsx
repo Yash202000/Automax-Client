@@ -194,6 +194,21 @@ const LicensePage = lazy(() =>
     default: m.LicensePage,
   })),
 );
+const IntegrationVariablesPage = lazy(() =>
+  import("./pages/admin/IntegrationVariablesPage").then((m) => ({
+    default: m.IntegrationVariablesPage,
+  })),
+);
+const IntegrationScriptsPage = lazy(() =>
+  import("./pages/admin/IntegrationScriptsPage").then((m) => ({
+    default: m.IntegrationScriptsPage,
+  })),
+);
+const WebhookConfigPage = lazy(() =>
+  import("./pages/admin/WebhookConfigPage").then((m) => ({
+    default: m.WebhookConfigPage,
+  })),
+);
 const CallCentrePage = lazy(() =>
   import("./pages/admin/CallCentrePage").then((m) => ({
     default: m.CallCentrePage,
@@ -485,6 +500,19 @@ function App() {
                           element={<ApplicationLinksPage />}
                         />
                       </Route>
+                      {/* Integration routes */}
+                      <Route
+                        path="/admin/integration-variables"
+                        element={<IntegrationVariablesPage />}
+                      />
+                      <Route
+                        path="/admin/integration-scripts"
+                        element={<IntegrationScriptsPage />}
+                      />
+                      <Route
+                        path="/admin/webhook-configs"
+                        element={<WebhookConfigPage />}
+                      />
                       {/* Settings - requires settings:update permission */}
                       <Route
                         element={

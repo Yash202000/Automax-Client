@@ -94,6 +94,8 @@ import {
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
 import { useAppSelector } from "../../hooks/redux";
+import { integrationApi } from "../../api/integration";
+import type { IncidentBridge } from "../../api/integration";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -128,6 +130,7 @@ export const IncidentDetailPage: React.FC = () => {
     | "revisions"
     | "rejections"
     | "ai-quality"
+    | "linked-systems"
   >("activity");
   const [commentText, setCommentText] = useState("");
   const [isInternalComment, setIsInternalComment] = useState(false);
@@ -286,6 +289,13 @@ export const IncidentDetailPage: React.FC = () => {
     enabled: !!id,
     retry: false,
   });
+
+  const { data: bridgesData } = useQuery({
+    queryKey: ["incident", id, "bridges"],
+    queryFn: () => integrationApi.listIncidentBridges(id!),
+    enabled: !!id && activeTab === "linked-systems",
+  });
+  const bridges: IncidentBridge[] = bridgesData?.data?.data ?? [];
 
   // Fetch escalation SLA actions fired for this incident
   const { data: escalationSlaData } = useQuery({
@@ -1961,6 +1971,25 @@ export const IncidentDetailPage: React.FC = () => {
                   )}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab("linked-systems")}
+                className={cn(
+                  "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === "linked-systems"
+                    ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <ArrowRightLeft className="w-4 h-4" />
+                  Linked Systems
+                  {bridges.length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]">
+                      {bridges.length}
+                    </span>
+                  )}
+                </span>
+              </button>
             </div>
 
             <div className="p-4">
@@ -2899,6 +2928,95 @@ export const IncidentDetailPage: React.FC = () => {
                         ),
                       )}
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Linked Systems Tab */}
+              {activeTab === "linked-systems" && (
+                <div className="space-y-3">
+                  {bridges.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
+                      <ArrowRightLeft className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm font-medium">No linked systems</p>
+                      <p className="text-xs mt-1 text-center max-w-xs">
+                        When this incident is sent to or received from another
+                        Automax system, the link will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    bridges.map((bridge) => {
+                      const isOutbound = bridge.direction === "outbound";
+                      const isOpen = bridge.status === "open";
+                      const remoteUrl =
+                        bridge.remote_system_url && bridge.remote_incident_id
+                          ? `${bridge.remote_system_url.replace(/\/$/, "")}/incidents/${bridge.remote_incident_id}`
+                          : null;
+                      return (
+                        <div
+                          key={bridge.id}
+                          className="flex items-start gap-4 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]"
+                        >
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isOutbound ? "bg-blue-500/10" : "bg-emerald-500/10"}`}
+                          >
+                            {isOutbound ? (
+                              <ArrowRight className={`w-4 h-4 text-blue-500`} />
+                            ) : (
+                              <ArrowLeft
+                                className={`w-4 h-4 text-emerald-500`}
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                                {bridge.remote_system_name}
+                              </span>
+                              {bridge.remote_incident_number && (
+                                <span className="text-xs font-mono px-2 py-0.5 bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-full">
+                                  {bridge.remote_incident_number}
+                                </span>
+                              )}
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  isOpen
+                                    ? "bg-green-500/10 text-green-600"
+                                    : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                                }`}
+                              >
+                                {bridge.status}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  isOutbound
+                                    ? "bg-blue-500/10 text-blue-600"
+                                    : "bg-emerald-500/10 text-emerald-600"
+                                }`}
+                              >
+                                {isOutbound ? "↗ sent" : "↙ received"}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                              {isOutbound ? "Sent" : "Received"}{" "}
+                              {new Date(bridge.created_at).toLocaleString()}
+                              {bridge.closed_at &&
+                                ` · Closed ${new Date(bridge.closed_at).toLocaleString()}`}
+                            </p>
+                          </div>
+                          {remoteUrl && (
+                            <a
+                              href={remoteUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg hover:bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors shrink-0"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               )}
