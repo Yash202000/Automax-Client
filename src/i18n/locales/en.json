@@ -914,7 +914,8 @@
     "license": "License",
     "quality": "Quality",
     "qualityAudit": "Quality Audit",
-    "escalationManagement": "Escalation Management"
+    "escalationManagement": "Escalation Management",
+    "notificationTemplates": "Notification Templates"
   },
   "users": {
     "title": "Users",

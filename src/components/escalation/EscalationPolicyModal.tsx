@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Plus, Trash2, GripVertical } from "lucide-react";
-import { escalationPolicyApi } from "@/api/admin";
-import type { EscalationPolicy, EscalationPolicyStepRequest } from "@/types";
+import { escalationPolicyApi, notificationTemplateApi } from "@/api/admin";
+import type {
+  EscalationPolicy,
+  EscalationPolicyStepRequest,
+  NotificationTemplate,
+} from "@/types";
 import { Button } from "@/components/ui";
 import TargetPicker from "./TargetPicker";
 import type { TargetEntry } from "./TargetPicker";
@@ -16,6 +20,8 @@ interface StepDraft {
   step_order: number;
   delay_hours: number;
   channel: "email" | "sms" | "both";
+  email_template_code?: string;
+  sms_template_code?: string;
   targets: TargetEntry[];
 }
 
@@ -39,6 +45,29 @@ const EscalationPolicyModal: React.FC<Props> = ({
   const [steps, setSteps] = useState<StepDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const { data: emailTemplatesData } = useQuery({
+    queryKey: ["notification-templates", "escalation", "email"],
+    queryFn: () =>
+      notificationTemplateApi.list({
+        action_type: "escalation",
+        channel: "email",
+        is_active: true,
+        limit: 200,
+      }),
+  });
+  const { data: smsTemplatesData } = useQuery({
+    queryKey: ["notification-templates", "escalation", "sms"],
+    queryFn: () =>
+      notificationTemplateApi.list({
+        action_type: "escalation",
+        channel: "sms",
+        is_active: true,
+        limit: 200,
+      }),
+  });
+  const emailTemplates: NotificationTemplate[] = emailTemplatesData?.data ?? [];
+  const smsTemplates: NotificationTemplate[] = smsTemplatesData?.data ?? [];
+
   useEffect(() => {
     if (editData?.steps) {
       setSteps(
@@ -47,13 +76,22 @@ const EscalationPolicyModal: React.FC<Props> = ({
           step_order: s.step_order,
           delay_hours: s.delay_hours,
           channel: s.channel,
+          email_template_code: s.email_template_code || "",
+          sms_template_code: s.sms_template_code || "",
           targets: (s.targets || []).map(fromBackendTarget),
         })),
       );
     } else {
       // start with one empty step
       setSteps([
-        { step_order: 1, delay_hours: 0, channel: "email", targets: [] },
+        {
+          step_order: 1,
+          delay_hours: 0,
+          channel: "email",
+          email_template_code: "",
+          sms_template_code: "",
+          targets: [],
+        },
       ]);
     }
   }, [editData]);
@@ -106,6 +144,8 @@ const EscalationPolicyModal: React.FC<Props> = ({
         step_order: idx + 1,
         delay_hours: s.delay_hours,
         channel: s.channel,
+        email_template_code: s.email_template_code || "",
+        sms_template_code: s.sms_template_code || "",
         targets: toTargetRequests(s.targets),
       })),
     });
@@ -118,6 +158,8 @@ const EscalationPolicyModal: React.FC<Props> = ({
         step_order: prev.length + 1,
         delay_hours: 1,
         channel: "email",
+        email_template_code: "",
+        sms_template_code: "",
         targets: [],
       },
     ]);
@@ -310,6 +352,87 @@ const EscalationPolicyModal: React.FC<Props> = ({
                       </select>
                     </div>
                   </div>
+
+                  {/* Template pickers */}
+                  {(step.channel === "email" || step.channel === "both") && (
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        {t("escalation.policy.emailTemplate", "Email Template")}
+                        <span className="ml-1 text-[hsl(var(--muted-foreground))] font-normal">
+                          (
+                          {t(
+                            "common.optional",
+                            "optional — uses default if blank",
+                          )}
+                          )
+                        </span>
+                      </label>
+                      <select
+                        value={step.email_template_code || ""}
+                        onChange={(e) =>
+                          updateStep(idx, {
+                            email_template_code: e.target.value,
+                          })
+                        }
+                        className={cn(
+                          "w-full h-9 rounded-md border border-[hsl(var(--border))] px-3 text-sm",
+                          "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]",
+                          "focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]",
+                        )}
+                      >
+                        <option value="">
+                          {t(
+                            "escalation.policy.defaultTemplate",
+                            "Default (SLA_POLICY_BREACH)",
+                          )}
+                        </option>
+                        {emailTemplates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.code}>
+                            {tpl.name} ({tpl.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {(step.channel === "sms" || step.channel === "both") && (
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        {t("escalation.policy.smsTemplate", "SMS Template")}
+                        <span className="ml-1 text-[hsl(var(--muted-foreground))] font-normal">
+                          (
+                          {t(
+                            "common.optional",
+                            "optional — uses default if blank",
+                          )}
+                          )
+                        </span>
+                      </label>
+                      <select
+                        value={step.sms_template_code || ""}
+                        onChange={(e) =>
+                          updateStep(idx, { sms_template_code: e.target.value })
+                        }
+                        className={cn(
+                          "w-full h-9 rounded-md border border-[hsl(var(--border))] px-3 text-sm",
+                          "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ",
+                          "focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]",
+                        )}
+                      >
+                        <option value="">
+                          {t(
+                            "escalation.policy.defaultTemplate",
+                            "Default (SLA_POLICY_BREACH_SMS)",
+                          )}
+                        </option>
+                        {smsTemplates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.code}>
+                            {tpl.name} ({tpl.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Targets */}
                   <div>

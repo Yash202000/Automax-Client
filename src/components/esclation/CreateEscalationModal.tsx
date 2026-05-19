@@ -10,6 +10,8 @@ import {
   Radio,
   Calendar,
   Target,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "../ui";
 import MultiTreeSelect from "../ui/MultiTreeSelect";
@@ -19,11 +21,13 @@ import {
   userApi,
   // locationApi,
   escalationApi,
+  notificationTemplateApi,
 } from "../../api/admin";
 import type {
   Classification,
   User as UserType,
   CreateEscalationRequest,
+  NotificationTemplate,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
@@ -60,6 +64,8 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   const [targets, setTargets] = useState<TargetEntry[]>([]);
   const [frequency, setFrequency] = useState("daily");
   const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [emailTemplateCode, setEmailTemplateCode] = useState("");
+  const [smsTemplateCode, setSmsTemplateCode] = useState("");
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -95,6 +101,31 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
     queryFn: () => userApi.list(1, 100),
     enabled: isOpen,
   });
+
+  const { data: emailTemplatesData } = useQuery({
+    queryKey: ["notification-templates", "email", "escalation"],
+    queryFn: () =>
+      notificationTemplateApi.list({
+        channel: "email",
+        action_type: "escalation",
+        is_active: true,
+      }),
+    enabled: isOpen,
+  });
+
+  const { data: smsTemplatesData } = useQuery({
+    queryKey: ["notification-templates", "sms", "escalation"],
+    queryFn: () =>
+      notificationTemplateApi.list({
+        channel: "sms",
+        action_type: "escalation",
+        is_active: true,
+      }),
+    enabled: isOpen,
+  });
+
+  const emailTemplates: NotificationTemplate[] = emailTemplatesData?.data || [];
+  const smsTemplates: NotificationTemplate[] = smsTemplatesData?.data || [];
 
   // Query for locations
   // const { data: locationsData } = useQuery({
@@ -293,6 +324,8 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       setScheduledTime(editData.scheduled_time ?? "09:00");
       setSelectedUsers(editData.users ?? []);
       setTargets((editData.targets || []).map(fromBackendTarget));
+      setEmailTemplateCode(editData.email_template_code ?? "");
+      setSmsTemplateCode(editData.sms_template_code ?? "");
     } else {
       setTitle("");
       setChannel("");
@@ -302,6 +335,8 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       setScheduledTime("09:00");
       setSelectedUsers([]);
       setTargets([]);
+      setEmailTemplateCode("");
+      setSmsTemplateCode("");
     }
     setErrors({});
   }, [isOpen, editData]);
@@ -351,6 +386,8 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       is_active: true,
       user_ids: selectedUsers.map((u) => u.id),
       targets: targets.length > 0 ? toTargetRequests(targets) : undefined,
+      email_template_code: emailTemplateCode || undefined,
+      sms_template_code: smsTemplateCode || undefined,
     };
     if (editData?.id) {
       updateMutation.mutate(data);
@@ -564,6 +601,75 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
                   className="w-full h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                 />
               </div>
+
+              {/* Email template — shown when channel is email or both */}
+              {(channel === "email" || channel === "both") && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    <Mail className="w-3 h-3 inline me-1" />
+                    {t(
+                      "escalation.emailTemplate",
+                      "Email Notification Template",
+                    )}
+                  </label>
+                  <select
+                    value={emailTemplateCode}
+                    onChange={(e) => setEmailTemplateCode(e.target.value)}
+                    className="w-full h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  >
+                    <option value="">
+                      {t(
+                        "escalation.defaultTemplate",
+                        "— Use default built-in message —",
+                      )}
+                    </option>
+                    {emailTemplates.map((tpl) => (
+                      <option key={tpl.id} value={tpl.code}>
+                        {tpl.name} ({tpl.code})
+                      </option>
+                    ))}
+                  </select>
+                  {emailTemplateCode && (
+                    <p className="text-xs text-muted-foreground">
+                      {emailTemplates.find((t) => t.code === emailTemplateCode)
+                        ?.subject_en ?? ""}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* SMS template — shown when channel is sms or both */}
+              {(channel === "sms" || channel === "both") && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    <MessageSquare className="w-3 h-3 inline me-1" />
+                    {t("escalation.smsTemplate", "SMS Notification Template")}
+                  </label>
+                  <select
+                    value={smsTemplateCode}
+                    onChange={(e) => setSmsTemplateCode(e.target.value)}
+                    className="w-full h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                  >
+                    <option value="">
+                      {t(
+                        "escalation.defaultTemplate",
+                        "— Use default built-in message —",
+                      )}
+                    </option>
+                    {smsTemplates.map((tpl) => (
+                      <option key={tpl.id} value={tpl.code}>
+                        {tpl.name} ({tpl.code})
+                      </option>
+                    ))}
+                  </select>
+                  {smsTemplateCode && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {smsTemplates.find((t) => t.code === smsTemplateCode)
+                        ?.body_en ?? ""}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

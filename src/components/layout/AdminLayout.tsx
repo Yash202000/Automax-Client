@@ -29,6 +29,7 @@ import {
   Settings,
   AlertTriangle,
   KeyRound,
+  BellRing,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
@@ -149,6 +150,12 @@ const sidebarSectionsConfig: SidebarSection[] = [
         path: "/admin/escalation-groups",
         permission: PERMISSIONS.ESCALATION_GROUPS_VIEW,
         licenseFeature: "escalation",
+      },
+      {
+        icon: BellRing,
+        labelKey: "admin.notificationTemplates",
+        path: "/admin/notification-templates",
+        permission: "templates:read",
       },
       {
         icon: KeyRound,

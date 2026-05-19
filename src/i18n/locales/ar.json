@@ -912,7 +912,8 @@
     "license": "الترخيص",
     "qualityAudit": "تدقيق الجودة",
     "quality": "الجودة",
-    "escalationManagement": "إدارة التصعيد"
+    "escalationManagement": "إدارة التصعيد",
+    "notificationTemplates": "قوالب الإشعارات"
   },
   "users": {
     "title": "المستخدمون",

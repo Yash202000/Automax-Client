@@ -37,6 +37,7 @@ import {
   escalationPolicyApi,
   feedbackTemplateApi,
   commentTemplateApi,
+  notificationTemplateApi,
 } from "../../api/admin";
 import { HierarchicalCheckboxTree } from "../../components/workflow/HierarchicalCheckboxTree";
 import type {
@@ -57,6 +58,7 @@ import type {
   IncidentSource,
   IncidentFormField,
   LookupCategory,
+  NotificationTemplate,
 } from "../../types";
 import {
   INCIDENT_SOURCES,
@@ -92,6 +94,9 @@ interface StateFormData {
   assignment_role_ids: string[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+  // New incident notification templates (initial states only)
+  new_incident_email_template_code: string;
+  new_incident_sms_template_code: string;
 }
 
 interface TransitionFormData {
@@ -138,6 +143,8 @@ const initialStateFormData: StateFormData = {
   assignment_role_ids: [],
   auto_match_user: false,
   manual_select_user: false,
+  new_incident_email_template_code: "",
+  new_incident_sms_template_code: "",
 };
 
 const initialTransitionFormData: TransitionFormData = {
@@ -602,6 +609,32 @@ export const WorkflowDesignerPage: React.FC = () => {
     transitionName: string;
   } | null>(null);
 
+  // Inline test panel state per action index: {recipient, isOpen, result}
+  const [actionTestState, setActionTestState] = useState<
+    Record<
+      number,
+      {
+        open: boolean;
+        recipient: string;
+        status: string | null;
+        error: string | null;
+      }
+    >
+  >({});
+
+  const sendTestMutation = useMutation({
+    mutationFn: notificationTemplateApi.sendTest,
+    onSuccess: (data, variables) => {
+      const status = data?.data?.status ?? "sent";
+      toast.success(
+        `Test ${variables.channel.toUpperCase()} sent — status: ${status}`,
+      );
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error ?? "Test send failed");
+    },
+  });
+
   const { data: workflowData, isLoading } = useQuery({
     queryKey: ["admin", "workflow", id],
     queryFn: () => workflowApi.getById(id!),
@@ -657,6 +690,26 @@ export const WorkflowDesignerPage: React.FC = () => {
     queryFn: () => escalationPolicyApi.list(),
   });
 
+  const { data: emailTemplatesData } = useQuery({
+    queryKey: ["admin", "notification-templates", "email"],
+    queryFn: () =>
+      notificationTemplateApi.list({
+        channel: "email",
+        is_active: true,
+        limit: 200,
+      }),
+  });
+
+  const { data: smsTemplatesData } = useQuery({
+    queryKey: ["admin", "notification-templates", "sms"],
+    queryFn: () =>
+      notificationTemplateApi.list({
+        channel: "sms",
+        is_active: true,
+        limit: 200,
+      }),
+  });
+
   const workflow = workflowData?.data;
   const classifications: Classification[] = classificationsData?.data || [];
   const locations: Location[] = locationsData?.data || [];
@@ -669,6 +722,8 @@ export const WorkflowDesignerPage: React.FC = () => {
     lookupCategoriesData?.data || []
   ).filter((cat) => cat.add_to_incident_form);
   const escalationPolicies = escalationPoliciesData?.data || [];
+  const emailTemplates: NotificationTemplate[] = emailTemplatesData?.data || [];
+  const smsTemplates: NotificationTemplate[] = smsTemplatesData?.data || [];
 
   // Get Priority and Severity categories for matching rules
   const allLookupCategories: LookupCategory[] =
@@ -998,6 +1053,10 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: state.assignment_roles?.map((r) => r.id) || [],
       auto_match_user: state.auto_match_user || false,
       manual_select_user: state.manual_select_user || false,
+      new_incident_email_template_code:
+        state.new_incident_email_template_code || "",
+      new_incident_sms_template_code:
+        state.new_incident_sms_template_code || "",
     });
     setIsStateModalOpen(true);
   };
@@ -1121,6 +1180,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: stateFormData.assignment_role_ids,
       auto_match_user: stateFormData.auto_match_user,
       manual_select_user: stateFormData.manual_select_user,
+      // New incident notification templates
+      new_incident_email_template_code:
+        stateFormData.new_incident_email_template_code || "",
+      new_incident_sms_template_code:
+        stateFormData.new_incident_sms_template_code || "",
     };
 
     if (editingState) {
@@ -3394,6 +3458,68 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* New Incident Notifications — only for initial states */}
+                {stateFormData.state_type === "initial" && (
+                  <div className="border-t border-[hsl(var(--border))] pt-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Mail className="w-4 h-4 text-blue-500" />
+                      <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                        New Incident Notifications
+                      </label>
+                    </div>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                      Templates sent to assignee and reporter when a new
+                      incident is created in this state.
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                          Email Template
+                        </label>
+                        <select
+                          value={stateFormData.new_incident_email_template_code}
+                          onChange={(e) =>
+                            setStateFormData({
+                              ...stateFormData,
+                              new_incident_email_template_code: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+                        >
+                          <option value="">— None —</option>
+                          {emailTemplates.map((tpl) => (
+                            <option key={tpl.id} value={tpl.code}>
+                              {tpl.name} ({tpl.code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                          SMS Template
+                        </label>
+                        <select
+                          value={stateFormData.new_incident_sms_template_code}
+                          onChange={(e) =>
+                            setStateFormData({
+                              ...stateFormData,
+                              new_incident_sms_template_code: e.target.value,
+                            })
+                          }
+                          className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+                        >
+                          <option value="">— None —</option>
+                          {smsTemplates.map((tpl) => (
+                            <option key={tpl.id} value={tpl.code}>
+                              {tpl.name} ({tpl.code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
@@ -4621,50 +4747,188 @@ export const WorkflowDesignerPage: React.FC = () => {
                                   </div>
                                 )}
 
-                                {/* Subject template */}
-                                <div>
-                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                    {t("workflows.subjectTemplate")}
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder={t(
-                                      "workflows.eGIncidentNumberStatusChangedTo",
-                                    )}
-                                    value={emailConfig.subject_template || ""}
-                                    onChange={(e) =>
-                                      updateEmailConfig({
-                                        subject_template: e.target.value,
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
-                                  />
-                                  <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
-                                    {t("workflows.use")}
-                                    {"{{incident_number}}"}, {"{{title}}"},{" "}
-                                    {"{{new_state}}"}, {"{{old_state}}"}
-                                  </p>
-                                </div>
+                                {/* Email Notification Template */}
+                                {(() => {
+                                  const selectedTpl = emailTemplates.find(
+                                    (t) => t.code === emailConfig.template_code,
+                                  );
+                                  const testEntry = actionTestState[index];
+                                  return (
+                                    <div className="space-y-2">
+                                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                                        Email Template
+                                      </label>
+                                      <div className="flex gap-2">
+                                        <select
+                                          value={
+                                            emailConfig.template_code || ""
+                                          }
+                                          onChange={(e) =>
+                                            updateEmailConfig({
+                                              template_code: e.target.value,
+                                            })
+                                          }
+                                          className="flex-1 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                                        >
+                                          <option value="">
+                                            — Select a template —
+                                          </option>
+                                          {emailTemplates.map((tpl) => (
+                                            <option
+                                              key={tpl.id}
+                                              value={tpl.code}
+                                            >
+                                              [{tpl.action_type}] {tpl.name} (
+                                              {tpl.code})
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <button
+                                          type="button"
+                                          disabled={!emailConfig.template_code}
+                                          onClick={() =>
+                                            setActionTestState((prev) => ({
+                                              ...prev,
+                                              [index]: {
+                                                open: !prev[index]?.open,
+                                                recipient:
+                                                  prev[index]?.recipient ?? "",
+                                                status: null,
+                                                error: null,
+                                              },
+                                            }))
+                                          }
+                                          className="px-3 py-2 text-xs font-medium rounded-lg border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                                        >
+                                          Send Test
+                                        </button>
+                                      </div>
 
-                                {/* Body template */}
-                                <div>
-                                  <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                    {t("workflows.bodyTemplateOptional")}
-                                  </label>
-                                  <textarea
-                                    placeholder={t(
-                                      "workflows.customEmailBodyTemplate",
-                                    )}
-                                    value={emailConfig.body_template || ""}
-                                    onChange={(e) =>
-                                      updateEmailConfig({
-                                        body_template: e.target.value,
-                                      })
-                                    }
-                                    rows={3}
-                                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
-                                  />
-                                </div>
+                                      {/* Body preview */}
+                                      {selectedTpl && (
+                                        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] p-3 text-xs space-y-1">
+                                          {selectedTpl.subject_en && (
+                                            <p>
+                                              <span className="font-semibold text-[hsl(var(--muted-foreground))]">
+                                                Subject:{" "}
+                                              </span>
+                                              {selectedTpl.subject_en}
+                                            </p>
+                                          )}
+                                          <p className="text-[hsl(var(--muted-foreground))] whitespace-pre-wrap line-clamp-4">
+                                            {selectedTpl.body_en}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {/* Inline test panel */}
+                                      {testEntry?.open &&
+                                        emailConfig.template_code && (
+                                          <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-blue-700">
+                                              Send test email using &quot;
+                                              {emailConfig.template_code}&quot;
+                                            </p>
+                                            <div className="flex gap-2">
+                                              <input
+                                                type="email"
+                                                placeholder="recipient@example.com"
+                                                value={testEntry.recipient}
+                                                onChange={(e) =>
+                                                  setActionTestState(
+                                                    (prev) => ({
+                                                      ...prev,
+                                                      [index]: {
+                                                        ...prev[index],
+                                                        recipient:
+                                                          e.target.value,
+                                                      },
+                                                    }),
+                                                  )
+                                                }
+                                                className="flex-1 px-2 py-1.5 text-xs bg-white border border-blue-300 rounded-lg"
+                                              />
+                                              <button
+                                                type="button"
+                                                disabled={
+                                                  !testEntry.recipient ||
+                                                  sendTestMutation.isPending
+                                                }
+                                                onClick={() => {
+                                                  sendTestMutation.mutate(
+                                                    {
+                                                      channel: "email",
+                                                      templateCode:
+                                                        emailConfig.template_code!,
+                                                      to: testEntry.recipient,
+                                                    },
+                                                    {
+                                                      onSuccess: (data) => {
+                                                        setActionTestState(
+                                                          (prev) => ({
+                                                            ...prev,
+                                                            [index]: {
+                                                              ...prev[index],
+                                                              status:
+                                                                data?.data
+                                                                  ?.status ??
+                                                                "sent",
+                                                              error: null,
+                                                            },
+                                                          }),
+                                                        );
+                                                      },
+                                                      onError: (err: any) => {
+                                                        setActionTestState(
+                                                          (prev) => ({
+                                                            ...prev,
+                                                            [index]: {
+                                                              ...prev[index],
+                                                              status: null,
+                                                              error:
+                                                                err?.response
+                                                                  ?.data
+                                                                  ?.error ??
+                                                                "Send failed",
+                                                            },
+                                                          }),
+                                                        );
+                                                      },
+                                                    },
+                                                  );
+                                                }}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                                              >
+                                                {sendTestMutation.isPending
+                                                  ? "Sending…"
+                                                  : "Send"}
+                                              </button>
+                                            </div>
+                                            {testEntry.status && (
+                                              <p className="text-[10px] text-green-700 font-medium">
+                                                ✓ Delivered — status:{" "}
+                                                {testEntry.status}
+                                              </p>
+                                            )}
+                                            {testEntry.error && (
+                                              <p className="text-[10px] text-red-600">
+                                                ✗ {testEntry.error}
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+
+                                      <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                                        Variables like{" "}
+                                        <code className="bg-[hsl(var(--muted))] px-1 rounded">
+                                          {"{{ .incident_number }}"}
+                                        </code>{" "}
+                                        are substituted automatically at send
+                                        time.
+                                      </p>
+                                    </div>
+                                  );
+                                })()}
 
                                 {/* Include options */}
                                 <div>
@@ -4799,19 +5063,34 @@ export const WorkflowDesignerPage: React.FC = () => {
                                 )}
                                 <div>
                                   <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                                    Message Template
+                                    SMS Template
                                   </label>
-                                  <textarea
-                                    value={smsConfig.message_template}
+                                  <select
+                                    value={smsConfig.template_code || ""}
                                     onChange={(e) =>
                                       updateSmsConfig({
-                                        message_template: e.target.value,
+                                        template_code: e.target.value,
                                       })
                                     }
-                                    placeholder="Incident {{incident_number}} status updated to {{to_state}}"
-                                    rows={3}
-                                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm resize-none"
-                                  />
+                                    className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                                  >
+                                    <option value="">
+                                      — Select a template —
+                                    </option>
+                                    {smsTemplates.map((tpl) => (
+                                      <option key={tpl.id} value={tpl.code}>
+                                        {tpl.name} ({tpl.code})
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
+                                    Templates are managed in Notification
+                                    Templates. Variables like{" "}
+                                    <code className="bg-[hsl(var(--muted))] px-1 rounded">
+                                      {"{{ .incident_number }}"}
+                                    </code>{" "}
+                                    are substituted automatically.
+                                  </p>
                                 </div>
                               </div>
                             ) : (

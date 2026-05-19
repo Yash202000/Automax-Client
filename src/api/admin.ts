@@ -109,6 +109,7 @@ import type {
   EscalationPolicy,
   ResolveUsersRequest,
   AIQualityFeedback,
+  NotificationTemplate,
 } from "../types";
 
 // User Management
@@ -3153,6 +3154,133 @@ export const feedbackTemplateApi = {
     const response = await apiClient.delete<ApiResponse<unknown>>(
       `/admin/feedback-templates/${id}`,
     );
+    return response.data;
+  },
+};
+
+export interface NotificationTemplateFilter {
+  channel?: string;
+  module_type?: string;
+  action_type?: string;
+  is_active?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const notificationTemplateApi = {
+  list: async (
+    filter: NotificationTemplateFilter = {},
+  ): Promise<ApiResponse<NotificationTemplate[]>> => {
+    const params = new URLSearchParams();
+    if (filter.channel) params.append("channel", filter.channel);
+    if (filter.module_type) params.append("module_type", filter.module_type);
+    if (filter.action_type) params.append("action_type", filter.action_type);
+    if (filter.is_active !== undefined)
+      params.append("is_active", String(filter.is_active));
+    if (filter.search) params.append("search", filter.search);
+    params.append("page", String(filter.page ?? 1));
+    params.append("limit", String(filter.limit ?? 100));
+    const response = await apiClient.get<ApiResponse<NotificationTemplate[]>>(
+      `/admin/notification-templates?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<ApiResponse<NotificationTemplate>> => {
+    const response = await apiClient.get<ApiResponse<NotificationTemplate>>(
+      `/admin/notification-templates/${id}`,
+    );
+    return response.data;
+  },
+
+  create: async (req: {
+    name: string;
+    code: string;
+    channel: "email" | "sms";
+    module_type?: string;
+    action_type?: string;
+    subject_en?: string;
+    body_en?: string;
+    subject_ar?: string;
+    body_ar?: string;
+    variables?: string;
+    transition_id?: string;
+    is_active: boolean;
+  }): Promise<ApiResponse<NotificationTemplate>> => {
+    const response = await apiClient.post<ApiResponse<NotificationTemplate>>(
+      "/admin/notification-templates",
+      req,
+    );
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    req: Partial<{
+      name: string;
+      subject_en: string;
+      body_en: string;
+      subject_ar: string;
+      body_ar: string;
+      module_type: string;
+      action_type: string;
+      variables: string;
+      is_active: boolean;
+    }>,
+  ): Promise<ApiResponse<NotificationTemplate>> => {
+    const response = await apiClient.put<ApiResponse<NotificationTemplate>>(
+      `/admin/notification-templates/${id}`,
+      req,
+    );
+    return response.data;
+  },
+
+  toggle: async (id: string): Promise<ApiResponse<NotificationTemplate>> => {
+    const response = await apiClient.patch<ApiResponse<NotificationTemplate>>(
+      `/admin/notification-templates/${id}/toggle`,
+    );
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await apiClient.delete<ApiResponse<void>>(
+      `/admin/notification-templates/${id}`,
+    );
+    return response.data;
+  },
+
+  getAvailableVariables: async (): Promise<
+    ApiResponse<{ data: Record<string, string[]>; syntax: string }>
+  > => {
+    const response = await apiClient.get<
+      ApiResponse<{ data: Record<string, string[]>; syntax: string }>
+    >("/admin/notification-templates/available-variables");
+    return response.data;
+  },
+
+  /** Send a test notification using a template code.
+   *  channel: "email" | "sms"
+   *  to: email address (email) or phone number in E.164 format (sms)
+   */
+  sendTest: async (data: {
+    channel: "email" | "sms";
+    templateCode: string;
+    to: string;
+    language?: string;
+  }): Promise<
+    ApiResponse<{ id: string; status: string; provider: string }>
+  > => {
+    const response = await apiClient.post<
+      ApiResponse<{ id: string; status: string; provider: string }>
+    >("/notifications/send", {
+      channel: data.channel,
+      templateCode: data.templateCode,
+      language: data.language ?? "en",
+      to: [data.to],
+      subject: "",
+      body: "",
+    });
     return response.data;
   },
 };

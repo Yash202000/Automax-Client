@@ -265,6 +265,11 @@ const ReviewAssignmentPage = lazy(() =>
 );
 const EscalationConfigPage = lazy(() => import("./pages/admin/EsclationPage"));
 const QualityAuditPage = lazy(() => import("./pages/admin/QualityAuditPage"));
+const NotificationTemplatesPage = lazy(() =>
+  import("./pages/admin/NotificationTemplatesPage").then((m) => ({
+    default: m.NotificationTemplatesPage,
+  })),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -520,6 +525,10 @@ function App() {
                         <Route
                           path="/admin/escalation-groups"
                           element={<EscalationConfigPage />}
+                        />
+                        <Route
+                          path="/admin/notification-templates"
+                          element={<NotificationTemplatesPage />}
                         />
                       </Route>
                     </Route>
