@@ -334,7 +334,7 @@ export default function IncidentLister() {
         {/* Footer info */}
         <div className="p-4 border-t border-gray-50 bg-gray-50/50 text-center">
           <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
-            Automax Intelligence System
+            Automax
           </p>
         </div>
       </div>
