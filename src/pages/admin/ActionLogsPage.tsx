@@ -337,7 +337,7 @@ export const ActionLogsPage: React.FC = () => {
           >
             {showStats ? t("actionLogs.hideStats") : t("actionLogs.showStats")}
           </Button>
-          {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
+          {/* {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
             <Button
               variant="outline"
               size="sm"
@@ -346,7 +346,7 @@ export const ActionLogsPage: React.FC = () => {
             >
               {t("actionLogs.exportCsv")}
             </Button>
-          )}
+          )} */}
           {hasPermission(PERMISSIONS.ACTION_LOGS_EXPORT) && (
             <Button
               variant="outline"
