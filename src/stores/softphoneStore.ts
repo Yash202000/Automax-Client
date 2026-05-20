@@ -29,7 +29,7 @@ export const useSoftphoneStore = create<SoftphoneState>()(
       shouldConnect: false,
       openCallerIncidents: false,
       isCallerIncidentsMinimized: false,
-      incomingCallNumber: "917034415345",
+      incomingCallNumber: "",
       setIncomingCallNumber: (incomingCallNumber) =>
         set({ incomingCallNumber }),
       setIsOpen: (isOpen) => set({ isOpen }),

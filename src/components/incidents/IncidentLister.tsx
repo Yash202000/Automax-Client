@@ -88,6 +88,10 @@ export default function IncidentLister() {
     return data?.pages.flatMap((page) => page.data) || [];
   }, [data]);
 
+  const totalItems = useMemo(() => {
+    return data?.pages[0]?.total_items || 0;
+  }, [data]);
+
   if (!openCallerIncidents) {
     return null;
   }
@@ -159,6 +163,11 @@ export default function IncidentLister() {
               <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
                 <History className="w-5 h-5 text-primary" />
                 {t("softphone.callerIncidents", "Caller Incidents")}
+                {totalItems > 0 && (
+                  <span className="bg-primary/10 text-primary text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                    {totalItems}
+                  </span>
+                )}
               </h2>
               {incomingCallNumber && (
                 <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">

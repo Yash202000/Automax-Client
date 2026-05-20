@@ -245,6 +245,7 @@ export default function SoftPhone({
     setShouldConnect,
     setOpenCallerIncidents,
     setIsCallerIncidentsMinimized,
+    setIncomingCallNumber,
   } = useSoftphoneStore();
 
   const [dialedNumber, setDialedNumber] = useState<string>("");
@@ -414,6 +415,7 @@ export default function SoftPhone({
       wasIncomingCallRef.current = true;
       dialedNumberRef.current =
         session?.remote_identity?.uri?.user ?? "Unknown";
+      setIncomingCallNumber(session?.remote_identity?.uri?.user ?? "Unknown");
       setOpenCallerIncidents(true);
       setIsCallerIncidentsMinimized(false);
       setDialedNumber(session?.remote_identity?.uri?.user ?? "Unknown");
