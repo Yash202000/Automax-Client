@@ -3807,6 +3807,12 @@
         "english": "الإنجليزية",
         "arabic": "العربية"
       },
+      "validation": {
+        "nameRequired": "الاسم مطلوب",
+        "codeRequired": "الرمز مطلوب",
+        "codeFormat": "يجب أن يحتوي الرمز على أحرف إنجليزية كبيرة وأرقام وشرطات سفلية فقط، مثل SLA_BREACH",
+        "bodyRequired": "يجب إدخال محتوى واحد على الأقل، بالعربية أو الإنجليزية"
+      },
       "placeholders": {
         "name": "أدخل اسم القالب",
         "code": "أدخل رمز القالب",
@@ -3818,7 +3824,17 @@
         "bodySmsArabic": "أدخل محتوى رسالة SMS باللغة العربية"
       },
       "templateSection": "محتوى القالب",
-      "templateSectionDescription": "اختر اللغة النشطة ثم أنشئ المحتوى."
+      "templateSectionDescription": "اختر اللغة النشطة ثم أنشئ المحتوى.",
+      "availableVariables": "المتغيرات المتاحة",
+      "availableVariablesDescription": "المتغيرات الخاصة بالقوالب. انقر على أي رمز لنسخه.",
+      "copyVariable": "نسخ المتغير",
+      "variablesCopied": "تم نسخ المتغير",
+      "variablesCopyFailed": "تعذر نسخ المتغير",
+      "escalationGroupTemplate": "قالب مجموعة التصعيد",
+      "escalationPolicyTemplate": "قالب خطوة سياسة التصعيد",
+      "additionalVariables": "متغيرات إضافية",
+      "incidentsSummaryHint": "استخدم {{token}} لعرض قائمة جميع البلاغات التي تجاوزت اتفاقية مستوى الخدمة.",
+      "noAvailableVariables": "لا توجد متغيرات متاحة."
     },
     "channels": {
       "email": "البريد الإلكتروني",
@@ -3826,13 +3842,21 @@
     },
     "modules": {
       "incident": "بلاغ",
-      "request": "طلب"
+      "request": "طلب",
+      "complaint": "شكوى",
+      "query": "استفسار",
+      "global": "عام"
     },
     "actions": {
       "escalation": "تصعيد",
+      "assignment": "تعيين",
       "closure": "إغلاق",
+      "status_change": "تغيير الحالة",
+      "ready_to_close": "جاهز للإغلاق",
+      "new_incident": "بلاغ جديد",
       "reminder": "تذكير",
-      "rejection": "رفض"
+      "rejection": "رفض",
+      "custom": "مخصص"
     },
     "status": {
       "active": "نشط",
@@ -3864,7 +3888,16 @@
     "deleteMessage": "هل أنت متأكد أنك تريد حذف {{name}}؟ لا يمكن التراجع عن هذا الإجراء.",
     "deleteConfirm": "حذف",
     "cancel": "إلغاء",
-    "deleteFallback": "هذا القالب"
+    "deleteFallback": "هذا القالب",
+    "createSuccess": "تم إنشاء القالب بنجاح",
+    "createFailed": "فشل إنشاء القالب",
+    "updateSuccess": "تم تحديث القالب بنجاح",
+    "updateFailed": "فشل تحديث القالب",
+    "deleteSuccess": "تم حذف القالب بنجاح",
+    "deleteFailed": "فشل حذف القالب",
+    "statusUpdateSuccess": "تم تحديث حالة القالب",
+    "statusUpdateFailed": "فشل تحديث حالة القالب",
+    "validationFailed": "يرجى تصحيح الحقول المحددة"
   },
   "reportTemplates": {
     "failedToLoadTemplate": "فشل تحميل القالب",

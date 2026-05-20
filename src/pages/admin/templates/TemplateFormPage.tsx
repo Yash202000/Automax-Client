@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Copy, Save } from "lucide-react";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,6 +17,44 @@ import {
   CHANNEL_OPTIONS,
   MODULE_OPTIONS,
 } from "@/constants/template";
+import { toast } from "sonner";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const apiError = error as {
+    response?: { data?: { error?: string; message?: string } };
+    message?: string;
+  };
+
+  return (
+    apiError.response?.data?.error ||
+    apiError.response?.data?.message ||
+    apiError.message ||
+    fallback
+  );
+};
+
+const DEFAULT_AVAILABLE_VARIABLES: Record<string, string[]> = {
+  escalation: [
+    "first_name",
+    "last_name",
+    "incident_count",
+    "classification_name",
+    "sla_page_url",
+    "incidents_summary",
+    "report_date",
+    "incident_number",
+    "incident_title",
+    "incident_url",
+    "state_name",
+    "hours_in_state",
+    "sla_hours",
+    "policy_name",
+    "step_order",
+    "hours_in_breach",
+  ],
+};
+
+const uniqueVariables = (variables: string[]) => Array.from(new Set(variables));
 
 export default function TemplateFormPage() {
   const navigate = useNavigate();
@@ -38,6 +76,14 @@ export default function TemplateFormPage() {
   });
 
   const template = data?.data;
+
+  const { data: varsData, isLoading: isVarsLoading } = useQuery({
+    queryKey: ["notification-templates", "available-variables"],
+    queryFn: notificationTemplateApi.getAvailableVariables,
+  });
+
+  const availableVars = varsData?.data?.data ?? {};
+  const variableSyntax = varsData?.data?.syntax ?? "{{variable}}";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -94,6 +140,13 @@ export default function TemplateFormPage() {
         ? t("notificationTemplates.form.placeholders.bodyArabic")
         : t("notificationTemplates.form.placeholders.bodyEnglish");
 
+  const actionVariables = useMemo(() => {
+    return uniqueVariables([
+      ...(availableVars[formData.action_type] ?? []),
+      ...(DEFAULT_AVAILABLE_VARIABLES[formData.action_type] ?? []),
+    ]);
+  }, [availableVars, formData.action_type]);
+
   useEffect(() => {
     if (!template) return;
 
@@ -126,20 +179,23 @@ export default function TemplateFormPage() {
     const e: Record<string, string> = {};
     const code = formData.code.trim();
 
-    if (!formData.name.trim()) e.name = "Name is required";
-    if (!code) e.code = "Code is required";
+    if (!formData.name.trim())
+      e.name = t("notificationTemplates.form.validation.nameRequired");
+    if (!code) e.code = t("notificationTemplates.form.validation.codeRequired");
     else if (!/^[A-Z0-9_]+$/.test(code))
-      e.code =
-        "Code must be uppercase letters, digits and underscores only (e.g. SLA_BREACH)";
+      e.code = t("notificationTemplates.form.validation.codeFormat");
     if (!formData.body_en.trim() && !formData.body_ar.trim())
-      e.body_en = "At least one body (EN or AR) is required";
+      e.body_en = t("notificationTemplates.form.validation.bodyRequired");
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error(t("notificationTemplates.validationFailed"));
+      return;
+    }
     mutation.mutate(buildPayload());
   };
 
@@ -163,11 +219,32 @@ export default function TemplateFormPage() {
         : notificationTemplateApi.create(payload),
 
     onSuccess: () => {
+      toast.success(
+        isEdit
+          ? t("notificationTemplates.updateSuccess")
+          : t("notificationTemplates.createSuccess"),
+      );
+
       queryClient.invalidateQueries({
         queryKey: ["notification-templates"],
       });
+      if (id) {
+        queryClient.invalidateQueries({
+          queryKey: ["notification-template", id],
+        });
+      }
 
-      navigate("/admin/templates");
+      navigate(-1);
+    },
+    onError: (error) => {
+      toast.error(
+        getErrorMessage(
+          error,
+          isEdit
+            ? t("notificationTemplates.updateFailed")
+            : t("notificationTemplates.createFailed"),
+        ),
+      );
     },
   });
 
@@ -176,6 +253,24 @@ export default function TemplateFormPage() {
       ...prev,
       [key]: value,
     }));
+  };
+
+  const formatVariable = (variable: string) => {
+    if (variable.includes("{") || variable.includes("}")) return variable;
+    return variableSyntax.includes("variable")
+      ? variableSyntax.replace("variable", variable)
+      : `{{${variable}}}`;
+  };
+
+  const copyVariable = async (variable: string) => {
+    const token = formatVariable(variable);
+
+    try {
+      await navigator.clipboard.writeText(token);
+      toast.success(t("notificationTemplates.form.variablesCopied"));
+    } catch {
+      toast.error(t("notificationTemplates.form.variablesCopyFailed"));
+    }
   };
 
   return (
@@ -282,6 +377,58 @@ export default function TemplateFormPage() {
               onChange={(e) => setField("language", e.target.value)}
               options={languageOptions}
             />
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.25)] p-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">
+                {t("notificationTemplates.form.availableVariables")}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {t("notificationTemplates.form.availableVariablesDescription")}
+              </p>
+            </div>
+            <code className="mt-2 inline-flex w-fit rounded-md bg-[hsl(var(--background))] px-2 py-1 text-xs text-muted-foreground sm:mt-0">
+              {variableSyntax}
+            </code>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            {isVarsLoading ? (
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-8 rounded-md bg-[hsl(var(--muted))] animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : actionVariables.length ? (
+              <div className="flex flex-wrap gap-2">
+                {actionVariables.map((variable) => {
+                  const token = formatVariable(variable);
+
+                  return (
+                    <button
+                      key={variable}
+                      type="button"
+                      onClick={() => copyVariable(variable)}
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2.5 py-1.5 text-xs font-mono text-[hsl(var(--foreground))] transition-colors hover:border-primary hover:text-primary"
+                      title={t("notificationTemplates.form.copyVariable")}
+                    >
+                      <span className="truncate">{token}</span>
+                      <Copy className="h-3 w-3 flex-shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("notificationTemplates.form.noAvailableVariables")}
+              </p>
+            )}
           </div>
         </div>
 

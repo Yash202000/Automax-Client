@@ -26,6 +26,10 @@ export const MODULE_OPTIONS = [
     label: "Query",
     value: "query",
   },
+  {
+    label: "Global",
+    value: "global",
+  },
 ];
 
 export const ACTION_OPTIONS = [
@@ -34,8 +38,24 @@ export const ACTION_OPTIONS = [
     value: "escalation",
   },
   {
+    label: "Assignment",
+    value: "assignment",
+  },
+  {
     label: "Closure",
     value: "closure",
+  },
+  {
+    label: "Status Change",
+    value: "status_change",
+  },
+  {
+    label: "Ready to Close",
+    value: "ready_to_close",
+  },
+  {
+    label: "New Incident",
+    value: "new_incident",
   },
   {
     label: "Reminder",
@@ -44,6 +64,10 @@ export const ACTION_OPTIONS = [
   {
     label: "Rejection",
     value: "rejection",
+  },
+  {
+    label: "Custom",
+    value: "custom",
   },
 ];
 
