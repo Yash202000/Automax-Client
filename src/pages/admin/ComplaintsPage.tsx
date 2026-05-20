@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { CreateComplaintModal } from "@/components/complaints/CreateComplaintModal";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { useAuthStore } from "@/stores/authStore";
 
 // Column configuration
 interface ColumnConfig {
@@ -82,7 +83,11 @@ const loadColumnsFromStorage = (): ColumnConfig[] => {
   return defaultColumns;
 };
 
-export const ComplaintsPage: React.FC = () => {
+interface ComplaintsPageProps {
+  listType?: "assigned" | "created";
+}
+
+export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({ listType }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
@@ -100,6 +105,7 @@ export const ComplaintsPage: React.FC = () => {
   const [showColumnConfig, setShowColumnConfig] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthStore();
 
   const canCreateComplaint =
     isSuperAdmin || hasPermission(PERMISSIONS.COMPLAINTS_CREATE);
@@ -111,10 +117,23 @@ export const ComplaintsPage: React.FC = () => {
   // Get status from URL - users with view permission can access if status filter is applied
   const urlStatusParam = searchParams.get("status");
   const hasUrlFilter = !!urlStatusParam;
+  const isScopedList = !!listType;
+  const pageTitle =
+    listType === "assigned"
+      ? t("complaints.assignedToMe")
+      : listType === "created"
+        ? t("complaints.createdByMe")
+        : t("complaints.title");
+  const pageDescription =
+    listType === "assigned"
+      ? t("complaints.assignedToMeDesc")
+      : listType === "created"
+        ? t("complaints.createdByMeDesc")
+        : t("complaints.subtitle");
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
   useEffect(() => {
-    if (!canViewAllComplaints && !hasUrlFilter) {
+    if (!canViewAllComplaints && !hasUrlFilter && !isScopedList) {
       if (canTransitionComplaint) {
         navigate("/complaints/my-assigned", { replace: true });
       } else if (canCreateComplaint) {
@@ -126,8 +145,21 @@ export const ComplaintsPage: React.FC = () => {
     canTransitionComplaint,
     canCreateComplaint,
     hasUrlFilter,
+    isScopedList,
     navigate,
   ]);
+
+  useEffect(() => {
+    setFilter({
+      page: 1,
+      limit: 10,
+      record_type: "complaint",
+      assignee_id: listType === "assigned" ? user?.id : undefined,
+      reporter_id: listType === "created" ? user?.id : undefined,
+    });
+
+    setShowFilters(false);
+  }, [listType]);
 
   // Handle click outside column config dropdown
   useEffect(() => {
@@ -278,6 +310,8 @@ export const ComplaintsPage: React.FC = () => {
       page: 1,
       limit: 10,
       record_type: "complaint",
+      assignee_id: listType === "assigned" ? user?.id : undefined,
+      reporter_id: listType === "created" ? user?.id : undefined,
     });
     setStatusFilter(null);
     setSearchParams({});
@@ -338,13 +372,13 @@ export const ComplaintsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {statusFilter
                 ? `${statusFilter} ${t("complaints.title")}`
-                : t("complaints.title")}
+                : pageTitle}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {statusFilter
               ? `${t("complaints.showingStatus")}: ${statusFilter}`
-              : t("complaints.subtitle")}
+              : pageDescription}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -388,18 +422,20 @@ export const ComplaintsPage: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant={showFilters ? "secondary" : "outline"}
-              size="sm"
-              leftIcon={<Filter className="w-4 h-4" />}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {t("common.filters")}
-              {hasActiveFilters && (
-                <span className="ml-1 w-2 h-2 rounded-full bg-amber-500" />
-              )}
-            </Button>
-            {hasActiveFilters && canViewAllComplaints && (
+            {!isScopedList && (
+              <Button
+                variant={showFilters ? "secondary" : "outline"}
+                size="sm"
+                leftIcon={<Filter className="w-4 h-4" />}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                {t("common.filters")}
+                {hasActiveFilters && (
+                  <span className="ml-1 w-2 h-2 rounded-full bg-amber-500" />
+                )}
+              </Button>
+            )}
+            {hasActiveFilters && canViewAllComplaints && !isScopedList && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 {t("common.clear")}
               </Button>
@@ -485,7 +521,7 @@ export const ComplaintsPage: React.FC = () => {
         </div>
 
         {/* Expanded Filters */}
-        {showFilters && (
+        {showFilters && !isScopedList && (
           <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">

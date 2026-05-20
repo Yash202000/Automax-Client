@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { CreateQueryModal } from "@/components/queries/CreateQueryModal";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { useAuthStore } from "@/stores/authStore";
 
 // Column configuration
 interface ColumnConfig {
@@ -82,7 +83,11 @@ const loadColumnsFromStorage = (): ColumnConfig[] => {
   return defaultColumns;
 };
 
-export const QueriesPage: React.FC = () => {
+interface QueriesPageProps {
+  listType?: "assigned" | "created";
+}
+
+export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
@@ -100,6 +105,7 @@ export const QueriesPage: React.FC = () => {
   const [showColumnConfig, setShowColumnConfig] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthStore();
 
   const canCreateQuery =
     isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_CREATE);
@@ -111,10 +117,23 @@ export const QueriesPage: React.FC = () => {
   // Get status from URL - users with view permission can access if status filter is applied
   const urlStatusParam = searchParams.get("status");
   const hasUrlFilter = !!urlStatusParam;
+  const isScopedList = !!listType;
+  const pageTitle =
+    listType === "assigned"
+      ? t("queries.assignedToMe")
+      : listType === "created"
+        ? t("queries.createdByMe")
+        : t("queries.title");
+  const pageDescription =
+    listType === "assigned"
+      ? t("queries.assignedToMeDesc")
+      : listType === "created"
+        ? t("queries.createdByMeDesc")
+        : t("queries.subtitle");
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
   useEffect(() => {
-    if (!canViewAllQueries && !hasUrlFilter) {
+    if (!canViewAllQueries && !hasUrlFilter && !isScopedList) {
       if (canTransitionQuery) {
         navigate("/queries/my-assigned", { replace: true });
       } else if (canCreateQuery) {
@@ -126,8 +145,20 @@ export const QueriesPage: React.FC = () => {
     canTransitionQuery,
     canCreateQuery,
     hasUrlFilter,
+    isScopedList,
     navigate,
   ]);
+
+  useEffect(() => {
+    setFilter({
+      page: 1,
+      limit: 10,
+      record_type: "query",
+      assignee_id: listType === "assigned" ? user?.id : undefined,
+      reporter_id: listType === "created" ? user?.id : undefined,
+    });
+    setShowFilters(false);
+  }, [listType]);
 
   // Handle click outside column config dropdown
   useEffect(() => {
@@ -280,6 +311,8 @@ export const QueriesPage: React.FC = () => {
       page: 1,
       limit: 10,
       record_type: "query",
+      assignee_id: listType === "assigned" ? user?.id : undefined,
+      reporter_id: listType === "created" ? user?.id : undefined,
     });
     setStatusFilter(null);
     setSearchParams({});
@@ -340,13 +373,13 @@ export const QueriesPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {statusFilter
                 ? `${statusFilter} ${t("queries.title")}`
-                : t("queries.title")}
+                : pageTitle}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {statusFilter
               ? `${t("queries.showingStatus")}: ${statusFilter}`
-              : t("queries.subtitle")}
+              : pageDescription}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -389,18 +422,20 @@ export const QueriesPage: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant={showFilters ? "secondary" : "outline"}
-              size="sm"
-              leftIcon={<Filter className="w-4 h-4" />}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {t("common.filters")}
-              {hasActiveFilters && (
-                <span className="ml-1 w-2 h-2 rounded-full bg-primary" />
-              )}
-            </Button>
-            {hasActiveFilters && canViewAllQueries && (
+            {!isScopedList && (
+              <Button
+                variant={showFilters ? "secondary" : "outline"}
+                size="sm"
+                leftIcon={<Filter className="w-4 h-4" />}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                {t("common.filters")}
+                {hasActiveFilters && (
+                  <span className="ml-1 w-2 h-2 rounded-full bg-primary" />
+                )}
+              </Button>
+            )}
+            {hasActiveFilters && canViewAllQueries && !isScopedList && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 {t("common.clear")}
               </Button>
@@ -486,7 +521,7 @@ export const QueriesPage: React.FC = () => {
         </div>
 
         {/* Expanded Filters */}
-        {showFilters && (
+        {showFilters && !isScopedList && (
           <div className="mt-4 pt-4 border-t border-[hsl(var(--border))] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">

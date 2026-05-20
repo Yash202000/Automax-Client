@@ -718,6 +718,14 @@ function App() {
                           element={<ComplaintsPage />}
                         />
                         <Route
+                          path="/complaints/my-assigned"
+                          element={<ComplaintsPage listType="assigned" />}
+                        />
+                        <Route
+                          path="/complaints/my-created"
+                          element={<ComplaintsPage listType="created" />}
+                        />
+                        <Route
                           path="/complaints/:id"
                           element={<ComplaintDetailPage />}
                         />
@@ -737,6 +745,14 @@ function App() {
                         }
                       >
                         <Route path="/queries" element={<QueriesPage />} />
+                        <Route
+                          path="/queries/my-assigned"
+                          element={<QueriesPage listType="assigned" />}
+                        />
+                        <Route
+                          path="/queries/my-created"
+                          element={<QueriesPage listType="created" />}
+                        />
                         <Route
                           path="/queries/:id"
                           element={<QueryDetailPage />}

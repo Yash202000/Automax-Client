@@ -1660,6 +1660,7 @@ export const complaintApi = {
     if (filter.channel) params.append("channel", filter.channel);
     if (filter.start_date) params.append("start_date", filter.start_date);
     if (filter.end_date) params.append("end_date", filter.end_date);
+    if (filter.reporter_id) params.append("reporter_id", filter.reporter_id);
 
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/complaints?${params.toString()}`,
@@ -1860,6 +1861,7 @@ export const queryApi = {
     if (filter.channel) params.append("channel", filter.channel);
     if (filter.start_date) params.append("start_date", filter.start_date);
     if (filter.end_date) params.append("end_date", filter.end_date);
+    if (filter.reporter_id) params.append("reporter_id", filter.reporter_id);
 
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/queries?${params.toString()}`,
