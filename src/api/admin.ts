@@ -3173,6 +3173,16 @@ export const notificationTemplateApi = {
     return response.data;
   },
 
+  getAvailableVariables: async (): Promise<
+    ApiResponse<{ data: Record<string, string[]>; syntax: string }>
+  > => {
+    const response = await apiClient.get<
+      ApiResponse<{ data: Record<string, string[]>; syntax: string }>
+    >("/admin/notification-templates/available-variables");
+
+    return response.data;
+  },
+
   getById: async (id: string): Promise<ApiResponse<NotificationTemplate>> => {
     const response = await apiClient.get<ApiResponse<NotificationTemplate>>(
       `/admin/notification-templates/${id}`,

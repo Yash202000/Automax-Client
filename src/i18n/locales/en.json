@@ -3811,6 +3811,12 @@
         "english": "English",
         "arabic": "Arabic"
       },
+      "validation": {
+        "nameRequired": "Name is required",
+        "codeRequired": "Code is required",
+        "codeFormat": "Code must be uppercase letters, digits, and underscores only (for example, SLA_BREACH)",
+        "bodyRequired": "At least one body, English or Arabic, is required"
+      },
       "placeholders": {
         "name": "Enter template name",
         "code": "Enter template code",
@@ -3822,7 +3828,17 @@
         "bodySmsArabic": "Enter the SMS body in Arabic"
       },
       "templateSection": "Template content",
-      "templateSectionDescription": "Choose the active language and compose your message."
+      "templateSectionDescription": "Choose the active language and compose your message.",
+      "availableVariables": "Available variables",
+      "availableVariablesDescription": "Variables for templates. Click a token to copy it.",
+      "copyVariable": "Copy variable",
+      "variablesCopied": "Variable copied",
+      "variablesCopyFailed": "Could not copy variable",
+      "escalationGroupTemplate": "Escalation group template",
+      "escalationPolicyTemplate": "Escalation policy step template",
+      "additionalVariables": "Additional variables",
+      "incidentsSummaryHint": "Use {{token}} to show the list of all breached incidents.",
+      "noAvailableVariables": "No variables are available."
     },
     "channels": {
       "email": "Email",
@@ -3830,13 +3846,21 @@
     },
     "modules": {
       "incident": "Incident",
-      "request": "Request"
+      "request": "Request",
+      "complaint": "Complaint",
+      "query": "Query",
+      "global": "Global"
     },
     "actions": {
       "escalation": "Escalation",
+      "assignment": "Assignment",
       "closure": "Closure",
+      "status_change": "Status Change",
+      "ready_to_close": "Ready to Close",
+      "new_incident": "New Incident",
       "reminder": "Reminder",
-      "rejection": "Rejection"
+      "rejection": "Rejection",
+      "custom": "Custom"
     },
     "status": {
       "active": "Active",
@@ -3868,7 +3892,16 @@
     "deleteMessage": "Are you sure you want to delete {{name}}? This action cannot be undone.",
     "deleteConfirm": "Delete",
     "cancel": "Cancel",
-    "deleteFallback": "this template"
+    "deleteFallback": "this template",
+    "createSuccess": "Template created successfully",
+    "createFailed": "Failed to create template",
+    "updateSuccess": "Template updated successfully",
+    "updateFailed": "Failed to update template",
+    "deleteSuccess": "Template deleted successfully",
+    "deleteFailed": "Failed to delete template",
+    "statusUpdateSuccess": "Template status updated",
+    "statusUpdateFailed": "Failed to update template status",
+    "validationFailed": "Please fix the highlighted fields"
   },
   "reportTemplates": {
     "failedToLoadTemplate": "Failed to load template",

@@ -29,6 +29,20 @@ import {
 } from "@/constants/template";
 import { toast } from "sonner";
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const apiError = error as {
+    response?: { data?: { error?: string; message?: string } };
+    message?: string;
+  };
+
+  return (
+    apiError.response?.data?.error ||
+    apiError.response?.data?.message ||
+    apiError.message ||
+    fallback
+  );
+};
+
 export default function TemplatesPage() {
   const { t } = useTranslation();
 
@@ -96,10 +110,15 @@ export default function TemplatesPage() {
       notificationTemplateApi.toggleStatus(id, is_active),
 
     onSuccess: () => {
-      toast.success("Template status updated");
+      toast.success(t("notificationTemplates.statusUpdateSuccess"));
       queryClient.invalidateQueries({
         queryKey: ["notification-templates"],
       });
+    },
+    onError: (error) => {
+      toast.error(
+        getErrorMessage(error, t("notificationTemplates.statusUpdateFailed")),
+      );
     },
   });
 
@@ -116,10 +135,16 @@ export default function TemplatesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => notificationTemplateApi.delete(id),
     onSuccess: () => {
+      toast.success(t("notificationTemplates.deleteSuccess"));
       queryClient.invalidateQueries({
         queryKey: ["notification-templates"],
       });
       setDeleteConfirm({ isOpen: false, id: null, name: undefined });
+    },
+    onError: (error) => {
+      toast.error(
+        getErrorMessage(error, t("notificationTemplates.deleteFailed")),
+      );
     },
   });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -184,17 +184,18 @@ export const RequestsPage: React.FC = () => {
   });
 
   // Get all states from request workflows for filter
-  const allStates =
-    workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
-  const uniqueStates = allStates.reduce(
-    (acc: WorkflowState[], state: WorkflowState) => {
+  const allStates = useMemo(() => {
+    return workflowsData?.data?.flatMap((w: Workflow) => w.states || []) || [];
+  }, [workflowsData]);
+
+  const uniqueStates = useMemo(() => {
+    return allStates.reduce((acc: WorkflowState[], state: WorkflowState) => {
       if (!acc.find((s) => s.name === state.name)) {
         acc.push(state);
       }
       return acc;
-    },
-    [],
-  );
+    }, []);
+  }, [allStates]);
 
   // Read status from URL and sync with filter
   useEffect(() => {
