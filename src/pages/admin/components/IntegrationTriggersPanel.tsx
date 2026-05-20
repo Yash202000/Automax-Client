@@ -175,8 +175,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({
     onError: () => toast.error("Failed to update trigger"),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (type === "state") {
       if (!stateForm.integration_script_id) {
         toast.error("Select a script");
@@ -209,10 +208,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 p-4 bg-[hsl(var(--muted))]/30 rounded-xl border border-[hsl(var(--border))]"
-    >
+    <div className="space-y-4 p-4 bg-[hsl(var(--muted))]/30 rounded-xl border border-[hsl(var(--border))]">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Script selector */}
         <div>
@@ -371,7 +367,8 @@ const TriggerForm: React.FC<TriggerFormProps> = ({
 
       <div className="flex items-center gap-3 pt-2">
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           disabled={isSaving}
           className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium disabled:opacity-50"
         >
@@ -390,7 +387,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({
           Cancel
         </button>
       </div>
-    </form>
+    </div>
   );
 };
 
