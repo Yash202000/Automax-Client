@@ -31,6 +31,7 @@ export interface User {
   permissions: string[];
   is_active: boolean;
   is_super_admin: boolean;
+  is_ad_user?: boolean;
   mobile_verified?: boolean;
   extension?: string;
   last_login_at: string | null;
@@ -329,6 +330,7 @@ export interface UserLoginResponse {
   permissions: string[];
   is_active: boolean;
   is_super_admin: boolean;
+  is_ad_user?: boolean;
   extension?: string;
   call_status?: string;
   last_login_at: string | null;

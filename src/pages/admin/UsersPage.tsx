@@ -38,8 +38,10 @@ import {
   roleApi,
   classificationApi,
 } from "../../api/admin";
+import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
 import type { User, Role, UpdateProfileRequest } from "../../types";
+import type { LDAPUserListItem } from "../../api/ldap";
 import { cn } from "@/lib/utils";
 import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -104,6 +106,11 @@ export const UsersPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isADModalOpen, setIsADModalOpen] = useState(false);
+  const [adUsers, setAdUsers] = useState<LDAPUserListItem[]>([]);
+  const [adUsersLoading, setAdUsersLoading] = useState(false);
+  const [adSearchQuery, setAdSearchQuery] = useState("");
+  const [adRegistering, setAdRegistering] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
@@ -689,6 +696,29 @@ export const UsersPage: React.FC = () => {
               {t("users.addUser")}
             </Button>
           )}
+          {canCreateUser && (
+            <Button
+              leftIcon={<Building2 className="w-4 h-4" />}
+              onClick={async () => {
+                setIsADModalOpen(true);
+                setAdUsersLoading(true);
+                setAdSearchQuery("");
+                try {
+                  const res = await ldapApi.fetchUsers();
+                  if (res.success && res.data) {
+                    setAdUsers(res.data);
+                  }
+                } catch {
+                  toast.error("Failed to fetch Active Directory users");
+                } finally {
+                  setAdUsersLoading(false);
+                }
+              }}
+              variant="outline"
+            >
+              Add AD User
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1028,8 +1058,14 @@ export const UsersPage: React.FC = () => {
                             </div>
                           )}
                           <div>
-                            <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                            <p className="text-sm font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
                               {user.first_name} {user.last_name}
+                              {user.is_ad_user && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full">
+                                  <Building2 className="w-3 h-3" />
+                                  AD
+                                </span>
+                              )}
                             </p>
                             <p className="text-sm text-[hsl(var(--muted-foreground))]">
                               @{user.username}
@@ -2007,6 +2043,125 @@ export const UsersPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add AD User Modal */}
+      {isADModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/25">
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    Add Active Directory User
+                  </h2>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    Search and select a user from Active Directory
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsADModalOpen(false)}
+                className="p-2 rounded-lg hover:bg-[hsl(var(--muted))] transition-colors"
+              >
+                <X className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search AD users..."
+                  value={adSearchQuery}
+                  onChange={(e) => setAdSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] text-sm"
+                />
+              </div>
+
+              {adUsersLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(var(--primary))]" />
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {adUsers
+                    .filter(
+                      (u) =>
+                        !adSearchQuery ||
+                        u.username
+                          .toLowerCase()
+                          .includes(adSearchQuery.toLowerCase()) ||
+                        (u.display_name &&
+                          u.display_name
+                            .toLowerCase()
+                            .includes(adSearchQuery.toLowerCase())) ||
+                        (u.email &&
+                          u.email
+                            .toLowerCase()
+                            .includes(adSearchQuery.toLowerCase())),
+                    )
+                    .map((adUser) => (
+                      <div
+                        key={adUser.dn}
+                        className="flex items-center justify-between p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                            {adUser.display_name || adUser.username}
+                          </p>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                            @{adUser.username}
+                            {adUser.email && ` - ${adUser.email}`}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          isLoading={adRegistering === adUser.username}
+                          disabled={adRegistering === adUser.username}
+                          onClick={async () => {
+                            setAdRegistering(adUser.username);
+                            try {
+                              const res = await ldapApi.register({
+                                username: adUser.username,
+                              });
+                              if (res.success) {
+                                toast.success(
+                                  `AD user "${adUser.username}" registered successfully`,
+                                );
+                                queryClient.invalidateQueries({
+                                  queryKey: ["users"],
+                                });
+                                setIsADModalOpen(false);
+                              } else {
+                                toast.error(
+                                  res.error || "Failed to register AD user",
+                                );
+                              }
+                            } catch {
+                              toast.error("Failed to register AD user");
+                            } finally {
+                              setAdRegistering(null);
+                            }
+                          }}
+                        >
+                          Add to System
+                        </Button>
+                      </div>
+                    ))}
+                  {adUsers.length === 0 && (
+                    <p className="text-center text-sm text-[hsl(var(--muted-foreground))] py-8">
+                      No Active Directory users found
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
