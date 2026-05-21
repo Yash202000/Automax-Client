@@ -74,6 +74,20 @@ import { IntegrationTriggersPanel } from "./components/IntegrationTriggersPanel"
 
 type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
 
+const parseCommaSeparatedPhones = (value: string) =>
+  value
+    .split(",")
+    .map((phone) => phone.trim())
+    .filter(Boolean);
+
+const parseCommaSeparatedEmails = (value: string) =>
+  value
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+
+const sanitizeSmsPhoneInput = (value: string) => value.replace(/[^\d+,]/g, "");
+
 interface StateFormData {
   name: string;
   name_ar: string;
@@ -569,6 +583,12 @@ export const WorkflowDesignerPage: React.FC = () => {
     TransitionRequirementRequest[]
   >([]);
   const [actions, setActions] = useState<TransitionActionRequest[]>([]);
+  const [customEmailInputs, setCustomEmailInputs] = useState<
+    Record<number, string>
+  >({});
+  const [smsPhoneInputs, setSmsPhoneInputs] = useState<Record<number, string>>(
+    {},
+  );
   const [fieldChanges, setFieldChanges] = useState<
     TransitionFieldChangeRequest[]
   >([]);
@@ -1116,6 +1136,17 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Config modal handlers
   const openConfigModal = (transition: WorkflowTransition) => {
     setConfiguringTransition(transition);
+    const transitionActions =
+      transition.actions?.map((a) => ({
+        action_type: a.action_type,
+        name: a.name,
+        description: a.description,
+        config: a.config,
+        execution_order: a.execution_order,
+        is_async: a.is_async,
+        is_active: a.is_active,
+      })) || [];
+
     setRequirements(
       transition.requirements?.map((r) => ({
         requirement_type: r.requirement_type,
@@ -1125,16 +1156,36 @@ export const WorkflowDesignerPage: React.FC = () => {
         error_message: r.error_message,
       })) || [],
     );
-    setActions(
-      transition.actions?.map((a) => ({
-        action_type: a.action_type,
-        name: a.name,
-        description: a.description,
-        config: a.config,
-        execution_order: a.execution_order,
-        is_async: a.is_async,
-        is_active: a.is_active,
-      })) || [],
+    setActions(transitionActions);
+    setCustomEmailInputs(
+      transitionActions.reduce<Record<number, string>>((acc, action, index) => {
+        const actionType = action.action_type as string;
+        if (actionType !== "email" || !action.config) return acc;
+
+        try {
+          const parsed = JSON.parse(action.config as string);
+          acc[index] = (parsed.custom_emails || []).join(", ");
+        } catch {
+          acc[index] = "";
+        }
+
+        return acc;
+      }, {}),
+    );
+    setSmsPhoneInputs(
+      transitionActions.reduce<Record<number, string>>((acc, action, index) => {
+        const actionType = action.action_type as string;
+        if (actionType !== "sms" || !action.config) return acc;
+
+        try {
+          const parsed = JSON.parse(action.config as string);
+          acc[index] = (parsed.custom_phones || []).join(", ");
+        } catch {
+          acc[index] = "";
+        }
+
+        return acc;
+      }, {}),
     );
     setFieldChanges(
       transition.field_changes?.map((f) => ({
@@ -1153,6 +1204,8 @@ export const WorkflowDesignerPage: React.FC = () => {
     setConfiguringTransition(null);
     setRequirements([]);
     setActions([]);
+    setCustomEmailInputs({});
+    setSmsPhoneInputs({});
     setFieldChanges([]);
   };
 
@@ -1307,6 +1360,24 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   const removeAction = (index: number) => {
     setActions(actions.filter((_, i) => i !== index));
+    setCustomEmailInputs((prev) => {
+      const next: Record<number, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const numericKey = Number(key);
+        if (numericKey < index) next[numericKey] = value;
+        if (numericKey > index) next[numericKey - 1] = value;
+      });
+      return next;
+    });
+    setSmsPhoneInputs((prev) => {
+      const next: Record<number, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const numericKey = Number(key);
+        if (numericKey < index) next[numericKey] = value;
+        if (numericKey > index) next[numericKey - 1] = value;
+      });
+      return next;
+    });
   };
 
   const updateAction = (index: number, field: string, value: any) => {
@@ -4655,6 +4726,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             return {
                               recipients: parsed.recipients || [],
                               custom_phones: parsed.custom_phones || [],
+                              template_code: parsed.template_code || "",
                               message_template: parsed.message_template || "",
                             };
                           } catch {
@@ -4695,6 +4767,20 @@ export const WorkflowDesignerPage: React.FC = () => {
                                     config: "",
                                   };
                                   setActions(updated);
+                                  if (newType !== "email") {
+                                    setCustomEmailInputs((prev) => {
+                                      const next = { ...prev };
+                                      delete next[index];
+                                      return next;
+                                    });
+                                  }
+                                  if (newType !== "sms") {
+                                    setSmsPhoneInputs((prev) => {
+                                      const next = { ...prev };
+                                      delete next[index];
+                                      return next;
+                                    });
+                                  }
                                 }}
                                 className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                               >
@@ -4792,17 +4878,21 @@ export const WorkflowDesignerPage: React.FC = () => {
                                         "workflows.email1ExampleComEmail2ExampleCom",
                                       )}
                                       value={
-                                        emailConfig.custom_emails?.join(", ") ||
+                                        customEmailInputs[index] ??
+                                        emailConfig.custom_emails?.join(", ") ??
                                         ""
                                       }
-                                      onChange={(e) =>
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setCustomEmailInputs((prev) => ({
+                                          ...prev,
+                                          [index]: value,
+                                        }));
                                         updateEmailConfig({
-                                          custom_emails: e.target.value
-                                            .split(",")
-                                            .map((s) => s.trim())
-                                            .filter(Boolean),
-                                        })
-                                      }
+                                          custom_emails:
+                                            parseCommaSeparatedEmails(value),
+                                        });
+                                      }}
                                       className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                                     />
                                     <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
@@ -4815,9 +4905,6 @@ export const WorkflowDesignerPage: React.FC = () => {
 
                                 {/* Email Notification Template */}
                                 {(() => {
-                                  const selectedTpl = emailTemplates.find(
-                                    (t) => t.code === emailConfig.template_code,
-                                  );
                                   const testEntry = actionTestState[index];
                                   return (
                                     <div className="space-y-2">
@@ -4869,23 +4956,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                                           Send Test
                                         </button>
                                       </div>
-
-                                      {/* Body preview */}
-                                      {selectedTpl && (
-                                        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] p-3 text-xs space-y-1">
-                                          {selectedTpl.subject_en && (
-                                            <p>
-                                              <span className="font-semibold text-[hsl(var(--muted-foreground))]">
-                                                Subject:{" "}
-                                              </span>
-                                              {selectedTpl.subject_en}
-                                            </p>
-                                          )}
-                                          <p className="text-[hsl(var(--muted-foreground))] whitespace-pre-wrap line-clamp-4">
-                                            {selectedTpl.body_en}
-                                          </p>
-                                        </div>
-                                      )}
 
                                       {/* Inline test panel */}
                                       {testEntry?.open &&
@@ -4983,15 +5053,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                                             )}
                                           </div>
                                         )}
-
-                                      <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                                        Variables like{" "}
-                                        <code className="bg-[hsl(var(--muted))] px-1 rounded">
-                                          {"{{ .incident_number }}"}
-                                        </code>{" "}
-                                        are substituted automatically at send
-                                        time.
-                                      </p>
                                     </div>
                                   );
                                 })()}
@@ -5113,16 +5174,25 @@ export const WorkflowDesignerPage: React.FC = () => {
                                     </label>
                                     <input
                                       type="text"
-                                      value={smsConfig.custom_phones.join(", ")}
-                                      onChange={(e) =>
-                                        updateSmsConfig({
-                                          custom_phones: e.target.value
-                                            .split(",")
-                                            .map((p) => p.trim())
-                                            .filter(Boolean),
-                                        })
+                                      inputMode="tel"
+                                      value={
+                                        smsPhoneInputs[index] ??
+                                        smsConfig.custom_phones.join(", ")
                                       }
-                                      placeholder="+1234567890, +0987654321"
+                                      onChange={(e) => {
+                                        const value = sanitizeSmsPhoneInput(
+                                          e.target.value,
+                                        );
+                                        setSmsPhoneInputs((prev) => ({
+                                          ...prev,
+                                          [index]: value,
+                                        }));
+                                        updateSmsConfig({
+                                          custom_phones:
+                                            parseCommaSeparatedPhones(value),
+                                        });
+                                      }}
+                                      placeholder="+1234567890,+0987654321"
                                       className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                                     />
                                   </div>
@@ -5149,14 +5219,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                                       </option>
                                     ))}
                                   </select>
-                                  <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
-                                    Templates are managed in Notification
-                                    Templates. Variables like{" "}
-                                    <code className="bg-[hsl(var(--muted))] px-1 rounded">
-                                      {"{{ .incident_number }}"}
-                                    </code>{" "}
-                                    are substituted automatically.
-                                  </p>
                                 </div>
                               </div>
                             ) : (
