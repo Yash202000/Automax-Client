@@ -4795,7 +4795,9 @@ export const IncidentDetailPage: React.FC = () => {
                                             fc.field_name
                                           ] || ""
                                         }
-                                        onChange={handleChange}
+                                        onChange={(e) =>
+                                          handleChange(e.target.value)
+                                        }
                                         rows={3}
                                         className={`${baseClass} resize-none`}
                                       />

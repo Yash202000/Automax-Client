@@ -982,13 +982,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                         const fieldType = cat?.field_type || "text";
                         const commonProps = {
                           value: fieldValues[fc.field_name] || "",
-                          onChange: (
-                            e: React.ChangeEvent<
-                              | HTMLInputElement
-                              | HTMLTextAreaElement
-                              | HTMLSelectElement
-                            >,
-                          ) =>
+                          onChange: (e: { target: { value: string } }) =>
                             setFieldValues((prev) => ({
                               ...prev,
                               [fc.field_name]: e.target.value,
@@ -1001,11 +995,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                             <IncidentMentionTextarea
                               {...commonProps}
                               rows={3}
-                              onChange={(e) => {
-                                commonProps.onChange(
-                                  e as React.ChangeEvent<HTMLTextAreaElement>,
-                                );
-                              }}
+                              onChange={commonProps.onChange}
                             />
                           );
                         }
