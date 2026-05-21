@@ -23,11 +23,18 @@ export default function IncidentLister() {
     openCallerIncidents,
     setOpenCallerIncidents,
     incomingCallNumber,
+    setIncomingCallNumber,
     isCallerIncidentsMinimized,
     setIsCallerIncidentsMinimized,
   } = useSoftphoneStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const handleClose = () => {
+    setOpenCallerIncidents(false);
+    setSearchTerm("");
+    setIncomingCallNumber("");
+  };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -49,7 +56,12 @@ export default function IncidentLister() {
     isError,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["incidents", "caller-lookup", debouncedSearch],
+    queryKey: [
+      "incidents",
+      "caller-lookup",
+      debouncedSearch,
+      incomingCallNumber,
+    ],
     queryFn: ({ pageParam = 1 }) =>
       incidentApi.list({
         page: pageParam,
@@ -147,7 +159,7 @@ export default function IncidentLister() {
       {/* Backdrop for mobile */}
       <div
         className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden pointer-events-auto"
-        onClick={() => setOpenCallerIncidents(false)}
+        onClick={handleClose}
       />
 
       <div
@@ -185,7 +197,7 @@ export default function IncidentLister() {
                 <Minus size={20} />
               </button>
               <button
-                onClick={() => setOpenCallerIncidents(false)}
+                onClick={handleClose}
                 className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                 aria-label="Close"
               >
