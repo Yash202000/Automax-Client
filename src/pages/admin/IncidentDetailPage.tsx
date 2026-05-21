@@ -97,6 +97,7 @@ import ImageEditor from "@/components/common/ImageEditor";
 import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
+import { useSoftphoneStore } from "../../stores/softphoneStore";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -123,6 +124,12 @@ export const IncidentDetailPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_MERGE);
   const canCloneIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+
+  const {
+    setOpenCallerIncidents,
+    setIncomingCallNumber,
+    setIsCallerIncidentsMinimized,
+  } = useSoftphoneStore();
 
   const [activeTab, setActiveTab] = useState<
     | "activity"
@@ -3429,20 +3436,39 @@ export const IncidentDetailPage: React.FC = () => {
                       </a>
                     )}
                     {incident.reporter_phone && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.dispatchEvent(
-                            new CustomEvent("initiate-call", {
-                              detail: { number: incident.reporter_phone },
-                            }),
-                          );
-                        }}
-                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                        {incident.reporter_phone}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.dispatchEvent(
+                              new CustomEvent("initiate-call", {
+                                detail: { number: incident.reporter_phone },
+                              }),
+                            );
+                          }}
+                          className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          {incident.reporter_phone}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIncomingCallNumber(
+                              incident.reporter_phone || "",
+                            );
+                            setOpenCallerIncidents(true);
+                            setIsCallerIncidentsMinimized(false);
+                          }}
+                          className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                          title={t(
+                            "incidents.viewCallerIncidents",
+                            "View Caller Incidents",
+                          )}
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -3484,22 +3510,43 @@ export const IncidentDetailPage: React.FC = () => {
                     </a>
                   )}
                   {(incident.reporter_phone || incident.reporter?.phone) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const phone =
-                          incident.reporter_phone || incident.reporter?.phone;
-                        window.dispatchEvent(
-                          new CustomEvent("initiate-call", {
-                            detail: { number: phone },
-                          }),
-                        );
-                      }}
-                      className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      {incident.reporter_phone || incident.reporter?.phone}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone =
+                            incident.reporter_phone || incident.reporter?.phone;
+                          window.dispatchEvent(
+                            new CustomEvent("initiate-call", {
+                              detail: { number: phone },
+                            }),
+                          );
+                        }}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        {incident.reporter_phone || incident.reporter?.phone}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone =
+                            incident.reporter_phone || incident.reporter?.phone;
+                          if (phone) {
+                            setIncomingCallNumber(phone);
+                            setOpenCallerIncidents(true);
+                            setIsCallerIncidentsMinimized(false);
+                          }
+                        }}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                        title={t(
+                          "incidents.viewCallerIncidents",
+                          "View Caller Incidents",
+                        )}
+                      >
+                        <History className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
