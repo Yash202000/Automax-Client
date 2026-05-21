@@ -3409,10 +3409,21 @@ export const IncidentDetailPage: React.FC = () => {
                   </label>
                   <div className="mt-1 space-y-1.5">
                     {incident.reporter_name && (
-                      <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone = incident.reporter_phone;
+                          if (phone) {
+                            setIncomingCallNumber(phone);
+                            setOpenCallerIncidents(true);
+                            setIsCallerIncidentsMinimized(false);
+                          }
+                        }}
+                        className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
+                      >
+                        <User className="w-3.5 h-3.5" />
                         {incident.reporter_name}
-                      </span>
+                      </button>
                     )}
                     {incident.reporter_email && (
                       <a
@@ -3451,23 +3462,6 @@ export const IncidentDetailPage: React.FC = () => {
                           <Phone className="w-3.5 h-3.5" />
                           {incident.reporter_phone}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIncomingCallNumber(
-                              incident.reporter_phone || "",
-                            );
-                            setOpenCallerIncidents(true);
-                            setIsCallerIncidentsMinimized(false);
-                          }}
-                          className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
-                          title={t(
-                            "incidents.viewCallerIncidents",
-                            "View Caller Incidents",
-                          )}
-                        >
-                          <History className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     )}
                   </div>
@@ -3480,14 +3474,26 @@ export const IncidentDetailPage: React.FC = () => {
                   {t("incidents.reporter")}
                 </label>
                 <div className="mt-1 flex items-center gap-3 flex-wrap">
-                  <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const phone =
+                        incident.reporter_phone || incident.reporter?.phone;
+                      if (phone) {
+                        setIncomingCallNumber(phone);
+                        setOpenCallerIncidents(true);
+                        setIsCallerIncidentsMinimized(false);
+                      }
+                    }}
+                    className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
+                  >
+                    <User className="w-3.5 h-3.5" />
                     {incident.reporter?.first_name
                       ? `${incident.reporter.first_name} ${incident.reporter.last_name || ""}`
                       : incident.reporter?.username ||
                         incident.reporter_name ||
                         "Unknown"}
-                  </span>
+                  </button>
                   {(incident.reporter_email || incident.reporter?.email) && (
                     <a
                       href={`mailto:${incident.reporter_email || incident.reporter?.email}`}
@@ -3526,25 +3532,6 @@ export const IncidentDetailPage: React.FC = () => {
                       >
                         <Phone className="w-3.5 h-3.5" />
                         {incident.reporter_phone || incident.reporter?.phone}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const phone =
-                            incident.reporter_phone || incident.reporter?.phone;
-                          if (phone) {
-                            setIncomingCallNumber(phone);
-                            setOpenCallerIncidents(true);
-                            setIsCallerIncidentsMinimized(false);
-                          }
-                        }}
-                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
-                        title={t(
-                          "incidents.viewCallerIncidents",
-                          "View Caller Incidents",
-                        )}
-                      >
-                        <History className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   )}
