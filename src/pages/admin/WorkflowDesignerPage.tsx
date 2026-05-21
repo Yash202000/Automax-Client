@@ -74,6 +74,14 @@ import { IntegrationTriggersPanel } from "./components/IntegrationTriggersPanel"
 
 type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
 
+const parseCommaSeparatedPhones = (value: string) =>
+  value
+    .split(",")
+    .map((phone) => phone.trim())
+    .filter(Boolean);
+
+const sanitizeSmsPhoneInput = (value: string) => value.replace(/[^\d+,]/g, "");
+
 interface StateFormData {
   name: string;
   name_ar: string;
@@ -569,6 +577,9 @@ export const WorkflowDesignerPage: React.FC = () => {
     TransitionRequirementRequest[]
   >([]);
   const [actions, setActions] = useState<TransitionActionRequest[]>([]);
+  const [smsPhoneInputs, setSmsPhoneInputs] = useState<Record<number, string>>(
+    {},
+  );
   const [fieldChanges, setFieldChanges] = useState<
     TransitionFieldChangeRequest[]
   >([]);
@@ -1116,6 +1127,17 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Config modal handlers
   const openConfigModal = (transition: WorkflowTransition) => {
     setConfiguringTransition(transition);
+    const transitionActions =
+      transition.actions?.map((a) => ({
+        action_type: a.action_type,
+        name: a.name,
+        description: a.description,
+        config: a.config,
+        execution_order: a.execution_order,
+        is_async: a.is_async,
+        is_active: a.is_active,
+      })) || [];
+
     setRequirements(
       transition.requirements?.map((r) => ({
         requirement_type: r.requirement_type,
@@ -1125,16 +1147,21 @@ export const WorkflowDesignerPage: React.FC = () => {
         error_message: r.error_message,
       })) || [],
     );
-    setActions(
-      transition.actions?.map((a) => ({
-        action_type: a.action_type,
-        name: a.name,
-        description: a.description,
-        config: a.config,
-        execution_order: a.execution_order,
-        is_async: a.is_async,
-        is_active: a.is_active,
-      })) || [],
+    setActions(transitionActions);
+    setSmsPhoneInputs(
+      transitionActions.reduce<Record<number, string>>((acc, action, index) => {
+        const actionType = action.action_type as string;
+        if (actionType !== "sms" || !action.config) return acc;
+
+        try {
+          const parsed = JSON.parse(action.config as string);
+          acc[index] = (parsed.custom_phones || []).join(", ");
+        } catch {
+          acc[index] = "";
+        }
+
+        return acc;
+      }, {}),
     );
     setFieldChanges(
       transition.field_changes?.map((f) => ({
@@ -1153,6 +1180,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     setConfiguringTransition(null);
     setRequirements([]);
     setActions([]);
+    setSmsPhoneInputs({});
     setFieldChanges([]);
   };
 
@@ -1307,6 +1335,15 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   const removeAction = (index: number) => {
     setActions(actions.filter((_, i) => i !== index));
+    setSmsPhoneInputs((prev) => {
+      const next: Record<number, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const numericKey = Number(key);
+        if (numericKey < index) next[numericKey] = value;
+        if (numericKey > index) next[numericKey - 1] = value;
+      });
+      return next;
+    });
   };
 
   const updateAction = (index: number, field: string, value: any) => {
@@ -4655,6 +4692,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                             return {
                               recipients: parsed.recipients || [],
                               custom_phones: parsed.custom_phones || [],
+                              template_code: parsed.template_code || "",
                               message_template: parsed.message_template || "",
                             };
                           } catch {
@@ -4695,6 +4733,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                                     config: "",
                                   };
                                   setActions(updated);
+                                  if (newType !== "sms") {
+                                    setSmsPhoneInputs((prev) => {
+                                      const next = { ...prev };
+                                      delete next[index];
+                                      return next;
+                                    });
+                                  }
                                 }}
                                 className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                               >
@@ -5113,16 +5158,25 @@ export const WorkflowDesignerPage: React.FC = () => {
                                     </label>
                                     <input
                                       type="text"
-                                      value={smsConfig.custom_phones.join(", ")}
-                                      onChange={(e) =>
-                                        updateSmsConfig({
-                                          custom_phones: e.target.value
-                                            .split(",")
-                                            .map((p) => p.trim())
-                                            .filter(Boolean),
-                                        })
+                                      inputMode="tel"
+                                      value={
+                                        smsPhoneInputs[index] ??
+                                        smsConfig.custom_phones.join(", ")
                                       }
-                                      placeholder="+1234567890, +0987654321"
+                                      onChange={(e) => {
+                                        const value = sanitizeSmsPhoneInput(
+                                          e.target.value,
+                                        );
+                                        setSmsPhoneInputs((prev) => ({
+                                          ...prev,
+                                          [index]: value,
+                                        }));
+                                        updateSmsConfig({
+                                          custom_phones:
+                                            parseCommaSeparatedPhones(value),
+                                        });
+                                      }}
+                                      placeholder="+1234567890,+0987654321"
                                       className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                                     />
                                   </div>
