@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { IncidentMentionTextarea } from "../common/IncidentMentionTextarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -996,7 +997,12 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                             "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]",
                         };
                         if (fieldType === "textarea") {
-                          return <textarea {...commonProps} rows={3} />;
+                          return (
+                            <IncidentMentionTextarea
+                              {...commonProps}
+                              rows={3}
+                            />
+                          );
                         }
                         if (
                           (fieldType === "select" ||

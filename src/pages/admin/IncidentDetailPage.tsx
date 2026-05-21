@@ -98,6 +98,7 @@ import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
+import { IncidentMentionTextarea } from "@/components/common/IncidentMentionTextarea";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -4788,15 +4789,13 @@ export const IncidentDetailPage: React.FC = () => {
                                 return (
                                   <>
                                     {fieldType === "textarea" ? (
-                                      <textarea
+                                      <IncidentMentionTextarea
                                         value={
                                           transitionFieldValues[
                                             fc.field_name
                                           ] || ""
                                         }
-                                        onChange={(e) =>
-                                          handleChange(e.target.value)
-                                        }
+                                        onChange={handleChange}
                                         rows={3}
                                         className={`${baseClass} resize-none`}
                                       />
