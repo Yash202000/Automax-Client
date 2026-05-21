@@ -33,27 +33,6 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   );
 };
 
-const DEFAULT_AVAILABLE_VARIABLES: Record<string, string[]> = {
-  escalation: [
-    "first_name",
-    "last_name",
-    "incident_count",
-    "classification_name",
-    "sla_page_url",
-    "incidents_summary",
-    "report_date",
-    "incident_number",
-    "incident_title",
-    "incident_url",
-    "state_name",
-    "hours_in_state",
-    "sla_hours",
-    "policy_name",
-    "step_order",
-    "hours_in_breach",
-  ],
-};
-
 const uniqueVariables = (variables: string[]) => Array.from(new Set(variables));
 
 export default function TemplateFormPage() {
@@ -82,7 +61,7 @@ export default function TemplateFormPage() {
     queryFn: notificationTemplateApi.getAvailableVariables,
   });
 
-  const availableVars = varsData?.data?.data ?? {};
+  const availableVars: any = varsData?.data ?? {};
   const variableSyntax = varsData?.data?.syntax ?? "{{variable}}";
 
   const [formData, setFormData] = useState({
@@ -141,10 +120,7 @@ export default function TemplateFormPage() {
         : t("notificationTemplates.form.placeholders.bodyEnglish");
 
   const actionVariables = useMemo(() => {
-    return uniqueVariables([
-      ...(availableVars[formData.action_type] ?? []),
-      ...(DEFAULT_AVAILABLE_VARIABLES[formData.action_type] ?? []),
-    ]);
+    return uniqueVariables([...(availableVars[formData.action_type] ?? [])]);
   }, [availableVars, formData.action_type]);
 
   useEffect(() => {
