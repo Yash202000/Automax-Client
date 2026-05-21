@@ -4,10 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Mail, Lock, ArrowRight, Fingerprint } from "lucide-react";
+import { Mail, Lock, ArrowRight, Fingerprint, Building2 } from "lucide-react";
 import { Button, Input, Checkbox } from "../ui";
 import { authApi } from "../../api/auth";
 import { ssoApi } from "../../api/sso";
+import { ldapApi } from "../../api/ldap";
 import { useAuthStore } from "../../stores/authStore";
 import type { User } from "../../types";
 
@@ -16,8 +17,12 @@ export const LoginForm: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [ssoMode, setSsoMode] = useState(false);
+  const [loginMode, setLoginMode] = useState<"regular" | "sso" | "ldap">(
+    "regular",
+  );
   const [nationalId, setNationalId] = useState("");
+  const [adUsername, setAdUsername] = useState("");
+  const [adPassword, setAdPassword] = useState("");
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const setUser = useAuthStore((state) => state.setUser);
@@ -38,11 +43,13 @@ export const LoginForm: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const toggleMode = () => {
-    setSsoMode((prev) => !prev);
+  const setMode = (mode: "regular" | "sso" | "ldap") => {
+    setLoginMode(mode);
     setError("");
     reset();
     setNationalId("");
+    setAdUsername("");
+    setAdPassword("");
   };
 
   const handleSsoLogin = async (e: React.FormEvent) => {
@@ -67,6 +74,47 @@ export const LoginForm: React.FC = () => {
         } else {
           navigate("/dashboard");
         }
+      } else {
+        setError(response.error || t("auth.loginError"));
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t("auth.loginError");
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosError = err as { response?: { data?: { error?: string } } };
+        setError(axiosError.response?.data?.error || errorMessage);
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adUsername.trim() || !adPassword.trim()) return;
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await ldapApi.login({
+        username: adUsername,
+        password: adPassword,
+      });
+      if (response.success && response.data) {
+        setAuth(
+          response.data.user as unknown as User,
+          response.data.token,
+          response.data.refresh_token,
+        );
+        try {
+          const profileResp = await authApi.getProfile();
+          if (profileResp.success && profileResp.data) {
+            setUser(profileResp.data);
+          }
+        } catch {}
+        navigate("/dashboard");
       } else {
         setError(response.error || t("auth.loginError"));
       }
@@ -115,7 +163,7 @@ export const LoginForm: React.FC = () => {
     setError("");
 
     try {
-      if (!ssoMode) {
+      if (loginMode === "regular") {
         await handleRegularLogin(data);
       }
     } catch (err: unknown) {
@@ -132,23 +180,34 @@ export const LoginForm: React.FC = () => {
     }
   };
 
+  const isSso = loginMode === "sso";
+  const isLdap = loginMode === "ldap";
+
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
         <h1 className="text-3xl font-bold ">
-          {ssoMode ? t("auth.ssoLoginTitle") : t("auth.welcomeBack")}
+          {isSso
+            ? t("auth.ssoLoginTitle")
+            : isLdap
+              ? "Active Directory Login"
+              : t("auth.welcomeBack")}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          {ssoMode ? t("auth.ssoLoginSubtitle") : t("auth.loginSubtitle")}
+          {isSso
+            ? t("auth.ssoLoginSubtitle")
+            : isLdap
+              ? "Sign in with your Active Directory credentials"
+              : t("auth.loginSubtitle")}
         </p>
       </div>
 
       <div className="mb-6 flex rounded-lg border p-1 bg-gray-50">
         <button
           type="button"
-          onClick={() => !ssoMode || toggleMode()}
+          onClick={() => setMode("regular")}
           className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            !ssoMode
+            loginMode === "regular"
               ? "bg-white text-blue-600 shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}
@@ -158,9 +217,21 @@ export const LoginForm: React.FC = () => {
         </button>
         <button
           type="button"
-          onClick={() => ssoMode || toggleMode()}
+          onClick={() => setMode("ldap")}
           className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            ssoMode
+            loginMode === "ldap"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <Building2 className="w-4 h-4 inline mr-1" />
+          AD Login
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("sso")}
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+            loginMode === "sso"
               ? "bg-white text-blue-600 shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}
@@ -176,7 +247,7 @@ export const LoginForm: React.FC = () => {
         </div>
       )}
 
-      {ssoMode ? (
+      {isSso ? (
         <form onSubmit={handleSsoLogin} className="space-y-5" noValidate>
           <Input
             label={t("auth.nationalId")}
@@ -184,6 +255,35 @@ export const LoginForm: React.FC = () => {
             value={nationalId}
             onChange={(e) => setNationalId(e.target.value)}
             leftIcon={<Fingerprint className="w-5 h-5" />}
+          />
+
+          <Button
+            type="submit"
+            size="lg"
+            fullWidth
+            isLoading={isLoading}
+            rightIcon={!isLoading && <ArrowRight className="w-5 h-5" />}
+          >
+            {t("auth.signIn")}
+          </Button>
+        </form>
+      ) : isLdap ? (
+        <form onSubmit={handleAdLogin} className="space-y-5" noValidate>
+          <Input
+            label="AD Username"
+            placeholder="Enter your Active Directory username"
+            value={adUsername}
+            onChange={(e) => setAdUsername(e.target.value)}
+            leftIcon={<Building2 className="w-5 h-5" />}
+          />
+
+          <Input
+            label={t("auth.password")}
+            type="password"
+            placeholder={t("auth.passwordPlaceholder")}
+            value={adPassword}
+            onChange={(e) => setAdPassword(e.target.value)}
+            leftIcon={<Lock className="w-5 h-5" />}
           />
 
           <Button
@@ -246,15 +346,17 @@ export const LoginForm: React.FC = () => {
         </form>
       )}
 
-      <p className="mt-8 text-center text-gray-600">
-        {t("auth.noAccount")}{" "}
-        <Link
-          to="/register"
-          className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          {t("auth.signUp")}
-        </Link>
-      </p>
+      {!isLdap && (
+        <p className="mt-8 text-center text-gray-600">
+          {t("auth.noAccount")}{" "}
+          <Link
+            to="/register"
+            className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            {t("auth.signUp")}
+          </Link>
+        </p>
+      )}
     </div>
   );
 };
