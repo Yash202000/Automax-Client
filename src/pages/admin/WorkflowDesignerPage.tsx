@@ -3556,67 +3556,64 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* New Incident Notifications — only for initial states */}
-                {stateFormData.state_type === "initial" && (
-                  <div className="border-t border-[hsl(var(--border))] pt-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Mail className="w-4 h-4 text-blue-500" />
-                      <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                        New Incident Notifications
+                <div className="border-t border-[hsl(var(--border))] pt-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Mail className="w-4 h-4 text-blue-500" />
+                    <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                      Notifications
+                    </label>
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                    Templates sent to assignee and reporter when an incident
+                    enters this state.
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        Email Template
                       </label>
+                      <select
+                        value={stateFormData.new_incident_email_template_code}
+                        onChange={(e) =>
+                          setStateFormData({
+                            ...stateFormData,
+                            new_incident_email_template_code: e.target.value,
+                          })
+                        }
+                        className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+                      >
+                        <option value="">— None —</option>
+                        {emailTemplates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.code}>
+                            {tpl.name} ({tpl.code})
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                      Templates sent to assignee and reporter when a new
-                      incident is created in this state.
-                    </p>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                          Email Template
-                        </label>
-                        <select
-                          value={stateFormData.new_incident_email_template_code}
-                          onChange={(e) =>
-                            setStateFormData({
-                              ...stateFormData,
-                              new_incident_email_template_code: e.target.value,
-                            })
-                          }
-                          className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
-                        >
-                          <option value="">— None —</option>
-                          {emailTemplates.map((tpl) => (
-                            <option key={tpl.id} value={tpl.code}>
-                              {tpl.name} ({tpl.code})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                          SMS Template
-                        </label>
-                        <select
-                          value={stateFormData.new_incident_sms_template_code}
-                          onChange={(e) =>
-                            setStateFormData({
-                              ...stateFormData,
-                              new_incident_sms_template_code: e.target.value,
-                            })
-                          }
-                          className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
-                        >
-                          <option value="">— None —</option>
-                          {smsTemplates.map((tpl) => (
-                            <option key={tpl.id} value={tpl.code}>
-                              {tpl.name} ({tpl.code})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        SMS Template
+                      </label>
+                      <select
+                        value={stateFormData.new_incident_sms_template_code}
+                        onChange={(e) =>
+                          setStateFormData({
+                            ...stateFormData,
+                            new_incident_sms_template_code: e.target.value,
+                          })
+                        }
+                        className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+                      >
+                        <option value="">— None —</option>
+                        {smsTemplates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.code}>
+                            {tpl.name} ({tpl.code})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
