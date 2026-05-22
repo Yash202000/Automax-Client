@@ -128,6 +128,7 @@ export const IncidentDetailPage: React.FC = () => {
   const {
     setOpenCallerIncidents,
     setIncomingCallNumber,
+    setIncomingCallName,
     setIsCallerIncidentsMinimized,
   } = useSoftphoneStore();
 
@@ -3415,6 +3416,7 @@ export const IncidentDetailPage: React.FC = () => {
                           const phone = incident.reporter_phone;
                           if (phone) {
                             setIncomingCallNumber(phone);
+                            setIncomingCallName(incident.reporter_name);
                             setOpenCallerIncidents(true);
                             setIsCallerIncidentsMinimized(false);
                           }
@@ -3480,7 +3482,13 @@ export const IncidentDetailPage: React.FC = () => {
                       const phone =
                         incident.reporter_phone || incident.reporter?.phone;
                       if (phone) {
+                        const reporterName = incident.reporter?.first_name
+                          ? `${incident.reporter.first_name} ${incident.reporter.last_name || ""}`.trim()
+                          : incident.reporter?.username ||
+                            incident.reporter_name ||
+                            "Unknown";
                         setIncomingCallNumber(phone);
+                        setIncomingCallName(reporterName);
                         setOpenCallerIncidents(true);
                         setIsCallerIncidentsMinimized(false);
                       }

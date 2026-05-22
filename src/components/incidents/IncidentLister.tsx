@@ -24,6 +24,7 @@ export default function IncidentLister() {
     setOpenCallerIncidents,
     incomingCallNumber,
     setIncomingCallNumber,
+    incomingCallName,
     isCallerIncidentsMinimized,
     setIsCallerIncidentsMinimized,
   } = useSoftphoneStore();
@@ -185,6 +186,7 @@ export default function IncidentLister() {
                 <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
                   <Phone className="w-3 h-3" />
                   {incomingCallNumber}
+                  {incomingCallName && ` (${incomingCallName})`}
                 </p>
               )}
             </div>
@@ -213,10 +215,7 @@ export default function IncidentLister() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={t(
-                "common.searchPlaceholder",
-                "Search by ID, name, or phone...",
-              )}
+              placeholder={t("common.searchPlaceholder", "Search by ID, title")}
               className={cn(
                 "w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all",
                 "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white",
@@ -297,14 +296,11 @@ export default function IncidentLister() {
                   )}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
-                        getPriorityColor(incident?.priority || 0),
-                      )}
-                    >
-                      {getPriorityLabel(incident?.priority || 0)}
-                    </span>
+                    <div>
+                      <span className="text-xs text-gray-900 text-sm mb-1 line-clamp-1">
+                        {incident.incident_number}
+                      </span>
+                    </div>
                     <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
                       <Calendar className="w-2.5 h-2.5" />
                       {new Date(incident.created_at).toLocaleDateString()}
@@ -321,7 +317,15 @@ export default function IncidentLister() {
 
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
                     <div className="flex items-center gap-2">
-                      <div className="px-2 py-1 rounded-lg bg-gray-50 text-[10px] font-medium text-gray-600">
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
+                          getPriorityColor(incident?.priority || 0),
+                        )}
+                      >
+                        {getPriorityLabel(incident?.priority || 0)}
+                      </span>
+                      <div className="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider">
                         {incident.current_state?.name || "New"}
                       </div>
                     </div>
