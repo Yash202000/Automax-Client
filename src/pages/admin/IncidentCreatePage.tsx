@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -12,6 +18,7 @@ import {
   Upload,
   X,
   Paperclip,
+  Loader2,
 } from "lucide-react";
 import {
   Button,
@@ -98,6 +105,9 @@ export function IncidentCreatePage() {
   const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [isResolvingLocation, setIsResolvingLocation] =
+    useState<boolean>(false);
+  const isResolvingRef = useRef(false);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -732,6 +742,80 @@ export function IncidentCreatePage() {
     setLookupValues((prev) => ({ ...prev, [categoryId]: value }));
   };
 
+  const resolveAndSetLocation = async (locationData: LocationData) => {
+    if (isResolvingRef.current) return;
+    isResolvingRef.current = true;
+    setIsResolvingLocation(true);
+    try {
+      const hierarchy = [
+        locationData.country,
+        locationData.state,
+        locationData.city,
+        locationData.suburb,
+        locationData.road,
+      ].filter(Boolean) as string[];
+
+      if (hierarchy.length === 0) {
+        setIsResolvingLocation(false);
+        isResolvingRef.current = false;
+        return;
+      }
+
+      let parentId: string | undefined = undefined;
+      let currentNodes = rawLocations;
+      let finalLocationId: string | undefined = undefined;
+
+      for (let i = 0; i < hierarchy.length; i++) {
+        const levelName = hierarchy[i];
+
+        // Find match in current tree nodes
+        const match = currentNodes?.find(
+          (n) => n.name.toLowerCase() === levelName.toLowerCase(),
+        );
+
+        if (match) {
+          parentId = match.id;
+          finalLocationId = match.id;
+          currentNodes = match.children || [];
+        } else {
+          // Node not found, create it
+          const res = await locationApi.create({
+            name: levelName,
+            parent_id: parentId,
+          });
+
+          if (res.data) {
+            parentId = res.data.id;
+            finalLocationId = res.data.id;
+            currentNodes = []; // The newly created node won't have children in our local cache
+            // Trigger refetch so next time we have it
+            queryClient.invalidateQueries({
+              queryKey: ["admin", "locations", "tree"],
+            });
+          } else {
+            // Creation failed, abort hierarchy building
+            throw new Error(`Failed to create location: ${levelName}`);
+          }
+        }
+      }
+
+      if (finalLocationId) {
+        setFormData((prev) => ({ ...prev, location_id: finalLocationId }));
+      }
+    } catch (error) {
+      console.error("Failed to resolve location hierarchy:", error);
+      toast.error(
+        t(
+          "incidents.locationResolveError",
+          "Failed to auto-select location. Please select manually.",
+        ),
+      );
+    } finally {
+      isResolvingRef.current = false;
+      setIsResolvingLocation(false);
+    }
+  };
+
   const handleLocationChange = (location: LocationData | undefined) => {
     if (location) {
       setFormData((prev) => ({
@@ -747,6 +831,7 @@ export function IncidentCreatePage() {
       if (errors.geolocation) {
         setErrors((prev) => ({ ...prev, geolocation: "" }));
       }
+      resolveAndSetLocation(location);
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -757,6 +842,7 @@ export function IncidentCreatePage() {
         state: undefined,
         country: undefined,
         postal_code: undefined,
+        location_id: "",
       }));
     }
   };
@@ -1156,17 +1242,25 @@ export function IncidentCreatePage() {
                   leafOnly={true}
                   emptyMessage={t("incidents.noClassifications")}
                 />
-                <TreeSelect
-                  label={t("incidents.location")}
-                  data={locationTree}
-                  value={formData.location_id || ""}
-                  onChange={(id) => handleChange("location_id", id)}
-                  placeholder={t("incidents.selectLocation")}
-                  required={true}
-                  error={errors.location_id}
-                  leafOnly={true}
-                  emptyMessage={t("incidents.noLocations")}
-                />
+                <div className="relative">
+                  <TreeSelect
+                    label={t("incidents.location")}
+                    data={locationTree}
+                    value={formData.location_id || ""}
+                    onChange={(id) => handleChange("location_id", id)}
+                    placeholder={t("incidents.selectLocation")}
+                    required={true}
+                    error={errors.location_id}
+                    leafOnly={true}
+                    disabled={isResolvingLocation}
+                    emptyMessage={t("incidents.noLocations")}
+                  />
+                  {isResolvingLocation && (
+                    <div className="absolute right-8 top-8">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    </div>
+                  )}
+                </div>
                 <Select
                   label={t("incidents.source")}
                   value={formData.source || ""}

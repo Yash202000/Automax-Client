@@ -42,6 +42,8 @@ export interface LocationData {
   state?: string;
   country?: string;
   postal_code?: string;
+  suburb?: string;
+  road?: string;
 }
 
 interface LocationPickerProps {
@@ -69,6 +71,7 @@ interface NominatimResponse {
     state?: string;
     country?: string;
     postcode?: string;
+    province?: string;
   };
 }
 
@@ -123,9 +126,11 @@ async function reverseGeocode(
     return {
       address: data.display_name,
       city: data.address.city || data.address.town || data.address.village,
-      state: data.address.state,
+      state: data.address.state || data.address.province,
       country: data.address.country,
       postal_code: data.address.postcode,
+      suburb: data.address.suburb,
+      road: data.address.road || data.address.house_number,
     };
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -159,6 +164,7 @@ export function LocationPicker({
   const searchRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const searchTimeout = useRef<any>(null);
+  const lastGeocodedCoords = useRef<{ lat: number; lng: number } | null>(null);
 
   // Default center
   const defaultCenter: [number, number] = [25.276987, 55.296249]; // Dubai as default
@@ -227,6 +233,8 @@ export function LocationPicker({
       const lat = parseFloat(suggestion.lat);
       const lon = parseFloat(suggestion.lon);
 
+      lastGeocodedCoords.current = { lat, lng: lon };
+
       const locationData: LocationData = {
         latitude: lat,
         longitude: lon,
@@ -235,9 +243,11 @@ export function LocationPicker({
           suggestion.address.city ||
           suggestion.address.town ||
           suggestion.address.village,
-        state: suggestion.address.state,
+        state: suggestion.address.state || suggestion.address.province,
         country: suggestion.address.country,
         postal_code: suggestion.address.postcode,
+        suburb: suggestion.address.suburb,
+        road: suggestion.address.road || suggestion.address.house_number,
       };
 
       onChange(locationData);
@@ -262,6 +272,7 @@ export function LocationPicker({
         const { latitude, longitude } = position.coords;
 
         // Reverse geocode to get address
+        lastGeocodedCoords.current = { lat: latitude, lng: longitude };
         const addressData = await reverseGeocode(latitude, longitude);
 
         const locationData: LocationData = {
@@ -296,6 +307,7 @@ export function LocationPicker({
 
   const handleMapClick = useCallback(
     async (latlng: LatLng) => {
+      lastGeocodedCoords.current = { lat: latlng.lat, lng: latlng.lng };
       setIsLoading(true);
 
       const addressData = await reverseGeocode(latlng.lat, latlng.lng);
@@ -314,12 +326,25 @@ export function LocationPicker({
   );
 
   const handleClear = useCallback(() => {
+    lastGeocodedCoords.current = null;
     onChange(undefined);
     setMapCenter(null);
   }, [onChange]);
 
   const reverseAndSetLatLong = async () => {
     if (value?.latitude && value.longitude) {
+      if (
+        lastGeocodedCoords.current &&
+        lastGeocodedCoords.current.lat === value.latitude &&
+        lastGeocodedCoords.current.lng === value.longitude
+      ) {
+        return;
+      }
+
+      lastGeocodedCoords.current = {
+        lat: value.latitude,
+        lng: value.longitude,
+      };
       setIsLoading(true);
 
       const addressData = await reverseGeocode(
