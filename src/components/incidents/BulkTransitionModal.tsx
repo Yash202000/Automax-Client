@@ -48,6 +48,58 @@ type TransitionStepKey =
   | "comment"
   | "executing";
 
+const cleanFieldChanges = (
+  fieldChanges: Record<string, string> | undefined,
+  categories: any[],
+) => {
+  if (!fieldChanges) return undefined;
+
+  const cleaned: Record<string, string> = {};
+  for (const [key, val] of Object.entries(fieldChanges)) {
+    if (typeof val !== "string") {
+      cleaned[key] = val;
+      continue;
+    }
+
+    const trimmed = val.trim();
+
+    // Check if key is a lookup field
+    if (key.startsWith("lookup:")) {
+      const code = key.replace("lookup:", "");
+      const cat = categories.find((c) => c.code === code);
+      const fieldType = cat?.field_type || "text";
+
+      if (fieldType === "select" || fieldType === "multiselect") {
+        // Extract all UUIDs from any mentions present in the string
+        const mentionGlobalRegex = /@\{[^:]+:([0-9a-fA-F-]{36})\}/g;
+        const matches = [...trimmed.matchAll(mentionGlobalRegex)];
+        if (matches.length > 0) {
+          const uuids = matches.map((m) => m[1]);
+          if (fieldType === "select") {
+            cleaned[key] = uuids[0]; // Send the first UUID
+          } else {
+            cleaned[key] = uuids.join(","); // Send comma-separated UUIDs for multiselect
+          }
+          continue;
+        }
+      } else {
+        // For non-select/multiselect custom lookup fields (like text, textarea),
+        // if the value is EXACTLY a single mention, extract its UUID to prevent database UUID parsing crash.
+        const singleMentionRegex = /^@\{[^:]+:([0-9a-fA-F-]{36})\}$/;
+        const match = trimmed.match(singleMentionRegex);
+        if (match) {
+          cleaned[key] = match[1];
+          continue;
+        }
+      }
+    }
+
+    // Default fallback: just trim the value
+    cleaned[key] = trimmed;
+  }
+  return cleaned;
+};
+
 export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   isOpen,
   onClose,
@@ -349,7 +401,9 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
           department_id: departmentId,
           user_ids: userIds,
           field_changes:
-            Object.keys(fieldValues).length > 0 ? fieldValues : undefined,
+            Object.keys(fieldValues).length > 0
+              ? cleanFieldChanges(fieldValues, lookupCategories)
+              : undefined,
           ready_to_close_duration: readyToCloseDuration || undefined,
           feedback: selectedTransition.requirements?.some(
             (r) => r.requirement_type === "feedback",
