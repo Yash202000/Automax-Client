@@ -27,6 +27,7 @@
     "actions": "Actions",
     "status": "Status",
     "name": "Name",
+    "tagIncident": "you can use @ to tag incidents",
     "description": "Description",
     "date": "Date",
     "type": "Type",
