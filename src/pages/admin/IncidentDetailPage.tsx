@@ -155,7 +155,6 @@ const RenderWithIncidentMentions: React.FC<{ text: string }> = ({ text }) => {
 
 const cleanFieldChanges = (
   fieldChanges: Record<string, string> | undefined,
-  categories: any[],
 ) => {
   if (!fieldChanges) return undefined;
 
@@ -170,32 +169,16 @@ const cleanFieldChanges = (
 
     // Check if key is a lookup field
     if (key.startsWith("lookup:")) {
-      const code = key.replace("lookup:", "");
-      const cat = categories.find((c) => c.code === code);
-      const fieldType = cat?.field_type || "text";
+      // Relaxed regex: matches @{incidentNumber:incidentId} allowing optional spaces anywhere
+      const mentionRegex = /@\{\s*[^:]+:\s*([^}]+?)\s*\}/g;
+      const matches = [...trimmed.matchAll(mentionRegex)];
 
-      if (fieldType === "select" || fieldType === "multiselect") {
-        // Extract all UUIDs from any mentions present in the string
-        const mentionGlobalRegex = /@\{[^:]+:([0-9a-fA-F-]{36})\}/g;
-        const matches = [...trimmed.matchAll(mentionGlobalRegex)];
-        if (matches.length > 0) {
-          const uuids = matches.map((m) => m[1]);
-          if (fieldType === "select") {
-            cleaned[key] = uuids[0]; // Send the first UUID
-          } else {
-            cleaned[key] = uuids.join(","); // Send comma-separated UUIDs for multiselect
-          }
-          continue;
-        }
-      } else {
-        // For non-select/multiselect custom lookup fields (like text, textarea),
-        // if the value is EXACTLY a single mention, extract its UUID to prevent database UUID parsing crash.
-        const singleMentionRegex = /^@\{[^:]+:([0-9a-fA-F-]{36})\}$/;
-        const match = trimmed.match(singleMentionRegex);
-        if (match) {
-          cleaned[key] = match[1];
-          continue;
-        }
+      if (matches.length > 0) {
+        // Extract all captured incidentIds
+        const ids = matches.map((m) => m[1].trim());
+        // Join them by commas (or just send the single one if there's only one)
+        cleaned[key] = ids.join(",");
+        continue;
       }
     }
 
@@ -689,7 +672,7 @@ export const IncidentDetailPage: React.FC = () => {
         },
         department_id,
         user_ids,
-        field_changes: cleanFieldChanges(field_changes, lookupCategories),
+        field_changes: cleanFieldChanges(field_changes),
         ready_to_close_duration,
         version: incident?.version || 1, // Include current version for optimistic locking
       }),
