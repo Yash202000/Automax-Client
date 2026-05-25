@@ -2143,8 +2143,11 @@ export const UsersPage: React.FC = () => {
                                   res.error || "Failed to register AD user",
                                 );
                               }
-                            } catch {
-                              toast.error("Failed to register AD user");
+                            } catch (err: any) {
+                              const msg =
+                                err?.response?.data?.error ||
+                                "Failed to register AD user";
+                              toast.error(msg);
                             } finally {
                               setAdRegistering(null);
                             }
