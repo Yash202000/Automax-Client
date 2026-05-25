@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useSearchParams,
+  Link,
+} from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -114,6 +119,7 @@ export const IncidentDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
   const { users } = useAppSelector((state) => state.users);
@@ -1069,6 +1075,20 @@ export const IncidentDetailPage: React.FC = () => {
       }
     }
   };
+
+  // Auto-open reopen transition modal when navigated with ?action=reopen
+  useEffect(() => {
+    if (searchParams.get("action") !== "reopen") return;
+    if (!availableTransitions.length) return;
+    const reopenTransition = availableTransitions.find(
+      (t) => t.transition.is_reopen && t.can_execute,
+    );
+    if (reopenTransition) {
+      handleTransitionClick(reopenTransition);
+    }
+    // Clear the param so it doesn't re-trigger
+    setSearchParams({}, { replace: true });
+  }, [availableTransitions, searchParams]);
 
   const evaluateReplaceButton = () => {
     if (selectedImage && selectedImage.uploaded_by?.id === user?.id) {

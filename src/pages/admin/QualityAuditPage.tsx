@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Bot,
   ShieldCheck,
@@ -15,8 +15,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { aiQualityApi } from "../../api/admin";
-import { useAuthStore } from "../../stores/authStore";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "../../stores/authStore";
 import type { AIQualityFeedback } from "../../types";
 
 // ---------------------------------------------------------------------------
@@ -70,26 +70,10 @@ const FILTER_OPTIONS = [
 
 export default function QualityAuditPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [reopeningId, setReopeningId] = useState<string | null>(null);
-  const [reopenError, setReopenError] = useState<string | null>(null);
-
-  const handleReopen = async (incidentId: string) => {
-    setReopeningId(incidentId);
-    setReopenError(null);
-    try {
-      await aiQualityApi.reopen(incidentId);
-      refetch();
-    } catch (err: any) {
-      setReopenError(
-        err?.response?.data?.message ?? "Failed to reopen incident.",
-      );
-    } finally {
-      setReopeningId(null);
-    }
-  };
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["ai-quality-list"],
@@ -221,19 +205,6 @@ export default function QualityAuditPage() {
           </button>
         )}
       </div>
-
-      {/* Reopen error banner */}
-      {reopenError && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
-          <span>{reopenError}</span>
-          <button
-            onClick={() => setReopenError(null)}
-            className="shrink-0 hover:text-red-900 dark:hover:text-red-100"
-          >
-            <XCircle className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Table */}
       <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] overflow-hidden shadow-sm">
@@ -381,48 +352,46 @@ export default function QualityAuditPage() {
                       {(() => {
                         const isInQAState =
                           record.incident?.current_state?.is_ai_qa === true;
-                        const canReopen =
-                          isInQAState &&
-                          (record.incident?.assignees?.some(
+                        const isAssignee =
+                          record.incident?.assignees?.some(
                             (a) => a.id === user?.id,
-                          ) ??
-                            false);
-                        const isReopening = reopeningId === record.incident_id;
+                          ) ?? false;
+                        const canReopen = isInQAState && isAssignee;
                         const wasReopened = record.is_reopened;
-                        const disabledReason = !canReopen
-                          ? wasReopened
-                            ? undefined
-                            : !isInQAState
-                              ? "Incident is not in an AI Quality Audit state"
-                              : "Incident is not assigned to you"
-                          : undefined;
-                        return (
-                          <button
-                            onClick={() =>
-                              canReopen && handleReopen(record.incident_id)
-                            }
-                            disabled={!canReopen || isReopening}
-                            title={disabledReason}
+                        return wasReopened ? (
+                          <span
                             className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                              wasReopened
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-default opacity-80"
-                                : canReopen && !isReopening
-                                  ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60 cursor-pointer"
-                                  : "bg-[hsl(var(--muted)/0.4)] text-[hsl(var(--muted-foreground))] cursor-not-allowed opacity-50",
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium",
+                              "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 opacity-80",
                             )}
                           >
-                            <RotateCcw
-                              className={cn(
-                                "w-3.5 h-3.5",
-                                isReopening && "animate-spin",
-                              )}
-                            />
-                            {isReopening
-                              ? t("common.loading")
-                              : wasReopened
-                                ? t("qualityAudit.reopened")
-                                : t("qualityAudit.reopen")}
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            {t("qualityAudit.reopened")}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              navigate(
+                                `/incidents/${record.incident_id}?action=reopen`,
+                              )
+                            }
+                            disabled={!canReopen}
+                            title={
+                              !isInQAState
+                                ? "Incident is not in an AI Quality Audit state"
+                                : !isAssignee
+                                  ? "You are not assigned to this incident"
+                                  : undefined
+                            }
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                              canReopen
+                                ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60 cursor-pointer"
+                                : "bg-[hsl(var(--muted)/0.4)] text-[hsl(var(--muted-foreground))] cursor-not-allowed opacity-50",
+                            )}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            {t("qualityAudit.reopen")}
                           </button>
                         );
                       })()}

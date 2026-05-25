@@ -3058,13 +3058,6 @@ export const aiQualityApi = {
     );
     return response.data;
   },
-
-  reopen: async (incidentId: string): Promise<ApiResponse<unknown>> => {
-    const response = await apiClient.post<ApiResponse<unknown>>(
-      `/incidents/${incidentId}/reopen`,
-    );
-    return response.data;
-  },
 };
 
 export const SmsLinkApi = {
