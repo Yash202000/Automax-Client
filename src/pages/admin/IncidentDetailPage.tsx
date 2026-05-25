@@ -98,6 +98,7 @@ import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
+import { IncidentMentionTextarea } from "@/components/common/IncidentMentionTextarea";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -109,6 +110,49 @@ const defaultIcon = new Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
+
+const RenderWithIncidentMentions: React.FC<{ text: string }> = ({ text }) => {
+  if (!text) return null;
+
+  // Match both: @[incidentNumber](incident:incidentId) and @{incidentNumber:incidentId}
+  const regex = /@\[([^\]]+)\]\(incident:([^)]+)\)|@\{([^:]+):([^}]+)\}/g;
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  regex.lastIndex = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    const incidentNumber = match[1] || match[3];
+    const incidentId = match[2] || match[4];
+
+    if (matchIndex > lastIndex) {
+      elements.push(text.substring(lastIndex, matchIndex));
+    }
+
+    elements.push(
+      <Link
+        key={`${incidentId}-${matchIndex}`}
+        to={`/incidents/${incidentId}`}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="text-[hsl(var(--primary))] hover:underline font-medium bg-[hsl(var(--primary)/0.1)] px-1 py-0.5 rounded-sm inline-flex items-center gap-0.5"
+      >
+        {incidentNumber}
+      </Link>,
+    );
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    elements.push(text.substring(lastIndex));
+  }
+
+  return <>{elements.length > 0 ? elements : text}</>;
+};
 
 export const IncidentDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -1777,7 +1821,11 @@ export const IncidentDetailPage: React.FC = () => {
               />
             ) : (
               <p className="text-[hsl(var(--foreground))] whitespace-pre-wrap">
-                {incident.description || t("incidents.noDescription")}
+                {incident.description ? (
+                  <RenderWithIncidentMentions text={incident.description} />
+                ) : (
+                  t("incidents.noDescription")
+                )}
               </p>
             )}
             {isSavingDescription && (
@@ -2226,7 +2274,9 @@ export const IncidentDetailPage: React.FC = () => {
                             </div>
                           </div>
                           <p className="text-sm text-[hsl(var(--foreground))] whitespace-pre-wrap">
-                            {comment.content}
+                            <RenderWithIncidentMentions
+                              text={comment.content}
+                            />
                           </p>
                         </div>
                       ))
@@ -3267,13 +3317,17 @@ export const IncidentDetailPage: React.FC = () => {
                             style={{
                               backgroundColor: value.color
                                 ? `${value.color}20`
-                                : "hsl(var(--muted))",
-                              color: value.color || "hsl(var(--foreground))",
+                                : "",
+                              color: value.color || "",
                             }}
                           >
-                            {i18n.language === "ar" && value.name_ar
-                              ? value.name_ar
-                              : value.name}
+                            <RenderWithIncidentMentions
+                              text={
+                                i18n.language === "ar" && value.name_ar
+                                  ? value.name_ar
+                                  : value.name
+                              }
+                            />
                           </span>
                         ))}
                       </div>
@@ -3312,7 +3366,7 @@ export const IncidentDetailPage: React.FC = () => {
                         </a>
                       ) : (
                         <div className="mt-0.5 text-sm text-[hsl(var(--foreground))]">
-                          {displayValue}
+                          <RenderWithIncidentMentions text={displayValue} />
                         </div>
                       )}
                     </div>
@@ -4783,7 +4837,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 return (
                                   <>
                                     {fieldType === "textarea" ? (
-                                      <textarea
+                                      <IncidentMentionTextarea
                                         value={
                                           transitionFieldValues[
                                             fc.field_name

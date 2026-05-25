@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { IncidentMentionTextarea } from "../common/IncidentMentionTextarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -347,8 +348,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
           attachments: uploadedAttachments,
           department_id: departmentId,
           user_ids: userIds,
-          field_changes:
-            Object.keys(fieldValues).length > 0 ? fieldValues : undefined,
+          field_changes: fieldValues,
           ready_to_close_duration: readyToCloseDuration || undefined,
           feedback: selectedTransition.requirements?.some(
             (r) => r.requirement_type === "feedback",
@@ -981,13 +981,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                         const fieldType = cat?.field_type || "text";
                         const commonProps = {
                           value: fieldValues[fc.field_name] || "",
-                          onChange: (
-                            e: React.ChangeEvent<
-                              | HTMLInputElement
-                              | HTMLTextAreaElement
-                              | HTMLSelectElement
-                            >,
-                          ) =>
+                          onChange: (e: { target: { value: string } }) =>
                             setFieldValues((prev) => ({
                               ...prev,
                               [fc.field_name]: e.target.value,
@@ -996,7 +990,13 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                             "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]",
                         };
                         if (fieldType === "textarea") {
-                          return <textarea {...commonProps} rows={3} />;
+                          return (
+                            <IncidentMentionTextarea
+                              {...commonProps}
+                              rows={3}
+                              onChange={commonProps.onChange}
+                            />
+                          );
                         }
                         if (
                           (fieldType === "select" ||
