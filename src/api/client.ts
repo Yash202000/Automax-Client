@@ -25,6 +25,22 @@ export const apiClient = axios.create({
   },
 });
 
+export const publicClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+publicClient.interceptors.request.use(
+  (config) => {
+    config.headers.set("Accept-Language", i18n.language);
+
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue: Array<{

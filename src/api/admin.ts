@@ -1,4 +1,4 @@
-import apiClient from "./client";
+import apiClient, { publicClient } from "./client";
 import type {
   Category,
   CategoryCreateRequest,
@@ -110,6 +110,8 @@ import type {
   ResolveUsersRequest,
   AIQualityFeedback,
   NotificationTemplate,
+  PublicIncidentFeedbackRequest,
+  PublicIncidentFeedbackValidationResponse,
 } from "../types";
 import type {
   NotificationTemplateCreatePayload,
@@ -1327,6 +1329,33 @@ export const incidentApi = {
       ApiResponse<ConvertToRequestResponse>
     >(`/incidents/${id}/convert-to-request`, data);
     return response.data;
+  },
+
+  publicFeedback: {
+    validateLink: async (
+      token: string,
+    ): Promise<ApiResponse<PublicIncidentFeedbackValidationResponse>> => {
+      const response = await publicClient.get<
+        ApiResponse<PublicIncidentFeedbackValidationResponse>
+      >(
+        `/public/incident-feedback/validate?token=${encodeURIComponent(token)}`,
+      );
+      return response.data;
+    },
+
+    submitFeedback: async (
+      token: string,
+      data: PublicIncidentFeedbackRequest,
+    ): Promise<ApiResponse<any>> => {
+      const response = await publicClient.post<ApiResponse<any>>(
+        "/public/incident-feedback/submit",
+        {
+          token,
+          ...data,
+        },
+      );
+      return response.data;
+    },
   },
 
   bulkConvertToRequest: async (

@@ -128,6 +128,11 @@ const IncidentDetailPage = lazy(() =>
     default: m.IncidentDetailPage,
   })),
 );
+const IncidentFeedbackPage = lazy(() =>
+  import("./pages/IncidentFeedbackPage").then((m) => ({
+    default: m.IncidentFeedbackPage,
+  })),
+);
 const MyIncidentsPage = lazy(() =>
   import("./pages/admin/MyIncidentsPage").then((m) => ({
     default: m.MyIncidentsPage,
@@ -331,6 +336,10 @@ function App() {
 
                   {/* SSO complete — public, bootstraps its own auth from URL params */}
                   <Route path="/sso-complete" element={<SSOCompletePage />} />
+                  <Route
+                    path="/incident-feedback/:token"
+                    element={<IncidentFeedbackPage />}
+                  />
 
                   {/* Protected routes */}
                   <Route element={<MainLayout />}>
