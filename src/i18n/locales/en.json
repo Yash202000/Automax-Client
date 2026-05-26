@@ -3866,6 +3866,8 @@
       "status_change": "Status Change",
       "ready_to_close": "Ready to Close",
       "new_incident": "New Incident",
+      "convert_to_request": "Convert to Request",
+      "missing_info": "Missing Info",
       "reminder": "Reminder",
       "rejection": "Rejection",
       "custom": "Custom"

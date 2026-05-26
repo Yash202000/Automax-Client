@@ -3870,6 +3870,8 @@
       "status_change": "تغيير الحالة",
       "ready_to_close": "جاهز للإغلاق",
       "new_incident": "بلاغ جديد",
+      "convert_to_request": "تحويل إلى طلب",
+      "missing_info": "معلومات ناقصة",
       "reminder": "تذكير",
       "rejection": "رفض",
       "custom": "مخصص"
