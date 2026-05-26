@@ -234,7 +234,8 @@
     "email": "Email",
     "web": "Web",
     "mobile": "Mobile App",
-    "inPerson": "In Person"
+    "inPerson": "In Person",
+    "chatbot": "Chatbot"
   },
   "auth": {
     "login": "Login",

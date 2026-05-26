@@ -587,6 +587,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({ listType }) => {
                 <option value="web">{t("channels.web")}</option>
                 <option value="mobile">{t("channels.mobile")}</option>
                 <option value="in_person">{t("channels.inPerson")}</option>
+                <option value="Chatbot">{t("channels.chatbot")}</option>
               </select>
             </div>
             <div>
