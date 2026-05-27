@@ -138,6 +138,7 @@ interface TransitionFormData {
   is_not_belong: boolean;
   is_missing_info: boolean;
   is_reopen: boolean;
+  require_assignee: boolean;
 }
 
 const initialStateFormData: StateFormData = {
@@ -189,6 +190,7 @@ const initialTransitionFormData: TransitionFormData = {
   is_not_belong: false,
   is_missing_info: false,
   is_reopen: false,
+  require_assignee: false,
 };
 
 const STATE_COLORS = [
@@ -1129,6 +1131,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_not_belong: transition.is_not_belong || false,
       is_missing_info: transition.is_missing_info || false,
       is_reopen: transition.is_reopen || false,
+      require_assignee: transition.require_assignee || false,
     });
     setIsTransitionModalOpen(true);
   };
@@ -1284,6 +1287,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_not_belong: transitionFormData.is_not_belong,
       is_missing_info: transitionFormData.is_missing_info,
       is_reopen: transitionFormData.is_reopen,
+      require_assignee: transitionFormData.require_assignee,
     };
 
     if (editingTransition) {
@@ -4316,16 +4320,43 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </p>
                   </div>
                 </label>
-
-                {editingTransition && (
-                  <div className="pt-2 border-t border-[hsl(var(--border))]">
-                    <IntegrationTriggersPanel
-                      triggerId={editingTransition.id}
-                      type="transition"
-                    />
-                  </div>
-                )}
               </div>
+
+              {/* Require Assignee */}
+              <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-emerald-600 focus:ring-emerald-500"
+                    checked={transitionFormData.require_assignee}
+                    onChange={(e) =>
+                      setTransitionFormData((prev) => ({
+                        ...prev,
+                        require_assignee: e.target.checked,
+                      }))
+                    }
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      Require Assignee
+                    </span>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      When enabled, only the assigned user(s) can execute this
+                      transition. Other users with the allowed role can view the
+                      incident but cannot act on it.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {editingTransition && (
+                <div className="px-6 py-4 border-t border-[hsl(var(--border))]">
+                  <IntegrationTriggersPanel
+                    triggerId={editingTransition.id}
+                    type="transition"
+                  />
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
                 <Button

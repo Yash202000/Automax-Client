@@ -830,6 +830,7 @@ export interface WorkflowTransition {
   is_not_belong: boolean;
   is_missing_info: boolean;
   is_reopen: boolean;
+  require_assignee: boolean;
 
   requirements?: TransitionRequirement[];
   actions?: TransitionAction[];
@@ -986,6 +987,7 @@ export interface WorkflowTransitionCreateRequest {
   is_not_belong?: boolean;
   is_missing_info?: boolean;
   is_reopen?: boolean;
+  require_assignee?: boolean;
 }
 
 export interface WorkflowTransitionUpdateRequest {
@@ -1014,6 +1016,7 @@ export interface WorkflowTransitionUpdateRequest {
   is_not_belong?: boolean;
   is_missing_info?: boolean;
   is_reopen?: boolean;
+  require_assignee?: boolean;
 }
 
 export interface WorkflowImportResponse {
