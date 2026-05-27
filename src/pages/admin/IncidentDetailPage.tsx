@@ -5419,15 +5419,50 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
   return (
     <div className="space-y-4">
       {/* Header badge */}
-      <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20">
-        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-800/40">
-          <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+      <div
+        className={cn(
+          "flex items-center gap-3 p-3 rounded-lg border",
+          isResolved
+            ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20"
+            : "border-yellow-300 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-900/20",
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center justify-center w-9 h-9 rounded-full",
+            isResolved
+              ? "bg-emerald-100 dark:bg-emerald-800/40"
+              : "bg-yellow-100 dark:bg-yellow-800/40",
+          )}
+        >
+          <Bot
+            className={cn(
+              "w-5 h-5",
+              isResolved
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-yellow-800 dark:text-yellow-400",
+            )}
+          />
         </div>
         <div>
-          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              isResolved
+                ? "text-emerald-800 dark:text-emerald-300"
+                : "text-yellow-800 dark:text-yellow-300",
+            )}
+          >
             {t("incidents.aiQualityAssessment")}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-500">
+          <p
+            className={cn(
+              "text-xs",
+              isResolved
+                ? "text-emerald-600 dark:text-emerald-500"
+                : "text-yellow-700 dark:text-yellow-500",
+            )}
+          >
             {t("incidents.processedOn")}{" "}
             {new Date(feedback.created_at).toLocaleString(undefined, {
               dateStyle: "medium",
