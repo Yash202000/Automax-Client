@@ -2151,8 +2151,8 @@ export interface PublicIncidentFeedbackValidationResponse {
 }
 
 export interface PublicIncidentFeedbackRequest {
+  satisfied: boolean;
   comment: string;
-  rating?: number;
 }
 
 export interface IncidentRejectionLog {

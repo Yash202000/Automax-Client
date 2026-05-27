@@ -1331,28 +1331,25 @@ export const incidentApi = {
     return response.data;
   },
 
-  publicFeedback: {
+  citizenFeedback: {
     validateLink: async (
-      token: string,
+      incidentId: string,
+      signedToken: string,
     ): Promise<ApiResponse<PublicIncidentFeedbackValidationResponse>> => {
       const response = await publicClient.get<
         ApiResponse<PublicIncidentFeedbackValidationResponse>
-      >(
-        `/public/incident-feedback/validate?token=${encodeURIComponent(token)}`,
-      );
+      >(`/ivr/incident/feedback/${incidentId}?signed_token=${signedToken}`);
       return response.data;
     },
 
     submitFeedback: async (
-      token: string,
+      incidentId: string,
+      signedToken: string,
       data: PublicIncidentFeedbackRequest,
     ): Promise<ApiResponse<any>> => {
       const response = await publicClient.post<ApiResponse<any>>(
-        "/public/incident-feedback/submit",
-        {
-          token,
-          ...data,
-        },
+        `/public-feedback/${incidentId}/submit?signed_token=${signedToken}`,
+        data,
       );
       return response.data;
     },
