@@ -14,6 +14,7 @@ import {
   Mail,
   Phone,
   Upload,
+  ToggleLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 
@@ -44,6 +45,7 @@ export const SettingsManagementPage: React.FC = () => {
     date_format: "",
     time_format: "",
     default_language: "",
+    show_evaluate_button: false,
   });
 
   // Fetch settings
@@ -79,6 +81,7 @@ export const SettingsManagementPage: React.FC = () => {
         date_format: data.date_format || "",
         time_format: data.time_format || "",
         default_language: data.default_language || "",
+        show_evaluate_button: data.show_evaluate_button ?? false,
       });
     }
   }, [settingsResponse]);
@@ -537,6 +540,64 @@ export const SettingsManagementPage: React.FC = () => {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Toggles Section */}
+        <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
+          <div className="flex items-center gap-3 mb-6">
+            <ToggleLeft className="w-5 h-5 text-violet-600" />
+            <div>
+              <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+                {t("settings.featureToggles", "Feature Toggles")}
+              </h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                {t(
+                  "settings.featureTogglesDesc",
+                  "Enable or disable optional features",
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-[hsl(var(--muted))] rounded-lg">
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                  {t("settings.manualEvaluateButton", "Manual Evaluate Button")}
+                </h3>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(
+                    "settings.manualEvaluateButtonDesc",
+                    "Show manual feedback trigger button on complaint/query detail pages. Enable this when automated WhatsApp feedback is unavailable.",
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={formData.show_evaluate_button}
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    show_evaluate_button: !prev.show_evaluate_button,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 ${
+                  formData.show_evaluate_button
+                    ? "bg-violet-600"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    formData.show_evaluate_button
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>

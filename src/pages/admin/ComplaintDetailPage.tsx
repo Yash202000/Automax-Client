@@ -40,6 +40,7 @@ import {
   classificationApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
+import { settingsApi } from "../../api/settings";
 import { AudioPlayer } from "../../components/common/AudioPlayer";
 import type { AvailableTransition } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
@@ -114,6 +115,11 @@ export const ComplaintDetailPage: React.FC = () => {
   useQuery({
     queryKey: ["admin", "users", 1, 100],
     queryFn: () => userApi.list(1, 100),
+  });
+
+  const { data: settingsResponse } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => settingsApi.get(),
   });
 
   const { data: combinedCommentData, refetch: refetchComments } = useQuery({
@@ -509,18 +515,19 @@ export const ComplaintDetailPage: React.FC = () => {
           >
             {t("common.refresh", "Refresh")}
           </Button>
-          {isClosed && (
-            <Button
-              size="sm"
-              onClick={() => evaluateMutation.mutate()}
-              isLoading={evaluateMutation.isPending}
-              leftIcon={<ThumbsUp className="w-4 h-4" />}
-              className="bg-linear-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-            >
-              {t("complaints.evaluate", "Evaluate")} (
-              {complaint.evaluation_count || 0})
-            </Button>
-          )}
+          {settingsResponse?.data?.show_evaluate_button &&
+            complaint.current_state?.state_type === "terminal" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => evaluateMutation.mutate()}
+                isLoading={evaluateMutation.isPending}
+                leftIcon={<ThumbsUp className="w-4 h-4" />}
+              >
+                {t("complaints.evaluate", "Evaluate")} (
+                {complaint.evaluation_count || 0})
+              </Button>
+            )}
         </div>
       </div>
 

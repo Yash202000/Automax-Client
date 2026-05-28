@@ -1765,6 +1765,7 @@ export interface Settings {
   default_language: string;
   sip_domain?: string;
   sip_socket_url?: string;
+  show_evaluate_button: boolean;
   updated_at: string;
 }
 
@@ -1793,6 +1794,7 @@ export interface SettingsUpdateRequest {
   default_language?: string;
   sip_domain?: string;
   sip_socket_url?: string;
+  show_evaluate_button?: boolean;
 }
 
 // Re-export report template builder types
