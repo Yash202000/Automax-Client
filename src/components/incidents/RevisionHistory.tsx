@@ -229,7 +229,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("revisionHistory.timestamp")}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider w-96 min-w-[350px]">
                   {t("revisionHistory.action")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -271,7 +271,9 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     </td>
                     <td className="px-4 py-3 flex flex-col gap-2">
                       <span className="text-sm text-[hsl(var(--foreground))]">
-                        {revision.action_description}
+                        <RenderWithIncidentMentions
+                          text={revision.action_description}
+                        />
                       </span>
                       {revision.transition?.name && (
                         <span className="text-xs bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] flex items-center gap-1 px-2 py-1 rounded-full w-fit">
