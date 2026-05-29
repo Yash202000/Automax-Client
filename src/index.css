@@ -695,3 +695,9 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   display: none !important;
   pointer-events: none;
 }
+
+/* Opaque hovered state for sticky table cells */
+.sticky-hover-opaque:hover,
+.group:hover .sticky-hover-opaque {
+  background: linear-gradient(hsl(var(--muted)/0.3), hsl(var(--muted)/0.3)), hsl(var(--card)) !important;
+}
