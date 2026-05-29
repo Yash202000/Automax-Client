@@ -22,6 +22,7 @@ import type { IncidentRevisionActionType } from "../../types";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useAppSelector } from "../../hooks/redux";
+import RenderWithIncidentMentions from "../common/RenderWithIncidentMentions";
 
 interface RevisionHistoryProps {
   incidentId: string;
@@ -243,15 +244,15 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                   {t("revisionHistory.mobile")}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider w-20">
-                  {t("revisionHistory.details")}
+                <th className="px-3 py-3 text-left text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider w-16">
+                  {/* {t("revisionHistory.details")} */}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))] bg-[hsl(var(--card))]">
               {revisions.map((revision) => (
                 <React.Fragment key={revision.id}>
-                  <tr className="hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                  <tr className="group hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-[hsl(var(--foreground))]">
                       {revision.revision_number}
                     </td>
@@ -363,7 +364,7 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="sticky right-0 bg-[hsl(var(--card))] px-3 py-3 sticky-hover-opaque transition-colors z-10">
                       {revision.changes && revision.changes.length > 0 && (
                         <button
                           onClick={() => toggleExpand(revision.id)}
@@ -400,15 +401,23 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                                 <span className="font-medium text-[hsl(var(--foreground))] min-w-[140px]">
                                   {change.field_label}:
                                 </span>
-                                <span className="text-[hsl(var(--muted-foreground))] line-through">
-                                  {change.old_value ||
-                                    t("revisionHistory.empty")}
-                                </span>
-                                <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                                <span className="text-[hsl(var(--foreground))] font-medium">
-                                  {change.new_value ||
-                                    t("revisionHistory.empty")}
-                                </span>
+                                {change.old_value && (
+                                  <span className="text-[hsl(var(--muted-foreground))] line-through">
+                                    <RenderWithIncidentMentions
+                                      text={change.old_value}
+                                    />
+                                  </span>
+                                )}
+                                {change.old_value && change.new_value && (
+                                  <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                                )}
+                                {change.new_value && (
+                                  <span className="text-[hsl(var(--foreground))] font-medium">
+                                    <RenderWithIncidentMentions
+                                      text={change.new_value}
+                                    />
+                                  </span>
+                                )}
                               </div>
                             ))}
                           </div>
