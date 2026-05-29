@@ -21,6 +21,11 @@ export interface IncidentMentionTextareaProps {
   onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
   disabled?: boolean;
   id?: string;
+  filters?: {
+    classification_ids?: string[];
+    location_ids?: string[];
+    currentIncident_ids?: string[];
+  };
 }
 
 const escapeHtml = (unsafe: string) => {
@@ -124,8 +129,30 @@ export const IncidentMentionTextarea = React.forwardRef<
 
   const { data, isFetching } = useQuery({
     queryKey: ["incident-mention-search", mention.searchText],
-    queryFn: () => incidentApi.list({ search: mention.searchText, limit: 10 }),
+    queryFn: () =>
+      incidentApi.list({
+        search: mention.searchText,
+        limit: 10,
+        record_type: "incident",
+        classification_ids: props.filters?.classification_ids || [],
+        location_ids: props.filters?.location_ids || [],
+      }),
     enabled: mention.isActive,
+    select: (response) => {
+      if (
+        props.filters?.currentIncident_ids?.length &&
+        Array.isArray(response?.data)
+      ) {
+        return {
+          ...response,
+          data: response.data.filter(
+            (item) => !props.filters?.currentIncident_ids?.includes(item.id),
+          ),
+        };
+      }
+
+      return response;
+    },
   });
 
   const incidents = data?.data || [];
@@ -313,7 +340,7 @@ export const IncidentMentionTextarea = React.forwardRef<
               </ul>
             ) : (
               <div className="p-4 text-center text-sm text-gray-500">
-                {t("common.noResults")}
+                {t("common.noMatchingIncidents")}
               </div>
             )}
           </div>,

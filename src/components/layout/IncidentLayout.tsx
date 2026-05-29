@@ -236,7 +236,7 @@ export const IncidentLayout: React.FC = () => {
       </button>
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 py-6 px-3 overflow-y-auto">
         {/* Main Actions */}
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">

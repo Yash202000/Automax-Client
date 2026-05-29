@@ -4928,6 +4928,16 @@ export const IncidentDetailPage: React.FC = () => {
                                         }
                                         rows={3}
                                         className={`${baseClass} resize-none`}
+                                        filters={{
+                                          classification_ids: incident
+                                            .classification?.id
+                                            ? [incident.classification?.id]
+                                            : [],
+                                          location_ids: incident.location?.id
+                                            ? [incident.location?.id]
+                                            : [],
+                                          currentIncident_ids: [incident.id],
+                                        }}
                                       />
                                     ) : (fieldType === "select" ||
                                         fieldType === "multiselect") &&

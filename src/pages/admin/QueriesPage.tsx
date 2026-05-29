@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -269,6 +269,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
   } = useQuery({
     queryKey: ["queries", filter],
     queryFn: () => queryApi.list(filter),
+    placeholderData: keepPreviousData,
   });
 
   const { data: usersData } = useQuery({
@@ -719,7 +720,12 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div
+              className={cn(
+                "overflow-x-auto transition-opacity duration-200",
+                isFetching && "opacity-60",
+              )}
+            >
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">

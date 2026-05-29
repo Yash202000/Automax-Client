@@ -995,6 +995,17 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                               {...commonProps}
                               rows={3}
                               onChange={commonProps.onChange}
+                              filters={{
+                                classification_ids: selectedIncidents.map(
+                                  (i) => i.classification?.id || "",
+                                ),
+                                location_ids: selectedIncidents.map(
+                                  (i) => i.location?.id || "",
+                                ),
+                                currentIncident_ids: selectedIncidents.map(
+                                  (i) => i.id,
+                                ),
+                              }}
                             />
                           );
                         }
