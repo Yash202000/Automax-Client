@@ -373,6 +373,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       location_id: locationId || undefined,
       source: source || undefined,
       priority,
+      record_type: "request",
     };
 
     workflowApi

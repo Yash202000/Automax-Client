@@ -359,6 +359,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       location_id: locationId || undefined,
       source: source || undefined,
       priority,
+      record_type: "complaint",
     };
 
     workflowApi

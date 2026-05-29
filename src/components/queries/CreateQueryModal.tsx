@@ -369,6 +369,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
       location_id: locationId || undefined,
       source: source || undefined,
       priority,
+      record_type: "query",
     };
 
     workflowApi

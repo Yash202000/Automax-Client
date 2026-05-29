@@ -473,6 +473,7 @@ export function IncidentCreatePage() {
       location_id: formData.location_id || undefined,
       source: formData.source || undefined,
       priority: priorityValue ? priorityValue.sort_order : undefined,
+      record_type: "incident",
     };
 
     try {
