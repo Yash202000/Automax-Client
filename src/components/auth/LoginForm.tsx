@@ -17,8 +17,19 @@ export const LoginForm: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  const showRegular = import.meta.env.VITE_LOGIN_REGULAR !== "false";
+  const showLdap = import.meta.env.VITE_LOGIN_LDAP !== "false";
+  const showSso = import.meta.env.VITE_LOGIN_SSO !== "false";
+
+  const enabledModes = [
+    ...(showRegular ? ["regular" as const] : []),
+    ...(showLdap ? ["ldap" as const] : []),
+    ...(showSso ? ["sso" as const] : []),
+  ];
+
   const [loginMode, setLoginMode] = useState<"regular" | "sso" | "ldap">(
-    "regular",
+    enabledModes[0] || "regular",
   );
   const [nationalId, setNationalId] = useState("");
   const [adUsername, setAdUsername] = useState("");
@@ -113,7 +124,9 @@ export const LoginForm: React.FC = () => {
           if (profileResp.success && profileResp.data) {
             setUser(profileResp.data);
           }
-        } catch {}
+        } catch {
+          // profile fetch is best-effort
+        }
         navigate("/dashboard");
       } else {
         setError(response.error || t("auth.loginError"));
@@ -151,7 +164,9 @@ export const LoginForm: React.FC = () => {
         if (profileResp.success && profileResp.data) {
           setUser(profileResp.data);
         }
-      } catch {}
+      } catch {
+        // profile fetch is best-effort
+      }
       navigate("/dashboard");
     } else {
       setError(response.error || t("auth.loginError"));
@@ -202,44 +217,52 @@ export const LoginForm: React.FC = () => {
         </p>
       </div>
 
-      <div className="mb-6 flex rounded-lg border p-1 bg-gray-50">
-        <button
-          type="button"
-          onClick={() => setMode("regular")}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            loginMode === "regular"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Mail className="w-4 h-4 inline mr-1" />
-          {t("auth.regularLogin")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("ldap")}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            loginMode === "ldap"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Building2 className="w-4 h-4 inline mr-1" />
-          AD Login
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("sso")}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            loginMode === "sso"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Fingerprint className="w-4 h-4 inline mr-1" />
-          {t("auth.ssoLogin")}
-        </button>
-      </div>
+      {enabledModes.length > 1 && (
+        <div className="mb-6 flex rounded-lg border p-1 bg-gray-50">
+          {showRegular && (
+            <button
+              type="button"
+              onClick={() => setMode("regular")}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                loginMode === "regular"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Mail className="w-4 h-4 inline mr-1" />
+              {t("auth.regularLogin")}
+            </button>
+          )}
+          {showLdap && (
+            <button
+              type="button"
+              onClick={() => setMode("ldap")}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                loginMode === "ldap"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Building2 className="w-4 h-4 inline mr-1" />
+              AD Login
+            </button>
+          )}
+          {showSso && (
+            <button
+              type="button"
+              onClick={() => setMode("sso")}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                loginMode === "sso"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Fingerprint className="w-4 h-4 inline mr-1" />
+              {t("auth.ssoLogin")}
+            </button>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl animate-fade-in">
