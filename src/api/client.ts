@@ -9,6 +9,9 @@ declare global {
       API_URL?: string;
       WS_URL?: string;
       BASE_PATH?: string;
+      LOGIN_REGULAR?: string;
+      LOGIN_LDAP?: string;
+      LOGIN_SSO?: string;
     };
   }
 }

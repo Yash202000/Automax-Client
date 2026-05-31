@@ -18,9 +18,15 @@ export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const showRegular = import.meta.env.VITE_LOGIN_REGULAR !== "false";
-  const showLdap = import.meta.env.VITE_LOGIN_LDAP !== "false";
-  const showSso = import.meta.env.VITE_LOGIN_SSO !== "false";
+  const showRegular =
+    (window.APP_CONFIG?.LOGIN_REGULAR ?? import.meta.env.VITE_LOGIN_REGULAR) !==
+    "false";
+  const showLdap =
+    (window.APP_CONFIG?.LOGIN_LDAP ?? import.meta.env.VITE_LOGIN_LDAP) !==
+    "false";
+  const showSso =
+    (window.APP_CONFIG?.LOGIN_SSO ?? import.meta.env.VITE_LOGIN_SSO) !==
+    "false";
 
   const enabledModes = [
     ...(showRegular ? ["regular" as const] : []),

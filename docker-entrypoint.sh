@@ -13,7 +13,10 @@ cat <<EOF > /app/dist/config.js
 window.APP_CONFIG = {
   API_URL: "${VITE_API_URL:-http://localhost:8080/api/v1}",
   WS_URL: "${VITE_WS_URL:-ws://localhost:8080}",
-  BASE_PATH: "${VITE_BASE_PATH:-/}"
+  BASE_PATH: "${VITE_BASE_PATH:-/}",
+  LOGIN_REGULAR: "${VITE_LOGIN_REGULAR:-true}",
+  LOGIN_LDAP: "${VITE_LOGIN_LDAP:-true}",
+  LOGIN_SSO: "${VITE_LOGIN_SSO:-true}"
 };
 EOF
 
