@@ -100,12 +100,22 @@ export function CitizenVerifyPage() {
     }) => SmsLinkApi.validate(id, signed_token, last6digits),
 
     onSuccess: (res) => {
-      const { incident, auth_data } = res.data;
+      const { incident, auth_data, already_submitted } = res.data;
+
+      if (already_submitted) {
+        setError(
+          t(
+            "citizen.alreadySubmitted",
+            "This incident has already been updated. If you need additional changes, please request a new link or contact support.",
+          ),
+        );
+        return;
+      }
 
       setAuth(auth_data.user, auth_data.token, auth_data.refresh_token);
 
       navigate(`/ivr/incident/${id}/update`, {
-        state: { incident, auth_data },
+        state: { incident, auth_data, signed_token: signedToken },
       });
     },
 

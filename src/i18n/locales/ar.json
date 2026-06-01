@@ -3603,6 +3603,8 @@
     "error401": "Invalid link. Please use the link from your SMS.",
     "error404": "Phone number not recognised. Please check and try again.",
     "error410": "This link has expired. Please contact support.",
+    "alreadySubmitted": "This incident has already been updated. If you need additional changes, please request a new link or contact support.",
+
     "feature1": "Pin your exact location on the map",
     "feature2": "Upload photos or documents",
     "feature3": "Add any extra details as a comment",

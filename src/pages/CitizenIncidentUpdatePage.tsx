@@ -36,6 +36,7 @@ export function CitizenIncidentUpdatePage() {
 
   const _location = useLocation();
   const incident = _location.state?.incident;
+  const ivr_link_token = _location.state?.signed_token;
 
   const isAllowedType = (file: File) => {
     if (!file.type) return true;
@@ -67,6 +68,7 @@ export function CitizenIncidentUpdatePage() {
         comment: string;
         version: number;
         source: string;
+        ivr_link_token?: string;
       };
       files: File[];
     }) => {
@@ -148,6 +150,7 @@ export function CitizenIncidentUpdatePage() {
         comment: comment.trim(),
         version: incident.version,
         source: "sms-link",
+        ivr_link_token,
       },
       files: attachments,
     });
