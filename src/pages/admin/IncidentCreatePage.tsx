@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -12,6 +18,7 @@ import {
   Upload,
   X,
   Paperclip,
+  Loader2,
 } from "lucide-react";
 import {
   Button,
@@ -98,6 +105,9 @@ export function IncidentCreatePage() {
   const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [isMatchingLocation, setIsMatchingLocation] = useState<boolean>(false);
+  // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
+  const lastProcessedGeoRef = useRef<string | null>(null);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -733,8 +743,39 @@ export function IncidentCreatePage() {
     setLookupValues((prev) => ({ ...prev, [categoryId]: value }));
   };
 
-  const handleLocationChange = (location: LocationData | undefined) => {
-    if (location) {
+  // Flatten a location tree into an array of all nodes
+  const flattenLocations = useCallback((nodes: Location[]): Location[] => {
+    const result: Location[] = [];
+    const traverse = (list: Location[]) => {
+      for (const node of list) {
+        result.push(node);
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+        }
+      }
+    };
+    traverse(nodes);
+    return result;
+  }, []);
+
+  const handleLocationChange = useCallback(
+    async (location: LocationData | undefined) => {
+      if (!location) {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: undefined,
+          longitude: undefined,
+          address: undefined,
+          city: undefined,
+          state: undefined,
+          country: undefined,
+          postal_code: undefined,
+        }));
+        lastProcessedGeoRef.current = null;
+        return;
+      }
+
+      // Set geolocation fields immediately
       setFormData((prev) => ({
         ...prev,
         latitude: location.latitude,
@@ -748,19 +789,136 @@ export function IncidentCreatePage() {
       if (errors.geolocation) {
         setErrors((prev) => ({ ...prev, geolocation: "" }));
       }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        latitude: undefined,
-        longitude: undefined,
-        address: undefined,
-        city: undefined,
-        state: undefined,
-        country: undefined,
-        postal_code: undefined,
-      }));
-    }
-  };
+
+      // Deduplicate: LocationPicker's internal useEffect re-fires onChange whenever
+      // lat/lng values change (for reverse geocoding). Skip match/create if we already
+      // processed this exact coordinate pair.
+      const geoKey = `${location.latitude},${location.longitude}`;
+      if (lastProcessedGeoRef.current === geoKey) {
+        return;
+      }
+      lastProcessedGeoRef.current = geoKey;
+
+      // Try to match against Location master
+      setIsMatchingLocation(true);
+      try {
+        const allLocations = flattenLocations(rawLocations);
+        const searchName = (location.city || location.address || "")
+          .toLowerCase()
+          .trim();
+
+        const matched = searchName
+          ? allLocations.find(
+              (loc) =>
+                loc.name.toLowerCase().trim() === searchName ||
+                loc.address?.toLowerCase().trim() === searchName ||
+                (location.city &&
+                  loc.name.toLowerCase().trim() ===
+                    location.city.toLowerCase().trim()),
+            )
+          : undefined;
+
+        if (matched) {
+          // Auto-select the matched location
+          setFormData((prev) => ({ ...prev, location_id: matched.id }));
+          if (errors.location_id) {
+            setErrors((prev) => ({ ...prev, location_id: "" }));
+          }
+          toast.info(
+            t("incidents.locationAutoMatched", {
+              name: matched.name,
+              defaultValue: `Location "${matched.name}" auto-selected from master`,
+            }),
+          );
+        } else {
+          // Build hierarchy: Country → State → City
+          // For each level, find an existing match in the master or create a new one.
+          const allLocations = flattenLocations(rawLocations);
+
+          // Helper: find or create a location at a given level under a parent
+          const findOrCreate = async (
+            name: string,
+            type: string,
+            parentId: string | undefined,
+          ): Promise<string> => {
+            const nameLower = name.toLowerCase().trim();
+            const existing = allLocations.find(
+              (loc) =>
+                loc.name.toLowerCase().trim() === nameLower &&
+                (parentId ? loc.parent_id === parentId : !loc.parent_id),
+            );
+            if (existing) return existing.id;
+
+            const res = await locationApi.create({
+              name,
+              type,
+              parent_id: parentId,
+            });
+            if (!res.data) throw new Error(`Failed to create ${type} location`);
+            // Also push into local list so sibling lookups within this call work
+            allLocations.push(res.data as unknown as Location);
+            return res.data.id;
+          };
+
+          // Determine the hierarchy levels from geolocation data
+          const levels: { name: string; type: string }[] = [];
+          if (location.country)
+            levels.push({ name: location.country, type: "country" });
+          if (location.state && location.state !== location.country)
+            levels.push({ name: location.state, type: "state" });
+          if (location.city && location.city !== location.state)
+            levels.push({ name: location.city, type: "city" });
+
+          // Fallback: if no structured data, use first part of address
+          if (levels.length === 0) {
+            const fallbackName = location.address
+              ? location.address.split(",")[0].trim()
+              : `Location ${Date.now()}`;
+            levels.push({ name: fallbackName, type: "other" });
+          }
+
+          // Walk down the hierarchy, creating/finding each level
+          let parentId: string | undefined = undefined;
+          let leafId = "";
+          for (const level of levels) {
+            leafId = await findOrCreate(level.name, level.type, parentId);
+            parentId = leafId;
+          }
+
+          // Update the leaf node with precise lat/lng and address if it was just created
+          if (leafId) {
+            setFormData((prev) => ({ ...prev, location_id: leafId }));
+            if (errors.location_id) {
+              setErrors((prev) => ({ ...prev, location_id: "" }));
+            }
+            // Refresh the locations tree so the TreeSelect reflects new entries
+            queryClient.invalidateQueries({
+              queryKey: ["admin", "locations", "tree"],
+            });
+            const leafName = levels[levels.length - 1].name;
+            toast.success(
+              t("incidents.locationCreatedAndSelected", {
+                name: leafName,
+                defaultValue: `New location "${leafName}" created and selected`,
+              }),
+            );
+          }
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Location match/create error:", err);
+        toast.error(
+          t(
+            "incidents.locationMatchError",
+            "Failed to match or create location. Please select manually.",
+          ),
+        );
+      } finally {
+        setIsMatchingLocation(false);
+      }
+    },
+    [rawLocations, flattenLocations, errors, t, queryClient],
+  );
 
   const selectedWorkflow = workflows.find((w) => w.id === formData.workflow_id);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
@@ -1162,12 +1320,27 @@ export function IncidentCreatePage() {
                   data={locationTree}
                   value={formData.location_id || ""}
                   onChange={(id) => handleChange("location_id", id)}
-                  placeholder={t("incidents.selectLocation")}
+                  placeholder={
+                    isMatchingLocation
+                      ? t("incidents.matchingLocation", "Matching location...")
+                      : t("incidents.selectLocation")
+                  }
                   required={true}
                   error={errors.location_id}
                   leafOnly={true}
                   emptyMessage={t("incidents.noLocations")}
                 />
+                {isMatchingLocation && (
+                  <div className="col-span-1 flex items-center gap-1.5 text-xs text-blue-600 -mt-2">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>
+                      {t(
+                        "incidents.matchingLocationHint",
+                        "Matching geolocation to location master...",
+                      )}
+                    </span>
+                  </div>
+                )}
                 <Select
                   label={t("incidents.source")}
                   value={formData.source || ""}
