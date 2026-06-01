@@ -42,6 +42,7 @@ export interface LocationData {
   state?: string;
   country?: string;
   postal_code?: string;
+  district?: string;
 }
 
 interface LocationPickerProps {
@@ -69,6 +70,10 @@ interface NominatimResponse {
     state?: string;
     country?: string;
     postcode?: string;
+    county?: string;
+    state_district?: string;
+    district?: string;
+    province?: string;
   };
 }
 
@@ -119,13 +124,19 @@ async function reverseGeocode(
     }
 
     const data: NominatimResponse = await response.json();
+    const districtValue =
+      data.address.district ||
+      data.address.county ||
+      data.address.state_district ||
+      data.address.suburb;
 
     return {
       address: data.display_name,
       city: data.address.city || data.address.town || data.address.village,
-      state: data.address.state,
+      state: data.address.state || data.address.province,
       country: data.address.country,
       postal_code: data.address.postcode,
+      district: districtValue,
     };
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -157,6 +168,7 @@ export function LocationPicker({
   );
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const searchTimeout = useRef<any>(null);
 
@@ -227,6 +239,12 @@ export function LocationPicker({
       const lat = parseFloat(suggestion.lat);
       const lon = parseFloat(suggestion.lon);
 
+      const districtValue =
+        suggestion.address.district ||
+        suggestion.address.county ||
+        suggestion.address.state_district ||
+        suggestion.address.suburb;
+
       const locationData: LocationData = {
         latitude: lat,
         longitude: lon,
@@ -235,15 +253,21 @@ export function LocationPicker({
           suggestion.address.city ||
           suggestion.address.town ||
           suggestion.address.village,
-        state: suggestion.address.state,
+        state: suggestion.address.state || suggestion.address.province,
         country: suggestion.address.country,
         postal_code: suggestion.address.postcode,
+        district: districtValue,
       };
 
       onChange(locationData);
       setMapCenter([lat, lon]);
       setSearchQuery(suggestion.display_name);
       setShowSuggestions(false);
+
+      // Restore focus to input to avoid browser scroll-to-top on suggestion button unmount
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
     },
     [onChange],
   );
@@ -425,6 +449,7 @@ export function LocationPicker({
               <Search className="h-4 w-4 text-gray-400" />
             </span>
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={onSearchChange}

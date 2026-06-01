@@ -159,6 +159,19 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Restore focus to trigger button when dropdown is closed to prevent scroll-to-top behavior
+  const isInitialRender = useRef(true);
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+    if (!isOpen) {
+      triggerRef.current?.focus();
+    }
+  }, [isOpen]);
 
   // Auto-expand parents of selected value
   useEffect(() => {
@@ -261,6 +274,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
 
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
