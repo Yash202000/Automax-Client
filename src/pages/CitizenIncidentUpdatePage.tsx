@@ -149,7 +149,7 @@ export function CitizenIncidentUpdatePage() {
         postal_code: location?.postal_code,
         comment: comment.trim(),
         version: incident.version,
-        source: "sms-link",
+        source: "ivr",
         ivr_link_token,
       },
       files: attachments,
