@@ -2142,6 +2142,19 @@ export interface CallerFeedBackRequest {
   feedback: string;
 }
 
+export interface PublicIncidentFeedbackValidationResponse {
+  valid: boolean;
+  message?: string;
+  description?: string;
+  incident_number: string;
+  status?: string;
+}
+
+export interface PublicIncidentFeedbackRequest {
+  satisfied: boolean;
+  comment: string;
+}
+
 export interface IncidentRejectionLog {
   id: string;
   incident_id: string;

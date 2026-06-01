@@ -110,6 +110,8 @@ import type {
   ResolveUsersRequest,
   AIQualityFeedback,
   NotificationTemplate,
+  PublicIncidentFeedbackRequest,
+  PublicIncidentFeedbackValidationResponse,
 } from "../types";
 import type {
   NotificationTemplateCreatePayload,
@@ -1328,6 +1330,30 @@ export const incidentApi = {
       ApiResponse<ConvertToRequestResponse>
     >(`/incidents/${id}/convert-to-request`, data);
     return response.data;
+  },
+
+  citizenFeedback: {
+    validateLink: async (
+      incidentId: string,
+      signedToken: string,
+    ): Promise<ApiResponse<PublicIncidentFeedbackValidationResponse>> => {
+      const response = await apiClient.get<
+        ApiResponse<PublicIncidentFeedbackValidationResponse>
+      >(`/ivr/incident/feedback/${incidentId}?signed_token=${signedToken}`);
+      return response.data;
+    },
+
+    submitFeedback: async (
+      incidentId: string,
+      signedToken: string,
+      data: PublicIncidentFeedbackRequest,
+    ): Promise<ApiResponse<any>> => {
+      const response = await apiClient.put<ApiResponse<any>>(
+        `/public-feedback/${incidentId}/submit?signed_token=${signedToken}`,
+        data,
+      );
+      return response.data;
+    },
   },
 
   bulkConvertToRequest: async (
