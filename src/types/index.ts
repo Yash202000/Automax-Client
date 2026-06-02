@@ -1097,6 +1097,7 @@ export interface Incident {
   state?: string;
   country?: string;
   postal_code?: string;
+  ivr_submitted?: boolean;
   due_date?: string;
   resolved_at?: string;
   closed_at?: string;
