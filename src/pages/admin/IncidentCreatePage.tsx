@@ -808,7 +808,10 @@ export function IncidentCreatePage() {
       }
       lastProcessedGeoRef.current = geoKey;
 
-      if (import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true") {
+      if (
+        (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
+          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
+      ) {
         return;
       }
 

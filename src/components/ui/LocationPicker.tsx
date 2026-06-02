@@ -287,7 +287,8 @@ export function LocationPicker({
 
         // Reverse geocode to get address
         const addressData =
-          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true"
+          (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
+            import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
             ? {}
             : await reverseGeocode(latitude, longitude);
 
@@ -326,7 +327,8 @@ export function LocationPicker({
       setIsLoading(true);
 
       const addressData =
-        import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true"
+        (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
+          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
           ? {}
           : await reverseGeocode(latlng.lat, latlng.lng);
 
@@ -353,7 +355,8 @@ export function LocationPicker({
       setIsLoading(true);
 
       const addressData =
-        import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true"
+        (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
+          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
           ? {}
           : await reverseGeocode(value?.latitude, value?.longitude);
 
