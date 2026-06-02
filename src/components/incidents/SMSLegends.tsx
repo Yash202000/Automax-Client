@@ -9,23 +9,21 @@ interface SMSLegendsProps {
 export const SMSLegends: React.FC<SMSLegendsProps> = ({ incident }) => {
   // Only show for incidents that sent out SMS to citizen requesting more info.
   // When an incident is created through IVR, source is 'ivr' and once citizen updates, it becomes 'sms-link'.
-  const isSMSRequested =
-    incident.source === "ivr" || incident.source === "sms-link";
+  const isSMSRequested = incident.source === "ivr" || incident.ivr_submitted;
 
   if (!isSMSRequested) return null;
 
   // Check if each item is present (added by citizen)
   // Location: present if coordinates are set or if source is sms-link (since form requires location)
   const hasLocation =
-    !!(incident.latitude && incident.longitude) ||
-    incident.source === "sms-link";
+    !!(incident.latitude && incident.longitude) || incident.ivr_submitted;
 
   // Comment: present if comments_count > 0 or if source is sms-link (since form requires comment)
   const hasComment =
-    (incident.comments_count ?? 0) > 0 || incident.source === "sms-link";
+    (incident.comments_count ?? 0) > 0 || incident.ivr_submitted;
 
   // Attachment: present if attachments_count > 0
-  const hasAttachment = incident.source === "sms-link";
+  const hasAttachment = incident.ivr_submitted;
 
   return (
     <div
