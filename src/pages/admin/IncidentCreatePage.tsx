@@ -808,6 +808,10 @@ export function IncidentCreatePage() {
       }
       lastProcessedGeoRef.current = geoKey;
 
+      if (import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true") {
+        return;
+      }
+
       // Try to match against Location master
       setIsMatchingLocation(true);
       try {

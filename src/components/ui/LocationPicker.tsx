@@ -286,7 +286,10 @@ export function LocationPicker({
         const { latitude, longitude } = position.coords;
 
         // Reverse geocode to get address
-        const addressData = await reverseGeocode(latitude, longitude);
+        const addressData =
+          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true"
+            ? {}
+            : await reverseGeocode(latitude, longitude);
 
         const locationData: LocationData = {
           latitude,
@@ -322,7 +325,10 @@ export function LocationPicker({
     async (latlng: LatLng) => {
       setIsLoading(true);
 
-      const addressData = await reverseGeocode(latlng.lat, latlng.lng);
+      const addressData =
+        import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true"
+          ? {}
+          : await reverseGeocode(latlng.lat, latlng.lng);
 
       const locationData: LocationData = {
         latitude: latlng.lat,
@@ -346,10 +352,10 @@ export function LocationPicker({
     if (value?.latitude && value.longitude) {
       setIsLoading(true);
 
-      const addressData = await reverseGeocode(
-        value?.latitude,
-        value?.longitude,
-      );
+      const addressData =
+        import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "true"
+          ? {}
+          : await reverseGeocode(value?.latitude, value?.longitude);
 
       const locationData: LocationData = {
         latitude: value.latitude,
