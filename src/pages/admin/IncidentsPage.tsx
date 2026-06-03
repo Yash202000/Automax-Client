@@ -219,6 +219,7 @@ export const IncidentsPage: React.FC = () => {
   const urlStatusParam = searchParams.get("status");
   const urlSlaBreachedParam = searchParams.get("sla_breached");
   const hasUrlFilter = !!urlStatusParam || urlSlaBreachedParam === "true";
+  const hasStatusFilter = !!urlStatusParam;
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
   useEffect(() => {
@@ -662,14 +663,14 @@ export const IncidentsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div
-              className={`p-2 rounded-lg ${filter.sla_breached ? "bg-red-500/10" : "bg-[hsl(var(--primary)/0.1)]"}`}
+              className={`p-2 rounded-lg ${!hasStatusFilter && filter.sla_breached ? "bg-red-500/10" : "bg-[hsl(var(--primary)/0.1)]"}`}
             >
               <AlertTriangle
-                className={`w-5 h-5 ${filter.sla_breached ? "text-red-500" : "text-[hsl(var(--primary))]"}`}
+                className={`w-5 h-5 ${!hasStatusFilter && filter.sla_breached ? "text-red-500" : "text-[hsl(var(--primary))]"}`}
               />
             </div>
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-              {filter.sla_breached
+              {!hasStatusFilter && filter.sla_breached
                 ? t("incidents.slaBreached")
                 : statusFilter
                   ? `${statusFilter} ${t("incidents.title")}`
@@ -677,7 +678,7 @@ export const IncidentsPage: React.FC = () => {
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
-            {filter.sla_breached
+            {!hasStatusFilter && filter.sla_breached
               ? t("incidents.showingSlaBreach")
               : statusFilter
                 ? `${t("incidents.showingStatus")}: ${statusFilter}`
@@ -993,12 +994,12 @@ export const IncidentsPage: React.FC = () => {
                     e.target.value || undefined,
                   )
                 }
-                disabled={!canViewAllIncidents && hasUrlFilter}
+                disabled={!canViewAllIncidents || hasStatusFilter}
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
-                  !canViewAllIncidents &&
-                    hasUrlFilter &&
-                    "opacity-60 cursor-not-allowed",
+                  !canViewAllIncidents || hasStatusFilter
+                    ? "opacity-60 cursor-not-allowed"
+                    : "",
                 )}
               >
                 <option value="">{t("common.allStates")}</option>
