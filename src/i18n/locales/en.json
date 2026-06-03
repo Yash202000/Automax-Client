@@ -471,6 +471,7 @@
     "selectClassification": "Select classification...",
     "selectSource": "Select source...",
     "titleRequired": "Title is required",
+    "titleMinLength": "Title must be at least 5 letters",
     "descriptionRequired": "Description is required",
     "classificationRequired": "Classification is required",
     "workflowRequired": "Workflow is required. Please select classification, location, or source to auto-match.",

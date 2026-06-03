@@ -472,6 +472,7 @@
     "selectClassification": "اختر التصنيف...",
     "selectSource": "اختر المصدر...",
     "titleRequired": "العنوان مطلوب",
+    "titleMinLength": "يجب أن يكون العنوان 5 أحرف على الأقل",
     "descriptionRequired": "الوصف مطلوب",
     "classificationRequired": "التصنيف مطلوب",
     "workflowRequired": "سير العمل مطلوب. يرجى اختيار التصنيف أو الموقع أو المصدر للمطابقة التلقائية.",

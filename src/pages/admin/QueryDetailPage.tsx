@@ -23,6 +23,7 @@ import {
   Tags,
   Star,
   ExternalLink,
+  Mail,
   Phone,
   ThumbsUp,
   AlertTriangle,
@@ -882,31 +883,6 @@ export const QueryDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Created By */}
-              {(query.created_by_name || query.created_by_mobile) && (
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-violet-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("queries.createdBy")}
-                    </p>
-                    {query.created_by_name && (
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {query.created_by_name}
-                      </p>
-                    )}
-                    {query.created_by_mobile && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3" />
-                        {query.created_by_mobile}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Source Incident */}
               {query.source_incident_id && (
                 <div className="flex items-start gap-3">
@@ -1093,6 +1069,37 @@ export const QueryDetailPage: React.FC = () => {
                     <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">
                       {query.source.replace("_", " ")}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Created By */}
+              {query?.reporter && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-violet-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {t("queries.createdBy")}
+                    </p>
+                    {query.reporter?.first_name && (
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {query.reporter.first_name} {query.reporter.last_name}
+                      </p>
+                    )}
+                    {query.reporter?.email && (
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5 break-all">
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        {query.reporter.email}
+                      </p>
+                    )}
+                    {query.reporter?.phone && (
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
+                        <Phone className="w-3 h-3" />
+                        {query.reporter.phone}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

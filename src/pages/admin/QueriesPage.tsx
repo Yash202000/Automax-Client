@@ -822,9 +822,9 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                       )}
                       {isColumnVisible("channel") && (
                         <td className="px-6 py-4">
-                          {query.channel ? (
+                          {query.source ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
-                              {query.channel}
+                              {query.source}
                             </span>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -834,16 +834,17 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                         </td>
                       )}
                       {isColumnVisible("created_by") && (
-                        <td className="px-6 py-4">
-                          {query.created_by_name ? (
+                        <td className="px-6 py-4 ">
+                          {query.reporter ? (
                             <div>
-                              <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                                {query.created_by_name}
+                              <p className="text-sm font-medium text-[hsl(var(--foreground))] whitespace-nowrap">
+                                {query.reporter.first_name}{" "}
+                                {query.reporter.last_name}
                               </p>
-                              {query.created_by_mobile && (
+                              {query.reporter.phone && (
                                 <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
                                   <Phone className="w-3 h-3" />
-                                  {query.created_by_mobile}
+                                  {query.reporter.phone}
                                 </p>
                               )}
                             </div>
@@ -882,7 +883,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                         </td>
                       )}
                       {isColumnVisible("state") && (
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           {query.current_state ? (
                             <span
                               className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
@@ -951,8 +952,8 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                       )}
                       {isColumnVisible("created_at") && (
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                            <Calendar className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                          <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))] whitespace-nowrap">
+                            <Calendar className="w-4 h-4 text-[hsl(var(--muted-foreground))] " />
                             {formatDate(query.created_at)}
                           </div>
                         </td>

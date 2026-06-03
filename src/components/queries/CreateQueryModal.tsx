@@ -494,8 +494,15 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
       newErrors.title = t("queries.titleRequired");
+    } else if (trimmedTitle.length < 5) {
+      newErrors.title = t(
+        "queries.titleMinLength",
+        "Title must be at least 5 letters",
+      );
     }
     if (!classificationId) {
       newErrors.classification = t("queries.classificationRequired");
@@ -778,7 +785,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <MapPin className="w-3 h-3 inline mr-1" />
-                  {t("queries.location")}
+                  {t("queries.location")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <TreeSelect
                   data={locationTree}
@@ -861,7 +869,14 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 name="title"
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                minLength={5}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setTitle(value);
+                  if (errors.title && value.trim().length >= 5) {
+                    setErrors((prev) => ({ ...prev, title: "" }));
+                  }
+                }}
                 placeholder={t("queries.titlePlaceholder")}
                 className={cn(
                   "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
@@ -982,11 +997,6 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   </span>
                 )}
               </h4>
-              {errors.source_incident_id && (
-                <p className="text-xs text-red-500">
-                  {errors.source_incident_id}
-                </p>
-              )}
 
               {sourceIncident ? (
                 <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
@@ -1016,6 +1026,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                       onChange={(e) => {
                         setIncidentSearch(e.target.value);
                         setShowIncidentSearch(true);
+                        setErrors((prev) => ({
+                          ...prev,
+                          source_incident_id: "",
+                        }));
                       }}
                       onFocus={() => setShowIncidentSearch(true)}
                       placeholder={t("queries.searchSourceIncident")}
@@ -1072,6 +1086,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                     </div>
                   )}
                 </div>
+              )}
+              {errors.source_incident_id && (
+                <p className="text-xs text-red-500">
+                  {errors.source_incident_id}
+                </p>
               )}
             </div>
           )}
