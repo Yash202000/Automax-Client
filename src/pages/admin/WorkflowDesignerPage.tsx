@@ -1073,7 +1073,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       color: state.color,
       sla_hours: state.sla_hours || undefined,
       sla_unit: state.sla_unit || "hours",
-      escalation_policy_id: state.escalation_policy_id || undefined,
+      escalation_policy_id: state.escalation_policy_id || "",
       is_mergable: state.is_mergable || false,
       is_ai_qa: state.is_ai_qa || false,
       is_ready_to_close: state.is_ready_to_close || false,
@@ -1233,7 +1233,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       color: stateFormData.color,
       sla_hours: stateFormData.sla_hours,
       sla_unit: stateFormData.sla_unit || "hours",
-      escalation_policy_id: stateFormData.escalation_policy_id || null,
+      escalation_policy_id: stateFormData.escalation_policy_id || "",
       is_mergable: stateFormData.is_mergable,
       is_ai_qa: stateFormData.is_ai_qa,
       is_ready_to_close: stateFormData.is_ready_to_close,
@@ -3213,7 +3213,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     onChange={(e) =>
                       setStateFormData({
                         ...stateFormData,
-                        escalation_policy_id: e.target.value || undefined,
+                        escalation_policy_id: e.target.value || "",
                       })
                     }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"

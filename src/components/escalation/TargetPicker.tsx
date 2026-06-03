@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, X, Users, Loader2 } from "lucide-react";
-import { departmentApi, escalationPolicyApi } from "@/api/admin";
+import { departmentApi, escalationPolicyApi, roleApi } from "@/api/admin";
 import type { Department, Role, User } from "@/types";
 import { cn } from "@/lib/utils";
 import { TreeSelect } from "@/components/ui";
@@ -69,7 +69,14 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
   const deptMap = buildDeptMap(deptTree);
   const treeNodes = toTreeNodes(deptTree);
 
-  // When draft dept changes → fetch its roles and reset role selection
+  // All system roles — shown when no department is selected
+  const { data: allRolesData } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => roleApi.list(),
+  });
+  const allRoles: Role[] = allRolesData?.data || [];
+
+  // When draft dept changes → fetch its roles; fall back to all roles when no dept selected
   useEffect(() => {
     setDraftRoleId("");
     setDeptRoles([]);
@@ -93,8 +100,9 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
       const deptName = vars.department_id
         ? deptMap.get(vars.department_id)?.name
         : undefined;
+      const roleList = vars.department_id ? deptRoles : allRoles;
       const roleName = vars.role_id
-        ? deptRoles.find((r) => r.id === vars.role_id)?.name
+        ? roleList.find((r) => r.id === vars.role_id)?.name
         : undefined;
       const newEntry: TargetEntry = {
         department_id: vars.department_id,
@@ -267,19 +275,17 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
               />
             </div>
 
-            {/* Role — filtered to selected dept */}
+            {/* Role — filtered to selected dept, or all system roles when no dept selected */}
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
                 {t("common.role", "Role")}
-                {draftDeptId && (
-                  <span className="ml-1 text-[hsl(var(--muted-foreground))] font-normal">
-                    (
-                    {rolesLoading
-                      ? t("common.loading", "loading...")
-                      : `${deptRoles.length} ${t("common.available", "available")}`}
-                    )
-                  </span>
-                )}
+                <span className="ml-1 text-[hsl(var(--muted-foreground))] font-normal">
+                  (
+                  {rolesLoading
+                    ? t("common.loading", "loading...")
+                    : `${(draftDeptId ? deptRoles : allRoles).length} ${t("common.available", "available")}`}
+                  )
+                </span>
               </label>
               <select
                 value={draftRoleId}
@@ -293,7 +299,7 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
                 )}
               >
                 <option value="">{t("common.anyRole", "Any role")}</option>
-                {deptRoles.map((r) => (
+                {(draftDeptId ? deptRoles : allRoles).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>
