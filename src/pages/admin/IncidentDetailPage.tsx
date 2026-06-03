@@ -1015,10 +1015,52 @@ export const IncidentDetailPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleStepNext = () => {
+  const handleStepNext = async () => {
     if (!validateCurrentStep()) return;
     setTransitionErrors({});
     if (transitionStep < transitionSteps.length - 1) {
+      const currentStepKey = transitionSteps[transitionStep];
+      const nextStepKey = transitionSteps[transitionStep + 1];
+
+      // Re-fetch user matches when moving from department to user step,
+      // using the newly selected department instead of the incident's (possibly null) department
+      if (
+        currentStepKey === "department" &&
+        nextStepKey === "user" &&
+        selectedTransition &&
+        selectedDepartmentId
+      ) {
+        const trans = selectedTransition.transition;
+        if (
+          (trans.manual_select_user || trans.auto_match_user) &&
+          trans.assignment_roles?.length
+        ) {
+          try {
+            setMatchLoading(true);
+            const userResult = await userApi.match({
+              role_ids: trans.assignment_roles.map((r) => r.id),
+              classification_id: incident?.classification?.id,
+              location_id: incident?.location?.id,
+              department_id: selectedDepartmentId,
+            });
+            if (userResult.success && userResult.data) {
+              setUserMatchResult(userResult.data);
+              setSelectedUserIds([]);
+              if (
+                userResult.data.single_match &&
+                userResult.data.matched_user_id
+              ) {
+                setSelectedUserIds([userResult.data.matched_user_id]);
+              }
+            }
+          } catch (error) {
+            console.error("Failed to re-fetch user matches:", error);
+          } finally {
+            setMatchLoading(false);
+          }
+        }
+      }
+
       setTransitionStep((prev) => prev + 1);
     } else {
       executeTransition();

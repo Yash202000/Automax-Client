@@ -8,6 +8,10 @@ BASE_PATH="${VITE_BASE_PATH:-/}"
 BASE_NO_SLASH=$(echo "$BASE_PATH" | sed 's|/$||')
 sed -i "s|/BASEPATHPLACEHOLDER|${BASE_NO_SLASH}|g" /app/dist/index.html
 
+# Cache-bust config.js so CDNs (Cloudflare) never serve stale runtime config
+CACHE_BUST=$(date +%s)
+sed -i "s|config\.js|config.js?v=${CACHE_BUST}|g" /app/dist/index.html
+
 # Generate runtime config from environment variables
 cat <<EOF > /app/dist/config.js
 window.APP_CONFIG = {
