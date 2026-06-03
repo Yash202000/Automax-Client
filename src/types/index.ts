@@ -1773,6 +1773,7 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
+  default_department_id?: string;
   updated_at: string;
 }
 
