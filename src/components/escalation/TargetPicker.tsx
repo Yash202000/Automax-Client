@@ -9,6 +9,7 @@ import { TreeSelect } from "@/components/ui";
 import type { TreeSelectNode } from "../../utils/treeUtils";
 
 export interface TargetEntry {
+  id?: string; // backend UUID — present when loaded from an existing policy
   department_id?: string;
   department_name?: string;
   role_id?: string;
@@ -21,6 +22,7 @@ interface TargetPickerProps {
   value: TargetEntry[];
   onChange: (targets: TargetEntry[]) => void;
   disabled?: boolean;
+  policyId?: string; // when editing an existing policy, enables the dedicated exclude endpoint
 }
 
 /** Flatten a Department tree into a lookup map */
@@ -51,6 +53,7 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
   value,
   onChange,
   disabled,
+  policyId,
 }) => {
   const { t } = useTranslation();
 
@@ -112,7 +115,8 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
         excluded_user_ids: [],
         resolved_users: resolved,
       };
-      onChange([...value, newEntry]);
+      // Use valueRef (not stale closure) to avoid overwriting concurrent updates
+      onChange([...valueRef.current, newEntry]);
       setDraftDeptId("");
       setDraftRoleId("");
     },
@@ -147,15 +151,21 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
           .resolveUsers({
             department_id: entry.department_id,
             role_id: entry.role_id,
+            excluded_user_ids: entry.excluded_user_ids,
           })
           .then((res) => res.data || [])
           .catch(() => [] as User[]),
       ),
     ).then((resolvedArrays) => {
+      // Use valueRef so we always patch the latest value, not the stale
+      // snapshot from when the effect started (avoids overwriting concurrent updates).
       onChange(
         valueRef.current.map((entry, idx) => {
           const pi = pending.findIndex((p) => p.idx === idx);
           if (pi === -1) return entry;
+          // Only set resolved_users if it's still unresolved (another path
+          // may have already set it while the promise was in flight).
+          if (entry.resolved_users !== undefined) return entry;
           return { ...entry, resolved_users: resolvedArrays[pi] };
         }),
       );
@@ -165,6 +175,13 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
 
   const handleAdd = () => {
     if (!draftDeptId && !draftRoleId) return;
+    // Prevent adding a target with the same dept+role that already exists
+    const alreadyExists = valueRef.current.some(
+      (e) =>
+        (e.department_id ?? "") === draftDeptId &&
+        (e.role_id ?? "") === draftRoleId,
+    );
+    if (alreadyExists) return;
     resolveMutation.mutate({
       department_id: draftDeptId || undefined,
       role_id: draftRoleId || undefined,
@@ -176,16 +193,39 @@ const TargetPicker: React.FC<TargetPickerProps> = ({
   };
 
   const handleExcludeUser = (entryIdx: number, userId: string) => {
+    const entry = value[entryIdx];
+    const newExcluded = [...entry.excluded_user_ids, userId];
+
+    // Optimistic local update — UI responds immediately
     onChange(
-      value.map((entry, i) => {
-        if (i !== entryIdx) return entry;
+      value.map((e, i) => {
+        if (i !== entryIdx) return e;
         return {
-          ...entry,
-          excluded_user_ids: [...entry.excluded_user_ids, userId],
-          resolved_users: entry.resolved_users?.filter((u) => u.id !== userId),
+          ...e,
+          excluded_user_ids: newExcluded,
+          resolved_users: e.resolved_users?.filter((u) => u.id !== userId),
         };
       }),
     );
+
+    // Persist to backend when we have both IDs (editing an existing policy)
+    if (policyId && entry.id) {
+      escalationPolicyApi
+        .updateTargetExcludedUsers(policyId, entry.id, newExcluded)
+        .catch(() => {
+          // Revert the optimistic update on failure
+          onChange(
+            value.map((e, i) => {
+              if (i !== entryIdx) return e;
+              return {
+                ...e,
+                excluded_user_ids: entry.excluded_user_ids,
+                resolved_users: [...(e.resolved_users || [])],
+              };
+            }),
+          );
+        });
+    }
   };
 
   const userName = (u: User) =>

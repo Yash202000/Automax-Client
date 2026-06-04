@@ -442,6 +442,7 @@ const EscalationPolicyModal: React.FC<Props> = ({
                     <TargetPicker
                       value={step.targets}
                       onChange={(targets) => updateStep(idx, { targets })}
+                      policyId={editData?.id}
                     />
                     {errors[`step_${idx}_targets`] && (
                       <p className="text-xs text-red-500 mt-1">

@@ -3014,6 +3014,17 @@ export const escalationPolicyApi = {
     );
     return response.data;
   },
+  updateTargetExcludedUsers: async (
+    policyId: string,
+    targetId: string,
+    excludedUserIds: string[],
+  ): Promise<ApiResponse<any>> => {
+    const response = await apiClient.put<ApiResponse<any>>(
+      `/admin/escalation-policies/${policyId}/targets/${targetId}/excluded-users`,
+      { excluded_user_ids: excludedUserIds },
+    );
+    return response.data;
+  },
 };
 
 export const callerFeedbackApi = {

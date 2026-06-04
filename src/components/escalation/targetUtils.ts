@@ -14,6 +14,7 @@ export function toTargetRequests(
 
 /** Convert backend target (EscalationPolicyStepTarget | EscalationGroupTarget) → TargetEntry */
 export function fromBackendTarget(t: {
+  id?: string;
   department_id?: string;
   department?: { id: string; name: string };
   role_id?: string;
@@ -21,6 +22,7 @@ export function fromBackendTarget(t: {
   excluded_user_ids?: string[];
 }): TargetEntry {
   return {
+    id: t.id,
     department_id: t.department_id,
     department_name: t.department?.name,
     role_id: t.role_id,
