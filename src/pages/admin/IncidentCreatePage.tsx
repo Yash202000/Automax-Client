@@ -1094,7 +1094,7 @@ export function IncidentCreatePage() {
             name,
             type,
             parent_id: parentId,
-            link_default_department: true,
+            source: "map",
           });
           if (!res.data) throw new Error(`Failed to create ${type} location`);
           // Also push into local list so sibling lookups within this call work
