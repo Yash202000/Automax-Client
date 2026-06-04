@@ -217,7 +217,7 @@ export const CitizenIncidentFeedbackPage = () => {
             <MessageSquare className="w-5 h-5 text-blue-600" />
 
             <h2 className="text-base font-semibold text-gray-900">
-              Was this helpful?
+              Has this incident been resolved to your satisfaction?
             </h2>
           </div>
 
@@ -277,16 +277,16 @@ export const CitizenIncidentFeedbackPage = () => {
           />
 
           {satisfaction === "unsatisfied" && (
-            <div className="mt-5 p-4 rounded-xl border border-red-200 bg-red-50">
+            <div className="mt-5 p-4 rounded-xl border border-amber-200 bg-amber-50">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
 
                 <div>
-                  <h3 className="text-sm font-semibold text-red-700">
+                  <h3 className="text-sm font-semibold text-amber-800">
                     Not satisfied with the resolution?
                   </h3>
 
-                  <p className="mt-1 text-sm text-red-600 leading-relaxed">
+                  <p className="mt-1 text-sm text-amber-700 leading-relaxed">
                     Submitting this will create a complaint and our team will
                     review the incident.
                   </p>
@@ -306,8 +306,7 @@ export const CitizenIncidentFeedbackPage = () => {
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             {satisfaction === "unsatisfied" ? (
               <Button
-                variant="destructive"
-                className="w-full"
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white"
                 onClick={handleSubmitFeedback}
                 isLoading={complaintMutation.isPending}
               >
