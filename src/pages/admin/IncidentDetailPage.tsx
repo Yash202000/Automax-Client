@@ -1015,52 +1015,10 @@ export const IncidentDetailPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleStepNext = async () => {
+  const handleStepNext = () => {
     if (!validateCurrentStep()) return;
     setTransitionErrors({});
     if (transitionStep < transitionSteps.length - 1) {
-      const currentStepKey = transitionSteps[transitionStep];
-      const nextStepKey = transitionSteps[transitionStep + 1];
-
-      // Re-fetch user matches when moving from department to user step,
-      // using the newly selected department instead of the incident's (possibly null) department
-      if (
-        currentStepKey === "department" &&
-        nextStepKey === "user" &&
-        selectedTransition &&
-        selectedDepartmentId
-      ) {
-        const trans = selectedTransition.transition;
-        if (
-          (trans.manual_select_user || trans.auto_match_user) &&
-          trans.assignment_roles?.length
-        ) {
-          try {
-            setMatchLoading(true);
-            const userResult = await userApi.match({
-              role_ids: trans.assignment_roles.map((r) => r.id),
-              classification_id: incident?.classification?.id,
-              location_id: incident?.location?.id,
-              department_id: selectedDepartmentId,
-            });
-            if (userResult.success && userResult.data) {
-              setUserMatchResult(userResult.data);
-              setSelectedUserIds([]);
-              if (
-                userResult.data.single_match &&
-                userResult.data.matched_user_id
-              ) {
-                setSelectedUserIds([userResult.data.matched_user_id]);
-              }
-            }
-          } catch (error) {
-            console.error("Failed to re-fetch user matches:", error);
-          } finally {
-            setMatchLoading(false);
-          }
-        }
-      }
-
       setTransitionStep((prev) => prev + 1);
     } else {
       executeTransition();
@@ -1310,10 +1268,17 @@ export const IncidentDetailPage: React.FC = () => {
       !trans.assign_department_id &&
       !selectedDepartmentId
     ) {
-      newTransitionErrors.department = t(
-        "incidents.departmentSelectionRequired",
-        "Please select a department",
-      );
+      const noDeptAvailable =
+        departmentMatchResult && departmentMatchResult.departments.length === 0;
+      newTransitionErrors.department = noDeptAvailable
+        ? t(
+            "incidents.noDepartmentAssigned",
+            "No department assigned - Contact administrator for this",
+          )
+        : t(
+            "incidents.departmentSelectionRequired",
+            "Please select a department",
+          );
     }
 
     // Validate user selection when manual_select_user is on: block if no user selected
@@ -3937,8 +3902,11 @@ export const IncidentDetailPage: React.FC = () => {
                       </p>
                     ) : departmentMatchResult ? (
                       departmentMatchResult.departments.length === 0 ? (
-                        <p className="text-sm text-amber-600">
-                          {t("incidents.noMatchingDepartments")}
+                        <p className="text-sm text-red-600 font-medium">
+                          {t(
+                            "incidents.noDepartmentAssigned",
+                            "No department assigned - Contact administrator for this",
+                          )}
                         </p>
                       ) : departmentMatchResult.single_match ? (
                         <p className="text-sm text-[hsl(var(--foreground))]">
