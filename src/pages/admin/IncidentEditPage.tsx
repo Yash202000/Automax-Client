@@ -1118,8 +1118,8 @@ export function IncidentEditPage() {
                 onClick={() => {
                   setFormData((prev) => ({
                     ...prev,
-                    latitude: x.lat,
-                    longitude: x.lon,
+                    latitude: parseFloat(x.lat.toString()),
+                    longitude: parseFloat(x.lon.toString()),
                   }));
                   setShowLocationOption(false);
                 }}
