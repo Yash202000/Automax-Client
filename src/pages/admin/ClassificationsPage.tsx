@@ -1244,7 +1244,9 @@ export const ClassificationsPage: React.FC = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
-                            {priority.name}
+                            {i18n.language === "ar" && priority.name_ar
+                              ? priority.name_ar
+                              : priority.name}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
