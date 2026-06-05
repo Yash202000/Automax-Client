@@ -1036,7 +1036,8 @@
     "errors": "Errors:",
     "userAgent": "User Agent",
     "51234Default": "51234 (default)",
-    "unknownUser": "Unknown User"
+    "unknownUser": "Unknown User",
+    "AddAdUser": "Add AD User"
   },
   "roles": {
     "title": "Roles",
