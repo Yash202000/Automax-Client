@@ -1047,7 +1047,7 @@ export interface TransitionActionRequest {
 }
 
 export interface TransitionSmsConfig {
-  recipients: ("assignee" | "reporter" | "creator" | "custom")[];
+  recipients: ("assignee" | "reporter" | "creator" | "caller" | "custom")[];
   custom_phones: string[];
   template_code?: string; // notification template code — when set, overrides message_template
   message_template: string;

@@ -5266,6 +5266,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                                         "assignee",
                                         "reporter",
                                         "creator",
+                                        "caller",
                                         "custom",
                                       ] as const
                                     ).map((r) => (
