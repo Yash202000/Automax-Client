@@ -99,31 +99,31 @@ const exportToCSV = (logs: ActionLog[], t: (key: string) => string) => {
   const headers = [
     t("actionLogs.time"),
     t("users.user"),
-    t("auth.username"),
+    // t("auth.username"),
     t("actionLogs.action"),
     t("actionLogs.module"),
     t("common.description"),
-    t("actionLogs.oldValue"),
-    t("actionLogs.newValue"),
+    // t("actionLogs.oldValue"),
+    // t("actionLogs.newValue"),
     t("common.status"),
-    t("actionLogs.ipAddress"),
+    // t("actionLogs.ipAddress"),
   ];
 
   const rows = logs.map((log) => [
     new Date(log?.created_at).toLocaleString(),
     `${log.user?.first_name || ""} ${log?.user?.last_name || ""}`,
-    log?.user?.username || "",
+    // log?.user?.username || "",
     log?.action,
     log?.module,
     log?.description,
-    log?.old_value
-      ? getChangedValues(log.old_value, log.new_value).oldText
-      : "",
-    log?.new_value
-      ? getChangedValues(log.old_value, log.new_value).newText
-      : "",
+    // log?.old_value
+    //   ? getChangedValues(log.old_value, log.new_value).oldText
+    //   : "",
+    // log?.new_value
+    //   ? getChangedValues(log.old_value, log.new_value).newText
+    //   : "",
     log?.status,
-    log?.ip_address,
+    // log?.ip_address,
   ]);
 
   const csvContent = [headers, ...rows]
@@ -152,18 +152,18 @@ const exportToExcel = (logs: ActionLog[], t: (key: string) => string) => {
     [t("actionLogs.time")]: new Date(log?.created_at).toLocaleString(),
     [t("users.user")]:
       `${log?.user?.first_name || ""} ${log?.user?.last_name || ""}`,
-    [t("auth.username")]: log?.user?.username,
+    // [t("auth.username")]: log?.user?.username,
     [t("actionLogs.action")]: log?.action,
     [t("actionLogs.module")]: log?.module,
     [t("common.description")]: log?.description,
-    [t("actionLogs.oldValue")]: log?.old_value
-      ? getChangedValues(log.old_value, log.new_value).oldText
-      : "",
-    [t("actionLogs.newValue")]: log?.new_value
-      ? getChangedValues(log.old_value, log.new_value).newText
-      : "",
+    // [t("actionLogs.oldValue")]: log?.old_value
+    //   ? getChangedValues(log.old_value, log.new_value).oldText
+    //   : "",
+    // [t("actionLogs.newValue")]: log?.new_value
+    //   ? getChangedValues(log.old_value, log.new_value).newText
+    //   : "",
     [t("common.status")]: log?.status,
-    [t("actionLogs.ipAddress")]: log?.ip_address,
+    // [t("actionLogs.ipAddress")]: log?.ip_address,
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(formattedData);
