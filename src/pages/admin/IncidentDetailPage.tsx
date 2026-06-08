@@ -3054,7 +3054,7 @@ export const IncidentDetailPage: React.FC = () => {
                   ) : (
                     bridges.map((bridge) => {
                       const isOutbound = bridge.direction === "outbound";
-                      const isOpen = bridge.status === "open";
+
                       const remoteUrl =
                         bridge.remote_system_url && bridge.remote_incident_id
                           ? `${bridge.remote_system_url.replace(/\/$/, "")}/incidents/${bridge.remote_incident_id}`
@@ -3085,15 +3085,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   {bridge.remote_incident_number}
                                 </span>
                               )}
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  isOpen
-                                    ? "bg-green-500/10 text-green-600"
-                                    : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
-                                }`}
-                              >
-                                {bridge.status}
-                              </span>
+
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full ${
                                   isOutbound
