@@ -1094,7 +1094,7 @@ export function IncidentCreatePage() {
             name,
             type,
             parent_id: parentId,
-            link_default_department: true,
+            source: "map",
           });
           if (!res.data) throw new Error(`Failed to create ${type} location`);
           // Also push into local list so sibling lookups within this call work
@@ -1837,10 +1837,10 @@ export function IncidentCreatePage() {
           </ModalDescription>
         </ModalHeader>
         <ModalBody>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 overflow-y-auto max-h-[70vh]">
             {locationOptions.map((x) => (
               <div
-                className="flex flex-col hover:bg-gray-100 cursor-pointer p-2 rounded-lg"
+                className="flex flex-col hover:bg-gray-100 cursor-pointer p-2 rounded-lg group"
                 onClick={() => {
                   setFormData((prev) => ({
                     ...prev,
@@ -1850,11 +1850,11 @@ export function IncidentCreatePage() {
                   setShowLocationOption(false);
                 }}
               >
-                <span>{x.name}</span>
+                <span className="group-hover:text-gray-700">{x.name}</span>
                 <span className="text-gray-500">
                   Lat: {x.lat} Lon: {x.lon}
                 </span>
-                <span>{x.type}</span>
+                <span className="group-hover:text-gray-700">{x.type}</span>
               </div>
             ))}
           </div>

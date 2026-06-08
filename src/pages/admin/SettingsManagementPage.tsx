@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { settingsApi } from "../../api/settings";
-import { departmentApi } from "../../api/admin";
 import { useTranslation } from "react-i18next";
 import { supportedLanguages } from "../../i18n";
 import {
@@ -16,7 +15,6 @@ import {
   Phone,
   Upload,
   ToggleLeft,
-  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 
@@ -48,19 +46,12 @@ export const SettingsManagementPage: React.FC = () => {
     time_format: "",
     default_language: "",
     show_evaluate_button: false,
-    default_department_id: "",
   });
 
   // Fetch settings
   const { data: settingsResponse, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: () => settingsApi.get(),
-  });
-
-  // Fetch departments for default department picker
-  const { data: departmentsResponse } = useQuery({
-    queryKey: ["admin", "departments"],
-    queryFn: () => departmentApi.list(),
   });
 
   // Update form data when settings are loaded
@@ -91,7 +82,6 @@ export const SettingsManagementPage: React.FC = () => {
         time_format: data.time_format || "",
         default_language: data.default_language || "",
         show_evaluate_button: data.show_evaluate_button ?? false,
-        default_department_id: data.default_department_id || "",
       });
     }
   }, [settingsResponse]);
@@ -610,59 +600,6 @@ export const SettingsManagementPage: React.FC = () => {
                   }`}
                 />
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Auto Location Settings */}
-        <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t("settings.autoLocation", "Auto Location Retrieval")}
-              </h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t(
-                  "settings.autoLocationDesc",
-                  "Configure defaults for locations created via GPS/map",
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="p-4 bg-[hsl(var(--muted))] rounded-lg">
-              <label className="block text-sm font-semibold text-[hsl(var(--foreground))] mb-1">
-                {t("settings.defaultDepartment", "Default Department")}
-              </label>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                {t(
-                  "settings.defaultDepartmentDesc",
-                  "Automatically assign this department to locations created from GPS/map during incident creation. Leave empty to disable.",
-                )}
-              </p>
-              <select
-                value={formData.default_department_id}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    default_department_id: e.target.value,
-                  }))
-                }
-                className="w-full md:w-1/2 px-4 py-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-              >
-                <option value="">
-                  {t("settings.noDepartment", "— None —")}
-                </option>
-                {departmentsResponse?.data?.map((dept: any) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         </div>

@@ -435,6 +435,73 @@ export function IncidentEditPage() {
     }
   };
 
+  // Auto-generate title from classification, location, and geolocation (shared)
+  useEffect(() => {
+    const parts: string[] = [];
+
+    // Add classification name
+    if (formData.classification_id) {
+      const findClassificationName = (
+        nodes: Classification[],
+        id: string,
+      ): string | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node.name;
+          if (node.children) {
+            const found = findClassificationName(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const classificationName = findClassificationName(
+        classifications,
+        formData.classification_id,
+      );
+      if (classificationName) parts.push(classificationName);
+    }
+
+    // Add location name
+    if (formData.location_id) {
+      const findLocationName = (
+        nodes: Location[],
+        id: string,
+      ): string | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node.name;
+          if (node.children) {
+            const found = findLocationName(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const locationName = findLocationName(locations, formData.location_id);
+      if (locationName) parts.push(locationName);
+    }
+
+    // Add geolocation area/address if available
+    if (formData.city) {
+      parts.push(formData.city);
+    } else if (formData.address) {
+      parts.push(formData.address);
+    }
+
+    // Generate title from parts
+    if (parts.length > 0) {
+      const generatedTitle = parts.join(" - ");
+
+      setFormData((prev) => ({ ...prev, title: generatedTitle }));
+    }
+  }, [
+    formData.classification_id,
+    formData.location_id,
+    formData.address,
+    formData.city,
+    classifications,
+    locations,
+  ]);
+
   const validFormFields = [
     "description",
     "classification_id",
@@ -1044,24 +1111,24 @@ export function IncidentEditPage() {
           </ModalDescription>
         </ModalHeader>
         <ModalBody>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 overflow-y-auto max-h-[70vh]">
             {locationOptions.map((x) => (
               <div
-                className="flex flex-col hover:bg-gray-100 cursor-pointer p-2 rounded-lg"
+                className="flex flex-col hover:bg-gray-100 cursor-pointer p-2 rounded-lg group"
                 onClick={() => {
                   setFormData((prev) => ({
                     ...prev,
-                    latitude: x.lat,
-                    longitude: x.lon,
+                    latitude: parseFloat(x.lat.toString()),
+                    longitude: parseFloat(x.lon.toString()),
                   }));
                   setShowLocationOption(false);
                 }}
               >
-                <span>{x.name}</span>
+                <span className="group-hover:text-gray-700">{x.name}</span>
                 <span className="text-gray-500">
                   Lat: {x.lat} Lon: {x.lon}
                 </span>
-                <span>{x.type}</span>
+                <span className="group-hover:text-gray-700">{x.type}</span>
               </div>
             ))}
           </div>

@@ -467,7 +467,7 @@ export interface LocationCreateRequest {
   latitude?: number;
   longitude?: number;
   sort_order?: number;
-  link_default_department?: boolean;
+  source?: string;
 }
 
 export interface LocationUpdateRequest {
@@ -1047,7 +1047,7 @@ export interface TransitionActionRequest {
 }
 
 export interface TransitionSmsConfig {
-  recipients: ("assignee" | "reporter" | "creator" | "custom")[];
+  recipients: ("assignee" | "reporter" | "creator" | "caller" | "custom")[];
   custom_phones: string[];
   template_code?: string; // notification template code — when set, overrides message_template
   message_template: string;
@@ -1774,7 +1774,6 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
-  default_department_id?: string;
   updated_at: string;
 }
 

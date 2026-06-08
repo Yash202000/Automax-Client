@@ -135,8 +135,10 @@ apiClient.interceptors.response.use(
     }
 
     try {
+      const rememberMe = localStorage.getItem("rememberMe") === "true";
       const response = await axios.post(`${API_URL}/auth/refresh`, {
         refresh_token: refreshToken,
+        remember_me: rememberMe,
       });
 
       const { token, refresh_token } = response.data.data;

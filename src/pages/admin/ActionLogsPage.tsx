@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -51,79 +52,79 @@ const statusColors: Record<string, string> = {
   failed: "bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--destructive))]",
 };
 
-const formatValue = (val: any) => {
-  if (val === null || val === undefined) return "null";
+// const formatValue = (val: any) => {
+//   if (val === null || val === undefined) return "null";
 
-  if (Array.isArray(val)) {
-    if (val.length === 0) return "[]";
-    return val.join(", ");
-  }
+//   if (Array.isArray(val)) {
+//     if (val.length === 0) return "[]";
+//     return val.join(", ");
+//   }
 
-  if (typeof val === "object") {
-    return JSON.stringify(val);
-  }
+//   if (typeof val === "object") {
+//     return JSON.stringify(val);
+//   }
 
-  return String(val);
-};
+//   return String(val);
+// };
 
-const getChangedValues = (oldValue?: string, newValue?: string) => {
-  try {
-    const oldObj = JSON.parse(oldValue || "{}");
-    const newObj = JSON.parse(newValue || "{}");
+// const getChangedValues = (oldValue?: string, newValue?: string) => {
+//   try {
+//     const oldObj = JSON.parse(oldValue || "{}");
+//     const newObj = JSON.parse(newValue || "{}");
 
-    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+//     const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
 
-    const oldChanges: string[] = [];
-    const newChanges: string[] = [];
+//     const oldChanges: string[] = [];
+//     const newChanges: string[] = [];
 
-    allKeys.forEach((key) => {
-      const oldVal = oldObj[key];
-      const newVal = newObj[key];
+//     allKeys.forEach((key) => {
+//       const oldVal = oldObj[key];
+//       const newVal = newObj[key];
 
-      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-        oldChanges.push(`${key}: ${formatValue(oldVal)}`);
-        newChanges.push(`${key}: ${formatValue(newVal)}`);
-      }
-    });
+//       if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+//         oldChanges.push(`${key}: ${formatValue(oldVal)}`);
+//         newChanges.push(`${key}: ${formatValue(newVal)}`);
+//       }
+//     });
 
-    return {
-      oldText: oldChanges.join(", "),
-      newText: newChanges.join(", "),
-    };
-  } catch {
-    return { oldText: "", newText: "" };
-  }
-};
+//     return {
+//       oldText: oldChanges.join(", "),
+//       newText: newChanges.join(", "),
+//     };
+//   } catch {
+//     return { oldText: "", newText: "" };
+//   }
+// };
 
 const exportToCSV = (logs: ActionLog[], t: (key: string) => string) => {
   const headers = [
     t("actionLogs.time"),
     t("users.user"),
-    t("auth.username"),
+    // t("auth.username"),
     t("actionLogs.action"),
     t("actionLogs.module"),
     t("common.description"),
-    t("actionLogs.oldValue"),
-    t("actionLogs.newValue"),
+    // t("actionLogs.oldValue"),
+    // t("actionLogs.newValue"),
     t("common.status"),
-    t("actionLogs.ipAddress"),
+    // t("actionLogs.ipAddress"),
   ];
 
   const rows = logs.map((log) => [
     new Date(log?.created_at).toLocaleString(),
     `${log.user?.first_name || ""} ${log?.user?.last_name || ""}`,
-    log?.user?.username || "",
+    // log?.user?.username || "",
     log?.action,
     log?.module,
     log?.description,
-    log?.old_value
-      ? getChangedValues(log.old_value, log.new_value).oldText
-      : "",
-    log?.new_value
-      ? getChangedValues(log.old_value, log.new_value).newText
-      : "",
+    // log?.old_value
+    //   ? getChangedValues(log.old_value, log.new_value).oldText
+    //   : "",
+    // log?.new_value
+    //   ? getChangedValues(log.old_value, log.new_value).newText
+    //   : "",
     log?.status,
-    log?.ip_address,
+    // log?.ip_address,
   ]);
 
   const csvContent = [headers, ...rows]
@@ -152,18 +153,18 @@ const exportToExcel = (logs: ActionLog[], t: (key: string) => string) => {
     [t("actionLogs.time")]: new Date(log?.created_at).toLocaleString(),
     [t("users.user")]:
       `${log?.user?.first_name || ""} ${log?.user?.last_name || ""}`,
-    [t("auth.username")]: log?.user?.username,
+    // [t("auth.username")]: log?.user?.username,
     [t("actionLogs.action")]: log?.action,
     [t("actionLogs.module")]: log?.module,
     [t("common.description")]: log?.description,
-    [t("actionLogs.oldValue")]: log?.old_value
-      ? getChangedValues(log.old_value, log.new_value).oldText
-      : "",
-    [t("actionLogs.newValue")]: log?.new_value
-      ? getChangedValues(log.old_value, log.new_value).newText
-      : "",
+    // [t("actionLogs.oldValue")]: log?.old_value
+    //   ? getChangedValues(log.old_value, log.new_value).oldText
+    //   : "",
+    // [t("actionLogs.newValue")]: log?.new_value
+    //   ? getChangedValues(log.old_value, log.new_value).newText
+    //   : "",
     [t("common.status")]: log?.status,
-    [t("actionLogs.ipAddress")]: log?.ip_address,
+    // [t("actionLogs.ipAddress")]: log?.ip_address,
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(formattedData);
