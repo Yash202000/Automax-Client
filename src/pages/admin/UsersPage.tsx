@@ -716,7 +716,7 @@ export const UsersPage: React.FC = () => {
               }}
               variant="outline"
             >
-              Add AD User
+              {t("users.AddAdUser")}
             </Button>
           )}
         </div>

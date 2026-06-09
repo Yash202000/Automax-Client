@@ -1037,7 +1037,8 @@
     "errors": "Errors:",
     "userAgent": "User Agent",
     "51234Default": "51234 (default)",
-    "unknownUser": "Unknown User"
+    "unknownUser": "Unknown User",
+    "AddAdUser": "Add AD User"
   },
   "roles": {
     "title": "Roles",
@@ -2562,7 +2563,10 @@
       "sentAt": "Sent At",
       "loadError": "Failed to load breach log",
       "stepNumber": "Step {{count}}"
-    }
+    },
+    "emailTemplate": "Email Notification Template",
+    "smsTemplate": "SMS Notification Template",
+    "defaultTemplate": "Use default build in message"
   },
   "goals": {
     "title": "Goals",

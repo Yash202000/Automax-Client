@@ -1035,7 +1035,8 @@
     "lastNamePlaceholder": "مثال: Doe",
     "usernamePlaceholder": "مثال: johndoe",
     "phonePlaceholder": "مثال: +1 234 567 890",
-    "extensionPlaceholder": "مثال: 1001"
+    "extensionPlaceholder": "مثال: 1001",
+    "AddAdUser": "إضافة مستخدم إعلان"
   },
   "roles": {
     "title": "الأدوار",
@@ -2560,7 +2561,10 @@
       "policies": "سياسات التصعيد",
       "groups": "مجموعات التصعيد",
       "breachLog": "سجل التجاوزات"
-    }
+    },
+    "emailTemplate": "نموذج إشعار عبر البريد الإلكتروني",
+    "smsTemplate": "نموذج إشعارات الرسائل القصيرة",
+    "defaultTemplate": "استخدم الرسالة المدمجة"
   },
   "goals": {
     "title": "الأهداف",
