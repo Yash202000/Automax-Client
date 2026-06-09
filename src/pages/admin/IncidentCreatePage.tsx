@@ -823,21 +823,47 @@ export function IncidentCreatePage() {
       setIsMatchingLocation(true);
       try {
         const allLocations = flattenLocations(locations);
-        const searchName = (location.city || location.address || "")
-          .toLowerCase()
-          .trim();
 
-        const matched = searchName
-          ? allLocations.find(
-              (loc) =>
-                (!loc.children || loc.children.length === 0) &&
-                (loc.name.toLowerCase().trim() === searchName ||
-                  loc.address?.toLowerCase().trim() === searchName ||
-                  (location.city &&
-                    loc.name.toLowerCase().trim() ===
-                      location.city.toLowerCase().trim())),
-            )
-          : undefined;
+        let matched = undefined;
+
+        if (
+          import.meta.env.VITE_ENABLE_GIS === "false" ||
+          import.meta.env.VITE_ENABLE_GIS === undefined
+        ) {
+          const searchName = (location.city || location.address || "")
+            .toLowerCase()
+            .trim();
+          matched = searchName
+            ? allLocations.find(
+                (loc) =>
+                  (!loc.children || loc.children.length === 0) &&
+                  (loc.name.toLowerCase().trim() === searchName ||
+                    loc.address?.toLowerCase().trim() === searchName ||
+                    (location.city &&
+                      loc.name.toLowerCase().trim() ===
+                        location.city.toLowerCase().trim())),
+              )
+            : undefined;
+        } else {
+          const searchName = (
+            location.gis?.street_fullname ||
+            location.gis?.municipality_name ||
+            ""
+          )
+            .toLowerCase()
+            .trim();
+          matched = searchName
+            ? allLocations.find(
+                (loc) =>
+                  (!loc.children || loc.children.length === 0) &&
+                  (loc.name.toLowerCase().trim() === searchName ||
+                    loc.address?.toLowerCase().trim() === searchName ||
+                    (location.gis?.street_fullname &&
+                      loc.name.toLowerCase().trim() ===
+                        location.gis.street_fullname.toLowerCase().trim())),
+              )
+            : undefined;
+        }
 
         if (matched) {
           // Auto-select the matched location
