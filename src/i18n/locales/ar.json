@@ -418,6 +418,7 @@
     "priority": "الأولوية",
     "severity": "الخطورة",
     "description": "الوصف",
+    "gisError": "الموقع خارج المنطقة المسموح بها.",
     "location": "الموقع",
     "department": "القسم",
     "assignee": "المُسند إليه",
@@ -2302,7 +2303,11 @@
     "permissionDenied": "تم رفض إذن الوصول للموقع",
     "locationUnavailable": "الموقع غير متاح",
     "locationTimeout": "انتهت مهلة طلب الموقع",
-    "locationFailed": "فشل الحصول على الموقع"
+    "locationFailed": "فشل الحصول على الموقع",
+    "district": "المنطقة",
+    "municipality": "البلدية",
+    "street": "الشارع",
+    "planNo": "رقم المخطط"
   },
   "revisionHistory": {
     "loading": "جاري تحميل سجل المراجعات...",
@@ -3608,7 +3613,6 @@
     "error404": "Phone number not recognised. Please check and try again.",
     "error410": "This link has expired. Please contact support.",
     "alreadySubmitted": "This incident has already been updated. If you need additional changes, please request a new link or contact support.",
-
     "feature1": "Pin your exact location on the map",
     "feature2": "Upload photos or documents",
     "feature3": "Add any extra details as a comment",

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { publicUrl } from "../../utils/publicUrl";
 import { useTranslation } from "react-i18next";
+import { integrationApi } from "@/api/integration";
+import { toast } from "sonner";
+
 import {
   MapContainer,
   TileLayer,
@@ -43,6 +46,13 @@ export interface LocationData {
   country?: string;
   postal_code?: string;
   district?: string;
+  gis?: {
+    plan_no: string;
+    street_fullname: string;
+    district_name: string;
+    municipality_name: string;
+    isInsideBoundary: boolean;
+  };
 }
 
 interface LocationPickerProps {
@@ -124,19 +134,34 @@ async function reverseGeocode(
     }
 
     const data: NominatimResponse = await response.json();
+    let gisData = undefined;
+    if (import.meta.env.VITE_ENABLE_GIS === "true") {
+      gisData = await integrationApi.gisLocation({ lat, lng });
+      if (!gisData?.data?.isInsideBoundary) {
+        toast.error("Location is outside the boundary");
+      }
+    }
+
     const districtValue =
       data.address.district ||
       data.address.county ||
       data.address.state_district ||
       data.address.suburb;
 
+    const gisAddress = `${gisData?.data?.plan_no}, ${gisData?.data?.street_fullname}, ${gisData?.data?.municipality_name}, ${gisData?.data?.district_name}`;
+
     return {
-      address: data.display_name,
+      address:
+        import.meta.env.VITE_ENABLE_GIS === "true" &&
+        gisData?.data?.isInsideBoundary
+          ? gisAddress
+          : data.display_name,
       city: data.address.city || data.address.town || data.address.village,
       state: data.address.state || data.address.province,
       country: data.address.country,
       postal_code: data.address.postcode,
       district: districtValue,
+      gis: gisData ? gisData.data : undefined,
     };
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -166,6 +191,7 @@ export function LocationPicker({
       ? [value.latitude, value.longitude]
       : null,
   );
+  const [GISData, setGISData] = useState<any>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -286,18 +312,14 @@ export function LocationPicker({
         const { latitude, longitude } = position.coords;
 
         // Reverse geocode to get address
-        const addressData =
-          (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
-            import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
-            ? {}
-            : await reverseGeocode(latitude, longitude);
+        const addressData = await reverseGeocode(latitude, longitude);
 
         const locationData: LocationData = {
           latitude,
           longitude,
           ...addressData,
         };
-
+        setGISData(locationData.gis);
         onChange(locationData);
         setMapCenter([latitude, longitude]);
         setIsLoading(false);
@@ -325,19 +347,14 @@ export function LocationPicker({
   const handleMapClick = useCallback(
     async (latlng: LatLng) => {
       setIsLoading(true);
-
-      const addressData =
-        (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
-          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
-          ? {}
-          : await reverseGeocode(latlng.lat, latlng.lng);
+      const addressData = await reverseGeocode(latlng.lat, latlng.lng);
 
       const locationData: LocationData = {
         latitude: latlng.lat,
         longitude: latlng.lng,
         ...addressData,
       };
-
+      setGISData(locationData.gis);
       onChange(locationData);
       setMapCenter([latlng.lat, latlng.lng]);
       setIsLoading(false);
@@ -354,11 +371,10 @@ export function LocationPicker({
     if (value?.latitude && value.longitude) {
       setIsLoading(true);
 
-      const addressData =
-        (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
-          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "true"
-          ? {}
-          : await reverseGeocode(value?.latitude, value?.longitude);
+      const addressData = await reverseGeocode(
+        value?.latitude,
+        value?.longitude,
+      );
 
       const locationData: LocationData = {
         latitude: value.latitude,
@@ -366,6 +382,7 @@ export function LocationPicker({
         ...addressData,
       };
 
+      setGISData(locationData.gis);
       onChange(locationData);
       setMapCenter([value.latitude, value.longitude]);
       setIsLoading(false);
@@ -426,12 +443,20 @@ export function LocationPicker({
 
       {/* Map */}
       <div
-        className={`relative ${isExpanded ? "h-[500px]" : "h-64"} rounded-lg overflow-hidden border border-gray-200 group transition-all duration-300`}
+        className={`relative ${isExpanded ? "h-[500px]" : "h-64"} rounded-lg overflow-hidden border group transition-all duration-300`}
+        style={{
+          border:
+            !GISData?.isInsideBoundary &&
+            GISData !== null &&
+            import.meta.env.VITE_ENABLE_GIS === "true"
+              ? "2px solid red"
+              : "",
+        }}
       >
         <MapContainer
           center={mapCenter || defaultCenter}
           zoom={mapCenter ? 15 : 10}
-          className="h-full w-full z-0"
+          className={"h-full w-full z-0"}
           style={{ height: "100%", width: "100%" }}
           zoomControl={false}
         >
@@ -546,38 +571,75 @@ export function LocationPicker({
             </div>
           </div>
 
-          {(value.city || value.state || value.country) && (
+          {(value.city || value.state || value.country) &&
+            import.meta.env.VITE_ENABLE_GIS === "false" && (
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                {value.city && (
+                  <div>
+                    <span className="font-medium">
+                      {t("locationPicker.city")}:
+                    </span>{" "}
+                    {value.city}
+                  </div>
+                )}
+                {value.state && (
+                  <div>
+                    <span className="font-medium">
+                      {t("locationPicker.state")}:
+                    </span>{" "}
+                    {value.state}
+                  </div>
+                )}
+                {value.country && (
+                  <div>
+                    <span className="font-medium">
+                      {t("locationPicker.country")}:
+                    </span>{" "}
+                    {value.country}
+                  </div>
+                )}
+                {value.postal_code && (
+                  <div>
+                    <span className="font-medium">
+                      {t("locationPicker.postalCode")}:
+                    </span>{" "}
+                    {value.postal_code}
+                  </div>
+                )}
+              </div>
+            )}
+          {import.meta.env.VITE_ENABLE_GIS === "true" && (
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-              {value.city && (
+              {GISData?.district_name && (
                 <div>
                   <span className="font-medium">
-                    {t("locationPicker.city")}:
+                    {t("locationPicker.district")}:
                   </span>{" "}
-                  {value.city}
+                  {GISData?.district_name}
                 </div>
               )}
-              {value.state && (
+              {GISData?.municipality_name && (
                 <div>
                   <span className="font-medium">
-                    {t("locationPicker.state")}:
+                    {t("locationPicker.municipality")}:
                   </span>{" "}
-                  {value.state}
+                  {GISData?.municipality_name}
                 </div>
               )}
-              {value.country && (
+              {GISData?.street_fullname && (
                 <div>
                   <span className="font-medium">
-                    {t("locationPicker.country")}:
+                    {t("locationPicker.street")}:
                   </span>{" "}
-                  {value.country}
+                  {GISData?.street_fullname}
                 </div>
               )}
-              {value.postal_code && (
+              {GISData?.plan_no && (
                 <div>
                   <span className="font-medium">
-                    {t("locationPicker.postalCode")}:
+                    {t("locationPicker.planNo")}:
                   </span>{" "}
-                  {value.postal_code}
+                  {GISData?.plan_no}
                 </div>
               )}
             </div>

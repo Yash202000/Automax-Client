@@ -765,7 +765,8 @@ export const IncidentDetailPage: React.FC = () => {
     },
   });
 
-  const availableTransitions = transitionsData?.data || [];
+  const availableTransitions =
+    incident?.location?.name != "Default" ? transitionsData?.data || [] : [];
   const history = historyData?.data || [];
   const comments = combinedCommentData || [];
 
@@ -1637,7 +1638,8 @@ export const IncidentDetailPage: React.FC = () => {
                     </Button>
                   ))}
               {(!incident.record_type || incident.record_type === "incident") &&
-                canConvertToRequest && (
+                canConvertToRequest &&
+                incident?.location?.name != "Default" && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -3232,6 +3234,11 @@ export const IncidentDetailPage: React.FC = () => {
                         incident.location.name
                       )}
                     </div>
+                    {incident.location?.name === "Default" && (
+                      <span className="text-xs text-orange-500">
+                        Location must be updated before performing transitions
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

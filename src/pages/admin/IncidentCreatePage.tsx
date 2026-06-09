@@ -114,6 +114,7 @@ export function IncidentCreatePage() {
   } | null>(null);
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
+  const [gisData, setGISData] = useState<any>(null);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -795,6 +796,7 @@ export function IncidentCreatePage() {
         country: location.country,
         postal_code: location.postal_code,
       }));
+
       if (errors.geolocation) {
         setErrors((prev) => ({ ...prev, geolocation: "" }));
       }
@@ -815,10 +817,12 @@ export function IncidentCreatePage() {
         return;
       }
 
+      setGISData(location?.gis);
+
       // Try to match against Location master
       setIsMatchingLocation(true);
       try {
-        const allLocations = flattenLocations(rawLocations);
+        const allLocations = flattenLocations(locations);
         const searchName = (location.city || location.address || "")
           .toLowerCase()
           .trim();
@@ -849,63 +853,78 @@ export function IncidentCreatePage() {
             }),
           );
         } else {
-          // Build hierarchy: Country → State → District → City
-          const levels: { name: string; type: string }[] = [];
+          // No match found — map to the root-level "Default" location.
+          // If it doesn't exist yet, create it first.
+          const DEFAULT_LOCATION_NAME = "Default";
+          const existingDefault = allLocations.find(
+            (loc) =>
+              loc.name.toLowerCase().trim() ===
+                DEFAULT_LOCATION_NAME.toLowerCase() && !loc.parent_id,
+          );
 
-          levels.push({ name: location.country || "Other", type: "country" });
-          levels.push({ name: location.state || "Other", type: "state" });
-          levels.push({ name: location.district || "Other", type: "district" });
-          levels.push({
-            name:
-              location.city ||
-              location.address?.split(",")[0].trim() ||
-              "Other",
-            type: "city",
-          });
-
-          const leafName = levels[levels.length - 1].name;
-          const virtualId = "virtual_new_location";
-
-          // Find the deepest existing parent in the location tree
-          const allLocations = flattenLocations(rawLocations);
-          let deepestParentId: string | undefined = undefined;
-
-          for (let i = 0; i < levels.length - 1; i++) {
-            const level = levels[i];
-            const nameLower = level.name.toLowerCase().trim();
-            const parentIdToCheck: any = deepestParentId;
-            const match = allLocations.find(
-              (loc) =>
-                loc.name.toLowerCase().trim() === nameLower &&
-                (parentIdToCheck
-                  ? loc.parent_id === parentIdToCheck
-                  : !loc.parent_id),
+          if (existingDefault) {
+            setPendingNewLocation(null);
+            setFormData((prev) => ({
+              ...prev,
+              location_id: existingDefault.id,
+            }));
+            if (errors.location_id) {
+              setErrors((prev) => ({ ...prev, location_id: "" }));
+            }
+            toast.info(
+              t("incidents.locationDefaultMapped", {
+                defaultValue:
+                  'No matching location found. Mapped to "Default" location.',
+              }),
             );
-            if (match) {
-              deepestParentId = match.id;
-            } else {
-              break;
+          } else {
+            // "Default" doesn't exist yet — create it at the root on the fly
+            try {
+              const res = await locationApi.create({
+                name: DEFAULT_LOCATION_NAME,
+                type: "default",
+              });
+              if (res.data) {
+                setPendingNewLocation(null);
+                setFormData((prev) => ({
+                  ...prev,
+                  location_id: res.data!.id,
+                }));
+                if (errors.location_id) {
+                  setErrors((prev) => ({ ...prev, location_id: "" }));
+                }
+                // Refresh the locations tree so TreeSelect reflects the new entry
+                queryClient.invalidateQueries({
+                  queryKey: ["admin", "locations", "tree"],
+                });
+                toast.info(
+                  t("incidents.locationDefaultCreated", {
+                    defaultValue:
+                      'No matching location found. Created and mapped to "Default" location.',
+                  }),
+                );
+              } else {
+                toast.error(
+                  t(
+                    "incidents.locationMatchError",
+                    "Failed to create Default location. Please select manually.",
+                  ),
+                );
+              }
+            } catch (createErr) {
+              // eslint-disable-next-line no-console
+              console.error(
+                "[handleLocationChange] Failed to create Default location:",
+                createErr,
+              );
+              toast.error(
+                t(
+                  "incidents.locationMatchError",
+                  "Failed to create Default location. Please select manually.",
+                ),
+              );
             }
           }
-
-          setPendingNewLocation({
-            levels,
-            virtualId,
-            name: leafName,
-            parent_id: deepestParentId,
-          });
-
-          setFormData((prev) => ({ ...prev, location_id: virtualId }));
-          if (errors.location_id) {
-            setErrors((prev) => ({ ...prev, location_id: "" }));
-          }
-
-          toast.info(
-            t("incidents.locationSelectedOnMap", {
-              name: leafName,
-              defaultValue: `Selected location "${leafName}" from map. It will be added to the master list when the incident is created.`,
-            }),
-          );
         }
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -944,6 +963,9 @@ export function IncidentCreatePage() {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
+    if (import.meta.env.VITE_ENABLE_GIS && !gisData?.isInsideBoundary) {
+      newErrors.geolocation = t("incidents.gisError");
+    }
     if (!formData.title.trim()) newErrors.title = t("incidents.titleRequired");
     if (!formData.workflow_id)
       newErrors.workflow_id = t("incidents.workflowRequired");
@@ -1066,72 +1088,9 @@ export function IncidentCreatePage() {
     }
     console.log("Validation passed, creating incident...");
 
-    let finalLocationId = formData.location_id;
-
-    if (
-      pendingNewLocation &&
-      formData.location_id === pendingNewLocation.virtualId
-    ) {
-      setIsMatchingLocation(true);
-      try {
-        const allLocations = flattenLocations(rawLocations);
-
-        // Helper: find or create a location at a given level under a parent
-        const findOrCreate = async (
-          name: string,
-          type: string,
-          parentId: string | undefined,
-        ): Promise<string> => {
-          const nameLower = name.toLowerCase().trim();
-          const existing = allLocations.find(
-            (loc) =>
-              loc.name.toLowerCase().trim() === nameLower &&
-              (parentId ? loc.parent_id === parentId : !loc.parent_id),
-          );
-          if (existing) return existing.id;
-
-          const res = await locationApi.create({
-            name,
-            type,
-            parent_id: parentId,
-            source: "map",
-          });
-          if (!res.data) throw new Error(`Failed to create ${type} location`);
-          // Also push into local list so sibling lookups within this call work
-          allLocations.push(res.data as unknown as Location);
-          return res.data.id;
-        };
-
-        // Walk down the hierarchy, creating/finding each level
-        let parentId: string | undefined = undefined;
-        let leafId = "";
-        for (const level of pendingNewLocation.levels) {
-          leafId = await findOrCreate(level.name, level.type, parentId);
-          parentId = leafId;
-        }
-
-        if (leafId) {
-          finalLocationId = leafId;
-          // Refresh the locations tree so the TreeSelect reflects new entries
-          queryClient.invalidateQueries({
-            queryKey: ["admin", "locations", "tree"],
-          });
-        }
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Location match/create error on submit:", err);
-        toast.error(
-          t(
-            "incidents.locationMatchError",
-            "Failed to match or create location. Please select manually.",
-          ),
-        );
-        setIsMatchingLocation(false);
-        return;
-      } finally {
-        setIsMatchingLocation(false);
-      }
-    }
+    // Default location is now resolved eagerly in handleLocationChange;
+    // use formData.location_id directly.
+    const finalLocationId = formData.location_id;
 
     const submitData: IncidentCreateRequest = {
       ...formData,
@@ -1443,6 +1402,11 @@ export function IncidentCreatePage() {
                   error={errors.location_id}
                   leafOnly={true}
                   emptyMessage={t("incidents.noLocations")}
+                  disabled={
+                    (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
+                      import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) !==
+                    "true"
+                  }
                 />
                 {isMatchingLocation && (
                   <div className="col-span-1 flex items-center gap-1.5 text-xs text-blue-600 -mt-2">
