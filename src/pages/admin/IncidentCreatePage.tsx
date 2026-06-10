@@ -1042,8 +1042,7 @@ export function IncidentCreatePage() {
         field === "classification_id" ||
         field === "location_id" ||
         field === "source" ||
-        field === "lookup:PRIORITY" ||
-        field === "geolocation"
+        field === "lookup:PRIORITY"
       ) {
         continue;
       }
