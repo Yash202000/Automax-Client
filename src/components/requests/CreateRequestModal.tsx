@@ -34,6 +34,8 @@ import type {
   Department,
   User as UserType,
   Incident,
+  IncidentDetail,
+  IncidentUpdateRequest,
   CreateRequestRequest,
   IncidentSource,
 } from "../../types";
@@ -45,17 +47,20 @@ interface CreateRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (requestId: string) => void;
+  initialRequest?: IncidentDetail;
 }
 
 export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialRequest,
 }) => {
   "use no memo";
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const isEdit = Boolean(initialRequest);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -373,6 +378,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
 
   // Auto-match workflow when criteria change via backend API
   useEffect(() => {
+    if (isEdit) return;
+
     const priority = getPriorityValue();
 
     const criteria = {
@@ -393,10 +400,19 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       .catch(() => {
         // Silently fail - let user manually select workflow
       });
-  }, [classificationId, locationId, source, lookupValues, getPriorityValue]);
+  }, [
+    classificationId,
+    locationId,
+    source,
+    lookupValues,
+    getPriorityValue,
+    isEdit,
+  ]);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
+    if (isEdit) return;
+
     const parts: string[] = [];
 
     // Add classification name
@@ -449,19 +465,31 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       const generatedTitle = parts.join(" - ");
       setTitle(generatedTitle);
     }
-  }, [classificationId, locationId, address, city, classifications, locations]);
+  }, [
+    classificationId,
+    locationId,
+    address,
+    city,
+    classifications,
+    locations,
+    isEdit,
+  ]);
 
-  // Create request mutation
-  const createMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async ({
       data,
       files,
     }: {
-      data: CreateRequestRequest;
+      data: CreateRequestRequest | IncidentUpdateRequest;
       files: File[];
     }) => {
-      const response = await requestApi.create(data);
-      // Upload attachments after request is created
+      const response = initialRequest
+        ? await requestApi.update(
+            initialRequest.id,
+            data as IncidentUpdateRequest,
+          )
+        : await requestApi.create(data as CreateRequestRequest);
+
       if (response.data && files.length > 0) {
         await Promise.all(
           files.map((file) =>
@@ -473,6 +501,11 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
+      if (initialRequest) {
+        queryClient.invalidateQueries({
+          queryKey: ["request", initialRequest.id],
+        });
+      }
       if (result.data?.id) {
         onSuccess(result.data.id);
       }
@@ -480,34 +513,45 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     },
   });
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setTitle("");
-      setDescription("");
-      setSource(undefined);
-      setChannel("");
-      setClassificationId("");
-      setLocationId("");
-      setWorkflowId("");
-      setSelectedDepartment(null);
-      setSelectedAssignee(null);
-      setSourceIncident(null);
+      setTitle(initialRequest?.title || "");
+      setDescription(initialRequest?.description || "");
+      setComment("");
+      setSource(initialRequest?.source);
+      setChannel(initialRequest?.channel || "");
+      setClassificationId(initialRequest?.classification?.id || "");
+      setLocationId(initialRequest?.location?.id || "");
+      setWorkflowId(initialRequest?.workflow?.id || "");
+      setSelectedDepartment(initialRequest?.department || null);
+      setSelectedAssignee(initialRequest?.assignee || null);
+      setSourceIncident(initialRequest?.source_incident || null);
       setIncidentSearch("");
       setShowIncidentSearch(false);
       setAttachments([]);
-      setLookupValues({});
-      setDueDate("");
-      setLatitude(undefined);
-      setLongitude(undefined);
-      setAddress(undefined);
-      setCity(undefined);
-      setState(undefined);
-      setCountry(undefined);
-      setPostalCode(undefined);
+      setLookupValues(
+        Object.fromEntries(
+          (initialRequest?.lookup_values || []).map((value) => [
+            value.category_id,
+            value.id,
+          ]),
+        ),
+      );
+      setDueDate(
+        initialRequest?.due_date
+          ? new Date(initialRequest.due_date).toISOString().slice(0, 16)
+          : "",
+      );
+      setLatitude(initialRequest?.latitude);
+      setLongitude(initialRequest?.longitude);
+      setAddress(initialRequest?.address);
+      setCity(initialRequest?.city);
+      setState(initialRequest?.state);
+      setCountry(initialRequest?.country);
+      setPostalCode(initialRequest?.postal_code);
       setErrors({});
     }
-  }, [isOpen]);
+  }, [isOpen, initialRequest]);
 
   // Flatten department tree for selection
   const flattenDepartments = (
@@ -533,7 +577,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     if (!classificationId) {
       newErrors.classification = t("requests.classificationRequired");
     }
-    if (!workflowId) {
+    if (!isEdit && !workflowId) {
       newErrors.workflow = t("requests.workflowRequired");
     }
 
@@ -548,7 +592,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
         field: t("requests.location"),
       });
     }
-    if (!source) {
+    if (!isEdit && !source) {
       newErrors.source = t("requests.fieldRequired", {
         field: t("requests.source"),
       });
@@ -573,12 +617,20 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
         field: t("requests.description"),
       });
     }
-    if (workflowRequiredFields.includes("comment") && !comment.trim()) {
+    if (
+      !isEdit &&
+      workflowRequiredFields.includes("comment") &&
+      !comment.trim()
+    ) {
       newErrors.comment = t("requests.fieldRequired", {
         field: t("requests.comment"),
       });
     }
-    if (workflowRequiredFields.includes("channel") && !channel.trim()) {
+    if (
+      !isEdit &&
+      workflowRequiredFields.includes("channel") &&
+      !channel.trim()
+    ) {
       newErrors.channel = t("requests.fieldRequired", {
         field: t("requests.channel"),
       });
@@ -617,7 +669,8 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     if (
       (workflowRequiredFields.includes("attachments") ||
         workflowRequiredFields.includes("attachment")) &&
-      attachments.length === 0
+      attachments.length === 0 &&
+      !initialRequest?.attachments_count
     ) {
       newErrors.attachments = t("requests.fieldRequired", {
         field: t("requests.attachments"),
@@ -648,7 +701,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
 
     const lookupIds = Object.values(lookupValues).filter(Boolean);
 
-    const data: CreateRequestRequest = {
+    const createData: CreateRequestRequest = {
       title: title.trim(),
       description: description.trim() || undefined,
       comment: comment.trim() || undefined,
@@ -671,7 +724,30 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       lookup_value_ids: lookupIds.length > 0 ? lookupIds : undefined,
     };
 
-    createMutation.mutate({ data, files: attachments });
+    if (initialRequest) {
+      const updateData: IncidentUpdateRequest = {
+        title: createData.title,
+        description: createData.description,
+        classification_id: createData.classification_id,
+        department_id: createData.department_id,
+        assignee_id: createData.assignee_id,
+        location_id: createData.location_id,
+        latitude: createData.latitude,
+        longitude: createData.longitude,
+        address: createData.address,
+        city: createData.city,
+        state: createData.state,
+        country: createData.country,
+        postal_code: createData.postal_code,
+        due_date: createData.due_date,
+        lookup_value_ids: lookupIds,
+        version: initialRequest.version,
+      };
+      saveMutation.mutate({ data: updateData, files: attachments });
+      return;
+    }
+
+    saveMutation.mutate({ data: createData, files: attachments });
   };
 
   const handleSelectIncident = (incident: Incident) => {
@@ -723,10 +799,19 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t("requests.createRequest")}
+                {t(isEdit ? "requests.editRequest" : "requests.createRequest")}
               </h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t("requests.createRequestDescription")}
+                {isEdit ? (
+                  <>
+                    {t("requests.editRequest")}
+                    {initialRequest?.incident_number
+                      ? ` • ${initialRequest.incident_number}`
+                      : null}
+                  </>
+                ) : (
+                  t("requests.createRequestDescription")
+                )}
               </p>
             </div>
           </div>
@@ -795,11 +880,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 </label>
                 <select
                   value={source || ""}
+                  disabled={isEdit}
                   onChange={(e) =>
                     setSource((e.target.value as IncidentSource) || undefined)
                   }
                   className={cn(
-                    "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                    "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60",
                     errors.source
                       ? "border-red-500"
                       : "border-[hsl(var(--border))]",
@@ -973,10 +1059,11 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <input
                 type="text"
                 value={channel}
+                disabled={isEdit}
                 onChange={(e) => setChannel(e.target.value)}
                 placeholder={t("requests.channelPlaceholder")}
                 className={cn(
-                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                  "w-full px-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60",
                   errors.channel
                     ? "border-red-500"
                     : "border-[hsl(var(--border))]",
@@ -1010,8 +1097,9 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 </div>
                 <button
                   type="button"
+                  disabled={isEdit}
                   onClick={() => setSourceIncident(null)}
-                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors disabled:hidden"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1023,13 +1111,14 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   <input
                     type="text"
                     value={incidentSearch}
+                    disabled={isEdit}
                     onChange={(e) => {
                       setIncidentSearch(e.target.value);
                       setShowIncidentSearch(true);
                     }}
                     onFocus={() => setShowIncidentSearch(true)}
                     placeholder={t("requests.searchSourceIncident")}
-                    className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 
@@ -1116,9 +1205,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   <button
                     key={workflow.id}
                     type="button"
+                    disabled={isEdit}
                     onClick={() => setWorkflowId(workflow.id)}
                     className={cn(
-                      "w-full p-2 rounded-lg text-left transition-colors text-sm",
+                      "w-full p-2 rounded-lg text-left transition-colors text-sm disabled:cursor-not-allowed",
                       workflowId === workflow.id
                         ? "bg-blue-500/10 text-blue-700 border border-blue-500"
                         : "hover:bg-[hsl(var(--muted)/0.5)]",
@@ -1215,7 +1305,6 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 <span className="text-red-500 ms-1">*</span>
               </h4>
               <LocationPicker
-                label={t("requests.geolocation")}
                 value={
                   latitude !== undefined && longitude !== undefined
                     ? {
@@ -1358,6 +1447,30 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             </h4>
 
             <div className="space-y-4">
+              {initialRequest?.attachments &&
+                initialRequest.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    {(initialRequest.attachments as any[]).map((att, index) => (
+                      <div
+                        key={`existing-${att.id || index}`}
+                        className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                          <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[250px]">
+                            {att.file_name || att.name || att.display_name}
+                          </span>
+                          {att.file_size && (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              ({(att.file_size / 1024).toFixed(1)}{" "}
+                              {t("common.kb")})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               {attachments.length > 0 && (
                 <div className="space-y-2">
                   {attachments.map((file, index) => (
@@ -1424,12 +1537,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           </div>
 
           {/* Error Message */}
-          {createMutation.isError && (
+          {saveMutation.isError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-700">
                 <AlertTriangle className="w-4 h-4" />
                 <p className="text-sm">
-                  {(createMutation.error as Error)?.message ||
+                  {(saveMutation.error as Error)?.message ||
                     t("requests.createError")}
                 </p>
               </div>
@@ -1442,21 +1555,21 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           <Button
             variant="ghost"
             onClick={onClose}
-            disabled={createMutation.isPending}
+            disabled={saveMutation.isPending}
           >
             {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={createMutation.isPending}
-            isLoading={createMutation.isPending}
+            disabled={saveMutation.isPending}
+            isLoading={saveMutation.isPending}
             leftIcon={
-              !createMutation.isPending ? (
+              !saveMutation.isPending ? (
                 <CheckCircle2 className="w-4 h-4" />
               ) : undefined
             }
           >
-            {t("requests.create")}
+            {t(isEdit ? "common.save" : "requests.create")}
           </Button>
         </div>
       </div>
