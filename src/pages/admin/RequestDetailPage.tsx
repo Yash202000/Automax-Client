@@ -31,6 +31,7 @@ import { Button } from "../../components/ui";
 import { MiniWorkflowView } from "../../components/workflow";
 import { RevisionHistory } from "../../components/incidents";
 import { AudioPlayer } from "../../components/common/AudioPlayer";
+import { CreateRequestModal } from "../../components/requests";
 import {
   incidentApi,
   userApi,
@@ -90,6 +91,7 @@ export const RequestDetailPage: React.FC = () => {
   );
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>("");
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Queries
   const {
@@ -579,6 +581,7 @@ export const RequestDetailPage: React.FC = () => {
               variant="ghost"
               size="sm"
               leftIcon={<Edit2 className="w-4 h-4" />}
+              onClick={() => setEditModalOpen(true)}
             >
               {t("common.edit")}
             </Button>
@@ -1447,6 +1450,16 @@ export const RequestDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <CreateRequestModal
+        isOpen={editModalOpen}
+        initialRequest={request}
+        onClose={() => setEditModalOpen(false)}
+        onSuccess={() => {
+          setEditModalOpen(false);
+          refetch();
+        }}
+      />
     </div>
   );
 };
