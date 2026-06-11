@@ -22,7 +22,6 @@ import {
   X,
   History,
   Tags,
-  Star,
   ExternalLink,
   Mail,
   Phone,
