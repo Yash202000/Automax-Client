@@ -47,6 +47,16 @@ export const CitizenIncidentFeedbackPage = () => {
     status: validatedIncident?.status,
   };
 
+  const handleFeedbackError = (error: any) => {
+    setErrors({
+      submit:
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to submit feedback",
+    });
+  };
+
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!incidentId || !signedToken) {
@@ -62,14 +72,7 @@ export const CitizenIncidentFeedbackPage = () => {
       );
     },
     onSuccess: () => setSubmitted(true),
-    onError: (error: any) => {
-      setErrors({
-        submit:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to submit feedback",
-      });
-    },
+    onError: handleFeedbackError,
   });
 
   const complaintMutation = useMutation({
@@ -87,14 +90,7 @@ export const CitizenIncidentFeedbackPage = () => {
       );
     },
     onSuccess: () => setSubmitted(true),
-    onError: (error: any) => {
-      setErrors({
-        submit:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to create complaint",
-      });
-    },
+    onError: handleFeedbackError,
   });
 
   const validate = (): boolean => {
