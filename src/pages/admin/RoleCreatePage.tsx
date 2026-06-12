@@ -31,6 +31,7 @@ export const RoleCreatePage: React.FC = () => {
   const [permissionSearch, setPermissionSearch] = useState("");
   const [permissionFilter, setPermissionFilter] =
     useState<PermissionFilterMode>("all");
+  const [error, setError] = useState<string | null>(null);
 
   const { data: permissionsData } = useQuery({
     queryKey: ["admin", "permissions"],
@@ -54,8 +55,10 @@ export const RoleCreatePage: React.FC = () => {
         navigate("/admin/roles", { replace: true });
       }
     },
-    onError: () => {
-      toast.error(t("roles.createFailed"));
+    onError: (error: any) => {
+      const message = error.response?.data?.error || error.message;
+      setError(message);
+      toast.error(message);
     },
   });
 
@@ -194,7 +197,11 @@ export const RoleCreatePage: React.FC = () => {
             onFilterChange={setPermissionFilter}
           />
         </div>
-
+        {error ? (
+          <div className="p-4 bg-[hsl(var(--destructive)/0.1)] border border-[hsl(var(--destructive))] rounded-xl">
+            <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>
+          </div>
+        ) : null}
         {/* Footer actions */}
         <div className="flex items-center justify-end gap-3 pt-2">
           <Link

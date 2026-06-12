@@ -348,6 +348,7 @@ export const DepartmentsPage: React.FC = () => {
   } | null>(null);
   const [modalTab, setModalTab] = useState<"details" | "users">("details");
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const canCreateDepartment =
     isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_CREATE);
@@ -415,6 +416,11 @@ export const DepartmentsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
       closeModal();
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || error.message;
+      setError(message);
+      toast.error(message);
     },
   });
 
@@ -1459,6 +1465,13 @@ export const DepartmentsPage: React.FC = () => {
                   </div>
                 </div>
               )}{" "}
+              {error ? (
+                <div className="p-4 bg-[hsl(var(--destructive)/0.1)] border border-[hsl(var(--destructive))] rounded-xl mx-6 mb-4">
+                  <p className="text-sm text-[hsl(var(--destructive))]">
+                    {error}
+                  </p>
+                </div>
+              ) : null}
               {/* end details tab */}
               {/* Modal Footer */}
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
