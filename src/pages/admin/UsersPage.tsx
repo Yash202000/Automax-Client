@@ -47,6 +47,7 @@ import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import i18n from "@/i18n";
+import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 
 interface UserFormData {
   first_name: string;
@@ -146,6 +147,9 @@ export const UsersPage: React.FC = () => {
   const [deptSearch, setDeptSearch] = useState("");
   const [locSearch, setLocSearch] = useState("");
   const [classSearch, setClassSearch] = useState("");
+  const [showDeleteConfirmation, setShowDeleteConfirmation] =
+    useState<boolean>(false);
+  const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
   const filterTreeNodes = useCallback(
     (nodes: TreeNode[], search: string): TreeNode[] => {
@@ -371,12 +375,16 @@ export const UsersPage: React.FC = () => {
     mutationFn: (id: string) => userApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      setDeleteLoading(false);
+      setShowDeleteConfirmation(false);
       toast.success(t("users.userDeletedSuccessfully"));
       closeDropdown();
     },
     onError: (error: any) => {
       const errorMessage =
         error.response?.data?.error || error.message || t("users.deleteFailed");
+      setDeleteLoading(false);
+      setShowDeleteConfirmation(false);
       toast.error(t("common.error"), {
         description: errorMessage,
       });
@@ -596,6 +604,14 @@ export const UsersPage: React.FC = () => {
       console.error("Export failed:", error);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    setDeleteLoading(true);
+    const user = filteredUsers?.find((u: User) => u.id === activeDropdown);
+    if (user) {
+      deleteMutation.mutate(user.id);
     }
   };
 
@@ -1326,12 +1342,7 @@ export const UsersPage: React.FC = () => {
             <div className="my-1 border-t border-[hsl(var(--border))]" />
             <button
               onClick={() => {
-                const user = filteredUsers?.find(
-                  (u: User) => u.id === activeDropdown,
-                );
-                if (user && window.confirm(t("users.confirmDelete"))) {
-                  deleteMutation.mutate(user.id);
-                }
+                setShowDeleteConfirmation(true);
               }}
               className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] transition-colors"
             >
@@ -2546,6 +2557,16 @@ export const UsersPage: React.FC = () => {
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onConfirm={handleConfirmDelete}
+        title={t("common.delete")}
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
+        onClose={() => setShowDeleteConfirmation(false)}
+        message={`Are you sure you want to delete this user?`}
+        isLoading={deleteLoading}
+      />
     </div>
   );
 };
