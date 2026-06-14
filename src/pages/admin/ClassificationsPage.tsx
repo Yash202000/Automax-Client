@@ -533,9 +533,47 @@ export const ClassificationsPage: React.FC = () => {
       return;
     }
 
+    const trimmedName = formData.name.trim();
+    const trimmedNameAr = formData.name_ar.trim();
+
+    if (!trimmedName) {
+      toast.error(
+        t("classifications.nameRequired", { defaultValue: "Name is required" }),
+      );
+      return;
+    }
+
+    if (
+      !/^(?=.*[a-zA-Z\u0600-\u06FF])[a-zA-Z0-9\u0600-\u06FF\s\-'.,&()/]+$/.test(
+        trimmedName,
+      )
+    ) {
+      toast.error(
+        t("classifications.nameInvalid", {
+          defaultValue:
+            "Name must contain at least one letter and no special characters",
+        }),
+      );
+      return;
+    }
+
+    if (
+      trimmedNameAr &&
+      !/^(?=.*[a-zA-Z\u0600-\u06FF])[a-zA-Z0-9\u0600-\u06FF\s\-'.,&()/]+$/.test(
+        trimmedNameAr,
+      )
+    ) {
+      toast.error(
+        t("classifications.nameArInvalid", {
+          defaultValue: "Arabic name contains invalid characters",
+        }),
+      );
+      return;
+    }
+
     const payload = {
-      name: formData.name,
-      name_ar: formData.name_ar || undefined,
+      name: trimmedName,
+      name_ar: trimmedNameAr || undefined,
       description: formData.description,
       description_ar: formData.description_ar || undefined,
       parent_id: formData.parent_id || undefined,
