@@ -382,6 +382,11 @@ export const ClassificationsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || "Failed to create classification",
+      );
+    },
   });
 
   const updateMutation = useMutation({
@@ -395,6 +400,11 @@ export const ClassificationsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
       closeModal();
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || "Failed to update classification",
+      );
     },
   });
 
