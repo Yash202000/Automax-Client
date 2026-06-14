@@ -416,6 +416,11 @@ export const DepartmentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || "Failed to create department",
+      );
+    },
   });
 
   const updateMutation = useMutation({
@@ -424,6 +429,11 @@ export const DepartmentsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
       closeModal();
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || "Failed to update department",
+      );
     },
   });
 
@@ -549,9 +559,46 @@ export const DepartmentsPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedName = formData.name.trim();
+    const trimmedNameAr = formData.name_ar.trim();
+
+    if (!trimmedName) {
+      toast.error(t("departments.nameRequired", "Name is required"));
+      return;
+    }
+
+    if (
+      !/^(?=.*[a-zA-Z\u0600-\u06FF])[a-zA-Z0-9\u0600-\u06FF\s\-'.,&()/]+$/.test(
+        trimmedName,
+      )
+    ) {
+      toast.error(
+        t(
+          "departments.nameInvalid",
+          "Name must contain at least one letter and no special characters",
+        ),
+      );
+      return;
+    }
+
+    if (
+      trimmedNameAr &&
+      !/^(?=.*[a-zA-Z\u0600-\u06FF])[a-zA-Z0-9\u0600-\u06FF\s\-'.,&()/]+$/.test(
+        trimmedNameAr,
+      )
+    ) {
+      toast.error(
+        t(
+          "departments.nameArInvalid",
+          "Arabic name contains invalid characters",
+        ),
+      );
+      return;
+    }
+
     const payload = {
-      name: formData.name,
-      name_ar: formData.name_ar || undefined,
+      name: trimmedName,
+      name_ar: trimmedNameAr || undefined,
       code: formData.code,
       description: formData.description,
       description_ar: formData.description_ar || undefined,
