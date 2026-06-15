@@ -1249,7 +1249,10 @@
     "codePlaceholder": "مثال: NY-OFF",
     "namePlaceholder": "مثال: مكتب نيويورك",
     "nameAr": "الاسم (بالعربية)",
-    "descriptionAr": "الوصف (بالعربية)"
+    "descriptionAr": "الوصف (بالعربية)",
+    "nameRequired": "اسم الموقع مطلوب",
+    "invalidName": "يمكن أن يحتوي اسم الموقع على أحرف وأرقام ومسافات فقط.",
+    "invalidArabicName": "يجب ألا يحتوي اسم الموقع باللغة العربية إلا على أحرف عربية وأرقام ومسافات."
   },
   "classifications": {
     "title": "التصنيفات",

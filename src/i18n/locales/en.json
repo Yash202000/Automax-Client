@@ -1251,7 +1251,10 @@
     "codePlaceholder": "e.g., NY-OFF",
     "namePlaceholder": "e.g., New York Office",
     "nameAr": "Name (Arabic)",
-    "descriptionAr": "Description (Arabic)"
+    "descriptionAr": "Description (Arabic)",
+    "nameRequired": "Location name is required",
+    "invalidName": "Location name can only contain letters, numbers and spaces",
+    "invalidArabicName": "Location name in Arabic can only contain Arabic letters, numbers and spaces"
   },
   "classifications": {
     "title": "Classifications",
