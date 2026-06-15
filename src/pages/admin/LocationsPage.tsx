@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { toast } from "sonner";
 
 interface LocationFormData {
   name: string;
@@ -269,6 +270,7 @@ export const LocationsPage: React.FC = () => {
   const [viewDepartments, setViewDepartments] = useState<Department[]>([]);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewTab, setViewTab] = useState<"users" | "departments">("users");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const canCreateLocation =
     isSuperAdmin || hasPermission(PERMISSIONS.LOCATIONS_CREATE);
@@ -365,12 +367,45 @@ export const LocationsPage: React.FC = () => {
       setViewLoading(false);
     }
   };
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    const name = formData.name.trim();
+    const name_ar = formData.name_ar.trim();
 
+    if (!name) {
+      newErrors.name = t("locations.nameRequired");
+    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+      newErrors.name = t("locations.invalidName", {
+        defaultValue:
+          "Location name can only contain letters, numbers and spaces",
+      });
+    }
+
+    if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
+      newErrors.name_ar = t("locations.invalidArabicName", {
+        defaultValue:
+          "Location name in Arabic can only contain Arabic letters, numbers and spaces",
+      });
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const name = formData.name.trim();
+    const name_ar = formData.name_ar.trim();
+
+    if (!validateForm()) {
+      toast.error(t("errors.validationError"));
+      return;
+    }
+
     const payload = {
-      name: formData.name,
-      name_ar: formData.name_ar || undefined,
+      name,
+      name_ar: name_ar || undefined,
       code: formData.code,
       description: formData.description,
       description_ar: formData.description_ar || undefined,
@@ -912,17 +947,28 @@ export const LocationsPage: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                       {t("locations.name")}
+                      <span className="text-[hsl(var(--destructive))] ml-1">
+                        *
+                      </span>
                     </label>
                     <input
                       type="text"
                       placeholder={t("locations.namePlaceholder")}
                       value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (errors.name) {
+                          setErrors({ ...errors, name: "" });
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${errors.name ? "border-[hsl(var(--destructive))]" : ""}`}
                       required
                     />
+                    {errors.name && (
+                      <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                        {errors.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -933,11 +979,23 @@ export const LocationsPage: React.FC = () => {
                       dir="rtl"
                       placeholder="الاسم بالعربية"
                       value={formData.name_ar}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name_ar: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      onChange={(e) => {
+                        setFormData({ ...formData, name_ar: e.target.value });
+
+                        if (errors.name_ar) {
+                          setErrors((prev) => ({
+                            ...prev,
+                            name_ar: "",
+                          }));
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${errors.name_ar ? "border-[hsl(var(--destructive))]" : ""}`}
                     />
+                    {errors.name_ar && (
+                      <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                        {errors.name_ar}
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -1107,7 +1107,9 @@
     "rolesSkipped": "roles skipped",
     "errors": "Errors:",
     "eGContentManager": "e.g., Content Manager",
-    "roleKeyExample": "e.g., content_manager"
+    "roleKeyExample": "e.g., content_manager",
+    "invalidName": "Role name must contain at least one letter or number",
+    "invalidCode": "Role code must contain at least one letter or number"
   },
   "departments": {
     "title": "Departments",
@@ -1179,7 +1181,12 @@
     "codePlaceholder": "e.g., ENG",
     "namePlaceholder": "e.g., Engineering",
     "nameAr": "Name (Arabic)",
-    "descriptionAr": "Description (Arabic)"
+    "descriptionAr": "Description (Arabic)",
+    "nameRequired": "Department name is required",
+    "codeRequired": "Department code is required",
+    "invalidName": "Department name can only contain letters, numbers and spaces",
+    "invalidArabicName": "Department name in Arabic can only contain letters, numbers and spaces",
+    "invalidCode": "Department code can only contain letters, numbers and spaces"
   },
   "locations": {
     "title": "Locations",
@@ -1244,7 +1251,10 @@
     "codePlaceholder": "e.g., NY-OFF",
     "namePlaceholder": "e.g., New York Office",
     "nameAr": "Name (Arabic)",
-    "descriptionAr": "Description (Arabic)"
+    "descriptionAr": "Description (Arabic)",
+    "nameRequired": "Location name is required",
+    "invalidName": "Location name can only contain letters, numbers and spaces",
+    "invalidArabicName": "Location name in Arabic can only contain Arabic letters, numbers and spaces"
   },
   "classifications": {
     "title": "Classifications",

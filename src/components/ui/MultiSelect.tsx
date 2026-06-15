@@ -35,7 +35,7 @@ export type MultiSelectProps = {
   /** Show a "Select all / Clear all" quick action */
   showSelectAll?: boolean;
   /** Optional label shown above the control */
-  label?: string;
+  label?: React.ReactNode;
   /** Optional helper text below the control */
   helperText?: string;
   /** Error message – red border + text */

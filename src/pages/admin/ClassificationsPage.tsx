@@ -1066,6 +1066,9 @@ export const ClassificationsPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t("classifications.name")}
+                    <span className="text-[hsl(var(--destructive))] ml-1">
+                      *
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -1162,7 +1165,14 @@ export const ClassificationsPage: React.FC = () => {
               </div>
 
               <MultiSelect
-                label={t("classifications.type")}
+                label={
+                  <>
+                    {t("classifications.type")}
+                    <span className="text-[hsl(var(--destructive))] ml-1">
+                      *
+                    </span>
+                  </>
+                }
                 options={ALL_TYPES.map((type) => ({
                   value: type,
                   label: t(`classifications.${type}`),

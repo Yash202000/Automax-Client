@@ -29,6 +29,7 @@ export const RoleCreatePage: React.FC = () => {
 
   const [formData, setFormData] = useState<RoleFormData>(initialFormData);
   const [permissionSearch, setPermissionSearch] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [permissionFilter, setPermissionFilter] =
     useState<PermissionFilterMode>("all");
   const [error, setError] = useState<string | null>(null);
@@ -84,19 +85,41 @@ export const RoleCreatePage: React.FC = () => {
     setFormData((prev) => ({ ...prev, permission_ids: [] }));
   };
 
+  //validations
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    const name = formData.name.trim();
+    const code = formData.code.trim();
+    if (!name) {
+      newErrors.name = t("roles.nameRequired");
+    } else if (!/[A-Za-z0-9]/.test(name)) {
+      newErrors.name = t("roles.invalidName");
+    }
+
+    if (!code) {
+      newErrors.code = t("roles.codeRequired");
+    } else if (!/[A-Za-z0-9]/.test(code)) {
+      newErrors.code = t("roles.invalidCode");
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      toast.error(t("roles.nameRequired"));
+    const name = formData.name.trim();
+    const code = formData.code.trim();
+
+    if (!validate()) {
+      toast.error(t("errors.validationError"));
       return;
     }
-    if (!formData.code.trim()) {
-      toast.error(t("roles.codeRequired"));
-      return;
-    }
+
     createMutation.mutate({
-      name: formData.name.trim(),
-      code: formData.code.trim(),
+      name,
+      code,
       description: formData.description,
       permission_ids: formData.permission_ids,
     });
@@ -138,12 +161,21 @@ export const RoleCreatePage: React.FC = () => {
                 type="text"
                 placeholder={t("roles.eGContentManager")}
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) {
+                    setErrors((prev) => ({ ...prev, name: "" }));
+                  }
+                }}
                 required
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
               />
+
+              {errors.name && (
+                <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                  {errors.name}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -153,15 +185,23 @@ export const RoleCreatePage: React.FC = () => {
                 type="text"
                 placeholder={t("roles.roleKeyExample")}
                 value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, code: e.target.value });
+
+                  setErrors((prev) => ({ ...prev, code: "" }));
+                }}
                 required
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
               />
               <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                 {t("roles.roleCodeHint")}
               </p>
+
+              {errors.code && (
+                <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                  {errors.code}
+                </p>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

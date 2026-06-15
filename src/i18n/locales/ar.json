@@ -1105,7 +1105,9 @@
     "rolesSkipped": "تم تخطي بعض الأدوار",
     "errors": "الأخطاء:",
     "eGContentManager": "مثال: مدير المحتوى",
-    "roleKeyExample": "مثال: content_manager"
+    "roleKeyExample": "مثال: content_manager",
+    "invalidName": "يجب أن يحتوي اسم الدور على حرف أو رقم واحد على الأقل.",
+    "invalidCode": "رمز الدور يجب أن يحتوي على حرف أو رقم واحد على الأقل"
   },
   "departments": {
     "title": "الأقسام",
@@ -1177,7 +1179,12 @@
     "codePlaceholder": "مثال: ENG",
     "namePlaceholder": "مثال: الهندسة",
     "nameAr": "الاسم (بالعربية)",
-    "descriptionAr": "الوصف (بالعربية)"
+    "descriptionAr": "الوصف (بالعربية)",
+    "nameRequired": "اسم القسم مطلوب",
+    "codeRequired": "رمز القسم مطلوب",
+    "invalidName": "يمكن أن يحتوي اسم القسم على أحرف وأرقام ومسافات فقط.",
+    "invalidArabicName": "يجب ألا يحتوي اسم القسم باللغة العربية إلا على أحرف وأرقام ومسافات.",
+    "invalidCode": "لا يمكن أن يحتوي رمز القسم إلا على أحرف وأرقام ومسافات."
   },
   "locations": {
     "title": "المواقع",
@@ -1242,7 +1249,10 @@
     "codePlaceholder": "مثال: NY-OFF",
     "namePlaceholder": "مثال: مكتب نيويورك",
     "nameAr": "الاسم (بالعربية)",
-    "descriptionAr": "الوصف (بالعربية)"
+    "descriptionAr": "الوصف (بالعربية)",
+    "nameRequired": "اسم الموقع مطلوب",
+    "invalidName": "يمكن أن يحتوي اسم الموقع على أحرف وأرقام ومسافات فقط.",
+    "invalidArabicName": "يجب ألا يحتوي اسم الموقع باللغة العربية إلا على أحرف عربية وأرقام ومسافات."
   },
   "classifications": {
     "title": "التصنيفات",

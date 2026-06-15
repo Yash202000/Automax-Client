@@ -1790,6 +1790,7 @@ export const UsersPage: React.FC = () => {
                     <input
                       type="text"
                       required
+                      autoComplete="off"
                       placeholder={t("users.usernamePlaceholder")}
                       value={createFormData.username}
                       onChange={(e) => {
@@ -1828,6 +1829,7 @@ export const UsersPage: React.FC = () => {
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     placeholder={t("users.enterPassword")}
                     value={createFormData.password}
                     onChange={(e) => {

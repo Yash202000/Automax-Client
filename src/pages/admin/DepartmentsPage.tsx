@@ -349,6 +349,7 @@ export const DepartmentsPage: React.FC = () => {
   const [modalTab, setModalTab] = useState<"details" | "users">("details");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const canCreateDepartment =
     isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_CREATE);
@@ -552,13 +553,61 @@ export const DepartmentsPage: React.FC = () => {
     setModalTab("details");
     setUserSearchTerm("");
   };
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    const name = formData.name.trim();
+    const name_ar = formData.name_ar.trim();
+    const code = formData.code.trim();
+
+    if (!name) {
+      newErrors.name = t("departments.nameRequired", {
+        defaultValue: "Department name is required",
+      });
+    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+      newErrors.name = t("departments.invalidName", {
+        defaultValue:
+          "Department name can only contain letters, numbers and spaces",
+      });
+    }
+
+    if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
+      newErrors.name_ar = t("departments.invalidArabicName", {
+        defaultValue:
+          "Department name can only contain Arabic letters, numbers and spaces",
+      });
+    }
+
+    if (!code) {
+      newErrors.code = t("departments.codeRequired", {
+        defaultValue: "Department code is required",
+      });
+    } else if (!/^[a-zA-Z0-9\s]+$/.test(code)) {
+      newErrors.code = t("departments.invalidCode", {
+        defaultValue:
+          "Department code can only contain letters, numbers and spaces",
+      });
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const name = formData.name.trim();
+    const name_ar = formData.name_ar.trim();
+    const code = formData.code.trim();
+
+    if (!validateForm()) {
+      toast.error(t("errors.validationError"));
+      return;
+    }
+
     const payload = {
-      name: formData.name,
-      name_ar: formData.name_ar || undefined,
-      code: formData.code,
+      name,
+      name_ar: name_ar || undefined,
+      code,
       description: formData.description,
       description_ar: formData.description_ar || undefined,
       type: formData.type,
@@ -1148,17 +1197,32 @@ export const DepartmentsPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                         {t("departments.name")}
+                        <span className="text-[hsl(var(--destructive))] ml-1">
+                          *
+                        </span>
                       </label>
                       <input
                         type="text"
                         placeholder={t("departments.namePlaceholder")}
                         value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                        required
+                        onChange={(e) => {
+                          setFormData({ ...formData, name: e.target.value });
+                          if (errors.name) {
+                            setErrors({ ...errors, name: "" });
+                          }
+                        }}
+                        className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all  ${
+                          errors.name
+                            ? "border-[hsl(var(--destructive))]"
+                            : "border-slate-300 dark:border-slate-600"
+                        }`}
+                        // required
                       />
+                      {errors.name && (
+                        <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                          {errors.name}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -1169,11 +1233,29 @@ export const DepartmentsPage: React.FC = () => {
                         dir="rtl"
                         placeholder="الاسم بالعربية"
                         value={formData.name_ar}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name_ar: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                        onChange={(e) => {
+                          setFormData({ ...formData, name_ar: e.target.value });
+
+                          if (errors.name_ar) {
+                            setErrors((prev) => ({
+                              ...prev,
+                              name_ar: "",
+                            }));
+                          }
+                        }}
+                        // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                        className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all  ${
+                          errors.name_ar
+                            ? "border-[hsl(var(--destructive))]"
+                            : "border-slate-300 dark:border-slate-600"
+                        }`}
                       />
+
+                      {errors.name_ar && (
+                        <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                          {errors.name_ar}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1181,17 +1263,37 @@ export const DepartmentsPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                         {t("departments.code")}
+                        <span className="text-[hsl(var(--destructive))] ml-1">
+                          *
+                        </span>
                       </label>
                       <input
                         type="text"
                         placeholder={t("departments.codePlaceholder")}
                         value={formData.code}
-                        onChange={(e) =>
-                          setFormData({ ...formData, code: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                        required
+                        onChange={(e) => {
+                          setFormData({ ...formData, code: e.target.value });
+
+                          if (errors.code) {
+                            setErrors((prev) => ({
+                              ...prev,
+                              code: "",
+                            }));
+                          }
+                        }}
+                        // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                        className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all  ${
+                          errors.code
+                            ? "border-[hsl(var(--destructive))]"
+                            : "border-slate-300 dark:border-slate-600"
+                        }`}
+                        // required
                       />
+                      {errors.code && (
+                        <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                          {errors.code}
+                        </p>
+                      )}
                     </div>
                   </div>
 
