@@ -20,6 +20,7 @@ import {
   Eye,
   Users,
   Briefcase,
+  Power,
 } from "lucide-react";
 import {
   classificationApi,
@@ -145,6 +146,7 @@ interface TreeNodeProps {
   onEdit: (cls: Classification) => void;
   onDelete: (id: string) => void;
   onView: (cls: Classification) => void;
+  onToggleActive: (cls: Classification) => void;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -158,6 +160,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onEdit,
   onDelete,
   onView,
+  onToggleActive,
   canCreate,
   canEdit,
   canDelete,
@@ -268,6 +271,24 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             )}
             {canEdit && (
               <button
+                onClick={() => onToggleActive(classification)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  classification.is_active
+                    ? "text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
+                )}
+                title={
+                  classification.is_active
+                    ? t("classifications.deactivate")
+                    : t("classifications.activate")
+                }
+              >
+                <Power className="w-4 h-4" />
+              </button>
+            )}
+            {canEdit && (
+              <button
                 onClick={() => onEdit(classification)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
                 title={t("common.edit")}
@@ -298,6 +319,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               onEdit={onEdit}
               onDelete={onDelete}
               onView={onView}
+              onToggleActive={onToggleActive}
               canCreate={canCreate}
               canEdit={canEdit}
               canDelete={canDelete}
@@ -403,6 +425,14 @@ export const ClassificationsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
       setDeleteConfirm(null);
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      classificationApi.update(id, { is_active: isActive } as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
     },
   });
 
@@ -705,6 +735,12 @@ export const ClassificationsPage: React.FC = () => {
                 onEdit={openEditModal}
                 onDelete={setDeleteConfirm}
                 onView={openViewModal}
+                onToggleActive={(c) =>
+                  toggleActiveMutation.mutate({
+                    id: c.id,
+                    isActive: !c.is_active,
+                  })
+                }
                 canCreate={canCreateClassification}
                 canEdit={canEditClassification}
                 canDelete={canDeleteClassification}

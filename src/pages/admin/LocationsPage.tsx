@@ -20,6 +20,7 @@ import {
   Eye,
   Users,
   Briefcase,
+  Power,
 } from "lucide-react";
 import { locationApi, userApi, departmentApi } from "../../api/admin";
 import type {
@@ -97,6 +98,7 @@ interface TreeNodeProps {
   onEdit: (loc: Location) => void;
   onDelete: (id: string) => void;
   onView: (loc: Location) => void;
+  onToggleActive: (loc: Location) => void;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -110,6 +112,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onEdit,
   onDelete,
   onView,
+  onToggleActive,
   canCreate,
   canEdit,
   canDelete,
@@ -196,6 +199,24 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             >
               <Eye className="w-4 h-4" />
             </button>
+            {canEdit && (
+              <button
+                onClick={() => onToggleActive(location)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  location.is_active
+                    ? "text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
+                )}
+                title={
+                  location.is_active
+                    ? t("locations.deactivate")
+                    : t("locations.activate")
+                }
+              >
+                <Power className="w-4 h-4" />
+              </button>
+            )}
             {canCreate && (
               <button
                 onClick={() => onAdd(location.id, displayName)}
@@ -237,6 +258,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               onEdit={onEdit}
               onDelete={onDelete}
               onView={onView}
+              onToggleActive={onToggleActive}
               canCreate={canCreate}
               canEdit={canEdit}
               canDelete={canDelete}
@@ -309,6 +331,14 @@ export const LocationsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "locations"] });
       setDeleteConfirm(null);
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      locationApi.update(id, { is_active: isActive } as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "locations"] });
     },
   });
 
@@ -557,6 +587,12 @@ export const LocationsPage: React.FC = () => {
                 onEdit={openEditModal}
                 onDelete={setDeleteConfirm}
                 onView={openViewModal}
+                onToggleActive={(l) =>
+                  toggleActiveMutation.mutate({
+                    id: l.id,
+                    isActive: !l.is_active,
+                  })
+                }
                 canCreate={canCreateLocation}
                 canEdit={canEditLocation}
                 canDelete={canDeleteLocation}

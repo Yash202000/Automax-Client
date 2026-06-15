@@ -23,6 +23,7 @@ import {
   UserMinus,
   Mail,
   Search,
+  Power,
 } from "lucide-react";
 import {
   departmentApi,
@@ -184,6 +185,7 @@ interface TreeNodeProps {
   onAdd: (parentId: string, parentName: string) => void;
   onEdit: (dept: Department) => void;
   onDelete: (id: string) => void;
+  onToggleActive: (dept: Department) => void;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -197,6 +199,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  onToggleActive,
   canCreate,
   canEdit,
   canDelete,
@@ -285,6 +288,24 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             </button>
             {canEdit && (
               <button
+                onClick={() => onToggleActive(department)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  department.is_active
+                    ? "text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)]"
+                    : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.5)]",
+                )}
+                title={
+                  department.is_active
+                    ? t("departments.deactivate")
+                    : t("departments.activate")
+                }
+              >
+                <Power className="w-4 h-4" />
+              </button>
+            )}
+            {canEdit && (
+              <button
                 onClick={() => onEdit(department)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
                 title={t("common.edit")}
@@ -315,6 +336,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               onAdd={onAdd}
               onEdit={onEdit}
               onDelete={onDelete}
+              onToggleActive={onToggleActive}
               canCreate={canCreate}
               canEdit={canEdit}
               canDelete={canDelete}
@@ -438,6 +460,14 @@ export const DepartmentsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
       setDeleteConfirm(null);
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      departmentApi.update(id, { is_active: isActive } as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
     },
   });
 
@@ -760,6 +790,12 @@ export const DepartmentsPage: React.FC = () => {
                 onAdd={openCreateModal}
                 onEdit={openEditModal}
                 onDelete={setDeleteConfirm}
+                onToggleActive={(d) =>
+                  toggleActiveMutation.mutate({
+                    id: d.id,
+                    isActive: !d.is_active,
+                  })
+                }
                 canCreate={canCreateDepartment}
                 canEdit={canEditDepartment}
                 canDelete={canDeleteDepartment}
