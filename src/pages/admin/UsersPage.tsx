@@ -25,6 +25,7 @@ import {
   Upload,
   Info,
   Phone,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Button,
@@ -67,6 +68,15 @@ interface UserFormData {
 type UserFieldErrors = Partial<
   Record<"email" | "username" | "password" | "form", string>
 >;
+
+interface UserImportResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+  note?: string;
+  failed?: unknown[];
+  failed_records?: unknown[];
+}
 
 const initialFormData: UserFormData = {
   first_name: "",
@@ -135,12 +145,11 @@ export const UsersPage: React.FC = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    imported: number;
-    skipped: number;
-    errors: string[];
-    note?: string;
-  } | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<UserImportResult | null>(
+    null,
+  );
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const limit = 10;
 
@@ -607,6 +616,11 @@ export const UsersPage: React.FC = () => {
     }
   };
 
+  const closeImportModal = () => {
+    if (isImporting) return;
+    setIsImportModalOpen(false);
+    setImportFile(null);
+  };
   const handleConfirmDelete = () => {
     setDeleteLoading(true);
     const user = filteredUsers?.find((u: User) => u.id === activeDropdown);
@@ -615,20 +629,33 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleImportFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (file && !file.name.toLowerCase().endsWith(".json")) {
+      toast.error(t("users.validJsonRequired"));
+      event.target.value = "";
+      setImportFile(null);
+      return;
+    }
+    setImportFile(file);
+  };
 
+  const handleImport = async () => {
+    if (!importFile) return;
     try {
       setIsImporting(true);
-      const result = await userApi.import(file);
-      setImportResult(result.data || null);
+      const result = await userApi.import(importFile);
+      setImportResult((result.data as UserImportResult) || null);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-    } catch (error) {
-      console.error("Import failed:", error);
+      setIsImportModalOpen(false);
+      setImportFile(null);
+    } catch (importError) {
+      console.error("Import failed:", importError);
+      toast.error(t("users.importFailed"));
     } finally {
       setIsImporting(false);
-      event.target.value = "";
     }
   };
 
@@ -687,23 +714,14 @@ export const UsersPage: React.FC = () => {
           >
             {isExporting ? t("common.exporting") : t("common.export")}
           </Button>
-          <label className="inline-flex">
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Upload className="w-4 h-4" />}
-              disabled={isImporting}
-            >
-              {isImporting ? t("common.importing") : t("common.import")}
-            </Button>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              disabled={isImporting}
-              className="hidden"
-            />
-          </label>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Upload className="w-4 h-4" />}
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            {t("common.import")}
+          </Button>
           {canCreateUser && (
             <Button
               leftIcon={<Plus className="w-4 h-4" />}
@@ -2481,76 +2499,187 @@ export const UsersPage: React.FC = () => {
         </div>
       )}
 
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl border border-[hsl(var(--border))] max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
+                    <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                    {t("users.importUsers")}
+                  </h3>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
+                  {t("users.uploadJsonToImport")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors disabled:opacity-50"
+                aria-label={t("common.close")}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("workflows.selectJsonFile")}
+                </label>
+                <label
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all",
+                    "bg-[hsl(var(--background))] border-[hsl(var(--border))]",
+                    isImporting
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:border-[hsl(var(--primary))]",
+                  )}
+                >
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-[hsl(var(--primary))] text-white whitespace-nowrap">
+                    {t("common.chooseFile")}
+                  </span>
+                  <span className="text-sm text-[hsl(var(--muted-foreground))] truncate">
+                    {importFile ? importFile.name : t("common.noFileChosen")}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleImportFileChange}
+                    disabled={isImporting}
+                    className="hidden"
+                  />
+                </label>
+                {importFile && (
+                  <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                    {t("common.selected")}: {importFile.name} (
+                    {(importFile.size / 1024).toFixed(2)} {t("common.kb")})
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="font-medium text-[hsl(var(--foreground))] mb-1">
+                      {t("common.importNotes")}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>{t("users.validJsonRequired")}</li>
+                      <li>{t("users.failedImportsDownloadNote")}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+              <Button
+                variant="ghost"
+                onClick={closeImportModal}
+                disabled={isImporting}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={!importFile}
+                isLoading={isImporting}
+                leftIcon={
+                  !isImporting ? <Upload className="w-4 h-4" /> : undefined
+                }
+              >
+                {isImporting ? t("common.importing") : t("users.importUsers")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Import Result Modal */}
       {importResult && (
         <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
             <div className="p-6">
-              <div className="flex items-start gap-4 mb-6">
-                <div
-                  className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-                    importResult.skipped > 0
-                      ? "bg-[hsl(var(--warning)/0.1)]"
-                      : "bg-[hsl(var(--success)/0.1)]",
-                  )}
-                >
-                  <Info
+              <div className="flex flex-col items-start gap-4 mb-6">
+                <div className="flex items-center gap-3 border-border border-0 border-b w-full pb-2">
+                  <div
                     className={cn(
-                      "w-6 h-6",
+                      "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
                       importResult.skipped > 0
-                        ? "text-[hsl(var(--warning))]"
-                        : "text-[hsl(var(--success))]",
+                        ? "bg-[hsl(var(--warning)/0.1)]"
+                        : "bg-[hsl(var(--success)/0.1)]",
                     )}
-                  />
-                </div>
-                <div className="flex-1">
+                  >
+                    <Info
+                      className={cn(
+                        "w-6 h-6",
+                        importResult.skipped > 0
+                          ? "text-[hsl(var(--warning))]"
+                          : "text-[hsl(var(--success))]",
+                      )}
+                    />
+                  </div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
                     {t("goals.components.import.completedHeading")}
                   </h3>
-                  <div className="mt-3 space-y-2">
+                </div>
+
+                <div className="mt-2 space-y-2">
+                  <p className="text-base font-semibold text-[hsl(var(--foreground))]">
+                    <span className="text-[hsl(var(--success))]">
+                      {importResult.imported}
+                    </span>
+                    {" / "}
+                    {importResult.imported + importResult.skipped}{" "}
+                    {t("users.imported")}
+                  </p>
+                  {importResult.skipped > 0 && (
                     <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      <span className="font-medium text-[hsl(var(--success))]">
-                        {importResult.imported}
-                      </span>{" "}
-                      {t("users.usersImportedSuccessfully")}
+                      {t("users.importSummary", {
+                        success: importResult.imported,
+                        errors: importResult.skipped,
+                      })}
                     </p>
-                    {importResult.skipped > 0 && (
-                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        <span className="font-medium text-[hsl(var(--warning))]">
-                          {importResult.skipped}
-                        </span>{" "}
-                        {t("users.usersSkipped")}
+                  )}
+                  {importResult.note && (
+                    <div className="mt-3 p-3 bg-[hsl(var(--accent)/0.1)] border border-[hsl(var(--accent))] rounded-lg">
+                      <p className="text-xs flex items-center gap-2 font-medium text-[hsl(var(--accent-foreground))]">
+                        <AlertTriangle
+                          className="text-yellow-500 mb-1"
+                          size={28}
+                        />
+                        {importResult.note}
                       </p>
-                    )}
-                    {importResult.note && (
-                      <div className="mt-3 p-3 bg-[hsl(var(--accent)/0.1)] border border-[hsl(var(--accent))] rounded-lg">
-                        <p className="text-xs font-medium text-[hsl(var(--accent-foreground))]">
-                          ⚠️ {importResult.note}
-                        </p>
-                      </div>
-                    )}
-                    {importResult.errors.length > 0 && (
-                      <div className="mt-3 max-h-40 overflow-y-auto">
-                        <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">
-                          {t("users.errors")}
-                        </p>
-                        <ul className="space-y-1">
-                          {importResult.errors.map((error, index) => (
-                            <li
-                              key={index}
-                              className="text-xs text-[hsl(var(--muted-foreground))] pl-3"
-                            >
-                              • {error}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {importResult.errors.length > 0 && (
+                    <div className="mt-3 max-h-40 overflow-y-auto">
+                      <p className="text-xs font-medium text-[hsl(var(--destructive))] mb-2">
+                        {t("users.errors")}
+                      </p>
+                      <ul className="space-y-1">
+                        {importResult.errors.map((error, index) => (
+                          <li
+                            key={index}
+                            className="text-xs text-[hsl(var(--muted-foreground))] pl-3"
+                          >
+                            • {error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
                 <Button onClick={() => setImportResult(null)}>
                   {t("common.close")}
                 </Button>
