@@ -1374,6 +1374,8 @@
     "duplicate": "نسخ",
     "delete": "حذف",
     "deleteConfirm": "هل أنت متأكد من حذف",
+    "templateSaved": "تم حفظ القالب بنجاح",
+    "templateUpdated": "تم تحديث القالب بنجاح",
     "dataSources": {
       "incidents": "البلاغات",
       "requests": "الطلبات",
@@ -1464,7 +1466,8 @@
         "isEmpty": "فارغ",
         "isNotEmpty": "غير فارغ"
       },
-      "toDate": "إلى تاريخ"
+      "toDate": "إلى تاريخ",
+      "timestampKey": "مفتاح الطابع الزمني"
     },
     "errors": {
       "invalidDateRange": "كلا التاريخين (من وإلى) مطلوبان",
@@ -1514,10 +1517,14 @@
       "updateTemplate": "تحديث القالب",
       "report": "تقرير",
       "templateName": "اسم القالب",
+      "templateNameAr": "اسم القالب (العربية)",
       "templateNameRequired": "اسم القالب مطلوب",
       "templateNamePlaceholder": "أدخل اسم القالب...",
+      "templateNamePlaceholderAr": "أدخل اسم القالب (العربية)...",
       "description": "الوصف",
+      "descriptionAr": "الوصف (العربية)",
       "descriptionPlaceholder": "وصف اختياري...",
+      "descriptionPlaceholderAr": "وصف اختياري (العربية)...",
       "visibility": "الرؤية",
       "private": "خاص",
       "privateDesc": "أنت فقط يمكنك الوصول",

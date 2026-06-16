@@ -1599,6 +1599,7 @@ export type FilterValue =
 export interface ReportFieldDefinition {
   field: string;
   label: string;
+  label_ar: string;
   type:
     | "string"
     | "number"
@@ -1648,6 +1649,7 @@ export interface ReportSort {
 export interface ReportColumnConfig {
   field: string;
   label: string;
+  label_ar: string;
   width?: number;
   sortOrder?: number;
 }
@@ -1668,7 +1670,9 @@ export interface ReportTemplateConfig {
 export interface ReportTemplate {
   id: string;
   name: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   data_source: ReportDataSource;
   config: ReportTemplateConfig;
   is_public: boolean;
@@ -1684,7 +1688,7 @@ export interface ReportTemplate {
 // Report Query Request
 export interface ReportQueryRequest {
   data_source: ReportDataSource;
-  columns: { field: string; label: string }[];
+  columns: { field: string; label: string; label_ar: string }[];
   filters: Omit<ReportFilter, "id">[];
   sorting: ReportSort[];
   page?: number;
@@ -1710,7 +1714,7 @@ export interface ReportQueryResponse<T = Record<string, unknown>> {
 // Report Export Request
 export interface ReportExportRequest {
   data_source: ReportDataSource;
-  columns: { field: string; label: string }[];
+  columns: { field: string; label: string; label_ar: string }[];
   filters: Omit<ReportFilter, "id">[];
   sorting: ReportSort[];
   format: "xlsx" | "pdf";
@@ -1726,7 +1730,9 @@ export interface ReportExportRequest {
 // Report Template Request Types
 export interface ReportTemplateCreateRequest {
   name: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   data_source: ReportDataSource;
   config: ReportTemplateConfig;
   is_public?: boolean;
@@ -1735,7 +1741,9 @@ export interface ReportTemplateCreateRequest {
 
 export interface ReportTemplateUpdateRequest {
   name?: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   config?: ReportTemplateConfig;
   is_public?: boolean;
   timestamp_key?: string;

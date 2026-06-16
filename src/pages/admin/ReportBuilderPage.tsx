@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   FileBarChart,
   ChevronDown,
@@ -150,7 +151,7 @@ export const ReportBuilderPage: React.FC = () => {
   // State
   const [dataSource, setDataSource] = useState<ReportDataSource | null>(null);
   const [selectedColumns, setSelectedColumns] = useState<
-    { field: string; label: string }[]
+    { field: string; label: string; label_ar: string }[]
   >([]);
   const [stateFields, setStateFields] = useState<Array<any>>([]);
   const [filters, setFilters] = useState<ReportFilter[]>([]);
@@ -317,6 +318,7 @@ export const ReportBuilderPage: React.FC = () => {
         template.config.columns.map((c) => ({
           field: c.field,
           label: c.label,
+          label_ar: c.label_ar,
         })),
       );
       setFilters(
@@ -529,18 +531,22 @@ export const ReportBuilderPage: React.FC = () => {
   const saveTemplateMutation = useMutation({
     mutationFn: async ({
       name,
+      name_ar,
       description,
+      description_ar,
       isPublic,
     }: {
       name: string;
+      name_ar: string;
       description: string;
+      description_ar: string;
       isPublic: boolean;
     }) => {
       if (!dataSource) throw new Error("No data source selected");
 
       const config = {
         columns: selectedColumns.map((col) => {
-          return { field: col.field, label: col.label };
+          return { field: col.field, label: col.label, label_ar: col.label_ar };
         }),
         filters: filters.map(({ field, operator, value }) => ({
           field,
@@ -557,7 +563,9 @@ export const ReportBuilderPage: React.FC = () => {
         // Update existing
         return reportApi.updateTemplate(loadedTemplate.id, {
           name,
+          name_ar,
           description,
+          description_ar,
           config,
           is_public: isPublic,
           timestamp_key: timestampKey,
@@ -566,7 +574,9 @@ export const ReportBuilderPage: React.FC = () => {
         // Create new
         return reportApi.createTemplate({
           name,
+          name_ar,
           description,
+          description_ar,
           data_source: dataSource,
           config,
           is_public: isPublic,
@@ -582,6 +592,11 @@ export const ReportBuilderPage: React.FC = () => {
       if (response.data) {
         setLoadedTemplate(response.data);
       }
+      toast.success(
+        loadedTemplate
+          ? t("reports.templateUpdated")
+          : t("reports.templateSaved"),
+      );
     },
   });
 
@@ -635,7 +650,7 @@ export const ReportBuilderPage: React.FC = () => {
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ltr:ml-12 rtl:mr-12">
             {loadedTemplate
-              ? `${t("reports.editing")}: ${loadedTemplate.name}`
+              ? `${t("reports.editing")}: ${i18n.language === "ar" && loadedTemplate.name_ar ? loadedTemplate.name_ar : loadedTemplate.name}`
               : t("reports.reportBuilderSubtitle")}
           </p>
         </div>
@@ -853,10 +868,18 @@ export const ReportBuilderPage: React.FC = () => {
       <SaveTemplateDialog
         isOpen={showSaveDialog}
         onClose={() => setShowSaveDialog(false)}
-        onSave={async (name, description, isPublic) => {
+        onSave={async (
+          name,
+          name_ar,
+          description,
+          description_ar,
+          isPublic,
+        ) => {
           await saveTemplateMutation.mutateAsync({
             name,
+            name_ar,
             description,
+            description_ar,
             isPublic,
           });
         }}

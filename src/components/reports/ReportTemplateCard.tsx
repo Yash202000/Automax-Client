@@ -436,7 +436,9 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-[hsl(var(--foreground))] line-clamp-1 group-hover:text-[hsl(var(--primary))] transition-colors">
-                {template.name}
+                {i18n.language === "ar" && template.name_ar
+                  ? template.name_ar
+                  : template.name}
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">

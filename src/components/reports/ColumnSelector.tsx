@@ -5,11 +5,14 @@ import { cn } from "@/lib/utils";
 import type { ReportFieldDefinition } from "../../types";
 import { groupFieldsByCategory } from "../../constants/reportFields";
 import { Info } from "lucide-react";
+import i18n from "@/i18n";
 
 interface ColumnSelectorProps {
   fields: ReportFieldDefinition[];
-  selectedColumns: { field: string; label: string }[];
-  onChange: (columns: { field: string; label: string }[]) => void;
+  selectedColumns: { field: string; label: string; label_ar: string }[];
+  onChange: (
+    columns: { field: string; label: string; label_ar: string }[],
+  ) => void;
 }
 
 export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
@@ -58,17 +61,26 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     setExpandedCategories(newExpanded);
   };
 
-  const toggleColumn = (field: string) => {
-    const found = selectedColumns.findIndex((c) => c.field === field);
+  const toggleColumn = (field: ReportFieldDefinition) => {
+    const found = selectedColumns.findIndex((c) => c.field === field.field);
     if (found !== -1) {
-      onChange(selectedColumns.filter((c) => c.field !== field));
+      onChange(selectedColumns.filter((c) => c.field !== field.field));
     } else {
-      onChange([...selectedColumns, { field: field, label: field }]);
+      onChange([
+        ...selectedColumns,
+        { field: field.field, label: field.label, label_ar: field.label_ar },
+      ]);
     }
   };
 
   const selectAll = () => {
-    onChange(fields.map((f) => ({ field: f.field, label: f.label })));
+    onChange(
+      fields.map((f) => ({
+        field: f.field,
+        label: f.label,
+        label_ar: f.label_ar,
+      })),
+    );
   };
 
   const selectNone = () => {
@@ -79,13 +91,15 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     onChange(
       fields
         .filter((f) => f.defaultSelected)
-        .map((f) => ({ field: f.field, label: f.label })),
+        .map((f) => ({ field: f.field, label: f.label, label_ar: f.label_ar })),
     );
   };
 
   const updateLabel = (field: string, label: string) => {
     const updatedColumns = selectedColumns.map((c) =>
-      c.field === field ? { ...c, label } : c,
+      c.field === field
+        ? { ...c, [i18n.language === "ar" ? "label_ar" : "label"]: label }
+        : c,
     );
     onChange(updatedColumns);
   };
@@ -194,13 +208,15 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                       selectedColumns.findIndex(
                         (c) => c.field === field.field,
                       ) !== -1;
+
                     const labelVal = selectedColumns.find(
                       (c) => c.field === field.field,
                     );
+
                     return (
                       <div
                         key={field.field}
-                        onClick={() => toggleColumn(field.field)}
+                        onClick={() => toggleColumn(field)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all",
                           isSelected
@@ -230,14 +246,24 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                             />
                             <span
                               className="text-sm truncate"
-                              title={field.label}
+                              title={
+                                i18n.language === "ar" && field.label_ar
+                                  ? field.label_ar
+                                  : field.label
+                              }
                             >
-                              {field.label}
+                              {i18n.language === "ar" && field.label_ar
+                                ? field.label_ar
+                                : field.label}
                             </span>
                           </div>
                           <input
                             type="text"
-                            value={labelVal?.label}
+                            value={
+                              i18n.language === "ar" && labelVal?.label_ar
+                                ? labelVal.label_ar
+                                : labelVal?.label
+                            }
                             onChange={(e) => {
                               e.stopPropagation();
                               updateLabel(field.field, e.target.value);
@@ -246,7 +272,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                             onClick={(e) => e.stopPropagation()}
                             placeholder={t("reports.labelName")}
                             disabled={!isSelected}
-                            className="border border-gray-300 text-gray-700 rounded-sm text-sm px-2 py-2 w-full"
+                            className="border border-gray-300 text-gray-700 dark:text-gray-400 rounded-sm text-sm px-2 py-2 w-full"
                           />
                         </div>
                       </div>

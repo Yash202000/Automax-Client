@@ -9,6 +9,7 @@ import type {
 } from "../../types";
 import { getOperatorsForFieldType } from "../../constants/reportFields";
 import { MultiSelect } from "../../components/ui/MultiSelect";
+import i18n from "@/i18n";
 
 interface FilterBuilderProps {
   fields: ReportFieldDefinition[];
@@ -259,7 +260,7 @@ const FilterRow: React.FC<FilterRowProps> = ({
             .filter((f) => f.filterable && !f.hidden)
             .map((f) => (
               <option key={f.field} value={f.field}>
-                {f.label}
+                {i18n.language === "ar" && f.label_ar ? f.label_ar : f.label}
               </option>
             ))}
         </select>
@@ -363,7 +364,9 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
     <div className="space-y-3">
       {showTimestampKey && (
         <div className="flex gap-2 items-center">
-          <span className="text-sm font-semibold">Timestamp Key</span>
+          <span className="text-sm font-semibold">
+            {t("reports.filterBuilder.timestampKey")}
+          </span>
           <select
             onChange={(e) => {
               onTimestampKeyChange(e.target.value);
@@ -376,7 +379,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
               .filter((x) => x.type === "datetime" || x.type === "date")
               .map((t) => (
                 <option key={t.field} value={t.field}>
-                  {t.label}
+                  {i18n.language === "ar" && t.label_ar ? t.label_ar : t.label}
                 </option>
               ))}
           </select>
