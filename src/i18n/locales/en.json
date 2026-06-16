@@ -1265,7 +1265,7 @@
     "noClassificationsYet": "No classifications yet",
     "createFirstClassification": "Create your first classification to categorize tickets",
     "deleteConfirmTitle": "Delete Classification",
-    "deleteConfirmMessage": "Are you sure you want to delete this classification? All child classifications will also be deleted.",
+    "deleteConfirmMessage": "Are you sure you want to delete this classification?",
     "deleting": "Deleting...",
     "updateDetails": "Update classification details",
     "addingUnder": "Adding under",

@@ -165,8 +165,9 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(true);
   const { i18n } = useTranslation();
-  const hasChildren =
-    classification.children && classification.children.length > 0;
+  const hasChildren = !!(
+    classification.children && classification.children.length > 0
+  );
   const gradient = levelGradients[level % levelGradients.length];
   const badgeColor = levelBadgeColors[level % levelBadgeColors.length];
   const displayName =
