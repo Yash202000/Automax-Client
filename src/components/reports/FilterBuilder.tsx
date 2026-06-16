@@ -370,7 +370,7 @@ export const FilterBuilder: React.FC<FilterBuilderProps> = ({
               setTimestampKey(e.target.value);
             }}
             value={timestampKey}
-            className="border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] px-3 py-2"
+            className="border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] px-3 py-2 bg-background"
           >
             {filterableFields
               .filter((x) => x.type === "datetime" || x.type === "date")
