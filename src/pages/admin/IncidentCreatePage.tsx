@@ -988,9 +988,9 @@ export function IncidentCreatePage() {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (import.meta.env.VITE_ENABLE_GIS && !gisData?.isInsideBoundary) {
-      newErrors.geolocation = t("incidents.gisError");
-    }
+    // if (import.meta.env.VITE_ENABLE_GIS && !gisData?.isInsideBoundary) {
+    //   newErrors.geolocation = t("incidents.gisError");
+    // }
     if (!formData.title.trim()) newErrors.title = t("incidents.titleRequired");
     if (!formData.workflow_id)
       newErrors.workflow_id = t("incidents.workflowRequired");

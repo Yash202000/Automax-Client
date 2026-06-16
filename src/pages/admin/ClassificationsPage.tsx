@@ -143,7 +143,7 @@ interface TreeNodeProps {
   level: number;
   onAdd: (parentId: string, parentName: string) => void;
   onEdit: (cls: Classification) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, hasChildren: boolean) => void;
   onView: (cls: Classification) => void;
   canCreate: boolean;
   canEdit: boolean;
@@ -277,7 +277,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             )}
             {canDelete && (
               <button
-                onClick={() => onDelete(classification.id)}
+                onClick={() => onDelete(classification.id, hasChildren)}
                 className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
                 title={t("common.delete")}
               >
@@ -319,7 +319,10 @@ export const ClassificationsPage: React.FC = () => {
     useState<Classification | null>(null);
   const [formData, setFormData] =
     useState<ClassificationFormData>(initialFormData);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    id: string;
+    hasChildren: boolean;
+  } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -402,6 +405,9 @@ export const ClassificationsPage: React.FC = () => {
     mutationFn: (id: string) => classificationApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
+      setDeleteConfirm(null);
+    },
+    onError: () => {
       setDeleteConfirm(null);
     },
   });
@@ -703,7 +709,9 @@ export const ClassificationsPage: React.FC = () => {
                 level={0}
                 onAdd={openCreateModal}
                 onEdit={openEditModal}
-                onDelete={setDeleteConfirm}
+                onDelete={(id, hasChildren) =>
+                  setDeleteConfirm({ id, hasChildren })
+                }
                 onView={openViewModal}
                 canCreate={canCreateClassification}
                 canEdit={canEditClassification}
@@ -985,9 +993,21 @@ export const ClassificationsPage: React.FC = () => {
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
                     {t("classifications.deleteConfirmTitle")}
                   </h3>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                    {t("classifications.deleteConfirmMessage")}
-                  </p>
+                  {deleteConfirm.hasChildren ? (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-sm font-medium text-[hsl(var(--destructive))]">
+                        This classification has child classifications.
+                      </p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        Deleting it will also permanently delete all associated
+                        child classifications. This action cannot be undone.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                      {t("classifications.deleteConfirmMessage")}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-3">
@@ -996,7 +1016,7 @@ export const ClassificationsPage: React.FC = () => {
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => deleteMutation.mutate(deleteConfirm)}
+                  onClick={() => deleteMutation.mutate(deleteConfirm.id)}
                   isLoading={deleteMutation.isPending}
                 >
                   {deleteMutation.isPending
