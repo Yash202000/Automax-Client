@@ -438,6 +438,9 @@ export function IncidentCreatePage() {
         locationMatch = w.locations.some((l) => l.id === formData.location_id);
       }
 
+      if (import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "false") {
+        return classificationMatch;
+      }
       return classificationMatch && locationMatch;
     });
 
