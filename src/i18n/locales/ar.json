@@ -1277,7 +1277,7 @@
     "noClassificationsYet": "لا توجد تصنيفات بعد",
     "createFirstClassification": "أنشئ تصنيفك الأول لتنظيم البلاغات والطلبات",
     "deleteConfirmTitle": "حذف التصنيف",
-    "deleteConfirmMessage": "هل أنت متأكد من حذف هذا التصنيف؟",
+    "deleteConfirmMessage": "هل أنت متأكد من حذف هذا التصنيف؟ سيتم حذف جميع التصنيفات الفرعية أيضاً.",
     "deleting": "جاري الحذف...",
     "updateDetails": "تحديث تفاصيل التصنيف",
     "addingUnder": "إضافة تحت",
@@ -2012,7 +2012,11 @@
     "duplicateWorkflowCodesWillBeRenamedAutomatically": "سيتم إعادة تسمية رموز سير العمل المكررة تلقائيًا",
     "missingRolesOrClassificationsWillShowWarnings": "سيتم عرض تحذيرات للأدوار أو التصنيفات المفقودة",
     "noFeedbackOptionsYet": "لا توجد خيارات تقييم حتى الآن",
-    "noCommentOptionsYet": "لا توجد خيارات تعليقات حتى الآن"
+    "noCommentOptionsYet": "لا توجد خيارات تعليقات حتى الآن",
+    "nameRequired": "اسم سير العمل مطلوب",
+    "invalidName": "يمكن أن يحتوي اسم سير العمل على أحرف وأرقام ومسافات فقط.",
+    "codeRequired": "رمز سير العمل مطلوب",
+    "invalidCode": "لا يمكن أن يحتوي كود سير العمل إلا على أحرف وأرقام ومسافات."
   },
   "lookups": {
     "title": "البيانات الرئيسية",

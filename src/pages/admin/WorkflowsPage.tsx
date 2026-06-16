@@ -75,6 +75,9 @@ export const WorkflowsPage: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   const { data: workflowsData, isLoading } = useQuery({
     queryKey: ["admin", "workflows"],
@@ -261,10 +264,36 @@ export const WorkflowsPage: React.FC = () => {
     setIsModalOpen(false);
     setEditingWorkflow(null);
     setFormData(initialFormData);
+    setValidationErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    const name = formData.name.trim();
+    const code = formData.code.trim();
+
+    if (!name) {
+      newErrors.name = t("workflows.nameRequired");
+    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+      newErrors.name = t("workflows.invalidName");
+    }
+
+    if (!code) {
+      newErrors.code = t("workflows.codeRequired");
+    } else if (!/^[a-zA-Z0-9\s]+$/.test(code)) {
+      newErrors.code = t("workflows.invalidCode");
+    }
+    setValidationErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error(t("errors.validationError"));
+      return;
+    }
     if (editingWorkflow) {
       updateMutation.mutate({
         id: editingWorkflow.id,
@@ -775,17 +804,35 @@ export const WorkflowsPage: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                       {t("workflows.workflowName")}
+                      <span className="text-[hsl(var(--destructive))] ml-1">
+                        *
+                      </span>
                     </label>
                     <input
                       type="text"
                       placeholder={t("workflows.workflowNamePlaceholder")}
                       value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (validationErrors.name) {
+                          setValidationErrors({
+                            ...validationErrors,
+                            name: "",
+                          });
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${
+                        validationErrors.name
+                          ? "border-[hsl(var(--destructive))]"
+                          : "border-slate-300 dark:border-slate-600"
+                      }`}
                       required
                     />
+                    {validationErrors.code && (
+                      <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                        {validationErrors.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -807,17 +854,32 @@ export const WorkflowsPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t("workflows.workflowCode")}
+                    <span className="text-[hsl(var(--destructive))] ml-1">
+                      *
+                    </span>
                   </label>
                   <input
                     type="text"
                     placeholder={t("workflows.workflowCodePlaceholder")}
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    onChange={(e) => {
+                      setFormData({ ...formData, code: e.target.value });
+                      if (validationErrors.code) {
+                        setValidationErrors({ ...validationErrors, code: "" });
+                      }
+                    }}
+                    className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${
+                      validationErrors.code
+                        ? "border-[hsl(var(--destructive))]"
+                        : "border-slate-300 dark:border-slate-600"
+                    }`}
                     required
                   />
+                  {validationErrors.code && (
+                    <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                      {validationErrors.code}
+                    </p>
+                  )}
                   <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                     {t("workflows.codeHint")}
                   </p>

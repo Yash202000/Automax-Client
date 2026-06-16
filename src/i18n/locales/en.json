@@ -1279,7 +1279,7 @@
     "noClassificationsYet": "No classifications yet",
     "createFirstClassification": "Create your first classification to categorize tickets",
     "deleteConfirmTitle": "Delete Classification",
-    "deleteConfirmMessage": "Are you sure you want to delete this classification?",
+    "deleteConfirmMessage": "Are you sure you want to delete this classification? All child classifications will also be deleted.",
     "deleting": "Deleting...",
     "updateDetails": "Update classification details",
     "addingUnder": "Adding under",
@@ -2014,7 +2014,11 @@
     "severityPriorityRange": "Severity & Priority Range",
     "severityRange": "Severity Range (1=Critical, 5=Cosmetic)",
     "noFeedbackOptionsYet": "No feedback options yet",
-    "noCommentOptionsYet": "No comment options yet"
+    "noCommentOptionsYet": "No comment options yet",
+    "nameRequired": "Workflow name is required",
+    "invalidName": "Workflow name can only contain letters, numbers and spaces",
+    "codeRequired": "Workflow code is required",
+    "invalidCode": "Workflow code can only contain letters, numbers and spaces"
   },
   "lookups": {
     "title": "Master Data",
