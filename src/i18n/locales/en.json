@@ -1376,6 +1376,8 @@
     "duplicate": "Duplicate",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete",
+    "templateSaved": "Template saved successfully",
+    "templateUpdated": "Template updated successfully",
     "dataSources": {
       "incidents": "Incidents",
       "requests": "Requests",
@@ -1466,7 +1468,8 @@
         "isEmpty": "Is empty",
         "isNotEmpty": "Is not empty"
       },
-      "toDate": "To Date"
+      "toDate": "To Date",
+      "timestampKey": "Timestamp Key"
     },
     "errors": {
       "invalidDateRange": "Both From and To dates are required",
@@ -1516,10 +1519,14 @@
       "updateTemplate": "Update Template",
       "report": "report",
       "templateName": "Template Name",
+      "templateNameAr": "Template Name (Arabic)",
       "templateNameRequired": "Template name is required",
       "templateNamePlaceholder": "Enter template name...",
+      "templateNamePlaceholderAr": "Enter template name (Arabic)...",
       "description": "Description",
+      "descriptionAr": "Description (Arabic)",
       "descriptionPlaceholder": "Optional description...",
+      "descriptionPlaceholderAr": "Optional description (Arabic)...",
       "visibility": "Visibility",
       "private": "Private",
       "privateDesc": "Only you can access",

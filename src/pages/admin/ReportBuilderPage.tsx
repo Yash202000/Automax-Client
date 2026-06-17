@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   FileBarChart,
   ChevronDown,
@@ -150,18 +151,17 @@ export const ReportBuilderPage: React.FC = () => {
   // State
   const [dataSource, setDataSource] = useState<ReportDataSource | null>(null);
   const [selectedColumns, setSelectedColumns] = useState<
-    { field: string; label: string }[]
+    { field: string; label: string; label_ar: string }[]
   >([]);
   const [stateFields, setStateFields] = useState<Array<any>>([]);
   const [filters, setFilters] = useState<ReportFilter[]>([]);
   const [sorting, setSorting] = useState<ReportSort[]>([]);
-  // recordLimit — how many rows the query should return (sent as the API limit)
-  const [recordLimit, setRecordLimit] = useState(100);
   // displayPage — client-side pagination through previewData
   const [displayPage, setDisplayPage] = useState(1);
   const DISPLAY_SIZE = 50;
   const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([]);
   const [dbTotalCount, setDbTotalCount] = useState(0); // total matching rows in DB
+  const [reportTotalPages, setReportTotalPages] = useState(1);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -318,6 +318,7 @@ export const ReportBuilderPage: React.FC = () => {
         template.config.columns.map((c) => ({
           field: c.field,
           label: c.label,
+          label_ar: c.label_ar,
         })),
       );
       setFilters(
@@ -397,29 +398,38 @@ export const ReportBuilderPage: React.FC = () => {
     }
   }, [dataSource, loadedTemplate]);
 
-  // Generate report — fetches recordLimit rows in a single request, no server pagination
+  // Server-driven paginated preview
+  const fetchReportData = async (page = 1) => {
+    const request: ReportQueryRequest = {
+      data_source: dataSource!,
+      columns: selectedColumns,
+      filters: getValidFilters(filters).map(({ field, value }) => ({
+        field,
+        operator: "equals",
+        value,
+      })),
+      sorting,
+      page,
+      limit: DISPLAY_SIZE,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+
+    const response = await reportApi.query(request);
+    return response;
+  };
+
   const generateReport = useCallback(async () => {
     if (!dataSource || selectedColumns.length === 0) return;
     setIsPreviewLoading(true);
     setDisplayPage(1);
     try {
-      const request: ReportQueryRequest = {
-        data_source: dataSource,
-        columns: selectedColumns,
-        filters: getValidFilters(filters).map(({ field, value }) => ({
-          field,
-          operator: "equals",
-          value,
-        })),
-        sorting,
-        page: 1,
-        limit: recordLimit,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      };
-
-      const response = await reportApi.query(request);
+      const response = await fetchReportData(1);
       setPreviewData(response?.data || []);
-      setDbTotalCount(response.total_items);
+      setDbTotalCount(response.total_items || 0);
+      setReportTotalPages(
+        response.total_pages ||
+          Math.max(1, Math.ceil((response.total_items || 0) / DISPLAY_SIZE)),
+      );
       setTimeout(
         () =>
           previewRef.current?.scrollIntoView({
@@ -434,7 +444,37 @@ export const ReportBuilderPage: React.FC = () => {
     } finally {
       setIsPreviewLoading(false);
     }
-  }, [dataSource, selectedColumns, filters, sorting, recordLimit]);
+  }, [dataSource, selectedColumns, filters, sorting]);
+
+  const handlePageChange = useCallback(
+    async (page: number) => {
+      if (page < 1 || page === displayPage || page > reportTotalPages) return;
+      setIsPreviewLoading(true);
+      try {
+        const response = await fetchReportData(page);
+        setPreviewData(response?.data || []);
+        setDisplayPage(page);
+        setDbTotalCount(response.total_items || 0);
+        setReportTotalPages(
+          response.total_pages ||
+            Math.max(1, Math.ceil((response.total_items || 0) / DISPLAY_SIZE)),
+        );
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to change preview page:", error);
+      } finally {
+        setIsPreviewLoading(false);
+      }
+    },
+    [
+      displayPage,
+      reportTotalPages,
+      dataSource,
+      selectedColumns,
+      sorting,
+      filters,
+    ],
+  );
 
   // Export mutation
   const exportMutation = useMutation({
@@ -491,18 +531,22 @@ export const ReportBuilderPage: React.FC = () => {
   const saveTemplateMutation = useMutation({
     mutationFn: async ({
       name,
+      name_ar,
       description,
+      description_ar,
       isPublic,
     }: {
       name: string;
+      name_ar: string;
       description: string;
+      description_ar: string;
       isPublic: boolean;
     }) => {
       if (!dataSource) throw new Error("No data source selected");
 
       const config = {
         columns: selectedColumns.map((col) => {
-          return { field: col.field, label: col.label };
+          return { field: col.field, label: col.label, label_ar: col.label_ar };
         }),
         filters: filters.map(({ field, operator, value }) => ({
           field,
@@ -519,7 +563,9 @@ export const ReportBuilderPage: React.FC = () => {
         // Update existing
         return reportApi.updateTemplate(loadedTemplate.id, {
           name,
+          name_ar,
           description,
+          description_ar,
           config,
           is_public: isPublic,
           timestamp_key: timestampKey,
@@ -528,7 +574,9 @@ export const ReportBuilderPage: React.FC = () => {
         // Create new
         return reportApi.createTemplate({
           name,
+          name_ar,
           description,
+          description_ar,
           data_source: dataSource,
           config,
           is_public: isPublic,
@@ -544,6 +592,11 @@ export const ReportBuilderPage: React.FC = () => {
       if (response.data) {
         setLoadedTemplate(response.data);
       }
+      toast.success(
+        loadedTemplate
+          ? t("reports.templateUpdated")
+          : t("reports.templateSaved"),
+      );
     },
   });
 
@@ -578,14 +631,9 @@ export const ReportBuilderPage: React.FC = () => {
   const canGenerate = dataSource && selectedColumns.length > 0;
   const canExport = (previewData?.length || 0) > 0;
 
-  // Client-side display pagination over previewData
-  const displayTotalPages = Math.ceil(
-    (previewData?.length || 0) / DISPLAY_SIZE,
-  );
-  const displayData = (previewData || []).slice(
-    (displayPage - 1) * DISPLAY_SIZE,
-    displayPage * DISPLAY_SIZE,
-  );
+  // Server-driven pagination: previewData contains current page
+  const displayTotalPages = reportTotalPages;
+  const displayData = previewData || [];
 
   return (
     <div className="space-y-6">
@@ -602,7 +650,7 @@ export const ReportBuilderPage: React.FC = () => {
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ltr:ml-12 rtl:mr-12">
             {loadedTemplate
-              ? `${t("reports.editing")}: ${loadedTemplate.name}`
+              ? `${t("reports.editing")}: ${i18n.language === "ar" && loadedTemplate.name_ar ? loadedTemplate.name_ar : loadedTemplate.name}`
               : t("reports.reportBuilderSubtitle")}
           </p>
         </div>
@@ -771,22 +819,6 @@ export const ReportBuilderPage: React.FC = () => {
           >
             {t("reports.export")}
           </Button>
-
-          {/* Record limit selector */}
-          <div className="flex items-center gap-2 ltr:ml-auto rtl:mr-auto text-sm text-[hsl(var(--muted-foreground))]">
-            <span>{t("reports.limit")}</span>
-            <select
-              value={recordLimit}
-              onChange={(e) => setRecordLimit(Number(e.target.value))}
-              className="px-2 py-1.5 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
-            >
-              {[100, 500, 1000, 5000, 10000].map((n) => (
-                <option key={n} value={n}>
-                  {n.toLocaleString()} {t("reports.records")}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       )}
 
@@ -800,28 +832,6 @@ export const ReportBuilderPage: React.FC = () => {
             <h2 className="font-semibold text-[hsl(var(--foreground))]">
               {t("reports.previewResults")}
             </h2>
-            {previewData.length > 0 && (
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                {previewData.length < dbTotalCount ? (
-                  <>
-                    {t("reports.fetched")} {t("reports.of")}{" "}
-                    <strong>{dbTotalCount.toLocaleString()}</strong>{" "}
-                    {t("reports.totalRecords")}
-                    {previewData.length < dbTotalCount && (
-                      <span className="ltr:ml-1 rtl:mr-1 text-amber-600 dark:text-amber-400">
-                        — {t("reports.increaseLimitHint")}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {t("reports.all")}{" "}
-                    <strong>{previewData.length.toLocaleString()}</strong>{" "}
-                    {t("reports.recordsFetched")}
-                  </>
-                )}
-              </span>
-            )}
           </div>
           <div className="p-4">
             <ReportPreview
@@ -831,9 +841,9 @@ export const ReportBuilderPage: React.FC = () => {
               isLoading={isPreviewLoading}
               page={displayPage}
               limit={DISPLAY_SIZE}
-              totalItems={previewData.length}
+              totalItems={dbTotalCount}
               totalPages={displayTotalPages}
-              onPageChange={setDisplayPage}
+              onPageChange={handlePageChange}
             />
           </div>
         </div>
@@ -858,10 +868,18 @@ export const ReportBuilderPage: React.FC = () => {
       <SaveTemplateDialog
         isOpen={showSaveDialog}
         onClose={() => setShowSaveDialog(false)}
-        onSave={async (name, description, isPublic) => {
+        onSave={async (
+          name,
+          name_ar,
+          description,
+          description_ar,
+          isPublic,
+        ) => {
           await saveTemplateMutation.mutateAsync({
             name,
+            name_ar,
             description,
+            description_ar,
             isPublic,
           });
         }}

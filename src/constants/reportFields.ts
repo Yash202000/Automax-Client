@@ -67,6 +67,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "id",
     label: "id",
+    label_ar: "معرف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -75,6 +76,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "workflow_transition_name",
     label: "Transition Name",
+    label_ar: "اسم الانتقال",
     type: "string",
     category: "Core",
     sortable: true,
@@ -83,6 +85,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "workflow_transition_id",
     label: "Transition",
+    label_ar: "الانتقال",
     type: "enum",
     dynamicOptions: "transitions",
     multiselect: true,
@@ -93,6 +96,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "workflow_transition_at",
     label: "Transition At",
+    label_ar: "وقت الانتقال",
     type: "date",
     category: "Core",
     sortable: true,
@@ -101,6 +105,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopen1_at",
     label: "Reopened Date",
+    label_ar: "تاريخ إعادة الفتح",
     type: "date",
     category: "Core",
     sortable: true,
@@ -109,6 +114,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "incident_number",
     label: "Incident Number",
+    label_ar: "رقم الحادث",
     type: "string",
     category: "Core",
     sortable: true,
@@ -117,6 +123,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "title",
     label: "Title",
+    label_ar: "العنوان",
     type: "string",
     category: "Core",
     sortable: true,
@@ -125,6 +132,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "description",
     label: "Description",
+    label_ar: "الوصف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -133,6 +141,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "priority",
     label: "Priority",
+    label_ar: "الأولوية",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -148,6 +157,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "severity",
     label: "Severity",
+    label_ar: "الخطورة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -163,6 +173,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopen1_comment",
     label: "Reopened1 comment",
+    label_ar: "تعليق إعادة الفتح 1",
     type: "string",
     category: "Core",
     sortable: true,
@@ -171,6 +182,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopen1_feedback",
     label: "Reopened Feedback",
+    label_ar: "ملاحظات إعادة الفتح",
     type: "string",
     category: "Core",
     sortable: true,
@@ -179,6 +191,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "assignee_id",
     label: "Assignee",
+    label_ar: "المكلّف",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -188,6 +201,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "classification_id",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -199,6 +213,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "department_id",
     label: "Department",
+    label_ar: "القسم",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -209,6 +224,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -220,6 +236,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "latitude",
     label: "Latitude",
+    label_ar: "خط العرض",
     type: "string",
     category: "Core",
     sortable: false,
@@ -228,6 +245,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "longitude",
     label: "Longitude",
+    label_ar: "خط الطول",
     type: "string",
     category: "Core",
     sortable: false,
@@ -236,6 +254,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "due_date",
     label: "Due Date",
+    label_ar: "تاريخ الاستحقاق",
     type: "date",
     category: "Core",
     sortable: true,
@@ -244,6 +263,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "resolved_at",
     label: "Resolved At",
+    label_ar: "تاريخ الحل",
     type: "date",
     category: "Core",
     sortable: true,
@@ -252,6 +272,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "closed_at",
     label: "Closed At",
+    label_ar: "تاريخ الإغلاق",
     type: "date",
     category: "Core",
     sortable: true,
@@ -260,6 +281,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "sla_breached",
     label: "Sla Breached",
+    label_ar: "تم تجاوز اتفاقية مستوى الخدمة",
     type: "boolean",
     category: "Core",
     sortable: true,
@@ -268,6 +290,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "sla_deadline",
     label: "Sla Deadline",
+    label_ar: "موعد اتفاقية مستوى الخدمة",
     type: "date",
     category: "Core",
     sortable: true,
@@ -276,6 +299,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_phone",
     label: "Reporter Phone",
+    label_ar: "هاتف المبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -284,6 +308,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_id",
     label: "Reporter",
+    label_ar: "المبلّغ",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -293,6 +318,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_email",
     label: "Reporter Email",
+    label_ar: "البريد الإلكتروني للمبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -301,6 +327,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_name",
     label: "Reporter Name",
+    label_ar: "اسم المبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -310,6 +337,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "feedbacks",
     label: "Feedbacks",
+    label_ar: "التقييمات",
     type: "string",
     category: "Core",
     sortable: true,
@@ -318,6 +346,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "feedback_array",
     label: "Feedback array",
+    label_ar: "مصفوفة التقييمات",
     type: "string",
     category: "Core",
     sortable: true,
@@ -327,6 +356,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "closed_feedback",
     label: "Closed feedback",
+    label_ar: "ملاحظات الإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -335,6 +365,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "rejected_feedback",
     label: "Rejected feedback",
+    label_ar: "ملاحظات الرفض",
     type: "string",
     category: "Core",
     sortable: true,
@@ -343,6 +374,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "under_resolution_feedback",
     label: "Under resolution feedback",
+    label_ar: "ملاحظات قيد المعالجة",
     type: "string",
     category: "Core",
     sortable: true,
@@ -351,6 +383,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_feedback",
     label: "Ready to close feedback",
+    label_ar: "ملاحظات جاهز للإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -359,6 +392,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopened_feedback",
     label: "Reopened feedback",
+    label_ar: "ملاحظات إعادة الفتح",
     type: "string",
     category: "Core",
     sortable: true,
@@ -368,6 +402,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "closed_comment",
     label: "Closed comment",
+    label_ar: "تعليق الإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -376,6 +411,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "rejected_comment",
     label: "Rejected comment",
+    label_ar: "تعليق الرفض",
     type: "string",
     category: "Core",
     sortable: true,
@@ -384,6 +420,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "under_resolution_comment",
     label: "Under resolution comment",
+    label_ar: "تعليق قيد المعالجة",
     type: "string",
     category: "Core",
     sortable: true,
@@ -392,6 +429,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_comment",
     label: "Ready to close comment",
+    label_ar: "تعليق جاهز للإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -400,6 +438,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopened_comment",
     label: "Reopened comment",
+    label_ar: "تعليق إعادة الفتح",
     type: "string",
     category: "Core",
     sortable: true,
@@ -409,6 +448,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "full_location",
     label: "Full location",
+    label_ar: "الموقع الكامل",
     type: "string",
     category: "Core",
     sortable: true,
@@ -417,6 +457,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "full_classification",
     label: "Full classification",
+    label_ar: "التصنيف الكامل",
     type: "string",
     category: "Core",
     sortable: true,
@@ -427,6 +468,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopen1_comment",
     label: "Reopened1 comment",
+    label_ar: "تعليق إعادة الفتح 1",
     type: "string",
     category: "Core",
     sortable: true,
@@ -435,6 +477,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopen1_feedback",
     label: "Reopened1 Feedback",
+    label_ar: "ملاحظات إعادة الفتح 1",
     type: "string",
     category: "Core",
     sortable: true,
@@ -445,6 +488,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Created At",
+    label_ar: "تاريخ الإنشاء",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -453,6 +497,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "updated_at",
     label: "Updated At",
+    label_ar: "تاريخ التحديث",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -461,6 +506,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "deleted_at",
     label: "Deleted At",
+    label_ar: "تاريخ الحذف",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -469,6 +515,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "record_type",
     label: "Record Type",
+    label_ar: "نوع السجل",
     type: "string",
     category: "Core",
     sortable: true,
@@ -477,6 +524,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "source_incident_id",
     label: "Source Incident Id",
+    label_ar: "معرف الحادث المصدر",
     type: "string",
     category: "Core",
     sortable: true,
@@ -485,6 +533,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "converted_request_id",
     label: "Converted Request Id",
+    label_ar: "معرف الطلب المحول",
     type: "string",
     category: "Core",
     sortable: true,
@@ -493,6 +542,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "channel",
     label: "Channel",
+    label_ar: "القناة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -516,6 +566,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "created_by_id",
     label: "Created By",
+    label_ar: "أُنشئ بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -525,6 +576,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "created_by_name",
     label: "Created By Name",
+    label_ar: "اسم المنشئ",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -535,6 +587,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "created_by_mobile",
     label: "Created By Mobile",
+    label_ar: "هاتف المنشئ",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -545,6 +598,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "evaluation_count",
     label: "Evaluation Count",
+    label_ar: "عدد التقييمات",
     type: "string",
     category: "Core",
     sortable: true,
@@ -553,6 +607,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "address",
     label: "Address",
+    label_ar: "العنوان",
     type: "string",
     category: "Core",
     sortable: true,
@@ -561,6 +616,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "city",
     label: "City",
+    label_ar: "المدينة",
     type: "string",
     category: "Core",
     sortable: true,
@@ -569,6 +625,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "state",
     label: "State",
+    label_ar: "الولاية",
     type: "string",
     category: "Core",
     sortable: true,
@@ -577,6 +634,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "country",
     label: "Country",
+    label_ar: "الدولة",
     type: "string",
     category: "Core",
     sortable: true,
@@ -585,6 +643,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "postal_code",
     label: "Postal Code",
+    label_ar: "الرمز البريدي",
     type: "string",
     category: "Core",
     sortable: true,
@@ -593,6 +652,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "source",
     label: "Channel",
+    label_ar: "القناة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -616,6 +676,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "version",
     label: "Version",
+    label_ar: "الإصدار",
     type: "string",
     category: "Core",
     sortable: true,
@@ -624,6 +685,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "master_incident_id",
     label: "Master Incident Id",
+    label_ar: "معرف الحادث الرئيسي",
     type: "string",
     category: "Core",
     sortable: true,
@@ -632,6 +694,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "is_merged",
     label: "Is Merged",
+    label_ar: "تم الدمج",
     type: "string",
     category: "Core",
     sortable: true,
@@ -640,6 +703,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "merged_at",
     label: "Merged At",
+    label_ar: "تاريخ الدمج",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -648,6 +712,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "merged_by_user_id",
     label: "Merged By User",
+    label_ar: "تم الدمج بواسطة المستخدم",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -658,6 +723,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "source_incident_ids",
     label: "Source Incident Ids",
+    label_ar: "معرفات الحوادث المصدر",
     type: "string",
     category: "Core",
     sortable: true,
@@ -666,6 +732,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_expires_at",
     label: "Ready To Close Expires At",
+    label_ar: "انتهاء الجاهزية للإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -674,6 +741,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_duration",
     label: "Ready To Close Duration",
+    label_ar: "مدة الجاهزية للإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -682,6 +750,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_notified",
     label: "Ready To Close Notified",
+    label_ar: "تم إشعار الجاهزية للإغلاق",
     type: "string",
     category: "Core",
     sortable: true,
@@ -690,6 +759,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_first_name",
     label: "Reporter First Name",
+    label_ar: "الاسم الأول للمبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -698,6 +768,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_last_name",
     label: "Reporter Last Name",
+    label_ar: "اسم العائلة للمبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -706,6 +777,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reporter_username",
     label: "Reporter Username",
+    label_ar: "اسم المستخدم للمبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -714,6 +786,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "assignee_email",
     label: "Assignee Email",
+    label_ar: "البريد الإلكتروني للمكلّف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -722,6 +795,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "assignee_first_name",
     label: "Assignee First Name",
+    label_ar: "الاسم الأول للمكلّف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -730,6 +804,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "assignee_last_name",
     label: "Assignee Last Name",
+    label_ar: "اسم العائلة للمكلّف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -738,6 +813,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "assignee_username",
     label: "Assignee Username",
+    label_ar: "اسم المستخدم للمكلّف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -746,6 +822,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "current_state_name",
     label: "Status",
+    label_ar: "الحالة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -756,6 +833,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "current_state_state_type",
     label: "Current State State Type",
+    label_ar: "نوع الحالة الحالية",
     type: "string",
     category: "Core",
     sortable: true,
@@ -764,6 +842,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "classification_name",
     label: "Classification Name",
+    label_ar: "اسم التصنيف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -773,6 +852,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "department_name",
     label: "Department Name",
+    label_ar: "اسم القسم",
     type: "string",
     category: "Core",
     sortable: true,
@@ -781,6 +861,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Location Name",
+    label_ar: "اسم الموقع",
     type: "string",
     category: "Core",
     sortable: true,
@@ -791,6 +872,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "workflow_name",
     label: "Workflow Name",
+    label_ar: "اسم سير العمل",
     type: "string",
     category: "Core",
     sortable: true,
@@ -799,6 +881,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "closed_by",
     label: "Closed By",
+    label_ar: "أُغلق بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -809,6 +892,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "contractor",
     label: "Contractor",
+    label_ar: "المقاول",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -819,6 +903,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "contractor_user",
     label: "Contractor User",
+    label_ar: "مستخدم المقاول",
     type: "string",
     category: "Core",
     sortable: true,
@@ -827,6 +912,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "solved_by",
     label: "Solved By",
+    label_ar: "تم الحل بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -837,6 +923,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "closed_date",
     label: "Closed Date",
+    label_ar: "تاريخ الإغلاق",
     type: "date",
     category: "Core",
     sortable: true,
@@ -845,6 +932,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "rejected_by",
     label: "Rejected By",
+    label_ar: "تم الرفض بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -855,6 +943,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "rejected_date",
     label: "Rejected Date",
+    label_ar: "تاريخ الرفض",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -863,6 +952,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "under_resolution_by",
     label: "Under Resolution By",
+    label_ar: "قيد المعالجة بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -873,6 +963,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "approved_by",
     label: "Approved By",
+    label_ar: "تمت الموافقة بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -883,6 +974,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "under_resolution_date",
     label: "Under Resolution Date",
+    label_ar: "تاريخ قيد المعالجة",
     type: "date",
     category: "Core",
     sortable: true,
@@ -891,6 +983,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "approved_time",
     label: "Approved Time",
+    label_ar: "وقت الموافقة",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -899,6 +992,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "approved_at",
     label: "Approved At",
+    label_ar: "تاريخ الموافقة",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -907,6 +1001,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "in_progress_by",
     label: "In Progress By",
+    label_ar: "قيد التنفيذ بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -917,6 +1012,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "in_progress_date",
     label: "In Progress Date",
+    label_ar: "تاريخ بدء التنفيذ",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -925,6 +1021,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_by",
     label: "Ready To Close By",
+    label_ar: "جاهز للإغلاق بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -935,6 +1032,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "ready_to_close_date",
     label: "Ready To Close Date",
+    label_ar: "تاريخ الجاهزية للإغلاق",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -943,6 +1041,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopened_by",
     label: "Reopened By",
+    label_ar: "أعيد فتحه بواسطة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -953,6 +1052,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "reopen_date",
     label: "Reopen Date",
+    label_ar: "تاريخ إعادة الفتح",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -961,6 +1061,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "escalation_date",
     label: "Escalation Date",
+    label_ar: "تاريخ التصعيد",
     type: "date",
     category: "Core",
     sortable: true,
@@ -969,6 +1070,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "comments",
     label: "Comments",
+    label_ar: "التعليقات",
     type: "string",
     category: "Core",
     sortable: false,
@@ -977,6 +1079,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "comments_array",
     label: "Comments Array",
+    label_ar: "مصفوفة التعليقات",
     type: "string",
     category: "Core",
     sortable: false,
@@ -985,6 +1088,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "contractor_comment",
     label: "Contractor Comment",
+    label_ar: "تعليق المقاول",
     type: "string",
     category: "Core",
     sortable: false,
@@ -993,6 +1097,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "before_attachments",
     label: "Before Attachments",
+    label_ar: "المرفقات قبل التنفيذ",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1001,6 +1106,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "before_attachment_array",
     label: "Before Attachment Array",
+    label_ar: "مصفوفة المرفقات قبل التنفيذ",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1009,6 +1115,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "after_attachments",
     label: "After Attachments",
+    label_ar: "المرفقات بعد التنفيذ",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1017,6 +1124,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "after_attachment_array",
     label: "After Attachment Array",
+    label_ar: "مصفوفة المرفقات بعد التنفيذ",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1025,6 +1133,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "attachments",
     label: "Attachments",
+    label_ar: "المرفقات",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1033,6 +1142,7 @@ export const incidentFields: ReportFieldDefinition[] = [
   {
     field: "total_closing_duration",
     label: "Total Closing Duration",
+    label_ar: "إجمالي مدة الإغلاق",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1045,6 +1155,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "request_number",
     label: "Request Number",
+    label_ar: "رقم الطلب",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1053,6 +1164,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "source",
     label: "Channel",
+    label_ar: "القناة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1076,6 +1188,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "status_id",
     label: "Status",
+    label_ar: "الحالة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1086,6 +1199,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "created_by_mobile",
     label: "Created By Mobile",
+    label_ar: "هاتف المنشئ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1096,6 +1210,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "reporter_name",
     label: "Reporter Name",
+    label_ar: "اسم المبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1104,6 +1219,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "reporter_phone",
     label: "Reporter Phone",
+    label_ar: "هاتف المبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1112,6 +1228,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "reporter_first_name",
     label: "Reporter First Name",
+    label_ar: "الاسم الأول للمبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1120,6 +1237,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "reporter_last_name",
     label: "Reporter Last Name",
+    label_ar: "اسم العائلة للمبلّغ",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1128,6 +1246,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "classification_name",
     label: "Classification Name",
+    label_ar: "اسم التصنيف",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1136,6 +1255,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Location Name",
+    label_ar: "اسم الموقع",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1145,6 +1265,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1155,6 +1276,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "title",
     label: "Title",
+    label_ar: "العنوان",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1164,6 +1286,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1175,6 +1298,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "classification_id",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1186,6 +1310,7 @@ export const requestFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Created At",
+    label_ar: "تاريخ الإنشاء",
     type: "datetime",
     category: "Core",
     sortable: true,
@@ -1199,6 +1324,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "id",
     label: "Log ID",
+    label_ar: "معرف السجل",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1207,6 +1333,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "user_id",
     label: "User",
+    label_ar: "المستخدم",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1216,6 +1343,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "action",
     label: "Action",
+    label_ar: "الإجراء",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1233,6 +1361,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "module",
     label: "Module",
+    label_ar: "الوحدة",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1242,6 +1371,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "description",
     label: "Description",
+    label_ar: "الوصف",
     type: "string",
     category: "Core",
     sortable: false,
@@ -1254,6 +1384,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "status",
     label: "Status",
+    label_ar: "الحالة",
     type: "enum",
     category: "Status",
     sortable: true,
@@ -1267,6 +1398,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "error_msg",
     label: "Error Message",
+    label_ar: "رسالة الخطأ",
     type: "string",
     category: "Status",
     sortable: false,
@@ -1275,6 +1407,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "duration",
     label: "Duration (ms)",
+    label_ar: "المدة (مللي ثانية)",
     type: "number",
     category: "Status",
     sortable: true,
@@ -1285,6 +1418,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "user_username",
     label: "Username",
+    label_ar: "اسم المستخدم",
     type: "string",
     category: "User",
     sortable: true,
@@ -1295,6 +1429,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "user_email",
     label: "User Email",
+    label_ar: "البريد الإلكتروني للمستخدم",
     type: "string",
     category: "User",
     sortable: true,
@@ -1304,6 +1439,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "user_first_name",
     label: "User First Name",
+    label_ar: "الاسم الأول للمستخدم",
     type: "string",
     category: "User",
     sortable: true,
@@ -1313,6 +1449,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "user_last_name",
     label: "User Last Name",
+    label_ar: "اسم العائلة للمستخدم",
     type: "string",
     category: "User",
     sortable: true,
@@ -1324,6 +1461,7 @@ export const actionLogFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Timestamp",
+    label_ar: "الطابع الزمني",
     type: "datetime",
     category: "Timestamps",
     sortable: true,
@@ -1338,6 +1476,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "id",
     label: "User ID",
+    label_ar: "معرف المستخدم",
     type: "enum",
     category: "Identity",
     sortable: true,
@@ -1347,6 +1486,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "username",
     label: "Username",
+    label_ar: "اسم المستخدم",
     type: "string",
     category: "Identity",
     sortable: true,
@@ -1356,6 +1496,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "email",
     label: "Email",
+    label_ar: "البريد الإلكتروني",
     type: "string",
     category: "Identity",
     sortable: true,
@@ -1365,6 +1506,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "first_name",
     label: "First Name",
+    label_ar: "الاسم الأول",
     type: "string",
     category: "Identity",
     sortable: true,
@@ -1374,6 +1516,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "last_name",
     label: "Last Name",
+    label_ar: "اسم العائلة",
     type: "string",
     category: "Identity",
     sortable: true,
@@ -1383,6 +1526,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "phone",
     label: "Phone",
+    label_ar: "الهاتف",
     type: "string",
     category: "Identity",
     sortable: true,
@@ -1393,6 +1537,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "is_active",
     label: "Active",
+    label_ar: "نشط",
     type: "boolean",
     category: "Status",
     sortable: true,
@@ -1402,6 +1547,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "is_super_admin",
     label: "Super Admin",
+    label_ar: "مدير عام",
     type: "boolean",
     category: "Status",
     sortable: true,
@@ -1410,6 +1556,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "last_login_at",
     label: "Last Login",
+    label_ar: "آخر تسجيل دخول",
     type: "datetime",
     category: "Status",
     sortable: true,
@@ -1420,6 +1567,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "department_name",
     label: "Primary Department",
+    label_ar: "القسم الرئيسي",
     type: "enum",
     category: "Relations",
     sortable: true,
@@ -1430,6 +1578,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Primary Location",
+    label_ar: "الموقع الرئيسي",
     type: "enum",
     category: "Relations",
     sortable: true,
@@ -1442,6 +1591,7 @@ export const userFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Created At",
+    label_ar: "تاريخ الإنشاء",
     type: "datetime",
     category: "Timestamps",
     sortable: true,
@@ -1453,6 +1603,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "performed_by_id",
     label: "Performer",
+    label_ar: "المنفذ",
     type: "enum",
     category: "Basic Info",
     sortable: true,
@@ -1463,6 +1614,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "incident_id",
     label: "Incident ID",
+    label_ar: "معرف الحادث",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1472,6 +1624,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "incident_number",
     label: "Incident Number",
+    label_ar: "رقم الحادث",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1482,6 +1635,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "record_type",
     label: "Record Type",
+    label_ar: "نوع السجل",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1492,6 +1646,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Created At",
+    label_ar: "تاريخ الإنشاء",
     type: "datetime",
     category: "Basic Info",
     sortable: true,
@@ -1503,6 +1658,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "timestamp",
     label: "Timestamp",
+    label_ar: "الطابع الزمني",
     type: "datetime",
     category: "Basic Info",
     sortable: false,
@@ -1513,6 +1669,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "user",
     label: "User",
+    label_ar: "المستخدم",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1523,6 +1680,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "resource_id",
     label: "Resource ID",
+    label_ar: "معرف المورد",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1532,6 +1690,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "classification",
     label: "Classification name",
+    label_ar: "اسم التصنيف",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1542,6 +1701,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "status",
     label: "Status",
+    label_ar: "الحالة",
     type: "enum",
     dynamicOptions: "states",
     category: "Basic Info",
@@ -1554,6 +1714,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "comments",
     label: "Comments",
+    label_ar: "التعليقات",
     type: "string",
     category: "Basic Info",
     sortable: false,
@@ -1564,6 +1725,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
   {
     field: "attachments",
     label: "Attachments",
+    label_ar: "المرفقات",
     type: "string",
     category: "Basic Info",
     sortable: false,
@@ -1579,6 +1741,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "id",
     label: "Department ID",
+    label_ar: "معرف القسم",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1587,6 +1750,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "name",
     label: "Name",
+    label_ar: "الاسم",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1596,6 +1760,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "code",
     label: "Code",
+    label_ar: "الرمز",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -1605,6 +1770,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "description",
     label: "Description",
+    label_ar: "الوصف",
     type: "string",
     category: "Basic Info",
     sortable: false,
@@ -1615,6 +1781,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "level",
     label: "Level",
+    label_ar: "المستوى",
     type: "number",
     category: "Hierarchy",
     sortable: true,
@@ -1623,6 +1790,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "path",
     label: "Path",
+    label_ar: "المسار",
     type: "string",
     category: "Hierarchy",
     sortable: true,
@@ -1631,6 +1799,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "parent_id",
     label: "Parent Department",
+    label_ar: "القسم الأب",
     type: "enum",
     category: "Hierarchy",
     sortable: true,
@@ -1643,6 +1812,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "manager_username",
     label: "Manager Username",
+    label_ar: "اسم مستخدم المدير",
     type: "string",
     category: "Relations",
     sortable: true,
@@ -1652,6 +1822,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "manager_first_name",
     label: "Manager First Name",
+    label_ar: "الاسم الأول للمدير",
     type: "string",
     category: "Relations",
     sortable: true,
@@ -1661,6 +1832,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "manager_last_name",
     label: "Manager Last Name",
+    label_ar: "اسم العائلة للمدير",
     type: "string",
     category: "Relations",
     sortable: true,
@@ -1672,6 +1844,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "is_active",
     label: "Active",
+    label_ar: "نشط",
     type: "boolean",
     category: "Status",
     sortable: true,
@@ -1681,6 +1854,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "sort_order",
     label: "Sort Order",
+    label_ar: "ترتيب الفرز",
     type: "number",
     category: "Status",
     sortable: true,
@@ -1691,6 +1865,7 @@ export const departmentFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Created At",
+    label_ar: "تاريخ الإنشاء",
     type: "datetime",
     category: "Timestamps",
     sortable: true,
@@ -1703,6 +1878,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Location Name",
+    label_ar: "اسم الموقع",
     type: "enum",
     filterable: false,
     dynamicOptions: "locations",
@@ -1713,6 +1889,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "channel",
     label: "Channel",
+    label_ar: "القناة",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -1736,6 +1913,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "parent_location_name",
     label: "Parent Location",
+    label_ar: "الموقع الأب",
     type: "enum",
     filterable: false,
     dynamicOptions: "locations",
@@ -1746,6 +1924,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "status_name",
     label: "Status",
+    label_ar: "الحالة",
     type: "enum",
     dynamicOptions: "states",
     filterable: true,
@@ -1757,6 +1936,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "incident_count",
     label: "No. of Incidents",
+    label_ar: "عدد الحوادث",
     type: "number",
     filterable: false,
     sortable: true,
@@ -1766,6 +1946,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     filterable: true,
     dynamicOptions: "locations",
@@ -1777,6 +1958,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "classification_id",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     filterable: true,
     dynamicOptions: "classifications",
@@ -1788,6 +1970,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "classification_name",
     label: "Classification Name",
+    label_ar: "اسم التصنيف",
     type: "enum",
     filterable: false,
     dynamicOptions: "classifications",
@@ -1797,6 +1980,7 @@ export const locationFields: ReportFieldDefinition[] = [
   {
     field: "percentage",
     label: "Percentage",
+    label_ar: "النسبة المئوية",
     type: "string",
     filterable: false,
     sortable: false,
@@ -1809,6 +1993,7 @@ export const locationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     filterable: false,
     dynamicOptions: "locations",
@@ -1819,6 +2004,7 @@ export const locationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "parent_location_name",
     label: "Parent Location",
+    label_ar: "الموقع الأب",
     type: "string",
     filterable: false,
     sortable: true,
@@ -1828,6 +2014,7 @@ export const locationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "incident_count",
     label: "No. of Incidents",
+    label_ar: "عدد الحوادث",
     type: "number",
     filterable: false,
     sortable: true,
@@ -1837,6 +2024,7 @@ export const locationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     filterable: true,
     dynamicOptions: "locations",
@@ -1848,6 +2036,7 @@ export const locationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "classification_id",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     filterable: true,
     dynamicOptions: "classifications",
@@ -1859,6 +2048,7 @@ export const locationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "classification_name",
     label: "Classification Name",
+    label_ar: "اسم التصنيف",
     type: "enum",
     filterable: false,
     dynamicOptions: "classifications",
@@ -1871,6 +2061,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "classification_name",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     filterable: false,
     dynamicOptions: "classifications",
@@ -1881,6 +2072,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "parent_classification_name",
     label: "Parent Classification",
+    label_ar: "التصنيف الأب",
     type: "enum",
     filterable: false,
     dynamicOptions: "classifications",
@@ -1891,6 +2083,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "channel",
     label: "Channel",
+    label_ar: "القناة",
     type: "enum",
     category: "Basic Info",
     sortable: true,
@@ -1914,6 +2107,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "status_name",
     label: "Status",
+    label_ar: "الحالة",
     type: "enum",
     dynamicOptions: "states",
     filterable: true,
@@ -1925,6 +2119,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "incident_count",
     label: "No. of Incidents",
+    label_ar: "عدد الحوادث",
     type: "number",
     filterable: false,
     sortable: true,
@@ -1934,6 +2129,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "classification_id",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     filterable: true,
     dynamicOptions: "classifications",
@@ -1945,6 +2141,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Location Name",
+    label_ar: "اسم الموقع",
     type: "enum",
     filterable: false,
     dynamicOptions: "locations",
@@ -1954,6 +2151,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     filterable: true,
     dynamicOptions: "locations",
@@ -1965,6 +2163,7 @@ export const classificationFields: ReportFieldDefinition[] = [
   {
     field: "percentage",
     label: "Percentage",
+    label_ar: "النسبة المئوية",
     type: "string",
     filterable: false,
     sortable: false,
@@ -1977,6 +2176,7 @@ export const classificationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "classification_name",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     filterable: false,
     dynamicOptions: "classifications",
@@ -1987,6 +2187,7 @@ export const classificationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "parent_classification_name",
     label: "Parent Classification",
+    label_ar: "التصنيف الأب",
     type: "string",
     filterable: false,
     sortable: true,
@@ -1996,6 +2197,7 @@ export const classificationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "incident_count",
     label: "No. of Incidents",
+    label_ar: "عدد الحوادث",
     type: "number",
     filterable: false,
     sortable: true,
@@ -2005,6 +2207,7 @@ export const classificationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "classification_id",
     label: "Classification",
+    label_ar: "التصنيف",
     type: "enum",
     filterable: true,
     dynamicOptions: "classifications",
@@ -2015,6 +2218,7 @@ export const classificationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "location_id",
     label: "Location",
+    label_ar: "الموقع",
     type: "enum",
     filterable: true,
     dynamicOptions: "locations",
@@ -2026,6 +2230,7 @@ export const classificationCountBasedFields: ReportFieldDefinition[] = [
   {
     field: "location_name",
     label: "Location Name",
+    label_ar: "اسم الموقع",
     type: "enum",
     filterable: false,
     dynamicOptions: "locations",
@@ -2040,6 +2245,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "id",
     label: "Workflow ID",
+    label_ar: "معرف سير العمل",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -2048,6 +2254,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "name",
     label: "Name",
+    label_ar: "الاسم",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -2057,6 +2264,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "code",
     label: "Code",
+    label_ar: "الرمز",
     type: "string",
     category: "Basic Info",
     sortable: true,
@@ -2066,6 +2274,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "description",
     label: "Description",
+    label_ar: "الوصف",
     type: "string",
     category: "Basic Info",
     sortable: false,
@@ -2074,6 +2283,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "version",
     label: "Version",
+    label_ar: "الإصدار",
     type: "number",
     category: "Basic Info",
     sortable: true,
@@ -2084,6 +2294,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "is_active",
     label: "Active",
+    label_ar: "نشط",
     type: "boolean",
     category: "Status",
     sortable: true,
@@ -2093,6 +2304,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "is_default",
     label: "Default Workflow",
+    label_ar: "سير العمل الافتراضي",
     type: "boolean",
     category: "Status",
     sortable: true,
@@ -2103,6 +2315,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "states_count",
     label: "States Count",
+    label_ar: "عدد الحالات",
     type: "number",
     category: "Counts",
     sortable: true,
@@ -2112,6 +2325,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "transitions_count",
     label: "Transitions Count",
+    label_ar: "عدد الانتقالات",
     type: "number",
     category: "Counts",
     sortable: true,
@@ -2122,6 +2336,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "priority_min",
     label: "Min Priority",
+    label_ar: "أدنى أولوية",
     type: "number",
     category: "Matching",
     sortable: true,
@@ -2130,6 +2345,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "priority_max",
     label: "Max Priority",
+    label_ar: "أعلى أولوية",
     type: "number",
     category: "Matching",
     sortable: true,
@@ -2140,6 +2356,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "created_by_username",
     label: "Created By",
+    label_ar: "أُنشئ بواسطة",
     type: "string",
     category: "Creator",
     sortable: true,
@@ -2152,6 +2369,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "created_at",
     label: "Created At",
+    label_ar: "تاريخ الإنشاء",
     type: "datetime",
     category: "Timestamps",
     sortable: true,
@@ -2160,6 +2378,7 @@ export const workflowFields: ReportFieldDefinition[] = [
   {
     field: "updated_at",
     label: "Updated At",
+    label_ar: "تاريخ التحديث",
     type: "datetime",
     category: "Timestamps",
     sortable: true,
@@ -2259,11 +2478,11 @@ export const getFieldsForDataSource = (
 // Helper function to get default selected fields for a data source
 export const getDefaultFieldsForDataSource = (
   dataSource: string,
-): { field: string; label: string }[] => {
+): { field: string; label: string; label_ar: string }[] => {
   const fields = getFieldsForDataSource(dataSource);
   return fields
     .filter((f) => f.defaultSelected)
-    .map((f) => ({ field: f.field, label: f.label }));
+    .map((f) => ({ field: f.field, label: f.label, label_ar: f.label_ar }));
 };
 
 // Helper function to get operators for a field type

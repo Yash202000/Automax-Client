@@ -55,6 +55,7 @@ import {
   downloadReport,
 } from "../../services/reportTemplateApi";
 import { DATA_SOURCES } from "../../constants/reportFields";
+import i18n from "@/i18n";
 
 // Element toolbox items
 const ELEMENT_TOOLS = [
@@ -1761,7 +1762,12 @@ const ImageElementProperties: React.FC<{
 const TableElementProperties: React.FC<{
   content: TableContent;
   onUpdate: (content: TableContent) => void;
-  availableFields: Array<{ field: string; label: string; type: string }>;
+  availableFields: Array<{
+    field: string;
+    label: string;
+    type: string;
+    label_ar?: string;
+  }>;
   disabled: boolean;
 }> = ({ content, onUpdate, availableFields, disabled }) => {
   const { t } = useTranslation();
@@ -1819,7 +1825,9 @@ const TableElementProperties: React.FC<{
             .filter((f) => !content.columns.some((c) => c.field === f.field))
             .map((field) => (
               <option key={field.field} value={field.field}>
-                {field.label}
+                {i18n.language === "ar" && field.label_ar
+                  ? field.label_ar
+                  : field.label}
               </option>
             ))}
         </select>

@@ -161,7 +161,8 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   const [showSorting, setShowSorting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [displayPage, setDisplayPage] = useState(1);
-  const [dbTotalCount, setDbTotalCount] = useState(0);
+  const [reportTotalCount, setReportTotalCount] = useState(0);
+  const [reportTotalPages, setReportTotalPages] = useState(1);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -169,12 +170,8 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
   const previewRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthStore();
   const DISPLAY_SIZE = 50;
-
-  const displayTotalPages = Math.ceil(previewData.length / DISPLAY_SIZE);
-  const displayData = previewData.slice(
-    (displayPage - 1) * DISPLAY_SIZE,
-    displayPage * DISPLAY_SIZE,
-  );
+  const displayTotalPages = reportTotalPages;
+  const displayData = previewData;
 
   const canGenerate =
     template.data_source && template.config.columns.length > 0;
@@ -272,7 +269,22 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     );
   };
 
-  // Generate report — fetches recordLimit rows in a single request, no server pagination
+  // Generate report — fetches page-scoped rows with server pagination
+  const fetchReportData = async (page = 1) => {
+    const request: ReportQueryRequest = {
+      data_source: template.data_source,
+      columns: template.config.columns,
+      filters: buildFilters(),
+      sorting: sorting,
+      page,
+      limit: DISPLAY_SIZE,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+
+    const response = await reportApi.query(request);
+    return response;
+  };
+
   const generateReport = useCallback(async () => {
     if (!template.data_source || template.config.columns.length === 0) return;
 
@@ -284,16 +296,21 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     setIsGenerating(true);
     setDisplayPage(1);
     try {
-      const response = await fetchReportData();
+      const response = await fetchReportData(1);
       if (response && response.data) {
         setShowPreview(true);
         setPreviewData(response.data || []);
-        setDbTotalCount(response.total_items || 0);
+        setReportTotalCount(response.total_items || 0);
+        setReportTotalPages(
+          response.total_pages ||
+            Math.max(1, Math.ceil((response.total_items || 0) / DISPLAY_SIZE)),
+        );
       } else {
         toast.error("No data found for the selected filters");
         setShowPreview(false);
         setPreviewData([]);
-        setDbTotalCount(0);
+        setReportTotalCount(0);
+        setReportTotalPages(1);
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -309,22 +326,47 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
     filters,
     fromDate,
     toDate,
+    dateError,
+    validateDates,
   ]);
 
-  const fetchReportData = async () => {
-    const request: ReportQueryRequest = {
-      data_source: template.data_source,
-      columns: template.config.columns,
-      filters: buildFilters(),
-      sorting: sorting,
-      page: 1,
-      limit: 100,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
+  const handlePageChange = useCallback(
+    async (page: number) => {
+      if (page < 1 || page === displayPage || page > reportTotalPages) return;
 
-    const response = await reportApi.query(request);
-    return response;
-  };
+      setIsGenerating(true);
+      try {
+        const response = await fetchReportData(page);
+        if (response && response.data) {
+          setPreviewData(response.data || []);
+          setDisplayPage(page);
+          setReportTotalCount(response.total_items || 0);
+          setReportTotalPages(
+            response.total_pages ||
+              Math.max(
+                1,
+                Math.ceil((response.total_items || 0) / DISPLAY_SIZE),
+              ),
+          );
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to change report page:", error);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [
+      displayPage,
+      reportTotalPages,
+      template.data_source,
+      template.config.columns,
+      sorting,
+      filters,
+      fromDate,
+      toDate,
+    ],
+  );
 
   // Export mutation
   const exportMutation = useMutation({
@@ -394,7 +436,9 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-[hsl(var(--foreground))] line-clamp-1 group-hover:text-[hsl(var(--primary))] transition-colors">
-                {template.name}
+                {i18n.language === "ar" && template.name_ar
+                  ? template.name_ar
+                  : template.name}
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-semibold">
@@ -712,17 +756,11 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="px-3 py-1 rounded-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] text-xs font-bold">
-                    {previewData.length.toLocaleString()}{" "}
+                    {reportTotalCount.toLocaleString()}{" "}
                     <span className="text-[hsl(var(--muted-foreground))] font-medium">
                       {t("reports.recordsFound")}
                     </span>
                   </div>
-                  {previewData.length < dbTotalCount && (
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full uppercase tracking-wider">
-                      <AlertCircle className="w-3 h-3" />
-                      {t("reports.partialResults")}
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="p-6 flex-1 overflow-auto">
@@ -733,9 +771,9 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
                   isLoading={false}
                   page={displayPage}
                   limit={DISPLAY_SIZE}
-                  totalItems={previewData.length}
+                  totalItems={reportTotalCount}
                   totalPages={displayTotalPages}
-                  onPageChange={setDisplayPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </div>
