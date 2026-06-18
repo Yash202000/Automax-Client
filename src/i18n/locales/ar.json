@@ -1427,7 +1427,9 @@
         "count": "التصنيفات حسب العدد"
       },
       "workflows": "سير العمل",
-      "workflowsDesc": "تعريفات سير العمل"
+      "workflowsDesc": "تعريفات سير العمل",
+      "usersPerformance": "أداء المستخدمين",
+      "usersPerformanceDesc": "بيانات تتبع أداء المستخدمين"
     },
     "limit": "حد",
     "records": "سجلات",

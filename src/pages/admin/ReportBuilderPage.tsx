@@ -506,7 +506,10 @@ export const ReportBuilderPage: React.FC = () => {
           format,
           options: {
             ...options,
-            title: loadedTemplate?.name || "Report",
+            title:
+              language === "ar" && loadedTemplate?.name_ar
+                ? loadedTemplate.name_ar
+                : loadedTemplate?.name || "Report",
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           },
         },

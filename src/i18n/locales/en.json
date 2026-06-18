@@ -1429,7 +1429,9 @@
         "count": "By Count"
       },
       "workflows": "Workflows",
-      "workflowsDesc": "Workflow definitions"
+      "workflowsDesc": "Workflow definitions",
+      "usersPerformance": "User Performance",
+      "usersPerformanceDesc": "User performance tracking data"
     },
     "limit": "limit",
     "records": "records",
