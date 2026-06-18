@@ -454,6 +454,11 @@ export const DepartmentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error || "Failed to update department",
+      );
+    },
   });
 
   const deleteMutation = useMutation({
@@ -582,6 +587,8 @@ export const DepartmentsPage: React.FC = () => {
     setFormData(initialFormData);
     setModalTab("details");
     setUserSearchTerm("");
+    setError(null);
+    setErrors({});
   };
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -590,21 +597,15 @@ export const DepartmentsPage: React.FC = () => {
     const code = formData.code.trim();
 
     if (!name) {
-      newErrors.name = t("departments.nameRequired", {
-        defaultValue: "Department name is required",
-      });
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
-      newErrors.name = t("departments.invalidName", {
-        defaultValue:
-          "Department name can only contain letters, numbers and spaces",
-      });
+      newErrors.name = t("common.nameRequired");
+    } else if (!/[A-Za-z]/.test(name)) {
+      newErrors.name = t("common.nameInvalid");
+    } else if (!/^[A-Za-z0-9\s'",.&()/-]+$/.test(name)) {
+      newErrors.name = t("common.nameAllowedCharacters");
     }
 
     if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
-      newErrors.name_ar = t("departments.invalidArabicName", {
-        defaultValue:
-          "Department name can only contain Arabic letters, numbers and spaces",
-      });
+      newErrors.name_ar = t("departments.invalidArabicName");
     }
 
     if (!code) {
@@ -1255,7 +1256,7 @@ export const DepartmentsPage: React.FC = () => {
                         // required
                       />
                       {errors.name && (
-                        <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                        <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
                           {errors.name}
                         </p>
                       )}
@@ -1288,7 +1289,7 @@ export const DepartmentsPage: React.FC = () => {
                       />
 
                       {errors.name_ar && (
-                        <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                        <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
                           {errors.name_ar}
                         </p>
                       )}
@@ -1326,7 +1327,7 @@ export const DepartmentsPage: React.FC = () => {
                         // required
                       />
                       {errors.code && (
-                        <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                        <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
                           {errors.code}
                         </p>
                       )}

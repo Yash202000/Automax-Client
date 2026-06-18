@@ -645,10 +645,10 @@ export const CategoriesPage: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                    required
+                    className={inputClassName(!!formErrors.name)}
                     maxLength={255}
                   />
+                  {renderFieldError(formErrors.name)}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -694,7 +694,7 @@ export const CategoriesPage: React.FC = () => {
                         }));
                       }
                     }}
-                    className={inputClassName(!!formErrors.code, "font-mono")}
+                    className={inputClassName(!!formErrors.code)}
                     required
                     maxLength={50}
                   />

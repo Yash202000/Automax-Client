@@ -304,6 +304,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   // Get selected workflow and its required fields
   const selectedWorkflow = workflows.find((w) => w.id === workflowId);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
+  const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
 
   // Convert classifications to TreeSelectNode format
   const classificationTreeData: TreeSelectNode[] = useMemo(() => {
@@ -754,8 +755,10 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <Tags className="w-3 h-3 inline mr-1" />
-                  {t("complaints.classification", "Classification")}{" "}
-                  <span className="text-red-500">*</span>
+                  {t("complaints.classification", "Classification")}
+                  {workflowRequiredFields.includes("classification_id") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 {classificationsLoading ? (
                   <div className="flex items-center justify-center py-3">
@@ -785,6 +788,9 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <MapPin className="w-3 h-3 inline mr-1" />
                   {t("complaints.location", "Location")}
+                  {workflowRequiredFields.includes("location_id") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <TreeSelect
                   data={locationTree}
@@ -809,6 +815,9 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   className="block text-xs font-medium text-[hsl(var(--muted-foreground))]"
                 >
                   {t("complaints.source", "Source")}
+                  {workflowRequiredFields.includes("source") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <select
                   id="complaint-source-match"
@@ -837,6 +846,9 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                       {i18n.language === "ar"
                         ? category.name_ar || category.name
                         : category.name}
+                      {workflowRequiredFields.includes("lookup:PRIORITY") && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
                     </label>
                     <select
                       value={lookupValues[category.id] || ""}
@@ -900,14 +912,17 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             </div>
 
             {/* Description */}
-            {workflowRequiredFields.includes("description") && (
+            {(workflowRequiredFields.includes("description") ||
+              workflowOptionalFields.includes("description")) && (
               <div>
                 <label
                   htmlFor="complaint-description"
                   className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
                 >
                   {t("complaints.description", "Description")}
-                  <span className="text-red-500 ml-1">*</span>
+                  {workflowRequiredFields.includes("description") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <textarea
                   id="complaint-description"
@@ -935,14 +950,17 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             )}
 
             {/* Comment */}
-            {workflowRequiredFields.includes("comment") && (
+            {(workflowRequiredFields.includes("comment") ||
+              workflowOptionalFields.includes("comment")) && (
               <div>
                 <label
                   htmlFor="complaint-comment"
                   className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
                 >
                   {t("complaints.comment", "Comment")}
-                  <span className="text-red-500 ml-1">*</span>
+                  {workflowRequiredFields.includes("comment") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <textarea
                   id="complaint-comment"
@@ -968,15 +986,18 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
           </div>
 
           {/* Channel */}
-          {workflowRequiredFields.includes("channel") && (
+          {(workflowRequiredFields.includes("channel") ||
+            workflowOptionalFields.includes("channel")) && (
             <div>
               <label
                 htmlFor="complaint-channel"
                 className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
               >
                 <Radio className="w-3 h-3 inline mr-1" />
-                {t("complaints.channel", "Channel")}{" "}
-                <span className="text-red-500 ml-1">*</span>
+                {t("complaints.channel", "Channel")}
+                {workflowRequiredFields.includes("channel") && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </label>
               <input
                 id="complaint-channel"
@@ -1002,7 +1023,8 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
           )}
 
           {/* Source Incident */}
-          {workflowRequiredFields.includes("source_incident_id") && (
+          {(workflowRequiredFields.includes("source_incident_id") ||
+            workflowOptionalFields.includes("source_incident_id")) && (
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -1186,8 +1208,8 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             )}
           </div>
 
-          {/* Additional Details — other workflow-required lookup fields (excluding PRIORITY which is in Matching Criteria) */}
-          {workflowRequiredFields.some(
+          {/* Additional Details — other workflow-required/optional lookup fields (excluding PRIORITY which is in Matching Criteria) */}
+          {[...workflowRequiredFields, ...workflowOptionalFields].some(
             (f) => f.startsWith("lookup:") && !f.startsWith("lookup:PRIORITY"),
           ) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1196,7 +1218,8 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   const lookupFieldKey = `lookup:${category.code}`;
                   return (
                     category.code !== "PRIORITY" &&
-                    workflowRequiredFields.includes(lookupFieldKey as any)
+                    (workflowRequiredFields.includes(lookupFieldKey as any) ||
+                      workflowOptionalFields.includes(lookupFieldKey as any))
                   );
                 })
                 .map((category) => {
@@ -1249,13 +1272,16 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
             </div>
           )}
 
-          {/* Geolocation - full width if required */}
-          {workflowRequiredFields.includes("geolocation") && (
+          {/* Geolocation - full width if required or optional */}
+          {(workflowRequiredFields.includes("geolocation") ||
+            workflowOptionalFields.includes("geolocation")) && (
             <div>
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
                 {t("complaints.geolocation", "Geolocation")}
-                <span className="text-red-500 ml-1">*</span>
+                {workflowRequiredFields.includes("geolocation") && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </h4>
               <LocationPicker
                 label={t("complaints.geolocation", "Geolocation")}
@@ -1281,10 +1307,15 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
           {/* Assignment */}
           {(workflowRequiredFields.includes("department_id") ||
-            workflowRequiredFields.includes("assignee_id")) && (
+            workflowOptionalFields.includes("department_id") ||
+            workflowRequiredFields.includes("assignee_id") ||
+            workflowOptionalFields.includes("assignee_id") ||
+            workflowRequiredFields.includes("due_date") ||
+            workflowOptionalFields.includes("due_date")) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Department */}
-              {workflowRequiredFields.includes("department_id") && (
+              {(workflowRequiredFields.includes("department_id") ||
+                workflowOptionalFields.includes("department_id")) && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
@@ -1329,7 +1360,8 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               )}
 
               {/* Assignee */}
-              {workflowRequiredFields.includes("assignee_id") && (
+              {(workflowRequiredFields.includes("assignee_id") ||
+                workflowOptionalFields.includes("assignee_id")) && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                     <User className="w-4 h-4" />
@@ -1372,7 +1404,8 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               )}
 
               {/* Due Date */}
-              {workflowRequiredFields.includes("due_date") && (
+              {(workflowRequiredFields.includes("due_date") ||
+                workflowOptionalFields.includes("due_date")) && (
                 <div className="space-y-3">
                   <label
                     htmlFor="complaint-due-date"
@@ -1411,7 +1444,9 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
           {/* Attachments */}
           {(workflowRequiredFields.includes("attachments") ||
-            workflowRequiredFields.includes("attachment")) && (
+            workflowRequiredFields.includes("attachment") ||
+            workflowOptionalFields.includes("attachments") ||
+            workflowOptionalFields.includes("attachment")) && (
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Paperclip className="w-4 h-4" />

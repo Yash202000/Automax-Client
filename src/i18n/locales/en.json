@@ -221,7 +221,10 @@
     "descriptionAr": "Description (Arabic)",
     "descriptionArPlaceholder": "الوصف بالعربية",
     "noFileChosen": "No file chosen",
-    "chooseFile": "Choose File"
+    "chooseFile": "Choose File",
+    "nameRequired": "Name is required.",
+    "nameInvalid": "Name cannot consist only of numbers or special characters.",
+    "nameAllowedCharacters": "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /."
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -1280,6 +1283,10 @@
     "createFirstClassification": "Create your first classification to categorize tickets",
     "deleteConfirmTitle": "Delete Classification",
     "deleteConfirmMessage": "Are you sure you want to delete this classification? All child classifications will also be deleted.",
+    "deleteHasChildrenTitle": "This classification has child classifications.",
+    "deleteHasChildrenMessage": "Deleting it will also permanently delete all associated child classifications. This action cannot be undone.",
+    "deleteFailedTitle": "Classification could not be deleted",
+    "deleteFailedHelp": "Resolve the issue shown above, then try again.",
     "deleting": "Deleting...",
     "updateDetails": "Update classification details",
     "addingUnder": "Adding under",
@@ -1336,7 +1343,8 @@
     "errors": "Errors:",
     "namePlaceholder": "e.g., Hardware Issues",
     "nameAr": "Name (Arabic)",
-    "descriptionAr": "Description (Arabic)"
+    "descriptionAr": "Description (Arabic)",
+    "deleteError": "Failed to delete classification."
   },
   "reports": {
     "title": "Reports",
@@ -1421,7 +1429,9 @@
         "count": "By Count"
       },
       "workflows": "Workflows",
-      "workflowsDesc": "Workflow definitions"
+      "workflowsDesc": "Workflow definitions",
+      "usersPerformance": "User Performance",
+      "usersPerformanceDesc": "User performance tracking data"
     },
     "limit": "limit",
     "records": "records",

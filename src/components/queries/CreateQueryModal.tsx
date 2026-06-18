@@ -316,6 +316,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   // Get selected workflow and its required fields
   const selectedWorkflow = workflows.find((w) => w.id === workflowId);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
+  const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
 
   // Convert classifications to TreeSelectNode format
   const classificationTreeData: TreeSelectNode[] = useMemo(() => {
@@ -761,8 +762,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <Tags className="w-3 h-3 inline mr-1" />
-                  {t("queries.classification")}{" "}
-                  <span className="text-red-500">*</span>
+                  {t("queries.classification")}
+                  {workflowRequiredFields.includes("classification_id") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 {classificationsLoading ? (
                   <div className="flex items-center justify-center py-3">
@@ -785,8 +788,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <MapPin className="w-3 h-3 inline mr-1" />
-                  {t("queries.location")}{" "}
-                  <span className="text-red-500">*</span>
+                  {t("queries.location")}
+                  {workflowRequiredFields.includes("location_id") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <TreeSelect
                   data={locationTree}
@@ -802,6 +807,9 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   {t("queries.source")}
+                  {workflowRequiredFields.includes("source") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <select
                   value={source || ""}
@@ -827,6 +835,9 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                       {i18n.language === "ar"
                         ? category.name_ar || category.name
                         : category.name}
+                      {workflowRequiredFields.includes("lookup:PRIORITY") && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
                     </label>
                     <select
                       value={lookupValues[category.id] || ""}
@@ -891,14 +902,17 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             </div>
 
             {/* Description */}
-            {workflowRequiredFields.includes("description") && (
+            {(workflowRequiredFields.includes("description") ||
+              workflowOptionalFields.includes("description")) && (
               <div>
                 <label
                   htmlFor="query-description"
                   className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
                 >
                   {t("queries.description")}
-                  <span className="text-red-500 ml-1">*</span>
+                  {workflowRequiredFields.includes("description") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <textarea
                   id="query-description"
@@ -923,14 +937,17 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             )}
 
             {/* Comment */}
-            {workflowRequiredFields.includes("comment") && (
+            {(workflowRequiredFields.includes("comment") ||
+              workflowOptionalFields.includes("comment")) && (
               <div>
                 <label
                   htmlFor="query-comment"
                   className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
                 >
                   {t("queries.comment")}
-                  <span className="text-red-500 ml-1">*</span>
+                  {workflowRequiredFields.includes("comment") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <textarea
                   id="query-comment"
@@ -953,15 +970,18 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           </div>
 
           {/* Channel */}
-          {workflowRequiredFields.includes("channel") && (
+          {(workflowRequiredFields.includes("channel") ||
+            workflowOptionalFields.includes("channel")) && (
             <div>
               <label
                 htmlFor="query-channel"
                 className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1"
               >
                 <Radio className="w-3 h-3 inline mr-1" />
-                {t("queries.channel")}{" "}
-                <span className="text-red-500 ml-1">*</span>
+                {t("queries.channel")}
+                {workflowRequiredFields.includes("channel") && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </label>
               <input
                 id="query-channel"
@@ -984,7 +1004,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
           )}
 
           {/* Source Incident */}
-          {workflowRequiredFields.includes("source_incident_id") && (
+          {(workflowRequiredFields.includes("source_incident_id") ||
+            workflowOptionalFields.includes("source_incident_id")) && (
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -1183,8 +1204,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             )}
           </div>
 
-          {/* Additional Details — other workflow-required lookup fields (excluding PRIORITY which is in Matching Criteria) */}
-          {workflowRequiredFields.some(
+          {/* Additional Details — other workflow-required/optional lookup fields (excluding PRIORITY which is in Matching Criteria) */}
+          {[...workflowRequiredFields, ...workflowOptionalFields].some(
             (f) => f.startsWith("lookup:") && !f.startsWith("lookup:PRIORITY"),
           ) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1193,7 +1214,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                   const lookupFieldKey = `lookup:${category.code}`;
                   return (
                     category.code !== "PRIORITY" &&
-                    workflowRequiredFields.includes(lookupFieldKey as any)
+                    (workflowRequiredFields.includes(lookupFieldKey as any) ||
+                      workflowOptionalFields.includes(lookupFieldKey as any))
                   );
                 })
                 .map((category) => {
@@ -1244,13 +1266,16 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
             </div>
           )}
 
-          {/* Geolocation - full width if required */}
-          {workflowRequiredFields.includes("geolocation") && (
+          {/* Geolocation - full width if required or optional */}
+          {(workflowRequiredFields.includes("geolocation") ||
+            workflowOptionalFields.includes("geolocation")) && (
             <div>
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
                 {t("queries.geolocation")}
-                <span className="text-red-500 ml-1">*</span>
+                {workflowRequiredFields.includes("geolocation") && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
               </h4>
               <LocationPicker
                 label={t("queries.geolocation")}
@@ -1276,11 +1301,15 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
           {/* Assignment */}
           {(workflowRequiredFields.includes("department_id") ||
+            workflowOptionalFields.includes("department_id") ||
             workflowRequiredFields.includes("assignee_id") ||
-            workflowRequiredFields.includes("due_date")) && (
+            workflowOptionalFields.includes("assignee_id") ||
+            workflowRequiredFields.includes("due_date") ||
+            workflowOptionalFields.includes("due_date")) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Department */}
-              {workflowRequiredFields.includes("department_id") && (
+              {(workflowRequiredFields.includes("department_id") ||
+                workflowOptionalFields.includes("department_id")) && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
@@ -1323,7 +1352,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               )}
 
               {/* Assignee */}
-              {workflowRequiredFields.includes("assignee_id") && (
+              {(workflowRequiredFields.includes("assignee_id") ||
+                workflowOptionalFields.includes("assignee_id")) && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                     <User className="w-4 h-4" />
@@ -1364,7 +1394,8 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               )}
 
               {/* Due Date */}
-              {workflowRequiredFields.includes("due_date") && (
+              {(workflowRequiredFields.includes("due_date") ||
+                workflowOptionalFields.includes("due_date")) && (
                 <div className="space-y-3">
                   <label
                     htmlFor="query-due-date"
@@ -1403,7 +1434,9 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
           {/* Attachments */}
           {(workflowRequiredFields.includes("attachments") ||
-            workflowRequiredFields.includes("attachment")) && (
+            workflowRequiredFields.includes("attachment") ||
+            workflowOptionalFields.includes("attachments") ||
+            workflowOptionalFields.includes("attachment")) && (
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2">
                 <Paperclip className="w-4 h-4" />

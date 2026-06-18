@@ -133,12 +133,26 @@ export const RoleEditPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       toast.error(t("roles.nameRequired"));
       return;
     }
+    if (
+      !/^(?=.*[a-zA-Z\u0600-\u06FF])[a-zA-Z0-9\u0600-\u06FF\s\-'.,&()/]+$/.test(
+        trimmedName,
+      )
+    ) {
+      toast.error(
+        t(
+          "roles.nameInvalid",
+          "Name must contain at least one letter and no special characters",
+        ),
+      );
+      return;
+    }
     updateMutation.mutate({
-      name: formData.name.trim(),
+      name: trimmedName,
       description: formData.description,
       permission_ids: formData.permission_ids,
     });
@@ -200,8 +214,7 @@ export const RoleEditPage: React.FC = () => {
               )}
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-              {role.name}{" "}
-              <span className="font-mono">({role.code})</span>
+              {role.name} <span className="font-mono">({role.code})</span>
             </p>
           </div>
         </div>
@@ -216,8 +229,7 @@ export const RoleEditPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleName")}{" "}
-                <span className="text-red-500">*</span>
+                {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

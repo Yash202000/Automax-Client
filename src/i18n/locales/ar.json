@@ -221,7 +221,10 @@
     "descriptionAr": "الوصف (بالعربية)",
     "descriptionArPlaceholder": "الوصف بالعربية",
     "noFileChosen": "لا يوجد ملف مختار",
-    "chooseFile": "اختر ملف"
+    "chooseFile": "اختر ملف",
+    "nameRequired": "الاسم مطلوب.",
+    "nameInvalid": "لا يمكن أن يتكون الاسم من أرقام أو رموز خاصة فقط.",
+    "nameAllowedCharacters": "يمكن أن يحتوي الاسم فقط على أحرف وأرقام ومسافات والرموز التالية: - ' . , & ( ) /."
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -1278,6 +1281,10 @@
     "createFirstClassification": "أنشئ تصنيفك الأول لتنظيم البلاغات والطلبات",
     "deleteConfirmTitle": "حذف التصنيف",
     "deleteConfirmMessage": "هل أنت متأكد من حذف هذا التصنيف؟ سيتم حذف جميع التصنيفات الفرعية أيضاً.",
+    "deleteHasChildrenTitle": "يحتوي هذا التصنيف على تصنيفات فرعية.",
+    "deleteHasChildrenMessage": "سيؤدي حذفه أيضاً إلى حذف جميع التصنيفات الفرعية المرتبطة به نهائياً. لا يمكن التراجع عن هذا الإجراء.",
+    "deleteFailedTitle": "تعذر حذف التصنيف",
+    "deleteFailedHelp": "قم بحل المشكلة الموضحة أعلاه، ثم حاول مرة أخرى.",
     "deleting": "جاري الحذف...",
     "updateDetails": "تحديث تفاصيل التصنيف",
     "addingUnder": "إضافة تحت",
@@ -1334,7 +1341,8 @@
     "errors": "الأخطاء:",
     "namePlaceholder": "مثال: مشاكل الأجهزة",
     "nameAr": "الاسم (بالعربية)",
-    "descriptionAr": "الوصف (بالعربية)"
+    "descriptionAr": "الوصف (بالعربية)",
+    "deleteError": "فشل في حذف التصنيف"
   },
   "reports": {
     "title": "التقارير",
@@ -1419,7 +1427,9 @@
         "count": "التصنيفات حسب العدد"
       },
       "workflows": "سير العمل",
-      "workflowsDesc": "تعريفات سير العمل"
+      "workflowsDesc": "تعريفات سير العمل",
+      "usersPerformance": "أداء المستخدمين",
+      "usersPerformanceDesc": "بيانات تتبع أداء المستخدمين"
     },
     "limit": "حد",
     "records": "سجلات",

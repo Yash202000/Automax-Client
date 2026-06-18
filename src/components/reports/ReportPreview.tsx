@@ -3,6 +3,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import type { ReportFieldDefinition } from "../../types";
+import i18n from "@/i18n";
 
 interface ReportPreviewProps {
   data: Record<string, unknown>[];
@@ -253,12 +254,17 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
 
   // Never drop a column — fall back to a human-readable label if the field
   // definition is not found (e.g. relation fields returned differently by API)
-  const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
+  const columnDefs: ReportFieldDefinition[] = columns.map((col: any) => {
     const found = fields.find((f) => f.field === col.field);
-    if (found) return { ...found, label: col.label };
+    const lang = i18n.language;
+    if (found)
+      return {
+        ...found,
+        label: lang === "ar" && found.label_ar ? found.label_ar : found.label,
+      };
     return {
       field: col.field,
-      label: col.label,
+      label: lang === "ar" && col.label_ar ? col.label_ar : col.label,
       type: "string",
     } as ReportFieldDefinition;
   });

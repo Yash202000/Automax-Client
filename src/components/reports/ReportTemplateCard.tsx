@@ -399,7 +399,10 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
           format,
           options: {
             ...options,
-            title: template.name || "Report",
+            title:
+              language === "ar" && template?.name_ar
+                ? template.name_ar
+                : template?.name || "Report",
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           },
         },
@@ -733,7 +736,9 @@ export const ReportTemplateCard: React.FC<ReportTemplateCardProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                {template.name}
+                {i18n.language === "ar" && template.name_ar
+                  ? template.name_ar
+                  : template.name}
               </h2>
               <p className="text-sm text-[hsl(var(--muted-foreground))] mt-0.5 font-medium">
                 {t("reports.previewResults")}

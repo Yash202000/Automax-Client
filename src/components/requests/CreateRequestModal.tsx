@@ -291,6 +291,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   // Get selected workflow and its required fields
   const selectedWorkflow = workflows.find((w) => w.id === workflowId);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
+  const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
 
   // Convert classifications to TreeSelectNode format
   const classificationTreeData: TreeSelectNode[] = useMemo(() => {
@@ -836,8 +837,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <Tags className="w-3 h-3 inline mr-1" />
-                  {t("requests.classification")}{" "}
-                  <span className="text-red-500">*</span>
+                  {t("requests.classification")}
+                  {workflowRequiredFields.includes("classification_id") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 {classificationsLoading ? (
                   <div className="flex items-center justify-center py-3">
@@ -860,8 +863,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
                   <MapPin className="w-3 h-3 inline mr-1" />
-                  {t("requests.location")}{" "}
-                  <span className="text-red-500">*</span>
+                  {t("requests.location")}
+                  {workflowRequiredFields.includes("location_id") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <TreeSelect
                   data={locationTree}
@@ -876,7 +881,10 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
               {/* Source */}
               <div className="space-y-2">
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  {t("requests.source")} <span className="text-red-500">*</span>
+                  {t("requests.source")}
+                  {workflowRequiredFields.includes("source") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
                 <select
                   value={source || ""}
@@ -911,7 +919,9 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                       {i18n.language === "ar"
                         ? category.name_ar || category.name
                         : category.name}
-                      <span className="text-red-500 ml-1">*</span>
+                      {workflowRequiredFields.includes("lookup:PRIORITY") && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
                     </label>
                     <select
                       value={lookupValues[category.id] || ""}
@@ -1017,11 +1027,14 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
           </div>
 
           {/* Comment */}
-          {workflowRequiredFields.includes("comment") && (
+          {(workflowRequiredFields.includes("comment") ||
+            workflowOptionalFields.includes("comment")) && (
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
                 {t("requests.comment")}
-                <span className="text-red-500 ms-1">*</span>
+                {workflowRequiredFields.includes("comment") && (
+                  <span className="text-red-500 ms-1">*</span>
+                )}
               </label>
               <textarea
                 value={comment}
@@ -1296,13 +1309,16 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
             </div>
           )}
 
-          {/* Geolocation - full width if required */}
-          {workflowRequiredFields.includes("geolocation") && (
+          {/* Geolocation - full width if required or optional */}
+          {(workflowRequiredFields.includes("geolocation") ||
+            workflowOptionalFields.includes("geolocation")) && (
             <div>
               <h4 className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-2 mb-3">
                 <MapPin className="w-4 h-4" />
                 {t("requests.geolocation")}
-                <span className="text-red-500 ms-1">*</span>
+                {workflowRequiredFields.includes("geolocation") && (
+                  <span className="text-red-500 ms-1">*</span>
+                )}
               </h4>
               <LocationPicker
                 value={
