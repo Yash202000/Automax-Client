@@ -3643,7 +3643,13 @@
   },
   "validation": {
     "required": "Required",
-    "fieldRequired": "{{field}} is required"
+    "fieldRequired": "{{field}} is required",
+    "nameRequired": "{{field}} name is required",
+    "codeRequired": "{{field}} code is required",
+    "invalidName": "{{field}} name can only contain letters, numbers, spaces, and basic punctuation (- ' . , & ( ) /)",
+    "invalidCode": "{{field}} code can only contain lowercase letters, numbers, and underscores",
+    "fromStateRequired": "{{field}} from state is required",
+    "toStateRequired": "{{field}} to state is required"
   },
   "navigation": {
     "streamlineYour": "Streamline your",

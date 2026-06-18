@@ -3714,7 +3714,13 @@
   },
   "validation": {
     "required": "مطلوب",
-    "fieldRequired": "{{field}} مطلوب"
+    "fieldRequired": "{{field}} مطلوب",
+    "nameRequired": "اسم {{field}} مطلوب",
+    "codeRequired": "رمز {{field}} مطلوب",
+    "invalidName": "يمكن أن يحتوي اسم {{field}} فقط على الأحرف والأرقام والمسافات وعلامات الترقيم الأساسية (- ' . , & ( ) /)",
+    "invalidCode": "يمكن أن يحتوي رمز {{field}} فقط على أحرف إنجليزية صغيرة وأرقام وشرطات سفلية (_)",
+    "fromStateRequired": "حالة المصدر لـ {{field}} مطلوبة",
+    "toStateRequired": "حالة الوجهة لـ {{field}} مطلوبة"
   },
   "license": {
     "noActiveLicenseSomeFeaturesMayBe": "لا توجد رخصة نشطة. قد لا تتوفر بعض الميزات. تواصل مع المسؤول.",
