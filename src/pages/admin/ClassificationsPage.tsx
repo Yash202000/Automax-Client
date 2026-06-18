@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { Button, MultiSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { toast } from "sonner";
 
 interface ClassificationFormData {
   name: string;
