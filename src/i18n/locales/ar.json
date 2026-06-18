@@ -2027,7 +2027,15 @@
     "stateAlreadyExists": "اسم الحالة موجود بالفعل",
     "stateCodeAlreadyExists": "رمز الحالة موجود بالفعل",
     "transitionAlreadyExists": "اسم الانتقال موجود بالفعل",
-    "transitionCodeAlreadyExists": "رمز الانتقال موجود بالفعل"
+    "transitionCodeAlreadyExists": "رمز الانتقال موجود بالفعل",
+    "integrationTriggers": "محفزات التكامل",
+    "addIntegrationTrigger": "إضافة مشغل تكامل",
+    "stateTriggerDescription": "السكربتات التي تعمل عند دخول البلاغ إلى هذه الحالة أو الخروج منها.",
+    "transitionTriggerDescription": "السكربتات التي تعمل عند تنفيذ هذا الانتقال.",
+    "notificationTemplatesDesc": "القوالب المرسلة إلى المكلّف ومقدّم البلاغ عند دخول البلاغ إلى هذه الحالة.",
+    "emailTemplate": "قالب البريد الإلكتروني",
+    "smsTemplate": "قالب الرسائل النصية",
+    "none": "- لا يوجد -"
   },
   "lookups": {
     "title": "البيانات الرئيسية",

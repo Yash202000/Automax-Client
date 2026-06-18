@@ -3204,7 +3204,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                    {editingState ? "Edit State" : "Add State"}
+                    {editingState
+                      ? t("workflows.editState")
+                      : t("workflows.addState")}
                   </h3>
                 </div>
               </div>
@@ -3861,17 +3863,16 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <Mail className="w-4 h-4 text-blue-500" />
                     <label className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                      Notifications
+                      {t("nav.notifications")}
                     </label>
                   </div>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                    Templates sent to assignee and reporter when an incident
-                    enters this state.
+                    {t("workflows.notificationTemplatesDesc")}
                   </p>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                        Email Template
+                        {t("workflows.emailTemplate")}
                       </label>
                       <select
                         value={stateFormData.new_incident_email_template_code}
@@ -3883,7 +3884,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                         }
                         className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
                       >
-                        <option value="">— None —</option>
+                        <option value="">{t("workflows.none")}</option>
                         {emailTemplates.map((tpl) => (
                           <option key={tpl.id} value={tpl.code}>
                             {tpl.name} ({tpl.code})
@@ -3893,7 +3894,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
-                        SMS Template
+                        {t("workflows.smsTemplate")}
                       </label>
                       <select
                         value={stateFormData.new_incident_sms_template_code}
@@ -3905,7 +3906,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                         }
                         className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
                       >
-                        <option value="">— None —</option>
+                        <option value="">
+                          {/* {t("goals.create.fields.noneCategory")} */}
+                          {t("workflows.none")}
+                        </option>
                         {smsTemplates.map((tpl) => (
                           <option key={tpl.id} value={tpl.code}>
                             {tpl.name} ({tpl.code})
@@ -3936,7 +3940,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ) : undefined
                   }
                 >
-                  {editingState ? "Update State" : "Add State"}
+                  {editingState
+                    ? t("workflows.updateState")
+                    : t("workflows.addState")}
                 </Button>
               </div>
             </form>
