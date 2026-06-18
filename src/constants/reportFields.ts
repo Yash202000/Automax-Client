@@ -1148,6 +1148,15 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: false,
     filterable: false,
   },
+  {
+    field: "task_id ",
+    label: "Task ID",
+    label_ar: "معرف المهمة",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
 ];
 
 export const requestFields: ReportFieldDefinition[] = [
