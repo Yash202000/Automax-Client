@@ -30,6 +30,9 @@ RUN npm install -g serve
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy serve config (cache headers: no-cache for index.html, immutable for hashed assets)
+COPY serve.json /app/serve.json
+
 # Copy entrypoint script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

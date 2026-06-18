@@ -23,20 +23,6 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary] Uncaught render error:", error, info);
-
-    // Auto-reload on stale chunk errors (happens after a new deployment)
-    const isChunkError =
-      error.message?.includes("Failed to fetch dynamically imported module") ||
-      error.message?.includes("Importing a module script failed") ||
-      error.message?.includes("error loading dynamically imported module");
-    const reloadKey = "chunk_error_reload";
-    if (isChunkError && !sessionStorage.getItem(reloadKey)) {
-      sessionStorage.setItem(reloadKey, "1");
-      window.location.reload();
-      return;
-    }
-    // Clear the flag on non-chunk errors so future chunk errors can still auto-reload
-    sessionStorage.removeItem(reloadKey);
   }
 
   render() {
