@@ -217,6 +217,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [lightboxImage, setLightboxImage] = useState<{
     url: string;
     name: string;
+    attachment: IncidentAttachment;
   } | null>(null);
 
   // Image comparison state
@@ -828,6 +829,7 @@ export const IncidentDetailPage: React.FC = () => {
     setLightboxImage({
       url: getAttachmentPreviewUrl(attachment.id),
       name: attachment.file_name,
+      attachment: attachment,
     });
     setLightboxOpen(true);
   };
@@ -5211,14 +5213,76 @@ export const IncidentDetailPage: React.FC = () => {
           >
             <Download className="w-6 h-6" />
           </a>
+          <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+            {/* Image */}
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.name}
+              className="max-w-[90vw] max-h-[90vh] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2">
+              <p className="truncate">{lightboxImage?.attachment?.file_name}</p>
+              <p className="text-xs text-white/70 mt-0.5">
+                {formatFileSize(lightboxImage?.attachment?.file_size)} •{" "}
+                {formatDateTime(lightboxImage?.attachment?.created_at)}
+              </p>
+              {lightboxImage?.attachment?.uploaded_by && (
+                <p className="truncate text-white/70 mt-0.5">
+                  {lightboxImage?.attachment?.uploaded_by.first_name}{" "}
+                  {lightboxImage?.attachment?.uploaded_by.last_name}
+                  <span className="ml-1 opacity-60">
+                    ·{" "}
+                    {lightboxImage?.attachment?.uploaded_by.roles?.[0]?.name ||
+                      "No Role"}
+                  </span>
+                  <span className="ml-1">
+                    ·{" "}
+                    {(lightboxImage?.attachment?.uploaded_by?.departments || [])
+                      .map((department: any) => department.name)
+                      .join(", ") || "No Department"}
+                  </span>
+                </p>
+              )}
 
-          {/* Image */}
-          <img
-            src={lightboxImage.url}
-            alt={lightboxImage.name}
-            className="max-w-[90vw] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+              {/* transition */}
+              {getHistoryById(
+                lightboxImage?.attachment?.transition_history_id || "",
+              ) && (
+                <div className="flex justify-start items-center gap-2">
+                  <span
+                    className={
+                      "text-xs  mt-0.5" +
+                      getHistoryById(
+                        lightboxImage?.attachment?.transition_history_id || "",
+                      )?.from_state?.color
+                    }
+                  >
+                    {
+                      getHistoryById(
+                        lightboxImage?.attachment?.transition_history_id || "",
+                      )?.from_state?.name
+                    }
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
+                  <span
+                    className={
+                      "text-xs  mt-0.5" +
+                      getHistoryById(
+                        lightboxImage?.attachment?.transition_history_id || "",
+                      )?.to_state?.color
+                    }
+                  >
+                    {
+                      getHistoryById(
+                        lightboxImage?.attachment?.transition_history_id || "",
+                      )?.to_state?.name
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
