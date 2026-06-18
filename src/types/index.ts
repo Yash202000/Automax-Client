@@ -847,7 +847,12 @@ export interface WorkflowTransition {
 export interface TransitionRequirement {
   id: string;
   transition_id: string;
-  requirement_type: "comment" | "attachment" | "feedback" | "field_value";
+  requirement_type:
+    | "comment"
+    | "attachment"
+    | "feedback"
+    | "field_value"
+    | "rating";
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
@@ -1029,7 +1034,12 @@ export interface WorkflowImportResponse {
 }
 
 export interface TransitionRequirementRequest {
-  requirement_type: "comment" | "attachment" | "feedback" | "field_value";
+  requirement_type:
+    | "comment"
+    | "attachment"
+    | "feedback"
+    | "field_value"
+    | "rating";
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;

@@ -4829,6 +4829,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                               <option value="feedback">
                                 {t("workflows.feedbackRequired")}
                               </option>
+                              <option value="rating">
+                                {t("workflows.ratingRequired")}
+                              </option>
                               <option value="field_value">
                                 {t("workflows.fieldValueRequired")}
                               </option>
