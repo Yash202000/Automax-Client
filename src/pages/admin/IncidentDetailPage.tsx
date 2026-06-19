@@ -639,7 +639,7 @@ export const IncidentDetailPage: React.FC = () => {
         comment,
         attachments,
         feedback: {
-          rating: 5, // Hardcoded rating for now - as it's required by the API.
+          rating: feedbackRating || 0,
           comment: feedback?.comment,
         },
         department_id,
@@ -2226,30 +2226,31 @@ export const IncidentDetailPage: React.FC = () => {
                                 "
                               </p>
                             )}
-                            {item.feedbacks?.rating > 0 && (
-                              <div className="flex items-center gap-1 mt-2">
-                                {[...Array(5).keys()].map((i) => (
-                                  <Star
-                                    fill={
-                                      i <= item.feedbacks?.rating
-                                        ? "#FFD700"
-                                        : "#CCC"
-                                    }
-                                    name={
-                                      i <= item.feedbacks?.rating
-                                        ? "star"
-                                        : "star-outline"
-                                    }
-                                    size={20}
-                                    color={
-                                      i <= item.feedbacks?.rating
-                                        ? "#FFD700"
-                                        : "#CCC"
-                                    }
-                                  />
-                                ))}
-                              </div>
-                            )}
+                            {item.feedbacks?.rating > 0 &&
+                              item.transition?.is_final_close && (
+                                <div className="flex items-center gap-1 mt-2">
+                                  {[...Array(5).keys()].map((i) => (
+                                    <Star
+                                      fill={
+                                        i <= item.feedbacks?.rating
+                                          ? "#FFD700"
+                                          : "#CCC"
+                                      }
+                                      name={
+                                        i <= item.feedbacks?.rating
+                                          ? "star"
+                                          : "star-outline"
+                                      }
+                                      size={20}
+                                      color={
+                                        i <= item.feedbacks?.rating
+                                          ? "#FFD700"
+                                          : "#CCC"
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                              )}
                           </div>
                         </div>
                       ))}
