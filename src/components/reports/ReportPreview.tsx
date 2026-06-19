@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link, Loader2 } from "lucide-react";
 import type { ReportFieldDefinition } from "../../types";
 import i18n from "@/i18n";
 
@@ -166,6 +166,48 @@ export const renderStyledCell = (
     );
   }
 
+  if (field.isUrl && typeof value === "string") {
+    const urls = value
+      .split("|")
+      .map((u) => u.trim())
+      .filter(Boolean);
+
+    const nameCounts = new Map<string, number>();
+
+    return (
+      <div className="flex gap-4">
+        {urls.map((url, index) => {
+          let displayName = "Link";
+
+          try {
+            const parsed = new URL(url);
+            const segments = parsed.pathname.split("/").filter(Boolean);
+            displayName = decodeURIComponent(
+              segments.at(-1) ?? `Link ${index + 1}`,
+            );
+          } catch {
+            displayName = `Link ${index + 1}`;
+          }
+
+          const count = (nameCounts.get(displayName) ?? 0) + 1;
+          nameCounts.set(displayName, count);
+
+          return (
+            <a
+              key={index}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 flex items-center gap-1 underline capitalize text-sm"
+            >
+              <Link size={12} />
+              {`${displayName} ${count}`}
+            </a>
+          );
+        })}
+      </div>
+    );
+  }
   return <span>{String(value)}</span>;
 };
 
@@ -260,7 +302,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
     if (found)
       return {
         ...found,
-        label: lang === "ar" && found.label_ar ? found.label_ar : found.label,
+        label: lang === "ar" && col.label_ar ? col.label_ar : col.label,
       };
     return {
       field: col.field,

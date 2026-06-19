@@ -1102,6 +1102,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    isUrl: true,
   },
   {
     field: "before_attachment_array",
@@ -1111,6 +1112,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    isUrl: true,
   },
   {
     field: "after_attachments",
@@ -1120,6 +1122,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    isUrl: true,
   },
   {
     field: "after_attachment_array",
@@ -1129,6 +1132,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    isUrl: true,
   },
   {
     field: "attachments",
@@ -1138,6 +1142,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    isUrl: true,
   },
   {
     field: "total_closing_duration",
@@ -1156,6 +1161,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    isUrl: true,
   },
 ];
 
@@ -1741,6 +1747,7 @@ export const userPerformanceFields: ReportFieldDefinition[] = [
     filterable: false,
     canBeColumn: true,
     defaultSelected: true,
+    isUrl: true,
   },
   {
     field: "location_name",
