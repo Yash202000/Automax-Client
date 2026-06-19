@@ -1629,6 +1629,7 @@ export interface ReportFieldDefinition {
   canBeColumn?: boolean;
   multiselect?: boolean;
   hidden?: boolean;
+  isUrl?: boolean;
 }
 
 // Data Source Definition
