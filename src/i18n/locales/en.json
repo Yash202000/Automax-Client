@@ -2047,7 +2047,15 @@
     "stateAlreadyExists": "State name already exists",
     "stateCodeAlreadyExists": "State code already exists",
     "transitionAlreadyExists": "Transition name already exists",
-    "transitionCodeAlreadyExists": "Transition code already exists"
+    "transitionCodeAlreadyExists": "Transition code already exists",
+    "integrationTriggers": "Integration Triggers",
+    "addIntegrationTrigger": "Add Integration Trigger",
+    "stateTriggerDescription": "Scripts that run when an incident enters or exits this state.",
+    "transitionTriggerDescription": "Scripts that run when this transition is executed.",
+    "notificationTemplatesDesc": "Templates sent to assignee and reporter when an incident enters this state.",
+    "emailTemplate": "Email Template",
+    "smsTemplate": "SMS Template",
+    "none": "-None"
   },
   "lookups": {
     "title": "Master Data",

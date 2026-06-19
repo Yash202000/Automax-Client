@@ -24,6 +24,7 @@ import {
   HierarchicalCheckboxTree,
   type TreeNode,
 } from "../../../components/workflow/HierarchicalCheckboxTree";
+import { t } from "i18next";
 
 const inputCls =
   "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] transition-colors";
@@ -550,7 +551,7 @@ export const IntegrationTriggersPanel: React.FC<Props> = ({
         <div className="flex items-center gap-2 min-w-0">
           <Zap className="w-4 h-4 text-[hsl(var(--primary))] shrink-0" />
           <span className="text-sm font-semibold text-[hsl(var(--foreground))] shrink-0">
-            Integration Triggers
+            {t("workflows.integrationTriggers")}
           </span>
           {triggers.length > 0 ? (
             <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-[hsl(var(--primary))] text-white rounded-full shrink-0">
@@ -576,8 +577,8 @@ export const IntegrationTriggersPanel: React.FC<Props> = ({
         <div className="px-4 pb-4 pt-2 space-y-3 border-t border-[hsl(var(--border))]">
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
             {type === "state"
-              ? "Scripts that run when an incident enters or exits this state."
-              : "Scripts that run when this transition is executed."}
+              ? t("workflows.stateTriggerDescription")
+              : t("workflows.transitionTriggerDescription")}
             {triggers.length > 1 && (
               <span className="ml-1">
                 Multiple scripts run in <strong>execution order</strong> (lowest
@@ -635,7 +636,7 @@ export const IntegrationTriggersPanel: React.FC<Props> = ({
             className="flex items-center gap-2 px-3 py-2 text-sm text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/8 rounded-lg transition-colors w-full justify-center border border-dashed border-[hsl(var(--primary))]/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             <Plus className="w-4 h-4" />
-            Add Integration Trigger
+            {t("workflows.addIntegrationTrigger")}
           </button>
         </div>
       )}
