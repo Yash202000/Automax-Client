@@ -1061,11 +1061,10 @@ export const ClassificationsPage: React.FC = () => {
                   {deleteConfirm.hasChildren ? (
                     <div className="mt-2 space-y-2">
                       <p className="text-sm font-medium text-[hsl(var(--destructive))]">
-                        This classification has child classifications.
+                        {t("classifications.deleteHasChildrenTitle")}
                       </p>
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        Deleting it will also permanently delete all associated
-                        child classifications. This action cannot be undone.
+                        {t("classifications.deleteHasChildrenMessage")}
                       </p>
                     </div>
                   ) : (
