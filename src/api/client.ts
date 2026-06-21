@@ -13,6 +13,7 @@ declare global {
       LOGIN_LDAP?: string;
       LOGIN_SSO?: string;
       DISABLE_AUTO_LOCATION_RETRIEVAL?: string;
+      CLIENT?: string;
     };
   }
 }
