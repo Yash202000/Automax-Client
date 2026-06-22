@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui";
 import type { ReportFieldDefinition } from "../../types";
 import { renderStyledCell, getNestedValue } from "./ReportPreview";
+import i18n from "@/i18n";
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -58,12 +59,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   if (!isOpen) return null;
 
   // Build column definitions — always produce a label, never drop a column
-  const columnDefs: ReportFieldDefinition[] = columns.map((col) => {
+  const columnDefs: ReportFieldDefinition[] = columns.map((col: any) => {
     const found = fields.find((f) => f.field === col.field);
-    if (found) return { ...found, label: col.label };
+    const label =
+      i18n.language === "ar" && col?.label_ar ? col.label_ar : col.label;
+    if (found) return { ...found, label };
     return {
       field: col.field,
-      label: col.label,
+      label: label,
       type: "string",
     } as ReportFieldDefinition;
   });
@@ -123,14 +126,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t("reports.exportDialog.exportFormat")}
                   </label>
-                  {
-                    columns.length > 10 && (
-                      <span className="text-red-500 text-xs flex gap-1 items-center my-2">
-                        <Info className='w-6 h-6' />
-                        {t('reports.exportDialog.pdfLimitWarning')}
-                      </span>
-                    )
-                  }
+                  {columns.length > 10 && (
+                    <span className="text-red-500 text-xs flex gap-1 items-center my-2">
+                      <Info className="w-6 h-6" />
+                      {t("reports.exportDialog.pdfLimitWarning")}
+                    </span>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -248,10 +249,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 <div className="flex items-center gap-2 mb-3">
                   <Eye className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                   <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                    {t('reports.exportDialog.dataPreview')}
+                    {t("reports.exportDialog.dataPreview")}
                   </span>
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {t('reports.exportDialog.previewInfo', {
+                    {t("reports.exportDialog.previewInfo", {
                       count: previewRows.length,
                       total: recordCount,
                     })}
@@ -303,7 +304,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
                 {recordCount > PREVIEW_ROWS && (
                   <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
-                    {t('reports.exportDialog.moreRecordsInfo', {
+                    {t("reports.exportDialog.moreRecordsInfo", {
                       count: recordCount - PREVIEW_ROWS,
                     })}
                   </p>
@@ -442,10 +443,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             }
           >
             {isExporting
-              ? t('reports.exportDialog.exporting')
-              : t('reports.exportDialog.downloadFormat', {
-                format: format.toUpperCase(),
-              })}
+              ? t("reports.exportDialog.exporting")
+              : t("reports.exportDialog.downloadFormat", {
+                  format: format.toUpperCase(),
+                })}
           </Button>
         </div>
       </div>
