@@ -224,7 +224,9 @@ export const renderStyledCell = (
               className="text-blue-600 flex items-center gap-1 underline capitalize text-sm"
             >
               <Link size={12} />
-              {isDuplicate ? `${displayName} ${currentIndex}` : displayName}
+              {isDuplicate
+                ? `${t(`common.${displayName}`, { defaultValue: displayName })} ${currentIndex}`
+                : t(`common.${displayName}`, { defaultValue: displayName })}
             </a>
           );
         })}

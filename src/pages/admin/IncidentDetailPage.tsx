@@ -135,7 +135,8 @@ export const IncidentDetailPage: React.FC = () => {
   const { users } = useAppSelector((state) => state.users);
 
   const isVd2 =
-    window.APP_CONFIG?.CLIENT === "VD2" || import.meta.env.CLIENT === "VD2";
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
 
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
