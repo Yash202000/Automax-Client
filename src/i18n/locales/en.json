@@ -2055,24 +2055,7 @@
     "notificationTemplatesDesc": "Templates sent to assignee and reporter when an incident enters this state.",
     "emailTemplate": "Email Template",
     "smsTemplate": "SMS Template",
-    "none": "-None",
-    "incidentSources": {
-      "web": "Web Portal",
-      "mobile": "Mobile App",
-      "email": "Email",
-      "phone": "Phone",
-      "ivr": "IVR",
-      "sms-link": "SMS Link",
-      "walk_in": "Walk-in",
-      "api": "API Integration",
-      "social_media": "Social Media",
-      "940_system": "940 System",
-      "940_manual": "940 Manual",
-      "field": "Field",
-      "manual": "Manual Entry",
-      "viusional": "Viusional",
-      "other": "Other"
-    }
+    "none": "-None"
   },
   "lookups": {
     "title": "Master Data",

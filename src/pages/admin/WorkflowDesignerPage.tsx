@@ -2673,10 +2673,13 @@ export const WorkflowDesignerPage: React.FC = () => {
                           className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                         />
                         <span className="text-sm text-[hsl(var(--foreground))]">
-                          {t(
+                          {/* {t(
                             `workflows.incidentSources.${source.value}`,
                             source.label,
-                          )}
+                          )} */}
+                          {i18n.language === "ar"
+                            ? source.label_ar
+                            : source.label}
                         </span>
                       </label>
                     ))}
