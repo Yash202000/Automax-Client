@@ -24,6 +24,7 @@ const SSOCompletePage = () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     const refresh = params.get("refresh");
+    const redirectTo = params.get("redirect_to") || "/dashboard";
 
     if (!token) {
       navigate("/login", { replace: true });
@@ -43,7 +44,7 @@ const SSOCompletePage = () => {
         const user = response.data;
         if (!user) throw new Error("No user in profile response");
         setAuth(user, token, refresh ?? undefined);
-        navigate("/dashboard", { replace: true });
+        navigate(redirectTo, { replace: true });
       })
       .catch(() => {
         // Fall back to decoding the JWT payload if the profile fetch fails
@@ -70,7 +71,7 @@ const SSOCompletePage = () => {
             token,
             refresh ?? undefined,
           );
-          navigate("/dashboard", { replace: true });
+          navigate(redirectTo, { replace: true });
         } catch {
           navigate("/login", { replace: true });
         }
