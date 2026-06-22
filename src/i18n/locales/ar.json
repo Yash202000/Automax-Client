@@ -1806,7 +1806,7 @@
     "transitionCode": "رمز الانتقال",
     "fromState": "من حالة",
     "toState": "إلى حالة",
-    "selectState": "Select state...",
+    "selectState": "اختر الولاية...",
     "allowedRoles": "الأدوار المسموح بها",
     "allRolesAllowed": "جميع الأدوار يمكنها تنفيذ هذا الانتقال",
     "noRolesSelected": "لم يتم تحديد أدوار (جميع الأدوار مسموح بها)",

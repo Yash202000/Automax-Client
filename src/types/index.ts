@@ -661,22 +661,86 @@ export type IncidentSource =
   | "viusional"
   | "other";
 
-export const INCIDENT_SOURCES: { value: IncidentSource; label: string }[] = [
-  { value: "web", label: "Web Portal" },
-  { value: "mobile", label: "Mobile App" },
-  { value: "email", label: "Email" },
-  { value: "phone", label: "Phone" },
-  { value: "ivr", label: "IVR" },
-  { value: "sms-link", label: "SMS Link" },
-  { value: "walk_in", label: "Walk-in" },
-  { value: "api", label: "API Integration" },
-  { value: "social_media", label: "Social Media" },
-  { value: "940_system", label: "940 System" },
-  { value: "940_manual", label: "940 Manual" },
-  { value: "field", label: "Field" },
-  { value: "manual", label: "Manual Entry" },
-  { value: "viusional", label: "Viusional" },
-  { value: "other", label: "Other" },
+export const INCIDENT_SOURCES: {
+  value: IncidentSource;
+  label: string;
+  label_ar: string;
+}[] = [
+  {
+    value: "web",
+    label: "Web Portal",
+    label_ar: "بوابة الويب",
+  },
+  {
+    value: "mobile",
+    label: "Mobile App",
+    label_ar: "تطبيق الهاتف المحمول",
+  },
+  {
+    value: "email",
+    label: "Email",
+    label_ar: "البريد الإلكتروني",
+  },
+  {
+    value: "phone",
+    label: "Phone",
+    label_ar: "الهاتف",
+  },
+  {
+    value: "ivr",
+    label: "IVR",
+    label_ar: "نظام الرد الصوتي التفاعلي",
+  },
+  {
+    value: "sms-link",
+    label: "SMS Link",
+    label_ar: "رابط الرسائل النصية",
+  },
+  {
+    value: "walk_in",
+    label: "Walk-in",
+    label_ar: "زيارة مباشرة",
+  },
+  {
+    value: "api",
+    label: "API Integration",
+    label_ar: "تكامل واجهة برمجة التطبيقات",
+  },
+  {
+    value: "social_media",
+    label: "Social Media",
+    label_ar: "وسائل التواصل الاجتماعي",
+  },
+  {
+    value: "940_system",
+    label: "940 System",
+    label_ar: "نظام 940",
+  },
+  {
+    value: "940_manual",
+    label: "940 Manual",
+    label_ar: "940 يدوي",
+  },
+  {
+    value: "field",
+    label: "Field",
+    label_ar: "ميداني",
+  },
+  {
+    value: "manual",
+    label: "Manual Entry",
+    label_ar: "إدخال يدوي",
+  },
+  {
+    value: "viusional",
+    label: "Viusional",
+    label_ar: "فيوجنال",
+  },
+  {
+    value: "other",
+    label: "Other",
+    label_ar: "أخرى",
+  },
 ];
 
 // Workflow matching API request/response

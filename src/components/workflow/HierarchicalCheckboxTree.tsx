@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 export interface TreeNode {
   id: string;
   name: string;
+  name_ar?: string;
   children?: TreeNode[];
   level?: number;
   [key: string]: unknown;
@@ -93,6 +94,8 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
     onToggleCheckbox(node, e.target.checked);
   };
 
+  const { i18n } = useTranslation();
+
   return (
     <div>
       <div
@@ -145,7 +148,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               : "font-normal text-[hsl(var(--foreground))]",
           )}
         >
-          {node.name}
+          {i18n.language === "ar" && node.name_ar ? node.name_ar : node.name}
         </label>
 
         {/* Children count badge */}
