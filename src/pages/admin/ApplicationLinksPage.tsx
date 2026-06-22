@@ -115,6 +115,7 @@ const ApplicationLinksPage: React.FC = () => {
     is_active: true,
     sso_enabled: false,
     sso_callback_url: "",
+    sso_redirect_path: "",
   });
 
   // Fetch application links
@@ -282,6 +283,7 @@ const ApplicationLinksPage: React.FC = () => {
       is_active: true,
       sso_enabled: false,
       sso_callback_url: "",
+      sso_redirect_path: "",
     });
   };
 
@@ -302,6 +304,7 @@ const ApplicationLinksPage: React.FC = () => {
       is_active: link.is_active,
       sso_enabled: link.sso_enabled,
       sso_callback_url: link.sso_callback_url || "",
+      sso_redirect_path: link.sso_redirect_path || "",
     });
   };
 
@@ -343,6 +346,7 @@ const ApplicationLinksPage: React.FC = () => {
       name: formData.name.trim(),
       url: formData.url.trim(),
       sso_callback_url: formData.sso_callback_url?.trim() || "",
+      sso_redirect_path: formData.sso_redirect_path?.trim() || "",
     };
 
     if (editingId) {
@@ -725,39 +729,65 @@ const ApplicationLinksPage: React.FC = () => {
                 </label>
               </div>
               {formData.sso_enabled && (
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                    {t("applicationLinks.ssoCallbackUrl")}{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.sso_callback_url}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        sso_callback_url: e.target.value,
-                      });
-                      if (formErrors.sso_callback_url) {
-                        setFormErrors((prev) => ({
-                          ...prev,
-                          sso_callback_url: undefined,
-                        }));
-                      }
-                    }}
-                    className={getInputClassName(!!formErrors.sso_callback_url)}
-                    placeholder={t(
-                      "applicationLinks.ssoCallbackUrlPlaceholder",
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                      {t("applicationLinks.ssoCallbackUrl")}{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.sso_callback_url}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          sso_callback_url: e.target.value,
+                        });
+                        if (formErrors.sso_callback_url) {
+                          setFormErrors((prev) => ({
+                            ...prev,
+                            sso_callback_url: undefined,
+                          }));
+                        }
+                      }}
+                      className={getInputClassName(
+                        !!formErrors.sso_callback_url,
+                      )}
+                      placeholder={t(
+                        "applicationLinks.ssoCallbackUrlPlaceholder",
+                      )}
+                    />
+                    {formErrors.sso_callback_url ? (
+                      renderFieldError(formErrors.sso_callback_url)
+                    ) : (
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                        {t("applicationLinks.ssoCallbackHelp")}
+                      </p>
                     )}
-                  />
-                  {formErrors.sso_callback_url ? (
-                    renderFieldError(formErrors.sso_callback_url)
-                  ) : (
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                      {t("applicationLinks.ssoRedirectPath")}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sso_redirect_path}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sso_redirect_path: e.target.value,
+                        })
+                      }
+                      className={getInputClassName()}
+                      placeholder={t(
+                        "applicationLinks.ssoRedirectPathPlaceholder",
+                      )}
+                    />
                     <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                      {t("applicationLinks.ssoCallbackHelp")}
+                      {t("applicationLinks.ssoRedirectPathHelp")}
                     </p>
-                  )}
-                </div>
+                  </div>
+                </>
               )}
             </div>
 

@@ -259,6 +259,7 @@ export interface ApplicationLink {
   is_active: boolean;
   sso_enabled: boolean;
   sso_callback_url: string;
+  sso_redirect_path?: string;
   created_at: string;
   updated_at: string;
 }
@@ -276,6 +277,7 @@ export interface ApplicationLinkCreateRequest {
   is_active?: boolean;
   sso_enabled?: boolean;
   sso_callback_url?: string;
+  sso_redirect_path?: string;
 }
 
 export interface ApplicationLinkUpdateRequest {
@@ -291,6 +293,7 @@ export interface ApplicationLinkUpdateRequest {
   is_active?: boolean;
   sso_enabled?: boolean;
   sso_callback_url?: string;
+  sso_redirect_path?: string;
 }
 
 export interface PaginatedResponse<T> {
