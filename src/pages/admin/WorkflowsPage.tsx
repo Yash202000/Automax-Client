@@ -438,29 +438,29 @@ export const WorkflowsPage: React.FC = () => {
                 />
 
                 <div className="relative">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start  justify-between mb-4">
+                    <div className="flex overflow-hidden whitespace-nowrap  group-hover:max-w-[175px] items-center gap-3">
                       <div
                         className={cn(
-                          "w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-lg",
+                          "w-12 h-12 bg-gradient-to-br rounded-xl flex shrink-0 items-center justify-center shadow-lg",
                           getWorkflowGradient(workflow),
                         )}
                       >
                         <GitBranch className="w-6 h-6 text-white" />
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                      <div className="min-w-0 group-hover:max-w-[175px] ">
+                        <h3 className="group-hover:truncate text-lg font-semibold text-[hsl(var(--foreground))]">
                           {i18n.language === "ar" && workflow.name_ar
                             ? workflow.name_ar
                             : workflow.name}
                         </h3>
-                        <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
+                        <p className="group-hover:truncate text-sm text-[hsl(var(--muted-foreground))] font-mono">
                           {workflow.code}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="items-center gap-1 hidden group-hover:flex justify-end shrink-0">
                       <button
                         onClick={() => navigate(`/workflows/${workflow.id}`)}
                         className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"

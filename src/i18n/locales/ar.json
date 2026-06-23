@@ -224,7 +224,8 @@
     "chooseFile": "اختر ملف",
     "nameRequired": "الاسم مطلوب.",
     "nameInvalid": "لا يمكن أن يتكون الاسم من أرقام أو رموز خاصة فقط.",
-    "nameAllowedCharacters": "يمكن أن يحتوي الاسم فقط على أحرف وأرقام ومسافات والرموز التالية: - ' . , & ( ) /."
+    "nameAllowedCharacters": "يمكن أن يحتوي الاسم فقط على أحرف وأرقام ومسافات والرموز التالية: - ' . , & ( ) /.",
+    "preview": "معاينة"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -3526,6 +3527,9 @@
     "ssoCallbackUrlPlaceholder": "https://target.app/sso/callback",
     "ssoCallbackRequired": "رابط الاستدعاء مطلوب — بدونه، لن يتم إعادة توجيه المستخدمين.",
     "ssoCallbackHelp": "رابط URL على التطبيق المستهدف الذي يستقبل رمز JWT للمصادقة الموحدة.",
+    "ssoRedirectPath": "مسار إعادة التوجيه بعد تسجيل الدخول",
+    "ssoRedirectPathPlaceholder": "/dashboard (افتراضي) أو /incidents أو /requests إلخ.",
+    "ssoRedirectPathHelp": "مسار اختياري للانتقال إليه بعد تسجيل الدخول عبر SSO. اتركه فارغاً للانتقال إلى لوحة التحكم.",
     "create": "إنشاء",
     "update": "تحديث",
     "cancel": "إلغاء",

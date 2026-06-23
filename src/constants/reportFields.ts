@@ -1,7 +1,9 @@
-import type {
-  DataSourceDefinition,
-  ReportFieldDefinition,
-  FilterOperator,
+import i18n from "@/i18n";
+import {
+  type DataSourceDefinition,
+  type ReportFieldDefinition,
+  type FilterOperator,
+  INCIDENT_SOURCES,
 } from "../types";
 
 // Filter operators by field type
@@ -61,6 +63,12 @@ export const FILTER_OPERATORS_BY_TYPE: Record<
     { value: "is_not_empty", label: "Is not empty" },
   ],
 };
+
+const sourceOptions = INCIDENT_SOURCES.map((source) => ({
+  value: source.value,
+  label:
+    i18n.language === "ar" && source.label_ar ? source.label_ar : source.label,
+}));
 
 // Incidents Data Source Fields
 export const incidentFields: ReportFieldDefinition[] = [
@@ -548,20 +556,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: [
-      { value: "web", label: "Web Portal" },
-      { value: "mobile", label: "Mobile App" },
-      { value: "email", label: "Email" },
-      { value: "phone", label: "Phone" },
-      { value: "walk_in", label: "Walk-in" },
-      { value: "api", label: "API Integration" },
-      { value: "social_media", label: "Social Media" },
-      { value: "940_system", label: "940 System" },
-      { value: "940_manual", label: "940 Manual" },
-      { value: "field", label: "Field" },
-      { value: "manual", label: "Manual Entry" },
-      { value: "other", label: "Other" },
-    ],
+    options: sourceOptions,
   },
   {
     field: "created_by_id",
@@ -658,20 +653,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: [
-      { value: "web", label: "Web Portal" },
-      { value: "mobile", label: "Mobile App" },
-      { value: "email", label: "Email" },
-      { value: "phone", label: "Phone" },
-      { value: "walk_in", label: "Walk-in" },
-      { value: "api", label: "API Integration" },
-      { value: "social_media", label: "Social Media" },
-      { value: "940_system", label: "940 System" },
-      { value: "940_manual", label: "940 Manual" },
-      { value: "field", label: "Field" },
-      { value: "manual", label: "Manual Entry" },
-      { value: "other", label: "Other" },
-    ],
+    options: sourceOptions,
   },
   {
     field: "version",
@@ -1262,20 +1244,7 @@ export const requestFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: [
-      { value: "web", label: "Web Portal" },
-      { value: "mobile", label: "Mobile App" },
-      { value: "email", label: "Email" },
-      { value: "phone", label: "Phone" },
-      { value: "walk_in", label: "Walk-in" },
-      { value: "api", label: "API Integration" },
-      { value: "social_media", label: "Social Media" },
-      { value: "940_system", label: "940 System" },
-      { value: "940_manual", label: "940 Manual" },
-      { value: "field", label: "Field" },
-      { value: "manual", label: "Manual Entry" },
-      { value: "other", label: "Other" },
-    ],
+    options: sourceOptions,
   },
   {
     field: "status_id",
@@ -1689,6 +1658,79 @@ export const userFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
   },
+  {
+    field: "creator_name",
+    label: "Creator Name",
+    label_ar: "اسم المنشئ",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "creator_email",
+    label: "Creator Email",
+    label_ar: "البريد الإلكتروني للمنشئ",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "creator_phone",
+    label: "Creator Phone",
+    label_ar: "هاتف المنشئ",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "approve_at",
+    label: "VD2 Approve At",
+    label_ar: "VD2 تاريخ الاعتماد",
+    type: "datetime",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "approve_by",
+    label: "VD2 Approve By",
+    label_ar: "VD2 اعتماد بواسطة",
+    type: "string",
+    category: "Core",
+    sortable: true,
+    filterable: true,
+  },
+  {
+    field: "approve_comment",
+    label: "VD2 Approve Comment",
+    label_ar: "VD2 تعليق الاعتماد",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "approve_feedback",
+    label: "VD2 Approve Feedback",
+    label_ar: "VD2 ملاحظات الاعتماد",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "approve_attachment",
+    label: "VD2 Approve Attachment",
+    label_ar: "VD2 مرفق الاعتماد",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+    isUrl: true,
+  },
 ];
 
 export const userPerformanceFields: ReportFieldDefinition[] = [
@@ -2034,20 +2076,7 @@ export const locationFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: [
-      { value: "web", label: "Web Portal" },
-      { value: "mobile", label: "Mobile App" },
-      { value: "email", label: "Email" },
-      { value: "phone", label: "Phone" },
-      { value: "walk_in", label: "Walk-in" },
-      { value: "api", label: "API Integration" },
-      { value: "social_media", label: "Social Media" },
-      { value: "940_system", label: "940 System" },
-      { value: "940_manual", label: "940 Manual" },
-      { value: "field", label: "Field" },
-      { value: "manual", label: "Manual Entry" },
-      { value: "other", label: "Other" },
-    ],
+    options: sourceOptions,
   },
   {
     field: "parent_location_name",
@@ -2228,20 +2257,7 @@ export const classificationFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: [
-      { value: "web", label: "Web Portal" },
-      { value: "mobile", label: "Mobile App" },
-      { value: "email", label: "Email" },
-      { value: "phone", label: "Phone" },
-      { value: "walk_in", label: "Walk-in" },
-      { value: "api", label: "API Integration" },
-      { value: "social_media", label: "Social Media" },
-      { value: "940_system", label: "940 System" },
-      { value: "940_manual", label: "940 Manual" },
-      { value: "field", label: "Field" },
-      { value: "manual", label: "Manual Entry" },
-      { value: "other", label: "Other" },
-    ],
+    options: sourceOptions,
   },
   {
     field: "status_name",

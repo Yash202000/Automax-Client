@@ -224,7 +224,8 @@
     "chooseFile": "Choose File",
     "nameRequired": "Name is required.",
     "nameInvalid": "Name cannot consist only of numbers or special characters.",
-    "nameAllowedCharacters": "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /."
+    "nameAllowedCharacters": "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /.",
+    "preview": "Preview"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -3558,6 +3559,9 @@
     "ssoCallbackUrlPlaceholder": "https://target.app/sso/callback",
     "ssoCallbackRequired": "Callback URL is required — without it, users clicking this app will see no redirection.",
     "ssoCallbackHelp": "The URL on the target application that receives the SSO JWT token.",
+    "ssoRedirectPath": "Post-SSO Redirect Path",
+    "ssoRedirectPathPlaceholder": "/dashboard (default) or /incidents, /requests, etc.",
+    "ssoRedirectPathHelp": "Optional path to land on after SSO login. Leave empty to use the default dashboard.",
     "create": "Create",
     "update": "Update",
     "cancel": "Cancel",
