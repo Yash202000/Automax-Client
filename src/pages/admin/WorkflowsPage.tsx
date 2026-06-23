@@ -35,6 +35,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import {
+  validateCode,
+  validateName,
+  validateRequired,
+} from "@/utils/validations";
 
 interface WorkflowFormData {
   name: string;
@@ -269,20 +274,21 @@ export const WorkflowsPage: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    const name = formData.name.trim();
-    const code = formData.code.trim();
+    const name = formData.name;
+    const code = formData.code;
 
-    if (!name) {
+    if (!validateRequired(name)) {
       newErrors.name = t("workflows.nameRequired");
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+    } else if (!validateName(name)) {
       newErrors.name = t("workflows.invalidName");
     }
 
-    if (!code) {
+    if (!validateRequired(code)) {
       newErrors.code = t("workflows.codeRequired");
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(code)) {
+    } else if (!validateCode(code)) {
       newErrors.code = t("workflows.invalidCode");
     }
+
     setValidationErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
