@@ -3792,11 +3792,17 @@ export const IncidentDetailPage: React.FC = () => {
                 {t("incidents.workflow")}
               </h3>
               <p className="text-sm text-[hsl(var(--foreground))]">
-                {incident.workflow.name}
+                {i18n.language === "ar" && incident.workflow.name_ar
+                  ? incident.workflow.name_ar
+                  : incident.workflow.name}
               </p>
               {incident.workflow.description && (
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 mb-4">
-                  {incident.workflow.description}
+                  {/* {incident.workflow.description}*/}
+                  {/* workflow model has description_ar but when checked api response not available */}
+                  {i18n.language === "ar" && incident.workflow.description_ar
+                    ? incident.workflow.description_ar
+                    : incident.workflow.description}
                 </p>
               )}
               {fullWorkflow && (

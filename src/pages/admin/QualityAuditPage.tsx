@@ -18,6 +18,7 @@ import { aiQualityApi } from "../../api/admin";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
 import type { AIQualityFeedback } from "../../types";
+import i18n from "@/i18n";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,10 +63,10 @@ function formatStatus(status: string) {
 // ---------------------------------------------------------------------------
 
 const FILTER_OPTIONS = [
-  { value: "", label: "All Results" },
-  { value: "resolved", label: "Resolved" },
-  { value: "cannot_verify", label: "Cannot Verify" },
-  { value: "mismatch", label: "Mismatch" },
+  { value: "", label: "All Results", label_ar: "جميع النتائج" },
+  { value: "resolved", label: "Resolved", label_ar: "تم الحل" },
+  { value: "cannot_verify", label: "Cannot Verify", label_ar: "تعذر التحقق" },
+  { value: "mismatch", label: "Mismatch", label_ar: "عدم تطابق" },
 ];
 
 export default function QualityAuditPage() {
@@ -189,7 +190,7 @@ export default function QualityAuditPage() {
         >
           {FILTER_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
-              {o.label}
+              {i18n.language === "ar" && o.label_ar ? o.label_ar : o.label}
             </option>
           ))}
         </select>
