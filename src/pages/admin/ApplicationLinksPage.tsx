@@ -15,6 +15,7 @@ import {
   Save,
   X,
   AlertTriangle,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -85,6 +86,19 @@ type ApplicationLinkFormErrors = Partial<
   Record<"name" | "url" | "sso_callback_url", string>
 >;
 
+// Build an ordered display list: each root link followed by its direct children
+function buildDisplayList(links: ApplicationLink[]): ApplicationLink[] {
+  const roots = links.filter((l) => !l.parent_id);
+  const childrenByParent: Record<string, ApplicationLink[]> = {};
+  for (const l of links) {
+    if (l.parent_id) {
+      if (!childrenByParent[l.parent_id]) childrenByParent[l.parent_id] = [];
+      childrenByParent[l.parent_id].push(l);
+    }
+  }
+  return roots.flatMap((root) => [root, ...(childrenByParent[root.id] ?? [])]);
+}
+
 const ApplicationLinksPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -104,6 +118,7 @@ const ApplicationLinksPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formErrors, setFormErrors] = useState<ApplicationLinkFormErrors>({});
   const [formData, setFormData] = useState<ApplicationLinkCreateRequest>({
+    parent_id: null,
     name: "",
     name_ar: "",
     description: "",
@@ -125,6 +140,8 @@ const ApplicationLinksPage: React.FC = () => {
   });
 
   const links = linksResponse?.data || [];
+  const displayLinks = buildDisplayList(links);
+  const linksById = Object.fromEntries(links.map((l) => [l.id, l]));
 
   // Create mutation
   const createMutation = useMutation({
@@ -271,6 +288,7 @@ const ApplicationLinksPage: React.FC = () => {
     setImageLoadError(false);
     setFormErrors({});
     setFormData({
+      parent_id: null,
       name: "",
       name_ar: "",
       description: "",
@@ -292,6 +310,7 @@ const ApplicationLinksPage: React.FC = () => {
     setFormErrors({});
     setEditingId(link.id);
     setFormData({
+      parent_id: link.parent_id ?? null,
       name: link.name,
       name_ar: link.name_ar || "",
       description: link.description,
@@ -324,7 +343,8 @@ const ApplicationLinksPage: React.FC = () => {
       });
     }
 
-    if (!formData.url.trim()) {
+    // URL is required for child cards (they navigate on click)
+    if (formData.parent_id && !formData.url?.trim()) {
       nextErrors.url = t("validation.fieldRequired", {
         field: t("applicationLinks.url"),
       });
@@ -344,7 +364,8 @@ const ApplicationLinksPage: React.FC = () => {
     const payload = {
       ...formData,
       name: formData.name.trim(),
-      url: formData.url.trim(),
+      url: formData.url?.trim() || "",
+      parent_id: formData.parent_id || null,
       sso_callback_url: formData.sso_callback_url?.trim() || "",
       sso_redirect_path: formData.sso_redirect_path?.trim() || "",
     };
@@ -477,11 +498,57 @@ const ApplicationLinksPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Parent group selector */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                  {t("applicationLinks.url")}{" "}
-                  <span className="text-[hsl(var(--destructive))]">*</span>
+                  {t("applicationLinks.parentGroup", "Parent Group")}
+                </label>
+                <select
+                  value={formData.parent_id ?? ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      parent_id: e.target.value || null,
+                    })
+                  }
+                  className={getInputClassName()}
+                >
+                  <option value="">
+                    {t("applicationLinks.noParent", "None (root card)")}
+                  </option>
+                  {links
+                    .filter((l) => !l.parent_id && l.id !== editingId)
+                    .map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {i18n.language === "ar" && l.name_ar
+                          ? l.name_ar
+                          : l.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {formData.parent_id
+                    ? t(
+                        "applicationLinks.childHint",
+                        "This card will appear inside the group's sub-links modal.",
+                      )
+                    : t(
+                        "applicationLinks.rootHint",
+                        "Root cards appear directly on the dashboard. Leave URL empty to make this a group.",
+                      )}
+                </p>
+              </div>
+              <div />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                  {t("applicationLinks.url")}
+                  {formData.parent_id && (
+                    <span className="text-[hsl(var(--destructive))]"> *</span>
+                  )}
                 </label>
                 <input
                   type="url"
@@ -495,7 +562,6 @@ const ApplicationLinksPage: React.FC = () => {
                       }));
                     }
                   }}
-                  required
                   className={getInputClassName(!!formErrors.url)}
                   placeholder={t("applicationLinks.urlPlaceholder")}
                 />
@@ -844,7 +910,7 @@ const ApplicationLinksPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]">
-              {links.length === 0 ? (
+              {displayLinks.length === 0 ? (
                 <tr>
                   <td
                     colSpan={canUpdate || canDelete ? 6 : 5}
@@ -855,98 +921,140 @@ const ApplicationLinksPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                links.map((link) => (
-                  <tr
-                    key={link.id}
-                    className="hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {i18n.language === "ar" && link.name_ar
-                            ? link.name_ar
-                            : link.name}
-                        </div>
-                        {(link.description || link.description_ar) && (
-                          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                            {i18n.language === "ar" && link.description_ar
-                              ? link.description_ar
-                              : link.description}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:underline flex items-center gap-1"
-                      >
-                        {link.url}
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                          {link.icon}
-                        </span>
-                        <span className="text-xs px-2 py-1 rounded-md bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]">
-                          {link.color}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[hsl(var(--foreground))]">
-                      {link.sort_order}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span
-                          className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                            link.is_active
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                displayLinks.map((link) => {
+                  const isChild = Boolean(link.parent_id);
+                  const childCount = links.filter(
+                    (l) => l.parent_id === link.id,
+                  ).length;
+                  const parentName = link.parent_id
+                    ? (i18n.language === "ar" &&
+                        linksById[link.parent_id]?.name_ar) ||
+                      linksById[link.parent_id]?.name ||
+                      ""
+                    : "";
+
+                  return (
+                    <tr
+                      key={link.id}
+                      className={`hover:bg-[hsl(var(--muted)/0.3)] transition-colors ${
+                        isChild ? "bg-[hsl(var(--muted)/0.15)]" : ""
+                      }`}
+                    >
+                      <td className="px-6 py-4">
+                        <div
+                          className={
+                            isChild
+                              ? "pl-5 border-l-2 border-[hsl(var(--border))]"
+                              : ""
+                          }
                         >
-                          {link.is_active
-                            ? t("applicationLinks.statusActive")
-                            : t("applicationLinks.statusInactive")}
-                        </span>
-                        {link.sso_enabled && !link.sso_callback_url && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                            <AlertTriangle className="w-3 h-3" />
-                            {t("applicationLinks.ssoNoCallback")}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    {(canUpdate || canDelete) && (
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {canUpdate && (
-                            <button
-                              onClick={() => handleEdit(link)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title={t("applicationLinks.editTitle")}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                          <div className="flex items-center gap-2">
+                            {!isChild && childCount > 0 && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700">
+                                <Layers className="w-3 h-3" />
+                                {childCount}
+                              </span>
+                            )}
+                            <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                              {i18n.language === "ar" && link.name_ar
+                                ? link.name_ar
+                                : link.name}
+                            </span>
+                          </div>
+                          {isChild && parentName && (
+                            <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                              ↳ {parentName}
+                            </div>
                           )}
-                          {canDelete && (
-                            <button
-                              onClick={() => setDeleteConfirm(link)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title={t("applicationLinks.deleteTitle")}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          {(link.description || link.description_ar) && (
+                            <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                              {i18n.language === "ar" && link.description_ar
+                                ? link.description_ar
+                                : link.description}
+                            </div>
                           )}
                         </div>
                       </td>
-                    )}
-                  </tr>
-                ))
+                      <td className="px-6 py-4">
+                        {link.url ? (
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+                          >
+                            <span className="max-w-[180px] truncate inline-block">
+                              {link.url}
+                            </span>
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                            {t("applicationLinks.noUrl", "No URL — group card")}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                            {link.icon}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded-md bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]">
+                            {link.color}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[hsl(var(--foreground))]">
+                        {link.sort_order}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                              link.is_active
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {link.is_active
+                              ? t("applicationLinks.statusActive")
+                              : t("applicationLinks.statusInactive")}
+                          </span>
+                          {link.sso_enabled && !link.sso_callback_url && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              <AlertTriangle className="w-3 h-3" />
+                              {t("applicationLinks.ssoNoCallback")}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      {(canUpdate || canDelete) && (
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {canUpdate && (
+                              <button
+                                onClick={() => handleEdit(link)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title={t("applicationLinks.editTitle")}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                onClick={() => setDeleteConfirm(link)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title={t("applicationLinks.deleteTitle")}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

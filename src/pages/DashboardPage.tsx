@@ -9,6 +9,7 @@ import { useLicense } from "../hooks/useLicense";
 import { PERMISSIONS } from "../constants/permissions";
 import { applicationLinkApi } from "../api/applicationLinks";
 import { ssoApi } from "../api/sso";
+import { ApplicationLinkSubModal } from "../components/ui/ApplicationLinkSubModal";
 import type { ApplicationLink } from "../types";
 import {
   Settings,
@@ -22,6 +23,7 @@ import {
   HelpCircle,
   PhoneCallIcon,
   ExternalLink,
+  Layers,
   Target,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -87,6 +89,8 @@ export const DashboardPage: React.FC = () => {
   const [brokenImages, setBrokenImages] = React.useState<Set<string>>(
     new Set(),
   );
+  const [subLinksParent, setSubLinksParent] =
+    React.useState<ApplicationLink | null>(null);
   const handleImageError = (id: string) =>
     setBrokenImages((prev) => new Set(prev).add(id));
 
@@ -258,6 +262,14 @@ export const DashboardPage: React.FC = () => {
   });
 
   const handleAppLinkClick = async (appLink: ApplicationLink) => {
+    // Group cards open the sub-links modal instead of navigating
+    if (appLink.children && appLink.children.length > 0) {
+      setSubLinksParent(appLink);
+      return;
+    }
+
+    if (!appLink.url) return;
+
     if (appLink.sso_enabled) {
       if (!appLink.sso_callback_url) {
         toast.warning(
@@ -386,9 +398,13 @@ export const DashboardPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* External link indicator */}
+                {/* Group / external-link indicator */}
                 <div className="absolute top-3 right-3 p-1 bg-white/20 rounded-md">
-                  <ExternalLink className="w-3 h-3 text-white" />
+                  {appLink.children && appLink.children.length > 0 ? (
+                    <Layers className="w-3 h-3 text-white" />
+                  ) : (
+                    <ExternalLink className="w-3 h-3 text-white" />
+                  )}
                 </div>
 
                 {/* Content */}
@@ -456,6 +472,13 @@ export const DashboardPage: React.FC = () => {
           {t("dashboard.allSystemsOperational")}
         </span>
       </div>
+
+      {/* Sub-links modal — opens when a group card is clicked */}
+      <ApplicationLinkSubModal
+        parent={subLinksParent}
+        onClose={() => setSubLinksParent(null)}
+        onLinkClick={handleAppLinkClick}
+      />
     </div>
   );
 };
