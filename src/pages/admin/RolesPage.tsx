@@ -13,6 +13,7 @@ import {
   Download,
   Upload,
   Info,
+  Search,
 } from "lucide-react";
 import { roleApi } from "../../api/admin";
 import type { Role } from "../../types";
@@ -27,6 +28,7 @@ export const RolesPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -41,6 +43,16 @@ export const RolesPage: React.FC = () => {
   const { data: rolesData, isLoading } = useQuery({
     queryKey: ["admin", "roles"],
     queryFn: () => roleApi.list(),
+  });
+
+  const filteredRoles = (rolesData?.data ?? []).filter((role: Role) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      role.name.toLowerCase().includes(q) ||
+      role.code.toLowerCase().includes(q) ||
+      (role.description || "").toLowerCase().includes(q)
+    );
   });
 
   const deleteMutation = useMutation({
@@ -159,6 +171,18 @@ export const RolesPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+        <input
+          type="text"
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+        />
+      </div>
+
       {/* Roles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {isLoading
@@ -180,7 +204,7 @@ export const RolesPage: React.FC = () => {
                 </div>
               </div>
             ))
-          : rolesData?.data?.map((role: Role) => (
+          : filteredRoles.map((role: Role) => (
               <div
                 key={role.id}
                 className="group relative bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 hover:shadow-xl hover:shadow-[hsl(var(--foreground)/0.05)] hover:border-[hsl(var(--border))] transition-all duration-300"
@@ -281,7 +305,7 @@ export const RolesPage: React.FC = () => {
       </div>
 
       {/* Empty state */}
-      {!isLoading && rolesData?.data?.length === 0 && (
+      {!isLoading && filteredRoles.length === 0 && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[hsl(var(--primary)/0.25)]">
             <Shield className="w-8 h-8 text-white" />

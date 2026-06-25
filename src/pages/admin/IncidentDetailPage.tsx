@@ -3626,8 +3626,7 @@ export const IncidentDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        const phone =
-                          incident.reporter_phone || incident.reporter?.phone;
+                        const phone = incident.reporter?.phone;
                         if (phone) {
                           const reporterName = incident.reporter?.first_name
                             ? `${incident.reporter.first_name} ${incident.reporter.last_name || ""}`.trim()
@@ -3649,9 +3648,10 @@ export const IncidentDetailPage: React.FC = () => {
                           incident.reporter_name ||
                           "Unknown"}
                     </button>
-                    {(incident.reporter_email || incident.reporter?.email) && (
+
+                    {incident.reporter?.email && (
                       <a
-                        href={`mailto:${incident.reporter_email || incident.reporter?.email}`}
+                        href={`mailto:${incident.reporter?.email}`}
                         className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
                       >
                         <svg
@@ -3667,17 +3667,15 @@ export const IncidentDetailPage: React.FC = () => {
                             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                           />
                         </svg>
-                        {incident.reporter_email || incident.reporter?.email}
+                        {incident.reporter?.email}
                       </a>
                     )}
-                    {(incident.reporter_phone || incident.reporter?.phone) && (
+                    {incident.reporter?.phone ? (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
-                            const phone =
-                              incident.reporter_phone ||
-                              incident.reporter?.phone;
+                            const phone = incident.reporter?.phone;
                             window.dispatchEvent(
                               new CustomEvent("initiate-call", {
                                 detail: { number: phone },
@@ -3687,10 +3685,10 @@ export const IncidentDetailPage: React.FC = () => {
                           className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
                         >
                           <Phone className="w-3.5 h-3.5" />
-                          {incident.reporter_phone || incident.reporter?.phone}
+                          {incident.reporter.phone}
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               ) : null}

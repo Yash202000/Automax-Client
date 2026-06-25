@@ -3600,7 +3600,14 @@
       "amber": "Amber",
       "rose": "Rose",
       "orange": "Orange"
-    }
+    },
+    "parentGroup": "Parent Group",
+    "noParent": "None (root card)",
+    "rootHint": "Root cards appear directly on the dashboard. Leave URL empty to make this a group.",
+    "childHint": "This card will appear inside the group's sub-links modal.",
+    "selectSubApp": "Select a sub-application",
+    "noSubLinks": "No sub-links configured for this group.",
+    "noUrl": "No URL — group card"
   },
   "callCentre": {
     "callHistory": "Call History",

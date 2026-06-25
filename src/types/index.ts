@@ -247,6 +247,7 @@ export interface LookupValueUpdateRequest {
 // Application Link types
 export interface ApplicationLink {
   id: string;
+  parent_id: string | null;
   name: string;
   name_ar?: string;
   description: string;
@@ -260,16 +261,18 @@ export interface ApplicationLink {
   sso_enabled: boolean;
   sso_callback_url: string;
   sso_redirect_path?: string;
+  children?: ApplicationLink[];
   created_at: string;
   updated_at: string;
 }
 
 export interface ApplicationLinkCreateRequest {
+  parent_id?: string | null;
   name: string;
   name_ar?: string;
   description?: string;
   description_ar?: string;
-  url: string;
+  url?: string;
   icon?: string;
   image_url?: string;
   color?: string;
@@ -281,6 +284,8 @@ export interface ApplicationLinkCreateRequest {
 }
 
 export interface ApplicationLinkUpdateRequest {
+  parent_id?: string | null;
+  clear_parent?: boolean;
   name?: string;
   name_ar?: string;
   description?: string;

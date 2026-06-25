@@ -63,7 +63,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [comment, setComment] = useState("");
-  const [source, setSource] = useState<IncidentSource | undefined>(undefined);
+  const [source, setSource] = useState<IncidentSource | undefined>("web");
   const [channel, setChannel] = useState("Web");
   const [classificationId, setClassificationId] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -424,7 +424,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
 
       setDescription("");
 
-      setSource(undefined);
+      setSource("web");
 
       setChannel("Web");
 

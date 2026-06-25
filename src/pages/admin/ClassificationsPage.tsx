@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,6 +20,7 @@ import {
   Users,
   Briefcase,
   Power,
+  Search,
 } from "lucide-react";
 import {
   classificationApi,
@@ -337,6 +338,7 @@ export const ClassificationsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClassification, setEditingClassification] =
     useState<Classification | null>(null);
@@ -373,6 +375,30 @@ export const ClassificationsPage: React.FC = () => {
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
   });
+
+  const filterTreeNodes = useCallback(
+    (nodes: Classification[], q: string): Classification[] => {
+      if (!q) return nodes;
+      return nodes.reduce<Classification[]>((acc, node) => {
+        const name =
+          i18n.language === "ar" && node.name_ar ? node.name_ar : node.name;
+        if (name.toLowerCase().includes(q)) {
+          acc.push(node);
+        } else {
+          const filteredChildren = filterTreeNodes(node.children ?? [], q);
+          if (filteredChildren.length > 0)
+            acc.push({ ...node, children: filteredChildren });
+        }
+        return acc;
+      }, []);
+    },
+    [i18n.language],
+  );
+
+  const displayedTreeNodes = useMemo(() => {
+    if (!search) return treeData?.data ?? [];
+    return filterTreeNodes(treeData?.data ?? [], search.toLowerCase().trim());
+  }, [treeData?.data, search, filterTreeNodes]);
 
   const { data: classificationsList } = useQuery({
     queryKey: ["admin", "classifications", "list"],
@@ -731,6 +757,20 @@ export const ClassificationsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Search */}
+        <div className="px-6 py-3 border-b border-[hsl(var(--border))]">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+            />
+          </div>
+        </div>
+
         {/* Tree Content */}
         {isLoading ? (
           <div className="p-12 text-center">
@@ -759,9 +799,25 @@ export const ClassificationsPage: React.FC = () => {
               </Button>
             )}
           </div>
+        ) : displayedTreeNodes.length === 0 && search ? (
+          <div className="p-12 text-center">
+            <div className="w-16 h-16 bg-[hsl(var(--muted))] rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-[hsl(var(--muted-foreground))]" />
+            </div>
+            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+              {t("classifications.noSearchResults", {
+                defaultValue: "No classifications found",
+              })}
+            </h3>
+            <p className="text-[hsl(var(--muted-foreground))]">
+              {t("classifications.tryDifferentSearch", {
+                defaultValue: "Try a different search term",
+              })}
+            </p>
+          </div>
         ) : (
           <div className="divide-y divide-[hsl(var(--border))]">
-            {treeData?.data?.map((cls: Classification) => (
+            {displayedTreeNodes.map((cls: Classification) => (
               <TreeNode
                 key={cls.id}
                 classification={cls}

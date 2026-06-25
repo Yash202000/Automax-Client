@@ -8,6 +8,10 @@ BASE_PATH="${VITE_BASE_PATH:-/}"
 BASE_NO_SLASH=$(echo "$BASE_PATH" | sed 's|/$||')
 sed -i "s|/BASEPATHPLACEHOLDER|${BASE_NO_SLASH}|g" /app/dist/index.html
 
+# Also patch JS/CSS chunks — Vite bakes the base path into dynamic imports
+find /app/dist/assets -type f \( -name '*.js' -o -name '*.css' \) \
+  -exec sed -i "s|/BASEPATHPLACEHOLDER|${BASE_NO_SLASH}|g" {} +
+
 # Cache-bust config.js so CDNs (Cloudflare) never serve stale runtime config
 CACHE_BUST=$(date +%s)
 sed -i "s|config\.js|config.js?v=${CACHE_BUST}|g" /app/dist/index.html

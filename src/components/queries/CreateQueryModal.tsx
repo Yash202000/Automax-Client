@@ -63,7 +63,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [comment, setComment] = useState("");
-  const [source, setSource] = useState<IncidentSource | undefined>(undefined);
+  const [source, setSource] = useState<IncidentSource | undefined>("web");
   const [channel, setChannel] = useState("");
   const [classificationId, setClassificationId] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -433,7 +433,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
       setDescription("");
 
-      setSource(undefined);
+      setSource("web");
 
       setChannel("");
 
