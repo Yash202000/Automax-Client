@@ -519,7 +519,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       setTitle(initialRequest?.title || "");
       setDescription(initialRequest?.description || "");
       setComment("");
-      setSource(initialRequest?.source);
+      setSource(initialRequest?.source || "web");
       setChannel(initialRequest?.channel || "");
       setClassificationId(initialRequest?.classification?.id || "");
       setLocationId(initialRequest?.location?.id || "");
