@@ -26,6 +26,9 @@ import {
   Info,
   Phone,
   AlertTriangle,
+  Key,
+  EyeOff,
+  ChevronDown,
 } from "lucide-react";
 import {
   Button,
@@ -100,6 +103,7 @@ export const UsersPage: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
+  const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
@@ -159,6 +163,11 @@ export const UsersPage: React.FC = () => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] =
     useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const filterTreeNodes = useCallback(
     (nodes: TreeNode[], search: string): TreeNode[] => {
@@ -400,6 +409,29 @@ export const UsersPage: React.FC = () => {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
+      userApi.adminPasswordReset(id, newPassword),
+    onSuccess: () => {
+      toast.success(
+        t("users.passwordResetSuccessfully", {
+          defaultValue: "Password reset successfully",
+        }),
+      );
+      setShowPasswordForm(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.error ||
+          t("users.passwordResetFailed", {
+            defaultValue: "Failed to reset password",
+          }),
+      );
+    },
+  });
+
   const openCreateModal = () => {
     setCreateFormData({
       email: "",
@@ -536,6 +568,9 @@ export const UsersPage: React.FC = () => {
     setEditingUser(null);
     setFormData(initialFormData);
     setFormErrors({});
+    setShowPasswordForm(false);
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
   const openViewModal = (user: User) => {
@@ -1493,6 +1528,151 @@ export const UsersPage: React.FC = () => {
                     className={getInputClassName()}
                   />
                 </div>
+
+                {/* Password Reset */}
+                {canUpdateUser && !editingUser?.is_ad_user && (
+                  <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPasswordForm(!showPasswordForm);
+                        setNewPassword("");
+                        setConfirmPassword("");
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Key className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                        <span>
+                          {t("users.resetPassword", {
+                            defaultValue: "Reset Password",
+                          })}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={cn(
+                          "w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform",
+                          showPasswordForm && "rotate-180",
+                        )}
+                      />
+                    </button>
+                    {showPasswordForm && (
+                      <div className="px-4 pb-4 space-y-3 border-t border-[hsl(var(--border))] pt-3">
+                        <div>
+                          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                            {t("users.newPassword", {
+                              defaultValue: "New Password",
+                            })}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showNewPassword ? "text" : "password"}
+                              placeholder="••••••••"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="w-full px-4 py-2.5 pr-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShowNewPassword(!showNewPassword)
+                              }
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                            >
+                              {showNewPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                            {t("users.confirmPassword", {
+                              defaultValue: "Confirm Password",
+                            })}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="••••••••"
+                              value={confirmPassword}
+                              onChange={(e) =>
+                                setConfirmPassword(e.target.value)
+                              }
+                              className="w-full px-4 py-2.5 pr-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShowConfirmPassword(!showConfirmPassword)
+                              }
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              if (!newPassword) {
+                                toast.error(
+                                  t("users.passwordRequired", {
+                                    defaultValue: "Password is required",
+                                  }),
+                                );
+                                return;
+                              }
+                              if (newPassword.length < 6) {
+                                toast.error(
+                                  t("users.passwordMinLength", {
+                                    defaultValue:
+                                      "Password must be at least 6 characters",
+                                  }),
+                                );
+                                return;
+                              }
+                              if (newPassword !== confirmPassword) {
+                                toast.error(
+                                  t("users.passwordsDoNotMatch", {
+                                    defaultValue: "Passwords do not match",
+                                  }),
+                                );
+                                return;
+                              }
+                              resetPasswordMutation.mutate({
+                                id: editingUser!.id,
+                                newPassword,
+                              });
+                            }}
+                            isLoading={resetPasswordMutation.isPending}
+                            leftIcon={
+                              !resetPasswordMutation.isPending ? (
+                                <Key className="w-3.5 h-3.5" />
+                              ) : undefined
+                            }
+                          >
+                            {resetPasswordMutation.isPending
+                              ? t("users.resetting", {
+                                  defaultValue: "Resetting...",
+                                })
+                              : t("users.updatePassword", {
+                                  defaultValue: "Update Password",
+                                })}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect

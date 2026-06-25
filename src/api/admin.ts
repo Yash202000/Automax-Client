@@ -282,6 +282,17 @@ export const userApi = {
     );
     return response.data;
   },
+
+  adminPasswordReset: async (
+    id: string,
+    newPassword: string,
+  ): Promise<ApiResponse<null>> => {
+    const response = await apiClient.put<ApiResponse<null>>(
+      `/users/${id}/password`,
+      { new_password: newPassword },
+    );
+    return response.data;
+  },
 };
 
 // Classification API
