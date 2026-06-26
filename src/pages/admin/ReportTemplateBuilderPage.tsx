@@ -506,7 +506,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
               {DATA_SOURCES.filter((ds) => ds.key !== "locations_by_count").map(
                 (ds) => (
                   <option className="text-black" key={ds.key} value={ds.key}>
-                    {ds.label}
+                    {t(`reports.dataSources.${ds.key}`) || ds.label}
                   </option>
                 ),
               )}
@@ -563,7 +563,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary to-accent text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
           >
             <Save className="h-4 w-4" />
-            {saving ? "Saving..." : "Save"}
+            {saving ? t("reports.saveDialog.saving") : t("common.save")}
           </button>
         </div>
       </div>
@@ -584,7 +584,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
                     : "text-gray-500  hover:text-gray-700  dark:text-gray-300  dark:hover:text-gray-400"
                 }`}
               >
-                {tab}
+                {t(`reportTemplates.tabbar.${tab}`)}
               </button>
             ))}
           </div>
@@ -604,7 +604,7 @@ const ReportTemplateBuilderPage: React.FC = () => {
                     >
                       <tool.icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                       <span className="text-xs text-gray-600 dark:text-gray-400">
-                        {tool.label}
+                        {t(`reportTemplates.elementTools.${tool.type}`)}
                       </span>
                     </button>
                   ))}

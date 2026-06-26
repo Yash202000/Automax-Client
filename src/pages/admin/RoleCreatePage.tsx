@@ -7,6 +7,11 @@ import { toast } from "sonner";
 import { permissionApi, roleApi } from "../../api/admin";
 import type { RoleCreateRequest } from "../../types";
 import { PermissionsEditor, type PermissionFilterMode } from "./RoleFormParts";
+import {
+  validateCode,
+  validateName,
+  validateRequired,
+} from "@/utils/validations";
 
 interface RoleFormData {
   name: string;
@@ -91,15 +96,15 @@ export const RoleCreatePage: React.FC = () => {
 
     const name = formData.name.trim();
     const code = formData.code.trim();
-    if (!name) {
+    if (!validateRequired(name)) {
       newErrors.name = t("roles.nameRequired");
-    } else if (!/[A-Za-z0-9]/.test(name)) {
+    } else if (!validateName(name)) {
       newErrors.name = t("roles.invalidName");
     }
 
-    if (!code) {
+    if (!validateRequired(code)) {
       newErrors.code = t("roles.codeRequired");
-    } else if (!/[A-Za-z0-9]/.test(code)) {
+    } else if (!validateCode(code)) {
       newErrors.code = t("roles.invalidCode");
     }
 

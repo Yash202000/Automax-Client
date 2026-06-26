@@ -4040,6 +4040,22 @@
     "failedToDuplicateTemplate": "Failed to duplicate template",
     "defaultTemplateUpdated": "Default template updated",
     "failedToSetDefaultTemplate": "Failed to set default template",
-    "deleteTemplateConfirm": "Are you sure you want to delete this template?"
+    "deleteTemplateConfirm": "Are you sure you want to delete this template?",
+    "elementTools": {
+      "text": "Text",
+      "image": "Image",
+      "table": "Table",
+      "shape": "Shape",
+      "line": "Line",
+      "dynamic_field": "Dynamic Field",
+      "chart": "Chart",
+      "spacer": "Spacer"
+    },
+    "tabbar": {
+      "elements": "Elements",
+      "page": "Page",
+      "header": "Header",
+      "footer": "Footer"
+    }
   }
 }

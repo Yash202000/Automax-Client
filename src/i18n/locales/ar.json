@@ -4044,6 +4044,22 @@
     "failedToDuplicateTemplate": "فشل تكرار القالب",
     "defaultTemplateUpdated": "تم تحديث القالب الافتراضي",
     "failedToSetDefaultTemplate": "فشل تعيين القالب الافتراضي",
-    "deleteTemplateConfirm": "هل أنت متأكد من حذف هذا القالب؟"
+    "deleteTemplateConfirm": "هل أنت متأكد من حذف هذا القالب؟",
+    "elementTools": {
+      "text": "نص",
+      "image": "صورة",
+      "table": "جدول",
+      "shape": "شكل",
+      "line": "خط",
+      "dynamic_field": "حقل ديناميكي",
+      "chart": "مخطط",
+      "spacer": "فاصل"
+    },
+    "tabbar": {
+      "elements": "العناصر",
+      "page": "الصفحة",
+      "header": "الرأس",
+      "footer": "التذييل"
+    }
   }
 }
