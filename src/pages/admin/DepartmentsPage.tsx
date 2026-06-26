@@ -503,6 +503,10 @@ export const DepartmentsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
     },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.error;
+      toast.error(errorMsg);
+    },
   });
 
   const { data: deptUsersData, isLoading: deptUsersLoading } = useQuery({

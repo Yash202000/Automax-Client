@@ -377,6 +377,10 @@ export const LocationsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "locations"] });
     },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.error;
+      toast.error(errorMsg);
+    },
   });
 
   const openCreateModal = (parentId: string = "", parentName: string = "") => {

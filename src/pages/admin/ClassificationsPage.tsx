@@ -481,6 +481,10 @@ export const ClassificationsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
     },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.error;
+      toast.error(errorMsg);
+    },
   });
 
   const openCreateModal = (parentId: string = "", parentName: string = "") => {
