@@ -112,7 +112,7 @@ export const WorkflowsPage: React.FC = () => {
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
-        "Failed to create workflow";
+        t("workflows.failedToCreateWorkflow");
       toast.error(t("workflows.failedToCreateWorkflow"), {
         description: errorMessage,
         duration: 5000,
@@ -134,7 +134,7 @@ export const WorkflowsPage: React.FC = () => {
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
-        "Failed to update workflow";
+        t("workflows.failedToUpdateWorkflow");
       toast.error(t("workflows.failedToUpdateWorkflow"), {
         description: errorMessage,
         duration: 5000,
@@ -154,7 +154,7 @@ export const WorkflowsPage: React.FC = () => {
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
-        "Failed to delete workflow";
+        t("workflows.failedToDeleteWorkflow");
       toast.error(t("workflows.failedToDeleteWorkflow"), {
         description: errorMessage,
       });
@@ -171,7 +171,7 @@ export const WorkflowsPage: React.FC = () => {
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
-        "Failed to duplicate workflow";
+        t("workflows.failedToDuplicateWorkflow");
       toast.error(t("workflows.failedToDuplicateWorkflow"), {
         description: errorMessage,
       });
@@ -191,7 +191,7 @@ export const WorkflowsPage: React.FC = () => {
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
-        "Failed to restore workflow";
+        t("workflows.failedToRestoreWorkflow");
       toast.error(t("workflows.failedToRestoreWorkflow"), {
         description: errorMessage,
       });
@@ -211,7 +211,7 @@ export const WorkflowsPage: React.FC = () => {
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
-        "Failed to permanently delete workflow";
+        t("workflows.failedToPermanentlyDeleteWorkflow");
       toast.error(t("workflows.failedToPermanentlyDeleteWorkflow"), {
         description: errorMessage,
       });
