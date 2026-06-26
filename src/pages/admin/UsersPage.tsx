@@ -77,6 +77,7 @@ type UserFieldErrors = Partial<
 interface UserImportResult {
   imported: number;
   skipped: number;
+  total?: number;
   errors: string[];
   note?: string;
   failed?: unknown[];
@@ -738,6 +739,25 @@ export const UsersPage: React.FC = () => {
     }
   };
 
+  const handleExportJson = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await userApi.export();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `users_export_${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDownloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
       [
@@ -783,10 +803,11 @@ export const UsersPage: React.FC = () => {
     const file = event.target.files?.[0] || null;
     if (file) {
       const name = file.name.toLowerCase();
-      if (!name.endsWith(".xlsx")) {
+      if (!name.endsWith(".json") && !name.endsWith(".xlsx")) {
         toast.error(
-          t("users.validExcelRequired", {
-            defaultValue: "Please select a valid Excel (.xlsx) file",
+          t("users.validJsonOrExcelRequired", {
+            defaultValue:
+              "Please select a valid JSON (.json) or Excel (.xlsx) file",
           }),
         );
         event.target.value = "";
@@ -797,25 +818,115 @@ export const UsersPage: React.FC = () => {
     setImportFile(file);
   };
 
+  const validateImportRows = (
+    rows: Array<{ username?: string; email?: string; password?: string }>,
+  ): string[] => {
+    const errors: string[] = [];
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameSet = new Map<string, number[]>();
+    const emailSet = new Map<string, number[]>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 1;
+      const rowLabel = `Row ${rowNum}`;
+
+      if (!row.username?.trim()) {
+        errors.push(
+          `${rowLabel}: ${t("users.importUsernameRequired", { defaultValue: "Username is required" })}`,
+        );
+      }
+      if (!row.email?.trim()) {
+        errors.push(
+          `${rowLabel}: ${t("users.importEmailRequired", { defaultValue: "Email is required" })}`,
+        );
+      } else if (!emailRegex.test(row.email.trim())) {
+        errors.push(
+          `${rowLabel}: "${row.email}" - ${t("auth.invalidEmail", { defaultValue: "Invalid email format" })}`,
+        );
+      }
+
+      if (row.username?.trim()) {
+        const existing = usernameSet.get(row.username.trim()) || [];
+        existing.push(rowNum);
+        usernameSet.set(row.username.trim(), existing);
+      }
+      if (row.email?.trim()) {
+        const existing = emailSet.get(row.email.trim()) || [];
+        existing.push(rowNum);
+        emailSet.set(row.email.trim(), existing);
+      }
+    }
+
+    for (const [username, rows] of usernameSet) {
+      if (rows.length > 1) {
+        errors.push(
+          t("users.importDuplicateUsername", {
+            defaultValue: `Duplicate username "${username}" found in rows: ${rows.join(", ")}`,
+          }),
+        );
+      }
+    }
+    for (const [email, rows] of emailSet) {
+      if (rows.length > 1) {
+        errors.push(
+          t("users.importDuplicateEmail", {
+            defaultValue: `Duplicate email "${email}" found in rows: ${rows.join(", ")}`,
+          }),
+        );
+      }
+    }
+
+    return errors;
+  };
+
   const handleImport = async () => {
     if (!importFile) return;
     try {
       setIsImporting(true);
-      const arrayBuffer = await importFile.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer);
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
-      const jsonRows = rows.map((row) => ({
-        username: row.username || "",
-        email: row.email || "",
-        first_name: row.first_name || "",
-        last_name: row.last_name || "",
-        phone: row.phone || "",
-        extension: row.extension || "",
-        is_active: true,
-        is_super_admin: false,
-      }));
+      let jsonRows: Array<{
+        username: string;
+        email: string;
+        first_name: string;
+        last_name: string;
+        phone: string;
+        extension: string;
+        is_active: boolean;
+        is_super_admin: boolean;
+      }>;
+
+      if (importFile.name.toLowerCase().endsWith(".xlsx")) {
+        const arrayBuffer = await importFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
+        jsonRows = rows.map((row) => ({
+          username: row.username || "",
+          email: row.email || "",
+          first_name: row.first_name || "",
+          last_name: row.last_name || "",
+          phone: row.phone || "",
+          extension: row.extension || "",
+          is_active: true,
+          is_super_admin: false,
+        }));
+      } else {
+        const text = await importFile.text();
+        jsonRows = JSON.parse(text);
+      }
+
+      const validationErrors = validateImportRows(jsonRows);
+      if (validationErrors.length > 0) {
+        setImportResult({
+          imported: 0,
+          skipped: 0,
+          total: jsonRows.length,
+          errors: validationErrors,
+        } as UserImportResult);
+        return;
+      }
+
       const jsonBlob = new Blob([JSON.stringify(jsonRows, null, 2)], {
         type: "application/json",
       });
@@ -824,7 +935,8 @@ export const UsersPage: React.FC = () => {
       });
 
       const result = await userApi.import(jsonFile);
-      setImportResult((result.data as UserImportResult) || null);
+      const data = result.data as UserImportResult;
+      setImportResult({ ...data, total: jsonRows.length });
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       setIsImportModalOpen(false);
       setImportFile(null);
@@ -885,11 +997,24 @@ export const UsersPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            leftIcon={<Download className="w-4 h-4" />}
+            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
             onClick={handleExport}
             isLoading={isExporting}
           >
-            {isExporting ? t("common.exporting") : t("common.export")}
+            {isExporting
+              ? t("common.exporting")
+              : t("users.exportExcel", { defaultValue: "Export Excel" })}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-4 h-4" />}
+            onClick={handleExportJson}
+            isLoading={isExporting}
+          >
+            {isExporting
+              ? t("common.exporting")
+              : t("users.exportJson", { defaultValue: "Export JSON" })}
           </Button>
           <Button
             variant="outline"
@@ -2844,9 +2969,9 @@ export const UsersPage: React.FC = () => {
                   </h3>
                 </div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
-                  {t("users.uploadExcelToImport", {
+                  {t("users.uploadJsonOrExcelToImport", {
                     defaultValue:
-                      "Upload an Excel file (.xlsx) to import users",
+                      "Upload a JSON (.json) or Excel (.xlsx) file to import users",
                   })}
                 </p>
               </div>
@@ -2864,8 +2989,8 @@ export const UsersPage: React.FC = () => {
             <div className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("users.selectExcelFile", {
-                    defaultValue: "Select Excel file (.xlsx)",
+                  {t("users.selectJsonOrExcelFile", {
+                    defaultValue: "Select JSON (.json) or Excel (.xlsx) file",
                   })}
                 </label>
                 <label
@@ -2885,7 +3010,7 @@ export const UsersPage: React.FC = () => {
                   </span>
                   <input
                     type="file"
-                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     onChange={handleImportFileChange}
                     disabled={isImporting}
                     className="hidden"
@@ -2908,8 +3033,9 @@ export const UsersPage: React.FC = () => {
                     </p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>
-                        {t("users.validExcelRequired", {
-                          defaultValue: "Valid Excel (.xlsx) file required",
+                        {t("users.validJsonOrExcelRequired", {
+                          defaultValue:
+                            "Valid JSON (.json) or Excel (.xlsx) file required",
                         })}
                       </li>
                       <li>{t("users.failedImportsDownloadNote")}</li>
@@ -2973,11 +3099,16 @@ export const UsersPage: React.FC = () => {
 
                 <div className="mt-2 space-y-2">
                   <p className="text-base font-semibold text-[hsl(var(--foreground))]">
+                    <span className="text-[hsl(var(--muted-foreground))]">
+                      {t("users.totalRecords", { defaultValue: "Total" })}:
+                    </span>{" "}
+                    {importResult.total ??
+                      importResult.imported + importResult.skipped}
+                  </p>
+                  <p className="text-base font-semibold text-[hsl(var(--foreground))]">
                     <span className="text-[hsl(var(--success))]">
                       {importResult.imported}
-                    </span>
-                    {" / "}
-                    {importResult.imported + importResult.skipped}{" "}
+                    </span>{" "}
                     {t("users.imported")}
                   </p>
                   {importResult.skipped > 0 && (
