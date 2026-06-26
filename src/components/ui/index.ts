@@ -17,6 +17,11 @@ export { LocationPicker } from "./LocationPicker";
 export type { LocationData } from "./LocationPicker";
 export { LocationPickerModal } from "./LocationPickerModal";
 export {
+  PasswordChecklist,
+  getPasswordRequirements,
+  isValidPassword,
+} from "./PasswordChecklist";
+export {
   Modal,
   ModalHeader,
   ModalTitle,

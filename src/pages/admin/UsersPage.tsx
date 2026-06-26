@@ -34,6 +34,8 @@ import {
 import {
   Button,
   HierarchicalTreeSelect,
+  PasswordChecklist,
+  getPasswordRequirements,
   type TreeNode,
 } from "../../components/ui";
 import {
@@ -73,6 +75,9 @@ interface UserFormData {
 type UserFieldErrors = Partial<
   Record<"email" | "username" | "password" | "form", string>
 >;
+
+const USER_PASSWORD_POLICY_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
 
 interface UserImportResult {
   imported: number;
@@ -171,6 +176,41 @@ export const UsersPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const passwordRequirementLabels = useMemo(
+    () => ({
+      minLength: t("users.passwordRequirementMinLength"),
+      uppercase: t("users.passwordRequirementUppercase"),
+      lowercase: t("users.passwordRequirementLowercase"),
+      number: t("users.passwordRequirementNumber"),
+      specialChar: t("users.passwordRequirementSpecialChar"),
+    }),
+    [t],
+  );
+
+  const passwordRequirements = useMemo(
+    () =>
+      getPasswordRequirements(
+        createFormData.password,
+        passwordRequirementLabels,
+      ),
+    [createFormData.password, passwordRequirementLabels],
+  );
+
+  const isCreatePasswordValid = passwordRequirements.every(
+    (requirement) => requirement.valid,
+  );
+
+  const adminResetPasswordRequirements = useMemo(
+    () => getPasswordRequirements(newPassword, passwordRequirementLabels),
+    [newPassword, passwordRequirementLabels],
+  );
+
+  const isAdminResetPasswordValid = adminResetPasswordRequirements.every(
+    (requirement) => requirement.valid,
+  );
+  const doAdminResetPasswordsMatch =
+    newPassword === confirmPassword && confirmPassword.length > 0;
 
   const filterTreeNodes = useCallback(
     (nodes: TreeNode[], search: string): TreeNode[] => {
@@ -539,6 +579,8 @@ export const UsersPage: React.FC = () => {
       errors.password = t("validation.fieldRequired", {
         field: t("auth.password"),
       });
+    } else if (!USER_PASSWORD_POLICY_REGEX.test(createFormData.password)) {
+      errors.password = t("users.passwordPolicy");
     }
 
     setCreateFormErrors(errors);
@@ -1893,10 +1935,20 @@ export const UsersPage: React.FC = () => {
                             </button>
                           </div>
                         </div>
+                        {newPassword && (
+                          <PasswordChecklist
+                            requirements={adminResetPasswordRequirements}
+                          />
+                        )}
                         <div className="flex justify-end">
                           <Button
                             type="button"
                             size="sm"
+                            disabled={
+                              !isAdminResetPasswordValid ||
+                              !doAdminResetPasswordsMatch ||
+                              resetPasswordMutation.isPending
+                            }
                             onClick={() => {
                               if (!newPassword) {
                                 toast.error(
@@ -1906,13 +1958,8 @@ export const UsersPage: React.FC = () => {
                                 );
                                 return;
                               }
-                              if (newPassword.length < 6) {
-                                toast.error(
-                                  t("users.passwordMinLength", {
-                                    defaultValue:
-                                      "Password must be at least 6 characters",
-                                  }),
-                                );
+                              if (!isAdminResetPasswordValid) {
+                                toast.error(t("users.passwordPolicy"));
                                 return;
                               }
                               if (newPassword !== confirmPassword) {
@@ -2303,6 +2350,7 @@ export const UsersPage: React.FC = () => {
                     className={getInputClassName(!!createFormErrors.password)}
                   />
                   {renderFieldError(createFormErrors.password)}
+                  <PasswordChecklist requirements={passwordRequirements} />
                 </div>
 
                 {/* Name Fields */}
@@ -2516,6 +2564,7 @@ export const UsersPage: React.FC = () => {
                 </Button>
                 <Button
                   type="submit"
+                  disabled={!isCreatePasswordValid || createMutation.isPending}
                   isLoading={createMutation.isPending}
                   leftIcon={
                     !createMutation.isPending ? (
