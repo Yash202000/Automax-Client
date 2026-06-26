@@ -546,7 +546,9 @@ export const WorkflowsPage: React.FC = () => {
                             key={classification.id}
                             className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg"
                           >
-                            {classification.name}
+                            {i18n.language === "ar" && classification.name_ar
+                              ? classification.name_ar
+                              : classification.name}
                           </span>
                         ))}
                       {(workflow.classifications?.length || 0) > 3 && (

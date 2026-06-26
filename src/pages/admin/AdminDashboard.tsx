@@ -250,33 +250,33 @@ export const AdminDashboard: React.FC = () => {
 
   const recentActivity = [
     {
-      action: "New user registered",
+      action: t("adminDashboard.newUserRegistered"),
       target: "john.doe@example.com",
-      time: "2 min ago",
+      time: t("adminDashboard.twoMinutesAgo"),
       type: "user",
     },
     {
-      action: "Role permissions updated",
-      target: "Content Manager",
-      time: "15 min ago",
+      action: t("adminDashboard.rolePermissionsUpdated"),
+      target: t("adminDashboard.contentManager"),
+      time: t("adminDashboard.fifteenMinutesAgo"),
       type: "role",
     },
     {
-      action: "Department created",
-      target: "Engineering",
-      time: "1 hour ago",
+      action: t("adminDashboard.departmentCreated"),
+      target: t("adminDashboard.engineering"),
+      time: t("adminDashboard.oneHourAgo"),
       type: "department",
     },
     {
-      action: "User deactivated",
+      action: t("adminDashboard.userDeactivated"),
       target: "jane.smith@example.com",
-      time: "3 hours ago",
+      time: t("adminDashboard.threeHoursAgo"),
       type: "user",
     },
     {
-      action: "New location added",
-      target: "San Francisco Office",
-      time: "5 hours ago",
+      action: t("adminDashboard.newLocationAdded"),
+      target: t("adminDashboard.sanFranciscoOffice"),
+      time: t("adminDashboard.fiveHoursAgo"),
       type: "location",
     },
   ];
@@ -310,6 +310,65 @@ export const AdminDashboard: React.FC = () => {
         return "bg-slate-100 text-slate-600";
     }
   };
+
+  const systemServices = [
+    {
+      name: t("adminDashboard.database"),
+      status: t("adminDashboard.connected"),
+      latency: "12ms",
+      color: "emerald",
+    },
+    {
+      name: t("adminDashboard.storage"),
+      status: t("adminDashboard.storageFree"),
+      latency: "8ms",
+      color: "emerald",
+    },
+    {
+      name: t("adminDashboard.cache"),
+      status: t("adminDashboard.redisActive"),
+      latency: "3ms",
+      color: "emerald",
+    },
+    {
+      name: t("adminDashboard.apiServer"),
+      status: t("adminDashboard.operational"),
+      latency: "45ms",
+      color: "emerald",
+    },
+    //   {
+    //     name: "Database",
+    //     name_ar: "قاعدة البيانات",
+    //     status: "Connected",
+    //     status_ar: "متصل",
+    //     latency: "12ms",
+    //     color: "emerald",
+    //   },
+    //   {
+    //     name: "Storage",
+    //     name_ar: "التخزين",
+    //     status: "2.4TB free",
+    //     status_ar: "2.4 تيرابايت متاحة",
+    //     latency: "8ms",
+    //     color: "emerald",
+    //   },
+    //   {
+    //     name: "Cache",
+    //     name_ar: "ذاكرة التخزين المؤقت",
+    //     status: "Redis active",
+    //     status_ar: "Redis نشط",
+    //     latency: "3ms",
+    //     color: "emerald",
+    //   },
+    //   {
+    //     name: "API Server",
+    //     name_ar: "خادم API",
+    //     status: "Operational",
+    //     status_ar: "قيد التشغيل",
+    //     latency: "45ms",
+    //     color: "emerald",
+    //   },
+  ];
 
   return (
     <div className="space-y-8">
@@ -488,32 +547,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            {
-              name: "Database",
-              status: "Connected",
-              latency: "12ms",
-              color: "emerald",
-            },
-            {
-              name: "Storage",
-              status: "2.4TB free",
-              latency: "8ms",
-              color: "emerald",
-            },
-            {
-              name: "Cache",
-              status: "Redis active",
-              latency: "3ms",
-              color: "emerald",
-            },
-            {
-              name: "API Server",
-              status: "Operational",
-              latency: "45ms",
-              color: "emerald",
-            },
-          ].map((service) => (
+          {systemServices.map((service) => (
             <div
               key={service.name}
               className=" relative overflow-hidden p-4 rounded-2xl  bg-white/70 dark:bg-white/5 backdrop-blur-xl  dark:border border-slate-200/60 dark:border-white/10 shadow-sm hover:shadow-lg transition-all duration-300  hover:-translate-y-0.5"
@@ -530,8 +564,7 @@ export const AdminDashboard: React.FC = () => {
                 {service.status}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">
-                {t("adminDashboard.latency")}
-                {service.latency}
+                {t("adminDashboard.latency") + "   " + service.latency}
               </p>
             </div>
           ))}
