@@ -12,13 +12,15 @@ import {
   locationApi,
   incidentApi,
 } from "../../api/admin";
-import type {
-  IncidentFilter,
-  Workflow,
-  User as UserType,
-  WorkflowState,
+import {
+  type IncidentFilter,
+  type Workflow,
+  type User as UserType,
+  type WorkflowState,
+  INCIDENT_SOURCES,
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
+import i18n from "@/i18n";
 
 // Column configuration (shared across pages)
 export interface ColumnConfig {
@@ -83,6 +85,14 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
+
+  const sourceOptions = INCIDENT_SOURCES.map((source) => ({
+    value: source.value,
+    label:
+      i18n.language === "ar" && source.label_ar
+        ? source.label_ar
+        : source.label,
+  }));
 
   // Handle click outside column config dropdown
   useEffect(() => {
@@ -511,6 +521,23 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               <option value="">{t("common.all")}</option>
               <option value="true">{t("common.breached")}</option>
               <option value="false">{t("common.onTrack")}</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+              {t("common.source")}
+            </label>
+            <select
+              value={filter.source === undefined ? "" : filter.source}
+              onChange={(e) => onFilterChange("source", e.target.value)}
+              className={cn(
+                "w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]",
+              )}
+            >
+              <option value="">{t("common.allSources")}</option>
+              {sourceOptions?.map((source) => (
+                <option value={source.value}>{source.label}</option>
+              ))}
             </select>
           </div>
         </div>

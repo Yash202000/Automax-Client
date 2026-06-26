@@ -225,7 +225,9 @@
     "nameRequired": "Name is required.",
     "nameInvalid": "Name cannot consist only of numbers or special characters.",
     "nameAllowedCharacters": "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /.",
-    "preview": "Preview"
+    "preview": "Preview",
+    "source": "Source",
+    "allSources": "All Sources"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
