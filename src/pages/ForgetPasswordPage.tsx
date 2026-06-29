@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,12 +12,18 @@ import {
   EyeOff,
   Eye,
 } from "lucide-react";
-import { Button } from "@/components/ui";
+import {
+  Button,
+  PasswordChecklist,
+  getPasswordRequirements,
+} from "@/components/ui";
 import { authApi } from "@/api/auth";
 import { useMutation } from "@tanstack/react-query";
 
 type Channel = "sms" | "email";
 type Step = 1 | 2 | 3 | 4;
+
+const PASSWORD_SPECIAL_CHARACTER_REGEX = /[^\w\s]/;
 
 function resolveError(
   status: number | undefined,
@@ -83,6 +89,28 @@ export function ForgotPasswordPage() {
   const [timer, setTimer] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const passwordRequirementLabels = useMemo(
+    () => ({
+      minLength: t("users.passwordRequirementMinLength"),
+      uppercase: t("users.passwordRequirementUppercase"),
+      lowercase: t("users.passwordRequirementLowercase"),
+      number: t("users.passwordRequirementNumber"),
+      specialChar: t("users.passwordRequirementSpecialChar"),
+    }),
+    [t],
+  );
+
+  const passwordRequirements = useMemo(
+    () => getPasswordRequirements(password, passwordRequirementLabels),
+    [password, passwordRequirementLabels],
+  );
+
+  const isResetPasswordValid = passwordRequirements.every(
+    (requirement) => requirement.valid,
+  );
+  const doPasswordsMatch =
+    password === confirmPassword && confirmPassword.length > 0;
 
   const goTo = (s: Step) => {
     setFieldError("");
@@ -257,11 +285,15 @@ export function ForgotPasswordPage() {
       setFieldError(t("auth.pwUppercase"));
       return;
     }
+    if (!/[a-z]/.test(password)) {
+      setFieldError(t("auth.pwLowercase"));
+      return;
+    }
     if (!/[0-9]/.test(password)) {
       setFieldError(t("auth.pwNumber"));
       return;
     }
-    if (!/[^A-Za-z0-9]/.test(password)) {
+    if (!PASSWORD_SPECIAL_CHARACTER_REGEX.test(password)) {
       setFieldError(t("auth.pwSpecial"));
       return;
     }
@@ -558,7 +590,7 @@ export function ForgotPasswordPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rtl:left-auto rtl:right-3" />
                 <input
                   type={showPw1 ? "text" : "password"}
-                  placeholder={t("auth.passwordPlaceholder", "••••••••")}
+                  placeholder={t("auth.passwordPlaceholder", "********")}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -574,6 +606,7 @@ export function ForgotPasswordPage() {
                   {showPw1 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              <PasswordChecklist requirements={passwordRequirements} />
             </div>
 
             <div>
@@ -584,7 +617,7 @@ export function ForgotPasswordPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rtl:left-auto rtl:right-3" />
                 <input
                   type={showPw2 ? "text" : "password"}
-                  placeholder={t("auth.passwordPlaceholder", "••••••••")}
+                  placeholder={t("auth.passwordPlaceholder", "********")}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
@@ -600,11 +633,21 @@ export function ForgotPasswordPage() {
                   {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {!doPasswordsMatch && (
+                <p className="mt-2 text-sm font-medium text-[hsl(var(--destructive))]">
+                  {t("users.passwordsDoNotMatch")}
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
               className="w-full"
+              disabled={
+                !isResetPasswordValid ||
+                !doPasswordsMatch ||
+                resetPasswordMutation.isPending
+              }
               isLoading={resetPasswordMutation.isPending}
               rightIcon={
                 !resetPasswordMutation.isPending && (
