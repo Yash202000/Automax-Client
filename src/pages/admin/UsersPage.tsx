@@ -73,7 +73,7 @@ interface UserFormData {
 }
 
 type UserFieldErrors = Partial<
-  Record<"email" | "username" | "password" | "form", string>
+  Record<"email" | "username" | "password" | "phone" | "form", string>
 >;
 
 const USER_PASSWORD_POLICY_REGEX =
@@ -416,6 +416,10 @@ export const UsersPage: React.FC = () => {
 
     if (lowerMessage.includes("password")) {
       return { password: message };
+    }
+
+    if (lowerMessage.includes("phone")) {
+      return { phone: message };
     }
 
     return { form: message };
@@ -1809,11 +1813,11 @@ export const UsersPage: React.FC = () => {
                         }
                       }}
                       className={getInputClassName(
-                        !!formErrors.username || !!formErrors.form,
+                        !!formErrors?.username,
                         "font-mono",
                       )}
                     />
-                    {renderFieldError(formErrors.username || formErrors.form)}
+                    {renderFieldError(formErrors?.username)}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -1826,8 +1830,9 @@ export const UsersPage: React.FC = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
-                      className={getInputClassName()}
+                      className={getInputClassName(!!formErrors?.phone)}
                     />
+                    {renderFieldError(formErrors?.phone)}
                   </div>
                 </div>
 
@@ -2156,6 +2161,11 @@ export const UsersPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                {formErrors?.form && (
+                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
+                    <div>{renderFieldError(formErrors.form)}</div>
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
@@ -2312,13 +2322,11 @@ export const UsersPage: React.FC = () => {
                         }
                       }}
                       className={getInputClassName(
-                        !!createFormErrors.username || !!createFormErrors.form,
+                        !!createFormErrors.username,
                         "font-mono",
                       )}
                     />
-                    {renderFieldError(
-                      createFormErrors.username || createFormErrors.form,
-                    )}
+                    {renderFieldError(createFormErrors.username)}
                   </div>
                 </div>
 
@@ -2406,8 +2414,9 @@ export const UsersPage: React.FC = () => {
                         phone: e.target.value,
                       })
                     }
-                    className={getInputClassName()}
+                    className={getInputClassName(!!createFormErrors?.phone)}
                   />
+                  {renderFieldError(createFormErrors?.phone)}
                 </div>
 
                 {/* Extension */}
@@ -2551,6 +2560,11 @@ export const UsersPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                {createFormErrors?.form && (
+                  <div className=" flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
+                    <div>{renderFieldError(createFormErrors.form)}</div>
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
