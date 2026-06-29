@@ -373,6 +373,7 @@ export const DepartmentsPage: React.FC = () => {
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const canCreateDepartment =
     isSuperAdmin || hasPermission(PERMISSIONS.DEPARTMENTS_CREATE);
@@ -494,6 +495,11 @@ export const DepartmentsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "departments"] });
       setDeleteConfirm(null);
+    },
+    onError: (err: any) => {
+      setDeleteError(
+        err?.response?.data?.error || t("departments.deleteError"),
+      );
     },
   });
 
@@ -1008,20 +1014,42 @@ export const DepartmentsPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteMutation.mutate(deleteConfirm)}
-                  isLoading={deleteMutation.isPending}
-                >
-                  {deleteMutation.isPending
-                    ? t("departments.deleting")
-                    : t("departments.deleteDepartment")}
-                </Button>
-              </div>
+              {deleteError && (
+                <div className="mt-3 mb-4 rounded-md border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] px-4 py-3 text-sm font-medium text-[hsl(var(--destructive))]">
+                  {deleteError}
+                </div>
+              )}
+              {!deleteError ? (
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setDeleteConfirm(null)}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteMutation.mutate(deleteConfirm)}
+                    isLoading={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending
+                      ? t("departments.deleting")
+                      : t("departments.deleteDepartment")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex justify-end mt-6 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDeleteConfirm(null);
+                      setDeleteError(null);
+                    }}
+                  >
+                    {t("common.close")}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

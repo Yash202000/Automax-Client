@@ -1208,7 +1208,8 @@
     "codeRequired": "Department code is required",
     "invalidName": "Department name can only contain letters, numbers and spaces",
     "invalidArabicName": "Department name in Arabic can only contain letters, numbers and spaces",
-    "invalidCode": "Department code can only contain letters, numbers and spaces"
+    "invalidCode": "Department code can only contain letters, numbers and spaces",
+    "deleteError": "Failed to delete department."
   },
   "locations": {
     "title": "Locations",
@@ -1278,7 +1279,8 @@
     "descriptionAr": "Description (Arabic)",
     "nameRequired": "Location name is required",
     "invalidName": "Location name can only contain letters, numbers and spaces",
-    "invalidArabicName": "Location name in Arabic can only contain Arabic letters, numbers and spaces"
+    "invalidArabicName": "Location name in Arabic can only contain Arabic letters, numbers and spaces",
+    "deleteError": "Failed to delete location."
   },
   "classifications": {
     "title": "Classifications",
