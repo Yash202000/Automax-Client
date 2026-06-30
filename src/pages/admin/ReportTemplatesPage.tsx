@@ -59,6 +59,12 @@ const dataSourceInfo: Record<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
+interface DynamicReportOption {
+  value: string;
+  label: string;
+  children?: DynamicReportOption[];
+}
+
 export const ReportTemplatesPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -66,7 +72,7 @@ export const ReportTemplatesPage: React.FC = () => {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [filterSource, setFilterSource] = useState<ReportDataSource | "">("");
   const [dynamicOptionsMap, setDynamicOptionsMap] = useState<
-    Record<string, { value: string; label: string }[]>
+    Record<string, DynamicReportOption[]>
   >({});
   const user = useAuthStore((state) => state.user);
 
@@ -149,37 +155,25 @@ export const ReportTemplatesPage: React.FC = () => {
     navigate(`/reports/builder/${template.id}`);
   };
 
-  const flattenTreeWithLabels = <
+  const mapTreeOptions = <
     T extends {
       id: string;
       name: string;
-      path?: string;
-      level?: number;
       children?: T[];
     },
   >(
     items: T[],
-    level: number = 0,
-  ): { value: string; label: string }[] => {
-    const result: { value: string; label: string }[] = [];
-
-    for (const item of items) {
-      const indent = level > 0 ? "│  ".repeat(level - 1) + "├─ " : "";
-      result.push({
-        value: item.id,
-        label: indent + item.name,
-      });
-
-      if (item.children && item.children.length > 0) {
-        result.push(...flattenTreeWithLabels(item.children, level + 1));
-      }
-    }
-
-    return result;
-  };
+  ): DynamicReportOption[] =>
+    items.map((item) => ({
+      value: item.id,
+      label: item.name,
+      children: item.children?.length
+        ? mapTreeOptions(item.children)
+        : undefined,
+    }));
 
   useEffect(() => {
-    const map: Record<string, { value: string; label: string }[]> = {};
+    const map: Record<string, DynamicReportOption[]> = {};
 
     if (stateOptions?.data && stateOptions.data.length > 0) {
       map.states = stateOptions.data[0].states?.map((state) => ({
@@ -208,19 +202,19 @@ export const ReportTemplatesPage: React.FC = () => {
     }
 
     if (departmentsTree?.data) {
-      map.departments = flattenTreeWithLabels(
+      map.departments = mapTreeOptions(
         departmentsTree.data as (Department & { children?: Department[] })[],
       );
     }
 
     if (locationsTree?.data) {
-      map.locations = flattenTreeWithLabels(
+      map.locations = mapTreeOptions(
         locationsTree.data as (Location & { children?: Location[] })[],
       );
     }
 
     if (classificationsTree?.data) {
-      map.classifications = flattenTreeWithLabels(
+      map.classifications = mapTreeOptions(
         classificationsTree.data as (Classification & {
           children?: Classification[];
         })[],

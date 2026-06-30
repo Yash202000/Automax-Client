@@ -9,6 +9,8 @@ import type {
 } from "../../types";
 import { getOperatorsForFieldType } from "../../constants/reportFields";
 import { MultiSelect } from "../../components/ui/MultiSelect";
+import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
+import type { TreeNode } from "../../components/ui/HierarchicalTreeSelect";
 import i18n from "@/i18n";
 
 interface FilterBuilderProps {
@@ -86,6 +88,35 @@ const FilterRow: React.FC<FilterRowProps> = ({
       const selectedValues: Array<string | number> = Array.isArray(filter.value)
         ? (filter.value as Array<string | number>)
         : [];
+      const hasNestedOptions = selectedField.options.some(
+        (option) => option.children && option.children.length > 0,
+      );
+
+      if (selectedField.dynamicOptions && hasNestedOptions) {
+        const toTreeNodes = (
+          options: NonNullable<ReportFieldDefinition["options"]>,
+        ): TreeNode[] =>
+          options.map((option) => ({
+            id: String(option.value),
+            name: option.label,
+            children: option.children?.length
+              ? toTreeNodes(option.children)
+              : undefined,
+          }));
+
+        return (
+          <MultiTreeSelect
+            className="w-full"
+            data={toTreeNodes(selectedField.options)}
+            selectedIds={selectedValues.map(String)}
+            onSelectionChange={(values) => handleValueChange(values)}
+            placeholder={t("reports.filterBuilder.selectValue")}
+            leafOnly={false}
+            maxTags={2}
+          />
+        );
+      }
+
       return (
         <MultiSelect
           options={selectedField.options.map((opt) => ({

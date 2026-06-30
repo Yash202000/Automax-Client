@@ -75,6 +75,31 @@ const initialFormData: DepartmentFormData = {
   role_ids: [],
 };
 
+type HierarchicalFormNode = {
+  id: string;
+  children?: HierarchicalFormNode[];
+};
+
+const getHierarchicalIds = (nodes: HierarchicalFormNode[]): string[] =>
+  nodes.flatMap((node) => [
+    node.id,
+    ...getHierarchicalIds(node.children ?? []),
+  ]);
+
+const normalizeHierarchicalSelection = (
+  nodes: HierarchicalFormNode[],
+  selectedIds: Set<string>,
+): string[] => {
+  const visit = (node: HierarchicalFormNode): boolean => {
+    if (!node.children?.length) return selectedIds.has(node.id);
+    const allChildrenSelected = node.children.map(visit).every(Boolean);
+    if (allChildrenSelected) selectedIds.add(node.id);
+    else selectedIds.delete(node.id);
+    return allChildrenSelected;
+  };
+  nodes.forEach(visit);
+  return Array.from(selectedIds);
+};
 // Tree checkbox components for hierarchical selection
 function LocationTreeCheckbox({
   nodes,
@@ -84,41 +109,50 @@ function LocationTreeCheckbox({
 }: {
   nodes: Location[];
   selectedIds: string[];
-  onToggle: (id: string) => void;
+  onToggle: (node: Location) => void;
   depth: number;
 }) {
   const { i18n } = useTranslation();
   return (
     <>
-      {nodes.map((node) => (
-        <div key={node.id}>
-          <label
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
-            style={{ paddingLeft: `${8 + depth * 16}px` }}
-          >
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(node.id)}
-              onChange={() => onToggle(node.id)}
-              className="w-4 h-4 rounded border-[hsl(var(--border))] accent-[hsl(var(--primary))]"
-            />
-            <MapPin className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
-            <span className="text-sm text-[hsl(var(--foreground))]">
-              {i18n.language === "ar" && node.name_ar
-                ? node.name_ar
-                : node.name}
-            </span>
-          </label>
-          {node.children && node.children.length > 0 && (
-            <LocationTreeCheckbox
-              nodes={node.children}
-              selectedIds={selectedIds}
-              onToggle={onToggle}
-              depth={depth + 1}
-            />
-          )}
-        </div>
-      ))}
+      {nodes.map((node) => {
+        const nodeIds = getHierarchicalIds([node]);
+        const isChecked = nodeIds.every((id) => selectedIds.includes(id));
+        const isIndeterminate =
+          !isChecked && nodeIds.some((id) => selectedIds.includes(id));
+        return (
+          <div key={node.id}>
+            <label
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
+              style={{ paddingLeft: `${8 + depth * 16}px` }}
+            >
+              <input
+                type="checkbox"
+                checked={isChecked}
+                ref={(input) => {
+                  if (input) input.indeterminate = isIndeterminate;
+                }}
+                onChange={() => onToggle(node)}
+                className="w-4 h-4 rounded border-[hsl(var(--border))] accent-[hsl(var(--primary))]"
+              />
+              <MapPin className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
+              <span className="text-sm text-[hsl(var(--foreground))]">
+                {i18n.language === "ar" && node.name_ar
+                  ? node.name_ar
+                  : node.name}
+              </span>
+            </label>
+            {node.children && node.children.length > 0 && (
+              <LocationTreeCheckbox
+                nodes={node.children}
+                selectedIds={selectedIds}
+                onToggle={onToggle}
+                depth={depth + 1}
+              />
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -131,41 +165,50 @@ function ClassificationTreeCheckbox({
 }: {
   nodes: Classification[];
   selectedIds: string[];
-  onToggle: (id: string) => void;
+  onToggle: (node: Classification) => void;
   depth: number;
 }) {
   const { i18n } = useTranslation();
   return (
     <>
-      {nodes.map((node) => (
-        <div key={node.id}>
-          <label
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
-            style={{ paddingLeft: `${8 + depth * 16}px` }}
-          >
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(node.id)}
-              onChange={() => onToggle(node.id)}
-              className="w-4 h-4 rounded border-[hsl(var(--border))] accent-[hsl(var(--primary))]"
-            />
-            <FolderTree className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
-            <span className="text-sm text-[hsl(var(--foreground))]">
-              {i18n.language === "ar" && node.name_ar
-                ? node.name_ar
-                : node.name}
-            </span>
-          </label>
-          {node.children && node.children.length > 0 && (
-            <ClassificationTreeCheckbox
-              nodes={node.children}
-              selectedIds={selectedIds}
-              onToggle={onToggle}
-              depth={depth + 1}
-            />
-          )}
-        </div>
-      ))}
+      {nodes.map((node) => {
+        const nodeIds = getHierarchicalIds([node]);
+        const isChecked = nodeIds.every((id) => selectedIds.includes(id));
+        const isIndeterminate =
+          !isChecked && nodeIds.some((id) => selectedIds.includes(id));
+        return (
+          <div key={node.id}>
+            <label
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
+              style={{ paddingLeft: `${8 + depth * 16}px` }}
+            >
+              <input
+                type="checkbox"
+                checked={isChecked}
+                ref={(input) => {
+                  if (input) input.indeterminate = isIndeterminate;
+                }}
+                onChange={() => onToggle(node)}
+                className="w-4 h-4 rounded border-[hsl(var(--border))] accent-[hsl(var(--primary))]"
+              />
+              <FolderTree className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
+              <span className="text-sm text-[hsl(var(--foreground))]">
+                {i18n.language === "ar" && node.name_ar
+                  ? node.name_ar
+                  : node.name}
+              </span>
+            </label>
+            {node.children && node.children.length > 0 && (
+              <ClassificationTreeCheckbox
+                nodes={node.children}
+                selectedIds={selectedIds}
+                onToggle={onToggle}
+                depth={depth + 1}
+              />
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -703,6 +746,26 @@ export const DepartmentsPage: React.FC = () => {
         ? prev[field].filter((i) => i !== id)
         : [...prev[field], id],
     }));
+  };
+
+  const toggleTreeItem = (
+    field: "location_ids" | "classification_ids",
+    node: HierarchicalFormNode,
+    tree: HierarchicalFormNode[],
+  ) => {
+    setFormData((prev) => {
+      const selectedIds = new Set(prev[field]);
+      const nodeIds = getHierarchicalIds([node]);
+      const isFullySelected = nodeIds.every((id) => selectedIds.has(id));
+      nodeIds.forEach((id) => {
+        if (isFullySelected) selectedIds.delete(id);
+        else selectedIds.add(id);
+      });
+      return {
+        ...prev,
+        [field]: normalizeHierarchicalSelection(tree, selectedIds),
+      };
+    });
   };
 
   const getAllIds = (
@@ -1568,7 +1631,13 @@ export const DepartmentsPage: React.FC = () => {
                         <LocationTreeCheckbox
                           nodes={locationsData?.data || []}
                           selectedIds={formData.location_ids}
-                          onToggle={(id) => toggleItem("location_ids", id)}
+                          onToggle={(node) =>
+                            toggleTreeItem(
+                              "location_ids",
+                              node,
+                              locationsData?.data || [],
+                            )
+                          }
                           depth={0}
                         />
                       )}
@@ -1620,8 +1689,12 @@ export const DepartmentsPage: React.FC = () => {
                         <ClassificationTreeCheckbox
                           nodes={classificationsData?.data || []}
                           selectedIds={formData.classification_ids}
-                          onToggle={(id) =>
-                            toggleItem("classification_ids", id)
+                          onToggle={(node) =>
+                            toggleTreeItem(
+                              "classification_ids",
+                              node,
+                              classificationsData?.data || [],
+                            )
                           }
                           depth={0}
                         />

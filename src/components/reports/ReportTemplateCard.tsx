@@ -53,7 +53,10 @@ interface ReportTemplateCardProps {
   onDuplicate: (_template: ReportTemplate) => void;
   // eslint-disable-next-line no-unused-vars
   onExport?: (_template: ReportTemplate) => void;
-  dynamicOptionsMap: Record<string, { value: string; label: string }[]>;
+  dynamicOptionsMap: Record<
+    string,
+    { value: string; label: string; children?: any[] }[]
+  >;
   stateFields?: any[];
 }
 

@@ -22,24 +22,30 @@ interface HierarchicalTreeSelectProps {
   leafOnly?: boolean; // Only allow selecting leaf nodes (no children)
 }
 
-// Helper to get all descendant IDs
-const getAllDescendantIds = (node: TreeNode): string[] => {
-  const ids: string[] = [node.id];
-  if (node.children && node.children.length > 0) {
-    node.children.forEach((child) => {
-      ids.push(...getAllDescendantIds(child));
-    });
-  }
-  return ids;
+const getLeafDescendantIds = (node: TreeNode): string[] => {
+  if (!node.children?.length) return [node.id];
+  return node.children.flatMap(getLeafDescendantIds);
 };
 
-// Helper to flatten tree to get all node IDs
-const flattenTree = (nodes: TreeNode[]): string[] => {
-  const ids: string[] = [];
-  nodes.forEach((node) => {
-    ids.push(...getAllDescendantIds(node));
-  });
-  return ids;
+const getAllLeafIds = (nodes: TreeNode[]): string[] =>
+  nodes.flatMap(getLeafDescendantIds);
+
+const withFullySelectedParents = (
+  nodes: TreeNode[],
+  leafIds: string[],
+): string[] => {
+  const selected = new Set(leafIds);
+
+  const visit = (node: TreeNode): boolean => {
+    if (!node.children?.length) return selected.has(node.id);
+
+    const allChildrenSelected = node.children.map(visit).every(Boolean);
+    if (allChildrenSelected) selected.add(node.id);
+    return allChildrenSelected;
+  };
+
+  nodes.forEach(visit);
+  return Array.from(selected);
 };
 
 // Helper to check if all children are selected
@@ -98,6 +104,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   const someChildrenSelected = hasChildren
     ? areSomeChildrenSelected(node, selectedIds)
     : false;
+  const isChecked = hasChildren ? allChildrenSelected : isSelected;
   const isIndeterminate = someChildrenSelected && !allChildrenSelected;
   // In leafOnly mode, parents are not selectable
   const isSelectable = !leafOnly || !hasChildren;
@@ -133,9 +140,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           isSelectable
             ? "cursor-pointer hover:bg-[hsl(var(--muted)/0.5)]"
             : "cursor-default hover:bg-[hsl(var(--muted)/0.3)]",
-          isSelectable &&
-            (isSelected || allChildrenSelected) &&
-            colorClasses[colorScheme].selected,
+          isSelectable && isChecked && colorClasses[colorScheme].selected,
         )}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
       >
@@ -166,19 +171,15 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             onClick={() => onToggleSelect(node)}
             className={cn(
               "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
-              isSelected || allChildrenSelected
+              isChecked
                 ? colorClasses[colorScheme].checkbox
                 : isIndeterminate
                   ? colorClasses[colorScheme].checkbox
                   : "border-[hsl(var(--border))] bg-[hsl(var(--background))]",
             )}
           >
-            {(isSelected || allChildrenSelected) && (
-              <Check className="w-3 h-3 text-white" />
-            )}
-            {isIndeterminate && !isSelected && !allChildrenSelected && (
-              <Minus className="w-3 h-3 text-white" />
-            )}
+            {isChecked && <Check className="w-3 h-3 text-white" />}
+            {isIndeterminate && <Minus className="w-3 h-3 text-white" />}
           </button>
         ) : (
           /* In leafOnly mode, show an indeterminate dot when some children selected */
@@ -203,7 +204,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           className={cn(
             "text-sm font-medium flex-1",
             isSelectable
-              ? isSelected || allChildrenSelected
+              ? isChecked
                 ? "text-[hsl(var(--foreground))]"
                 : "text-[hsl(var(--muted-foreground))]"
               : "text-[hsl(var(--foreground))] opacity-70",
@@ -284,43 +285,33 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
       // In leafOnly mode, parents are not selectable
       if (leafOnly && hasChildren) return;
 
-      const allIds = getAllDescendantIds(node);
-      const idsToToggle = leafOnly ? [node.id] : allIds;
+      const idsToToggle = getLeafDescendantIds(node);
       const isCurrentlyFullySelected = idsToToggle.every((id) =>
         selectedIds.includes(id),
       );
 
-      if (isCurrentlyFullySelected) {
-        onSelectionChange(
-          selectedIds.filter((id) => !idsToToggle.includes(id)),
-        );
-      } else {
-        const newSelection = new Set([...selectedIds, ...idsToToggle]);
-        onSelectionChange(Array.from(newSelection));
-      }
+      const validLeafIds = new Set(getAllLeafIds(data));
+      const normalizedSelection = selectedIds.filter((id) =>
+        validLeafIds.has(id),
+      );
+      const nextLeafIds = isCurrentlyFullySelected
+        ? normalizedSelection.filter((id) => !idsToToggle.includes(id))
+        : Array.from(new Set([...normalizedSelection, ...idsToToggle]));
+
+      onSelectionChange(
+        leafOnly ? nextLeafIds : withFullySelectedParents(data, nextLeafIds),
+      );
 
       // Auto-expand when clicking a parent with children
       if (hasChildren && !expandedIds.includes(node.id)) {
         setExpandedIds((prev) => [...prev, node.id]);
       }
     },
-    [selectedIds, onSelectionChange, expandedIds, leafOnly],
+    [selectedIds, onSelectionChange, expandedIds, leafOnly, data],
   );
 
-  const allLeafIds = useMemo(() => {
-    const collect = (nodes: TreeNode[]): string[] => {
-      const ids: string[] = [];
-      nodes.forEach((n) => {
-        if (n.children && n.children.length > 0)
-          ids.push(...collect(n.children));
-        else ids.push(n.id);
-      });
-      return ids;
-    };
-    return collect(data);
-  }, [data]);
-  const allIds = useMemo(() => flattenTree(data), [data]);
-  const selectableIds = leafOnly ? allLeafIds : allIds;
+  const allLeafIds = useMemo(() => getAllLeafIds(data), [data]);
+  const selectableIds = allLeafIds;
   const selectedCount = selectedIds.filter((id) =>
     selectableIds.includes(id),
   ).length;
@@ -344,7 +335,9 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   };
 
   const selectAll = () => {
-    onSelectionChange(selectableIds);
+    onSelectionChange(
+      leafOnly ? selectableIds : withFullySelectedParents(data, selectableIds),
+    );
   };
 
   const deselectAll = () => {

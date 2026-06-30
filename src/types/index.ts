@@ -1694,7 +1694,7 @@ export interface ReportFieldDefinition {
   sortable: boolean;
   filterable: boolean;
   defaultSelected?: boolean;
-  options?: { value: string | number; label: string }[];
+  options?: ReportFieldOption[];
   relationField?: string;
   description?: string;
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
@@ -1702,6 +1702,12 @@ export interface ReportFieldDefinition {
   multiselect?: boolean;
   hidden?: boolean;
   isUrl?: boolean;
+}
+
+export interface ReportFieldOption {
+  value: string | number;
+  label: string;
+  children?: ReportFieldOption[];
 }
 
 // Data Source Definition
