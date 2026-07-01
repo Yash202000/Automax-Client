@@ -27,6 +27,7 @@ import {
   Target,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { permissionApi } from "@/api/admin";
 
 interface NavigationCard {
   title: string;
@@ -132,6 +133,20 @@ export const DashboardPage: React.FC = () => {
   const applicationLinks = canAccessAppLinks
     ? appLinksResponse?.data || []
     : [];
+
+  //fetching permissions data for the automax client
+  const { data: permissionsData, isLoading: isPermissionsLoading } = useQuery({
+    queryKey: ["admin", "permissions"],
+    queryFn: () => permissionApi.list(),
+  });
+
+  const availablePermissionCodes = React.useMemo(
+    () =>
+      new Set<string>(
+        permissionsData?.data?.map((permission) => permission.code) ?? [],
+      ),
+    [permissionsData],
+  );
 
   const navigationCards: NavigationCard[] = [
     {
@@ -248,6 +263,15 @@ export const DashboardPage: React.FC = () => {
   // always pass the license check (admin panel, foundational modules).
   // Super admins always see everything (useful for debugging license config).
   const visibleCards = navigationCards.filter((card) => {
+    //not showing dashboard cards whos permission dosent exist for this client
+    const permissionExist =
+      !card.permissions ||
+      card.permissions.length === 0 ||
+      card.permissions.some((permission) =>
+        availablePermissionCodes.has(permission),
+      );
+
+    if (!permissionExist) return false;
     const permOk =
       isSuperAdmin ||
       !card.permissions ||
@@ -311,7 +335,22 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Navigation Cards Grid - 4 columns on large screens */}
-      {visibleCards.length > 0 || applicationLinks.length > 0 ? (
+      {isPermissionsLoading ? (
+        /* loading */
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="p-4 bg-[hsl(var(--muted))] rounded-full w-fit mx-auto mb-4">
+              <Settings className="w-8 h-8 text-[hsl(var(--muted-foreground))] animate-spin" />
+            </div>
+            <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+              {t("common.loading", "Loading...")}
+            </h3>
+            <p className="text-[hsl(var(--muted-foreground))]">
+              {t("dashboard.loadingModules", "Loading available modules...")}
+            </p>
+          </div>
+        </div>
+      ) : visibleCards.length > 0 || applicationLinks.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Internal navigation cards */}
           {visibleCards.map((card) => (

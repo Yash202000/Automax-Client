@@ -400,7 +400,8 @@
     "citizenQueries": "استفسارات المواطنين",
     "manageQueries": "معالجة والرد على الاستفسارات",
     "noAccessDescription": "يرجى التواصل مع المسؤول للحصول على صلاحية الوصول إلى الوحدات.",
-    "noAccessTitle": "لا توجد وحدات متاحة"
+    "noAccessTitle": "لا توجد وحدات متاحة",
+    "loadingModules": "جارٍ تحميل الوحدات المتاحة..."
   },
   "incidents": {
     "title": "البلاغات",

@@ -400,7 +400,8 @@
     "citizenQueries": "Citizen Queries",
     "manageQueries": "Handle and respond to queries",
     "noAccessDescription": "Contact your administrator to get access to modules.",
-    "noAccessTitle": "No modules available"
+    "noAccessTitle": "No modules available",
+    "loadingModules": "Loading available modules..."
   },
   "incidents": {
     "title": "Incidents",
