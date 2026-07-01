@@ -2127,6 +2127,12 @@ export const requestApi = {
     return response.data;
   },
 
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/incidents/${id}`,
+    );
+    return response.data;
+  },
   // State transitions
   transition: async (
     id: string,

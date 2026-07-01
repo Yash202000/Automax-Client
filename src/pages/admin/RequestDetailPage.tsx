@@ -26,6 +26,7 @@ import {
   Tags,
   ExternalLink,
   Radio,
+  Trash2,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { MiniWorkflowView } from "../../components/workflow";
@@ -34,6 +35,7 @@ import { AudioPlayer } from "../../components/common/AudioPlayer";
 import { CreateRequestModal } from "../../components/requests";
 import {
   incidentApi,
+  requestApi,
   userApi,
   commentTemplateApi,
   feedbackTemplateApi,
@@ -62,6 +64,9 @@ export const RequestDetailPage: React.FC = () => {
 
   const canEditRequest =
     isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_UPDATE);
+
+  const canDeleteRequest =
+    isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_DELETE);
 
   const [activeTab, setActiveTab] = useState<
     "activity" | "comments" | "attachments" | "revisions"
@@ -92,6 +97,7 @@ export const RequestDetailPage: React.FC = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string>("");
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
 
   // Queries
   const {
@@ -380,6 +386,20 @@ export const RequestDetailPage: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => requestApi.delete(id!),
+    onSuccess: () => {
+      setDeleteModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      toast.success(t("requests.requestDeleted"));
+      navigate("/requests");
+    },
+    onError: (deleteError: any) => {
+      const message =
+        deleteError?.response?.data?.error || t("requests.deleteFailed");
+      toast.error(message);
+    },
+  });
   const handleTransitionClick = (transition: AvailableTransition) => {
     setSelectedTransition(transition);
     setTransitionModalOpen(true);
@@ -584,6 +604,16 @@ export const RequestDetailPage: React.FC = () => {
               onClick={() => setEditModalOpen(true)}
             >
               {t("common.edit")}
+            </Button>
+          )}
+          {canDeleteRequest && (
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Trash2 className="w-4 h-4" />}
+              onClick={() => setDeleteModalOpen(true)}
+            >
+              {t("common.delete")}
             </Button>
           )}
         </div>
@@ -1451,6 +1481,65 @@ export const RequestDetailPage: React.FC = () => {
         </div>
       )}
 
+      {deleteModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(var(--foreground)/0.6)] p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-request-title"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !deleteMutation.isPending
+            ) {
+              setDeleteModalOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-md rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3 border-b border-[hsl(var(--border))] px-6 py-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--destructive)/0.1)]">
+                <AlertTriangle className="h-5 w-5 text-[hsl(var(--destructive))]" />
+              </div>
+              <h3
+                id="delete-request-title"
+                className="text-lg font-semibold text-[hsl(var(--foreground))]"
+              >
+                {t("requests.deleteRequest")}
+              </h3>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+                {t("requests.deleteRequestConfirm", {
+                  number: request.incident_number,
+                })}
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-[hsl(var(--border))] px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleteMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                isLoading={deleteMutation.isPending}
+                disabled={deleteMutation.isPending}
+                leftIcon={
+                  !deleteMutation.isPending ? (
+                    <Trash2 className="h-4 w-4" />
+                  ) : undefined
+                }
+              >
+                {t("common.delete")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <CreateRequestModal
         isOpen={editModalOpen}
         initialRequest={request}
