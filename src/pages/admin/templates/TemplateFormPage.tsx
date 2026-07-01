@@ -18,6 +18,7 @@ import {
   MODULE_OPTIONS,
 } from "@/constants/template";
 import { toast } from "sonner";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   const apiError = error as {
@@ -39,6 +40,9 @@ export default function TemplateFormPage() {
   const navigate = useNavigate();
 
   const queryClient = useQueryClient();
+
+  const { settings } = useSettings();
+  const SMS_MAX_LENGTH = settings?.sms_max_length ?? 160;
 
   const { t } = useTranslation();
 
@@ -151,6 +155,10 @@ export default function TemplateFormPage() {
     });
   }, [template]);
 
+  const smsCharCount = [
+    ...(formData.language === "ar" ? formData.body_ar : formData.body_en),
+  ].length;
+
   const validate = () => {
     const e: Record<string, string> = {};
     const code = formData.code.trim();
@@ -162,6 +170,17 @@ export default function TemplateFormPage() {
       e.code = t("notificationTemplates.form.validation.codeFormat");
     if (!formData.body_en.trim() && !formData.body_ar.trim())
       e.body_en = t("notificationTemplates.form.validation.bodyRequired");
+
+    if (formData.channel === "sms" && SMS_MAX_LENGTH > 0) {
+      if ([...formData.body_en].length > SMS_MAX_LENGTH)
+        e.body_en = t("notificationTemplates.form.validation.smsBodyTooLong", {
+          max: SMS_MAX_LENGTH,
+        });
+      if ([...formData.body_ar].length > SMS_MAX_LENGTH)
+        e.body_ar = t("notificationTemplates.form.validation.smsBodyTooLong", {
+          max: SMS_MAX_LENGTH,
+        });
+    }
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -456,23 +475,44 @@ export default function TemplateFormPage() {
               )}
             </div>
           ) : (
-            <Textarea
-              dir={formData.language === "ar" ? "rtl" : undefined}
-              label={t("notificationTemplates.form.body")}
-              placeholder={bodyPlaceholder}
-              value={
-                formData.language === "ar" ? formData.body_ar : formData.body_en
-              }
-              onChange={(e) =>
-                setField(
-                  formData.language === "ar" ? "body_ar" : "body_en",
-                  e.target.value,
-                )
-              }
-              className="min-h-72"
-              required
-              error={errors.body_en}
-            />
+            <div>
+              <Textarea
+                dir={formData.language === "ar" ? "rtl" : undefined}
+                label={t("notificationTemplates.form.body")}
+                placeholder={bodyPlaceholder}
+                value={
+                  formData.language === "ar"
+                    ? formData.body_ar
+                    : formData.body_en
+                }
+                onChange={(e) =>
+                  setField(
+                    formData.language === "ar" ? "body_ar" : "body_en",
+                    e.target.value,
+                  )
+                }
+                className="min-h-72"
+                required
+                error={
+                  errors[formData.language === "ar" ? "body_ar" : "body_en"]
+                }
+              />
+              {SMS_MAX_LENGTH > 0 && (
+                <div className="flex justify-end mt-1">
+                  <span
+                    className={`text-xs font-mono ${
+                      smsCharCount > SMS_MAX_LENGTH
+                        ? "text-red-500 font-semibold"
+                        : smsCharCount > SMS_MAX_LENGTH * 0.9
+                          ? "text-amber-500"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {smsCharCount}/{SMS_MAX_LENGTH}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </Card>

@@ -1865,6 +1865,7 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
+  sms_max_length: number;
   updated_at: string;
 }
 

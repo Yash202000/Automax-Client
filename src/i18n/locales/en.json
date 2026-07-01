@@ -3977,7 +3977,8 @@
         "nameRequired": "Name is required",
         "codeRequired": "Code is required",
         "codeFormat": "Code must be uppercase letters, digits, and underscores only (for example, SLA_BREACH)",
-        "bodyRequired": "At least one body, English or Arabic, is required"
+        "bodyRequired": "At least one body, English or Arabic, is required",
+        "smsBodyTooLong": "SMS body must not exceed {{max}} characters (including spaces)"
       },
       "placeholders": {
         "name": "Enter template name",
