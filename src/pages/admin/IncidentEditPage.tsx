@@ -43,7 +43,6 @@ import type {
   Location,
   Workflow,
   Classification,
-  IncidentSource,
   iLocationOption,
 } from "../../types";
 
@@ -389,7 +388,7 @@ export function IncidentEditPage() {
 
   const handleChange = (
     field: keyof typeof formData,
-    value: string | IncidentSource | undefined,
+    value: string | undefined,
   ) => {
     if (field === "location_id" && value) {
       updateNode(locations, value, (node) => {
