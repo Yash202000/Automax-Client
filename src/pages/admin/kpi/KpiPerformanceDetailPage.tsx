@@ -310,7 +310,7 @@ export const KpiPerformanceDetailPage: React.FC = () => {
             {t("kpi.performance.detail.history")}
           </h2>
         </div>
-        <TransitionHistoryViewer id={id} />
+        {id && <TransitionHistoryViewer id={id} />}
       </div>
 
       {/* Transition Confirm Modal */}

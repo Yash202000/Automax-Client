@@ -33,11 +33,12 @@ import type {
   KpiBenchmarkRequest,
   KpiSegmentation,
   KpiSegmentationRequest,
-  KpiDashboardData,
   EnhancedKpiDashboardData,
   PerformanceTrend,
   KpiCardDef,
   PaginatedResponse,
+  WorkflowTransitionBrief,
+  KpiWorkflowAction,
 } from "../types/kpi";
 
 export const kpiMasterDataApi = {
@@ -419,7 +420,7 @@ export const kpiPerformanceApi = {
   },
   getAvailableTransitions: async (
     id: string,
-  ): Promise<ApiResponse<WorkflowTransition[]>> => {
+  ): Promise<ApiResponse<WorkflowTransitionBrief[]>> => {
     const res = await apiClient.get(`/kpi/performance/${id}/transitions`);
     return res.data;
   },

@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import {
-  Target,
   Search,
   Plus,
   Trash2,
@@ -13,6 +11,7 @@ import {
   useKpiSegmentations,
   useCreateKpiSegmentation,
   useDeleteKpiSegmentation,
+  useKpiCardDefinitions,
 } from "../../../hooks/useKpi";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
@@ -22,7 +21,6 @@ import type {
 } from "../../../types/kpi";
 
 export const KpiSegmentationPage: React.FC = () => {
-  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [dimensionFilter, setDimensionFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
@@ -37,6 +35,12 @@ export const KpiSegmentationPage: React.FC = () => {
   );
 
   const { data: segmentations, isLoading, error } = useKpiSegmentations(params);
+  const { data: allCards } = useKpiCardDefinitions();
+  const cardOptions = (allCards ?? []).map((c) => ({
+    code: c.code,
+    label: `${c.code} — ${c.name_en}`,
+    type: c.type,
+  }));
   const createSeg = useCreateKpiSegmentation();
   const deleteSeg = useDeleteKpiSegmentation();
 
@@ -264,14 +268,27 @@ export const KpiSegmentationPage: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 KPI Code
               </label>
-              <input
+              <select
                 value={formData.kpi_code}
-                onChange={(e) =>
-                  setFormData({ ...formData, kpi_code: e.target.value })
-                }
+                onChange={(e) => {
+                  const selected = cardOptions.find(
+                    (c) => c.code === e.target.value,
+                  );
+                  setFormData({
+                    ...formData,
+                    kpi_code: e.target.value,
+                    kpi_type: (selected?.type as any) ?? formData.kpi_type,
+                  });
+                }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                placeholder="e.g. KPI-P1-1-1"
-              />
+              >
+                <option value="">-- Select KPI --</option>
+                {cardOptions.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

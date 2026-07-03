@@ -14,8 +14,6 @@ import {
   FileText,
 } from "lucide-react";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -36,8 +34,6 @@ const STATUS_COLORS: Record<string, string> = {
   draft: "#f59e0b",
   inactive: "#94a3b8",
 };
-
-const TREND_COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b"];
 
 export const KpiDashboardPage: React.FC = () => {
   const { t } = useTranslation();
@@ -82,11 +78,6 @@ export const KpiDashboardPage: React.FC = () => {
     name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
     value: s.count,
     fill: STATUS_COLORS[s.status] ?? "#94a3b8",
-  }));
-
-  const goalData = (dashboard?.kpis_by_goal ?? []).map((g) => ({
-    name: g.goal,
-    count: g.count,
   }));
 
   const trendData = (dashboard?.performance_trends ?? [])
@@ -192,10 +183,8 @@ export const KpiDashboardPage: React.FC = () => {
                       tickFormatter={(v) => `${v}%`}
                     />
                     <Tooltip
-                      formatter={(value: number) => [
-                        `${value}%`,
-                        "Achievement",
-                      ]}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(value: any) => [`${value}%`, "Achievement"]}
                     />
                     <Line
                       type="monotone"

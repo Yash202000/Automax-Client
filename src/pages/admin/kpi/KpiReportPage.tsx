@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   FileText,
   Search,
@@ -7,13 +6,11 @@ import {
   CheckCircle,
   Clock,
   Printer,
-  Download,
 } from "lucide-react";
 import { useKpiCardDefinitions } from "../../../hooks/useKpi";
 import type { KpiCardDef } from "../../../types/kpi";
 
 export const KpiReportPage: React.FC = () => {
-  const { t } = useTranslation();
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [search, setSearch] = useState("");
 
