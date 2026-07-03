@@ -2812,18 +2812,7 @@ export const UsersPage: React.FC = () => {
             {/* Modal Body */}
             <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-6">
               {/* Contact Info */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                    {t("users.email")}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-[hsl(var(--primary))]" />
-                    <p className="text-sm text-[hsl(var(--foreground))]">
-                      {viewingUser.email}
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                     {t("users.phone")}
@@ -2840,6 +2829,17 @@ export const UsersPage: React.FC = () => {
                     <Phone className="w-4 h-4 text-[hsl(var(--primary))]" />
                     <p className="text-sm text-[hsl(var(--foreground))]">
                       {(viewingUser as any).extension || t("users.notProvided")}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                    {t("users.email")}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-[hsl(var(--primary))]" />
+                    <p className="text-sm text-[hsl(var(--foreground))]">
+                      {viewingUser.email}
                     </p>
                   </div>
                 </div>
