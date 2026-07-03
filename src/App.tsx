@@ -291,7 +291,75 @@ const QualityAuditPage = lazy(() => import("./pages/admin/QualityAuditPage"));
 const TemplatesPage = lazy(
   () => import("./pages/admin/templates/TemplatesPage"),
 );
+const KpiDashboardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDashboardPage").then((m) => ({
+    default: m.KpiDashboardPage,
+  })),
+);
+const KpiMasterDataPage = lazy(() =>
+  import("./pages/admin/kpi/KpiMasterDataPage").then((m) => ({
+    default: m.KpiMasterDataPage,
+  })),
+);
+const KpiDictionaryPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
+    default: m.KpiDictionaryPage,
+  })),
+);
+const KpiDictionaryDetailPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryDetailPage").then((m) => ({
+    default: m.KpiDictionaryDetailPage,
+  })),
+);
+const KpiDictionaryFormPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryFormPage").then((m) => ({
+    default: m.KpiDictionaryFormPage,
+  })),
+);
+const KpiDictionaryFormOperationalPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryFormOperationalPage").then((m) => ({
+    default: m.KpiDictionaryFormOperationalPage,
+  })),
+);
+const KpiDictionaryFormAwardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryFormAwardPage").then((m) => ({
+    default: m.KpiDictionaryFormAwardPage,
+  })),
+);
+const KpiPerformancePage = lazy(() =>
+  import("./pages/admin/kpi/KpiPerformancePage").then((m) => ({
+    default: m.KpiPerformancePage,
+  })),
+);
+const KpiPerformanceDetailPage = lazy(() =>
+  import("./pages/admin/kpi/KpiPerformanceDetailPage").then((m) => ({
+    default: m.KpiPerformanceDetailPage,
+  })),
+);
 
+const KpiTargetsPage = lazy(() =>
+  import("./pages/admin/kpi/KpiTargetsPage").then((m) => ({
+    default: m.KpiTargetsPage,
+  })),
+);
+
+const KpiBenchmarkPage = lazy(() =>
+  import("./pages/admin/kpi/KpiBenchmarkPage").then((m) => ({
+    default: m.KpiBenchmarkPage,
+  })),
+);
+
+const KpiSegmentationPage = lazy(() =>
+  import("./pages/admin/kpi/KpiSegmentationPage").then((m) => ({
+    default: m.KpiSegmentationPage,
+  })),
+);
+
+const KpiReportPage = lazy(() =>
+  import("./pages/admin/kpi/KpiReportPage").then((m) => ({
+    default: m.KpiReportPage,
+  })),
+);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -919,6 +987,68 @@ function App() {
                         <Route
                           path="/goals/:id/edit"
                           element={<GoalEditPage />}
+                        />
+                      </Route>
+
+                      {/* KPI routes */}
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi"
+                          element={<KpiDashboardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/master-data"
+                          element={<KpiMasterDataPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary"
+                          element={<KpiDictionaryPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/new"
+                          element={<KpiDictionaryFormPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/new/operational"
+                          element={<KpiDictionaryFormOperationalPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/new/award"
+                          element={<KpiDictionaryFormAwardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id"
+                          element={<KpiDictionaryDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/performance"
+                          element={<KpiPerformancePage />}
+                        />
+                        <Route
+                          path="/goals/kpi/performance/:id"
+                          element={<KpiPerformanceDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/targets"
+                          element={<KpiTargetsPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/benchmarks"
+                          element={<KpiBenchmarkPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/segmentation"
+                          element={<KpiSegmentationPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/report"
+                          element={<KpiReportPage />}
                         />
                       </Route>
                     </Route>

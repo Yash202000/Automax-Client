@@ -145,6 +145,13 @@ export const PERMISSIONS = {
   GOALS_APPROVE: "goals:approve",
   DASHBOARD_GOALS: "dashboard:goals",
 
+  // KPI permissions
+  KPI_VIEW: "kpi:view",
+  KPI_CREATE: "kpi:create",
+  KPI_UPDATE: "kpi:update",
+  KPI_DELETE: "kpi:delete",
+  KPI_APPROVE: "kpi:approve",
+
   CALLER_SENTIMENT_CREATE: "caller-sentiment:create",
   CALLER_SENTIMENT_VIEW: "caller-sentiment:view",
 
