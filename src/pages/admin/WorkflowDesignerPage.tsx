@@ -1628,21 +1628,57 @@ export const WorkflowDesignerPage: React.FC = () => {
   };
 
   const toggleStateRole = (roleId: string) => {
-    setStateFormData((prev) => ({
-      ...prev,
-      viewable_role_ids: prev.viewable_role_ids.includes(roleId)
-        ? prev.viewable_role_ids.filter((id) => id !== roleId)
-        : [...prev.viewable_role_ids, roleId],
-    }));
+    const isViewable = stateFormData.viewable_role_ids.includes(roleId);
+    const isEditable = stateFormData.editable_role_ids.includes(roleId);
+    //prevent removing viewable role if edit permission for the role is added
+    if (isViewable && isEditable) {
+      const roleName = roles.find((role) => role.id === roleId)?.name ?? "Role";
+      toast.error(
+        `Please remove Edit permission from "${roleName}" before removing View permission.`,
+      );
+      return;
+    }
+    setStateFormData((prev) => {
+      return {
+        ...prev,
+        viewable_role_ids: prev.viewable_role_ids.includes(roleId)
+          ? prev.viewable_role_ids.filter((id) => id !== roleId)
+          : [...prev.viewable_role_ids, roleId],
+      };
+    });
   };
 
   const toggleEditableStateRole = (roleId: string) => {
-    setStateFormData((prev) => ({
-      ...prev,
-      editable_role_ids: prev.editable_role_ids.includes(roleId)
-        ? prev.editable_role_ids.filter((id) => id !== roleId)
-        : [...prev.editable_role_ids, roleId],
-    }));
+    const isEditable = stateFormData.editable_role_ids.includes(roleId);
+    const wasViewable = stateFormData.viewable_role_ids.includes(roleId);
+
+    // adding editable roles will automatically add viewable roles so showing toast
+    if (!isEditable && !wasViewable) {
+      const roleName = roles.find((role) => role.id === roleId)?.name ?? "Role";
+      toast.info(
+        `"${roleName}" was automatically added to Viewable Roles because it has Edit permission.`,
+      );
+    }
+    setStateFormData((prev) => {
+      if (prev.editable_role_ids.includes(roleId)) {
+        //only removing from edit checkbox
+        return {
+          ...prev,
+          editable_role_ids: prev.editable_role_ids.filter(
+            (id) => id !== roleId,
+          ),
+        };
+      }
+
+      // adding edit permission should also add view permission if not added yet
+      return {
+        ...prev,
+        editable_role_ids: [...prev.editable_role_ids, roleId],
+        viewable_role_ids: prev.viewable_role_ids.includes(roleId)
+          ? prev.viewable_role_ids
+          : [...prev.viewable_role_ids, roleId],
+      };
+    });
   };
 
   const toggleStateAssignmentRole = (roleId: string) => {
