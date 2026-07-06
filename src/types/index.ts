@@ -1303,6 +1303,7 @@ export interface IncidentCreateRequest {
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
   comment?: string;
+  assignees?: string[];
 }
 
 export interface IncidentUpdateRequest {
@@ -1324,6 +1325,7 @@ export interface IncidentUpdateRequest {
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
   version: number;
+  assignees?: string[];
 }
 
 export interface IncidentTransitionRequest {

@@ -17,6 +17,7 @@ import {
   Button,
   Card,
   Input,
+  MultiSelect,
   Select,
   Textarea,
   TreeSelect,
@@ -46,6 +47,13 @@ import type {
   iLocationOption,
 } from "../../types";
 
+type IncidentEditFormData = Omit<
+  IncidentUpdateRequest,
+  "lookup_value_ids" | "custom_lookup_fields" | "version" | "assignee_id"
+> & {
+  assignees?: string[];
+};
+
 import { DynamicLookupField } from "../../components/common/DynamicLookupField";
 import { useAuthStore } from "../../stores/authStore";
 import { Modal } from "../../components/ui";
@@ -57,16 +65,11 @@ export function IncidentEditPage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
 
-  const [formData, setFormData] = useState<
-    Omit<
-      IncidentUpdateRequest,
-      "lookup_value_ids" | "custom_lookup_fields" | "version"
-    >
-  >({
+  const [formData, setFormData] = useState<IncidentEditFormData>({
     title: "",
     description: "",
     classification_id: "",
-    assignee_id: "",
+    assignees: [],
     department_id: "",
     location_id: "",
     latitude: undefined,
@@ -237,12 +240,18 @@ export function IncidentEditPage() {
   useEffect(() => {
     if (!incident || initialized) return;
 
+    const selectedAssigneeIds = incident.assignees?.length
+      ? incident.assignees.map((assignee) => assignee.id)
+      : incident.assignee
+        ? [incident.assignee.id]
+        : [];
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       title: incident.title || "",
       description: incident.description || "",
       classification_id: incident.classification?.id || "",
-      assignee_id: incident.assignee?.id || "",
+      assignees: selectedAssigneeIds,
       department_id: incident.department?.id || "",
       location_id: incident.location?.id || "",
       latitude: incident.latitude,
@@ -398,6 +407,16 @@ export function IncidentEditPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field as string]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleAssigneesChange = (assignees: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      assignees,
+    }));
+    if (errors.assignees) {
+      setErrors((prev) => ({ ...prev, assignees: "" }));
     }
   };
 
@@ -585,6 +604,13 @@ export function IncidentEditPage() {
             field: t("incidents.geolocation", "Geolocation"),
           });
         }
+      } else if (field === "assignee_id") {
+        const value = formData.assignees;
+        if (!value || value.length === 0) {
+          newErrors.assignees = t("incidents.fieldRequired", {
+            field: t("incidents.assignees"),
+          });
+        }
       } else if (validFormFields.includes(field)) {
         const value = formData[field as keyof typeof formData];
         if (!value || (typeof value === "string" && !value.trim())) {
@@ -603,12 +629,26 @@ export function IncidentEditPage() {
     if (!incident) return;
 
     const submitData: IncidentUpdateRequest = {
-      ...formData,
+      title: formData.title,
+      description: formData.description,
+      classification_id: formData.classification_id,
+      assignees: formData.assignees,
+      department_id: formData.department_id,
+      location_id: formData.location_id,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      country: formData.country,
+      postal_code: formData.postal_code,
+      due_date: formData.due_date
+        ? new Date(formData.due_date).toISOString()
+        : undefined,
       version: incident.version,
     };
 
-    // Ensure empty strings are not sent for optional UUID fields
-    if (submitData.assignee_id === "") submitData.assignee_id = undefined;
+    if (submitData.assignees?.length === 0) submitData.assignees = undefined;
     if (submitData.department_id === "") submitData.department_id = undefined;
     if (submitData.location_id === "") submitData.location_id = undefined;
     if (submitData.classification_id === "")
@@ -658,13 +698,37 @@ export function IncidentEditPage() {
     updateMutation.mutate({ data: submitData, files: attachments });
   };
 
-  const userOptions = [
-    { value: "", label: t("incidents.unassigned") },
-    ...users.map((u) => ({
-      value: u.id,
-      label: `${u.first_name} ${u.last_name}`,
-    })),
-  ];
+  const userOptions = useMemo(() => {
+    const optionMap = new Map<string, { value: string; label: string }>();
+
+    const formatUserLabel = (u: User) => {
+      const fullName = [u.first_name, u.last_name].filter(Boolean).join(" ");
+      return fullName || u.username || u.email || t("common.unknown");
+    };
+
+    users.forEach((u) => {
+      optionMap.set(u.id, {
+        value: u.id,
+        label: formatUserLabel(u),
+      });
+    });
+
+    const incidentUsers = [
+      ...(incident?.assignees || []),
+      ...(incident?.assignee ? [incident.assignee] : []),
+    ];
+
+    incidentUsers.forEach((u) => {
+      if (!optionMap.has(u.id)) {
+        optionMap.set(u.id, {
+          value: u.id,
+          label: formatUserLabel(u),
+        });
+      }
+    });
+
+    return Array.from(optionMap.values());
+  }, [users, incident, t]);
 
   const departmentOptions = [
     { value: "", label: t("incidents.noDepartment") },
@@ -1037,13 +1101,16 @@ export function IncidentEditPage() {
                 {t("incidents.assignment")}
               </h2>
               <div className="space-y-4">
-                <Select
-                  label={t("incidents.assignee")}
-                  value={formData.assignee_id || ""}
-                  onChange={(e) => handleChange("assignee_id", e.target.value)}
+                <MultiSelect
+                  label={t("incidents.assignees")}
+                  value={formData.assignees || []}
+                  onChange={handleAssigneesChange}
                   options={userOptions}
-                  required={workflowRequiredFields.includes("assignee_id")}
-                  error={errors.assignee_id}
+                  placeholder={t("incidents.unassigned")}
+                  searchable
+                  showSelectAll
+                  error={errors.assignees}
+                  maxTagCount={3}
                 />
                 <Select
                   label={t("incidents.department")}
