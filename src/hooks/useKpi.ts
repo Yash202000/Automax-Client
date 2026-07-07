@@ -857,6 +857,74 @@ export const useSubmitPerformance = () => {
   });
 };
 
+export const useUpdatePerformance = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.updatePerformance(id, data),
+    onSuccess: (_res, { id }) => {
+      qc.invalidateQueries({ queryKey: ["kpi", "performance"] });
+      qc.invalidateQueries({ queryKey: ["kpi", "performance", id] });
+      toast.success("Performance entry updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeletePerformance = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => kpiPerformanceApi.deletePerformance(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "performance"] });
+      toast.success("Performance entry deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const usePerformanceEvidence = (performanceId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "performance", performanceId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiPerformanceApi.listPerformanceEvidence(
+        performanceId!,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!performanceId,
+  });
+
+export const useCreatePerformanceEvidence = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.createPerformanceEvidence(id, data),
+    onSuccess: (_res, { id }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "performance", id, "evidence"],
+      });
+      toast.success("Evidence added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeletePerformanceEvidence = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, evidenceId }: { id: string; evidenceId: string }) =>
+      kpiPerformanceApi.deletePerformanceEvidence(id, evidenceId),
+    onSuccess: (_res, { id }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "performance", id, "evidence"],
+      });
+      toast.success("Evidence removed");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
 export const useTransitionPerformance = () => {
   const qc = useQueryClient();
   const { t } = useTranslation();

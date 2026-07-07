@@ -564,6 +564,29 @@ export interface KpiPerformanceRequest {
   corrective_action?: string;
 }
 
+export interface KpiPerformanceUpdateRequest {
+  target: number;
+  actual: number;
+  trend_description?: string;
+  justification?: string;
+  corrective_action?: string;
+}
+
+export interface KpiPerformanceEvidence {
+  id: string;
+  kpi_performance_id: string;
+  description: string;
+  file_url: string;
+  uploaded_by_id: string;
+  uploaded_by?: UserBrief;
+  created_at: string;
+}
+
+export interface KpiPerformanceEvidenceRequest {
+  description: string;
+  file_url?: string;
+}
+
 export interface WorkflowTransitionBrief {
   id: string;
   workflow_id: string;

@@ -3657,7 +3657,15 @@
         "submittedBy": "مقدم من",
         "approvedBy": "معتمد من",
         "history": "سجل التحولات",
-        "noHistory": "لا توجد تحولات بعد."
+        "noHistory": "لا توجد تحولات بعد.",
+        "lockedTooltip": "لا يمكن تعديل الإدخالات المعتمدة.",
+        "lockedNotice": "تمت الموافقة على هذا الإدخال وهو الآن مقفل. لا يمكن تغيير الهدف أو الفعلي أو الأدلة.",
+        "editTitle": "تعديل سجل الأداء",
+        "evidence": "الأدلة",
+        "addEvidence": "إضافة دليل",
+        "noEvidence": "لا توجد أدلة مرفقة بهذه النتيجة.",
+        "evidenceDescription": "الوصف",
+        "evidenceLink": "الرابط"
       },
       "addActual": {
         "title": "إضافة نتيجة فعلية",

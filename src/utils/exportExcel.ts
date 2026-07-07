@@ -5,7 +5,7 @@ import { toast } from "sonner";
 // one column per key (excluding "id"). Used anywhere a KPI list needs a real
 // spreadsheet export rather than just print/PDF.
 export function exportToExcel(
-  data: Record<string, unknown>[],
+  data: any[],
   label: string,
   noDataMessage = "No data to export",
   successMessage = "Exported",

@@ -3659,7 +3659,15 @@
         "submittedBy": "Submitted By",
         "approvedBy": "Approved By",
         "history": "Transition History",
-        "noHistory": "No transitions yet."
+        "noHistory": "No transitions yet.",
+        "lockedTooltip": "Approved KPI Entries cannot be modified.",
+        "lockedNotice": "This entry has been approved and is now locked. Target, Actual, and Evidence cannot be changed.",
+        "editTitle": "Edit Performance Entry",
+        "evidence": "Evidence",
+        "addEvidence": "Add Evidence",
+        "noEvidence": "No evidence attached to this result.",
+        "evidenceDescription": "Description",
+        "evidenceLink": "Link"
       },
       "addActual": {
         "title": "Add Actual",
