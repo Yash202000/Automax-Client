@@ -46,7 +46,12 @@ export const KpiReportPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportToExcel(items, "KPI_Report")}
+            onClick={() =>
+              exportToExcel(
+                items as unknown as Record<string, unknown>[],
+                "KPI_Report",
+              )
+            }
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <Download className="w-4 h-4" />
