@@ -1960,6 +1960,7 @@
     "terminalEndState": "الحالة النهائية",
     "slaDurationOptional": "مدة SLA (اختياري)",
     "days": "أيام",
+    "weeks": "أسابيع",
     "months": "أشهر",
     "maximumTimeAnIncidentShouldRemainIn": "الحد الأقصى لمدة بقاء الحادث في هذه الحالة",
     "escalationPolicyOptional": "سياسة التصعيد (اختياري)",

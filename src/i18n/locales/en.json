@@ -1959,6 +1959,7 @@
     "terminalEndState": "Terminal (End state)",
     "slaDurationOptional": "SLA Duration (optional)",
     "days": "Days",
+    "weeks": "Weeks",
     "months": "Months",
     "maximumTimeAnIncidentShouldRemainIn": "Maximum time an incident should remain in this state",
     "escalationPolicyOptional": "Escalation Policy (optional)",

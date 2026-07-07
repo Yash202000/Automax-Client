@@ -106,7 +106,8 @@ interface StateFormData {
   is_ai_qa: boolean;
   is_ready_to_close: boolean;
   is_partial_close: boolean;
-  duration_options: string; // comma-separated input string
+  duration_option_value: number | undefined;
+  duration_option_unit: string;
   viewable_role_ids: string[];
   editable_role_ids: string[];
   // Creation-time assignment
@@ -148,6 +149,18 @@ type TransitionFormErrors = Partial<
   Record<"name" | "code" | "fromState" | "toState", string>
 >;
 
+// Parses a stored label like "2 Week" / "2 Weeks" back into {value, unit} for editing.
+const parseDurationOptionLabel = (
+  label: string,
+): { value: number | undefined; unit: string } | null => {
+  const match = label.trim().match(/^(\d+)\s+(Day|Week|Month)s?$/i);
+  if (!match) return null;
+  return {
+    value: parseInt(match[1], 10),
+    unit: match[2][0].toUpperCase() + match[2].slice(1).toLowerCase(),
+  };
+};
+
 const initialStateFormData: StateFormData = {
   name: "",
   name_ar: "",
@@ -163,7 +176,8 @@ const initialStateFormData: StateFormData = {
   is_ai_qa: false,
   is_ready_to_close: false,
   is_partial_close: false,
-  duration_options: "",
+  duration_option_value: undefined,
+  duration_option_unit: "Day",
   viewable_role_ids: [],
   editable_role_ids: [],
   // Creation-time assignment
@@ -1121,7 +1135,12 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ai_qa: state.is_ai_qa || false,
       is_ready_to_close: state.is_ready_to_close || false,
       is_partial_close: state.is_partial_close || false,
-      duration_options: (state.duration_options || []).join(", "),
+      duration_option_value:
+        parseDurationOptionLabel(state.duration_options?.[0] || "")?.value ??
+        undefined,
+      duration_option_unit:
+        parseDurationOptionLabel(state.duration_options?.[0] || "")?.unit ??
+        "Day",
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
       editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
       // Creation-time assignment
@@ -1368,12 +1387,13 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ai_qa: stateFormData.is_ai_qa,
       is_ready_to_close: stateFormData.is_ready_to_close,
       is_partial_close: stateFormData.is_partial_close,
-      duration_options: stateFormData.duration_options
-        ? stateFormData.duration_options
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
+      duration_options:
+        stateFormData.duration_option_value &&
+        stateFormData.duration_option_value > 0
+          ? [
+              `${stateFormData.duration_option_value} ${stateFormData.duration_option_unit}`,
+            ]
+          : [],
       viewable_role_ids: stateFormData.viewable_role_ids,
       editable_role_ids: stateFormData.editable_role_ids,
       // Creation-time assignment
@@ -3603,28 +3623,41 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 {stateFormData.is_partial_close && (
                   <div className="ml-7 space-y-2">
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                       {t("workflows.durationOptions", "Duration Options")}
-                      <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                        {t("workflows.commaSeparatedLeaveEmptyToUseGlobal")}
-                      </span>
                     </label>
-                    <input
-                      type="text"
-                      value={stateFormData.duration_options}
-                      onChange={(e) =>
-                        setStateFormData({
-                          ...stateFormData,
-                          duration_options: e.target.value,
-                        })
-                      }
-                      placeholder={t(
-                        "workflows.durationExample",
-                        "e.g. 1 Day, 2 Days, 1 Week, 1 Month",
-                      )}
-                      className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    />
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        value={stateFormData.duration_option_value ?? ""}
+                        onChange={(e) =>
+                          setStateFormData({
+                            ...stateFormData,
+                            duration_option_value: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          })
+                        }
+                        placeholder={t("workflows.escalationHoursExample")}
+                        className="flex-1 px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      />
+                      <select
+                        value={stateFormData.duration_option_unit}
+                        onChange={(e) =>
+                          setStateFormData({
+                            ...stateFormData,
+                            duration_option_unit: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      >
+                        <option value="Day">{t("workflows.days")}</option>
+                        <option value="Week">{t("workflows.weeks")}</option>
+                        <option value="Month">{t("workflows.months")}</option>
+                      </select>
+                    </div>
+                    <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
                       {t(
                         "workflows.closingDurationHint",
                         "Leave empty to use the global defaults configured in system settings.",
