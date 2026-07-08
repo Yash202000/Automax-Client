@@ -5,7 +5,6 @@ import { ArrowLeft, BookOpen, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCreateStrategicKPI,
-  useStrategicGoals,
   usePillars,
   useDomains,
   useDataSources,
@@ -20,13 +19,11 @@ export const KpiDictionaryFormPage: React.FC = () => {
   const navigate = useNavigate();
   const createKpi = useCreateStrategicKPI();
 
-  const { data: goalsData } = useStrategicGoals();
   const { data: pillarsData } = usePillars();
   const { data: domainsData } = useDomains();
   const { data: okrGoalsData } = useGoals({ limit: 200 });
   const { data: dataSourcesData } = useDataSources();
 
-  const goals = goalsData ?? [];
   const pillars = pillarsData ?? [];
   const domains = domainsData ?? [];
   const okrGoals = (okrGoalsData as any)?.data ?? [];
@@ -36,7 +33,6 @@ export const KpiDictionaryFormPage: React.FC = () => {
     code: "",
     name_en: "",
     name_ar: "",
-    strategic_goal_id: "",
     pillar_id: "",
     domain_id: "",
     goal_id: "",
@@ -68,7 +64,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.code || !form.name_en || !form.strategic_goal_id) {
+    if (!form.code || !form.name_en || !form.goal_id) {
       toast.error(t("kpi.targets.formValidation"));
       return;
     }
@@ -76,10 +72,9 @@ export const KpiDictionaryFormPage: React.FC = () => {
     const data: StrategicKPIRequest = {
       ...form,
       baseline: Number(form.baseline),
-      strategic_goal_id: form.strategic_goal_id,
+      goal_id: form.goal_id,
       pillar_id: form.pillar_id || undefined,
       domain_id: form.domain_id || undefined,
-      goal_id: form.goal_id || undefined,
     };
 
     await createKpi.mutateAsync(data);
@@ -122,16 +117,13 @@ export const KpiDictionaryFormPage: React.FC = () => {
             />
             <Select
               label={`${t("kpi.masterData.strategicGoal")} *`}
-              value={form.strategic_goal_id}
+              value={form.goal_id}
               onChange={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  strategic_goal_id: v.target.value,
-                }))
+                setForm((prev) => ({ ...prev, goal_id: v.target.value }))
               }
-              options={goals.map((g: any) => ({
+              options={okrGoals.map((g: any) => ({
                 value: g.id,
-                label: g.name_en,
+                label: g.title,
               }))}
               placeholder={t("common.selectAnOption")}
             />
@@ -173,21 +165,6 @@ export const KpiDictionaryFormPage: React.FC = () => {
               options={domains.map((d: any) => ({
                 value: d.id,
                 label: d.name_en,
-              }))}
-              placeholder={t("common.selectAnOption")}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <Select
-              label="OKR Goal"
-              value={form.goal_id}
-              onChange={(v) =>
-                setForm((prev) => ({ ...prev, goal_id: v.target.value }))
-              }
-              options={okrGoals.map((g: any) => ({
-                value: g.id,
-                label: g.title,
               }))}
               placeholder={t("common.selectAnOption")}
             />

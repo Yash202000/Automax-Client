@@ -152,6 +152,7 @@ export const PERMISSIONS = {
   KPI_UPDATE: "kpi:update",
   KPI_DELETE: "kpi:delete",
   KPI_APPROVE: "kpi:approve",
+  KPI_ASSIGN: "kpi:assign",
 
   // KPI performance / targets / benchmark / segmentation permissions
   PERF_VIEW: "perf:view",

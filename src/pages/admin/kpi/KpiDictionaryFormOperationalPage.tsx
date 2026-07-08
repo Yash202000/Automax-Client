@@ -5,11 +5,11 @@ import { ArrowLeft, BookOpen, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCreateOperationalKPI,
-  useStrategicGoals,
   useOperationalObjectives,
   useProcesses,
   useDataSources,
 } from "../../../hooks/useKpi";
+import { useGoals } from "../../../hooks/useGoals";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
 import type { OperationalKPIRequest } from "../../../types/kpi";
@@ -19,12 +19,12 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
   const navigate = useNavigate();
   const createKpi = useCreateOperationalKPI();
 
-  const { data: goalsData } = useStrategicGoals();
+  const { data: goalsData } = useGoals({ limit: 200 });
   const { data: objectivesData } = useOperationalObjectives();
   const { data: processesData } = useProcesses();
   const { data: dataSourcesData } = useDataSources();
 
-  const goals = goalsData ?? [];
+  const goals = (goalsData as any)?.data ?? [];
   const objectives = objectivesData ?? [];
   const processes = processesData ?? [];
   const dataSources = dataSourcesData ?? [];
@@ -33,7 +33,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     code: "",
     name_en: "",
     name_ar: "",
-    strategic_goal_id: "",
+    goal_id: "",
     operational_objective_id: "",
     process_id: "",
     polarity: "ascending",
@@ -64,7 +64,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     if (
       !form.code ||
       !form.name_en ||
-      !form.strategic_goal_id ||
+      !form.goal_id ||
       !form.operational_objective_id ||
       !form.process_id
     ) {
@@ -117,16 +117,13 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
             />
             <Select
               label={`${t("kpi.masterData.strategicGoal")} *`}
-              value={form.strategic_goal_id}
+              value={form.goal_id}
               onChange={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  strategic_goal_id: v.target.value,
-                }))
+                setForm((prev) => ({ ...prev, goal_id: v.target.value }))
               }
               options={goals.map((g: any) => ({
                 value: g.id,
-                label: g.name_en,
+                label: g.title,
               }))}
               placeholder={t("common.selectAnOption")}
             />

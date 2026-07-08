@@ -5,8 +5,6 @@ import type {
   PillarRequest,
   Enabler,
   EnablerRequest,
-  StrategicGoal,
-  StrategicGoalRequest,
   OperationalObjective,
   OperationalObjectiveRequest,
   Process,
@@ -51,6 +49,17 @@ import type {
   KpiPerformanceUpdateRequest,
   KpiPerformanceEvidence,
   KpiPerformanceEvidenceRequest,
+  KpiMetric,
+  KpiMetricRequest,
+  KpiEngagementEvidence,
+  KpiEngagementEvidenceRequest,
+  KpiCollaborator,
+  KpiCollaboratorAddRequest,
+  KpiCheckIn,
+  KpiCheckInRequest,
+  KpiComment,
+  KpiActivity,
+  KpiListResponse,
 } from "../types/kpi";
 
 export const kpiMasterDataApi = {
@@ -93,28 +102,6 @@ export const kpiMasterDataApi = {
   },
   deleteEnabler: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/enablers/${id}`);
-    return res.data;
-  },
-
-  listGoals: async (): Promise<ApiResponse<StrategicGoal[]>> => {
-    const res = await apiClient.get("/kpi/strategic-goals");
-    return res.data;
-  },
-  createGoal: async (
-    data: StrategicGoalRequest,
-  ): Promise<ApiResponse<StrategicGoal>> => {
-    const res = await apiClient.post("/kpi/strategic-goals", data);
-    return res.data;
-  },
-  updateGoal: async (
-    id: string,
-    data: Partial<StrategicGoalRequest>,
-  ): Promise<ApiResponse<StrategicGoal>> => {
-    const res = await apiClient.put(`/kpi/strategic-goals/${id}`, data);
-    return res.data;
-  },
-  deleteGoal: async (id: string): Promise<ApiResponse<void>> => {
-    const res = await apiClient.delete(`/kpi/strategic-goals/${id}`);
     return res.data;
   },
 
@@ -314,14 +301,13 @@ export const kpiDictionaryApi = {
     page?: number;
     limit?: number;
     search?: string;
-    strategic_goal_id?: string;
+    goal_id?: string;
   }): Promise<PaginatedResponse<StrategicKPI>> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append("page", String(params.page));
     if (params?.limit) searchParams.append("limit", String(params.limit));
     if (params?.search) searchParams.append("search", params.search);
-    if (params?.strategic_goal_id)
-      searchParams.append("strategic_goal_id", params.strategic_goal_id);
+    if (params?.goal_id) searchParams.append("goal_id", params.goal_id);
     const res = await apiClient.get(
       `/kpi/strategic?${searchParams.toString()}`,
     );
@@ -717,6 +703,158 @@ export const kpiDashboardApi = {
     if (params?.search) searchParams.append("search", params.search);
     const res = await apiClient.get(
       `/kpi/dashboard/cards?${searchParams.toString()}`,
+    );
+    return res.data;
+  },
+};
+
+export const kpiEngagementApi = {
+  // Metrics
+  listMetrics: async (
+    type: string,
+    id: string,
+  ): Promise<ApiResponse<KpiMetric[]>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/metrics`);
+    return res.data;
+  },
+  createMetric: async (
+    type: string,
+    id: string,
+    data: KpiMetricRequest,
+  ): Promise<ApiResponse<KpiMetric>> => {
+    const res = await apiClient.post(`/kpi/${type}/${id}/metrics`, data);
+    return res.data;
+  },
+  updateMetric: async (
+    metricId: string,
+    data: KpiMetricRequest,
+  ): Promise<ApiResponse<KpiMetric>> => {
+    const res = await apiClient.put(`/kpi/metrics/${metricId}`, data);
+    return res.data;
+  },
+  updateMetricValue: async (
+    metricId: string,
+    value: number,
+  ): Promise<ApiResponse<KpiMetric>> => {
+    const res = await apiClient.put(`/kpi/metrics/${metricId}/value`, {
+      value,
+    });
+    return res.data;
+  },
+  deleteMetric: async (metricId: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/metrics/${metricId}`);
+    return res.data;
+  },
+
+  // Evidence
+  listEvidence: async (
+    type: string,
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/evidence`);
+    return res.data;
+  },
+  createEvidence: async (
+    type: string,
+    id: string,
+    data: KpiEngagementEvidenceRequest,
+  ): Promise<ApiResponse<KpiEngagementEvidence>> => {
+    const res = await apiClient.post(`/kpi/${type}/${id}/evidence`, data);
+    return res.data;
+  },
+  deleteEvidence: async (evidenceId: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/evidence/${evidenceId}`);
+    return res.data;
+  },
+
+  // Collaborators
+  listCollaborators: async (
+    type: string,
+    id: string,
+  ): Promise<ApiResponse<KpiCollaborator[]>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/collaborators`);
+    return res.data;
+  },
+  addCollaborator: async (
+    type: string,
+    id: string,
+    data: KpiCollaboratorAddRequest,
+  ): Promise<ApiResponse<KpiCollaborator>> => {
+    const res = await apiClient.post(`/kpi/${type}/${id}/collaborators`, data);
+    return res.data;
+  },
+  removeCollaborator: async (
+    type: string,
+    id: string,
+    userId: string,
+  ): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(
+      `/kpi/${type}/${id}/collaborators/${userId}`,
+    );
+    return res.data;
+  },
+
+  // Check-ins
+  listCheckIns: async (
+    type: string,
+    id: string,
+    page = 1,
+    limit = 10,
+  ): Promise<KpiListResponse<KpiCheckIn>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/check-ins?page=${page}&limit=${limit}`,
+    );
+    return res.data;
+  },
+  createCheckIn: async (
+    type: string,
+    id: string,
+    data: KpiCheckInRequest,
+  ): Promise<ApiResponse<KpiCheckIn>> => {
+    const res = await apiClient.post(`/kpi/${type}/${id}/check-ins`, data);
+    return res.data;
+  },
+  deleteCheckIn: async (checkInId: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/check-ins/${checkInId}`);
+    return res.data;
+  },
+
+  // Comments
+  listComments: async (
+    type: string,
+    id: string,
+    page = 1,
+    limit = 20,
+  ): Promise<KpiListResponse<KpiComment>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/comments?page=${page}&limit=${limit}`,
+    );
+    return res.data;
+  },
+  addComment: async (
+    type: string,
+    id: string,
+    content: string,
+  ): Promise<ApiResponse<KpiComment>> => {
+    const res = await apiClient.post(`/kpi/${type}/${id}/comments`, {
+      content,
+    });
+    return res.data;
+  },
+  deleteComment: async (commentId: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/comments/${commentId}`);
+    return res.data;
+  },
+
+  // Activity
+  listActivity: async (
+    type: string,
+    id: string,
+    page = 1,
+    limit = 20,
+  ): Promise<KpiListResponse<KpiActivity>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/activity?page=${page}&limit=${limit}`,
     );
     return res.data;
   },

@@ -35,24 +35,12 @@ export interface Enabler {
   created_at: string;
 }
 
-export interface StrategicGoal {
-  id: string;
-  name_en: string;
-  name_ar: string;
-  pillar_id?: string;
-  pillar?: Pillar;
-  enabler_id?: string;
-  enabler?: Enabler;
-  is_active: boolean;
-  created_at: string;
-}
-
 export interface OperationalObjective {
   id: string;
   name_en: string;
   name_ar: string;
-  strategic_goal_id: string;
-  strategic_goal?: StrategicGoal;
+  goal_id: string;
+  goal?: GoalBrief;
   is_active: boolean;
   created_at: string;
 }
@@ -63,7 +51,8 @@ export interface Process {
   name_ar: string;
   operational_objective_id: string;
   operational_objective?: OperationalObjective;
-  strategic_goal_id: string;
+  goal_id: string;
+  goal?: GoalBrief;
   department_id?: string;
   department?: DepartmentBrief;
   unit: string;
@@ -75,8 +64,8 @@ export interface Initiative {
   id: string;
   name_en: string;
   name_ar: string;
-  strategic_goal_id: string;
-  strategic_goal?: StrategicGoal;
+  goal_id: string;
+  goal?: GoalBrief;
   pillar_id?: string;
   enabler_id?: string;
   owner_id?: string;
@@ -216,15 +205,13 @@ export interface StrategicKPI {
   code: string;
   name_en: string;
   name_ar: string;
-  strategic_goal_id: string;
-  strategic_goal?: StrategicGoal;
   pillar_id?: string;
   pillar?: Pillar;
   domain_id?: string;
   domain?: Domain;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
-  goal_id?: string;
+  goal_id: string;
   goal?: GoalBrief;
   polarity: string;
   activation_status: string;
@@ -248,7 +235,8 @@ export interface OperationalKPI {
   code: string;
   name_en: string;
   name_ar: string;
-  strategic_goal_id: string;
+  goal_id: string;
+  goal?: GoalBrief;
   operational_objective_id: string;
   process_id: string;
   process?: Process;
@@ -428,24 +416,17 @@ export interface EnablerRequest {
   owner_id?: string;
 }
 
-export interface StrategicGoalRequest {
-  name_en: string;
-  name_ar?: string;
-  pillar_id?: string;
-  enabler_id?: string;
-}
-
 export interface OperationalObjectiveRequest {
   name_en: string;
   name_ar?: string;
-  strategic_goal_id: string;
+  goal_id: string;
 }
 
 export interface ProcessRequest {
   name_en: string;
   name_ar?: string;
   operational_objective_id: string;
-  strategic_goal_id: string;
+  goal_id: string;
   department_id?: string;
   unit?: string;
 }
@@ -453,7 +434,7 @@ export interface ProcessRequest {
 export interface InitiativeRequest {
   name_en: string;
   name_ar?: string;
-  strategic_goal_id: string;
+  goal_id: string;
   pillar_id?: string;
   enabler_id?: string;
   owner_id?: string;
@@ -483,11 +464,10 @@ export interface StrategicKPIRequest {
   code: string;
   name_en: string;
   name_ar?: string;
-  strategic_goal_id: string;
   pillar_id?: string;
   domain_id?: string;
   owner_dept_id?: string;
-  goal_id?: string;
+  goal_id: string;
   polarity?: string;
   activation_status?: string;
   description_en?: string;
@@ -507,7 +487,7 @@ export interface OperationalKPIRequest {
   code: string;
   name_en: string;
   name_ar?: string;
-  strategic_goal_id: string;
+  goal_id: string;
   operational_objective_id: string;
   process_id: string;
   owner_dept_id?: string;
@@ -652,6 +632,122 @@ export interface KpiCorrectiveActionStatusRequest {
 export interface PaginatedResponse<T> {
   data: T[];
   total_items: number;
+  page: number;
+  limit: number;
+}
+
+// ─── KPI Engagement (Metrics, Evidence, Collaborators, Check-ins, Comments, Activity) ──
+
+export interface KpiMetric {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  name: string;
+  metric_type: string;
+  unit: string;
+  baseline_value: number;
+  current_value: number;
+  target_value: number;
+  weight: number;
+  formula?: string;
+  created_by_id: string;
+  created_by?: UserBrief;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiMetricRequest {
+  name: string;
+  metric_type?: string;
+  unit?: string;
+  baseline_value?: number;
+  target_value: number;
+  weight?: number;
+  formula?: string;
+}
+
+export interface KpiEngagementEvidence {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  title: string;
+  description: string;
+  file_url: string;
+  uploaded_by_id: string;
+  uploaded_by?: UserBrief;
+  created_at: string;
+}
+
+export interface KpiEngagementEvidenceRequest {
+  title: string;
+  description?: string;
+  file_url?: string;
+}
+
+export type KpiCollaboratorRole = "collaborator" | "reviewer";
+
+export interface KpiCollaborator {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  user_id: string;
+  user?: UserBrief;
+  role: KpiCollaboratorRole;
+  created_at: string;
+}
+
+export interface KpiCollaboratorAddRequest {
+  user_id: string;
+  role?: KpiCollaboratorRole;
+}
+
+export type KpiCheckInStatus = "on_track" | "at_risk" | "behind" | "blocked";
+
+export interface KpiCheckIn {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  author_id: string;
+  author?: UserBrief;
+  status: KpiCheckInStatus;
+  content: string;
+  created_at: string;
+}
+
+export interface KpiCheckInRequest {
+  status: KpiCheckInStatus;
+  content: string;
+}
+
+export interface KpiComment {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  author_id: string;
+  author?: UserBrief;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiCommentRequest {
+  content: string;
+}
+
+export interface KpiActivity {
+  id: string;
+  action: string;
+  module: string;
+  resource_id: string;
+  description: string;
+  user?: UserBrief;
+  created_at: string;
+}
+
+export interface KpiListResponse<T> {
+  success: boolean;
+  data: T[];
+  total: number;
   page: number;
   limit: number;
 }

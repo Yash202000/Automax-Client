@@ -540,7 +540,6 @@ export const GoalLayout: React.FC = () => {
                 [
                   ["pillar", "Pillars", Database],
                   ["enabler", "Enablers", BookOpen],
-                  ["goal", "Strategic Goals", Target],
                   [
                     "operational-objective",
                     "Operational Objectives",
