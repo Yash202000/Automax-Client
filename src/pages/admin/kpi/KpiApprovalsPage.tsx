@@ -10,6 +10,7 @@ import {
   CheckCircle,
   XCircle,
   TrendingUp,
+  RotateCcw,
 } from "lucide-react";
 import {
   useKpiPerformances,
@@ -45,6 +46,7 @@ const transitionIconMap: Record<string, React.ReactNode> = {
   approve: <CheckCircle className="w-4 h-4" />,
   reject: <XCircle className="w-4 h-4" />,
   publish: <TrendingUp className="w-4 h-4" />,
+  request_changes: <RotateCcw className="w-4 h-4" />,
 };
 
 const PerformanceRow: React.FC<{

@@ -18,6 +18,8 @@ export function kpiTransitionPermissionCode(code: string): string {
       return "perf:reject";
     case "publish":
       return "perf:publish";
+    case "request_changes":
+      return "perf:request_changes";
     default:
       return "perf:review";
   }

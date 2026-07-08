@@ -160,6 +160,8 @@ export const PERMISSIONS = {
   PERF_APPROVE: "perf:approve",
   PERF_REJECT: "perf:reject",
   PERF_PUBLISH: "perf:publish",
+  PERF_REQUEST_CHANGES: "perf:request_changes",
+  PERF_OVERRIDE_LOCK: "perf:override_lock",
   TARGETS_VIEW: "targets:view",
   TARGETS_SET: "targets:set",
   TARGETS_APPROVE: "targets:approve",

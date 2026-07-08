@@ -48,6 +48,9 @@ import type {
   KpiCorrectiveAction,
   KpiCorrectiveActionRequest,
   KpiCorrectiveActionStatusRequest,
+  KpiPerformanceUpdateRequest,
+  KpiPerformanceEvidence,
+  KpiPerformanceEvidenceRequest,
 } from "../types/kpi";
 
 export const kpiMasterDataApi = {
@@ -473,6 +476,39 @@ export const kpiPerformanceApi = {
   },
   getPerformance: async (id: string): Promise<ApiResponse<KpiPerformance>> => {
     const res = await apiClient.get(`/kpi/performance/${id}`);
+    return res.data;
+  },
+  updatePerformance: async (
+    id: string,
+    data: KpiPerformanceUpdateRequest,
+  ): Promise<ApiResponse<KpiPerformance>> => {
+    const res = await apiClient.put(`/kpi/performance/${id}`, data);
+    return res.data;
+  },
+  deletePerformance: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/performance/${id}`);
+    return res.data;
+  },
+  listPerformanceEvidence: async (
+    id: string,
+  ): Promise<ApiResponse<KpiPerformanceEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/performance/${id}/evidence`);
+    return res.data;
+  },
+  createPerformanceEvidence: async (
+    id: string,
+    data: KpiPerformanceEvidenceRequest,
+  ): Promise<ApiResponse<KpiPerformanceEvidence>> => {
+    const res = await apiClient.post(`/kpi/performance/${id}/evidence`, data);
+    return res.data;
+  },
+  deletePerformanceEvidence: async (
+    id: string,
+    evidenceId: string,
+  ): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(
+      `/kpi/performance/${id}/evidence/${evidenceId}`,
+    );
     return res.data;
   },
   getAvailableTransitions: async (

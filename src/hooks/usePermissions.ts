@@ -178,6 +178,8 @@ export const usePermissions = () => {
     canViewKpiPerformance: () => hasPermission(PERMISSIONS.PERF_VIEW),
     canSubmitKpiPerformance: () => hasPermission(PERMISSIONS.PERF_SUBMIT),
     canReviewKpiPerformance: () => hasPermission(PERMISSIONS.PERF_REVIEW),
+    canOverrideKpiApprovalLock: () =>
+      hasPermission(PERMISSIONS.PERF_OVERRIDE_LOCK),
 
     // KPI target permissions
     canViewKpiTargets: () => hasPermission(PERMISSIONS.TARGETS_VIEW),
