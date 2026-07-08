@@ -2486,7 +2486,8 @@
     "callerHistory": "Caller History",
     "calls": "Calls",
     "feedbackSubmitted": "Feedback submitted. Thank you!",
-    "cintrix": "Cintrix"
+    "cintrix": "Cintrix",
+    "automax": "Automax"
   },
   "queries": {
     "title": "Queries",

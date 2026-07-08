@@ -64,21 +64,18 @@ export const AuthLayout: React.FC = () => {
             {isEPM940 ? (
               <div className="w-30 h-30 bg-white backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <img
-                  // src={publicUrl("epm-logo-horizontal.png")}
-                  src={publicUrl("epm-ccm.png")}
+                  src={publicUrl("epm-logo.png")}
                   alt="Automax"
                   className="h-30 object-contain"
                 />
               </div>
             ) : (
-              // </div>
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Zap className="w-7 h-7 text-white" />
               </div>
             )}
             <span className="text-2xl font-bold text-white">
-              {" "}
-              {t("citizen.automax")}
+              {t("softphone.automax")}
             </span>
           </div>
 
@@ -146,7 +143,7 @@ export const AuthLayout: React.FC = () => {
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
                   <img
                     // src={publicUrl("epm-logo-horizontal.png")}
-                    src={publicUrl("epm-ccm.png")}
+                    src={publicUrl("epm-logo.png")}
                     alt="Automax"
                     className="h-10 object-contain"
                   />
@@ -157,7 +154,7 @@ export const AuthLayout: React.FC = () => {
                 </div>
               )}
               <span className="text-xl font-bold text-gray-900">
-                {t("citizen.automax")}
+                {t("softphone.automax")}
               </span>
             </Link>
           </div>
@@ -205,9 +202,25 @@ export const AuthLayout: React.FC = () => {
             )}
           </div>
         </div>
-
+        {/* automax epm940 logos */}
+        {isEPM940 && (
+          <div className="flex flex-row align-baseline justify-between px-6 lg:px-12">
+            <div className="flex flex-row w-full justify-between">
+              <img
+                src={publicUrl("epm-logo1.png")}
+                alt="Automax"
+                className="h-30 object-contain"
+              />
+              <img
+                src={publicUrl("epm-ccm.png")}
+                alt="Automax"
+                className="h-30 object-contain"
+              />{" "}
+            </div>
+          </div>
+        )}
         {/* Form Container */}
-        <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="flex-1 flex items-center justify-center p-6 pt-0 lg:p-12 lg:pt-6">
           <div className="w-full max-w-md">
             <Outlet />
           </div>

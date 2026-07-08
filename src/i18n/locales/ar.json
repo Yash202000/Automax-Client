@@ -2484,7 +2484,8 @@
     "callEnded": "Call ended",
     "sentimentSubtitle": "Rate the caller's mood during this call",
     "skip": "Skip",
-    "cintrix": "سينتريكس"
+    "cintrix": "سينتريكس",
+    "automax": "أوتوماكس"
   },
   "queries": {
     "title": "الاستفسارات",
