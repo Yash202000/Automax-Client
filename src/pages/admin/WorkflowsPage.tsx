@@ -30,6 +30,7 @@ import type {
   Classification,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
+  WorkflowFilter,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
@@ -40,6 +41,7 @@ import {
   validateName,
   validateRequired,
 } from "@/utils/validations";
+import { WorkflowFilters } from "@/components/workflow";
 
 interface WorkflowFormData {
   name: string;
@@ -83,6 +85,38 @@ export const WorkflowsPage: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [filter, setFilter] = useState<WorkflowFilter>({
+    search: "",
+    status: "",
+    module: "",
+    created_by: "",
+    created_from: "",
+    created_to: "",
+    modified_from: "",
+    modified_to: "",
+  });
+  console.log(filter);
+  const onFilterChange = <K extends keyof WorkflowFilter>(
+    key: K,
+    value: WorkflowFilter[K],
+  ) => {
+    setFilter((prev) => {
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
+  };
+
+  const onClearFilters = () => {
+    setFilter({
+      search: "",
+    });
+  };
+
+  const hasActiveFilters = Object.values(filter).some(
+    (value) => value !== "" && value !== null && value !== undefined,
+  );
 
   const { data: workflowsData, isLoading } = useQuery({
     queryKey: ["admin", "workflows"],
@@ -388,6 +422,7 @@ export const WorkflowsPage: React.FC = () => {
             {t("workflows.subtitle")}
           </p>
         </div>
+
         {canCreateWorkflow && (
           <div className="flex gap-2">
             <Button
@@ -406,7 +441,12 @@ export const WorkflowsPage: React.FC = () => {
           </div>
         )}
       </div>
-
+      <WorkflowFilters
+        filter={filter}
+        onFilterChange={onFilterChange}
+        onClearFilters={onClearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
       {/* Workflows Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {isLoading

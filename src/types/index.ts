@@ -895,7 +895,16 @@ export interface WorkflowUpdateRequest {
   required_fields?: IncidentFormField[];
   optional_fields?: IncidentFormField[];
 }
-
+export interface WorkflowFilter {
+  search?: string;
+  status?: string;
+  module?: string;
+  created_by?: string;
+  created_from?: string;
+  created_to?: string;
+  modified_from?: string;
+  modified_to?: string;
+}
 export interface WorkflowStateCreateRequest {
   name: string;
   name_ar?: string;
