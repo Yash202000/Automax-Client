@@ -1260,6 +1260,7 @@ export const incidentApi = {
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.search) params.append("search", filter.search);
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+    if (filter.my_record) params.append("my_record", filter.my_record);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
     filter.classification_ids?.forEach((id) =>
@@ -1269,6 +1270,7 @@ export const incidentApi = {
     if (filter.reporter_phone)
       params.append("reporter_phone", filter.reporter_phone);
     if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
+    if (filter.reporter_id) params.append("reporter_id", filter.reporter_id);
     filter.department_ids?.forEach((id) => params.append("department_id", id));
     filter.location_ids?.forEach((id) => params.append("location_id", id));
     if (filter.source) params.append("source", filter.source);
@@ -1284,7 +1286,7 @@ export const incidentApi = {
     if (filter.end_date) params.append("end_date", filter.end_date);
     if (filter.transition_id)
       params.append("transition_id", filter.transition_id);
-
+    console.log(filter);
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
     );
@@ -1605,6 +1607,25 @@ export const incidentApi = {
       },
     );
     return response.data;
+  },
+
+  getIncidentStatsV2: async (
+    params = {},
+  ): Promise<ApiResponse<IncidentStats>> => {
+    try {
+      const response = await apiClient.get("/incidents/stats/v2", {
+        params: { ...params, record_type: "incident" },
+      });
+      if (response.data && response.data.success) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: "Invalid response from server" };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
   },
 
   // Ready-to-Close duration options (global defaults)
