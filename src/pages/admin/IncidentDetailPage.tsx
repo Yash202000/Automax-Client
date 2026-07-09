@@ -1218,9 +1218,7 @@ export const IncidentDetailPage: React.FC = () => {
     const roles = incident.current_state?.editable_roles ?? [];
     const userRoles = user?.roles?.map((role) => role?.id) ?? [];
 
-    return (
-      roles.length === 0 || roles.some((r: any) => userRoles.includes(r.id))
-    );
+    return roles.some((r: any) => userRoles.includes(r.id));
   }, [incident, user]);
 
   const executeTransition = async () => {
