@@ -21,6 +21,7 @@ import {
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
 import i18n from "@/i18n";
+import { useAuthStore } from "@/stores/authStore";
 
 // Column configuration (shared across pages)
 export interface ColumnConfig {
@@ -85,6 +86,8 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
+
+  const { user } = useAuthStore();
 
   // Handle click outside column config dropdown
   useEffect(() => {
@@ -160,15 +163,59 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     queryFn: () => departmentApi.getTree(),
   });
 
-  const { data: classificationsData } = useQuery({
+  const isVDCOP = import.meta.env.VITE_CLIENT === "VDCOP";
+
+  const { data: rawClassificationsData } = useQuery({
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
+    enabled: !isVDCOP,
   });
 
-  const { data: locationsData } = useQuery({
+  const { data: rawLocationsData } = useQuery({
     queryKey: ["admin", "locations", "tree"],
     queryFn: () => locationApi.getTree(),
+    enabled: !isVDCOP,
   });
+
+  const buildTree = (data: any) => {
+    if (!data) return [];
+    const map = new Map();
+    const roots: any[] = [];
+
+    data.forEach((item: any) => {
+      map.set(item.id, {
+        ...item,
+        children: [],
+      });
+    });
+
+    // Build tree
+    data.forEach((item: any) => {
+      const node = map.get(item.id);
+
+      if (item.parent_id && map.has(item.parent_id)) {
+        map.get(item.parent_id).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
+  };
+
+  const classificationsData = useMemo(() => {
+    if (isVDCOP) {
+      return { success: true, data: buildTree(user?.classifications) };
+    }
+    return rawClassificationsData;
+  }, [isVDCOP, user?.classifications, rawClassificationsData]);
+
+  const locationsData = useMemo(() => {
+    if (isVDCOP) {
+      return { success: true, data: buildTree(user?.locations) };
+    }
+    return rawLocationsData;
+  }, [isVDCOP, user?.locations, rawLocationsData]);
 
   const { data: sourceData } = useQuery({
     queryKey: ["lookups", "categories"],
