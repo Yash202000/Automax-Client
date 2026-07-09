@@ -983,7 +983,7 @@
     "assignDepartment": "Assign Department",
     "resetPassword": "Reset Password",
     "noUsers": "No users found",
-    "searchPlaceholder": "Search by name, email...",
+    "searchPlaceholder": "Search by name, email, or phone number...",
     "loadingUsers": "Loading users...",
     "failedToLoad": "Failed to Load Users",
     "errorLoading": "There was an error loading the user list. Please try again.",
@@ -3946,7 +3946,8 @@
     "subtitle": "Manage calls and view contacts",
     "title": "Call Centre",
     "showRecording": "Show Recording",
-    "hideRecording": "Hide Recording"
+    "hideRecording": "Hide Recording",
+    "searchPlaceholder": "Search by name, email..."
   },
   "citizen": {
     "closePage": "You may safely close this page.",

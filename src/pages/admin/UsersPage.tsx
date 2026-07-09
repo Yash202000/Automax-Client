@@ -1438,6 +1438,11 @@ export const UsersPage: React.FC = () => {
                     </th>
                     <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                        {t("users.phone")}
+                      </span>
+                    </th>
+                    <th className="px-6 py-4 text-start">
+                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.roles")}
                       </span>
                     </th>
@@ -1517,6 +1522,24 @@ export const UsersPage: React.FC = () => {
                         ) : (
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
                             —
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.phone ? (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                            {/* the + sign goes to the end when changing to arabic so adding dir="ltr" */}
+                            <span
+                              dir="ltr"
+                              className="text-sm text-[hsl(var(--foreground))]"
+                            >
+                              {user.phone}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                            {t("users.noPhone")}
                           </span>
                         )}
                       </td>
