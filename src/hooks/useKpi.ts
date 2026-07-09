@@ -5,11 +5,13 @@ import {
   kpiMasterDataApi,
   kpiDictionaryApi,
   kpiPerformanceApi,
+  kpiPerformanceBandApi,
+  kpiCorrectiveActionApi,
   kpiDashboardApi,
+  kpiEngagementApi,
 } from "../api/kpi";
 import type {
   PillarRequest,
-  StrategicGoalRequest,
   StrategicKPIRequest,
   KpiAnnualTargetRequest,
   KpiPerformanceRequest,
@@ -21,6 +23,10 @@ import type {
   AwardSubCriterionRequest,
   OperationalKPIRequest,
   AwardKPIRequest,
+  KpiMetricRequest,
+  KpiEngagementEvidenceRequest,
+  KpiCollaboratorAddRequest,
+  KpiCheckInRequest,
 } from "../types/kpi";
 
 function getApiError(err: any): string {
@@ -128,61 +134,6 @@ export const useDeleteEnabler = () => {
       toast.success(t("kpi.enablerDeleted"));
     },
     onError: () => toast.error(t("kpi.enablerDeleteFailed")),
-  });
-};
-
-export const useStrategicGoals = () =>
-  useQuery({
-    queryKey: ["kpi", "strategic-goals"],
-    queryFn: async () => {
-      const res = await kpiMasterDataApi.listGoals();
-      return res.data ?? [];
-    },
-  });
-
-export const useCreateStrategicGoal = () => {
-  const qc = useQueryClient();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: (data: StrategicGoalRequest) =>
-      kpiMasterDataApi.createGoal(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kpi", "strategic-goals"] });
-      toast.success(t("kpi.goalCreated"));
-    },
-    onError: () => toast.error(t("kpi.goalCreateFailed")),
-  });
-};
-
-export const useUpdateStrategicGoal = () => {
-  const qc = useQueryClient();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<StrategicGoalRequest>;
-    }) => kpiMasterDataApi.updateGoal(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kpi", "strategic-goals"] });
-      toast.success(t("kpi.goalUpdated"));
-    },
-    onError: () => toast.error(t("kpi.goalUpdateFailed")),
-  });
-};
-
-export const useDeleteStrategicGoal = () => {
-  const qc = useQueryClient();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: (id: string) => kpiMasterDataApi.deleteGoal(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kpi", "strategic-goals"] });
-      toast.success(t("kpi.goalDeleted"));
-    },
-    onError: () => toast.error(t("kpi.goalDeleteFailed")),
   });
 };
 
@@ -516,11 +467,105 @@ export const useDeleteAwardSubCriterion = () => {
   });
 };
 
+export const useDataSources = () =>
+  useQuery({
+    queryKey: ["kpi", "data-sources"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listDataSources();
+      return res.data ?? [];
+    },
+  });
+
+export const useCreateDataSource = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => kpiMasterDataApi.createDataSource(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "data-sources"] });
+      toast.success("Data source saved");
+    },
+    onError: () => toast.error("Failed to save data source"),
+  });
+};
+
+export const useUpdateDataSource = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiMasterDataApi.updateDataSource(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "data-sources"] });
+      toast.success("Data source updated");
+    },
+    onError: () => toast.error("Failed to update data source"),
+  });
+};
+
+export const useDeleteDataSource = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => kpiMasterDataApi.deleteDataSource(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "data-sources"] });
+      toast.success("Data source deleted");
+    },
+    onError: () => toast.error("Failed to delete data source"),
+  });
+};
+
+export const useSegmentationDimensions = () =>
+  useQuery({
+    queryKey: ["kpi", "segmentation-dimensions"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listSegmentationDimensions();
+      return res.data ?? [];
+    },
+  });
+
+export const useCreateSegmentationDimension = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) =>
+      kpiMasterDataApi.createSegmentationDimension(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "segmentation-dimensions"] });
+      toast.success("Segmentation dimension saved");
+    },
+    onError: () => toast.error("Failed to save segmentation dimension"),
+  });
+};
+
+export const useUpdateSegmentationDimension = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiMasterDataApi.updateSegmentationDimension(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "segmentation-dimensions"] });
+      toast.success("Segmentation dimension updated");
+    },
+    onError: () => toast.error("Failed to update segmentation dimension"),
+  });
+};
+
+export const useDeleteSegmentationDimension = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      kpiMasterDataApi.deleteSegmentationDimension(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "segmentation-dimensions"] });
+      toast.success("Segmentation dimension deleted");
+    },
+    onError: () => toast.error("Failed to delete segmentation dimension"),
+  });
+};
+
 export const useStrategicKPIs = (params?: {
   page?: number;
   limit?: number;
   search?: string;
-  strategic_goal_id?: string;
+  goal_id?: string;
 }) =>
   useQuery({
     queryKey: ["kpi", "strategic", params],
@@ -761,6 +806,74 @@ export const useSubmitPerformance = () => {
   });
 };
 
+export const useUpdatePerformance = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.updatePerformance(id, data),
+    onSuccess: (_res, { id }) => {
+      qc.invalidateQueries({ queryKey: ["kpi", "performance"] });
+      qc.invalidateQueries({ queryKey: ["kpi", "performance", id] });
+      toast.success("Performance entry updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeletePerformance = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => kpiPerformanceApi.deletePerformance(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "performance"] });
+      toast.success("Performance entry deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const usePerformanceEvidence = (performanceId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "performance", performanceId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiPerformanceApi.listPerformanceEvidence(
+        performanceId!,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!performanceId,
+  });
+
+export const useCreatePerformanceEvidence = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.createPerformanceEvidence(id, data),
+    onSuccess: (_res, { id }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "performance", id, "evidence"],
+      });
+      toast.success("Evidence added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeletePerformanceEvidence = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, evidenceId }: { id: string; evidenceId: string }) =>
+      kpiPerformanceApi.deletePerformanceEvidence(id, evidenceId),
+    onSuccess: (_res, { id }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "performance", id, "evidence"],
+      });
+      toast.success("Evidence removed");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
 export const useTransitionPerformance = () => {
   const qc = useQueryClient();
   const { t } = useTranslation();
@@ -882,11 +995,94 @@ export const useDeleteKpiSegmentation = () => {
   });
 };
 
-export const useKpiDashboard = () =>
+export const usePerformanceBands = () =>
   useQuery({
-    queryKey: ["kpi", "dashboard"],
+    queryKey: ["kpi", "performance-bands"],
     queryFn: async () => {
-      const res = await kpiDashboardApi.getDashboard();
+      const res = await kpiPerformanceBandApi.listBands();
+      return res.data ?? [];
+    },
+  });
+
+export const useEffectivePerformanceBand = (kpiCode?: string) =>
+  useQuery({
+    queryKey: ["kpi", "performance-bands", "effective", kpiCode],
+    queryFn: async () => {
+      const res = await kpiPerformanceBandApi.getEffectiveBand(kpiCode);
+      return res.data ?? { green_min: 80, amber_min: 60 };
+    },
+  });
+
+export const useUpsertPerformanceBand = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => kpiPerformanceBandApi.upsertBand(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "performance-bands"] });
+      toast.success("Performance band saved");
+    },
+    onError: () => toast.error("Failed to save performance band"),
+  });
+};
+
+export const useDeletePerformanceBand = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => kpiPerformanceBandApi.deleteBand(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "performance-bands"] });
+      toast.success("Performance band deleted");
+    },
+    onError: () => toast.error("Failed to delete performance band"),
+  });
+};
+
+export const useCorrectiveActions = (performanceId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "corrective-actions", performanceId],
+    queryFn: async () => {
+      const res = await kpiCorrectiveActionApi.listByPerformance(
+        performanceId!,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!performanceId,
+  });
+
+export const useCreateCorrectiveAction = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => kpiCorrectiveActionApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "corrective-actions"] });
+      toast.success("Corrective action created");
+    },
+    onError: () => toast.error("Failed to create corrective action"),
+  });
+};
+
+export const useUpdateCorrectiveActionStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiCorrectiveActionApi.updateStatus(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "corrective-actions"] });
+      toast.success("Corrective action updated");
+    },
+    onError: () => toast.error("Failed to update corrective action"),
+  });
+};
+
+export const useKpiDashboard = (params?: {
+  kpi_type?: string;
+  year?: number;
+  quarter?: number;
+}) =>
+  useQuery({
+    queryKey: ["kpi", "dashboard", params],
+    queryFn: async () => {
+      const res = await kpiDashboardApi.getDashboard(params);
       return res.data;
     },
   });
@@ -931,4 +1127,265 @@ export const useKpiSegmentationSummary = () =>
       const res = await kpiPerformanceApi.listSegmentationSummary();
       return res.data ?? [];
     },
+  });
+
+// ─── KPI Engagement: Metrics ──────────────────────────────────────────────
+
+export const useKpiMetrics = (type: string, id: string) =>
+  useQuery({
+    queryKey: ["kpi", "engagement", type, id, "metrics"],
+    queryFn: async () => {
+      const res = await kpiEngagementApi.listMetrics(type, id);
+      return res.data ?? [];
+    },
+    enabled: !!type && !!id,
+  });
+
+export const useCreateKpiMetric = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: KpiMetricRequest) =>
+      kpiEngagementApi.createMetric(type, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      toast.success("Metric added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useUpdateKpiMetric = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      metricId,
+      data,
+    }: {
+      metricId: string;
+      data: KpiMetricRequest;
+    }) => kpiEngagementApi.updateMetric(metricId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      toast.success("Metric updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useUpdateKpiMetricValue = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ metricId, value }: { metricId: string; value: number }) =>
+      kpiEngagementApi.updateMetricValue(metricId, value),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      toast.success("Value updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeleteKpiMetric = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (metricId: string) => kpiEngagementApi.deleteMetric(metricId),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      toast.success("Metric deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// ─── KPI Engagement: Evidence ─────────────────────────────────────────────
+
+export const useKpiEngagementEvidence = (type: string, id: string) =>
+  useQuery({
+    queryKey: ["kpi", "engagement", type, id, "evidence"],
+    queryFn: async () => {
+      const res = await kpiEngagementApi.listEvidence(type, id);
+      return res.data ?? [];
+    },
+    enabled: !!type && !!id,
+  });
+
+export const useCreateKpiEvidence = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: KpiEngagementEvidenceRequest) =>
+      kpiEngagementApi.createEvidence(type, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "evidence"],
+      });
+      toast.success("Evidence added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeleteKpiEvidence = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (evidenceId: string) =>
+      kpiEngagementApi.deleteEvidence(evidenceId),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "evidence"],
+      });
+      toast.success("Evidence deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// ─── KPI Engagement: Collaborators ────────────────────────────────────────
+
+export const useKpiCollaborators = (type: string, id: string) =>
+  useQuery({
+    queryKey: ["kpi", "engagement", type, id, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiEngagementApi.listCollaborators(type, id);
+      return res.data ?? [];
+    },
+    enabled: !!type && !!id,
+  });
+
+export const useAddKpiCollaborator = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: KpiCollaboratorAddRequest) =>
+      kpiEngagementApi.addCollaborator(type, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "collaborators"],
+      });
+      toast.success("Collaborator added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useRemoveKpiCollaborator = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      kpiEngagementApi.removeCollaborator(type, id, userId),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "collaborators"],
+      });
+      toast.success("Collaborator removed");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// ─── KPI Engagement: Check-ins ────────────────────────────────────────────
+
+export const useKpiCheckIns = (
+  type: string,
+  id: string,
+  page = 1,
+  limit = 10,
+) =>
+  useQuery({
+    queryKey: ["kpi", "engagement", type, id, "check-ins", page, limit],
+    queryFn: () => kpiEngagementApi.listCheckIns(type, id, page, limit),
+    enabled: !!type && !!id,
+  });
+
+export const useCreateKpiCheckIn = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: KpiCheckInRequest) =>
+      kpiEngagementApi.createCheckIn(type, id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "check-ins"],
+      });
+      toast.success("Check-in added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeleteKpiCheckIn = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (checkInId: string) =>
+      kpiEngagementApi.deleteCheckIn(checkInId),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "check-ins"],
+      });
+      toast.success("Check-in deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// ─── KPI Engagement: Comments ─────────────────────────────────────────────
+
+export const useKpiComments = (
+  type: string,
+  id: string,
+  page = 1,
+  limit = 20,
+) =>
+  useQuery({
+    queryKey: ["kpi", "engagement", type, id, "comments", page, limit],
+    queryFn: () => kpiEngagementApi.listComments(type, id, page, limit),
+    enabled: !!type && !!id,
+  });
+
+export const useAddKpiComment = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) =>
+      kpiEngagementApi.addComment(type, id, content),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "comments"],
+      });
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeleteKpiComment = (type: string, id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      kpiEngagementApi.deleteComment(commentId),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "comments"],
+      });
+      toast.success("Comment deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// ─── KPI Engagement: Activity ─────────────────────────────────────────────
+
+export const useKpiActivity = (
+  type: string,
+  id: string,
+  page = 1,
+  limit = 20,
+) =>
+  useQuery({
+    queryKey: ["kpi", "engagement", type, id, "activity", page, limit],
+    queryFn: () => kpiEngagementApi.listActivity(type, id, page, limit),
+    enabled: !!type && !!id,
   });

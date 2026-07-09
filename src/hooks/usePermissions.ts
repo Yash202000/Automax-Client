@@ -163,6 +163,34 @@ export const usePermissions = () => {
     canCreateLookups: () => hasPermission(PERMISSIONS.LOOKUPS_CREATE),
     canUpdateLookups: () => hasPermission(PERMISSIONS.LOOKUPS_UPDATE),
     canDeleteLookups: () => hasPermission(PERMISSIONS.LOOKUPS_DELETE),
+
+    // Goal/KPI master data (pillars, enablers, goals, objectives, criteria...)
+    canManageGoalHierarchy: () => hasPermission(PERMISSIONS.GOALS_MANAGE),
+
+    // KPI dictionary permissions
+    canViewKpi: () => hasPermission(PERMISSIONS.KPI_VIEW),
+    canCreateKpi: () => hasPermission(PERMISSIONS.KPI_CREATE),
+    canUpdateKpi: () => hasPermission(PERMISSIONS.KPI_UPDATE),
+    canDeleteKpi: () => hasPermission(PERMISSIONS.KPI_DELETE),
+    canApproveKpi: () => hasPermission(PERMISSIONS.KPI_APPROVE),
+    canAssignKpi: () => hasPermission(PERMISSIONS.KPI_ASSIGN),
+
+    // KPI performance permissions
+    canViewKpiPerformance: () => hasPermission(PERMISSIONS.PERF_VIEW),
+    canSubmitKpiPerformance: () => hasPermission(PERMISSIONS.PERF_SUBMIT),
+    canReviewKpiPerformance: () => hasPermission(PERMISSIONS.PERF_REVIEW),
+    canOverrideKpiApprovalLock: () =>
+      hasPermission(PERMISSIONS.PERF_OVERRIDE_LOCK),
+
+    // KPI target permissions
+    canViewKpiTargets: () => hasPermission(PERMISSIONS.TARGETS_VIEW),
+    canSetKpiTargets: () => hasPermission(PERMISSIONS.TARGETS_SET),
+
+    // KPI benchmark / segmentation permissions
+    canManageKpiBenchmarks: () => hasPermission(PERMISSIONS.BENCHMARK_MANAGE),
+    canManageKpiSegments: () => hasPermission(PERMISSIONS.SEGMENT_MANAGE),
+    canManageCorrectiveActions: () =>
+      hasPermission(PERMISSIONS.CORRECTIVE_ACTION_MANAGE),
   };
 };
 

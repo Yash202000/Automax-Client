@@ -815,6 +815,15 @@ export const UsersPage: React.FC = () => {
         "phone",
         "extension",
       ],
+      [
+        "(Required)",
+        "(Required)",
+        "(Required)",
+        "(Optional)",
+        "(Optional)",
+        "(Optional)",
+        "(Optional)",
+      ],
     ]);
     ws["!cols"] = [
       { wch: 20 },
@@ -869,6 +878,7 @@ export const UsersPage: React.FC = () => {
   ): string[] => {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
     const usernameSet = new Map<string, number[]>();
     const emailSet = new Map<string, number[]>();
 
@@ -880,6 +890,15 @@ export const UsersPage: React.FC = () => {
       if (!row.username?.trim()) {
         errors.push(
           `${rowLabel}: ${t("users.importUsernameRequired", { defaultValue: "Username is required" })}`,
+        );
+      } else if (!usernameRegex.test(row.username.trim())) {
+        errors.push(
+          `${rowLabel}: "${row.username}" - ${t("auth.usernameInvalidChars", { defaultValue: "Username can only contain letters, numbers, and underscores" })}`,
+        );
+      }
+      if (!row.password?.trim()) {
+        errors.push(
+          `${rowLabel}: ${t("users.importPasswordRequired", { defaultValue: "Password is required" })}`,
         );
       }
       if (!row.email?.trim()) {
@@ -950,6 +969,7 @@ export const UsersPage: React.FC = () => {
         jsonRows = rows.map((row) => ({
           username: row.username || "",
           email: row.email || "",
+          password: row.password || "",
           first_name: row.first_name || "",
           last_name: row.last_name || "",
           phone: row.phone || "",
@@ -960,6 +980,21 @@ export const UsersPage: React.FC = () => {
       } else {
         const text = await importFile.text();
         jsonRows = JSON.parse(text);
+      }
+
+      if (jsonRows.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: 0,
+          total: 0,
+          errors: [
+            t("users.importEmptyFile", {
+              defaultValue:
+                "No data found in file. Please ensure the file contains user records.",
+            }),
+          ],
+        } as UserImportResult);
+        return;
       }
 
       const validationErrors = validateImportRows(jsonRows);
@@ -1068,7 +1103,9 @@ export const UsersPage: React.FC = () => {
             leftIcon={<FileSpreadsheet className="w-4 h-4" />}
             onClick={handleDownloadTemplate}
           >
-            {t("users.downloadTemplate", { defaultValue: "Download Template" })}
+            {t("users.downloadTemplate", {
+              defaultValue: "Download User Import Template",
+            })}
           </Button>
           <Button
             variant="outline"
@@ -3184,7 +3221,7 @@ export const UsersPage: React.FC = () => {
                   )}
                   {importResult.note && (
                     <div className="mt-3 p-3 bg-[hsl(var(--accent)/0.1)] border border-[hsl(var(--accent))] rounded-lg">
-                      <p className="text-xs flex items-center gap-2 font-medium text-[hsl(var(--accent-foreground))]">
+                      <p className="text-xs flex items-center gap-2 font-medium text-[hsl(var(--accent))]">
                         <AlertTriangle
                           className="text-yellow-500 mb-1"
                           size={28}

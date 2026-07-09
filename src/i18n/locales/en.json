@@ -1959,6 +1959,7 @@
     "terminalEndState": "Terminal (End state)",
     "slaDurationOptional": "SLA Duration (optional)",
     "days": "Days",
+    "weeks": "Weeks",
     "months": "Months",
     "maximumTimeAnIncidentShouldRemainIn": "Maximum time an incident should remain in this state",
     "escalationPolicyOptional": "Escalation Policy (optional)",
@@ -3535,7 +3536,10 @@
       "totalAward": "Award KPIs",
       "pendingReviews": "Pending Reviews",
       "analyticsTitle": "KPI Analytics",
-      "analyticsDescription": "Detailed analytics and visualizations will appear here."
+      "analyticsDescription": "Detailed analytics and visualizations will appear here.",
+      "allTypes": "All Types",
+      "allYears": "All Years",
+      "allQuarters": "All Quarters"
     },
     "masterData": {
       "title": "Master Data",
@@ -3549,13 +3553,15 @@
       "domains": "Domains",
       "awardCriteria": "Award Criteria",
       "awardSubCriteria": "Award Sub Criteria",
+      "dataSources": "Data Sources",
+      "segmentationDimensions": "Segmentation Dimensions",
       "nameEn": "Name (EN)",
       "nameAr": "Name (AR)",
       "active": "Active",
       "owner": "Owner",
       "pillar": "Pillar",
       "enabler": "Enabler",
-      "strategicGoal": "Strategic Goal",
+      "strategicGoal": "Goal",
       "operationalObjective": "Operational Objective",
       "department": "Department",
       "unit": "Unit",
@@ -3576,6 +3582,8 @@
       "domainTypeAward": "Award",
       "domainTypeStrategyAndAward": "Strategy & Award",
       "noAwardSubCriteria": "No award sub criteria found.",
+      "noDataSources": "No data sources found.",
+      "noSegmentationDimensions": "No segmentation dimensions found.",
       "failedToLoad": "Failed to load master data."
     },
     "dictionary": {
@@ -3599,6 +3607,7 @@
       "fieldDescriptionAr": "Description (AR)",
       "fieldFormula": "Formula",
       "fieldBaseline": "Baseline",
+      "fieldUnitOfMeasure": "Unit of Measure",
       "fieldFrequency": "Reporting Frequency",
       "fieldPolarity": "Polarity",
       "fieldStatus": "Status",
@@ -3653,7 +3662,51 @@
         "submittedBy": "Submitted By",
         "approvedBy": "Approved By",
         "history": "Transition History",
-        "noHistory": "No transitions yet."
+        "noHistory": "No transitions yet.",
+        "lockedTooltip": "Approved KPI Entries cannot be modified.",
+        "lockedNotice": "This entry has been approved and is now locked. Target, Actual, and Evidence cannot be changed.",
+        "editTitle": "Edit Performance Entry",
+        "evidence": "Evidence",
+        "addEvidence": "Add Evidence",
+        "noEvidence": "No evidence attached to this result.",
+        "evidenceDescription": "Description",
+        "evidenceLink": "Link"
+      },
+      "addActual": {
+        "title": "Add Actual",
+        "subtitle": "Record an actual result for a KPI. It starts as a draft and can then be submitted for review.",
+        "validation": "Please select a KPI and enter an actual value.",
+        "periodKeyRequired": "Please enter a period for this actual."
+      }
+    },
+    "approvals": {
+      "title": "KPI Approvals",
+      "subtitle": "Review and act on submitted KPI performance results",
+      "pending": "Pending",
+      "completed": "Completed",
+      "review": "Review",
+      "failedToLoad": "Failed to load approvals.",
+      "emptyPending": "No performance results are waiting for review.",
+      "emptyCompleted": "No completed reviews yet.",
+      "reviewTitle": "Review {{code}}",
+      "noActions": "No actions are available for this record."
+    },
+    "correctiveActions": {
+      "title": "Corrective Actions",
+      "add": "Add Corrective Action",
+      "empty": "No corrective actions recorded for this result.",
+      "description": "Description",
+      "owner": "Owner",
+      "dueDate": "Due Date",
+      "closureNote": "Closure Note",
+      "closureEvidenceUrl": "Closure Evidence (link)",
+      "escalate": "Escalate",
+      "close": "Close",
+      "status": {
+        "open": "Open",
+        "in_progress": "In Progress",
+        "closed": "Closed",
+        "escalated": "Escalated"
       }
     },
     "targets": {
@@ -3664,15 +3717,26 @@
       "empty": "No targets found.",
       "failedToLoad": "Failed to load targets.",
       "formValidation": "Please fill in all required fields.",
+      "periodKeyRequired": "Please enter a period for this target.",
       "form": {
         "kpiCode": "KPI Code",
         "kpiType": "KPI Type",
-        "targetValue": "Target Value"
+        "targetValue": "Target Value",
+        "periodType": "Period Type",
+        "periodKey": "Period"
+      },
+      "periodTypes": {
+        "annual": "Annual",
+        "month": "Monthly",
+        "quarter": "Quarterly",
+        "semiAnnual": "Semi-Annual",
+        "custom": "Custom"
       },
       "table": {
         "kpiCode": "KPI Code",
         "kpiType": "Type",
         "year": "Year",
+        "period": "Period",
         "targetValue": "Target Value"
       }
     },
@@ -3714,9 +3778,17 @@
       "addBenchmark": "Add Benchmark",
       "searchPlaceholder": "Search by KPI code...",
       "empty": "No benchmarks found.",
+      "emptyHint": "Add a benchmark to compare internal achievement against external entities",
       "allZones": "All Zones",
       "year": "Year",
-      "deleteConfirm": "Delete this benchmark record?"
+      "deleteConfirm": "Delete this benchmark record?",
+      "failedToLoad": "Failed to load benchmarks.",
+      "entity": "Entity",
+      "entityPlaceholder": "e.g. Industry Average, Target 2025",
+      "internal": "Internal",
+      "benchmark": "Benchmark",
+      "variance": "Variance",
+      "notes": "Notes"
     },
     "segmentation": {
       "title": "KPI Segmentation",
@@ -3724,9 +3796,20 @@
       "addSegment": "Add Segment",
       "searchPlaceholder": "Search by KPI code...",
       "empty": "No segmentation data found.",
+      "emptyHint": "Add segmentation to break down KPI performance by dimension",
       "allDimensions": "All Dimensions",
       "year": "Year",
-      "deleteConfirm": "Delete this segmentation record?"
+      "deleteConfirm": "Delete this segmentation record?",
+      "failedToLoad": "Failed to load segmentation data.",
+      "dimension": "Dimension",
+      "segment": "Segment",
+      "deptZone": "Dept/Zone",
+      "quarter": "Quarter",
+      "dimensionPlaceholder": "e.g. Zone, Department, Category",
+      "segmentPlaceholder": "e.g. Eastern Region, HR Dept",
+      "zone": "Zone",
+      "zonePlaceholder": "e.g. Eastern Region",
+      "achievement": "Achievement"
     },
     "report": {
       "title": "KPI Card Definitions Report",

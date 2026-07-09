@@ -31,6 +31,7 @@ import {
   Crosshair,
   TrendingUp,
   Layers,
+  Gauge,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -430,6 +431,26 @@ export const GoalLayout: React.FC = () => {
           </NavLink>
 
           <NavLink
+            to="/goals/kpi/approvals"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <ClipboardCheck size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("kpi.approvals.title")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
             to="/goals/kpi/benchmarks"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -482,6 +503,26 @@ export const GoalLayout: React.FC = () => {
               </>
             )}
           </NavLink>
+
+          <NavLink
+            to="/goals/kpi/performance-bands"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <Gauge size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    Performance Bands
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
         </div>
 
         {/* Master Data Management */}
@@ -499,7 +540,6 @@ export const GoalLayout: React.FC = () => {
                 [
                   ["pillar", "Pillars", Database],
                   ["enabler", "Enablers", BookOpen],
-                  ["goal", "Strategic Goals", Target],
                   [
                     "operational-objective",
                     "Operational Objectives",
@@ -509,6 +549,9 @@ export const GoalLayout: React.FC = () => {
                   ["initiative", "Initiatives", Sparkles],
                   ["domain", "Domains", FolderOpen],
                   ["award-criterion", "Award Criteria", ClipboardCheck],
+                  ["award-sub-criterion", "Award Sub-Criteria", CheckCheck],
+                  ["data-source", "Data Sources", FileSpreadsheet],
+                  ["segmentation-dimension", "Segmentation Dimensions", Layers],
                 ] as const
               ).map(([tabKey, label, Icon]) => (
                 <NavLink
