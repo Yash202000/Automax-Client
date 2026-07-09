@@ -96,6 +96,7 @@ export function IncidentEditPage() {
     data: incidentData,
     isLoading: incidentLoading,
     isError: incidentError,
+    isSuccess: incidentSuccess,
   } = useQuery({
     queryKey: ["incident", id],
     queryFn: () => incidentApi.getById(id!),
@@ -132,12 +133,10 @@ export function IncidentEditPage() {
     (role) => role.id,
   );
 
-  console.log(classIds, locIds, roleIds);
-
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users"],
-    queryFn: () =>
-      userApi.list(
+    queryFn: () => {
+      return userApi.list(
         1,
         100,
         "",
@@ -145,7 +144,9 @@ export function IncidentEditPage() {
         [],
         locIds ? [locIds] : [],
         classIds ? [classIds] : [],
-      ),
+      );
+    },
+    enabled: incidentSuccess,
   });
 
   // console.log(incident)
