@@ -221,7 +221,11 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
 
   const { data: statsData } = useQuery({
     queryKey: ["incidents", "stats", type],
-    queryFn: () => incidentApi.getStats("incident", type),
+    queryFn: () =>
+      incidentApi.getIncidentStatsV2({
+        assignee_id: type === "assigned" ? user?.id : undefined,
+        reporter_id: type === "created" ? user?.id : undefined,
+      }),
   });
 
   // Real-time viewer count updates via WebSocket (no polling!)
