@@ -60,6 +60,7 @@ import { Modal } from "../../components/ui";
 import { AttachmentPreview } from "@/components/common/AttachmentPreview";
 import { toast } from "sonner";
 import i18n from "@/i18n";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
 
 export function IncidentCreatePage() {
   const { t } = useTranslation();
@@ -113,6 +114,35 @@ export function IncidentCreatePage() {
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
+  const { incomingCallNumber } = useSoftphoneStore();
+
+  const { data: userData } = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: () =>
+      userApi.list(1, 10, incomingCallNumber ? incomingCallNumber : undefined),
+    enabled: !!incomingCallNumber,
+  });
+
+  useEffect(() => {
+    if (incomingCallNumber && userData?.data?.length) {
+      const matchedUser = userData.data[0];
+
+      const reporterName =
+        [matchedUser.first_name, matchedUser.last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        matchedUser.username ||
+        matchedUser.email ||
+        "";
+
+      setFormData((prev) => ({
+        ...prev,
+        reporter_name: reporterName,
+        reporter_email: matchedUser.email || "",
+        reporter_phone: matchedUser.phone || "",
+      }));
+    }
+  }, [incomingCallNumber, userData]);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
