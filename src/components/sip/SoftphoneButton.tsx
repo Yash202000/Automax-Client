@@ -15,6 +15,12 @@ export const SoftphoneButton: React.FC<SoftphoneButtonProps> = ({
   const { isOpen, toggle, isConnected, isConnecting, shouldConnect } =
     useSoftphoneStore();
 
+  // Cintrix mode replaces the native softphone entry point with
+  // CintrixCtiHost (mounted by CallCentreLayout); hide the native button
+  // everywhere else it's rendered. Called after the hook above so this
+  // doesn't trip react-hooks/rules-of-hooks.
+  if (import.meta.env.VITE_CTI_PROVIDER === "cintrix") return null;
+
   const status = isConnected
     ? "connected"
     : isConnecting || (shouldConnect && !isConnected)

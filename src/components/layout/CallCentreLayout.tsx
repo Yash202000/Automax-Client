@@ -26,6 +26,7 @@ import ThemeToggle from "../common/ThemeToggle";
 import { NotificationBell } from "../common/NotificationBell";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
 import { SoftphoneButton } from "../sip/SoftphoneButton";
+import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
 import { usePermissions } from "@/hooks/usePermissions";
 
 export const CallCentreLayout: React.FC = () => {
@@ -360,9 +361,12 @@ export const CallCentreLayout: React.FC = () => {
               </span>
             </Link>
             {/* Softphone Toggle */}
-            {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
-              <SoftphoneButton />
-            )}
+            {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) &&
+              (import.meta.env.VITE_CTI_PROVIDER === "cintrix" ? (
+                <CintrixCtiHost />
+              ) : (
+                <SoftphoneButton />
+              ))}
 
             {/* Search */}
             {/* <div className="hidden md:flex items-center">
