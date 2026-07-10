@@ -6,6 +6,7 @@ import SoftPhone from "../sip/Softphone";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import usePermissions from "@/hooks/usePermissions";
+import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
 
 export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -69,6 +70,9 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
           settings={softphoneSettings}
           auth={softphoneAuth}
         />
+      )}
+      {isAuthenticated && canViewSoftphone && isCintrixCti && (
+        <CintrixCtiHost />
       )}
     </>
   );
