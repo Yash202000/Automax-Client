@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -68,6 +68,9 @@ export function IncidentCreatePage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const { id } = useParams<{ id: string }>();
+  // Named `routerLocation` (not `location`) to avoid shadowing the geolocation
+  // `location` param used by handleLocationChange/LocationPicker further below.
+  const routerLocation = useLocation();
 
   const [formData, setFormData] = useState<
     Omit<IncidentCreateRequest, "lookup_value_ids" | "custom_lookup_fields">
@@ -92,6 +95,19 @@ export function IncidentCreatePage() {
     reporter_email: "",
     reporter_phone: "",
   });
+
+  // CTI prefill: navigated here from the Cintrix call widget ("Create incident").
+  useEffect(() => {
+    const p = (routerLocation.state as any)?.ctiPrefill;
+    if (!p) return;
+    setFormData((prev) => ({
+      ...prev,
+      reporter_phone: p.reporter_phone || prev.reporter_phone,
+      reporter_name: p.reporter_name || prev.reporter_name,
+      source: p.source || prev.source,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [comment, setComment] = useState("");
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
