@@ -96,19 +96,6 @@ export function IncidentCreatePage() {
     reporter_phone: "",
   });
 
-  // CTI prefill: navigated here from the Cintrix call widget ("Create incident").
-  useEffect(() => {
-    const p = (routerLocation.state as any)?.ctiPrefill;
-    if (!p) return;
-    setFormData((prev) => ({
-      ...prev,
-      reporter_phone: p.reporter_phone || prev.reporter_phone,
-      reporter_name: p.reporter_name || prev.reporter_name,
-      source: p.source || prev.source,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const [comment, setComment] = useState("");
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -625,6 +612,22 @@ export function IncidentCreatePage() {
       setAttachments([]);
     }
   }, [id]);
+
+  // CTI prefill: navigated here from the Cintrix call widget ("Create incident").
+  // Must stay declared after the `!id` reset effect above — both flush on mount
+  // in declaration order, and the reset uses a non-functional setFormData that
+  // would clobber this prefill if it ran later.
+  useEffect(() => {
+    const p = (routerLocation.state as any)?.ctiPrefill;
+    if (!p) return;
+    setFormData((prev) => ({
+      ...prev,
+      reporter_phone: p.reporter_phone || prev.reporter_phone,
+      reporter_name: p.reporter_name || prev.reporter_name,
+      source: p.source || prev.source,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
