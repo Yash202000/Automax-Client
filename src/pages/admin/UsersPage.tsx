@@ -950,6 +950,7 @@ export const UsersPage: React.FC = () => {
     try {
       setIsImporting(true);
       let jsonRows: Array<{
+        password: any;
         username: string;
         email: string;
         first_name: string;
