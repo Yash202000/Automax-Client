@@ -1240,10 +1240,17 @@ export function IncidentCreatePage() {
 
   const userOptions = [
     { value: "", label: t("incidents.unassigned") },
-    ...users.map((u) => ({
-      value: u.id,
-      label: `${u.first_name} ${u.last_name}`,
-    })),
+    ...users.map((u) => {
+      const label =
+        [u.first_name, u.last_name].filter(Boolean).join(" ") ||
+        u.username ||
+        u.email ||
+        "";
+      return {
+        value: u.id,
+        label,
+      };
+    }),
   ];
 
   const departmentOptions = [
