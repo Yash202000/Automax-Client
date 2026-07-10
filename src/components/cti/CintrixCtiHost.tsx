@@ -39,11 +39,23 @@ declare global {
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      // Only trust an existing tag if the widget global actually arrived —
+      // a tag left over from a FAILED load would otherwise dedup-resolve
+      // here and poison every retry. Remove the stale tag and load fresh.
+      if (window.CintrixCTI) return resolve();
+      existing.remove();
+    }
     const s = document.createElement("script");
     s.src = src;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    s.onerror = () => {
+      // Remove the failed tag so the next attempt loads fresh instead of
+      // finding a script element that never executed.
+      s.remove();
+      reject(new Error(`Failed to load ${src}`));
+    };
     document.head.appendChild(s);
   });
 }
@@ -59,6 +71,8 @@ export const CintrixCtiHost: React.FC = () => {
   const inCallRef = useRef(false);
   // Lets the Retry button re-run boot() without remounting the component.
   const bootRef = useRef<() => void>(() => {});
+  // True while a boot() attempt is in flight; collapses concurrent attempts.
+  const bootingRef = useRef(false);
   const {
     setIncomingCallNumber,
     setIncomingCallName,
@@ -89,13 +103,23 @@ export const CintrixCtiHost: React.FC = () => {
     };
 
     const boot = async () => {
+      // In-flight guard: a timer firing while a manual Retry is running (or
+      // a double-click on Retry) must collapse to a single boot attempt.
+      if (bootingRef.current) return;
+      bootingRef.current = true;
       try {
         const { data } = await apiClient.get<WidgetTokenResponse>(
           "/cti/widget-token",
         );
         if (cancelled || !containerRef.current) return;
         await loadScript(`${data.cintrix_url.replace(/\/$/, "")}/cti-widget.js`);
-        if (cancelled || !window.CintrixCTI || !containerRef.current) return;
+        if (cancelled || !containerRef.current) return;
+        if (!window.CintrixCTI) {
+          // Script "loaded" but never defined the global (poisoned cache,
+          // wrong asset, blocked eval...). THROW so the catch path engages
+          // (banner + auto-retry) instead of silently dying with no timer.
+          throw new Error("cti-widget.js loaded but CintrixCTI is undefined");
+        }
         const iceServers: RTCIceServer[] = [];
         if (data.stun_url) iceServers.push({ urls: data.stun_url.split(",") });
         if (data.turn_url)
@@ -119,9 +143,17 @@ export const CintrixCtiHost: React.FC = () => {
         setError("Call system unavailable");
         // Auto-recover: keep retrying without requiring the Retry button.
         schedule(() => void boot(), RETRY_MS);
+      } finally {
+        bootingRef.current = false;
       }
     };
-    bootRef.current = () => void boot();
+    // Manual Retry goes through the same timer discipline as the automatic
+    // paths: clear any pending refresh/retry timer, then boot (the in-flight
+    // guard absorbs a timer that fires mid-flight or a double-click).
+    bootRef.current = () => {
+      if (timer) clearTimeout(timer);
+      void boot();
+    };
     void boot();
     return () => {
       cancelled = true;
@@ -145,7 +177,10 @@ export const CintrixCtiHost: React.FC = () => {
       setOpenCallerIncidents(true);
       // Only un-minimize for a NEW call: the enriched second fire of the
       // same call_uuid must not re-expand a panel the agent just minimized.
-      if (d.call_uuid !== lastCallUuidRef.current) {
+      // A missing call_uuid is treated as always-novel so two uuid-less
+      // calls in a row still re-expand the panel.
+      const novel = !d.call_uuid || d.call_uuid !== lastCallUuidRef.current;
+      if (novel) {
         lastCallUuidRef.current = d.call_uuid;
         setIsCallerIncidentsMinimized(false);
       }
