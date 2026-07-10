@@ -48,10 +48,17 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
+const RETRY_MS = 60_000;
+
 export const CintrixCtiHost: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  // True from cintrix:incoming-call / cintrix:call-answered until
+  // cintrix:call-ended. Read by the token-refresh loop below.
+  const inCallRef = useRef(false);
+  // Lets the Retry button re-run boot() without remounting the component.
+  const bootRef = useRef<() => void>(() => {});
   const {
     setIncomingCallNumber,
     setIncomingCallName,
@@ -59,10 +66,27 @@ export const CintrixCtiHost: React.FC = () => {
     setIsCallerIncidentsMinimized,
   } = useSoftphoneStore();
 
-  // Mount widget
+  // Mount widget + token-refresh/retry loop
   useEffect(() => {
     let cancelled = false;
-    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    // Single pending-timer slot shared by refresh and retry (at most one is
+    // ever scheduled at a time); always cleared on unmount.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const schedule = (fn: () => void, ms: number) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(fn, ms);
+    };
+
+    const scheduleRefresh = (ms: number) => {
+      schedule(() => {
+        // Never re-init the widget under a live call: init() rebuilds the
+        // Shadow-DOM UI and would drop the active SIP session. Defer the
+        // token refresh until the call has ended.
+        if (inCallRef.current) scheduleRefresh(RETRY_MS);
+        else void boot();
+      }, ms);
+    };
 
     const boot = async () => {
       try {
@@ -87,19 +111,21 @@ export const CintrixCtiHost: React.FC = () => {
           sipWssUrl: data.sip_wss_url,
           iceServers,
         });
+        setError("");
         // Re-mint before expiry (widget keeps its SIP registration through it).
-        refreshTimer = setTimeout(
-          boot,
-          Math.max((data.expires_in - 300) * 1000, 60_000),
-        );
+        scheduleRefresh(Math.max((data.expires_in - 300) * 1000, RETRY_MS));
       } catch {
-        if (!cancelled) setError("Call system unavailable");
+        if (cancelled) return;
+        setError("Call system unavailable");
+        // Auto-recover: keep retrying without requiring the Retry button.
+        schedule(() => void boot(), RETRY_MS);
       }
     };
+    bootRef.current = () => void boot();
     void boot();
     return () => {
       cancelled = true;
-      if (refreshTimer) clearTimeout(refreshTimer);
+      if (timer) clearTimeout(timer);
       window.CintrixCTI?.destroy();
     };
   }, []);
@@ -109,15 +135,26 @@ export const CintrixCtiHost: React.FC = () => {
   // name/contact_id null, then enriched once the lookup resolves — same
   // call_uuid). Treat this as an idempotent upsert: just re-set the store
   // values, never toggle/append/reset in a way double-firing would break.
+  const lastCallUuidRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     const onIncoming = (e: Event) => {
       const d = (e as CustomEvent).detail || {};
+      inCallRef.current = true;
       setIncomingCallNumber(d.number || "Unknown");
       setIncomingCallName(d.name || "");
       setOpenCallerIncidents(true);
-      setIsCallerIncidentsMinimized(false);
+      // Only un-minimize for a NEW call: the enriched second fire of the
+      // same call_uuid must not re-expand a panel the agent just minimized.
+      if (d.call_uuid !== lastCallUuidRef.current) {
+        lastCallUuidRef.current = d.call_uuid;
+        setIsCallerIncidentsMinimized(false);
+      }
+    };
+    const onAnswered = () => {
+      inCallRef.current = true;
     };
     const onEnded = () => {
+      inCallRef.current = false;
       setOpenCallerIncidents(false);
     };
     const onCreateIncident = (e: Event) => {
@@ -134,10 +171,12 @@ export const CintrixCtiHost: React.FC = () => {
       });
     };
     window.addEventListener("cintrix:incoming-call", onIncoming);
+    window.addEventListener("cintrix:call-answered", onAnswered);
     window.addEventListener("cintrix:call-ended", onEnded);
     window.addEventListener("cintrix:create-incident", onCreateIncident);
     return () => {
       window.removeEventListener("cintrix:incoming-call", onIncoming);
+      window.removeEventListener("cintrix:call-answered", onAnswered);
       window.removeEventListener("cintrix:call-ended", onEnded);
       window.removeEventListener("cintrix:create-incident", onCreateIncident);
     };
@@ -149,22 +188,24 @@ export const CintrixCtiHost: React.FC = () => {
     setIsCallerIncidentsMinimized,
   ]);
 
+  // The container div is ALWAYS rendered: a failed token refresh must not
+  // yank a live widget's DOM out from under it. The error banner renders
+  // adjacent (above), never instead.
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {error ? (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+      {error && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {error}{" "}
           <button
             type="button"
             className="underline"
-            onClick={() => window.location.reload()}
+            onClick={() => bootRef.current()}
           >
             Retry
           </button>
         </div>
-      ) : (
-        <div ref={containerRef} />
       )}
+      <div ref={containerRef} />
     </div>
   );
 };
