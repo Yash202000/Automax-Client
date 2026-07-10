@@ -158,6 +158,10 @@ export const CintrixCtiHost: React.FC = () => {
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      // Released in cleanup so StrictMode's remount (or any future remount)
+      // is never blocked by this doomed closure's in-flight boot; its
+      // pending promise no-ops at the `cancelled` checkpoints.
+      bootingRef.current = false;
       window.CintrixCTI?.destroy();
     };
   }, []);
