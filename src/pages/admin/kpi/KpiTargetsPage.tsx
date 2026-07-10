@@ -12,6 +12,10 @@ import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
 import { Input } from "../../../components/ui/Input";
 import { Select } from "../../../components/ui/SelectInput";
+import {
+  periodTypeForFrequency,
+  periodKeyPlaceholder,
+} from "../../../utils/kpiPeriod";
 import type { KpiAnnualTarget } from "../../../types/kpi";
 
 export const KpiTargetsPage: React.FC = () => {
@@ -25,6 +29,7 @@ export const KpiTargetsPage: React.FC = () => {
     code: c.code,
     label: `${c.code} — ${c.name_en}`,
     type: c.type,
+    reporting_frequency: c.reporting_frequency,
   }));
 
   const {
@@ -42,6 +47,8 @@ export const KpiTargetsPage: React.FC = () => {
   const [formKpiCode, setFormKpiCode] = useState("");
   const [formKpiType, setFormKpiType] = useState<string>("strategic");
   const [formTargetValue, setFormTargetValue] = useState("");
+  const [formPeriodType, setFormPeriodType] = useState<string>("annual");
+  const [formPeriodKey, setFormPeriodKey] = useState("");
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
@@ -50,15 +57,23 @@ export const KpiTargetsPage: React.FC = () => {
       toast.error(t("kpi.targets.formValidation"));
       return;
     }
+    if (formPeriodType !== "annual" && !formPeriodKey) {
+      toast.error(t("kpi.targets.periodKeyRequired"));
+      return;
+    }
     await setTarget.mutateAsync({
       kpi_code: formKpiCode,
       kpi_type: formKpiType as any,
       year,
+      period_type: formPeriodType as any,
+      period_key: formPeriodType === "annual" ? String(year) : formPeriodKey,
       target_value: Number(formTargetValue),
     });
     setModalOpen(false);
     setFormKpiCode("");
     setFormTargetValue("");
+    setFormPeriodType("annual");
+    setFormPeriodKey("");
   };
 
   const handleDelete = (id: string) => {
@@ -150,6 +165,9 @@ export const KpiTargetsPage: React.FC = () => {
                     {t("kpi.targets.table.year")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {t("kpi.targets.table.period")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {t("kpi.targets.table.targetValue")}
                   </th>
                   <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -171,6 +189,9 @@ export const KpiTargetsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                       {target.year}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-mono text-slate-700 dark:text-slate-300">
+                      {target.period_key || target.year}
                     </td>
                     <td className="px-6 py-4 text-sm tabular-nums font-medium text-slate-900 dark:text-white">
                       {target.target_value}
@@ -209,7 +230,12 @@ export const KpiTargetsPage: React.FC = () => {
                   (c) => c.code === e.target.value,
                 );
                 setFormKpiCode(e.target.value);
-                if (selected) setFormKpiType(selected.type);
+                if (selected) {
+                  setFormKpiType(selected.type);
+                  const suggested =
+                    periodTypeForFrequency[selected.reporting_frequency ?? ""];
+                  if (suggested) setFormPeriodType(suggested);
+                }
               }}
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
             >
@@ -231,6 +257,38 @@ export const KpiTargetsPage: React.FC = () => {
               { value: "award", label: t("kpi.dictionary.award") },
             ]}
           />
+          <Select
+            label={t("kpi.targets.form.periodType")}
+            value={formPeriodType}
+            onChange={(v) => {
+              setFormPeriodType(v as string);
+              setFormPeriodKey("");
+            }}
+            options={[
+              { value: "annual", label: t("kpi.targets.periodTypes.annual") },
+              { value: "month", label: t("kpi.targets.periodTypes.month") },
+              {
+                value: "quarter",
+                label: t("kpi.targets.periodTypes.quarter"),
+              },
+              {
+                value: "semi_annual",
+                label: t("kpi.targets.periodTypes.semiAnnual"),
+              },
+              {
+                value: "custom",
+                label: t("kpi.targets.periodTypes.custom"),
+              },
+            ]}
+          />
+          {formPeriodType !== "annual" && (
+            <Input
+              label={t("kpi.targets.form.periodKey") + " *"}
+              value={formPeriodKey}
+              onChange={(e) => setFormPeriodKey(e.target.value)}
+              placeholder={periodKeyPlaceholder[formPeriodType]}
+            />
+          )}
           <Input
             label={t("kpi.targets.form.targetValue") + " *"}
             type="number"

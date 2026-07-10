@@ -204,21 +204,21 @@ export const IncidentsPage: React.FC = () => {
   const hasStatusFilter = !!urlStatusParam;
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
-  useEffect(() => {
-    if (!canViewAllIncidents && !hasUrlFilter) {
-      if (canTransitionIncident) {
-        navigate("/incidents/my-assigned", { replace: true });
-      } else if (canCreateIncident) {
-        navigate("/incidents/my-created", { replace: true });
-      }
-    }
-  }, [
-    canViewAllIncidents,
-    canTransitionIncident,
-    canCreateIncident,
-    hasUrlFilter,
-    navigate,
-  ]);
+  // useEffect(() => {
+  //   if (!canViewAllIncidents && !hasUrlFilter) {
+  //     if (canTransitionIncident) {
+  //       navigate("/incidents/my-assigned", { replace: true });
+  //     } else if (canCreateIncident) {
+  //       navigate("/incidents/my-created", { replace: true });
+  //     }
+  //   }
+  // }, [
+  //   canViewAllIncidents,
+  //   canTransitionIncident,
+  //   canCreateIncident,
+  //   hasUrlFilter,
+  //   navigate,
+  // ]);
 
   // Save columns to localStorage when changed
   useEffect(() => {
@@ -381,9 +381,8 @@ export const IncidentsPage: React.FC = () => {
       canViewAllIncidents ? "all" : "assigned",
     ],
     queryFn: () =>
-      incidentApi.getStats(
-        "incident",
-        canViewAllIncidents ? undefined : "assigned",
+      incidentApi.getIncidentStatsV2(
+        canViewAllIncidents ? undefined : { my_record: user?.id },
       ),
   });
 
@@ -406,13 +405,13 @@ export const IncidentsPage: React.FC = () => {
       "incidents",
       {
         ...queryFilter,
-        assignee_id: canViewAllIncidents ? queryFilter.assignee_id : user?.id,
+        ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       },
     ],
     queryFn: () =>
       incidentApi.list({
         ...queryFilter,
-        assignee_id: canViewAllIncidents ? queryFilter.assignee_id : user?.id,
+        ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       }),
     enabled: !isShortSearch,
     placeholderData: keepPreviousData,

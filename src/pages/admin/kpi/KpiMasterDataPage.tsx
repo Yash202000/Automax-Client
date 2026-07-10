@@ -22,10 +22,6 @@ import {
   useCreateEnabler,
   useUpdateEnabler,
   useDeleteEnabler,
-  useStrategicGoals,
-  useCreateStrategicGoal,
-  useUpdateStrategicGoal,
-  useDeleteStrategicGoal,
   useOperationalObjectives,
   useCreateOperationalObjective,
   useUpdateOperationalObjective,
@@ -50,7 +46,16 @@ import {
   useCreateAwardSubCriterion,
   useUpdateAwardSubCriterion,
   useDeleteAwardSubCriterion,
+  useDataSources,
+  useCreateDataSource,
+  useUpdateDataSource,
+  useDeleteDataSource,
+  useSegmentationDimensions,
+  useCreateSegmentationDimension,
+  useUpdateSegmentationDimension,
+  useDeleteSegmentationDimension,
 } from "../../../hooks/useKpi";
+import { useGoals } from "../../../hooks/useGoals";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { PERMISSIONS } from "../../../constants/permissions";
 import { Modal } from "../../../components/ui/Modal";
@@ -59,37 +64,41 @@ import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/SelectInput";
 import { userApi } from "../../../api/admin";
 import { departmentApi } from "../../../api/admin";
+import { exportToExcel as exportToExcelUtil } from "../../../utils/exportExcel";
 import type {
   Pillar,
   Enabler,
-  StrategicGoal,
   OperationalObjective,
   Process,
   Initiative,
   Domain,
   AwardCriterion,
   AwardSubCriterion,
+  KpiDataSource,
+  KpiSegmentationDimension,
   PillarRequest,
   EnablerRequest,
-  StrategicGoalRequest,
   OperationalObjectiveRequest,
   ProcessRequest,
   InitiativeRequest,
   DomainRequest,
   AwardCriterionRequest,
   AwardSubCriterionRequest,
+  KpiDataSourceRequest,
+  KpiSegmentationDimensionRequest,
 } from "../../../types/kpi";
 
 type EntityType =
   | "pillar"
   | "enabler"
-  | "goal"
   | "operational-objective"
   | "process"
   | "initiative"
   | "domain"
   | "award-criterion"
-  | "award-sub-criterion";
+  | "award-sub-criterion"
+  | "data-source"
+  | "segmentation-dimension";
 
 interface FormState {
   name_en: string;
@@ -97,7 +106,7 @@ interface FormState {
   owner_id: string;
   pillar_id: string;
   enabler_id: string;
-  strategic_goal_id: string;
+  goal_id: string;
   operational_objective_id: string;
   department_id: string;
   unit: string;
@@ -114,7 +123,7 @@ const initialForm: FormState = {
   owner_id: "",
   pillar_id: "",
   enabler_id: "",
-  strategic_goal_id: "",
+  goal_id: "",
   operational_objective_id: "",
   department_id: "",
   unit: "",
@@ -133,7 +142,6 @@ export const KpiMasterDataPage: React.FC = () => {
   const tabs: { key: EntityType; label: string }[] = [
     { key: "pillar", label: t("kpi.masterData.pillars") },
     { key: "enabler", label: t("kpi.masterData.enablers") },
-    { key: "goal", label: t("kpi.masterData.strategicGoals") },
     {
       key: "operational-objective",
       label: t("kpi.masterData.operationalObjectives"),
@@ -142,6 +150,15 @@ export const KpiMasterDataPage: React.FC = () => {
     { key: "initiative", label: t("kpi.masterData.initiatives") },
     { key: "domain", label: t("kpi.masterData.domains") },
     { key: "award-criterion", label: t("kpi.masterData.awardCriteria") },
+    {
+      key: "award-sub-criterion",
+      label: t("kpi.masterData.awardSubCriteria"),
+    },
+    { key: "data-source", label: t("kpi.masterData.dataSources") },
+    {
+      key: "segmentation-dimension",
+      label: t("kpi.masterData.segmentationDimensions"),
+    },
   ];
   const validKeys = tabs.map((t) => t.key);
   const activeTab: EntityType =
@@ -158,17 +175,16 @@ export const KpiMasterDataPage: React.FC = () => {
     isLoading: enablersLoading,
     error: enablersError,
   } = useEnablers();
-  const {
-    data: goals,
-    isLoading: goalsLoading,
-    error: goalsError,
-  } = useStrategicGoals();
+  const { data: goalsData } = useGoals({ limit: 200 });
+  const goals = (goalsData as any)?.data ?? [];
   const { data: operationalObjectives } = useOperationalObjectives();
   const { data: processes } = useProcesses();
   const { data: initiatives } = useInitiatives();
   const { data: domains } = useDomains();
   const { data: awardCriteria } = useAwardCriteria();
   const { data: awardSubCriteria } = useAwardSubCriteria();
+  const { data: dataSources } = useDataSources();
+  const { data: segmentationDimensions } = useSegmentationDimensions();
 
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", "all"],
@@ -188,9 +204,6 @@ export const KpiMasterDataPage: React.FC = () => {
   const createEnabler = useCreateEnabler();
   const updateEnabler = useUpdateEnabler();
   const deleteEnabler = useDeleteEnabler();
-  const createGoal = useCreateStrategicGoal();
-  const updateGoal = useUpdateStrategicGoal();
-  const deleteGoal = useDeleteStrategicGoal();
   const createOperationalObjective = useCreateOperationalObjective();
   const updateOperationalObjective = useUpdateOperationalObjective();
   const deleteOperationalObjective = useDeleteOperationalObjective();
@@ -209,11 +222,14 @@ export const KpiMasterDataPage: React.FC = () => {
   const createAwardSubCriterion = useCreateAwardSubCriterion();
   const updateAwardSubCriterion = useUpdateAwardSubCriterion();
   const deleteAwardSubCriterion = useDeleteAwardSubCriterion();
+  const createDataSource = useCreateDataSource();
+  const updateDataSource = useUpdateDataSource();
+  const deleteDataSource = useDeleteDataSource();
+  const createSegmentationDimension = useCreateSegmentationDimension();
+  const updateSegmentationDimension = useUpdateSegmentationDimension();
+  const deleteSegmentationDimension = useDeleteSegmentationDimension();
 
-  const canManage =
-    isSuperAdmin ||
-    hasPermission(PERMISSIONS.GOALS_CREATE) ||
-    hasPermission(PERMISSIONS.GOALS_VIEW);
+  const canManage = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_MANAGE);
 
   const userOptions = users.map((u: any) => ({
     value: u.id,
@@ -252,7 +268,7 @@ export const KpiMasterDataPage: React.FC = () => {
       owner_id: item.owner_id || "",
       pillar_id: item.pillar_id || "",
       enabler_id: item.enabler_id || "",
-      strategic_goal_id: item.strategic_goal_id || "",
+      goal_id: item.goal_id || "",
       operational_objective_id: item.operational_objective_id || "",
       department_id: item.department_id || "",
       unit: item.unit || "",
@@ -285,20 +301,11 @@ export const KpiMasterDataPage: React.FC = () => {
         };
         if (isEdit) await updateEnabler.mutateAsync({ id: modalItem.id, data });
         else await createEnabler.mutateAsync(data);
-      } else if (modalType === "goal") {
-        const data: StrategicGoalRequest = {
-          name_en: form.name_en,
-          name_ar: form.name_ar,
-          pillar_id: form.pillar_id || undefined,
-          enabler_id: form.enabler_id || undefined,
-        };
-        if (isEdit) await updateGoal.mutateAsync({ id: modalItem.id, data });
-        else await createGoal.mutateAsync(data);
       } else if (modalType === "operational-objective") {
         const data: OperationalObjectiveRequest = {
           name_en: form.name_en,
           name_ar: form.name_ar,
-          strategic_goal_id: form.strategic_goal_id,
+          goal_id: form.goal_id,
         };
         if (isEdit)
           await updateOperationalObjective.mutateAsync({
@@ -311,7 +318,7 @@ export const KpiMasterDataPage: React.FC = () => {
           name_en: form.name_en,
           name_ar: form.name_ar,
           operational_objective_id: form.operational_objective_id,
-          strategic_goal_id: form.strategic_goal_id,
+          goal_id: form.goal_id,
           department_id: form.department_id || undefined,
           unit: form.unit || undefined,
         };
@@ -321,7 +328,7 @@ export const KpiMasterDataPage: React.FC = () => {
         const data: InitiativeRequest = {
           name_en: form.name_en,
           name_ar: form.name_ar,
-          strategic_goal_id: form.strategic_goal_id,
+          goal_id: form.goal_id,
           pillar_id: form.pillar_id || undefined,
           enabler_id: form.enabler_id || undefined,
           owner_id: form.owner_id || undefined,
@@ -357,6 +364,25 @@ export const KpiMasterDataPage: React.FC = () => {
         if (isEdit)
           await updateAwardSubCriterion.mutateAsync({ id: modalItem.id, data });
         else await createAwardSubCriterion.mutateAsync(data);
+      } else if (modalType === "data-source") {
+        const data: KpiDataSourceRequest = {
+          name_en: form.name_en,
+          name_ar: form.name_ar,
+        };
+        if (isEdit)
+          await updateDataSource.mutateAsync({ id: modalItem.id, data });
+        else await createDataSource.mutateAsync(data);
+      } else if (modalType === "segmentation-dimension") {
+        const data: KpiSegmentationDimensionRequest = {
+          name_en: form.name_en,
+          name_ar: form.name_ar,
+        };
+        if (isEdit)
+          await updateSegmentationDimension.mutateAsync({
+            id: modalItem.id,
+            data,
+          });
+        else await createSegmentationDimension.mutateAsync(data);
       }
       setModalOpen(false);
     } catch {
@@ -368,13 +394,14 @@ export const KpiMasterDataPage: React.FC = () => {
     const actions: Record<string, (id: string) => void> = {
       pillar: (i) => deletePillar.mutate(i),
       enabler: (i) => deleteEnabler.mutate(i),
-      goal: (i) => deleteGoal.mutate(i),
       "operational-objective": (i) => deleteOperationalObjective.mutate(i),
       process: (i) => deleteProcess.mutate(i),
       initiative: (i) => deleteInitiative.mutate(i),
       domain: (i) => deleteDomain.mutate(i),
       "award-criterion": (i) => deleteAwardCriterion.mutate(i),
       "award-sub-criterion": (i) => deleteAwardSubCriterion.mutate(i),
+      "data-source": (i) => deleteDataSource.mutate(i),
+      "segmentation-dimension": (i) => deleteSegmentationDimension.mutate(i),
     };
     actions[type]?.(id);
   };
@@ -383,19 +410,13 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const [importType, setImportType] = useState<EntityType>("pillar");
 
-  const exportToExcel = (data: any[], label: string) => {
-    if (!data.length) {
-      toast.error(t("common.noDataToExport"));
-      return;
-    }
-    const headers = Object.keys(data[0]).filter((k) => k !== "id");
-    const rows = data.map((item) => headers.map((h) => item[h] ?? ""));
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, label);
-    XLSX.writeFile(wb, `${label}.xlsx`);
-    toast.success(t("common.exported"));
-  };
+  const exportToExcel = (data: any[], label: string) =>
+    exportToExcelUtil(
+      data,
+      label,
+      t("common.noDataToExport"),
+      t("common.exported"),
+    );
 
   const handleImportExcel = (type: EntityType) => {
     setImportType(type);
@@ -450,25 +471,18 @@ export const KpiMasterDataPage: React.FC = () => {
         name_ar,
         owner_id: row.owner_id || undefined,
       } as EnablerRequest);
-    } else if (type === "goal") {
-      await createGoal.mutateAsync({
-        name_en,
-        name_ar,
-        pillar_id: row.pillar_id || undefined,
-        enabler_id: row.enabler_id || undefined,
-      } as StrategicGoalRequest);
     } else if (type === "operational-objective") {
       await createOperationalObjective.mutateAsync({
         name_en,
         name_ar,
-        strategic_goal_id: row.strategic_goal_id,
+        goal_id: row.goal_id,
       } as OperationalObjectiveRequest);
     } else if (type === "process") {
       await createProcess.mutateAsync({
         name_en,
         name_ar,
         operational_objective_id: row.operational_objective_id,
-        strategic_goal_id: row.strategic_goal_id,
+        goal_id: row.goal_id,
         department_id: row.department_id || undefined,
         unit: row.unit || undefined,
       } as ProcessRequest);
@@ -476,7 +490,7 @@ export const KpiMasterDataPage: React.FC = () => {
       await createInitiative.mutateAsync({
         name_en,
         name_ar,
-        strategic_goal_id: row.strategic_goal_id,
+        goal_id: row.goal_id,
         pillar_id: row.pillar_id || undefined,
         enabler_id: row.enabler_id || undefined,
         owner_id: row.owner_id || undefined,
@@ -501,6 +515,16 @@ export const KpiMasterDataPage: React.FC = () => {
         award_criterion_id: row.award_criterion_id,
         sub_no: row.sub_no || row.subNo || "1",
       } as AwardSubCriterionRequest);
+    } else if (type === "data-source") {
+      await createDataSource.mutateAsync({
+        name_en,
+        name_ar,
+      } as KpiDataSourceRequest);
+    } else if (type === "segmentation-dimension") {
+      await createSegmentationDimension.mutateAsync({
+        name_en,
+        name_ar,
+      } as KpiSegmentationDimensionRequest);
     }
   };
 
@@ -519,13 +543,14 @@ export const KpiMasterDataPage: React.FC = () => {
   const modalEntityLabelKey: Record<EntityType, string> = {
     pillar: "pillars",
     enabler: "enablers",
-    goal: "strategicGoals",
     "operational-objective": "operationalObjectives",
     process: "processes",
     initiative: "initiatives",
     domain: "domains",
     "award-criterion": "awardCriteria",
     "award-sub-criterion": "awardSubCriteria",
+    "data-source": "dataSources",
+    "segmentation-dimension": "segmentationDimensions",
   };
   const modalTitle = modalItem ? t("common.edit") : t("common.add");
   const modalEntityLabel = t(
@@ -627,37 +652,6 @@ export const KpiMasterDataPage: React.FC = () => {
             error={enablersError ? t("kpi.masterData.failedToLoad") : undefined}
           />
         )}
-        {activeTab === "goal" && (
-          <MasterTable<StrategicGoal>
-            data={goals ?? []}
-            columns={[
-              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
-              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
-              {
-                header: t("kpi.masterData.pillar"),
-                accessor: (r) => r.pillar?.name_en ?? r.pillar_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.enabler"),
-                accessor: (r) => r.enabler?.name_en ?? r.enabler_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.active"),
-                accessor: (r) =>
-                  r.is_active ? t("common.yes") : t("common.no"),
-              },
-            ]}
-            emptyMessage={t("kpi.masterData.noGoals")}
-            canManage={canManage}
-            onEdit={(item) => handleEdit("goal", item)}
-            onDelete={(id) => handleDelete("goal", id)}
-            onAdd={() => handleAdd("goal")}
-            onExport={() => exportToExcel(goals ?? [], "StrategicGoals")}
-            onImport={() => handleImportExcel("goal")}
-            loading={goalsLoading}
-            error={goalsError ? t("kpi.masterData.failedToLoad") : undefined}
-          />
-        )}
         {activeTab === "operational-objective" && (
           <MasterTable<OperationalObjective>
             data={operationalObjectives ?? []}
@@ -666,8 +660,7 @@ export const KpiMasterDataPage: React.FC = () => {
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
               {
                 header: t("kpi.masterData.strategicGoal"),
-                accessor: (r) =>
-                  r.strategic_goal?.name_en ?? r.strategic_goal_id ?? "-",
+                accessor: (r) => r.goal?.title ?? r.goal_id ?? "-",
               },
               {
                 header: t("kpi.masterData.active"),
@@ -730,8 +723,7 @@ export const KpiMasterDataPage: React.FC = () => {
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
               {
                 header: t("kpi.masterData.strategicGoal"),
-                accessor: (r) =>
-                  r.strategic_goal?.name_en ?? r.strategic_goal_id ?? "-",
+                accessor: (r) => r.goal?.title ?? r.goal_id ?? "-",
               },
               {
                 header: t("kpi.masterData.owner"),
@@ -809,6 +801,53 @@ export const KpiMasterDataPage: React.FC = () => {
             onImport={() => handleImportExcel("award-sub-criterion")}
           />
         )}
+        {activeTab === "data-source" && (
+          <MasterTable<KpiDataSource>
+            data={dataSources ?? []}
+            columns={[
+              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
+              {
+                header: t("kpi.masterData.active"),
+                accessor: (r) =>
+                  r.is_active ? t("common.yes") : t("common.no"),
+              },
+            ]}
+            emptyMessage={t("kpi.masterData.noDataSources")}
+            canManage={canManage}
+            onEdit={(item) => handleEdit("data-source", item)}
+            onDelete={(id) => handleDelete("data-source", id)}
+            onAdd={() => handleAdd("data-source")}
+            onExport={() => exportToExcel(dataSources ?? [], "DataSources")}
+            onImport={() => handleImportExcel("data-source")}
+          />
+        )}
+        {activeTab === "segmentation-dimension" && (
+          <MasterTable<KpiSegmentationDimension>
+            data={segmentationDimensions ?? []}
+            columns={[
+              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
+              {
+                header: t("kpi.masterData.active"),
+                accessor: (r) =>
+                  r.is_active ? t("common.yes") : t("common.no"),
+              },
+            ]}
+            emptyMessage={t("kpi.masterData.noSegmentationDimensions")}
+            canManage={canManage}
+            onEdit={(item) => handleEdit("segmentation-dimension", item)}
+            onDelete={(id) => handleDelete("segmentation-dimension", id)}
+            onAdd={() => handleAdd("segmentation-dimension")}
+            onExport={() =>
+              exportToExcel(
+                segmentationDimensions ?? [],
+                "SegmentationDimensions",
+              )
+            }
+            onImport={() => handleImportExcel("segmentation-dimension")}
+          />
+        )}
       </div>
 
       <input
@@ -847,42 +886,15 @@ export const KpiMasterDataPage: React.FC = () => {
             />
           )}
 
-          {modalType === "goal" && (
-            <>
-              <Select
-                label={t("kpi.masterData.pillar")}
-                options={(pillars ?? []).map((p: Pillar) => ({
-                  value: p.id,
-                  label: p.name_en,
-                }))}
-                value={form.pillar_id}
-                onChange={setSel("pillar_id")}
-                searchable
-                placeholder={t("common.selectAnOption")}
-              />
-              <Select
-                label={t("kpi.masterData.enabler")}
-                options={(enablers ?? []).map((e: Enabler) => ({
-                  value: e.id,
-                  label: e.name_en,
-                }))}
-                value={form.enabler_id}
-                onChange={setSel("enabler_id")}
-                searchable
-                placeholder={t("common.selectAnOption")}
-              />
-            </>
-          )}
-
           {modalType === "operational-objective" && (
             <Select
               label={t("kpi.masterData.strategicGoal")}
-              options={(goals ?? []).map((g: StrategicGoal) => ({
+              options={(goals ?? []).map((g: any) => ({
                 value: g.id,
-                label: g.name_en,
+                label: g.title,
               }))}
-              value={form.strategic_goal_id}
-              onChange={setSel("strategic_goal_id")}
+              value={form.goal_id}
+              onChange={setSel("goal_id")}
               searchable
               placeholder={t("common.selectAnOption")}
             />
@@ -905,12 +917,12 @@ export const KpiMasterDataPage: React.FC = () => {
               />
               <Select
                 label={t("kpi.masterData.strategicGoal")}
-                options={(goals ?? []).map((g: StrategicGoal) => ({
+                options={(goals ?? []).map((g: any) => ({
                   value: g.id,
-                  label: g.name_en,
+                  label: g.title,
                 }))}
-                value={form.strategic_goal_id}
-                onChange={setSel("strategic_goal_id")}
+                value={form.goal_id}
+                onChange={setSel("goal_id")}
                 searchable
                 placeholder={t("common.selectAnOption")}
               />
@@ -934,12 +946,12 @@ export const KpiMasterDataPage: React.FC = () => {
             <>
               <Select
                 label={t("kpi.masterData.strategicGoal")}
-                options={(goals ?? []).map((g: StrategicGoal) => ({
+                options={(goals ?? []).map((g: any) => ({
                   value: g.id,
-                  label: g.name_en,
+                  label: g.title,
                 }))}
-                value={form.strategic_goal_id}
-                onChange={setSel("strategic_goal_id")}
+                value={form.goal_id}
+                onChange={setSel("goal_id")}
                 searchable
                 placeholder={t("common.selectAnOption")}
               />

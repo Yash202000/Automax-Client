@@ -1399,6 +1399,7 @@ export interface IncidentFilter {
   priority?: number;
   assignee_id?: string;
   department_ids?: string[];
+  my_record?: string;
   location_ids?: string[];
   reporter_id?: string;
   sla_breached?: boolean;

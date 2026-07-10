@@ -6,8 +6,10 @@ import {
   CheckCircle,
   Clock,
   Printer,
+  Download,
 } from "lucide-react";
 import { useKpiCardDefinitions } from "../../../hooks/useKpi";
+import { exportToExcel } from "../../../utils/exportExcel";
 import type { KpiCardDef } from "../../../types/kpi";
 
 export const KpiReportPage: React.FC = () => {
@@ -43,6 +45,18 @@ export const KpiReportPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() =>
+              exportToExcel(
+                items as unknown as Record<string, unknown>[],
+                "KPI_Report",
+              )
+            }
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
           <button
             onClick={handlePrint}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -112,6 +126,9 @@ export const KpiReportPage: React.FC = () => {
                     Baseline
                   </th>
                   <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Unit
+                  </th>
+                  <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Polarity
                   </th>
                   <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -163,6 +180,9 @@ export const KpiReportPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-sm tabular-nums text-right text-slate-700 dark:text-slate-200 print:text-black">
                       {card.baseline ?? "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200 print:text-black">
+                      {card.unit_of_measure || "-"}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200 print:text-black">
                       {card.polarity === "ascending" ? (

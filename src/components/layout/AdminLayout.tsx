@@ -159,7 +159,7 @@ const sidebarSectionsConfig: SidebarSection[] = [
         icon: BellRing,
         labelKey: "notificationTemplates.title",
         path: "/admin/templates",
-        permission: "templates:view",
+        permission: "templates:read",
       },
       {
         icon: KeyRound,

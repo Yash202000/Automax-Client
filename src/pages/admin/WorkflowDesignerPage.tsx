@@ -106,7 +106,7 @@ interface StateFormData {
   is_ai_qa: boolean;
   is_ready_to_close: boolean;
   is_partial_close: boolean;
-  duration_options: string; // comma-separated input string
+  duration_options: { value: number | undefined; unit: string }[];
   viewable_role_ids: string[];
   editable_role_ids: string[];
   // Creation-time assignment
@@ -148,6 +148,18 @@ type TransitionFormErrors = Partial<
   Record<"name" | "code" | "fromState" | "toState", string>
 >;
 
+// Parses a stored label like "2 Week" / "2 Weeks" back into {value, unit} for editing.
+const parseDurationOptionLabel = (
+  label: string,
+): { value: number | undefined; unit: string } | null => {
+  const match = label.trim().match(/^(\d+)\s+(Day|Week|Month)s?$/i);
+  if (!match) return null;
+  return {
+    value: parseInt(match[1], 10),
+    unit: match[2][0].toUpperCase() + match[2].slice(1).toLowerCase(),
+  };
+};
+
 const initialStateFormData: StateFormData = {
   name: "",
   name_ar: "",
@@ -163,7 +175,7 @@ const initialStateFormData: StateFormData = {
   is_ai_qa: false,
   is_ready_to_close: false,
   is_partial_close: false,
-  duration_options: "",
+  duration_options: [],
   viewable_role_ids: [],
   editable_role_ids: [],
   // Creation-time assignment
@@ -1121,7 +1133,12 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ai_qa: state.is_ai_qa || false,
       is_ready_to_close: state.is_ready_to_close || false,
       is_partial_close: state.is_partial_close || false,
-      duration_options: (state.duration_options || []).join(", "),
+      duration_options: (state.duration_options || [])
+        .map((label) => parseDurationOptionLabel(label))
+        .filter(
+          (parsed): parsed is { value: number; unit: string } =>
+            parsed !== null && parsed.value !== undefined,
+        ),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
       editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
       // Creation-time assignment
@@ -1369,11 +1386,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ready_to_close: stateFormData.is_ready_to_close,
       is_partial_close: stateFormData.is_partial_close,
       duration_options: stateFormData.duration_options
-        ? stateFormData.duration_options
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
+        .filter(
+          (opt) =>
+            opt.value !== undefined && opt.value !== null && opt.value > 0,
+        )
+        .map((opt) => `${opt.value} ${opt.unit}`),
       viewable_role_ids: stateFormData.viewable_role_ids,
       editable_role_ids: stateFormData.editable_role_ids,
       // Creation-time assignment
@@ -1628,21 +1645,64 @@ export const WorkflowDesignerPage: React.FC = () => {
   };
 
   const toggleStateRole = (roleId: string) => {
-    setStateFormData((prev) => ({
-      ...prev,
-      viewable_role_ids: prev.viewable_role_ids.includes(roleId)
-        ? prev.viewable_role_ids.filter((id) => id !== roleId)
-        : [...prev.viewable_role_ids, roleId],
-    }));
+    const isViewable = stateFormData.viewable_role_ids.includes(roleId);
+    const isEditable = stateFormData.editable_role_ids.includes(roleId);
+    //prevent removing viewable role if edit permission for the role is added
+    if (isViewable && isEditable) {
+      const roleName = roles.find((role) => role.id === roleId)?.name ?? "Role";
+      toast.error(
+        t("workflows.pleaseRemoveEditPermissionFirst", {
+          role: roleName,
+        }),
+      );
+      return;
+    }
+    setStateFormData((prev) => {
+      return {
+        ...prev,
+        viewable_role_ids: prev.viewable_role_ids.includes(roleId)
+          ? prev.viewable_role_ids.filter((id) => id !== roleId)
+          : [...prev.viewable_role_ids, roleId],
+      };
+    });
   };
 
   const toggleEditableStateRole = (roleId: string) => {
-    setStateFormData((prev) => ({
-      ...prev,
-      editable_role_ids: prev.editable_role_ids.includes(roleId)
-        ? prev.editable_role_ids.filter((id) => id !== roleId)
-        : [...prev.editable_role_ids, roleId],
-    }));
+    const isEditable = stateFormData.editable_role_ids.includes(roleId);
+    const wasViewable = stateFormData.viewable_role_ids.includes(roleId);
+
+    // adding editable roles will automatically add viewable roles so showing toast
+    if (!isEditable && !wasViewable) {
+      const roleName = roles.find((role) => role.id === roleId)?.name ?? "Role";
+      toast.info(
+        t("workflows.viewPermissionAutomaticallyAdded", {
+          role: roleName,
+        }),
+      );
+    }
+    setStateFormData((prev) => {
+      if (prev.editable_role_ids.includes(roleId)) {
+        // Removing edit permission should also remove view permission
+        return {
+          ...prev,
+          editable_role_ids: prev.editable_role_ids.filter(
+            (id) => id !== roleId,
+          ),
+          viewable_role_ids: prev.viewable_role_ids.filter(
+            (id) => id !== roleId,
+          ),
+        };
+      }
+
+      // adding edit permission should also add view permission if not added yet
+      return {
+        ...prev,
+        editable_role_ids: [...prev.editable_role_ids, roleId],
+        viewable_role_ids: prev.viewable_role_ids.includes(roleId)
+          ? prev.viewable_role_ids
+          : [...prev.viewable_role_ids, roleId],
+      };
+    });
   };
 
   const toggleStateAssignmentRole = (roleId: string) => {
@@ -3603,28 +3663,95 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 {stateFormData.is_partial_close && (
                   <div className="ml-7 space-y-2">
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                       {t("workflows.durationOptions", "Duration Options")}
-                      <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                        {t("workflows.commaSeparatedLeaveEmptyToUseGlobal")}
-                      </span>
                     </label>
-                    <input
-                      type="text"
-                      value={stateFormData.duration_options}
-                      onChange={(e) =>
-                        setStateFormData({
-                          ...stateFormData,
-                          duration_options: e.target.value,
-                        })
-                      }
-                      placeholder={t(
-                        "workflows.durationExample",
-                        "e.g. 1 Day, 2 Days, 1 Week, 1 Month",
-                      )}
-                      className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    />
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <div className="space-y-2">
+                      {stateFormData.duration_options.map((opt, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={opt.value ?? ""}
+                            onChange={(e) => {
+                              const next = [...stateFormData.duration_options];
+                              next[index] = {
+                                ...next[index],
+                                value: e.target.value
+                                  ? parseInt(e.target.value)
+                                  : undefined,
+                              };
+                              setStateFormData({
+                                ...stateFormData,
+                                duration_options: next,
+                              });
+                            }}
+                            placeholder={t("workflows.escalationHoursExample")}
+                            className="flex-1 px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                          />
+                          <select
+                            value={opt.unit}
+                            onChange={(e) => {
+                              const next = [...stateFormData.duration_options];
+                              next[index] = {
+                                ...next[index],
+                                unit: e.target.value,
+                              };
+                              setStateFormData({
+                                ...stateFormData,
+                                duration_options: next,
+                              });
+                            }}
+                            className="px-3 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                          >
+                            <option value="Day">{t("workflows.days")}</option>
+                            <option value="Week">{t("workflows.weeks")}</option>
+                            <option value="Month">
+                              {t("workflows.months")}
+                            </option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setStateFormData({
+                                ...stateFormData,
+                                duration_options:
+                                  stateFormData.duration_options.filter(
+                                    (_, i) => i !== index,
+                                  ),
+                              })
+                            }
+                            className="px-2.5 py-2.5 rounded-xl border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-red-600 hover:border-red-300 transition-colors"
+                            aria-label={t(
+                              "workflows.removeDurationOption",
+                              "Remove duration option",
+                            )}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStateFormData({
+                            ...stateFormData,
+                            duration_options: [
+                              ...stateFormData.duration_options,
+                              { value: undefined, unit: "Day" },
+                            ],
+                          })
+                        }
+                        className="flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--primary))] hover:opacity-80 transition-opacity"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {t(
+                          "workflows.addDurationOption",
+                          "Add duration option",
+                        )}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
                       {t(
                         "workflows.closingDurationHint",
                         "Leave empty to use the global defaults configured in system settings.",
