@@ -169,7 +169,16 @@ export default function IncidentLister() {
   };
 
   return (
-    <div className="fixed inset-y-2 right-2 z-[1000] flex pointer-events-none">
+    <div
+      className={cn(
+        "fixed inset-y-2 flex pointer-events-none",
+        // In cintrix mode the embedded call widget sits fixed bottom-4
+        // right-4 z-50 (~340px wide). Offset the pop left of it and drop
+        // below its z-index so the widget's Answer button is never
+        // covered, even transiently while the pop animates in.
+        isCintrixCti ? "right-[380px] z-40" : "right-2 z-[1000]",
+      )}
+    >
       {/* Backdrop for mobile */}
       <div
         className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden pointer-events-auto"
