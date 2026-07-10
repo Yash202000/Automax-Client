@@ -15,10 +15,23 @@ import { incidentApi } from "@/api/admin";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { SentimentStats } from "../sip/Softphone";
+import { useAuthStore } from "@/stores/authStore";
+import usePermissions from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/constants/permissions";
+
+// The native softphone panel (Softphone.tsx) renders its own SentimentStats
+// and never mounts in cintrix mode, so this is the only place caller
+// sentiment stats surface under cintrix — gate strictly on the flag to avoid
+// double-rendering in NATIVE mode.
+const isCintrixCti = import.meta.env.VITE_CTI_PROVIDER === "cintrix";
 
 export default function IncidentLister() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { hasPermission } = usePermissions();
+  const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
   const {
     openCallerIncidents,
     setOpenCallerIncidents,
@@ -231,6 +244,18 @@ export default function IncidentLister() {
             )}
           </div>
         </div>
+
+        {/* Caller sentiment stats — cintrix mode only (native softphone panel
+            renders its own copy, which never mounts here). */}
+        {isCintrixCti && canViewSentiment && user && incomingCallNumber && (
+          <div className="pt-3">
+            <SentimentStats
+              calleeId={user.id}
+              callerId={incomingCallNumber}
+              t={t}
+            />
+          </div>
+        )}
 
         {/* Content Area */}
         <div

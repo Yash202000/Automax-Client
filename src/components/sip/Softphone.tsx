@@ -110,7 +110,7 @@ const SENTIMENTS = (t: any) =>
 
 /* -------------------- Component -------------------- */
 
-const SentimentStats: React.FC<{
+export const SentimentStats: React.FC<{
   calleeId: string;
   callerId: string;
   t: any;
