@@ -370,6 +370,17 @@ export const WorkflowsPage: React.FC = () => {
     const index = workflow.name.charCodeAt(0) % gradients.length;
     return gradients[index];
   };
+  const isEpm940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
+  const generateWorkflowCode = (name: string) => {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "") //removes special characters
+      .replace(/\s+/g, "_");
+  };
 
   return (
     <div className="space-y-6">
@@ -825,7 +836,15 @@ export const WorkflowsPage: React.FC = () => {
                       placeholder={t("workflows.workflowNamePlaceholder")}
                       value={formData.name}
                       onChange={(e) => {
-                        setFormData({ ...formData, name: e.target.value });
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                          // adding generated code for epm940 clients
+                          code:
+                            isEpm940 && !editingWorkflow
+                              ? generateWorkflowCode(e.target.value)
+                              : prev.code,
+                        }));
                         if (validationErrors.name) {
                           setValidationErrors({
                             ...validationErrors,
@@ -874,10 +893,16 @@ export const WorkflowsPage: React.FC = () => {
                     type="text"
                     placeholder={t("workflows.workflowCodePlaceholder")}
                     value={formData.code}
+                    readOnly={isEpm940}
                     onChange={(e) => {
-                      setFormData({ ...formData, code: e.target.value });
-                      if (validationErrors.code) {
-                        setValidationErrors({ ...validationErrors, code: "" });
+                      if (!isEpm940) {
+                        setFormData({ ...formData, code: e.target.value });
+                        if (validationErrors.code) {
+                          setValidationErrors({
+                            ...validationErrors,
+                            code: "",
+                          });
+                        }
                       }
                     }}
                     className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${
