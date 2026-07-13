@@ -2094,7 +2094,13 @@
     "workflowPermanentlyDeleted": "تم حذف سير العمل نهائيًا",
     "failedToPermanentlyDeleteWorkflow": "فشل في حذف سير العمل نهائيًا",
     "pleaseRemoveEditPermissionFirst": "يرجى إزالة صلاحية التعديل من \"{{role}}\" قبل إزالة صلاحية العرض.",
-    "viewPermissionAutomaticallyAdded": "تمت إضافة \"{{role}}\" تلقائيًا إلى أدوار العرض لأنه يمتلك صلاحية التعديل."
+    "viewPermissionAutomaticallyAdded": "تمت إضافة \"{{role}}\" تلقائيًا إلى أدوار العرض لأنه يمتلك صلاحية التعديل.",
+    "recommendedRoles": "الأدوار الموصى بها",
+    "noRecommendedRoles": "لا توجد أدوار موصى بها",
+    "workflowMatchingRules": "قواعد مطابقة سير العمل",
+    "hasAccessToFromStatus": "لديه صلاحية الوصول إلى حالة {{fromStatus}}",
+    "recommendedRolesDescription": "تتمتع هذه الأدوار بصلاحية العرض أو التعديل على حالة {{fromStatus}}.",
+    "otherAvailableRoles": "الأدوار الأخرى المتاحة"
   },
   "lookups": {
     "title": "البيانات الرئيسية",
