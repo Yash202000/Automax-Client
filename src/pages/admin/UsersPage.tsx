@@ -952,13 +952,13 @@ export const UsersPage: React.FC = () => {
       let jsonRows: Array<{
         username: string;
         email: string;
-        password: string;
         first_name: string;
         last_name: string;
         phone: string;
         extension: string;
         is_active: boolean;
         is_super_admin: boolean;
+        password: string;
       }>;
 
       if (importFile.name.toLowerCase().endsWith(".xlsx")) {
