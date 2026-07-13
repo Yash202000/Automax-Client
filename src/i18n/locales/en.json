@@ -1073,7 +1073,8 @@
     "userAgent": "User Agent",
     "51234Default": "51234 (default)",
     "unknownUser": "Unknown User",
-    "AddAdUser": "Add AD User"
+    "AddAdUser": "Add AD User",
+    "invalidPhone": "Enter a valid phone number. Use only digits and an optional country code prefixed with '+'."
   },
   "roles": {
     "title": "Roles",

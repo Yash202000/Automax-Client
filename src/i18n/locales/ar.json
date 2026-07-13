@@ -1071,7 +1071,8 @@
     "usernamePlaceholder": "مثال: johndoe",
     "phonePlaceholder": "مثال: +1 234 567 890",
     "extensionPlaceholder": "مثال: 1001",
-    "AddAdUser": "إضافة مستخدم إعلان"
+    "AddAdUser": "إضافة مستخدم إعلان",
+    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'."
   },
   "roles": {
     "title": "الأدوار",
