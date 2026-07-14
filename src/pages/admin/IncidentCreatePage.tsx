@@ -173,9 +173,36 @@ export function IncidentCreatePage() {
     queryFn: () => userApi.list(1, 100),
   });
 
+  const isEpmclClient =
+    (
+      window.APP_CONFIG?.CLIENT ??
+      import.meta.env.VITE_CLIENT ??
+      ""
+    ).toUpperCase() === "EPMCL";
+
+  const shouldFilterDepartments =
+    isEpmclClient &&
+    Boolean(formData.location_id && formData.classification_id);
+
   const { data: departmentsData } = useQuery({
-    queryKey: ["admin", "departments"],
-    queryFn: () => departmentApi.list(),
+    queryKey: [
+      "admin",
+      "departments",
+      shouldFilterDepartments ? "filtered" : "all",
+      formData.location_id || "",
+      formData.classification_id || "",
+    ],
+    enabled: !isEpmclClient || shouldFilterDepartments,
+    queryFn: () => {
+      if (isEpmclClient) {
+        return departmentApi.list({
+          location: formData.location_id!,
+          classification: formData.classification_id!,
+        });
+      }
+
+      return departmentApi.list();
+    },
   });
 
   const { data: locationsData } = useQuery({
