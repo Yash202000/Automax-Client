@@ -35,11 +35,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
-import {
-  validateCode,
-  validateName,
-  validateRequired,
-} from "@/utils/validations";
+import { validateName, validateRequired } from "@/utils/validations";
 
 interface WorkflowFormData {
   name: string;

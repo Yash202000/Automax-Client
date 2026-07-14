@@ -996,7 +996,6 @@ export const UsersPage: React.FC = () => {
         extension: string;
         is_active: boolean;
         is_super_admin: boolean;
-        password: string;
       }>;
 
       if (importFile.name.toLowerCase().endsWith(".xlsx")) {
