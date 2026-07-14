@@ -3925,7 +3925,10 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
 
                 {/* Step content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div
+                  key={currentStepKey}
+                  className="flex-1 overflow-y-auto p-6 space-y-4"
+                >
                   {/* Step label */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
