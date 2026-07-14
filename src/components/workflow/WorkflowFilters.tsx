@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Filter } from "lucide-react";
 import { Button } from "../ui";
-import type { WorkflowFilter } from "../../types";
+import type { WorkflowFilter, ClassificationType } from "../../types";
 
 export interface WorkflowFilterProps {
   filter: WorkflowFilter;
@@ -13,6 +13,16 @@ export interface WorkflowFilterProps {
   onClearFilters: () => void;
   hasActiveFilters: boolean;
 }
+const recordTypes: ClassificationType[] = [
+  "incident",
+  "request",
+  "complaint",
+  "query",
+  "mobile",
+  "ivr",
+  "both",
+  "all",
+];
 
 const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
   filter,
@@ -75,7 +85,9 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
               value={filter.status ?? ""}
               onChange={(e) => onFilterChange("status", e.target.value)}
             >
-              <option>{t("common.allStatuses", "All Statuses")}</option>
+              <option value={""}>
+                {t("common.allStatuses", "All Statuses")}
+              </option>
               <option>{t("common.active", "Active")}</option>
               <option>{t("common.inactive", "Inactive")}</option>
             </select>
@@ -88,10 +100,22 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
             </label>
             <select
               className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-              value={filter.module ?? ""}
-              onChange={(e) => onFilterChange("module", e.target.value)}
+              value={filter.record_type ?? ""}
+              onChange={(e) =>
+                onFilterChange(
+                  "record_type",
+                  e.target.value as WorkflowFilter["record_type"],
+                )
+              }
             >
-              <option>{t("common.allModules", "All Modules")}</option>
+              <option value={""}>
+                {t("common.allModules", "All Modules")}
+              </option>
+              {recordTypes.map((type) => (
+                <option key={type} value={type}>
+                  {t(`recordTypes.${type}`, type)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -105,7 +129,8 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
               value={filter.created_by ?? ""}
               onChange={(e) => onFilterChange("created_by", e.target.value)}
             >
-              <option>{t("common.allUsers", "All Users")}</option>
+              <option value={""}>{t("common.allUsers", "All Users")}</option>
+              {}
             </select>
           </div>
 

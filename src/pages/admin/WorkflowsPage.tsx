@@ -84,7 +84,6 @@ export const WorkflowsPage: React.FC = () => {
     limit: 20,
     search: "",
   });
-  console.log(filter);
   const onFilterChange = <K extends keyof WorkflowFilter>(
     key: K,
     value: WorkflowFilter[K],
