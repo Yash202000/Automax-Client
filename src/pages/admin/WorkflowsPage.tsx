@@ -80,14 +80,9 @@ export const WorkflowsPage: React.FC = () => {
     Record<string, string>
   >({});
   const [filter, setFilter] = useState<WorkflowFilter>({
+    page: 1,
+    limit: 20,
     search: "",
-    status: "",
-    module: "",
-    created_by: "",
-    created_from: "",
-    created_to: "",
-    modified_from: "",
-    modified_to: "",
   });
   console.log(filter);
   const onFilterChange = <K extends keyof WorkflowFilter>(
@@ -113,8 +108,8 @@ export const WorkflowsPage: React.FC = () => {
   );
 
   const { data: workflowsData, isLoading } = useQuery({
-    queryKey: ["admin", "workflows"],
-    queryFn: () => workflowApi.list(),
+    queryKey: ["admin", "workflows", filter],
+    queryFn: () => workflowApi.listWithFilters(filter),
   });
 
   const { data: classificationsData } = useQuery({
