@@ -558,7 +558,8 @@ export const UsersPage: React.FC = () => {
     setAvatarPreview(null);
     setCreateFormErrors({});
   };
-
+  // const PHONE_REGEX = /^\+?\d+(?: \d+)*$/; //optional country code , allows spaces between numbers.
+  const PHONE_REGEX = /^\+?\d+$/; // Optional country code (+), digits only.
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: UserFieldErrors = {};
@@ -587,13 +588,22 @@ export const UsersPage: React.FC = () => {
       errors.password = t("users.passwordPolicy");
     }
 
+    if (
+      createFormData.phone.trim() &&
+      !PHONE_REGEX.test(createFormData.phone.trim())
+    ) {
+      errors.phone = t("users.invalidPhone");
+      // toast.error(t("auth.invalidPhone"));
+    }
+
     setCreateFormErrors(errors);
     if (Object.keys(errors).length > 0) {
+      toast.error(t("errors.validationError"));
       return;
     }
 
     createMutation.mutate({
-      data: createFormData,
+      data: { ...createFormData, phone: createFormData.phone.trim() },
       avatar: avatarFile || undefined,
     });
   };
@@ -679,14 +689,19 @@ export const UsersPage: React.FC = () => {
         field: t("users.username"),
       });
     }
+    if (formData.phone.trim() && !PHONE_REGEX.test(formData.phone.trim())) {
+      errors.phone = t("users.invalidPhone");
+      // toast.error(t("auth.invalidPhone"));
+    }
 
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
+      toast.error(t("errors.validationError"));
       return;
     }
 
     let phoneChanged = false;
-    if (editingUser.phone !== formData.phone) {
+    if ((editingUser.phone || "").trim() !== formData.phone.trim()) {
       phoneChanged = true;
     }
     const payload: UpdateProfileRequest = {
@@ -694,7 +709,7 @@ export const UsersPage: React.FC = () => {
       last_name: formData.last_name,
       username: formData.username,
       mobile_verified: phoneChanged ? false : editingUser.mobile_verified,
-      phone: formData.phone,
+      phone: formData.phone.trim(),
       extension: formData.extension || "",
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,

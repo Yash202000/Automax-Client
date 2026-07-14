@@ -1057,7 +1057,7 @@
     "firstNamePlaceholder": "e.g., John",
     "lastNamePlaceholder": "e.g., Doe",
     "usernamePlaceholder": "e.g., johndoe",
-    "phonePlaceholder": "e.g., +1 234 567 890",
+    "phonePlaceholder": "e.g., +1234567890",
     "extensionPlaceholder": "e.g., 1001",
     "usersImportedSuccessfully": "users imported successfully",
     "usersSkipped": "users skipped",
@@ -1073,7 +1073,8 @@
     "userAgent": "User Agent",
     "51234Default": "51234 (default)",
     "unknownUser": "Unknown User",
-    "AddAdUser": "Add AD User"
+    "AddAdUser": "Add AD User",
+    "invalidPhone": "Enter a valid phone number. Use only digits and an optional country code prefixed with '+'."
   },
   "roles": {
     "title": "Roles",
