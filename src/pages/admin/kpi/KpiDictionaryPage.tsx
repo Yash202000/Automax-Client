@@ -18,6 +18,7 @@ import {
   useOperationalKPIs,
   useAwardKPIs,
 } from "../../../hooks/useKpi";
+import { KpiCard } from "../../../components/kpi/KpiCard";
 import type {
   PaginatedResponse,
   StrategicKPI,
@@ -188,8 +189,8 @@ export const KpiDictionaryPage: React.FC = () => {
         )}
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
+      {/* Cards */}
+      <div>
         {currentQuery.isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
@@ -204,7 +205,7 @@ export const KpiDictionaryPage: React.FC = () => {
             </div>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center py-20 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80">
             <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-500 mb-3" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
               {t("kpi.dictionary.empty")}
@@ -212,68 +213,14 @@ export const KpiDictionaryPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800">
-                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {t("kpi.dictionary.table.code")}
-                    </th>
-                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {t("kpi.dictionary.table.name")}
-                    </th>
-                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {t("kpi.dictionary.table.status")}
-                    </th>
-                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {t("kpi.dictionary.table.frequency")}
-                    </th>
-                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {t("kpi.dictionary.table.baseline")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(
-                    (kpi: StrategicKPI | OperationalKPI | AwardKPI) => (
-                      <tr
-                        key={kpi.id}
-                        className="border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <Link
-                            to={`/goals/kpi/dictionary/${activeTab}/${(kpi as any).id}`}
-                            className="text-sm font-mono font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            {(kpi as any).code}
-                          </Link>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Link
-                            to={`/goals/kpi/dictionary/${activeTab}/${kpi.id}`}
-                            className="text-sm font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          >
-                            {kpi.name_en}
-                          </Link>
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusBadge status={kpi.activation_status} />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                          {kpi.reporting_frequency}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 tabular-nums">
-                          {kpi.baseline}
-                        </td>
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {items.map((kpi: StrategicKPI | OperationalKPI | AwardKPI) => (
+                <KpiCard key={kpi.id} kpi={kpi} type={activeTab} />
+              ))}
             </div>
 
             {/* Pagination */}
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+            <div className="mt-4 px-6 py-4 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 flex items-center justify-between">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t("kpi.dictionary.pageOf", {
                   current: page,
@@ -305,21 +252,3 @@ export const KpiDictionaryPage: React.FC = () => {
     </div>
   );
 };
-
-function StatusBadge({ status }: { status: string }) {
-  const colorMap: Record<string, string> = {
-    draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
-    active:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    inactive: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  };
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-        colorMap[status] ?? colorMap.draft
-      }`}
-    >
-      {status}
-    </span>
-  );
-}

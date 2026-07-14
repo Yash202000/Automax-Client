@@ -791,6 +791,33 @@ export const WorkflowDesignerPage: React.FC = () => {
   const emailTemplates: NotificationTemplate[] = emailTemplatesData?.data || [];
   const smsTemplates: NotificationTemplate[] = smsTemplatesData?.data || [];
 
+  const fromStatusAccessibleRoleIds = useMemo(() => {
+    const status = states.find(
+      (s) => s.id === transitionFormData.from_state_id,
+    );
+
+    if (!status) return [];
+
+    return [
+      ...new Set([
+        ...(status.viewable_roles?.map((r) => r.id) ?? []),
+        ...(status.editable_roles?.map((r) => r.id) ?? []),
+      ]),
+    ];
+  }, [transitionFormData.from_state_id, states]);
+
+  const recommendedRoles = useMemo(() => {
+    return roles.filter((role) =>
+      fromStatusAccessibleRoleIds.includes(role.id),
+    );
+  }, [fromStatusAccessibleRoleIds, roles]);
+
+  const otherRoles = useMemo(() => {
+    return roles.filter(
+      (role) => !fromStatusAccessibleRoleIds.includes(role.id),
+    );
+  }, [fromStatusAccessibleRoleIds, roles]);
+
   // Get Priority and Severity categories for matching rules
   const allLookupCategories: LookupCategory[] =
     lookupCategoriesData?.data || [];
@@ -1807,6 +1834,12 @@ export const WorkflowDesignerPage: React.FC = () => {
     } catch (error) {
       console.error("Export failed:", error);
     }
+  };
+
+  const getStatus = (id: string) => {
+    const state = states.find((s) => s.id === id);
+    if (!state) return "Unknown";
+    return i18n.language === "ar" && state.name_ar ? state.name_ar : state.name;
   };
 
   if (isLoading) {
@@ -4393,38 +4426,104 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
 
                 {/* Allowed Roles */}
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.allowedRoles")}
-                    <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                      {t("workflows.leaveEmptyToAllowAllRoles")}
-                    </span>
-                  </label>
-                  <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
-                    {roles.map((role) => (
-                      <label
-                        key={role.id}
-                        className={cn(
-                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
-                          transitionFormData.role_ids.includes(role.id)
-                            ? "bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.3)]"
-                            : "hover:bg-[hsl(var(--muted)/0.5)]",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={transitionFormData.role_ids.includes(
-                            role.id,
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("workflows.allowedRoles")}
+                  <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
+                    {t("workflows.leaveEmptyToAllowAllRoles")}
+                  </span>
+                </label>
+
+                <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-80 overflow-y-auto space-y-4">
+                  {/* Recommended Roles */}
+                  {recommendedRoles.length > 0 && (
+                    <>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-emerald-500">
+                            {t("workflows.recommendedRoles")}
+                          </span>
+
+                          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+                            {t("workflows.hasAccessToFromStatus", {
+                              fromStatus: getStatus(
+                                transitionFormData.from_state_id,
+                              ),
+                            })}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {t("workflows.recommendedRolesDescription", {
+                            fromStatus: getStatus(
+                              transitionFormData.from_state_id,
+                            ),
+                          })}
+                        </p>
+
+                        <div className="space-y-2">
+                          {recommendedRoles.map((role) => (
+                            <label
+                              key={role.id}
+                              className={cn(
+                                "flex items-center gap-3 rounded-lg p-2 cursor-pointer transition-all border",
+                                transitionFormData.role_ids.includes(role.id)
+                                  ? "border-primary bg-primary/10"
+                                  : "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10",
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={transitionFormData.role_ids.includes(
+                                  role.id,
+                                )}
+                                onChange={() => toggleRole(role.id)}
+                                className="w-4 h-4"
+                              />
+
+                              <Shield className="w-4 h-4 text-muted-foreground" />
+
+                              <span className="text-sm">{role.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <hr className="border-border" />
+                    </>
+                  )}
+
+                  {/* Other Roles */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-3">
+                      {t("workflows.otherAvailableRoles")}
+                    </label>
+
+                    <div className="space-y-2">
+                      {otherRoles.map((role) => (
+                        <label
+                          key={role.id}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg p-2 cursor-pointer transition-all",
+                            transitionFormData.role_ids.includes(role.id)
+                              ? "border border-primary bg-primary/10"
+                              : "hover:bg-muted/50",
                           )}
-                          onChange={() => toggleRole(role.id)}
-                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
-                        />
-                        <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span className="text-sm text-[hsl(var(--foreground))]">
-                          {role.name}
-                        </span>
-                      </label>
-                    ))}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={transitionFormData.role_ids.includes(
+                              role.id,
+                            )}
+                            onChange={() => toggleRole(role.id)}
+                            className="w-4 h-4"
+                          />
+
+                          <Shield className="w-4 h-4 text-muted-foreground" />
+
+                          <span className="text-sm">{role.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

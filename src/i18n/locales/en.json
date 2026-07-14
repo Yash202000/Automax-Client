@@ -2096,7 +2096,13 @@
     "workflowPermanentlyDeleted": "Workflow permanently deleted",
     "failedToPermanentlyDeleteWorkflow": "Failed to permanently delete workflow",
     "pleaseRemoveEditPermissionFirst": "Please remove Edit permission from \"{{role}}\" before removing View permission.",
-    "viewPermissionAutomaticallyAdded": "\"{{role}}\" was automatically added to Viewable Roles because it has Edit permission."
+    "viewPermissionAutomaticallyAdded": "\"{{role}}\" was automatically added to Viewable Roles because it has Edit permission.",
+    "recommendedRoles": "Recommended Roles",
+    "noRecommendedRoles": "No recommended roles",
+    "workflowMatchingRules": "Workflow Matching Rules",
+    "hasAccessToFromStatus": "has access to {{fromStatus}} status",
+    "recommendedRolesDescription": "These roles have View or Edit Access to {{fromStatus}} status.",
+    "otherAvailableRoles": "Other Available Roles"
   },
   "lookups": {
     "title": "Master Data",

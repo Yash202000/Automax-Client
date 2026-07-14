@@ -8,6 +8,7 @@ import {
   usePillars,
   useDomains,
   useDataSources,
+  useProcesses,
 } from "../../../hooks/useKpi";
 import { useGoals } from "../../../hooks/useGoals";
 import { Button } from "../../../components/ui/Button";
@@ -23,11 +24,13 @@ export const KpiDictionaryFormPage: React.FC = () => {
   const { data: domainsData } = useDomains();
   const { data: okrGoalsData } = useGoals({ limit: 200 });
   const { data: dataSourcesData } = useDataSources();
+  const { data: processesData } = useProcesses();
 
   const pillars = pillarsData ?? [];
   const domains = domainsData ?? [];
   const okrGoals = (okrGoalsData as any)?.data ?? [];
   const dataSources = dataSourcesData ?? [];
+  const processes = processesData ?? [];
 
   const [form, setForm] = useState({
     code: "",
@@ -36,6 +39,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
     pillar_id: "",
     domain_id: "",
     goal_id: "",
+    process_id: "",
     polarity: "ascending",
     activation_status: "draft",
     description_en: "",
@@ -64,7 +68,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.code || !form.name_en || !form.goal_id) {
+    if (!form.code || !form.name_en || !form.goal_id || !form.process_id) {
       toast.error(t("kpi.targets.formValidation"));
       return;
     }
@@ -73,6 +77,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
       ...form,
       baseline: Number(form.baseline),
       goal_id: form.goal_id,
+      process_id: form.process_id,
       pillar_id: form.pillar_id || undefined,
       domain_id: form.domain_id || undefined,
     };
@@ -124,6 +129,21 @@ export const KpiDictionaryFormPage: React.FC = () => {
               options={okrGoals.map((g: any) => ({
                 value: g.id,
                 label: g.title,
+              }))}
+              placeholder={t("common.selectAnOption")}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Objective *"
+              value={form.process_id}
+              onChange={(v) =>
+                setForm((prev) => ({ ...prev, process_id: v.target.value }))
+              }
+              options={processes.map((p: any) => ({
+                value: p.id,
+                label: p.name_en,
               }))}
               placeholder={t("common.selectAnOption")}
             />
