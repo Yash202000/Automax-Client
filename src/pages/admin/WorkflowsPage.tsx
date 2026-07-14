@@ -36,17 +36,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
-import {
-  validateCode,
-  validateName,
-  validateRequired,
-} from "@/utils/validations";
+import { validateName, validateRequired } from "@/utils/validations";
 import { WorkflowFilters } from "@/components/workflow";
 
 interface WorkflowFormData {
   name: string;
   name_ar: string;
-  code: string;
   description: string;
   description_ar: string;
   is_default: boolean;
@@ -56,7 +51,6 @@ interface WorkflowFormData {
 const initialFormData: WorkflowFormData = {
   name: "",
   name_ar: "",
-  code: "",
   description: "",
   description_ar: "",
   is_default: false,
@@ -294,7 +288,7 @@ export const WorkflowsPage: React.FC = () => {
     setFormData({
       name: workflow.name,
       name_ar: workflow.name_ar || "",
-      code: workflow.code,
+
       description: workflow.description,
       description_ar: workflow.description_ar || "",
       is_default: workflow.is_default,
@@ -313,18 +307,11 @@ export const WorkflowsPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     const name = formData.name;
-    const code = formData.code;
 
     if (!validateRequired(name)) {
       newErrors.name = t("workflows.nameRequired");
     } else if (!validateName(name)) {
       newErrors.name = t("workflows.invalidName");
-    }
-
-    if (!validateRequired(code)) {
-      newErrors.code = t("workflows.codeRequired");
-    } else if (!validateCode(code)) {
-      newErrors.code = t("workflows.invalidCode");
     }
 
     setValidationErrors(newErrors);
@@ -344,7 +331,7 @@ export const WorkflowsPage: React.FC = () => {
         data: {
           name: formData.name,
           name_ar: formData.name_ar,
-          code: formData.code,
+
           description: formData.description,
           description_ar: formData.description_ar,
           is_default: formData.is_default,
@@ -356,7 +343,7 @@ export const WorkflowsPage: React.FC = () => {
       createMutation.mutate({
         name: formData.name,
         name_ar: formData.name_ar,
-        code: formData.code,
+
         description: formData.description,
         description_ar: formData.description_ar,
       });
@@ -865,7 +852,10 @@ export const WorkflowsPage: React.FC = () => {
                       placeholder={t("workflows.workflowNamePlaceholder")}
                       value={formData.name}
                       onChange={(e) => {
-                        setFormData({ ...formData, name: e.target.value });
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }));
                         if (validationErrors.name) {
                           setValidationErrors({
                             ...validationErrors,
@@ -901,40 +891,6 @@ export const WorkflowsPage: React.FC = () => {
                       className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.workflowCode")}
-                    <span className="text-[hsl(var(--destructive))] ml-1">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("workflows.workflowCodePlaceholder")}
-                    value={formData.code}
-                    onChange={(e) => {
-                      setFormData({ ...formData, code: e.target.value });
-                      if (validationErrors.code) {
-                        setValidationErrors({ ...validationErrors, code: "" });
-                      }
-                    }}
-                    className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${
-                      validationErrors.code
-                        ? "border-[hsl(var(--destructive))]"
-                        : "border-slate-300 dark:border-slate-600"
-                    }`}
-                    required
-                  />
-                  {validationErrors.code && (
-                    <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
-                      {validationErrors.code}
-                    </p>
-                  )}
-                  <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
-                    {t("workflows.codeHint")}
-                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

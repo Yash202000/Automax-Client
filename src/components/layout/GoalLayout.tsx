@@ -540,12 +540,8 @@ export const GoalLayout: React.FC = () => {
                 [
                   ["pillar", "Pillars", Database],
                   ["enabler", "Enablers", BookOpen],
-                  [
-                    "operational-objective",
-                    "Operational Objectives",
-                    Crosshair,
-                  ],
-                  ["process", "Processes", GitBranch],
+                  ["operational-objective", "Parent Objectives", Crosshair],
+                  ["process", "Operational Objectives", GitBranch],
                   ["initiative", "Initiatives", Sparkles],
                   ["domain", "Domains", FolderOpen],
                   ["award-criterion", "Award Criteria", ClipboardCheck],

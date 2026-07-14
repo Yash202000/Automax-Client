@@ -608,9 +608,14 @@ export const departmentApi = {
     return response.data;
   },
 
-  list: async (): Promise<ApiResponse<Department[]>> => {
-    const response =
-      await apiClient.get<ApiResponse<Department[]>>("/admin/departments");
+  list: async (filters?: {
+    location?: string;
+    classification?: string;
+  }): Promise<ApiResponse<Department[]>> => {
+    const response = await apiClient.get<ApiResponse<Department[]>>(
+      "/admin/departments",
+      { params: filters },
+    );
     return response.data;
   },
 

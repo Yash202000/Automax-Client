@@ -5134,23 +5134,46 @@ export const WorkflowDesignerPage: React.FC = () => {
                             </button>
                           </div>
                           <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={req.is_mandatory}
-                                onChange={(e) =>
-                                  updateRequirement(
-                                    index,
-                                    "is_mandatory",
-                                    e.target.checked,
-                                  )
-                                }
-                                className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
-                              />
-                              <span className="text-sm text-[hsl(var(--foreground))]">
-                                {t("workflows.mandatory")}
-                              </span>
-                            </label>
+                            <div className="flex items-center gap-3">
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={req.is_mandatory}
+                                  onChange={(e) =>
+                                    updateRequirement(
+                                      index,
+                                      "is_mandatory",
+                                      e.target.checked,
+                                    )
+                                  }
+                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                />
+                                <span className="text-sm text-[hsl(var(--foreground))]">
+                                  {t("workflows.mandatory")}
+                                </span>
+                              </label>
+                            </div>
+                            {req?.requirement_type === "attachment" ? (
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={req.is_multiple}
+                                    onChange={(e) =>
+                                      updateRequirement(
+                                        index,
+                                        "is_multiple",
+                                        e.target.checked,
+                                      )
+                                    }
+                                    className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                  />
+                                  <span className="text-sm text-[hsl(var(--foreground))]">
+                                    {t("workflows.multiple")}
+                                  </span>
+                                </label>
+                              </div>
+                            ) : null}
                           </div>
                           <input
                             type="text"

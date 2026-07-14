@@ -145,7 +145,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
-              label={`Operational Objective *`}
+              label={`Parent Objective *`}
               value={form.operational_objective_id}
               onChange={(v) =>
                 setForm((prev) => ({
@@ -160,7 +160,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
               placeholder={t("common.selectAnOption")}
             />
             <Select
-              label={`Process *`}
+              label={`Operational Objective *`}
               value={form.process_id}
               onChange={(v) =>
                 setForm((prev) => ({ ...prev, process_id: v.target.value }))

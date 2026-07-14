@@ -98,7 +98,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           <>
             {leftIcon && <span className={iconSize}>{leftIcon}</span>}
-            {children}
+            <span className="truncate">{children}</span>
             {rightIcon && <span className={iconSize}>{rightIcon}</span>}
           </>
         )}

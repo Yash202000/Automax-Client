@@ -828,6 +828,7 @@ export interface TransitionRequirement {
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
+  is_multiple?: boolean;
   error_message?: string;
 }
 
@@ -865,7 +866,6 @@ export interface TransitionFieldChangeRequest {
 export interface WorkflowCreateRequest {
   name: string;
   name_ar?: string;
-  code: string;
   description?: string;
   description_ar?: string;
   record_type?: ClassificationType;
@@ -1024,6 +1024,7 @@ export interface TransitionRequirementRequest {
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
+  is_multiple?: boolean;
   error_message?: string;
 }
 

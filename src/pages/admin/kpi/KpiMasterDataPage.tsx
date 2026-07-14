@@ -238,11 +238,6 @@ export const KpiMasterDataPage: React.FC = () => {
     label: `${u.first_name} ${u.last_name} (${u.email})`,
   }));
 
-  const deptOptions = departments.map((d: any) => ({
-    value: d.id,
-    label: d.name,
-  }));
-
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<EntityType>("pillar");
   const [modalItem, setModalItem] = useState<any>(null);
@@ -695,10 +690,7 @@ export const KpiMasterDataPage: React.FC = () => {
             onDelete={(id) => handleDelete("operational-objective", id)}
             onAdd={() => handleAdd("operational-objective")}
             onExport={() =>
-              exportToExcel(
-                operationalObjectives ?? [],
-                "OperationalObjectives",
-              )
+              exportToExcel(operationalObjectives ?? [], "ParentObjectives")
             }
             onImport={() => handleImportExcel("operational-objective")}
           />
@@ -740,7 +732,9 @@ export const KpiMasterDataPage: React.FC = () => {
             onEdit={(item) => handleEdit("process", item)}
             onDelete={(id) => handleDelete("process", id)}
             onAdd={() => handleAdd("process")}
-            onExport={() => exportToExcel(processes ?? [], "Processes")}
+            onExport={() =>
+              exportToExcel(processes ?? [], "OperationalObjectives")
+            }
             onImport={() => handleImportExcel("process")}
           />
         )}
@@ -968,20 +962,29 @@ export const KpiMasterDataPage: React.FC = () => {
                   }),
                 )}
                 value={form.operational_objective_id}
-                onChange={setSel("operational_objective_id")}
+                onChange={(v) => {
+                  const selected = (operationalObjectives ?? []).find(
+                    (o: OperationalObjective) => o.id === v,
+                  );
+                  setForm((prev) => ({
+                    ...prev,
+                    operational_objective_id: v,
+                    goal_id: selected?.goal_id ?? selected?.goal?.id ?? "",
+                  }));
+                }}
                 searchable
                 placeholder={t("common.selectAnOption")}
               />
-              <Select
+              <Input
                 label={t("kpi.masterData.strategicGoal")}
-                options={(goals ?? []).map((g: any) => ({
-                  value: g.id,
-                  label: g.title,
-                }))}
-                value={form.goal_id}
-                onChange={setSel("goal_id")}
-                searchable
-                placeholder={t("common.selectAnOption")}
+                value={
+                  (operationalObjectives ?? []).find(
+                    (o: OperationalObjective) =>
+                      o.id === form.operational_objective_id,
+                  )?.goal?.title ?? ""
+                }
+                disabled
+                placeholder="Select a Parent Objective first"
               />
               <Select
                 label={t("kpi.masterData.pillar")}
@@ -1004,19 +1007,6 @@ export const KpiMasterDataPage: React.FC = () => {
                 onChange={setSel("enabler_id")}
                 searchable
                 placeholder={t("common.selectAnOption")}
-              />
-              <Select
-                label={t("kpi.masterData.department")}
-                options={deptOptions}
-                value={form.department_id}
-                onChange={setSel("department_id")}
-                searchable
-                placeholder={t("common.selectAnOption")}
-              />
-              <Input
-                label={t("kpi.masterData.unit")}
-                value={form.unit}
-                onChange={set("unit")}
               />
             </>
           )}
