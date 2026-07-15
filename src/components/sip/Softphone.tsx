@@ -281,6 +281,9 @@ export default function SoftPhone({
   const setIsOpen = useSoftphoneStore((state) => state.setIsOpen);
   const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
   const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
 
   const wasIncomingCallRef = useRef(false);
   const dialedNumberRef = useRef("");
@@ -940,9 +943,10 @@ export default function SoftPhone({
         <div className="flex items-center gap-2">
           <Phone className="w-5 h-5 text-white" />
           <span className="font-semibold text-white">
-            {t("softphone.title")}
+            {t(isEPM940 ? "softphone.cintrix" : "softphone.title")}
           </span>
         </div>
+
         <div className="flex items-center gap-2">
           <GripHorizontal className="w-5 h-5 text-white/70" />
           <button

@@ -710,6 +710,24 @@ export const useCreateAwardKPI = () => {
   });
 };
 
+export const useUpdateAwardKPI = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<AwardKPIRequest>;
+    }) => kpiDictionaryApi.updateAward(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award"] });
+      toast.success("Award KPI updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
 export const useDeleteAwardKPI = () => {
   const qc = useQueryClient();
   return useMutation({

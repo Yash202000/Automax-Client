@@ -191,7 +191,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const transition = useKpiStatusTransition();
 
   const [showAddMetric, setShowAddMetric] = useState(false);
-  const [metricForm, setMetricForm] = useState({
+  const emptyMetricForm = {
     name: "",
     metric_type: "Numeric",
     unit: "",
@@ -199,7 +199,12 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     target_value: 0,
     weight: 1,
     formula: "",
-  });
+    start_date: "",
+    due_date: "",
+    attachment_title: "",
+    attachment_file_url: "",
+  };
+  const [metricForm, setMetricForm] = useState(emptyMetricForm);
   const createMetric = useCreateKpiMetric(kpiType, kpiId);
   const updateMetricValue = useUpdateKpiMetricValue(kpiType, kpiId);
   const deleteMetric = useDeleteKpiMetric(kpiType, kpiId);
@@ -271,17 +276,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       toast.error("Name and target value are required");
       return;
     }
-    await createMetric.mutateAsync(metricForm);
-    setShowAddMetric(false);
-    setMetricForm({
-      name: "",
-      metric_type: "Numeric",
-      unit: "",
-      baseline_value: 0,
-      target_value: 0,
-      weight: 1,
-      formula: "",
+    await createMetric.mutateAsync({
+      ...metricForm,
+      start_date: metricForm.start_date || undefined,
+      due_date: metricForm.due_date || undefined,
+      attachment_title: metricForm.attachment_title || undefined,
+      attachment_file_url: metricForm.attachment_file_url || undefined,
     });
+    setShowAddMetric(false);
+    setMetricForm(emptyMetricForm);
   };
 
   const handleSaveMetricValue = async (metricId: string) => {
@@ -560,8 +563,28 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Status transitions */}
+          {/* Status transitions + quick links */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              to={`/goals/kpi/targets?kpi_code=${encodeURIComponent(kpi.code)}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Target className="w-4 h-4" />
+              Targets
+            </Link>
+            {canUpdateKpi() && (
+              <Link
+                to={
+                  type === "strategic"
+                    ? `/goals/kpi/dictionary/${id}/edit`
+                    : `/goals/kpi/dictionary/${type}/${id}/edit`
+                }
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit
+              </Link>
+            )}
             {transitions.map((tr) => (
               <button
                 key={tr.action}
@@ -798,6 +821,25 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
+                <Input
+                  label="Start Date"
+                  type="date"
+                  value={metricForm.start_date}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      start_date: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="Due Date"
+                  type="date"
+                  value={metricForm.due_date}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({ ...p, due_date: e.target.value }))
+                  }
+                />
               </div>
               <Textarea
                 label="Formula (optional)"
@@ -807,6 +849,33 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 }
                 rows={2}
               />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Attachment Title (optional)"
+                  value={metricForm.attachment_title}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      attachment_title: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Baseline Survey"
+                />
+                <Input
+                  label="Attachment URL (optional)"
+                  value={metricForm.attachment_file_url}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      attachment_file_url: e.target.value,
+                    }))
+                  }
+                  placeholder="https://..."
+                />
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Attachments also appear under the Evidence tab.
+              </p>
               <div className="flex justify-end gap-3">
                 <Button
                   variant="outline"
@@ -873,6 +942,16 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       <p className="mt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">
                         {m.formula}
                       </p>
+                    )}
+                    {(m.start_date || m.due_date) && (
+                      <div className="mt-2 flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+                        {m.start_date && (
+                          <span>Start: {formatDate(m.start_date)}</span>
+                        )}
+                        {m.due_date && (
+                          <span>Due: {formatDate(m.due_date)}</span>
+                        )}
+                      </div>
                     )}
                     {canUpdateKpi() && (
                       <div className="mt-3 flex items-center gap-2">

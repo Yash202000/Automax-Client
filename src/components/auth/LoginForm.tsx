@@ -204,9 +204,15 @@ export const LoginForm: React.FC = () => {
   const isSso = loginMode === "sso";
   const isLdap = loginMode === "ldap";
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   return (
     <div className="animate-fade-in-up">
-      <div className="mb-8">
+      <div
+        className={`mb-8 ${isEPM940 ? "flex flex-col items-center text-center" : ""}`}
+      >
         <h1 className="text-3xl font-bold ">
           {isSso
             ? t("auth.ssoLoginTitle")

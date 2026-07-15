@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Crosshair, Plus, AlertCircle, Trash2 } from "lucide-react";
+import { Crosshair, Plus, AlertCircle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   useKpiTargets,
@@ -20,9 +21,19 @@ import type { KpiAnnualTarget } from "../../../types/kpi";
 
 export const KpiTargetsPage: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(currentYear);
-  const [kpiCodeFilter, setKpiCodeFilter] = useState("");
+  const [kpiCodeFilter, setKpiCodeFilter] = useState(
+    () => searchParams.get("kpi_code") ?? "",
+  );
+
+  // Keep the filter box in sync if the user navigates here again with a
+  // different ?kpi_code= (e.g. clicking "Targets" from another KPI's page).
+  useEffect(() => {
+    const fromUrl = searchParams.get("kpi_code");
+    if (fromUrl) setKpiCodeFilter(fromUrl);
+  }, [searchParams]);
 
   const { data: allCards } = useKpiCardDefinitions();
   const cardOptions = (allCards ?? []).map((c) => ({
@@ -119,13 +130,30 @@ export const KpiTargetsPage: React.FC = () => {
             </option>
           ))}
         </select>
-        <input
-          type="text"
-          value={kpiCodeFilter}
-          onChange={(e) => setKpiCodeFilter(e.target.value)}
-          placeholder={t("kpi.targets.searchPlaceholder")}
-          className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={kpiCodeFilter}
+            onChange={(e) => setKpiCodeFilter(e.target.value)}
+            placeholder={t("kpi.targets.searchPlaceholder")}
+            className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 pe-8"
+          />
+          {kpiCodeFilter && (
+            <button
+              onClick={() => {
+                setKpiCodeFilter("");
+                if (searchParams.get("kpi_code")) {
+                  searchParams.delete("kpi_code");
+                  setSearchParams(searchParams);
+                }
+              }}
+              className="absolute end-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              title={t("common.clear")}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}

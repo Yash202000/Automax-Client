@@ -32,6 +32,7 @@ import {
   TrendingUp,
   Layers,
   Gauge,
+  ListTree,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -540,8 +541,7 @@ export const GoalLayout: React.FC = () => {
                 [
                   ["pillar", "Pillars", Database],
                   ["enabler", "Enablers", BookOpen],
-                  ["operational-objective", "Parent Objectives", Crosshair],
-                  ["process", "Operational Objectives", GitBranch],
+                  ["objectives-tree", "Objectives Hierarchy", ListTree],
                   ["initiative", "Initiatives", Sparkles],
                   ["domain", "Domains", FolderOpen],
                   ["award-criterion", "Award Criteria", ClipboardCheck],
