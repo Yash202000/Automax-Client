@@ -445,20 +445,6 @@ export const UsersPage: React.FC = () => {
       </p>
     ) : null;
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateProfileRequest }) =>
-      userApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success(t("users.userUpdatedSuccessfully"));
-      closeModal();
-    },
-    onError: (error: any) => {
-      const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
-      setFormErrors(getApiFieldErrors(errorMessage));
-    },
-  });
-
   const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
 
   const hasAgentRole = createFormData.role_ids.some((id) => {
@@ -472,6 +458,52 @@ export const UsersPage: React.FC = () => {
     return role?.permissions?.some(
       (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
     );
+  });
+
+  const updateAssignExtensionMutation = useMutation({
+    mutationFn: (payload: { user_id: string; extension: string }) =>
+      extensionApi.assign(payload),
+    onSuccess: () => {
+      toast.success(
+        t("users.userUpdatedSuccessfully") + " (Extension assigned)",
+      );
+      closeModal();
+    },
+    onError: (error: any) => {
+      toast.warning(
+        t("users.userUpdatedSuccessfully") +
+          " but failed to assign extension: " +
+          getApiErrorMessage(error, "Error"),
+      );
+      closeModal();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateProfileRequest }) =>
+      userApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+
+      if (
+        canAssignExtensions &&
+        editHasAgentRole &&
+        formData.extension &&
+        editingUser?.id
+      ) {
+        updateAssignExtensionMutation.mutate({
+          user_id: editingUser.id,
+          extension: formData.extension,
+        });
+      } else {
+        toast.success(t("users.userUpdatedSuccessfully"));
+        closeModal();
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
+      setFormErrors(getApiFieldErrors(errorMessage));
+    },
   });
 
   const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
@@ -509,7 +541,11 @@ export const UsersPage: React.FC = () => {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 
-      const newUserId = response.data?.id;
+      const newUserId =
+        response.data?.id ||
+        (response as any)?.id ||
+        (response as any)?.data?.user?.id;
+
       if (
         canAssignExtensions &&
         hasAgentRole &&
@@ -662,7 +698,11 @@ export const UsersPage: React.FC = () => {
     }
 
     createMutation.mutate({
-      data: { ...createFormData, phone: createFormData.phone.trim() },
+      data: {
+        ...createFormData,
+        extension: "",
+        phone: createFormData.phone.trim(),
+      },
       avatar: avatarFile || undefined,
     });
   };
@@ -769,7 +809,7 @@ export const UsersPage: React.FC = () => {
       username: formData.username,
       mobile_verified: phoneChanged ? false : editingUser.mobile_verified,
       phone: formData.phone.trim(),
-      extension: formData.extension || "",
+      extension: "",
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,
       department_ids: formData.department_ids,
@@ -2319,15 +2359,35 @@ export const UsersPage: React.FC = () => {
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                       {t("users.extension")}
                     </label>
-                    <input
-                      type="text"
-                      placeholder={t("users.extensionPlaceholder")}
+                    <select
                       value={formData.extension}
                       onChange={(e) =>
-                        setFormData({ ...formData, extension: e.target.value })
+                        setFormData({
+                          ...formData,
+                          extension: e.target.value,
+                        })
                       }
                       className={getInputClassName()}
-                    />
+                      disabled={extensionsLoading}
+                    >
+                      <option value="">
+                        {t("common.select", { defaultValue: "Select..." })}
+                      </option>
+                      {(editingUser as any)?.extension &&
+                        !availableExtensions.some(
+                          (e: any) =>
+                            e.extension === (editingUser as any)?.extension,
+                        ) && (
+                          <option value={(editingUser as any).extension}>
+                            {(editingUser as any).extension}
+                          </option>
+                        )}
+                      {availableExtensions.map((ext: any) => (
+                        <option key={ext.extension} value={ext.extension}>
+                          {ext.extension}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 

@@ -3370,7 +3370,7 @@ export const extensionApi = {
     return response.data;
   },
   assign: async (payload: {
-    user_id: string;
+    user_id?: string;
     extension: string;
   }): Promise<ApiResponse<any>> => {
     const response = await apiClient.post<ApiResponse<any>>(
