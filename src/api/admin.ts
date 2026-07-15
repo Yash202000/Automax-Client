@@ -129,6 +129,7 @@ export const userApi = {
     departmentIds: string[] = [],
     locationIds: string[] = [],
     classificationIds: string[] = [],
+    call_status?: string,
   ): Promise<PaginatedResponse<User>> => {
     const params = new URLSearchParams({
       page: String(page),
@@ -142,6 +143,7 @@ export const userApi = {
       params.append("location_ids", locationIds.join(","));
     if (classificationIds.length)
       params.append("classification_ids", classificationIds.join(","));
+    if (call_status) params.append("call_status", call_status);
     const response = await apiClient.get<PaginatedResponse<User>>(
       `/admin/users?${params.toString()}`,
     );
@@ -291,6 +293,23 @@ export const userApi = {
       `/users/${id}/password`,
       { new_password: newPassword },
     );
+    return response.data;
+  },
+
+  updateUserStatus: async ({
+    extension,
+    status,
+  }: {
+    extension: string;
+    status: string;
+  }): Promise<ApiResponse<unknown>> => {
+    const response = await apiClient.put<ApiResponse<unknown>>(
+      `/users/${extension}/status`,
+      {
+        call_status: status,
+      },
+    );
+
     return response.data;
   },
 };

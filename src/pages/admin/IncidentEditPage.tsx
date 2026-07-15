@@ -144,6 +144,7 @@ export function IncidentEditPage() {
         [],
         locIds ? [locIds] : [],
         classIds ? [classIds] : [],
+        "available",
       );
     },
     enabled: incidentSuccess,
@@ -678,20 +679,28 @@ export function IncidentEditPage() {
     updateMutation.mutate({ data: submitData, files: attachments });
   };
 
-  const userOptions = [
-    { value: "", label: t("incidents.unassigned") },
-    ...users.map((u) => {
-      const label =
-        [u.first_name, u.last_name].filter(Boolean).join(" ") ||
-        u.username ||
-        u.email ||
-        "";
-      return {
-        value: u.id,
-        label,
-      };
-    }),
-  ];
+  const userOptions = useMemo(() => {
+    const userList = [...users];
+
+    if (
+      incident?.assignee &&
+      !userList.some((user) => user.id === incident.assignee?.id)
+    ) {
+      userList.unshift(incident.assignee);
+    }
+
+    return [
+      { value: "", label: t("incidents.unassigned") },
+      ...userList.map((user) => ({
+        value: user.id,
+        label:
+          [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+          user.username ||
+          user.email ||
+          "",
+      })),
+    ];
+  }, [users, incident, t]);
 
   const departmentOptions = [
     { value: "", label: t("incidents.noDepartment") },

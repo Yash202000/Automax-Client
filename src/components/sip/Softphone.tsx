@@ -21,7 +21,7 @@ import {
   BarChart2,
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { callerFeedbackApi } from "@/api/admin";
+import { callerFeedbackApi, userApi } from "@/api/admin";
 import { useAuthStore } from "@/stores/authStore";
 import { v4 as uuid } from "uuid";
 import usePermissions from "@/hooks/usePermissions";
@@ -291,6 +291,7 @@ export default function SoftPhone({
 
   const canCreateSentimentRef = useRef(false);
   const ringRef = useRef<HTMLAudioElement | null>(null);
+  const lastPresenceStatusRef = useRef<"available" | "offline" | null>(null);
 
   const callingToneCtxRef = useRef<AudioContext | null>(null);
   const callingToneIntervalRef = useRef<any>(null);
@@ -452,6 +453,30 @@ export default function SoftPhone({
   const extension = auth?.user?.extension ?? "";
   const socketURL = settings?.socketURL ?? "";
   const domain = settings?.domain ?? "";
+
+  const syncUserPresenceStatus = useCallback(
+    async (status: "available" | "offline") => {
+      if (!extension) return;
+      if (lastPresenceStatusRef.current === status) return;
+
+      lastPresenceStatusRef.current = status;
+
+      try {
+        await userApi.updateUserStatus({ extension, status });
+      } catch (error) {
+        console.error("Failed to update softphone presence status:", error);
+      }
+    },
+    [extension],
+  );
+
+  useEffect(() => {
+    if (sipConnected) {
+      void syncUserPresenceStatus("available");
+    } else {
+      void syncUserPresenceStatus("offline");
+    }
+  }, [sipConnected, syncUserPresenceStatus]);
 
   const tryConnect = useCallback((): void => {
     // Only return if we're already connecting OR if we're connected AND the service is active
