@@ -307,8 +307,8 @@ export const incidentFields: ReportFieldDefinition[] = [
   },
   {
     field: "reporter_id",
-    label: "Reporter",
-    label_ar: "المبلّغ",
+    label: "Creator",
+    label_ar: "المبدع",
     type: "enum",
     category: "Core",
     sortable: true,

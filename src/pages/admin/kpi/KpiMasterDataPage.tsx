@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { KpiObjectivesTree } from "../../../components/kpi/KpiObjectivesTree";
 import {
   usePillars,
   useCreatePillar,
@@ -63,13 +64,11 @@ import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/SelectInput";
 import { userApi } from "../../../api/admin";
-import { departmentApi } from "../../../api/admin";
 import { exportToExcel as exportToExcelUtil } from "../../../utils/exportExcel";
 import type {
   Pillar,
   Enabler,
   OperationalObjective,
-  Process,
   Initiative,
   Domain,
   AwardCriterion,
@@ -93,6 +92,7 @@ type EntityType =
   | "enabler"
   | "operational-objective"
   | "process"
+  | "objectives-tree"
   | "initiative"
   | "domain"
   | "award-criterion"
@@ -144,11 +144,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const tabs: { key: EntityType; label: string }[] = [
     { key: "pillar", label: t("kpi.masterData.pillars") },
     { key: "enabler", label: t("kpi.masterData.enablers") },
-    {
-      key: "operational-objective",
-      label: t("kpi.masterData.operationalObjectives"),
-    },
-    { key: "process", label: t("kpi.masterData.processes") },
+    { key: "objectives-tree", label: "Objectives Hierarchy" },
     { key: "initiative", label: t("kpi.masterData.initiatives") },
     { key: "domain", label: t("kpi.masterData.domains") },
     { key: "award-criterion", label: t("kpi.masterData.awardCriteria") },
@@ -192,13 +188,8 @@ export const KpiMasterDataPage: React.FC = () => {
     queryKey: ["admin", "users", "all"],
     queryFn: () => userApi.list(1, 1000),
   });
-  const { data: deptData } = useQuery({
-    queryKey: ["admin", "departments", "list"],
-    queryFn: () => departmentApi.list(),
-  });
 
   const users = (usersData as any)?.data ?? [];
-  const departments = deptData?.data ?? [];
 
   const createPillar = useCreatePillar();
   const updatePillar = useUpdatePillar();
@@ -542,17 +533,12 @@ export const KpiMasterDataPage: React.FC = () => {
     return u ? `${u.first_name} ${u.last_name}` : userId;
   };
 
-  const getDeptName = (deptId?: string) => {
-    if (!deptId) return "-";
-    const d = departments.find((x: any) => x.id === deptId);
-    return d ? d.name : deptId;
-  };
-
   const modalEntityLabelKey: Record<EntityType, string> = {
     pillar: "pillars",
     enabler: "enablers",
     "operational-objective": "operationalObjectives",
     process: "processes",
+    "objectives-tree": "processes",
     initiative: "initiatives",
     domain: "domains",
     "award-criterion": "awardCriteria",
@@ -660,82 +646,25 @@ export const KpiMasterDataPage: React.FC = () => {
             error={enablersError ? t("kpi.masterData.failedToLoad") : undefined}
           />
         )}
-        {activeTab === "operational-objective" && (
-          <MasterTable<OperationalObjective>
-            data={operationalObjectives ?? []}
-            columns={[
-              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
-              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
-              {
-                header: t("kpi.masterData.strategicGoal"),
-                accessor: (r) => r.goal?.title ?? r.goal_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.pillar"),
-                accessor: (r) => r.pillar?.name_en ?? r.pillar_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.enabler"),
-                accessor: (r) => r.enabler?.name_en ?? r.enabler_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.active"),
-                accessor: (r) =>
-                  r.is_active ? t("common.yes") : t("common.no"),
-              },
-            ]}
-            emptyMessage={t("kpi.masterData.noOperationalObjectives")}
+        {activeTab === "objectives-tree" && (
+          <KpiObjectivesTree
+            operationalObjectives={operationalObjectives ?? []}
+            processes={processes ?? []}
             canManage={canManage}
-            onEdit={(item) => handleEdit("operational-objective", item)}
-            onDelete={(id) => handleDelete("operational-objective", id)}
-            onAdd={() => handleAdd("operational-objective")}
-            onExport={() =>
+            onAddParent={() => handleAdd("operational-objective")}
+            onEditParent={(item) => handleEdit("operational-objective", item)}
+            onDeleteParent={(id) => handleDelete("operational-objective", id)}
+            onExportParent={() =>
               exportToExcel(operationalObjectives ?? [], "ParentObjectives")
             }
-            onImport={() => handleImportExcel("operational-objective")}
-          />
-        )}
-        {activeTab === "process" && (
-          <MasterTable<Process>
-            data={processes ?? []}
-            columns={[
-              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
-              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
-              {
-                header: t("kpi.masterData.operationalObjective"),
-                accessor: (r) =>
-                  r.operational_objective?.name_en ??
-                  r.operational_objective_id ??
-                  "-",
-              },
-              {
-                header: t("kpi.masterData.pillar"),
-                accessor: (r) => r.pillar?.name_en ?? r.pillar_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.enabler"),
-                accessor: (r) => r.enabler?.name_en ?? r.enabler_id ?? "-",
-              },
-              {
-                header: t("kpi.masterData.department"),
-                accessor: (r) => getDeptName(r.department_id),
-              },
-              { header: t("kpi.masterData.unit"), accessor: "unit" },
-              {
-                header: t("kpi.masterData.active"),
-                accessor: (r) =>
-                  r.is_active ? t("common.yes") : t("common.no"),
-              },
-            ]}
-            emptyMessage={t("kpi.masterData.noProcesses")}
-            canManage={canManage}
-            onEdit={(item) => handleEdit("process", item)}
-            onDelete={(id) => handleDelete("process", id)}
-            onAdd={() => handleAdd("process")}
-            onExport={() =>
+            onImportParent={() => handleImportExcel("operational-objective")}
+            onAddChild={() => handleAdd("process")}
+            onEditChild={(item) => handleEdit("process", item)}
+            onDeleteChild={(id) => handleDelete("process", id)}
+            onExportChild={() =>
               exportToExcel(processes ?? [], "OperationalObjectives")
             }
-            onImport={() => handleImportExcel("process")}
+            onImportChild={() => handleImportExcel("process")}
           />
         )}
         {activeTab === "initiative" && (

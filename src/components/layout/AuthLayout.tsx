@@ -8,6 +8,8 @@ import {
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
+import { publicUrl } from "../../utils/publicUrl";
+import { useTheme } from "@/hooks/useTheme";
 
 export const AuthLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -25,7 +27,10 @@ export const AuthLayout: React.FC = () => {
     setCurrentLang(langCode);
     setIsLangOpen(false);
   };
-
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+  const { theme } = useTheme();
   // Close language dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,11 +60,40 @@ export const AuthLayout: React.FC = () => {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between w-full p-12">
           {/* Logo */}
+
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <Zap className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">Automax</span>
+            {/* {isEPM940 ? (
+              <div className="w-30 h-30 bg-white backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <img
+                  src={publicUrl("epm-logo.png")}
+                  alt="Automax"
+                  className="h-30 object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <Zap className="w-7 h-7 text-white" />
+              </div>
+            )}
+            <span className="text-2xl font-bold text-white">
+              {t("softphone.automax")}
+            </span> */}
+            {isEPM940 ? (
+              <div>
+                <img
+                  src={publicUrl("epm940_rebranding/automax.svg")}
+                  alt="Automax"
+                  className="h-9 object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Zap className="w-7 h-7 text-white" />
+                </div>
+                <span className="text-2xl font-bold text-white">Automax</span>
+              </div>
+            )}
           </div>
 
           {/* Main Content */}
@@ -121,10 +155,24 @@ export const AuthLayout: React.FC = () => {
           {/* Mobile Logo */}
           <div className="lg:hidden">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Automax</span>
+              {isEPM940 ? (
+                <img
+                  src={publicUrl(
+                    theme === "dark"
+                      ? "epm940_rebranding/automax.svg"
+                      : "epm940_rebranding/automax-dark.svg",
+                  )}
+                  alt="Automax"
+                  className="h-6 object-contain"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+              )}
+              {/* <span className="text-xl font-bold text-gray-900">
+                {t("softphone.automax")}
+              </span> */}
             </Link>
           </div>
           <div className="hidden lg:block" /> {/* Spacer for desktop */}
@@ -171,9 +219,22 @@ export const AuthLayout: React.FC = () => {
             )}
           </div>
         </div>
-
+        {/* automax epm940 logos */}
+        {isEPM940 && (
+          <div className="flex flex-row justify-center px-6 lg:px-12 pb-4 sm:pb-0">
+            <img
+              src={publicUrl(
+                theme === "dark"
+                  ? "epm940_rebranding/940-logo-white-hq.png"
+                  : "epm-logo.png",
+              )}
+              alt="Automax"
+              className="h-33 object-contain"
+            />
+          </div>
+        )}
         {/* Form Container */}
-        <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="flex-1 flex items-center justify-center p-6 pt-0 lg:p-12 lg:pt-6">
           <div className="w-full max-w-md">
             <Outlet />
           </div>

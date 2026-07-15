@@ -1058,6 +1058,27 @@ function App() {
                       <Route
                         element={
                           <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.KPI_UPDATE]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/dictionary/:id/edit"
+                          element={<KpiDictionaryFormPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/operational/:id/edit"
+                          element={<KpiDictionaryFormOperationalPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/award/:id/edit"
+                          element={<KpiDictionaryFormAwardPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
                             requiredPermissions={[PERMISSIONS.GOALS_MANAGE]}
                           />
                         }

@@ -163,7 +163,9 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     queryFn: () => departmentApi.getTree(),
   });
 
-  const isVDCOP = import.meta.env.VITE_CLIENT === "VD2";
+  const isVDCOP =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
 
   const { data: rawClassificationsData } = useQuery({
     queryKey: ["admin", "classifications", "tree"],
