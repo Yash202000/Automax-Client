@@ -266,7 +266,7 @@ export default function SoftPhone({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Extension credentials
-  const [sipPassword, setSipPassword] = useState<string>(
+  const [sipPassword] = useState<string>(
     import.meta.env.VITE_SIP_PASSWORD || "51234",
   );
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<boolean>(false);
@@ -319,7 +319,7 @@ export default function SoftPhone({
         setShouldConnect(true);
       }
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error(
         t("users.extensionAssignmentFailed", {
           defaultValue: "Failed to assign extension",
