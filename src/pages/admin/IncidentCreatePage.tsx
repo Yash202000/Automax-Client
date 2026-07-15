@@ -114,35 +114,17 @@ export function IncidentCreatePage() {
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
-  const { incomingCallNumber } = useSoftphoneStore();
-
-  const { data: userData } = useQuery({
-    queryKey: ["admin", "users"],
-    queryFn: () =>
-      userApi.list(1, 10, incomingCallNumber ? incomingCallNumber : undefined),
-    enabled: !!incomingCallNumber,
-  });
+  const { incomingCallNumber, incomingCallName } = useSoftphoneStore();
 
   useEffect(() => {
-    if (incomingCallNumber && userData?.data?.length) {
-      const matchedUser = userData.data[0];
-
-      const reporterName =
-        [matchedUser.first_name, matchedUser.last_name]
-          .filter(Boolean)
-          .join(" ") ||
-        matchedUser.username ||
-        matchedUser.email ||
-        "";
-
+    if (incomingCallNumber) {
       setFormData((prev) => ({
         ...prev,
-        reporter_name: reporterName,
-        reporter_email: matchedUser.email || "",
-        reporter_phone: matchedUser.phone || "",
+        reporter_name: incomingCallName || "",
+        reporter_phone: incomingCallNumber,
       }));
     }
-  }, [incomingCallNumber, userData]);
+  }, [incomingCallNumber, incomingCallName]);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
