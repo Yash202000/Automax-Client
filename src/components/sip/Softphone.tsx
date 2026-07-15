@@ -916,20 +916,12 @@ export default function SoftPhone({
         className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex justify-between items-center cursor-grab active:cursor-grabbing"
       >
         <div className="flex items-center gap-2">
-          {/* {isEPM940 ? (
-            <img
-              src={publicUrl("epm-ccm.png")}
-              alt="EPM940"
-              className="w-8 h-8 object-contain bg-white rounded-xl"
-            />
-          ) : (
-            <Phone className="w-5 h-5 text-white" />
-            )} */}
-          {/* <Phone className="w-5 h-5 text-white" /> */}
+          <Phone className="w-5 h-5 text-white" />
           <span className="font-semibold text-white">
-            {t("softphone.cintrix")}
+            {t(isEPM940 ? "softphone.cintrix" : "softphone.title")}
           </span>
         </div>
+
         <div className="flex items-center gap-2">
           <GripHorizontal className="w-5 h-5 text-white/70" />
           <button
