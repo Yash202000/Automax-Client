@@ -3358,3 +3358,25 @@ export const gisLocationApi = {
     return response.data;
   },
 };
+
+export const extensionApi = {
+  list: async (): Promise<
+    ApiResponse<{ extension: string; status: string }[]>
+  > => {
+    const response =
+      await apiClient.get<ApiResponse<{ extension: string; status: string }[]>>(
+        "/extensions",
+      );
+    return response.data;
+  },
+  assign: async (payload: {
+    user_id: string;
+    extension: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/extensions/assign",
+      payload,
+    );
+    return response.data;
+  },
+};

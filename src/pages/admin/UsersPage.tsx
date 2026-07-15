@@ -44,6 +44,7 @@ import {
   locationApi,
   roleApi,
   classificationApi,
+  extensionApi,
 } from "../../api/admin";
 import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
@@ -458,13 +459,71 @@ export const UsersPage: React.FC = () => {
     },
   });
 
+  const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
+
+  const hasAgentRole = createFormData.role_ids.some((id) => {
+    const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
+    return role?.permissions?.some(
+      (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
+    );
+  });
+  const editHasAgentRole = formData.role_ids.some((id) => {
+    const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
+    return role?.permissions?.some(
+      (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
+    );
+  });
+
+  const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
+    queryKey: ["extensions"],
+    queryFn: () => extensionApi.list(),
+    enabled: canAssignExtensions && hasAgentRole && isCreateModalOpen,
+  });
+
+  const availableExtensions = (extensionsData?.data || []).filter(
+    (ext: any) => ext.status === "available",
+  );
+
+  const assignExtensionMutation = useMutation({
+    mutationFn: (payload: { user_id: string; extension: string }) =>
+      extensionApi.assign(payload),
+    onSuccess: () => {
+      toast.success(
+        t("users.userCreatedSuccessfully") + " (Extension assigned)",
+      );
+      closeCreateModal();
+    },
+    onError: (error: any) => {
+      toast.warning(
+        t("users.userCreatedSuccessfully") +
+          " but failed to assign extension: " +
+          getApiErrorMessage(error, "Error"),
+      );
+      closeCreateModal();
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: (params: { data: typeof createFormData; avatar?: File }) =>
       userApi.create(params.data, params.avatar),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success(t("users.userCreatedSuccessfully"));
-      closeCreateModal();
+
+      const newUserId = response.data?.id;
+      if (
+        canAssignExtensions &&
+        hasAgentRole &&
+        createFormData.extension &&
+        newUserId
+      ) {
+        assignExtensionMutation.mutate({
+          user_id: newUserId,
+          extension: createFormData.extension,
+        });
+      } else {
+        toast.success(t("users.userCreatedSuccessfully"));
+        closeCreateModal();
+      }
     },
     onError: (error: any) => {
       const errorMessage = getApiErrorMessage(error, t("users.createFailed"));
@@ -1985,21 +2044,6 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("users.extension")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("users.extensionPlaceholder")}
-                    value={formData.extension}
-                    onChange={(e) =>
-                      setFormData({ ...formData, extension: e.target.value })
-                    }
-                    className={getInputClassName()}
-                  />
-                </div>
-
                 {/* Password Reset */}
                 {canUpdateUser && !editingUser?.is_ad_user && (
                   <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
@@ -2268,6 +2312,24 @@ export const UsersPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Extension */}
+                {canAssignExtensions && editHasAgentRole && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("users.extension")}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t("users.extensionPlaceholder")}
+                      value={formData.extension}
+                      onChange={(e) =>
+                        setFormData({ ...formData, extension: e.target.value })
+                      }
+                      className={getInputClassName()}
+                    />
+                  </div>
+                )}
 
                 {/* Status */}
                 <div>
@@ -2568,25 +2630,6 @@ export const UsersPage: React.FC = () => {
                   {renderFieldError(createFormErrors?.phone)}
                 </div>
 
-                {/* Extension */}
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("users.extension")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("users.extensionPlaceholder")}
-                    value={createFormData.extension}
-                    onChange={(e) =>
-                      setCreateFormData({
-                        ...createFormData,
-                        extension: e.target.value,
-                      })
-                    }
-                    className={getInputClassName()}
-                  />
-                </div>
-
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
                   data={departmentsTree}
@@ -2709,6 +2752,36 @@ export const UsersPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Extension */}
+                {canAssignExtensions && hasAgentRole && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("users.extension")}
+                    </label>
+                    <select
+                      value={createFormData.extension}
+                      onChange={(e) =>
+                        setCreateFormData({
+                          ...createFormData,
+                          extension: e.target.value,
+                        })
+                      }
+                      className={getInputClassName()}
+                      disabled={extensionsLoading}
+                    >
+                      <option value="">
+                        {t("common.select", { defaultValue: "Select..." })}
+                      </option>
+                      {availableExtensions.map((ext: any) => (
+                        <option key={ext.extension} value={ext.extension}>
+                          {ext.extension}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {createFormErrors?.form && (
                   <div className=" flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
                     <div>{renderFieldError(createFormErrors.form)}</div>
