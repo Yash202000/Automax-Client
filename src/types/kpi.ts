@@ -253,6 +253,7 @@ export interface OperationalKPI {
   goal_id: string;
   goal?: GoalBrief;
   operational_objective_id: string;
+  operational_objective?: OperationalObjective;
   process_id: string;
   process?: Process;
   owner_dept_id?: string;
@@ -671,6 +672,8 @@ export interface KpiMetric {
   target_value: number;
   weight: number;
   formula?: string;
+  start_date?: string;
+  due_date?: string;
   created_by_id: string;
   created_by?: UserBrief;
   created_at: string;
@@ -685,6 +688,10 @@ export interface KpiMetricRequest {
   target_value: number;
   weight?: number;
   formula?: string;
+  start_date?: string;
+  due_date?: string;
+  attachment_title?: string;
+  attachment_file_url?: string;
 }
 
 export interface KpiEngagementEvidence {

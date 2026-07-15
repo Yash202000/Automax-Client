@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, BookOpen, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCreateAwardKPI,
+  useUpdateAwardKPI,
+  useAwardKPIDetail,
   useAwardSubCriteria,
   useDataSources,
 } from "../../../hooks/useKpi";
@@ -15,7 +17,11 @@ import type { AwardKPIRequest } from "../../../types/kpi";
 export const KpiDictionaryFormAwardPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
   const createKpi = useCreateAwardKPI();
+  const updateKpi = useUpdateAwardKPI();
+  const { data: existingData } = useAwardKPIDetail(id ?? "");
 
   const { data: subCriteriaData } = useAwardSubCriteria();
   const { data: dataSourcesData } = useDataSources();
@@ -40,6 +46,27 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     notes: "",
   });
 
+  useEffect(() => {
+    const kpi = existingData?.data;
+    if (!kpi) return;
+    setForm({
+      code: kpi.code,
+      name_en: kpi.name_en,
+      name_ar: kpi.name_ar ?? "",
+      award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      polarity: kpi.polarity,
+      activation_status: kpi.activation_status,
+      description_en: kpi.description_en ?? "",
+      description_ar: kpi.description_ar ?? "",
+      formula: kpi.formula ?? "",
+      baseline: kpi.baseline,
+      unit_of_measure: kpi.unit_of_measure ?? "",
+      reporting_frequency: kpi.reporting_frequency ?? "quarterly",
+      data_source: kpi.data_source ?? "",
+      notes: kpi.notes ?? "",
+    });
+  }, [existingData]);
+
   const handleChange =
     (field: string) =>
     (
@@ -63,8 +90,13 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       baseline: Number(form.baseline),
     };
 
-    await createKpi.mutateAsync(data);
-    navigate("/goals/kpi/dictionary");
+    if (isEdit) {
+      await updateKpi.mutateAsync({ id: id!, data });
+      navigate(`/goals/kpi/dictionary/award/${id}`);
+    } else {
+      await createKpi.mutateAsync(data);
+      navigate("/goals/kpi/dictionary");
+    }
   };
 
   return (
@@ -83,7 +115,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            New Award KPI
+            {isEdit ? "Edit Award KPI" : "New Award KPI"}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {t("kpi.dictionary.subtitle")}
@@ -248,7 +280,10 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
           >
             {t("common.cancel")}
           </Button>
-          <Button type="submit" isLoading={createKpi.isPending}>
+          <Button
+            type="submit"
+            isLoading={isEdit ? updateKpi.isPending : createKpi.isPending}
+          >
             <Save className="w-4 h-4 me-1" />
             {t("common.save")}
           </Button>
