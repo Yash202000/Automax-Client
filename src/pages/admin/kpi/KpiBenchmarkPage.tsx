@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   Search,
@@ -20,6 +21,7 @@ import { Modal } from "../../../components/ui/Modal";
 import type { KpiBenchmark, KpiBenchmarkRequest } from "../../../types/kpi";
 
 export const KpiBenchmarkPage: React.FC = () => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [zoneFilter, setZoneFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
@@ -75,7 +77,7 @@ export const KpiBenchmarkPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this benchmark record?")) {
+    if (confirm(t("kpi.benchmarks.deleteConfirm"))) {
       await deleteBenchmark.mutateAsync(id);
     }
   };
@@ -91,16 +93,16 @@ export const KpiBenchmarkPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              KPI Benchmarks
+              {t("kpi.benchmarks.title")}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Compare internal achievement against external benchmarks by zone
+              {t("kpi.benchmarks.subtitle")}
             </p>
           </div>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4" />
-          Add Benchmark
+          {t("kpi.benchmarks.addBenchmark")}
         </Button>
       </div>
 
@@ -111,7 +113,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by KPI code..."
+            placeholder={t("kpi.benchmarks.searchPlaceholder")}
             className="ps-9 pe-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
           />
         </div>
@@ -120,7 +122,7 @@ export const KpiBenchmarkPage: React.FC = () => {
           onChange={(e) => setZoneFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">All Zones</option>
+          <option value="">{t("kpi.benchmarks.allZones")}</option>
           {zones.map((z) => (
             <option key={z} value={z}>
               {z}
@@ -131,7 +133,7 @@ export const KpiBenchmarkPage: React.FC = () => {
           type="number"
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
-          placeholder="Year"
+          placeholder={t("kpi.targets.table.year")}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
         />
       </div>
@@ -145,18 +147,19 @@ export const KpiBenchmarkPage: React.FC = () => {
           <div className="flex items-center justify-center py-16">
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
               <AlertCircle className="w-5 h-5" />
-              <p className="text-sm font-medium">Failed to load benchmarks</p>
+              <p className="text-sm font-medium">
+                {t("kpi.benchmarks.failedToLoad")}
+              </p>
             </div>
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <BarChart3 className="w-10 h-10 text-slate-400 mb-3" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              No benchmarks found
+              {t("kpi.benchmarks.empty")}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Add a benchmark to compare internal achievement against external
-              entities
+              {t("kpi.benchmarks.emptyHint")}
             </p>
           </div>
         ) : (
@@ -165,28 +168,28 @@ export const KpiBenchmarkPage: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800">
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    KPI Code
+                    {t("kpi.performance.table.kpiCode")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Year
+                    {t("kpi.targets.table.year")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Zone
+                    {t("kpi.segmentation.zone")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Entity
+                    {t("kpi.benchmarks.entity")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    Internal
+                    {t("kpi.benchmarks.internal")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    Benchmark
+                    {t("kpi.benchmarks.benchmark")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    Variance
+                    {t("kpi.benchmarks.variance")}
                   </th>
                   <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">
-                    Actions
+                    {t("common.actions")}
                   </th>
                 </tr>
               </thead>
@@ -237,7 +240,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                       <button
                         onClick={() => handleDelete(b.id)}
                         className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        title="Delete"
+                        title={t("common.delete")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -253,12 +256,12 @@ export const KpiBenchmarkPage: React.FC = () => {
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} size="lg">
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Add Benchmark
+            {t("kpi.benchmarks.addBenchmark")}
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                KPI Code
+                {t("kpi.targets.form.kpiCode")}
               </label>
               <select
                 value={formData.kpi_code}
@@ -274,7 +277,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                 }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
               >
-                <option value="">-- Select KPI --</option>
+                <option value="">-- {t("kpi.targets.form.kpiCode")} --</option>
                 {cardOptions.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.label}
@@ -284,7 +287,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Type
+                {t("kpi.targets.form.kpiType")}
               </label>
               <select
                 value={formData.kpi_type}
@@ -293,14 +296,18 @@ export const KpiBenchmarkPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
               >
-                <option value="strategic">Strategic</option>
-                <option value="operational">Operational</option>
-                <option value="award">Award</option>
+                <option value="strategic">
+                  {t("kpi.dictionary.strategic")}
+                </option>
+                <option value="operational">
+                  {t("kpi.dictionary.operational")}
+                </option>
+                <option value="award">{t("kpi.dictionary.award")}</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Year
+                {t("kpi.targets.table.year")}
               </label>
               <input
                 type="number"
@@ -313,7 +320,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Zone
+                {t("kpi.segmentation.zone")}
               </label>
               <input
                 value={formData.zone || ""}
@@ -321,12 +328,12 @@ export const KpiBenchmarkPage: React.FC = () => {
                   setFormData({ ...formData, zone: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                placeholder="e.g. Eastern Region"
+                placeholder={t("kpi.segmentation.zonePlaceholder")}
               />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Benchmark Entity
+                {t("kpi.benchmarks.entity")}
               </label>
               <input
                 value={formData.benchmark_entity}
@@ -334,12 +341,12 @@ export const KpiBenchmarkPage: React.FC = () => {
                   setFormData({ ...formData, benchmark_entity: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                placeholder="e.g. Industry Average, Target 2025"
+                placeholder={t("kpi.benchmarks.entityPlaceholder")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Internal Achievement
+                {t("kpi.benchmarks.internal")}
               </label>
               <input
                 type="number"
@@ -355,7 +362,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Benchmark Achievement
+                {t("kpi.benchmarks.benchmark")}
               </label>
               <input
                 type="number"
@@ -371,7 +378,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Notes
+                {t("kpi.benchmarks.notes")}
               </label>
               <textarea
                 value={formData.notes || ""}
@@ -385,10 +392,10 @@ export const KpiBenchmarkPage: React.FC = () => {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setShowForm(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={createBenchmark.isPending}>
-              {createBenchmark.isPending ? "Saving..." : "Save"}
+              {createBenchmark.isPending ? "..." : t("common.save")}
             </Button>
           </div>
         </div>

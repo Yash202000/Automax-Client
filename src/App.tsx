@@ -360,6 +360,18 @@ const KpiReportPage = lazy(() =>
     default: m.KpiReportPage,
   })),
 );
+
+const KpiPerformanceBandsPage = lazy(() =>
+  import("./pages/admin/kpi/KpiPerformanceBandsPage").then((m) => ({
+    default: m.KpiPerformanceBandsPage,
+  })),
+);
+
+const KpiApprovalsPage = lazy(() =>
+  import("./pages/admin/kpi/KpiApprovalsPage").then((m) => ({
+    default: m.KpiApprovalsPage,
+  })),
+);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -990,11 +1002,13 @@ function App() {
                         />
                       </Route>
 
-                      {/* KPI routes */}
+                      {/* KPI routes — gated per the actual backend permission each
+                          page's underlying list endpoint requires, not one blanket
+                          Goals permission. Write actions are gated inside each page. */}
                       <Route
                         element={
                           <PermissionRoute
-                            requiredPermissions={[PERMISSIONS.GOALS_VIEW]}
+                            requiredPermissions={[PERMISSIONS.KPI_VIEW]}
                           />
                         }
                       >
@@ -1003,13 +1017,30 @@ function App() {
                           element={<KpiDashboardPage />}
                         />
                         <Route
-                          path="/goals/kpi/master-data"
-                          element={<KpiMasterDataPage />}
-                        />
-                        <Route
                           path="/goals/kpi/dictionary"
                           element={<KpiDictionaryPage />}
                         />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id"
+                          element={<KpiDictionaryDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/report"
+                          element={<KpiReportPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/performance-bands"
+                          element={<KpiPerformanceBandsPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.KPI_CREATE]}
+                          />
+                        }
+                      >
                         <Route
                           path="/goals/kpi/dictionary/new"
                           element={<KpiDictionaryFormPage />}
@@ -1022,10 +1053,28 @@ function App() {
                           path="/goals/kpi/dictionary/new/award"
                           element={<KpiDictionaryFormAwardPage />}
                         />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.GOALS_MANAGE]}
+                          />
+                        }
+                      >
                         <Route
-                          path="/goals/kpi/dictionary/:type/:id"
-                          element={<KpiDictionaryDetailPage />}
+                          path="/goals/kpi/master-data"
+                          element={<KpiMasterDataPage />}
                         />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.PERF_VIEW]}
+                          />
+                        }
+                      >
                         <Route
                           path="/goals/kpi/performance"
                           element={<KpiPerformancePage />}
@@ -1035,20 +1084,47 @@ function App() {
                           element={<KpiPerformanceDetailPage />}
                         />
                         <Route
+                          path="/goals/kpi/approvals"
+                          element={<KpiApprovalsPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.TARGETS_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
                           path="/goals/kpi/targets"
                           element={<KpiTargetsPage />}
                         />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.BENCHMARK_MANAGE]}
+                          />
+                        }
+                      >
                         <Route
                           path="/goals/kpi/benchmarks"
                           element={<KpiBenchmarkPage />}
                         />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.SEGMENT_MANAGE]}
+                          />
+                        }
+                      >
                         <Route
                           path="/goals/kpi/segmentation"
                           element={<KpiSegmentationPage />}
-                        />
-                        <Route
-                          path="/goals/kpi/report"
-                          element={<KpiReportPage />}
                         />
                       </Route>
                     </Route>

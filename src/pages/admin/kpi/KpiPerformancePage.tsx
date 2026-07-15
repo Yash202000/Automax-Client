@@ -8,9 +8,38 @@ import {
   ChevronRight,
   AlertCircle,
   Eye,
+  Plus,
 } from "lucide-react";
-import { useKpiPerformances } from "../../../hooks/useKpi";
+import {
+  useKpiPerformances,
+  useEffectivePerformanceBand,
+} from "../../../hooks/useKpi";
+import { getBandColor, BAND_BAR_CLASS } from "../../../utils/kpiBand";
+import { usePermissions } from "../../../hooks/usePermissions";
+import { Button } from "../../../components/ui/Button";
+import { AddPerformanceActualModal } from "../../../components/kpi/AddPerformanceActualModal";
 import type { KpiPerformance, KPIPerfStatus } from "../../../types/kpi";
+
+const AchievementBar: React.FC<{ kpiCode: string; achievementPct: number }> = ({
+  kpiCode,
+  achievementPct,
+}) => {
+  const { data: band } = useEffectivePerformanceBand(kpiCode);
+  const color = getBandColor(achievementPct, band);
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+        <div
+          className={`h-2 rounded-full ${BAND_BAR_CLASS[color]}`}
+          style={{ width: `${Math.min(Math.max(achievementPct, 0), 100)}%` }}
+        />
+      </div>
+      <span className="text-sm tabular-nums font-medium text-slate-700 dark:text-slate-300">
+        {achievementPct.toFixed(1)}%
+      </span>
+    </div>
+  );
+};
 
 const statusColorMap: Record<KPIPerfStatus, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
@@ -30,7 +59,9 @@ export const KpiPerformancePage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [page, setPage] = useState(1);
+  const [showAddActual, setShowAddActual] = useState(false);
   const limit = 10;
+  const { canSubmitKpiPerformance } = usePermissions();
 
   const params = useMemo(
     () => ({
@@ -75,6 +106,12 @@ export const KpiPerformancePage: React.FC = () => {
             </p>
           </div>
         </div>
+        {canSubmitKpiPerformance() && (
+          <Button onClick={() => setShowAddActual(true)}>
+            <Plus className="w-4 h-4" />
+            {t("kpi.performance.addActual.title")}
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -178,25 +215,10 @@ export const KpiPerformancePage: React.FC = () => {
                         {perf.actual ?? "-"}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                              className={`h-2 rounded-full ${
-                                perf.achievement_pct >= 100
-                                  ? "bg-green-500"
-                                  : perf.achievement_pct >= 80
-                                    ? "bg-amber-500"
-                                    : "bg-red-500"
-                              }`}
-                              style={{
-                                width: `${Math.min(perf.achievement_pct, 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm tabular-nums font-medium text-slate-700 dark:text-slate-300">
-                            {perf.achievement_pct.toFixed(1)}%
-                          </span>
-                        </div>
+                        <AchievementBar
+                          kpiCode={perf.kpi_code}
+                          achievementPct={perf.achievement_pct}
+                        />
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -255,6 +277,11 @@ export const KpiPerformancePage: React.FC = () => {
           </>
         )}
       </div>
+
+      <AddPerformanceActualModal
+        isOpen={showAddActual}
+        onClose={() => setShowAddActual(false)}
+      />
     </div>
   );
 };

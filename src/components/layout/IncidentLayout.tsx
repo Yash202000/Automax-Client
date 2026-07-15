@@ -177,9 +177,8 @@ export const IncidentLayout: React.FC = () => {
       canViewAllIncidents ? "all" : "assigned",
     ],
     queryFn: () =>
-      incidentApi.getStats(
-        "incident",
-        canViewAllIncidents ? undefined : "assigned",
+      incidentApi.getIncidentStatsV2(
+        canViewAllIncidents ? undefined : { my_record: user?.id },
       ),
   });
 
@@ -244,40 +243,38 @@ export const IncidentLayout: React.FC = () => {
           </p>
         )}
         <div className="space-y-1">
-          {canViewAllIncidents && (
-            <NavLink
-              to="/incidents"
-              end
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) => {
-                const isAllIncidentsActive =
-                  isActive && !currentStatus && !isSlaBreached;
-                return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isAllIncidentsActive
-                    ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`;
-              }}
-            >
-              {({ isActive }) => {
-                const isAllIncidentsActive =
-                  isActive && !currentStatus && !isSlaBreached;
-                return (
-                  <>
-                    {isAllIncidentsActive && (
-                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                    )}
-                    <List size={20} className="flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="ms-3 font-medium text-sm">
-                        {t("sidebar.allIncidents")}
-                      </span>
-                    )}
-                  </>
-                );
-              }}
-            </NavLink>
-          )}
+          <NavLink
+            to="/incidents"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => {
+              const isAllIncidentsActive =
+                isActive && !currentStatus && !isSlaBreached;
+              return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                isAllIncidentsActive
+                  ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`;
+            }}
+          >
+            {({ isActive }) => {
+              const isAllIncidentsActive =
+                isActive && !currentStatus && !isSlaBreached;
+              return (
+                <>
+                  {isAllIncidentsActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                  )}
+                  <List size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("sidebar.allIncidents")}
+                    </span>
+                  )}
+                </>
+              );
+            }}
+          </NavLink>
 
           {canCreateIncident && (
             <NavLink

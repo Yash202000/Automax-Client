@@ -828,6 +828,7 @@ export interface TransitionRequirement {
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
+  is_multiple?: boolean;
   error_message?: string;
 }
 
@@ -865,7 +866,6 @@ export interface TransitionFieldChangeRequest {
 export interface WorkflowCreateRequest {
   name: string;
   name_ar?: string;
-  code: string;
   description?: string;
   description_ar?: string;
   record_type?: ClassificationType;
@@ -1015,6 +1015,7 @@ export interface TransitionRequirementRequest {
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
+  is_multiple?: boolean;
   error_message?: string;
 }
 
@@ -1397,6 +1398,7 @@ export interface IncidentFilter {
   priority?: number;
   assignee_id?: string;
   department_ids?: string[];
+  my_record?: string;
   location_ids?: string[];
   reporter_id?: string;
   sla_breached?: boolean;

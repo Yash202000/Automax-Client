@@ -5,10 +5,11 @@ import { ArrowLeft, BookOpen, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCreateOperationalKPI,
-  useStrategicGoals,
   useOperationalObjectives,
   useProcesses,
+  useDataSources,
 } from "../../../hooks/useKpi";
+import { useGoals } from "../../../hooks/useGoals";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
 import type { OperationalKPIRequest } from "../../../types/kpi";
@@ -18,19 +19,21 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
   const navigate = useNavigate();
   const createKpi = useCreateOperationalKPI();
 
-  const { data: goalsData } = useStrategicGoals();
+  const { data: goalsData } = useGoals({ limit: 200 });
   const { data: objectivesData } = useOperationalObjectives();
   const { data: processesData } = useProcesses();
+  const { data: dataSourcesData } = useDataSources();
 
-  const goals = goalsData ?? [];
+  const goals = (goalsData as any)?.data ?? [];
   const objectives = objectivesData ?? [];
   const processes = processesData ?? [];
+  const dataSources = dataSourcesData ?? [];
 
   const [form, setForm] = useState({
     code: "",
     name_en: "",
     name_ar: "",
-    strategic_goal_id: "",
+    goal_id: "",
     operational_objective_id: "",
     process_id: "",
     polarity: "ascending",
@@ -39,6 +42,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     description_ar: "",
     formula: "",
     baseline: 0,
+    unit_of_measure: "",
     reporting_frequency: "quarterly",
     data_source: "",
     notes: "",
@@ -60,7 +64,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     if (
       !form.code ||
       !form.name_en ||
-      !form.strategic_goal_id ||
+      !form.goal_id ||
       !form.operational_objective_id ||
       !form.process_id
     ) {
@@ -113,16 +117,13 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
             />
             <Select
               label={`${t("kpi.masterData.strategicGoal")} *`}
-              value={form.strategic_goal_id}
+              value={form.goal_id}
               onChange={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  strategic_goal_id: v.target.value,
-                }))
+                setForm((prev) => ({ ...prev, goal_id: v.target.value }))
               }
               options={goals.map((g: any) => ({
                 value: g.id,
-                label: g.name_en,
+                label: g.title,
               }))}
               placeholder={t("common.selectAnOption")}
             />
@@ -144,7 +145,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
-              label={`Operational Objective *`}
+              label={`Parent Objective *`}
               value={form.operational_objective_id}
               onChange={(v) =>
                 setForm((prev) => ({
@@ -159,7 +160,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
               placeholder={t("common.selectAnOption")}
             />
             <Select
-              label={`Process *`}
+              label={`Operational Objective *`}
               value={form.process_id}
               onChange={(v) =>
                 setForm((prev) => ({ ...prev, process_id: v.target.value }))
@@ -216,14 +217,25 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
             />
           </div>
 
-          <Input
-            label={t("kpi.dictionary.fieldBaseline")}
-            type="number"
-            value={form.baseline}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, baseline: Number(e.target.value) }))
-            }
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={t("kpi.dictionary.fieldBaseline")}
+              type="number"
+              value={form.baseline}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  baseline: Number(e.target.value),
+                }))
+              }
+            />
+            <Input
+              label={t("kpi.dictionary.fieldUnitOfMeasure")}
+              value={form.unit_of_measure}
+              onChange={handleChange("unit_of_measure")}
+              placeholder="%, days, SAR, count..."
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Textarea
@@ -248,10 +260,17 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
+            <Select
               label={t("kpi.dictionary.fieldDataSource")}
               value={form.data_source}
-              onChange={handleChange("data_source")}
+              onChange={(v) =>
+                setForm((prev) => ({ ...prev, data_source: v.target.value }))
+              }
+              options={dataSources.map((d: any) => ({
+                value: d.name_en,
+                label: d.name_en,
+              }))}
+              placeholder={t("common.selectAnOption")}
             />
           </div>
 

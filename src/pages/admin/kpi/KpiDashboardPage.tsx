@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
@@ -37,7 +37,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 export const KpiDashboardPage: React.FC = () => {
   const { t } = useTranslation();
-  const { data: dashboard, isLoading } = useKpiDashboard();
+  const currentYear = new Date().getFullYear();
+  const [kpiTypeFilter, setKpiTypeFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [quarterFilter, setQuarterFilter] = useState("");
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  const dashboardParams = useMemo(
+    () => ({
+      kpi_type: kpiTypeFilter || undefined,
+      year: yearFilter ? Number(yearFilter) : undefined,
+      quarter: quarterFilter ? Number(quarterFilter) : undefined,
+    }),
+    [kpiTypeFilter, yearFilter, quarterFilter],
+  );
+
+  const { data: dashboard, isLoading } = useKpiDashboard(dashboardParams);
 
   const cards = [
     {
@@ -120,6 +135,43 @@ export const KpiDashboardPage: React.FC = () => {
             KPI Report
           </Link>
         </div>
+      </div>
+
+      <div className="flex items-center gap-4 flex-wrap">
+        <select
+          value={kpiTypeFilter}
+          onChange={(e) => setKpiTypeFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t("kpi.dashboard.allTypes")}</option>
+          <option value="strategic">{t("kpi.dictionary.strategic")}</option>
+          <option value="operational">{t("kpi.dictionary.operational")}</option>
+          <option value="award">{t("kpi.dictionary.award")}</option>
+        </select>
+        <select
+          value={yearFilter}
+          onChange={(e) => setYearFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t("kpi.dashboard.allYears")}</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+        <select
+          value={quarterFilter}
+          onChange={(e) => setQuarterFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t("kpi.dashboard.allQuarters")}</option>
+          {[1, 2, 3, 4].map((q) => (
+            <option key={q} value={q}>
+              Q{q}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isLoading ? (

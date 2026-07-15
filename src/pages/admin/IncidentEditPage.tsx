@@ -96,6 +96,7 @@ export function IncidentEditPage() {
     data: incidentData,
     isLoading: incidentLoading,
     isError: incidentError,
+    isSuccess: incidentSuccess,
   } = useQuery({
     queryKey: ["incident", id],
     queryFn: () => incidentApi.getById(id!),
@@ -126,10 +127,29 @@ export function IncidentEditPage() {
     },
   });
 
+  const classIds = incident?.classification?.id;
+  const locIds = incident?.location?.id;
+  const roleIds = incident?.current_state?.assignment_roles?.map(
+    (role) => role.id,
+  );
+
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users"],
-    queryFn: () => userApi.list(1, 100),
+    queryFn: () => {
+      return userApi.list(
+        1,
+        100,
+        "",
+        roleIds || [],
+        [],
+        locIds ? [locIds] : [],
+        classIds ? [classIds] : [],
+      );
+    },
+    enabled: incidentSuccess,
   });
+
+  // console.log(incident)
 
   const { data: departmentsData } = useQuery({
     queryKey: ["admin", "departments"],
@@ -660,10 +680,17 @@ export function IncidentEditPage() {
 
   const userOptions = [
     { value: "", label: t("incidents.unassigned") },
-    ...users.map((u) => ({
-      value: u.id,
-      label: `${u.first_name} ${u.last_name}`,
-    })),
+    ...users.map((u) => {
+      const label =
+        [u.first_name, u.last_name].filter(Boolean).join(" ") ||
+        u.username ||
+        u.email ||
+        "";
+      return {
+        value: u.id,
+        label,
+      };
+    }),
   ];
 
   const departmentOptions = [
@@ -827,7 +854,12 @@ export function IncidentEditPage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
                   {incidentLookupCategories
-                    .filter((category) => category.code !== "PRIORITY")
+                    .filter(
+                      (category) =>
+                        category.code !== "PRIORITY" &&
+                        category.code !== "SOURCE" &&
+                        category.code !== "IR",
+                    )
                     .map((category) => {
                       const lookupFieldKey = `lookup:${category.code}`;
                       const isRequired = workflowRequiredFields.includes(

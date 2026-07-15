@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   Plus,
@@ -12,6 +13,7 @@ import {
   useCreateKpiSegmentation,
   useDeleteKpiSegmentation,
   useKpiCardDefinitions,
+  useSegmentationDimensions,
 } from "../../../hooks/useKpi";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
@@ -21,6 +23,7 @@ import type {
 } from "../../../types/kpi";
 
 export const KpiSegmentationPage: React.FC = () => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [dimensionFilter, setDimensionFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
@@ -36,6 +39,8 @@ export const KpiSegmentationPage: React.FC = () => {
 
   const { data: segmentations, isLoading, error } = useKpiSegmentations(params);
   const { data: allCards } = useKpiCardDefinitions();
+  const { data: segmentationDimensionsData } = useSegmentationDimensions();
+  const segmentationDimensions = segmentationDimensionsData ?? [];
   const cardOptions = (allCards ?? []).map((c) => ({
     code: c.code,
     label: `${c.code} — ${c.name_en}`,
@@ -76,7 +81,7 @@ export const KpiSegmentationPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this segmentation record?")) {
+    if (confirm(t("kpi.segmentation.deleteConfirm"))) {
       await deleteSeg.mutateAsync(id);
     }
   };
@@ -100,16 +105,16 @@ export const KpiSegmentationPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              KPI Segmentation
+              {t("kpi.segmentation.title")}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Breakdown KPI performance by dimension, department, and zone
+              {t("kpi.segmentation.subtitle")}
             </p>
           </div>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4" />
-          Add Segment
+          {t("kpi.segmentation.addSegment")}
         </Button>
       </div>
 
@@ -120,7 +125,7 @@ export const KpiSegmentationPage: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by KPI code..."
+            placeholder={t("kpi.segmentation.searchPlaceholder")}
             className="ps-9 pe-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
           />
         </div>
@@ -129,7 +134,7 @@ export const KpiSegmentationPage: React.FC = () => {
           onChange={(e) => setDimensionFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">All Dimensions</option>
+          <option value="">{t("kpi.segmentation.allDimensions")}</option>
           {dimensions.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -140,7 +145,7 @@ export const KpiSegmentationPage: React.FC = () => {
           type="number"
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
-          placeholder="Year"
+          placeholder={t("kpi.targets.table.year")}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
         />
       </div>
@@ -155,7 +160,7 @@ export const KpiSegmentationPage: React.FC = () => {
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
               <AlertCircle className="w-5 h-5" />
               <p className="text-sm font-medium">
-                Failed to load segmentation data
+                {t("kpi.segmentation.failedToLoad")}
               </p>
             </div>
           </div>
@@ -163,10 +168,10 @@ export const KpiSegmentationPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-20">
             <Layers className="w-10 h-10 text-slate-400 mb-3" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              No segmentation data found
+              {t("kpi.segmentation.empty")}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Add segmentation to break down KPI performance by dimension
+              {t("kpi.segmentation.emptyHint")}
             </p>
           </div>
         ) : (
@@ -175,31 +180,31 @@ export const KpiSegmentationPage: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800">
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    KPI Code
+                    {t("kpi.performance.table.kpiCode")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Period
+                    {t("kpi.performance.table.period")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Dimension
+                    {t("kpi.segmentation.dimension")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Segment
+                    {t("kpi.segmentation.segment")}
                   </th>
                   <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 uppercase">
-                    Dept/Zone
+                    {t("kpi.segmentation.deptZone")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    Target
+                    {t("kpi.performance.table.target")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    Actual
+                    {t("kpi.performance.table.actual")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     %
                   </th>
                   <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">
-                    Actions
+                    {t("common.actions")}
                   </th>
                 </tr>
               </thead>
@@ -245,7 +250,7 @@ export const KpiSegmentationPage: React.FC = () => {
                       <button
                         onClick={() => handleDelete(s.id)}
                         className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        title="Delete"
+                        title={t("common.delete")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -261,12 +266,12 @@ export const KpiSegmentationPage: React.FC = () => {
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} size="lg">
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Add Segmentation
+            {t("kpi.segmentation.addSegment")}
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                KPI Code
+                {t("kpi.targets.form.kpiCode")}
               </label>
               <select
                 value={formData.kpi_code}
@@ -282,7 +287,7 @@ export const KpiSegmentationPage: React.FC = () => {
                 }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
               >
-                <option value="">-- Select KPI --</option>
+                <option value="">-- {t("kpi.targets.form.kpiCode")} --</option>
                 {cardOptions.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.label}
@@ -292,7 +297,7 @@ export const KpiSegmentationPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Type
+                {t("kpi.targets.form.kpiType")}
               </label>
               <select
                 value={formData.kpi_type}
@@ -301,14 +306,18 @@ export const KpiSegmentationPage: React.FC = () => {
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
               >
-                <option value="strategic">Strategic</option>
-                <option value="operational">Operational</option>
-                <option value="award">Award</option>
+                <option value="strategic">
+                  {t("kpi.dictionary.strategic")}
+                </option>
+                <option value="operational">
+                  {t("kpi.dictionary.operational")}
+                </option>
+                <option value="award">{t("kpi.dictionary.award")}</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Year
+                {t("kpi.targets.table.year")}
               </label>
               <input
                 type="number"
@@ -321,7 +330,7 @@ export const KpiSegmentationPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Quarter
+                {t("kpi.segmentation.quarter")}
               </label>
               <select
                 value={formData.quarter}
@@ -338,20 +347,28 @@ export const KpiSegmentationPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Dimension
+                {t("kpi.segmentation.dimension")}
               </label>
-              <input
+              <select
                 value={formData.dimension_name}
                 onChange={(e) =>
                   setFormData({ ...formData, dimension_name: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                placeholder="e.g. Zone, Department, Category"
-              />
+              >
+                <option value="">
+                  -- {t("kpi.segmentation.dimension")} --
+                </option>
+                {segmentationDimensions.map((d: any) => (
+                  <option key={d.id} value={d.name_en}>
+                    {d.name_en}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Segment
+                {t("kpi.segmentation.segment")}
               </label>
               <input
                 value={formData.segment_name}
@@ -359,12 +376,12 @@ export const KpiSegmentationPage: React.FC = () => {
                   setFormData({ ...formData, segment_name: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                placeholder="e.g. Eastern Region, HR Dept"
+                placeholder={t("kpi.segmentation.segmentPlaceholder")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Zone
+                {t("kpi.segmentation.zone")}
               </label>
               <input
                 value={formData.zone || ""}
@@ -372,12 +389,12 @@ export const KpiSegmentationPage: React.FC = () => {
                   setFormData({ ...formData, zone: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                placeholder="e.g. Eastern Region"
+                placeholder={t("kpi.segmentation.zonePlaceholder")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Target
+                {t("kpi.performance.table.target")}
               </label>
               <input
                 type="number"
@@ -390,7 +407,7 @@ export const KpiSegmentationPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Achievement
+                {t("kpi.segmentation.achievement")}
               </label>
               <input
                 type="number"
@@ -407,10 +424,10 @@ export const KpiSegmentationPage: React.FC = () => {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setShowForm(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={createSeg.isPending}>
-              {createSeg.isPending ? "Saving..." : "Save"}
+              {createSeg.isPending ? "..." : t("common.save")}
             </Button>
           </div>
         </div>

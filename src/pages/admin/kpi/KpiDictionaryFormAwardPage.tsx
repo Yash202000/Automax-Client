@@ -3,7 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, BookOpen, Save } from "lucide-react";
 import { toast } from "sonner";
-import { useCreateAwardKPI, useAwardSubCriteria } from "../../../hooks/useKpi";
+import {
+  useCreateAwardKPI,
+  useAwardSubCriteria,
+  useDataSources,
+} from "../../../hooks/useKpi";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
 import type { AwardKPIRequest } from "../../../types/kpi";
@@ -14,8 +18,10 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
   const createKpi = useCreateAwardKPI();
 
   const { data: subCriteriaData } = useAwardSubCriteria();
+  const { data: dataSourcesData } = useDataSources();
 
   const subCriteria = subCriteriaData ?? [];
+  const dataSources = dataSourcesData ?? [];
 
   const [form, setForm] = useState({
     code: "",
@@ -28,6 +34,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     description_ar: "",
     formula: "",
     baseline: 0,
+    unit_of_measure: "",
     reporting_frequency: "quarterly",
     data_source: "",
     notes: "",
@@ -169,14 +176,25 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             />
           </div>
 
-          <Input
-            label={t("kpi.dictionary.fieldBaseline")}
-            type="number"
-            value={form.baseline}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, baseline: Number(e.target.value) }))
-            }
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={t("kpi.dictionary.fieldBaseline")}
+              type="number"
+              value={form.baseline}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  baseline: Number(e.target.value),
+                }))
+              }
+            />
+            <Input
+              label={t("kpi.dictionary.fieldUnitOfMeasure")}
+              value={form.unit_of_measure}
+              onChange={handleChange("unit_of_measure")}
+              placeholder="%, days, SAR, count..."
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Textarea
@@ -201,10 +219,17 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
+            <Select
               label={t("kpi.dictionary.fieldDataSource")}
               value={form.data_source}
-              onChange={handleChange("data_source")}
+              onChange={(v) =>
+                setForm((prev) => ({ ...prev, data_source: v.target.value }))
+              }
+              options={dataSources.map((d: any) => ({
+                value: d.name_en,
+                label: d.name_en,
+              }))}
+              placeholder={t("common.selectAnOption")}
             />
           </div>
 

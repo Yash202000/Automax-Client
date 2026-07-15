@@ -558,7 +558,8 @@ export const UsersPage: React.FC = () => {
     setAvatarPreview(null);
     setCreateFormErrors({});
   };
-
+  // const PHONE_REGEX = /^\+?\d+(?: \d+)*$/; //optional country code , allows spaces between numbers.
+  const PHONE_REGEX = /^\+?\d+$/; // Optional country code (+), digits only.
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: UserFieldErrors = {};
@@ -587,13 +588,22 @@ export const UsersPage: React.FC = () => {
       errors.password = t("users.passwordPolicy");
     }
 
+    if (
+      createFormData.phone.trim() &&
+      !PHONE_REGEX.test(createFormData.phone.trim())
+    ) {
+      errors.phone = t("users.invalidPhone");
+      // toast.error(t("auth.invalidPhone"));
+    }
+
     setCreateFormErrors(errors);
     if (Object.keys(errors).length > 0) {
+      toast.error(t("errors.validationError"));
       return;
     }
 
     createMutation.mutate({
-      data: createFormData,
+      data: { ...createFormData, phone: createFormData.phone.trim() },
       avatar: avatarFile || undefined,
     });
   };
@@ -679,14 +689,19 @@ export const UsersPage: React.FC = () => {
         field: t("users.username"),
       });
     }
+    if (formData.phone.trim() && !PHONE_REGEX.test(formData.phone.trim())) {
+      errors.phone = t("users.invalidPhone");
+      // toast.error(t("auth.invalidPhone"));
+    }
 
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
+      toast.error(t("errors.validationError"));
       return;
     }
 
     let phoneChanged = false;
-    if (editingUser.phone !== formData.phone) {
+    if ((editingUser.phone || "").trim() !== formData.phone.trim()) {
       phoneChanged = true;
     }
     const payload: UpdateProfileRequest = {
@@ -694,7 +709,7 @@ export const UsersPage: React.FC = () => {
       last_name: formData.last_name,
       username: formData.username,
       mobile_verified: phoneChanged ? false : editingUser.mobile_verified,
-      phone: formData.phone,
+      phone: formData.phone.trim(),
       extension: formData.extension || "",
       department_id: formData.department_id || undefined,
       location_id: formData.location_id || undefined,
@@ -804,16 +819,47 @@ export const UsersPage: React.FC = () => {
     }
   };
 
+  const normalizeImportHeader = (header: string | undefined) => {
+    if (!header) return "";
+
+    return header
+      .toString()
+      .trim()
+      .replace(/\s*\((required|optional)\)\s*$/i, "")
+      .replace(/\s+/g, "_")
+      .toLowerCase();
+  };
+
+  const isImportMetadataRow = (
+    row: Record<string, string | number | boolean | null | undefined>,
+  ) => {
+    const values = Object.values(row).filter(
+      (value) => value !== undefined && value !== null && value !== "",
+    );
+
+    if (values.length === 0) return true;
+
+    return values.every((value) => {
+      const normalized = String(value).trim().toLowerCase();
+      return (
+        normalized === "(required)" ||
+        normalized === "(optional)" ||
+        normalized === "required" ||
+        normalized === "optional"
+      );
+    });
+  };
+
   const handleDownloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
       [
-        "username",
-        "email",
-        "password",
-        "first_name",
-        "last_name",
-        "phone",
-        "extension",
+        "username (Required)",
+        "email (Required)",
+        "password (Required)",
+        "first_name (Optional)",
+        "last_name (Optional)",
+        "phone (Optional)",
+        "extension (Optional)",
       ],
     ]);
     ws["!cols"] = [
@@ -869,6 +915,7 @@ export const UsersPage: React.FC = () => {
   ): string[] => {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
     const usernameSet = new Map<string, number[]>();
     const emailSet = new Map<string, number[]>();
 
@@ -880,6 +927,15 @@ export const UsersPage: React.FC = () => {
       if (!row.username?.trim()) {
         errors.push(
           `${rowLabel}: ${t("users.importUsernameRequired", { defaultValue: "Username is required" })}`,
+        );
+      } else if (!usernameRegex.test(row.username.trim())) {
+        errors.push(
+          `${rowLabel}: "${row.username}" - ${t("auth.usernameInvalidChars", { defaultValue: "Username can only contain letters, numbers, and underscores" })}`,
+        );
+      }
+      if (!row.password?.trim()) {
+        errors.push(
+          `${rowLabel}: ${t("users.importPasswordRequired", { defaultValue: "Password is required" })}`,
         );
       }
       if (!row.email?.trim()) {
@@ -933,6 +989,7 @@ export const UsersPage: React.FC = () => {
       let jsonRows: Array<{
         username: string;
         email: string;
+        password: string;
         first_name: string;
         last_name: string;
         phone: string;
@@ -946,10 +1003,28 @@ export const UsersPage: React.FC = () => {
         const workbook = XLSX.read(arrayBuffer);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
-        jsonRows = rows.map((row) => ({
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
+          defval: "",
+        });
+        const normalizedRows = (rows || [])
+          .filter((row) => !isImportMetadataRow(row))
+          .map((row) => {
+            const normalizedRow: Record<string, string> = {};
+
+            Object.entries(row).forEach(([key, value]) => {
+              const normalizedKey = normalizeImportHeader(key);
+              if (normalizedKey) {
+                normalizedRow[normalizedKey] = String(value ?? "");
+              }
+            });
+
+            return normalizedRow;
+          });
+
+        jsonRows = normalizedRows.map((row) => ({
           username: row.username || "",
           email: row.email || "",
+          password: row.password || "",
           first_name: row.first_name || "",
           last_name: row.last_name || "",
           phone: row.phone || "",
@@ -962,18 +1037,62 @@ export const UsersPage: React.FC = () => {
         jsonRows = JSON.parse(text);
       }
 
-      const validationErrors = validateImportRows(jsonRows);
-      if (validationErrors.length > 0) {
+      if (jsonRows.length === 0) {
         setImportResult({
           imported: 0,
           skipped: 0,
+          total: 0,
+          errors: [
+            t("users.importEmptyFile", {
+              defaultValue:
+                "No data found in file. Please ensure the file contains user records.",
+            }),
+          ],
+        } as UserImportResult);
+        return;
+      }
+
+      const validationErrors = validateImportRows(jsonRows);
+      const clientSkipped: string[] = [];
+
+      const validRows = jsonRows.filter((row, i) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        const rowNum = i + 1;
+        const rowErrors: string[] = [];
+
+        if (!row.email?.trim() || !emailRegex.test(row.email.trim())) {
+          rowErrors.push(
+            `Row ${rowNum}: "${row.email || ""}" - Enter a valid email address`,
+          );
+        }
+        if (!row.username?.trim() || !usernameRegex.test(row.username.trim())) {
+          rowErrors.push(
+            `Row ${rowNum}: "${row.username || ""}" - Invalid username`,
+          );
+        }
+        if (!row.password?.trim()) {
+          rowErrors.push(`Row ${rowNum}: Password is required`);
+        }
+
+        if (rowErrors.length > 0) {
+          clientSkipped.push(...rowErrors);
+          return false;
+        }
+        return true;
+      });
+
+      if (validRows.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: jsonRows.length,
           total: jsonRows.length,
           errors: validationErrors,
         } as UserImportResult);
         return;
       }
 
-      const jsonBlob = new Blob([JSON.stringify(jsonRows, null, 2)], {
+      const jsonBlob = new Blob([JSON.stringify(validRows, null, 2)], {
         type: "application/json",
       });
       const jsonFile = new File([jsonBlob], "users_import.json", {
@@ -982,7 +1101,12 @@ export const UsersPage: React.FC = () => {
 
       const result = await userApi.import(jsonFile);
       const data = result.data as UserImportResult;
-      setImportResult({ ...data, total: jsonRows.length });
+      setImportResult({
+        imported: data.imported,
+        skipped: data.skipped + clientSkipped.length,
+        total: jsonRows.length,
+        errors: [...clientSkipped, ...data.errors],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       setIsImportModalOpen(false);
       setImportFile(null);
@@ -1068,7 +1192,9 @@ export const UsersPage: React.FC = () => {
             leftIcon={<FileSpreadsheet className="w-4 h-4" />}
             onClick={handleDownloadTemplate}
           >
-            {t("users.downloadTemplate", { defaultValue: "Download Template" })}
+            {t("users.downloadTemplate", {
+              defaultValue: "Download User Import Template",
+            })}
           </Button>
           <Button
             variant="outline"
@@ -1401,6 +1527,11 @@ export const UsersPage: React.FC = () => {
                     </th>
                     <th className="px-6 py-4 text-start">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                        {t("users.phone")}
+                      </span>
+                    </th>
+                    <th className="px-6 py-4 text-start">
+                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("users.roles")}
                       </span>
                     </th>
@@ -1480,6 +1611,24 @@ export const UsersPage: React.FC = () => {
                         ) : (
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
                             —
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.phone ? (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                            {/* the + sign goes to the end when changing to arabic so adding dir="ltr" */}
+                            <span
+                              dir="ltr"
+                              className="text-sm text-[hsl(var(--foreground))]"
+                            >
+                              {user.phone}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                            {t("users.noPhone")}
                           </span>
                         )}
                       </td>
@@ -3184,7 +3333,7 @@ export const UsersPage: React.FC = () => {
                   )}
                   {importResult.note && (
                     <div className="mt-3 p-3 bg-[hsl(var(--accent)/0.1)] border border-[hsl(var(--accent))] rounded-lg">
-                      <p className="text-xs flex items-center gap-2 font-medium text-[hsl(var(--accent-foreground))]">
+                      <p className="text-xs flex items-center gap-2 font-medium text-[hsl(var(--accent))]">
                         <AlertTriangle
                           className="text-yellow-500 mb-1"
                           size={28}

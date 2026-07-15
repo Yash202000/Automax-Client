@@ -981,7 +981,7 @@
     "assignDepartment": "تعيين قسم",
     "resetPassword": "إعادة تعيين كلمة المرور",
     "noUsers": "لا يوجد مستخدمون",
-    "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني أو اسم المستخدم...",
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني أو رقم الهاتف...",
     "loadingUsers": "جاري تحميل المستخدمين...",
     "failedToLoad": "فشل تحميل المستخدمين",
     "errorLoading": "حدث خطأ أثناء تحميل قائمة المستخدمين. يرجى المحاولة مرة أخرى.",
@@ -1069,9 +1069,10 @@
     "firstNamePlaceholder": "مثال: John",
     "lastNamePlaceholder": "مثال: Doe",
     "usernamePlaceholder": "مثال: johndoe",
-    "phonePlaceholder": "مثال: +1 234 567 890",
+    "phonePlaceholder": "مثال: +1234567890",
     "extensionPlaceholder": "مثال: 1001",
-    "AddAdUser": "إضافة مستخدم إعلان"
+    "AddAdUser": "إضافة مستخدم إعلان",
+    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'."
   },
   "roles": {
     "title": "الأدوار",
@@ -1960,6 +1961,7 @@
     "terminalEndState": "الحالة النهائية",
     "slaDurationOptional": "مدة SLA (اختياري)",
     "days": "أيام",
+    "weeks": "أسابيع",
     "months": "أشهر",
     "maximumTimeAnIncidentShouldRemainIn": "الحد الأقصى لمدة بقاء الحادث في هذه الحالة",
     "escalationPolicyOptional": "سياسة التصعيد (اختياري)",
@@ -2092,8 +2094,15 @@
     "failedToRestoreWorkflow": "فشل في استعادة سير العمل",
     "workflowPermanentlyDeleted": "تم حذف سير العمل نهائيًا",
     "failedToPermanentlyDeleteWorkflow": "فشل في حذف سير العمل نهائيًا",
+    "multiple": "متعدد",
     "pleaseRemoveEditPermissionFirst": "يرجى إزالة صلاحية التعديل من \"{{role}}\" قبل إزالة صلاحية العرض.",
-    "viewPermissionAutomaticallyAdded": "تمت إضافة \"{{role}}\" تلقائيًا إلى أدوار العرض لأنه يمتلك صلاحية التعديل."
+    "viewPermissionAutomaticallyAdded": "تمت إضافة \"{{role}}\" تلقائيًا إلى أدوار العرض لأنه يمتلك صلاحية التعديل.",
+    "recommendedRoles": "الأدوار الموصى بها",
+    "noRecommendedRoles": "لا توجد أدوار موصى بها",
+    "workflowMatchingRules": "قواعد مطابقة سير العمل",
+    "hasAccessToFromStatus": "لديه صلاحية الوصول إلى حالة {{fromStatus}}",
+    "recommendedRolesDescription": "تتمتع هذه الأدوار بصلاحية العرض أو التعديل على حالة {{fromStatus}}.",
+    "otherAvailableRoles": "الأدوار الأخرى المتاحة"
   },
   "lookups": {
     "title": "البيانات الرئيسية",
@@ -3535,7 +3544,10 @@
       "totalAward": "مؤشرات جوائز",
       "pendingReviews": "قيد المراجعة",
       "analyticsTitle": "تحليلات مؤشرات الأداء",
-      "analyticsDescription": "ستظهر التحليلات والتصورات التفصيلية هنا."
+      "analyticsDescription": "ستظهر التحليلات والتصورات التفصيلية هنا.",
+      "allTypes": "جميع الأنواع",
+      "allYears": "جميع السنوات",
+      "allQuarters": "جميع الأرباع"
     },
     "masterData": {
       "title": "البيانات الأساسية",
@@ -3543,20 +3555,22 @@
       "pillars": "الركائز",
       "enablers": "الممكنات",
       "strategicGoals": "الأهداف الاستراتيجية",
-      "operationalObjectives": "الأهداف التشغيلية",
-      "processes": "العمليات",
+      "operationalObjectives": "الأهداف الرئيسية",
+      "processes": "الأهداف التشغيلية",
       "initiatives": "المبادرات",
       "domains": "المجالات",
       "awardCriteria": "معايير الجوائز",
       "awardSubCriteria": "المعايير الفرعية للجوائز",
+      "dataSources": "مصادر البيانات",
+      "segmentationDimensions": "أبعاد التجزئة",
       "nameEn": "الاسم (إنجليزي)",
       "nameAr": "الاسم (عربي)",
       "active": "نشط",
       "owner": "المالك",
       "pillar": "الركيزة",
       "enabler": "الممكن",
-      "strategicGoal": "الهدف الاستراتيجي",
-      "operationalObjective": "الهدف التشغيلي",
+      "strategicGoal": "الهدف",
+      "operationalObjective": "الهدف الرئيسي",
       "department": "القسم",
       "unit": "الوحدة",
       "status": "الحالة",
@@ -3567,8 +3581,8 @@
       "noPillars": "لا توجد ركائز.",
       "noEnablers": "لا توجد ممكنات.",
       "noGoals": "لا توجد أهداف استراتيجية.",
-      "noOperationalObjectives": "لا توجد أهداف تشغيلية.",
-      "noProcesses": "لا توجد عمليات.",
+      "noOperationalObjectives": "لا توجد أهداف رئيسية.",
+      "noProcesses": "لا توجد أهداف تشغيلية.",
       "noInitiatives": "لا توجد مبادرات.",
       "noDomains": "لا توجد مجالات.",
       "noAwardCriteria": "لا توجد معايير جوائز.",
@@ -3576,6 +3590,8 @@
       "domainTypeAward": "جائزة",
       "domainTypeStrategyAndAward": "استراتيجي وجائزة",
       "noAwardSubCriteria": "لا توجد معايير فرعية للجوائز.",
+      "noDataSources": "لا توجد مصادر بيانات.",
+      "noSegmentationDimensions": "لا توجد أبعاد تجزئة.",
       "failedToLoad": "فشل تحميل البيانات الأساسية."
     },
     "dictionary": {
@@ -3599,6 +3615,7 @@
       "fieldDescriptionAr": "الوصف (عربي)",
       "fieldFormula": "الصيغة",
       "fieldBaseline": "القيمة الأساسية",
+      "fieldUnitOfMeasure": "وحدة القياس",
       "fieldFrequency": "وتيرة التقرير",
       "fieldPolarity": "الاتجاه",
       "fieldStatus": "الحالة",
@@ -3653,7 +3670,51 @@
         "submittedBy": "مقدم من",
         "approvedBy": "معتمد من",
         "history": "سجل التحولات",
-        "noHistory": "لا توجد تحولات بعد."
+        "noHistory": "لا توجد تحولات بعد.",
+        "lockedTooltip": "لا يمكن تعديل الإدخالات المعتمدة.",
+        "lockedNotice": "تمت الموافقة على هذا الإدخال وهو الآن مقفل. لا يمكن تغيير الهدف أو الفعلي أو الأدلة.",
+        "editTitle": "تعديل سجل الأداء",
+        "evidence": "الأدلة",
+        "addEvidence": "إضافة دليل",
+        "noEvidence": "لا توجد أدلة مرفقة بهذه النتيجة.",
+        "evidenceDescription": "الوصف",
+        "evidenceLink": "الرابط"
+      },
+      "addActual": {
+        "title": "إضافة نتيجة فعلية",
+        "subtitle": "تسجيل نتيجة فعلية لمؤشر. تبدأ كمسودة ويمكن إرسالها بعد ذلك للمراجعة.",
+        "validation": "يرجى اختيار مؤشر وإدخال القيمة الفعلية.",
+        "periodKeyRequired": "يرجى إدخال فترة لهذه النتيجة."
+      }
+    },
+    "approvals": {
+      "title": "موافقات المؤشرات",
+      "subtitle": "مراجعة واتخاذ إجراء بشأن نتائج أداء المؤشرات المُرسلة",
+      "pending": "قيد الانتظار",
+      "completed": "مكتملة",
+      "review": "مراجعة",
+      "failedToLoad": "فشل تحميل الموافقات.",
+      "emptyPending": "لا توجد نتائج أداء في انتظار المراجعة.",
+      "emptyCompleted": "لا توجد مراجعات مكتملة بعد.",
+      "reviewTitle": "مراجعة {{code}}",
+      "noActions": "لا توجد إجراءات متاحة لهذا السجل."
+    },
+    "correctiveActions": {
+      "title": "الإجراءات التصحيحية",
+      "add": "إضافة إجراء تصحيحي",
+      "empty": "لا توجد إجراءات تصحيحية مسجلة لهذه النتيجة.",
+      "description": "الوصف",
+      "owner": "المسؤول",
+      "dueDate": "تاريخ الاستحقاق",
+      "closureNote": "ملاحظة الإغلاق",
+      "closureEvidenceUrl": "دليل الإغلاق (رابط)",
+      "escalate": "تصعيد",
+      "close": "إغلاق",
+      "status": {
+        "open": "مفتوح",
+        "in_progress": "قيد التنفيذ",
+        "closed": "مغلق",
+        "escalated": "مُصعّد"
       }
     },
     "targets": {
@@ -3664,15 +3725,26 @@
       "empty": "لا توجد أهداف.",
       "failedToLoad": "فشل تحميل الأهداف.",
       "formValidation": "يرجى ملء جميع الحقول المطلوبة.",
+      "periodKeyRequired": "يرجى إدخال فترة لهذا الهدف.",
       "form": {
         "kpiCode": "كود المؤشر",
         "kpiType": "نوع المؤشر",
-        "targetValue": "القيمة المستهدفة"
+        "targetValue": "القيمة المستهدفة",
+        "periodType": "نوع الفترة",
+        "periodKey": "الفترة"
+      },
+      "periodTypes": {
+        "annual": "سنوي",
+        "month": "شهري",
+        "quarter": "ربع سنوي",
+        "semiAnnual": "نصف سنوي",
+        "custom": "مخصص"
       },
       "table": {
         "kpiCode": "كود المؤشر",
         "kpiType": "النوع",
         "year": "السنة",
+        "period": "الفترة",
         "targetValue": "القيمة المستهدفة"
       }
     },
@@ -3714,9 +3786,17 @@
       "addBenchmark": "إضافة مقارنة",
       "searchPlaceholder": "البحث بكود المؤشر...",
       "empty": "لا توجد مقارنات.",
+      "emptyHint": "أضف مقارنة لمقارنة الإنجاز الداخلي بجهات خارجية",
       "allZones": "جميع المناطق",
       "year": "السنة",
-      "deleteConfirm": "حذف سجل المقارنة؟"
+      "deleteConfirm": "حذف سجل المقارنة؟",
+      "failedToLoad": "فشل تحميل المقارنات.",
+      "entity": "الجهة",
+      "entityPlaceholder": "مثال: متوسط الصناعة، هدف 2025",
+      "internal": "داخلي",
+      "benchmark": "المقارنة",
+      "variance": "الفرق",
+      "notes": "ملاحظات"
     },
     "segmentation": {
       "title": "تجزئة مؤشرات الأداء",
@@ -3724,9 +3804,20 @@
       "addSegment": "إضافة تجزئة",
       "searchPlaceholder": "البحث بكود المؤشر...",
       "empty": "لا توجد بيانات تجزئة.",
+      "emptyHint": "أضف تجزئة لتحليل أداء المؤشر حسب البعد",
       "allDimensions": "جميع الأبعاد",
       "year": "السنة",
-      "deleteConfirm": "حذف سجل التجزئة؟"
+      "deleteConfirm": "حذف سجل التجزئة؟",
+      "failedToLoad": "فشل تحميل بيانات التجزئة.",
+      "dimension": "البعد",
+      "segment": "التجزئة",
+      "deptZone": "القسم/المنطقة",
+      "quarter": "الربع",
+      "dimensionPlaceholder": "مثال: منطقة، قسم، فئة",
+      "segmentPlaceholder": "مثال: المنطقة الشرقية، قسم الموارد البشرية",
+      "zone": "المنطقة",
+      "zonePlaceholder": "مثال: المنطقة الشرقية",
+      "achievement": "الإنجاز"
     },
     "report": {
       "title": "تقرير تعريفات بطاقات المؤشرات",
@@ -3938,7 +4029,8 @@
     "subtitle": "إدارة المكالمات وعرض جهات الاتصال",
     "title": "مركز الاتصال",
     "showRecording": "عرض التسجيل",
-    "hideRecording": "إخفاء التسجيل"
+    "hideRecording": "إخفاء التسجيل",
+    "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني أو اسم المستخدم..."
   },
   "citizen": {
     "closePage": "يمكنك إغلاق هذه الصفحة بأمان.",
