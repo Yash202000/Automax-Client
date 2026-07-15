@@ -21,7 +21,7 @@ import {
   BarChart2,
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { callerFeedbackApi } from "@/api/admin";
+import { callerFeedbackApi, extensionApi } from "@/api/admin";
 import { useAuthStore } from "@/stores/authStore";
 import { v4 as uuid } from "uuid";
 import usePermissions from "@/hooks/usePermissions";
@@ -266,7 +266,9 @@ export default function SoftPhone({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Extension credentials
-  const [sipPassword, setSipPassword] = useState<string>("51234");
+  const [sipPassword] = useState<string>(
+    import.meta.env.VITE_SIP_PASSWORD || "51234",
+  );
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<boolean>(false);
 
   const [showSentimentModal, setShowSentimentModal] = useState<boolean>(false);
@@ -277,13 +279,63 @@ export default function SoftPhone({
   } | null>();
 
   const [selectedSentiment, setSelectedSentiment] = useState<any | null>(null);
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const setIsOpen = useSoftphoneStore((state) => state.setIsOpen);
   const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
   const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
   const isEPM940 =
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
+  const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
+
+  const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
+    queryKey: ["extensions"],
+    queryFn: () => extensionApi.list(),
+    enabled: canAssignExtensions && showPasswordPrompt,
+  });
+
+  const availableExtensions = (extensionsData?.data || []).filter(
+    (ext: any) => ext.status === "available",
+  );
+
+  const [selectedExtension, setSelectedExtension] = useState<string>("");
+
+  const assignExtensionMutation = useMutation({
+    mutationFn: (payload: { extension: string }) =>
+      extensionApi.assign(payload),
+    onSuccess: () => {
+      toast.success(
+        t("users.extensionAssignedSuccessfully", {
+          defaultValue: "Extension assigned successfully",
+        }),
+      );
+      setShowPasswordPrompt(false);
+
+      if (user) {
+        setUser({ ...user, extension: selectedExtension });
+      }
+
+      if (sipConnected) {
+        sipService.stop();
+        setSipConnected(false);
+      } else {
+        setShouldConnect(true);
+      }
+    },
+    onError: () => {
+      toast.error(
+        t("users.extensionAssignmentFailed", {
+          defaultValue: "Failed to assign extension",
+        }),
+      );
+    },
+  });
+
+  useEffect(() => {
+    if (showPasswordPrompt) {
+      setSelectedExtension(auth?.user?.extension || "");
+    }
+  }, [showPasswordPrompt, auth?.user?.extension]);
 
   const wasIncomingCallRef = useRef(false);
   const dialedNumberRef = useRef("");
@@ -473,7 +525,8 @@ export default function SoftPhone({
     }
 
     setMissingExtension(false);
-    const password = sipPassword || "51234";
+    const password =
+      sipPassword || import.meta.env.VITE_SIP_PASSWORD || "51234";
 
     if (socketURL && domain) {
       setIsConnecting(true);
@@ -974,13 +1027,17 @@ export default function SoftPhone({
               </button>
             )}
 
-            <button
-              onClick={() => setShowPasswordPrompt(true)}
-              className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
-              title={t("users.changeSipPassword")}
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </button>
+            {canAssignExtensions && (
+              <button
+                onClick={() => setShowPasswordPrompt(true)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
+                title={t("users.manageExtension", {
+                  defaultValue: "Manage Extension",
+                })}
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
         {auth?.user?.extension && (
@@ -1171,7 +1228,7 @@ export default function SoftPhone({
         )}
       </div>
 
-      {/* SIP Password Prompt */}
+      {/* Manage Extension Prompt */}
       {showPasswordPrompt && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60]">
           <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full mx-4 animate-scale-in">
@@ -1181,57 +1238,74 @@ export default function SoftPhone({
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900">
-                  {t("users.sipPasswordSettings")}
+                  {t("users.manageExtension", {
+                    defaultValue: "Manage Extension",
+                  })}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  {t("users.extension")}: {auth?.user?.extension}
+                  {t("users.currentExtension", {
+                    defaultValue: "Current Extension",
+                  })}
+                  :{" "}
+                  {auth?.user?.extension ||
+                    t("common.none", { defaultValue: "None" })}
                 </p>
               </div>
             </div>
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs font-medium text-blue-900 mb-1">
-                {t("users.defaultPassword")}
-              </p>
-              <p className="text-sm text-blue-700">
-                {t("users.usingDefaultPassword")}{" "}
-                <span className="font-mono font-bold">51234</span>
-              </p>
-            </div>
             <p className="text-sm text-gray-600 mb-3">
-              {t("users.enterACustomSipPasswordOrLeave")}
+              {t("users.selectExtensionToAssign", {
+                defaultValue: "Select an extension to assign to yourself:",
+              })}
             </p>
-            <input
-              type="password"
-              value={sipPassword}
-              onChange={(e) => setSipPassword(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  setShowPasswordPrompt(false);
-                }
-              }}
-              placeholder={t("users.51234Default")}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 mb-4"
-              autoFocus
-            />
+            <select
+              value={selectedExtension}
+              onChange={(e) => setSelectedExtension(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 mb-6"
+              disabled={extensionsLoading}
+            >
+              <option value="">
+                {t("common.select", { defaultValue: "Select..." })}
+              </option>
+              {auth?.user?.extension &&
+                !availableExtensions.some(
+                  (e: any) => e.extension === auth?.user?.extension,
+                ) && (
+                  <option value={auth.user.extension}>
+                    {auth.user.extension}
+                  </option>
+                )}
+              {availableExtensions.map((ext: any) => (
+                <option key={ext.extension} value={ext.extension}>
+                  {ext.extension}
+                </option>
+              ))}
+            </select>
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowPasswordPrompt(false);
                 }}
                 className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                disabled={assignExtensionMutation.isPending}
               >
                 {t("common.cancel")}
               </button>
               <button
                 onClick={() => {
-                  setShowPasswordPrompt(false);
-                  if (!sipConnected) {
-                    tryConnect();
+                  if (selectedExtension) {
+                    assignExtensionMutation.mutate({
+                      extension: selectedExtension,
+                    });
                   }
                 }}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
+                disabled={
+                  !selectedExtension || assignExtensionMutation.isPending
+                }
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-medium transition-colors shadow-md hover:shadow-lg disabled:opacity-50"
               >
-                {t("common.save")}
+                {assignExtensionMutation.isPending
+                  ? t("common.saving", { defaultValue: "Saving..." })
+                  : t("common.save")}
               </button>
             </div>
           </div>

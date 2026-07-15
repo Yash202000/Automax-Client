@@ -179,6 +179,9 @@ export const PERMISSIONS = {
   // License permissions
   LICENSE_VIEW: "license:view",
   LICENSE_MANAGE: "license:manage",
+
+  // Extension permissions
+  EXTENSIONS_ASSIGN: "extensions:assign",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
