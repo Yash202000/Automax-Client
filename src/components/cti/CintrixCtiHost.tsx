@@ -9,6 +9,9 @@ import { useNavigate } from "react-router-dom";
 
 import apiClient from "@/api/client";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
+import usePermissions from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/constants/permissions";
+import { CallerSentimentModal } from "./CallerSentimentModal";
 
 interface WidgetTokenResponse {
   cintrix_url: string;
@@ -79,6 +82,16 @@ export const CintrixCtiHost: React.FC = () => {
     setOpenCallerIncidents,
     setIsCallerIncidentsMinimized,
   } = useSoftphoneStore();
+  const { hasPermission } = usePermissions();
+  const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
+  // Post-call sentiment prompt (parity with the native softphone's modal,
+  // Softphone.tsx ~line 727). Only one at a time — a fresh call-ended simply
+  // replaces whatever was pending.
+  const [sentimentPrompt, setSentimentPrompt] = useState<{
+    number: string;
+    durationSeconds: number;
+    callUuid: string;
+  } | null>(null);
 
   // Mount widget + token-refresh/retry loop
   useEffect(() => {
@@ -192,9 +205,21 @@ export const CintrixCtiHost: React.FC = () => {
     const onAnswered = () => {
       inCallRef.current = true;
     };
-    const onEnded = () => {
+    const onEnded = (e: Event) => {
       inCallRef.current = false;
       setOpenCallerIncidents(false);
+      const d = (e as CustomEvent).detail || {};
+      if (
+        canCreateSentiment &&
+        d.outcome === "answered" &&
+        (d.duration_seconds ?? 0) > 0
+      ) {
+        setSentimentPrompt({
+          number: d.number || "",
+          durationSeconds: d.duration_seconds,
+          callUuid: d.call_uuid || "",
+        });
+      }
     };
     const onCreateIncident = (e: Event) => {
       const d = (e as CustomEvent).detail || {};
@@ -225,6 +250,7 @@ export const CintrixCtiHost: React.FC = () => {
     setIncomingCallName,
     setOpenCallerIncidents,
     setIsCallerIncidentsMinimized,
+    canCreateSentiment,
   ]);
 
   // The container div is ALWAYS rendered: a failed token refresh must not
@@ -245,6 +271,14 @@ export const CintrixCtiHost: React.FC = () => {
         </div>
       )}
       <div ref={containerRef} />
+      {sentimentPrompt && (
+        <CallerSentimentModal
+          number={sentimentPrompt.number}
+          durationSeconds={sentimentPrompt.durationSeconds}
+          callUuid={sentimentPrompt.callUuid}
+          onClose={() => setSentimentPrompt(null)}
+        />
+      )}
     </div>
   );
 };
