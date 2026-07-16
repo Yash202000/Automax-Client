@@ -29,7 +29,9 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   // a second SIP registration (double ringtone, native panel popping over the
   // widget) alongside CintrixCtiHost. Plain flag (not an early return) so all
   // hooks above/below still run unconditionally.
-  const isCintrixCti = import.meta.env.VITE_CTI_PROVIDER === "cintrix";
+  const isCintrixCti =
+    (window.APP_CONFIG?.CTI_PROVIDER ?? import.meta.env.VITE_CTI_PROVIDER) ===
+    "cintrix";
 
   useEffect(() => {
     if (isAuthenticated) {

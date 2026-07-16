@@ -14,6 +14,7 @@ declare global {
       LOGIN_SSO?: string;
       DISABLE_AUTO_LOCATION_RETRIEVAL?: string;
       CLIENT?: string;
+      CTI_PROVIDER?: string;
     };
   }
 }

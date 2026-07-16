@@ -19,7 +19,11 @@ export const SoftphoneButton: React.FC<SoftphoneButtonProps> = ({
   // CintrixCtiHost (mounted globally by UserBootstrap); hide the native
   // button everywhere else it's rendered. Called after the hook above so
   // this doesn't trip react-hooks/rules-of-hooks.
-  if (import.meta.env.VITE_CTI_PROVIDER === "cintrix") return null;
+  if (
+    (window.APP_CONFIG?.CTI_PROVIDER ?? import.meta.env.VITE_CTI_PROVIDER) ===
+    "cintrix"
+  )
+    return null;
 
   const status = isConnected
     ? "connected"

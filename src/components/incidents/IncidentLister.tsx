@@ -24,7 +24,9 @@ import { PERMISSIONS } from "@/constants/permissions";
 // and never mounts in cintrix mode, so this is the only place caller
 // sentiment stats surface under cintrix — gate strictly on the flag to avoid
 // double-rendering in NATIVE mode.
-const isCintrixCti = import.meta.env.VITE_CTI_PROVIDER === "cintrix";
+const isCintrixCti =
+  (window.APP_CONFIG?.CTI_PROVIDER ?? import.meta.env.VITE_CTI_PROVIDER) ===
+  "cintrix";
 
 export default function IncidentLister() {
   const { t } = useTranslation();
