@@ -41,9 +41,18 @@ export const CallerSentimentModal: React.FC<CallerSentimentModalProps> = ({
 
   const feedbackMutation = useMutation({
     mutationFn: () => {
+      // The widget's call_uuid is the SIP.js session id — a valid UUID (the
+      // SIP Call-ID) with the local tag appended, e.g.
+      // "2cd05acd-…-5e4627ae5efc86rSN039jKZvS". Automax validates CallUUID as a
+      // strict UUID, so extract the leading UUID; fall back to a fresh one
+      // (matching the native softphone, which always sent a random uuid).
+      const uuidMatch = (callUuid || "").match(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+      );
+      const validCallUuid = uuidMatch ? uuidMatch[0] : crypto.randomUUID();
       return callerFeedbackApi.create({
         callee_id: number,
-        call_uuid: callUuid,
+        call_uuid: validCallUuid,
         sentiment: selectedSentiment!.key,
         feedback: selectedSentiment!.label,
       });
