@@ -1174,6 +1174,14 @@ export const useCreateKpiMetric = (type: string, id: string) => {
   });
 };
 
+export const useUploadKpiAttachment = (type: string, id: string) => {
+  return useMutation({
+    mutationFn: (file: File) =>
+      kpiEngagementApi.uploadAttachment(type, id, file),
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
 export const useUpdateKpiMetric = (type: string, id: string) => {
   const qc = useQueryClient();
   return useMutation({
@@ -1261,6 +1269,19 @@ export const useDeleteKpiEvidence = (type: string, id: string) => {
       });
       toast.success("Evidence deleted");
     },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDownloadKpiEvidence = () => {
+  return useMutation({
+    mutationFn: ({
+      evidenceId,
+      fileName,
+    }: {
+      evidenceId: string;
+      fileName: string;
+    }) => kpiEngagementApi.downloadEvidence(evidenceId, fileName),
     onError: (err) => toast.error(getApiError(err)),
   });
 };

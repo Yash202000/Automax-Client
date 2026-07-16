@@ -30,6 +30,8 @@ import {
   Send,
   User,
   Pencil,
+  Upload,
+  Download,
 } from "lucide-react";
 import {
   useStrategicKPIDetail,
@@ -53,6 +55,9 @@ import {
   useAddKpiComment,
   useDeleteKpiComment,
   useKpiActivity,
+  useKpiTargets,
+  useUploadKpiAttachment,
+  useDownloadKpiEvidence,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuthStore } from "../../../stores/authStore";
@@ -60,7 +65,13 @@ import { userApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
 import { Input, Select, Textarea } from "../../../components/ui/Input";
-import type { KpiCheckInStatus, KpiCollaboratorRole } from "../../../types/kpi";
+import { KpiEvidenceUploadModal } from "../../../components/kpi/KpiEvidenceUploadModal";
+import type {
+  KpiCheckInStatus,
+  KpiCollaboratorRole,
+  KpiEvidenceType,
+} from "../../../types/kpi";
+import { KPI_EVIDENCE_TYPE_OPTIONS } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -182,6 +193,13 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   });
   const users = (usersData as any)?.data ?? [];
 
+  // Latest annual target already set for this KPI (list is year DESC) — reused
+  // to auto-fill a new metric's target instead of asking for it again.
+  const { data: kpiTargets } = useKpiTargets(
+    kpi?.code ? { kpi_code: kpi.code } : undefined,
+  );
+  const latestKpiTargetValue = kpiTargets?.[0]?.target_value;
+
   // ── Mutations ────────────────────────────────────────
   const [transitionModal, setTransitionModal] = useState<{
     open: boolean;
@@ -201,24 +219,28 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     formula: "",
     start_date: "",
     due_date: "",
-    attachment_title: "",
-    attachment_file_url: "",
   };
   const [metricForm, setMetricForm] = useState(emptyMetricForm);
+  const [metricAttachmentFile, setMetricAttachmentFile] = useState<File | null>(
+    null,
+  );
+  const [isDraggingMetricAttachment, setIsDraggingMetricAttachment] =
+    useState(false);
+  const [metricEvidenceTitle, setMetricEvidenceTitle] = useState("");
+  const [metricEvidenceType, setMetricEvidenceType] =
+    useState<KpiEvidenceType>("Report");
+  const [metricEvidenceComment, setMetricEvidenceComment] = useState("");
   const createMetric = useCreateKpiMetric(kpiType, kpiId);
+  const uploadAttachment = useUploadKpiAttachment(kpiType, kpiId);
+  const createEvidence = useCreateKpiEvidence(kpiType, kpiId);
+  const downloadEvidence = useDownloadKpiEvidence();
   const updateMetricValue = useUpdateKpiMetricValue(kpiType, kpiId);
   const deleteMetric = useDeleteKpiMetric(kpiType, kpiId);
   const [metricValueDrafts, setMetricValueDrafts] = useState<
     Record<string, string>
   >({});
 
-  const [showAddEvidence, setShowAddEvidence] = useState(false);
-  const [evidenceForm, setEvidenceForm] = useState({
-    title: "",
-    description: "",
-    file_url: "",
-  });
-  const createEvidence = useCreateKpiEvidence(kpiType, kpiId);
+  const [showEvidenceUpload, setShowEvidenceUpload] = useState(false);
   const deleteEvidence = useDeleteKpiEvidence(kpiType, kpiId);
 
   const [collabUserId, setCollabUserId] = useState("");
@@ -260,6 +282,12 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     });
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const formatDateTime = (dateStr?: string) => {
     if (!dateStr) return "--";
     return new Date(dateStr).toLocaleString("en-US", {
@@ -271,20 +299,60 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     });
   };
 
+  const resetMetricAttachment = () => {
+    setMetricAttachmentFile(null);
+    setMetricEvidenceTitle("");
+    setMetricEvidenceType("Report");
+    setMetricEvidenceComment("");
+  };
+
   const handleCreateMetric = async () => {
-    if (!metricForm.name.trim() || !metricForm.target_value) {
-      toast.error("Name and target value are required");
+    if (!metricForm.name.trim()) {
+      toast.error("Name is required");
       return;
     }
-    await createMetric.mutateAsync({
+    if (!metricForm.target_value) {
+      toast.error("Target value is required and must be greater than 0");
+      return;
+    }
+    if (metricAttachmentFile) {
+      if (!metricEvidenceTitle.trim() || !metricEvidenceComment.trim()) {
+        toast.error(
+          "Evidence title and comment are required when attaching a file",
+        );
+        return;
+      }
+    }
+
+    const created = await createMetric.mutateAsync({
       ...metricForm,
-      start_date: metricForm.start_date || undefined,
-      due_date: metricForm.due_date || undefined,
-      attachment_title: metricForm.attachment_title || undefined,
-      attachment_file_url: metricForm.attachment_file_url || undefined,
+      start_date: metricForm.start_date
+        ? `${metricForm.start_date}T00:00:00Z`
+        : undefined,
+      due_date: metricForm.due_date
+        ? `${metricForm.due_date}T00:00:00Z`
+        : undefined,
     });
+
+    if (metricAttachmentFile && created.data) {
+      const uploaded = await uploadAttachment.mutateAsync(metricAttachmentFile);
+      if (uploaded.data) {
+        await createEvidence.mutateAsync({
+          title: metricEvidenceTitle.trim(),
+          evidence_type: metricEvidenceType,
+          description: metricEvidenceComment.trim(),
+          metric_id: created.data.id,
+          file_url: uploaded.data.file_url,
+          file_name: uploaded.data.file_name,
+          file_size: uploaded.data.file_size,
+          mime_type: uploaded.data.mime_type,
+        });
+      }
+    }
+
     setShowAddMetric(false);
     setMetricForm(emptyMetricForm);
+    resetMetricAttachment();
   };
 
   const handleSaveMetricValue = async (metricId: string) => {
@@ -299,16 +367,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       delete next[metricId];
       return next;
     });
-  };
-
-  const handleCreateEvidence = async () => {
-    if (!evidenceForm.title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-    await createEvidence.mutateAsync(evidenceForm);
-    setShowAddEvidence(false);
-    setEvidenceForm({ title: "", description: "", file_url: "" });
   };
 
   const handleAddCollaborator = async () => {
@@ -762,7 +820,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             {canUpdateKpi() && (
               <Button
                 size="sm"
-                onClick={() => setShowAddMetric(!showAddMetric)}
+                onClick={() => {
+                  if (!showAddMetric && latestKpiTargetValue !== undefined) {
+                    setMetricForm((p) => ({
+                      ...p,
+                      target_value: latestKpiTargetValue,
+                    }));
+                  }
+                  setShowAddMetric(!showAddMetric);
+                }}
               >
                 <Plus className="w-4 h-4 me-1" />
                 Add Metric
@@ -798,17 +864,26 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
-                <Input
-                  label="Target *"
-                  type="number"
-                  value={metricForm.target_value}
-                  onChange={(e) =>
-                    setMetricForm((p) => ({
-                      ...p,
-                      target_value: Number(e.target.value),
-                    }))
-                  }
-                />
+                <div>
+                  <Input
+                    label="Target *"
+                    type="number"
+                    value={metricForm.target_value}
+                    onChange={(e) =>
+                      setMetricForm((p) => ({
+                        ...p,
+                        target_value: Number(e.target.value),
+                      }))
+                    }
+                  />
+                  {latestKpiTargetValue !== undefined && (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Auto-filled from this KPI's current target (
+                      {latestKpiTargetValue}). Adjust if this metric tracks a
+                      different value.
+                    </p>
+                  )}
+                </div>
                 <Input
                   label="Weight"
                   type="number"
@@ -849,45 +924,127 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 }
                 rows={2}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Attachment Title (optional)"
-                  value={metricForm.attachment_title}
-                  onChange={(e) =>
-                    setMetricForm((p) => ({
-                      ...p,
-                      attachment_title: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g. Baseline Survey"
-                />
-                <Input
-                  label="Attachment URL (optional)"
-                  value={metricForm.attachment_file_url}
-                  onChange={(e) =>
-                    setMetricForm((p) => ({
-                      ...p,
-                      attachment_file_url: e.target.value,
-                    }))
-                  }
-                  placeholder="https://..."
-                />
+
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 p-4 space-y-4">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Evidence (optional)
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    File
+                  </label>
+                  {metricAttachmentFile ? (
+                    <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-700/30">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Paperclip className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-200 truncate">
+                          {metricAttachmentFile.name}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
+                          ({formatFileSize(metricAttachmentFile.size)})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMetricAttachmentFile(null)}
+                        className="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        aria-label="Remove file"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="metric-evidence-file-input"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDraggingMetricAttachment(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        setIsDraggingMetricAttachment(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingMetricAttachment(false);
+                        const dropped = e.dataTransfer?.files?.[0];
+                        if (dropped) setMetricAttachmentFile(dropped);
+                      }}
+                      className={`flex flex-col items-center justify-center gap-1.5 p-5 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                        isDraggingMetricAttachment
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+                      }`}
+                    >
+                      <Upload className="w-6 h-6 text-slate-400" />
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        {isDraggingMetricAttachment
+                          ? "Drop to select"
+                          : "Click to select a file"}
+                      </span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                        or drag and drop
+                      </span>
+                    </label>
+                  )}
+                  <input
+                    id="metric-evidence-file-input"
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const selected = e.target.files?.[0];
+                      if (selected) setMetricAttachmentFile(selected);
+                    }}
+                  />
+                </div>
+                {metricAttachmentFile && (
+                  <>
+                    <Input
+                      label="Title *"
+                      value={metricEvidenceTitle}
+                      onChange={(e) => setMetricEvidenceTitle(e.target.value)}
+                      placeholder="e.g. Baseline Survey"
+                    />
+                    <Select
+                      label="Evidence Type"
+                      value={metricEvidenceType}
+                      onChange={(e) =>
+                        setMetricEvidenceType(e.target.value as KpiEvidenceType)
+                      }
+                      options={KPI_EVIDENCE_TYPE_OPTIONS}
+                    />
+                    <Textarea
+                      label="Comment *"
+                      value={metricEvidenceComment}
+                      onChange={(e) => setMetricEvidenceComment(e.target.value)}
+                      rows={2}
+                      placeholder="Describe this evidence..."
+                    />
+                  </>
+                )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Attachments also appear under the Evidence tab.
-              </p>
+
               <div className="flex justify-end gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowAddMetric(false)}
+                  onClick={() => {
+                    setShowAddMetric(false);
+                    resetMetricAttachment();
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreateMetric}
-                  disabled={createMetric.isPending}
+                  disabled={
+                    createMetric.isPending || uploadAttachment.isPending
+                  }
                 >
-                  {createMetric.isPending ? "Creating..." : "Create"}
+                  {uploadAttachment.isPending
+                    ? "Uploading..."
+                    : createMetric.isPending
+                      ? "Creating..."
+                      : "Create"}
                 </Button>
               </div>
             </div>
@@ -1000,63 +1157,12 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               Evidence ({(evidenceList ?? []).length})
             </h2>
             {canUpdateKpi() && (
-              <Button
-                size="sm"
-                onClick={() => setShowAddEvidence(!showAddEvidence)}
-              >
-                <Plus className="w-4 h-4 me-1" />
-                Add Evidence
+              <Button size="sm" onClick={() => setShowEvidenceUpload(true)}>
+                <Upload className="w-4 h-4 me-1" />
+                Upload Evidence
               </Button>
             )}
           </div>
-
-          {showAddEvidence && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6 space-y-4">
-              <Input
-                label="Title *"
-                value={evidenceForm.title}
-                onChange={(e) =>
-                  setEvidenceForm((p) => ({ ...p, title: e.target.value }))
-                }
-              />
-              <Textarea
-                label="Description"
-                value={evidenceForm.description}
-                onChange={(e) =>
-                  setEvidenceForm((p) => ({
-                    ...p,
-                    description: e.target.value,
-                  }))
-                }
-                rows={3}
-              />
-              <Input
-                label="File URL"
-                value={evidenceForm.file_url}
-                onChange={(e) =>
-                  setEvidenceForm((p) => ({
-                    ...p,
-                    file_url: e.target.value,
-                  }))
-                }
-                placeholder="https://..."
-              />
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddEvidence(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateEvidence}
-                  disabled={createEvidence.isPending}
-                >
-                  {createEvidence.isPending ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </div>
-          )}
 
           {(evidenceList ?? []).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1066,9 +1172,21 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {e.title}
-                    </p>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {e.title}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
+                          {e.evidence_type}
+                        </span>
+                        {e.metric && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            {e.metric.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     {canUpdateKpi() && (
                       <button
                         onClick={() => deleteEvidence.mutate(e.id)}
@@ -1083,16 +1201,37 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       {e.description}
                     </p>
                   )}
-                  {e.file_url && (
-                    <a
-                      href={e.file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                  {e.file_name ? (
+                    <button
+                      onClick={() =>
+                        downloadEvidence.mutate({
+                          evidenceId: e.id,
+                          fileName: e.file_name!,
+                        })
+                      }
+                      disabled={downloadEvidence.isPending}
+                      className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 disabled:opacity-50"
                     >
-                      <Paperclip className="w-3 h-3" />
-                      {e.file_url}
-                    </a>
+                      <Download className="w-3 h-3" />
+                      {e.file_name}
+                      {e.file_size !== undefined && (
+                        <span className="text-slate-400">
+                          ({formatFileSize(e.file_size)})
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    e.file_url && (
+                      <a
+                        href={e.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                      >
+                        <Paperclip className="w-3 h-3" />
+                        {e.file_url}
+                      </a>
+                    )
                   )}
                   <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
                     {e.uploaded_by
@@ -1563,6 +1702,14 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <KpiEvidenceUploadModal
+        kpiType={kpiType}
+        kpiId={kpiId}
+        isOpen={showEvidenceUpload}
+        onClose={() => setShowEvidenceUpload(false)}
+        metrics={metrics}
+      />
     </div>
   );
 };
