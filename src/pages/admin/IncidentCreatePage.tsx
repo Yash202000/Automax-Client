@@ -370,6 +370,12 @@ export function IncidentCreatePage() {
     [lookupCategoriesData?.data],
   );
 
+  useEffect(() => {
+    if (!formData.department_id && departments.length === 1) {
+      setFormData((prev) => ({ ...prev, department_id: departments[0].id }));
+    }
+  }, [departments, formData.department_id]);
+
   const fetchIncidentById = useCallback(
     async (id: string) => {
       const d = await incidentApi.getById(id);
