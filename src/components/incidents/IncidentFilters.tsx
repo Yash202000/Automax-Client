@@ -180,27 +180,39 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   });
 
   const buildTree = (data: any) => {
-    if (!data) return [];
+    if (!data || !Array.isArray(data)) return [];
     const map = new Map();
     const roots: any[] = [];
 
-    data.forEach((item: any) => {
-      map.set(item.id, {
-        ...item,
-        children: [],
-      });
-    });
+    // First pass: recursively flatten and ensure uniqueness by ID
+    const addNode = (item: any) => {
+      if (!map.has(item.id)) {
+        map.set(item.id, { ...item, children: [] });
+      }
+      if (item.children && Array.isArray(item.children)) {
+        item.children.forEach(addNode);
+      }
+    };
 
-    // Build tree
-    data.forEach((item: any) => {
-      const node = map.get(item.id);
+    data.forEach(addNode);
 
-      if (item.parent_id && map.has(item.parent_id)) {
-        map.get(item.parent_id).children.push(node);
+    // Second pass: build tree relationships safely
+    map.forEach((node) => {
+      if (node.parent_id && map.has(node.parent_id)) {
+        map.get(node.parent_id).children.push(node);
       } else {
         roots.push(node);
       }
     });
+
+    // Optional: Sort nodes if sort_order exists
+    const sortNodes = (nodes: any[]) => {
+      nodes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      nodes.forEach((n) => {
+        if (n.children.length > 0) sortNodes(n.children);
+      });
+    };
+    sortNodes(roots);
 
     return roots;
   };
