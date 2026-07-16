@@ -20,7 +20,7 @@ export interface Pillar {
   name_en: string;
   name_ar: string;
   owner_id?: string;
-  owner?: UserBrief;
+  owner?: DepartmentBrief;
   is_active: boolean;
   created_at: string;
 }
@@ -30,7 +30,7 @@ export interface Enabler {
   name_en: string;
   name_ar: string;
   owner_id?: string;
-  owner?: UserBrief;
+  owner?: DepartmentBrief;
   is_active: boolean;
   created_at: string;
 }
@@ -690,17 +690,46 @@ export interface KpiMetricRequest {
   formula?: string;
   start_date?: string;
   due_date?: string;
-  attachment_title?: string;
-  attachment_file_url?: string;
 }
+
+export interface KpiAttachmentUploadResult {
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+}
+
+export type KpiEvidenceType =
+  | "Report"
+  | "Photo"
+  | "Certificate"
+  | "Invoice"
+  | "Other";
+
+export const KPI_EVIDENCE_TYPE_OPTIONS: {
+  value: KpiEvidenceType;
+  label: string;
+}[] = [
+  { value: "Report", label: "Report" },
+  { value: "Photo", label: "Photo" },
+  { value: "Certificate", label: "Certificate" },
+  { value: "Invoice", label: "Invoice" },
+  { value: "Other", label: "Other" },
+];
 
 export interface KpiEngagementEvidence {
   id: string;
   kpi_id: string;
   kpi_type: KPIType;
   title: string;
+  evidence_type: KpiEvidenceType;
   description: string;
+  metric_id?: string;
+  metric?: { id: string; name: string };
   file_url: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
   uploaded_by_id: string;
   uploaded_by?: UserBrief;
   created_at: string;
@@ -708,8 +737,13 @@ export interface KpiEngagementEvidence {
 
 export interface KpiEngagementEvidenceRequest {
   title: string;
+  evidence_type?: KpiEvidenceType;
   description?: string;
+  metric_id?: string;
   file_url?: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
 }
 
 export type KpiCollaboratorRole = "collaborator" | "reviewer";

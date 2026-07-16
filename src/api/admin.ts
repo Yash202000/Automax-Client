@@ -129,6 +129,7 @@ export const userApi = {
     departmentIds: string[] = [],
     locationIds: string[] = [],
     classificationIds: string[] = [],
+    call_status?: string,
   ): Promise<PaginatedResponse<User>> => {
     const params = new URLSearchParams({
       page: String(page),
@@ -142,6 +143,7 @@ export const userApi = {
       params.append("location_ids", locationIds.join(","));
     if (classificationIds.length)
       params.append("classification_ids", classificationIds.join(","));
+    if (call_status) params.append("call_status", call_status);
     const response = await apiClient.get<PaginatedResponse<User>>(
       `/admin/users?${params.toString()}`,
     );
@@ -156,6 +158,7 @@ export const userApi = {
       first_name?: string;
       last_name?: string;
       phone?: string;
+      extension?: string;
       department_id?: string;
       location_id?: string;
       department_ids?: string[];
@@ -174,6 +177,7 @@ export const userApi = {
       if (data.first_name) formData.append("first_name", data.first_name);
       if (data.last_name) formData.append("last_name", data.last_name);
       if (data.phone) formData.append("phone", data.phone);
+      if (data.extension) formData.append("extension", data.extension);
       if (data.department_id)
         formData.append("department_id", data.department_id);
       if (data.location_id) formData.append("location_id", data.location_id);
@@ -291,6 +295,23 @@ export const userApi = {
       `/users/${id}/password`,
       { new_password: newPassword },
     );
+    return response.data;
+  },
+
+  updateUserStatus: async ({
+    extension,
+    status,
+  }: {
+    extension: string;
+    status: string;
+  }): Promise<ApiResponse<unknown>> => {
+    const response = await apiClient.put<ApiResponse<unknown>>(
+      `/users/${extension}/status`,
+      {
+        call_status: status,
+      },
+    );
+
     return response.data;
   },
 };
@@ -3355,6 +3376,28 @@ export const gisLocationApi = {
       payload,
     );
 
+    return response.data;
+  },
+};
+
+export const extensionApi = {
+  list: async (): Promise<
+    ApiResponse<{ extension: string; status: string }[]>
+  > => {
+    const response =
+      await apiClient.get<ApiResponse<{ extension: string; status: string }[]>>(
+        "/extensions",
+      );
+    return response.data;
+  },
+  assign: async (payload: {
+    user_id?: string;
+    extension: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/extensions/assign",
+      payload,
+    );
     return response.data;
   },
 };

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { ChevronRight, ChevronDown, Check, Minus } from "lucide-react";
+import { ChevronRight, ChevronDown, Check, Minus, Search } from "lucide-react";
 import { cn, getLocalizedName } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -30,7 +30,7 @@ const getLeafDescendantIds = (node: TreeNode): string[] => {
 const getAllLeafIds = (nodes: TreeNode[]): string[] =>
   nodes.flatMap(getLeafDescendantIds);
 
-const withFullySelectedParents = (
+const withPartiallySelectedParents = (
   nodes: TreeNode[],
   leafIds: string[],
 ): string[] => {
@@ -39,9 +39,9 @@ const withFullySelectedParents = (
   const visit = (node: TreeNode): boolean => {
     if (!node.children?.length) return selected.has(node.id);
 
-    const allChildrenSelected = node.children.map(visit).every(Boolean);
-    if (allChildrenSelected) selected.add(node.id);
-    return allChildrenSelected;
+    const anyChildSelected = node.children.map(visit).some(Boolean);
+    if (anyChildSelected) selected.add(node.id);
+    return anyChildSelected;
   };
 
   nodes.forEach(visit);
@@ -254,7 +254,39 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   colorScheme = "primary",
   leafOnly = false,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return data;
+
+    const query = searchQuery.toLowerCase();
+
+    const filterNodes = (nodes: TreeNode[]): TreeNode[] => {
+      return nodes
+        .map((node) => {
+          const name = getLocalizedName(node) || "";
+          const matches = name.toLowerCase().includes(query);
+
+          let filteredChildren: TreeNode[] = [];
+          if (node.children) {
+            filteredChildren = filterNodes(node.children);
+          }
+
+          if (matches || filteredChildren.length > 0) {
+            return {
+              ...node,
+              children:
+                filteredChildren.length > 0 ? filteredChildren : node.children,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean) as TreeNode[];
+    };
+
+    return filterNodes(data);
+  }, [data, searchQuery, i18n.language]);
 
   const [expandedIds, setExpandedIds] = useState<string[]>(() => {
     // Auto-expand nodes that have selected children
@@ -299,7 +331,9 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         : Array.from(new Set([...normalizedSelection, ...idsToToggle]));
 
       onSelectionChange(
-        leafOnly ? nextLeafIds : withFullySelectedParents(data, nextLeafIds),
+        leafOnly
+          ? nextLeafIds
+          : withPartiallySelectedParents(data, nextLeafIds),
       );
 
       // Auto-expand when clicking a parent with children
@@ -310,7 +344,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
     [selectedIds, onSelectionChange, expandedIds, leafOnly, data],
   );
 
-  const allLeafIds = useMemo(() => getAllLeafIds(data), [data]);
+  const allLeafIds = useMemo(() => getAllLeafIds(filteredData), [filteredData]);
   const selectableIds = allLeafIds;
   const selectedCount = selectedIds.filter((id) =>
     selectableIds.includes(id),
@@ -326,7 +360,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         }
       });
     };
-    collectIds(data);
+    collectIds(filteredData);
     setExpandedIds(allNodeIds);
   };
 
@@ -336,7 +370,9 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
 
   const selectAll = () => {
     onSelectionChange(
-      leafOnly ? selectableIds : withFullySelectedParents(data, selectableIds),
+      leafOnly
+        ? selectableIds
+        : withPartiallySelectedParents(data, selectableIds),
     );
   };
 
@@ -354,54 +390,68 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {icon}
-          {label && (
-            <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-              {label}
-            </label>
-          )}
-          <span
-            className={cn(
-              "px-2 py-0.5 text-xs font-medium rounded-md",
-              colorBadgeClasses[colorScheme],
+      <div className="flex flex-col gap-3 mb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {icon}
+            {label && (
+              <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                {label}
+              </label>
             )}
-          >
-            {selectedCount} {t("common.selected")}
-          </span>
+            <span
+              className={cn(
+                "px-2 py-0.5 text-xs font-medium rounded-md",
+                colorBadgeClasses[colorScheme],
+              )}
+            >
+              {selectedCount} {t("common.selected")}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={expandAll}
+              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+            >
+              {t("common.expand")}
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+            >
+              {t("common.collapse")}
+            </button>
+            <span className="text-[hsl(var(--border))]">|</span>
+            <button
+              type="button"
+              onClick={selectAll}
+              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+            >
+              {t("common.all")}
+            </button>
+            <button
+              type="button"
+              onClick={deselectAll}
+              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+            >
+              {t("common.none")}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={expandAll}
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-          >
-            {t("common.expand")}
-          </button>
-          <button
-            type="button"
-            onClick={collapseAll}
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-          >
-            {t("common.collapse")}
-          </button>
-          <span className="text-[hsl(var(--border))]">|</span>
-          <button
-            type="button"
-            onClick={selectAll}
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-          >
-            {t("common.all")}
-          </button>
-          <button
-            type="button"
-            onClick={deselectAll}
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-          >
-            {t("common.none")}
-          </button>
-        </div>
+      </div>
+
+      {/* Search Input */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t("common.search", { defaultValue: "Search..." })}
+          className="w-full pl-9 pr-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+        />
       </div>
 
       {/* Tree Container */}
@@ -409,12 +459,12 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         className="border border-[hsl(var(--border))] rounded-xl overflow-y-auto p-2"
         style={{ maxHeight }}
       >
-        {data.length === 0 ? (
+        {filteredData.length === 0 ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
             {emptyMessage}
           </p>
         ) : (
-          data.map((node) => (
+          filteredData.map((node) => (
             <TreeNodeItem
               key={node.id}
               node={node}
