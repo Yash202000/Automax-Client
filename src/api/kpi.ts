@@ -51,6 +51,7 @@ import type {
   KpiPerformanceEvidenceRequest,
   KpiMetric,
   KpiMetricRequest,
+  KpiAttachmentUploadResult,
   KpiEngagementEvidence,
   KpiEngagementEvidenceRequest,
   KpiCollaborator,
@@ -745,6 +746,22 @@ export const kpiEngagementApi = {
     const res = await apiClient.delete(`/kpi/metrics/${metricId}`);
     return res.data;
   },
+  uploadAttachment: async (
+    type: string,
+    id: string,
+    file: File,
+  ): Promise<ApiResponse<KpiAttachmentUploadResult>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiClient.post(
+      `/kpi/${type}/${id}/attachment`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return res.data;
+  },
 
   // Evidence
   listEvidence: async (
@@ -765,6 +782,22 @@ export const kpiEngagementApi = {
   deleteEvidence: async (evidenceId: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/evidence/${evidenceId}`);
     return res.data;
+  },
+  downloadEvidence: async (
+    evidenceId: string,
+    fileName: string,
+  ): Promise<void> => {
+    const res = await apiClient.get(`/kpi/evidence/${evidenceId}/download`, {
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   // Collaborators

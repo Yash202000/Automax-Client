@@ -6,6 +6,7 @@ import SoftPhone from "../sip/Softphone";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import usePermissions from "@/hooks/usePermissions";
+import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
 
 export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -21,6 +22,16 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const { isSuperAdmin, hasAnyPermission } = usePermissions();
 
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
+
+  // When Cintrix is the CTI provider, the native SoftPhone must not mount at
+  // all: its auto-connect effect registers the native JsSIP stack whenever
+  // the persisted `shouldConnect` is true, giving previously-connected agents
+  // a second SIP registration (double ringtone, native panel popping over the
+  // widget) alongside CintrixCtiHost. Plain flag (not an early return) so all
+  // hooks above/below still run unconditionally.
+  const isCintrixCti =
+    (window.APP_CONFIG?.CTI_PROVIDER ?? import.meta.env.VITE_CTI_PROVIDER) ===
+    "cintrix";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -54,13 +65,16 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   return (
     <>
       {children}
-      {isAuthenticated && canViewSoftphone && (
+      {isAuthenticated && canViewSoftphone && !isCintrixCti && (
         <SoftPhone
           showSip={isOpen}
           onClose={() => setIsOpen(false)}
           settings={softphoneSettings}
           auth={softphoneAuth}
         />
+      )}
+      {isAuthenticated && canViewSoftphone && isCintrixCti && (
+        <CintrixCtiHost />
       )}
     </>
   );

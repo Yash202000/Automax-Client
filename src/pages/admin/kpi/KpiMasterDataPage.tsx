@@ -63,7 +63,7 @@ import { Modal } from "../../../components/ui/Modal";
 import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/SelectInput";
-import { userApi } from "../../../api/admin";
+import { departmentApi } from "../../../api/admin";
 import { exportToExcel as exportToExcelUtil } from "../../../utils/exportExcel";
 import type {
   Pillar,
@@ -184,12 +184,12 @@ export const KpiMasterDataPage: React.FC = () => {
   const { data: dataSources } = useDataSources();
   const { data: segmentationDimensions } = useSegmentationDimensions();
 
-  const { data: usersData } = useQuery({
-    queryKey: ["admin", "users", "all"],
-    queryFn: () => userApi.list(1, 1000),
+  const { data: departmentsData } = useQuery({
+    queryKey: ["admin", "departments", "all"],
+    queryFn: () => departmentApi.list(),
   });
 
-  const users = (usersData as any)?.data ?? [];
+  const departments = departmentsData?.data ?? [];
 
   const createPillar = useCreatePillar();
   const updatePillar = useUpdatePillar();
@@ -224,9 +224,9 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const canManage = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_MANAGE);
 
-  const userOptions = users.map((u: any) => ({
-    value: u.id,
-    label: `${u.first_name} ${u.last_name} (${u.email})`,
+  const departmentOptions = departments.map((d) => ({
+    value: d.id,
+    label: d.name,
   }));
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -527,10 +527,10 @@ export const KpiMasterDataPage: React.FC = () => {
     }
   };
 
-  const getUserName = (userId?: string) => {
-    if (!userId) return "-";
-    const u = users.find((x: any) => x.id === userId);
-    return u ? `${u.first_name} ${u.last_name}` : userId;
+  const getDepartmentName = (departmentId?: string) => {
+    if (!departmentId) return "-";
+    const d = departments.find((x) => x.id === departmentId);
+    return d ? d.name : departmentId;
   };
 
   const modalEntityLabelKey: Record<EntityType, string> = {
@@ -600,7 +600,7 @@ export const KpiMasterDataPage: React.FC = () => {
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
               {
                 header: t("kpi.masterData.owner"),
-                accessor: (r) => getUserName(r.owner_id),
+                accessor: (r) => r.owner?.name ?? getDepartmentName(r.owner_id),
               },
               {
                 header: t("kpi.masterData.active"),
@@ -627,7 +627,7 @@ export const KpiMasterDataPage: React.FC = () => {
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
               {
                 header: t("kpi.masterData.owner"),
-                accessor: (r) => getUserName(r.owner_id),
+                accessor: (r) => r.owner?.name ?? getDepartmentName(r.owner_id),
               },
               {
                 header: t("kpi.masterData.active"),
@@ -683,7 +683,7 @@ export const KpiMasterDataPage: React.FC = () => {
               },
               {
                 header: t("kpi.masterData.owner"),
-                accessor: (r) => getUserName(r.owner_id),
+                accessor: (r) => r.owner?.name ?? getDepartmentName(r.owner_id),
               },
               { header: t("kpi.masterData.status"), accessor: "status" },
             ]}
@@ -834,7 +834,7 @@ export const KpiMasterDataPage: React.FC = () => {
           {(modalType === "pillar" || modalType === "enabler") && (
             <Select
               label={t("kpi.masterData.owner")}
-              options={userOptions}
+              options={departmentOptions}
               value={form.owner_id}
               onChange={setSel("owner_id")}
               searchable
@@ -990,7 +990,7 @@ export const KpiMasterDataPage: React.FC = () => {
               />
               <Select
                 label={t("kpi.masterData.owner")}
-                options={userOptions}
+                options={departmentOptions}
                 value={form.owner_id}
                 onChange={setSel("owner_id")}
                 searchable

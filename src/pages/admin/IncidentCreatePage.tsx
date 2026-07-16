@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -68,6 +68,9 @@ export function IncidentCreatePage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const { id } = useParams<{ id: string }>();
+  // Named `routerLocation` (not `location`) to avoid shadowing the geolocation
+  // `location` param used by handleLocationChange/LocationPicker further below.
+  const routerLocation = useLocation();
 
   const [formData, setFormData] = useState<
     Omit<IncidentCreateRequest, "lookup_value_ids" | "custom_lookup_fields">
@@ -114,35 +117,17 @@ export function IncidentCreatePage() {
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
-  const { incomingCallNumber } = useSoftphoneStore();
-
-  const { data: userData } = useQuery({
-    queryKey: ["admin", "users"],
-    queryFn: () =>
-      userApi.list(1, 10, incomingCallNumber ? incomingCallNumber : undefined),
-    enabled: !!incomingCallNumber,
-  });
+  const { incomingCallNumber, incomingCallName } = useSoftphoneStore();
 
   useEffect(() => {
-    if (incomingCallNumber && userData?.data?.length) {
-      const matchedUser = userData.data[0];
-
-      const reporterName =
-        [matchedUser.first_name, matchedUser.last_name]
-          .filter(Boolean)
-          .join(" ") ||
-        matchedUser.username ||
-        matchedUser.email ||
-        "";
-
+    if (incomingCallNumber) {
       setFormData((prev) => ({
         ...prev,
-        reporter_name: reporterName,
-        reporter_email: matchedUser.email || "",
-        reporter_phone: matchedUser.phone || "",
+        reporter_name: incomingCallName || "",
+        reporter_phone: incomingCallNumber,
       }));
     }
-  }, [incomingCallNumber, userData]);
+  }, [incomingCallNumber, incomingCallName]);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -369,6 +354,12 @@ export function IncidentCreatePage() {
       ),
     [lookupCategoriesData?.data],
   );
+
+  useEffect(() => {
+    if (!formData.department_id && departments.length === 1) {
+      setFormData((prev) => ({ ...prev, department_id: departments[0].id }));
+    }
+  }, [departments, formData.department_id]);
 
   const fetchIncidentById = useCallback(
     async (id: string) => {
@@ -636,6 +627,22 @@ export function IncidentCreatePage() {
       setAttachments([]);
     }
   }, [id]);
+
+  // CTI prefill: navigated here from the Cintrix call widget ("Create incident").
+  // Must stay declared after the `!id` reset effect above — both flush on mount
+  // in declaration order, and the reset uses a non-functional setFormData that
+  // would clobber this prefill if it ran later.
+  useEffect(() => {
+    const p = (routerLocation.state as any)?.ctiPrefill;
+    if (!p) return;
+    setFormData((prev) => ({
+      ...prev,
+      reporter_phone: p.reporter_phone || prev.reporter_phone,
+      reporter_name: p.reporter_name || prev.reporter_name,
+      source: p.source || prev.source,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {

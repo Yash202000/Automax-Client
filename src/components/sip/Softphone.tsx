@@ -21,7 +21,7 @@ import {
   BarChart2,
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { callerFeedbackApi, extensionApi } from "@/api/admin";
+import { callerFeedbackApi, extensionApi, userApi } from "@/api/admin";
 import { useAuthStore } from "@/stores/authStore";
 import { v4 as uuid } from "uuid";
 import usePermissions from "@/hooks/usePermissions";
@@ -95,7 +95,7 @@ const dialpadKeys = [
   { digit: "#", letters: "" },
 ];
 
-const SENTIMENTS = (t: any) =>
+export const SENTIMENTS = (t: any) =>
   [
     { key: 1, emoji: "😡", label: t("softphone.sentiment.angry") },
     { key: 2, emoji: "😠", label: t("softphone.sentiment.upset") },
@@ -110,7 +110,7 @@ const SENTIMENTS = (t: any) =>
 
 /* -------------------- Component -------------------- */
 
-const SentimentStats: React.FC<{
+export const SentimentStats: React.FC<{
   calleeId: string;
   callerId: string;
   t: any;
@@ -346,6 +346,7 @@ export default function SoftPhone({
 
   const canCreateSentimentRef = useRef(false);
   const ringRef = useRef<HTMLAudioElement | null>(null);
+  const lastPresenceStatusRef = useRef<"online" | "offline" | null>(null);
 
   const callingToneCtxRef = useRef<AudioContext | null>(null);
   const callingToneIntervalRef = useRef<any>(null);
@@ -507,6 +508,30 @@ export default function SoftPhone({
   const extension = auth?.user?.extension ?? "";
   const socketURL = settings?.socketURL ?? "";
   const domain = settings?.domain ?? "";
+
+  const syncUserPresenceStatus = useCallback(
+    async (status: "online" | "offline") => {
+      if (!extension) return;
+      if (lastPresenceStatusRef.current === status) return;
+
+      lastPresenceStatusRef.current = status;
+
+      try {
+        await userApi.updateUserStatus({ extension, status });
+      } catch (error) {
+        console.error("Failed to update softphone presence status:", error);
+      }
+    },
+    [extension],
+  );
+
+  useEffect(() => {
+    if (sipConnected) {
+      void syncUserPresenceStatus("online");
+    } else {
+      void syncUserPresenceStatus("offline");
+    }
+  }, [sipConnected, syncUserPresenceStatus]);
 
   const tryConnect = useCallback((): void => {
     // Only return if we're already connecting OR if we're connected AND the service is active
