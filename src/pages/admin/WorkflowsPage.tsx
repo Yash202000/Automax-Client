@@ -79,11 +79,13 @@ export const WorkflowsPage: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const [filter, setFilter] = useState<WorkflowFilter>({
+
+  const defaultFilter: WorkflowFilter = {
     page: 1,
     limit: 20,
     search: "",
-  });
+  };
+  const [filter, setFilter] = useState<WorkflowFilter>(defaultFilter);
   const onFilterChange = <K extends keyof WorkflowFilter>(
     key: K,
     value: WorkflowFilter[K],
@@ -97,14 +99,12 @@ export const WorkflowsPage: React.FC = () => {
   };
 
   const onClearFilters = () => {
-    setFilter({
-      search: "",
-    });
+    setFilter(defaultFilter);
   };
 
-  const hasActiveFilters = Object.values(filter).some(
-    (value) => value !== "" && value !== null && value !== undefined,
-  );
+  const hasActiveFilters = Object.entries(filter)
+    .filter(([key]) => !["page", "limit"].includes(key))
+    .some(([, value]) => value !== "" && value !== null && value !== undefined);
 
   const { data: workflowsData, isLoading } = useQuery({
     queryKey: ["admin", "workflows", filter],

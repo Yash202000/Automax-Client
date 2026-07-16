@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Filter } from "lucide-react";
 import { Button } from "../ui";
-import type { WorkflowFilter, ClassificationType } from "../../types";
+import type { WorkflowFilter, User } from "../../types";
+import { useQuery } from "@tanstack/react-query";
+import { lookupApi, userApi } from "@/api/admin";
 
 export interface WorkflowFilterProps {
   filter: WorkflowFilter;
@@ -13,16 +15,6 @@ export interface WorkflowFilterProps {
   onClearFilters: () => void;
   hasActiveFilters: boolean;
 }
-const recordTypes: ClassificationType[] = [
-  "incident",
-  "request",
-  "complaint",
-  "query",
-  "mobile",
-  "ivr",
-  "both",
-  "all",
-];
 
 const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
   filter,
@@ -30,8 +22,34 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
   onClearFilters,
   hasActiveFilters,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
+
+  const { data: sourceData } = useQuery({
+    queryKey: ["lookups", "categories"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find(
+          (cat) => cat.code === "WOKRFLOW_CATERGORY_EPM940",
+        ) || null
+      );
+    },
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ["admin", "users", 1, 100],
+    queryFn: () => userApi.list(1, 100),
+  });
+
+  const sourceOptions = useMemo(() => {
+    if (!sourceData) return [];
+    return (sourceData.values || []).map((value) => ({
+      value: value.code.toLowerCase(),
+      label:
+        i18n.language === "ar" && value.name_ar ? value.name_ar : value.name,
+    }));
+  }, [sourceData, i18n.language]);
 
   return (
     <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
@@ -96,7 +114,7 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
           {/* Module */}
           <div>
             <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-              {t("common.module", "Module")}
+              {t("workflows.recordType", "Record Type")}
             </label>
             <select
               className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
@@ -109,12 +127,10 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
               }
             >
               <option value={""}>
-                {t("common.allModules", "All Modules")}
+                {t("workflows.recordTypeAllDesc", "All Records")}
               </option>
-              {recordTypes.map((type) => (
-                <option key={type} value={type}>
-                  {t(`recordTypes.${type}`, type)}
-                </option>
+              {sourceOptions?.map((source) => (
+                <option value={source.value}>{source.label}</option>
               ))}
             </select>
           </div>
@@ -130,7 +146,13 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
               onChange={(e) => onFilterChange("created_by", e.target.value)}
             >
               <option value={""}>{t("common.allUsers", "All Users")}</option>
-              {}
+              {usersData?.data?.map((user: User) => (
+                <option key={user.id} value={user.id}>
+                  {user.first_name
+                    ? `${user.first_name} ${user.last_name || ""}`
+                    : user.username}
+                </option>
+              ))}
             </select>
           </div>
 
