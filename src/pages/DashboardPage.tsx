@@ -353,53 +353,55 @@ export const DashboardPage: React.FC = () => {
       ) : visibleCards.length > 0 || applicationLinks.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Internal navigation cards */}
-          {visibleCards.map((card) => (
-            <Link
-              key={card.title}
-              to={card.href}
-              className={`
-                group relative overflow-hidden rounded-2xl p-5
-                bg-linear-to-b ${card.gradient}
-                shadow-lg 
-                hover:shadow-xl hover:scale-[1.02]
-                transition-all duration-300 ease-out
-                min-h-[160px] flex flex-col justify-between
-              `}
-            >
-              {/* Background decoration */}
-              <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
-                <card.icon className="w-full h-full" strokeWidth={0.5} />
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10">
-                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl w-fit mb-3">
-                  <card.icon className="w-6 h-6 text-white" />
+          {visibleCards.map((card) => {
+            return (
+              <Link
+                key={card.title}
+                to={card.href}
+                className={`
+                  group relative overflow-hidden rounded-2xl p-5
+                  bg-linear-to-b ${card.gradient}
+                  shadow-lg
+                  hover:shadow-xl hover:scale-[1.02]
+                  transition-all duration-300 ease-out
+                  min-h-[160px] flex flex-col justify-between
+                `}
+              >
+                {/* Background decoration */}
+                <div className="absolute -top-4 -end-4 w-24 h-24 opacity-10">
+                  <card.icon className="w-full h-full" strokeWidth={0.5} />
                 </div>
-                <h2 className="text-lg font-bold text-white leading-tight">
-                  {card.title}
-                </h2>
-                <p className="text-white/90 text-xs font-medium mt-0.5">
-                  {card.subtitle}
-                </p>
-              </div>
 
-              {/* Arrow indicator */}
-              <div className="relative z-10 flex items-center justify-between mt-3">
-                <p className="text-white/90 text-xs hidden sm:block">
-                  {card.description}
-                </p>
-                <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:rtl:-translate-x-1 group-hover:ltr:translate-x-1 transition-all ms-auto">
-                  <ArrowRight className="w-4 h-4 text-white rtl:-rotate-180" />
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl w-fit mb-3">
+                    <card.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-lg font-bold text-white leading-tight">
+                    {card.title}
+                  </h2>
+                  <p className="text-white/90 text-xs font-medium mt-0.5">
+                    {card.subtitle}
+                  </p>
                 </div>
-              </div>
 
-              {/* Hover shine effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-              </div>
-            </Link>
-          ))}
+                {/* Arrow indicator */}
+                <div className="relative z-10 flex items-center justify-between mt-3">
+                  <p className="text-white/90 text-xs hidden sm:block">
+                    {card.description}
+                  </p>
+                  <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 group-hover:rtl:-translate-x-1 group-hover:ltr:translate-x-1 transition-all ms-auto">
+                    <ArrowRight className="w-4 h-4 text-white rtl:-rotate-180" />
+                  </div>
+                </div>
+
+                {/* Hover shine effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                </div>
+              </Link>
+            );
+          })}
 
           {/* Application link cards */}
           {applicationLinks.map((appLink) => {

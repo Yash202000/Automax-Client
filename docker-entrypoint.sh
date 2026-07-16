@@ -25,7 +25,8 @@ window.APP_CONFIG = {
   LOGIN_REGULAR: "${VITE_LOGIN_REGULAR:-true}",
   LOGIN_LDAP: "${VITE_LOGIN_LDAP:-true}",
   LOGIN_SSO: "${VITE_LOGIN_SSO:-true}",
-  DISABLE_AUTO_LOCATION_RETRIEVAL: "${VITE_DISABLE_AUTO_LOCATION_RETRIEVAL:-false}"
+  DISABLE_AUTO_LOCATION_RETRIEVAL: "${VITE_DISABLE_AUTO_LOCATION_RETRIEVAL:-false}",
+  CTI_PROVIDER: "${VITE_CTI_PROVIDER:-native}"
 };
 EOF
 
@@ -33,6 +34,7 @@ echo "Generated config.js with:"
 echo "  API_URL: ${VITE_API_URL:-http://localhost:8080/api/v1}"
 echo "  WS_URL: ${VITE_WS_URL:-ws://localhost:8080}"
 echo "  BASE_PATH: ${VITE_BASE_PATH:-/}"
+echo "  CTI_PROVIDER: ${VITE_CTI_PROVIDER:-native}"
 
 # Start the server
 exec serve -s dist -l 3000

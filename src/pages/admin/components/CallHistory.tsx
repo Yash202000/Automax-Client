@@ -28,6 +28,11 @@ export const CallHistory: React.FC = () => {
     queryKey: ["call-logs", page, limit],
     queryFn: () => callLogApi.list(page, limit),
     retry: 1,
+    // New calls (CTI webhooks) land without any user action on this page —
+    // poll so they show up without a manual refresh, same as the notification
+    // bell / incident layout's backoff-polling convention.
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
   const calls = data?.data || [];
