@@ -425,6 +425,16 @@ export const IncidentsPage: React.FC = () => {
   const totalPages = incidentsData?.total_pages ?? 1;
   const totalItems = incidentsData?.total_items ?? 0;
 
+  // Derive visible state IDs from stats sidebar for non-admin users
+  const visibleStateIds = useMemo(() => {
+    if (canViewAllIncidents || !stats?.workflow_stats) return null;
+    return new Set(
+      stats.workflow_stats.flatMap((w: any) =>
+        w.by_state_details.map((s: any) => s.id),
+      ),
+    );
+  }, [stats, canViewAllIncidents]);
+
   const handleFilterChange = (key: keyof IncidentFilter, value: any) => {
     const params = new URLSearchParams(searchParams);
     params.delete(key);
@@ -797,7 +807,8 @@ export const IncidentsPage: React.FC = () => {
         columns={columns}
         onToggleColumn={toggleColumn}
         onResetColumns={() => setColumns(defaultColumns)}
-        disableStateFilter={!canViewAllIncidents || hasStatusFilter}
+        disableStateFilter={hasStatusFilter}
+        visibleStateIds={visibleStateIds}
         disableSlaFilter={!canViewAllIncidents && hasUrlFilter}
         canViewAllIncidents={canViewAllIncidents}
         hasStatusFilter={hasStatusFilter}
