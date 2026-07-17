@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, Settings2, Check } from "lucide-react";
-import { Button } from "../ui";
+import { Button, Input } from "../ui";
 import { MultiTreeSelect } from "../ui/MultiTreeSelect";
 import {
   workflowApi,
@@ -22,6 +22,8 @@ import {
 import { cn, getLocalizedName } from "@/lib/utils";
 import i18n from "@/i18n";
 import { useAuthStore } from "@/stores/authStore";
+import { PERMISSIONS } from "@/constants/permissions";
+import usePermissions from "@/hooks/usePermissions";
 
 // Column configuration (shared across pages)
 export interface ColumnConfig {
@@ -85,7 +87,14 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
+  const [reporterPhoneInput, setReporterPhoneInput] = useState(
+    filter.reporter_phone || "",
+  );
   const columnConfigRef = useRef<HTMLDivElement>(null);
+  const { hasPermission, isSuperAdmin } = usePermissions();
+
+  const hasReporterPhonePermission =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_FILTER_REPORTER_PHONE);
 
   const { user } = useAuthStore();
 
@@ -249,6 +258,23 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
         i18n.language === "ar" && value.name_ar ? value.name_ar : value.name,
     }));
   }, [sourceData, i18n.language]);
+
+  useEffect(() => {
+    setReporterPhoneInput(filter.reporter_phone || "");
+  }, [filter.reporter_phone]);
+
+  useEffect(() => {
+    const currentValue = (filter.reporter_phone || "").trim();
+    const nextValue = reporterPhoneInput.trim();
+
+    if (currentValue === nextValue) return;
+
+    const timeoutId = window.setTimeout(() => {
+      onFilterChange("reporter_phone", nextValue || undefined);
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [reporterPhoneInput, filter.reporter_phone, onFilterChange]);
 
   const visibleColumnCount = columns?.filter((c) => c.visible).length ?? 0;
 
@@ -612,6 +638,23 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               ))}
             </select>
           </div>
+          {hasReporterPhonePermission ? (
+            <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                {t("common.reporterPhone", "Reporter Phone")}
+              </label>
+              <Input
+                value={reporterPhoneInput}
+                onChange={(e) => setReporterPhoneInput(e.target.value)}
+                placeholder={t(
+                  "common.reporterPhonePlaceholder",
+                  "Phone number",
+                )}
+                inputMode="tel"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              />
+            </div>
+          ) : null}
         </div>
       )}
     </div>
