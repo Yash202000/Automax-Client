@@ -24,7 +24,6 @@ import {
   Tags,
   ExternalLink,
   Mail,
-  Phone,
   ThumbsUp,
   AlertTriangle,
   MapPin,
@@ -37,6 +36,7 @@ import { Button } from "../../components/ui";
 import { TreeSelect } from "../../components/ui/TreeSelect";
 import { MiniWorkflowView } from "../../components/workflow";
 import { RevisionHistory } from "../../components/incidents";
+import CallablePhone from "../../components/common/CallablePhone";
 import {
   queryApi,
   userApi,
@@ -1496,9 +1496,11 @@ export const QueryDetailPage: React.FC = () => {
                       </p>
                     )}
                     {query.reporter?.phone && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3" />
-                        {query.reporter.phone}
+                      <p className="mt-0.5">
+                        <CallablePhone
+                          number={query.reporter.phone}
+                          className="text-xs"
+                        />
                       </p>
                     )}
                   </div>

@@ -14,12 +14,11 @@ import {
   Headphones,
 } from "lucide-react";
 import { callLogApi } from "../../../api/admin";
-import { useAuthStore } from "@/stores/authStore";
 import { AudioPlayer } from "../../../components/common/AudioPlayer";
 import { cn } from "@/lib/utils";
+import CallablePhone from "../../../components/common/CallablePhone";
 
 export const CallHistory: React.FC = () => {
-  const { user } = useAuthStore();
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -177,7 +176,6 @@ export const CallHistory: React.FC = () => {
                 <CallHistoryItem
                   key={call.id}
                   call={call}
-                  user={user}
                   getStatusColor={getStatusColor}
                   getCallIcon={getCallIcon}
                   formatTimestamp={formatTimestamp}
@@ -225,7 +223,6 @@ export const CallHistory: React.FC = () => {
 
 const CallHistoryItem: React.FC<{
   call: any;
-  user: any;
   getStatusColor: (status: string) => string;
   getCallIcon: (call: any) => any;
   formatTimestamp: (dateString: string) => string;
@@ -233,7 +230,6 @@ const CallHistoryItem: React.FC<{
   t: any;
 }> = ({
   call,
-  user,
   getStatusColor,
   getCallIcon,
   formatTimestamp,
@@ -275,7 +271,12 @@ const CallHistoryItem: React.FC<{
               </h3>
               {call.other_party_extension && (
                 <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                  Ext. {call.other_party_extension}
+                  Ext.{" "}
+                  <CallablePhone
+                    number={call.other_party_extension}
+                    showIcon={false}
+                    className="text-xs"
+                  />
                 </span>
               )}
             </div>
@@ -313,22 +314,22 @@ const CallHistoryItem: React.FC<{
           )}
           <button
             onClick={() => {
-              const extension = (user as any).extension || user?.phone;
-              if (extension) {
+              const number = call.other_party_extension || call.other_party_phone;
+              if (number) {
                 window.dispatchEvent(
                   new CustomEvent("initiate-call", {
-                    detail: { number: extension },
+                    detail: { number },
                   }),
                 );
               }
             }}
-            disabled={!(user as any).extension && !user?.phone}
+            disabled={!call.other_party_extension && !call.other_party_phone}
             className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             title={
-              (user as any).extension
-                ? `Call ext. ${(user as any).extension}`
-                : user?.phone
-                  ? `Call ${user.phone}`
+              call.other_party_extension
+                ? `Call ext. ${call.other_party_extension}`
+                : call.other_party_phone
+                  ? `Call ${call.other_party_phone}`
                   : "No extension"
             }
           >

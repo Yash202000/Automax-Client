@@ -16,6 +16,7 @@ import { Button } from "../../../components/ui";
 import { userApi } from "../../../api/admin";
 import type { User } from "../../../types";
 import { cn } from "@/lib/utils";
+import CallablePhone from "@/components/common/CallablePhone";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -213,12 +214,10 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                       </td>
                       <td className="px-6 py-4">
                         {user.phone ? (
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm text-slate-700 font-medium">
-                              {user.phone}
-                            </span>
-                          </div>
+                          <CallablePhone
+                            number={user.phone}
+                            className="text-sm font-medium"
+                          />
                         ) : (
                           <span className="text-sm text-slate-400 italic">
                             {t("users.noPhone")}
@@ -230,7 +229,11 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                           {(user as any).extension ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-primary/10 text-primary rounded-lg border border-violet-200">
                               <Phone className="w-3 h-3" />
-                              Ext. {(user as any).extension}
+                              Ext.{" "}
+                              <CallablePhone
+                                number={(user as any).extension}
+                                showIcon={false}
+                              />
                             </span>
                           ) : (
                             <span className="text-sm text-slate-400">—</span>
