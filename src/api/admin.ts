@@ -1312,7 +1312,9 @@ export const incidentApi = {
     if (filter.end_date) params.append("end_date", filter.end_date);
     if (filter.transition_id)
       params.append("transition_id", filter.transition_id);
-    console.log(filter);
+    if (filter.reporter_phone_search) {
+      params.append("reporter_phone_search", filter.reporter_phone_search);
+    }
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
     );

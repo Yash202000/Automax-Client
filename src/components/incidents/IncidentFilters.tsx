@@ -88,7 +88,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
   const [reporterPhoneInput, setReporterPhoneInput] = useState(
-    filter.reporter_phone || "",
+    filter.reporter_phone_search || "",
   );
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin } = usePermissions();
@@ -260,21 +260,21 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   }, [sourceData, i18n.language]);
 
   useEffect(() => {
-    setReporterPhoneInput(filter.reporter_phone || "");
-  }, [filter.reporter_phone]);
+    setReporterPhoneInput(filter.reporter_phone_search || "");
+  }, [filter.reporter_phone_search]);
 
   useEffect(() => {
-    const currentValue = (filter.reporter_phone || "").trim();
+    const currentValue = (filter.reporter_phone_search || "").trim();
     const nextValue = reporterPhoneInput.trim();
 
     if (currentValue === nextValue) return;
 
     const timeoutId = window.setTimeout(() => {
-      onFilterChange("reporter_phone", nextValue || undefined);
+      onFilterChange("reporter_phone_search", nextValue || undefined);
     }, 400);
 
     return () => window.clearTimeout(timeoutId);
-  }, [reporterPhoneInput, filter.reporter_phone, onFilterChange]);
+  }, [reporterPhoneInput, filter.reporter_phone_search, onFilterChange]);
 
   const visibleColumnCount = columns?.filter((c) => c.visible).length ?? 0;
 

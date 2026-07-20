@@ -123,7 +123,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     filter.priority !== undefined ||
     !!filter.start_date ||
     !!filter.end_date ||
-    !!filter.reporter_phone
+    !!filter.reporter_phone ||
+    !!filter.reporter_phone_search
   );
 
   // Check if all selected incidents belong to the same workflow

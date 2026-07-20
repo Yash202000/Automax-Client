@@ -1412,6 +1412,7 @@ export interface IncidentFilter {
   limit?: number;
   transition_id?: string;
   reporter_phone?: string;
+  reporter_phone_search?: string;
 }
 
 // Convert Incident to Request types
