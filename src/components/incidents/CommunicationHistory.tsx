@@ -104,8 +104,9 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
 
   const formatDateTime = (dateStr: string) => {
     const d = new Date(dateStr);
+
     return {
-      date: d.toLocaleDateString("en-US", {
+      date: d.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
