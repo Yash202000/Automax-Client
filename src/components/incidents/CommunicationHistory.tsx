@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui";
+import { DatePickerWithRange } from "@/ui/date-range-picker";
 import { incidentApi } from "../../api/admin";
 import type { Email } from "../../types";
+import { AppPagination } from "../ui/AppPagination";
 
 interface CommunicationHistoryProps {
   incidentId: string;
@@ -54,14 +56,37 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
   const [page, setPage] = useState(1);
   const [channel, setChannel] = useState<"" | "sms" | "email">("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [dateRange, setDateRange] = useState<{
+    from?: Date | undefined;
+    to?: Date | undefined;
+  }>({});
+
+  const startDate = dateRange.from ? new Date(dateRange.from) : undefined;
+  startDate?.setHours(0, 0, 0, 0);
+
+  const endDate = dateRange.to ? new Date(dateRange.to) : undefined;
+  endDate?.setHours(23, 59, 59, 999);
+
+  const startDateStr = startDate?.toISOString();
+  const endDateStr = endDate?.toISOString();
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["incident", incidentId, "communications", page, channel],
+    queryKey: [
+      "incident",
+      incidentId,
+      "communications",
+      page,
+      channel,
+      startDateStr,
+      endDateStr,
+    ],
     queryFn: () =>
       incidentApi.getCommunications(incidentId, {
         page,
         limit: 20,
         channel: channel || undefined,
+        start_date: startDateStr,
+        end_date: endDateStr,
       }),
     enabled: !!incidentId,
   });
@@ -127,32 +152,34 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-1 p-1 bg-[hsl(var(--muted)/0.5)] rounded-lg">
-          {channelTabs.map((tab) => (
-            <button
-              key={tab.value || "all"}
-              onClick={() => {
-                setChannel(tab.value);
-                setPage(1);
-              }}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                channel === tab.value
-                  ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm"
-                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
         <div className="flex items-center gap-3">
-          {totalItems > 0 && (
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">
-              {totalItems} {t("incidents.communications", "communication(s)")}
-            </span>
-          )}
+          <div className="flex items-center gap-1 p-1 bg-[hsl(var(--muted)/0.5)] rounded-lg">
+            {channelTabs.map((tab) => (
+              <button
+                key={tab.value || "all"}
+                onClick={() => {
+                  setChannel(tab.value);
+                  setPage(1);
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  channel === tab.value
+                    ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <DatePickerWithRange
+            value={dateRange as any}
+            onChange={(r) => {
+              setDateRange(r || {});
+              setPage(1);
+            }}
+          />
         </div>
         <Button
           variant="ghost"
@@ -168,7 +195,6 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
           {t("common.refresh")}
         </Button>
       </div>
-
       {communications.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-[hsl(var(--border))] rounded-lg">
           <FileText className="w-12 h-12 text-[hsl(var(--muted-foreground))] mx-auto mb-3" />
@@ -183,7 +209,7 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-screen overflow-y-auto ">
           {communications.map((comm) => {
             const { date, time } = formatDateTime(
               comm.sent_at || comm.created_at,
@@ -205,13 +231,15 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
                   onClick={() => toggleExpand(comm.id)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
                 >
-                  {comm.channel === "email" ? (
-                    <Mail className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                  ) : (
-                    <MessageSquare className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
-                  )}
+                  <div className="bg-primary/5 p-2 rounded-md">
+                    {comm.channel === "email" ? (
+                      <Mail className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+                    ) : (
+                      <MessageSquare className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+                    )}
+                  </div>
 
-                  <div className="flex flex-col min-w-[110px]">
+                  <div className="flex flex-col min-w-24">
                     <span className="text-sm whitespace-nowrap">{date}</span>
                     <span className="text-xs text-[hsl(var(--muted-foreground))] whitespace-nowrap">
                       {time}
@@ -227,12 +255,6 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
                     </p>
                   </div>
 
-                  {comm.template_code && (
-                    <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] whitespace-nowrap">
-                      {comm.template_code}
-                    </span>
-                  )}
-
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap",
@@ -244,9 +266,9 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
                   </span>
 
                   {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                    <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
                   )}
                 </button>
 
@@ -260,9 +282,12 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
                         {comm.subject}
                       </p>
                     )}
-                    <p className="text-sm whitespace-pre-wrap text-[hsl(var(--foreground))]">
-                      {comm.body}
-                    </p>
+                    <div
+                      className="prose prose-sm dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: comm.body || "",
+                      }}
+                    />
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[hsl(var(--muted-foreground))] pt-1">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" /> {date} {time}
@@ -285,30 +310,19 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
           })}
         </div>
       )}
-
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4 border-t border-[hsl(var(--border))]">
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            {t("revisionHistory.pageOf", { page, total: totalPages })}
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, totalItems)} of{" "}
+            <span className="font-medium text-foreground">{totalItems}</span>{" "}
+            communications
           </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-            >
-              {t("common.previous")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              {t("common.next")}
-            </Button>
-          </div>
+
+          <AppPagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
         </div>
       )}
     </div>

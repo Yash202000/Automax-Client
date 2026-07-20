@@ -1623,13 +1623,21 @@ export const incidentApi = {
   // Full SMS/Email communication history for this incident's audit trail.
   getCommunications: async (
     incidentId: string,
-    filter: { page?: number; limit?: number; channel?: "sms" | "email" } = {},
+    filter: {
+      page?: number;
+      limit?: number;
+      channel?: "sms" | "email";
+      start_date?: string;
+      end_date?: string;
+    } = {},
   ): Promise<PaginatedResponse<Email>> => {
     const params = new URLSearchParams();
     params.append("incident_id", incidentId);
     if (filter.page) params.append("page", String(filter.page));
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.channel) params.append("channel", filter.channel);
+    if (filter.start_date) params.append("start_date", filter.start_date);
+    if (filter.end_date) params.append("end_date", filter.end_date);
 
     const response = await apiClient.get<PaginatedResponse<Email>>(
       `/notifications?${params.toString()}`,
