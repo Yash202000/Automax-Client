@@ -198,8 +198,10 @@ export const AuthLayout: React.FC = () => {
 
           {/* Footer */}
           <div className="text-blue-200 text-sm">
-            v1.0.2 &copy; {new Date().getFullYear()} Automax. All rights
-            reserved.
+            {window.APP_CONFIG?.APP_VERSION ||
+              import.meta.env.VITE_APP_VERSION ||
+              "v1.0.2"}{" "}
+            &copy; {new Date().getFullYear()} Automax. All rights reserved.
           </div>
         </div>
       </div>
