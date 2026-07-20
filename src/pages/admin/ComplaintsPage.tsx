@@ -18,11 +18,11 @@ import {
   Check,
   MessageSquareWarning,
   ExternalLink,
-  Phone,
   Plus,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
+import CallablePhone from "../../components/common/CallablePhone";
 import {
   complaintApi,
   workflowApi,
@@ -841,9 +841,11 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({ listType }) => {
                                 {complaint.created_by_name}
                               </p>
                               {complaint.created_by_mobile && (
-                                <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
-                                  <Phone className="w-3 h-3" />
-                                  {complaint.created_by_mobile}
+                                <p className="mt-0.5">
+                                  <CallablePhone
+                                    number={complaint.created_by_mobile}
+                                    className="text-xs"
+                                  />
                                 </p>
                               )}
                             </div>

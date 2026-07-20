@@ -38,6 +38,7 @@ import {
   getPasswordRequirements,
   type TreeNode,
 } from "../../components/ui";
+import CallablePhone from "@/components/common/CallablePhone";
 import {
   userApi,
   departmentApi,
@@ -1705,7 +1706,11 @@ export const UsersPage: React.FC = () => {
                         {(user as any).extension ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
                             <Phone className="w-3 h-3" />
-                            Ext. {(user as any).extension}
+                            Ext.{" "}
+                            <CallablePhone
+                              number={(user as any).extension}
+                              showIcon={false}
+                            />
                           </span>
                         ) : (
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -1716,14 +1721,11 @@ export const UsersPage: React.FC = () => {
                       <td className="px-6 py-4">
                         {user.phone ? (
                           <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                             {/* the + sign goes to the end when changing to arabic so adding dir="ltr" */}
-                            <span
-                              dir="ltr"
-                              className="text-sm text-[hsl(var(--foreground))]"
-                            >
-                              {user.phone}
-                            </span>
+                            <CallablePhone
+                              number={user.phone}
+                              className="text-sm"
+                            />
                           </div>
                         ) : (
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -3100,7 +3102,11 @@ export const UsersPage: React.FC = () => {
                     {t("users.phone")}
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))]">
-                    {viewingUser.phone || t("users.notProvided")}
+                    {viewingUser.phone ? (
+                      <CallablePhone number={viewingUser.phone} className="text-sm" />
+                    ) : (
+                      t("users.notProvided")
+                    )}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -3110,7 +3116,14 @@ export const UsersPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-[hsl(var(--primary))]" />
                     <p className="text-sm text-[hsl(var(--foreground))]">
-                      {(viewingUser as any).extension || t("users.notProvided")}
+                      {(viewingUser as any).extension ? (
+                        <CallablePhone
+                          number={(viewingUser as any).extension}
+                          showIcon={false}
+                        />
+                      ) : (
+                        t("users.notProvided")
+                      )}
                     </p>
                   </div>
                 </div>

@@ -903,10 +903,20 @@ export const ComplaintDetailPage: React.FC = () => {
                       </p>
                     )}
                     {complaint.created_by_mobile && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent("initiate-call", {
+                              detail: { number: complaint.created_by_mobile },
+                            }),
+                          );
+                        }}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1 mt-0.5"
+                      >
                         <Phone className="w-3 h-3" />
                         {complaint.created_by_mobile}
-                      </p>
+                      </button>
                     )}
                   </div>
                 </div>

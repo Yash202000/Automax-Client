@@ -179,6 +179,21 @@ export const CintrixCtiHost: React.FC = () => {
     };
   }, []);
 
+  // Bridge Automax's app-wide click-to-call event into the embedded widget.
+  // "Call" buttons across the app dispatch `initiate-call`; the Cintrix
+  // widget (same window, Shadow DOM) listens for this postMessage and opens
+  // its dialpad pre-filled.
+  useEffect(() => {
+    const onInitiateCall = (e: Event) => {
+      const number = (e as CustomEvent<{ number?: string }>).detail?.number?.trim();
+      if (!number) return;
+      window.postMessage({ type: "cintrix:dial", number }, window.location.origin);
+    };
+    window.addEventListener("initiate-call", onInitiateCall as EventListener);
+    return () =>
+      window.removeEventListener("initiate-call", onInitiateCall as EventListener);
+  }, []);
+
   // Bridge widget events → Automax behaviors (screen-pop parity).
   // NOTE: cintrix:incoming-call fires TWICE per call (first with
   // name/contact_id null, then enriched once the lookup resolves — same

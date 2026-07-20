@@ -71,6 +71,21 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 221.2 83.2% 53.3%;
 
+    --login-circle: 212 84% 49%;
+
+    /* EPM940 Branding */
+    --epm-background-start: 221 100% 50%; /* blue-600 */
+    --epm-background-middle: 217 91% 60%; /* blue-700 */
+    --epm-background-end: 226 70% 55%; /* indigo-800 */
+
+    --epm-circle: 219 84% 49%;
+
+    --epm-icon: 212 84% 49%;
+
+    --epm-gradient-start: 218 73% 44%; /* #1E57C1 */
+    --epm-gradient-middle: 220 89% 57%; /* #3172F3 */
+    --epm-gradient-end: 186 91% 46%; /* #0DCBDB */
+
     /* Typography */
     --font-sans:
       "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -79,7 +94,7 @@
 
   .dark {
     /* Dark mode - Professional slate theme */
-    --background: 222 47% 11%;
+    --background: 222 47% 11%; 
     --foreground: 210 40% 98%;
 
     /* Card components - Slightly lighter than background */
@@ -136,6 +151,19 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 221.2 83.2% 53.3%;
+
+    /* EPM940 Branding */
+    --epm-background-start: 223 96% 11%;
+    --epm-background-middle: 223 96% 11%;
+    --epm-background-end: 224 95% 8%;
+
+    --epm-circle: 219 94% 14%;
+
+    --epm-icon: 212 84% 49%;
+
+    --epm-gradient-start: 218 73% 44%;
+    --epm-gradient-middle: 220 89% 57%;
+    --epm-gradient-end: 186 91% 46%;
   }
 }
 
@@ -719,5 +747,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 /* Opaque hovered state for sticky table cells */
 .sticky-hover-opaque:hover,
 .group:hover .sticky-hover-opaque {
-  background: linear-gradient(hsl(var(--muted)/0.3), hsl(var(--muted)/0.3)), hsl(var(--card)) !important;
+  background:
+    linear-gradient(hsl(var(--muted) / 0.3), hsl(var(--muted) / 0.3)),
+    hsl(var(--card)) !important;
 }
