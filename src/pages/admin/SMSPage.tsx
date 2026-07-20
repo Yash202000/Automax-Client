@@ -17,6 +17,7 @@ import type { SMS, SMSFilter } from "../../types";
 import { Button } from "@/components/ui";
 import { useAuthStore } from "@/stores/authStore";
 import { ConfirmationModal } from "../../components/common/ConfirmationModal";
+import CallablePhone from "../../components/common/CallablePhone";
 
 const linkifyText = (text: string) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -356,10 +357,16 @@ export const SMSPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-semibold text-slate-900">
-                        {selectedSMS.direction === "outbound"
-                          ? getDisplayName(selectedSMS)
-                          : selectedSMS.sent_by_user?.phone ||
-                            getDisplayName(selectedSMS)}
+                        {selectedSMS.direction !== "outbound" &&
+                        selectedSMS.sent_by_user?.phone ? (
+                          <CallablePhone
+                            number={selectedSMS.sent_by_user.phone}
+                            showIcon={false}
+                            className="font-semibold"
+                          />
+                        ) : (
+                          getDisplayName(selectedSMS)
+                        )}
                       </div>
                       {selectedSMS.direction === "outbound" &&
                         selectedSMS.received_by_user && (

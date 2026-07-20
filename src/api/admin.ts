@@ -113,6 +113,7 @@ import type {
   PublicIncidentFeedbackRequest,
   PublicIncidentFeedbackValidationResponse,
   PublicIncidentFeedbackSubmitResponse,
+  WorkflowFilter,
 } from "../types";
 import type {
   NotificationTemplateCreatePayload,
@@ -960,6 +961,33 @@ export const workflowApi = {
     if (recordType) params.append("record_type", recordType);
     const url = `/admin/workflows${params.toString() ? "?" + params.toString() : ""}`;
     const response = await apiClient.get<ApiResponse<Workflow[]>>(url);
+    return response.data;
+  },
+  //searching workflows with filters
+  listWithFilters: async (
+    filter: WorkflowFilter,
+  ): Promise<ApiResponse<Workflow[]>> => {
+    const params = new URLSearchParams();
+
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.search) params.append("search", filter.search);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.record_type) params.append("record_type", filter.record_type);
+    if (filter.created_by) params.append("created_by", filter.created_by);
+    if (filter.created_from) params.append("created_from", filter.created_from);
+    if (filter.created_to) params.append("created_to", filter.created_to);
+    if (filter.modified_from)
+      params.append("modified_from", filter.modified_from);
+    if (filter.modified_to) params.append("modified_to", filter.modified_to);
+    if (filter.active_only !== undefined) {
+      params.append("active_only", String(filter.active_only));
+    }
+
+    const response = await apiClient.get<ApiResponse<Workflow[]>>(
+      `/admin/workflows${params.toString() ? `?${params.toString()}` : ""}`,
+    );
+
     return response.data;
   },
 

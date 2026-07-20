@@ -30,12 +30,14 @@ import type {
   Classification,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
+  WorkflowFilter,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { validateName, validateRequired } from "@/utils/validations";
+import { WorkflowFilters } from "@/components/workflow";
 
 interface WorkflowFormData {
   name: string;
@@ -78,9 +80,35 @@ export const WorkflowsPage: React.FC = () => {
     Record<string, string>
   >({});
 
+  const defaultFilter: WorkflowFilter = {
+    page: 1,
+    limit: 20,
+    search: "",
+  };
+  const [filter, setFilter] = useState<WorkflowFilter>(defaultFilter);
+  const onFilterChange = <K extends keyof WorkflowFilter>(
+    key: K,
+    value: WorkflowFilter[K],
+  ) => {
+    setFilter((prev) => {
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
+  };
+
+  const onClearFilters = () => {
+    setFilter(defaultFilter);
+  };
+
+  const hasActiveFilters = Object.entries(filter)
+    .filter(([key]) => !["page", "limit"].includes(key))
+    .some(([, value]) => value !== "" && value !== null && value !== undefined);
+
   const { data: workflowsData, isLoading } = useQuery({
-    queryKey: ["admin", "workflows"],
-    queryFn: () => workflowApi.list(),
+    queryKey: ["admin", "workflows", filter],
+    queryFn: () => workflowApi.listWithFilters(filter),
   });
 
   const { data: classificationsData } = useQuery({
@@ -375,6 +403,7 @@ export const WorkflowsPage: React.FC = () => {
             {t("workflows.subtitle")}
           </p>
         </div>
+
         {canCreateWorkflow && (
           <div className="flex gap-2">
             <Button
@@ -393,6 +422,14 @@ export const WorkflowsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* SEARCH AND FILTER */}
+      <WorkflowFilters
+        filter={filter}
+        onFilterChange={onFilterChange}
+        onClearFilters={onClearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Workflows Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

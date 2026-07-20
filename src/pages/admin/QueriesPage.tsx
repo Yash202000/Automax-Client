@@ -18,11 +18,11 @@ import {
   Check,
   HelpCircle,
   ExternalLink,
-  Phone,
   Plus,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
+import CallablePhone from "../../components/common/CallablePhone";
 import {
   queryApi,
   workflowApi,
@@ -842,9 +842,11 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                                 {query.reporter.last_name}
                               </p>
                               {query.reporter.phone && (
-                                <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
-                                  <Phone className="w-3 h-3" />
-                                  {query.reporter.phone}
+                                <p className="mt-0.5">
+                                  <CallablePhone
+                                    number={query.reporter.phone}
+                                    className="text-xs"
+                                  />
                                 </p>
                               )}
                             </div>

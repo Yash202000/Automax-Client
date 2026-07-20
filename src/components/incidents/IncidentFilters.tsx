@@ -54,6 +54,8 @@ export interface IncidentFiltersProps {
   onResetColumns?: () => void;
   /** Whether the state filter should be disabled */
   disableStateFilter?: boolean;
+  /** Restrict state dropdown to only these state IDs (null = show all) */
+  visibleStateIds?: Set<string> | null;
   /** Whether the SLA filter should be disabled */
   disableSlaFilter?: boolean;
   /** Whether can view all incidents (affects clear filter visibility) */
@@ -79,6 +81,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   disableStateFilter = false,
   disableSlaFilter = false,
   canViewAllIncidents = false,
+  visibleStateIds = null,
   searchParams,
   setSearchParams,
 }) => {
@@ -139,6 +142,15 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
         return acc;
       }, []),
     [allStates],
+  );
+
+  // Filter states to only those visible in the sidebar (from stats API)
+  const filteredStates = React.useMemo(
+    () =>
+      visibleStateIds
+        ? uniqueStates.filter((s) => visibleStateIds.has(s.id))
+        : uniqueStates,
+    [uniqueStates, visibleStateIds],
   );
 
   // Transition filter data (only when a state is selected)
@@ -404,7 +416,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               )}
             >
               <option value="">{t("common.allStates")}</option>
-              {uniqueStates.map((state: WorkflowState) => (
+              {filteredStates.map((state: WorkflowState) => (
                 <option key={state.id} value={state.id}>
                   {getLocalizedName(state)}
                 </option>
