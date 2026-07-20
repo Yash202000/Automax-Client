@@ -82,7 +82,7 @@ export interface Initiative {
   pillar_id?: string;
   enabler_id?: string;
   owner_id?: string;
-  owner?: UserBrief;
+  owner?: DepartmentBrief;
   status: string;
   created_at: string;
 }

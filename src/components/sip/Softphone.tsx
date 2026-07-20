@@ -95,7 +95,7 @@ const dialpadKeys = [
   { digit: "#", letters: "" },
 ];
 
-const SENTIMENTS = (t: any) =>
+export const SENTIMENTS = (t: any) =>
   [
     { key: 1, emoji: "😡", label: t("softphone.sentiment.angry") },
     { key: 2, emoji: "😠", label: t("softphone.sentiment.upset") },
@@ -110,7 +110,7 @@ const SENTIMENTS = (t: any) =>
 
 /* -------------------- Component -------------------- */
 
-const SentimentStats: React.FC<{
+export const SentimentStats: React.FC<{
   calleeId: string;
   callerId: string;
   t: any;
