@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   MapPin,
   Shield,
+  Crown,
   FolderTree,
   Eye,
   Download,
@@ -56,6 +57,7 @@ interface DepartmentFormData {
   type: "internal" | "external";
   parent_id: string;
   parent_name: string;
+  supervisor_id: string;
   location_ids: string[];
   classification_ids: string[];
   role_ids: string[];
@@ -70,6 +72,7 @@ const initialFormData: DepartmentFormData = {
   type: "internal",
   parent_id: "",
   parent_name: "",
+  supervisor_id: "",
   location_ids: [],
   classification_ids: [],
   role_ids: [],
@@ -440,6 +443,7 @@ export const DepartmentsPage: React.FC = () => {
         type: (dept.type as "internal" | "external") || "internal",
         parent_id: dept.parent_id || "",
         parent_name: "",
+        supervisor_id: dept.supervisor_id || "",
         location_ids: dept.locations?.map((l) => l.id) || [],
         classification_ids: dept.classifications?.map((c) => c.id) || [],
         role_ids: dept.roles?.map((r) => r.id) || [],
@@ -504,6 +508,17 @@ export const DepartmentsPage: React.FC = () => {
   const { data: rolesData } = useQuery({
     queryKey: ["admin", "roles"],
     queryFn: () => roleApi.list(),
+  });
+
+  const supervisorRoleId = (rolesData?.data as Role[] | undefined)?.find(
+    (r: Role) => r.code === "supervisor",
+  )?.id;
+
+  const { data: supervisorUsers } = useQuery({
+    queryKey: ["admin", "users", "supervisor", supervisorRoleId],
+    queryFn: () =>
+      userApi.list(1, 100, "", supervisorRoleId ? [supervisorRoleId] : []),
+    enabled: !!supervisorRoleId,
   });
 
   const createMutation = useMutation({
@@ -653,6 +668,7 @@ export const DepartmentsPage: React.FC = () => {
       type: (department.type as "internal" | "external") || "internal",
       parent_id: department.parent_id || "",
       parent_name: parentDept?.name || "",
+      supervisor_id: department.supervisor_id || "",
       location_ids: department.locations?.map((l) => l.id) || [],
       classification_ids: department.classifications?.map((c) => c.id) || [],
       role_ids: department.roles?.map((r) => r.id) || [],
@@ -724,6 +740,7 @@ export const DepartmentsPage: React.FC = () => {
       description_ar: formData.description_ar || undefined,
       type: formData.type,
       parent_id: formData.parent_id || undefined,
+      supervisor_id: formData.supervisor_id || undefined,
       location_ids: formData.location_ids,
       classification_ids: formData.classification_ids,
       role_ids: formData.role_ids,
@@ -985,6 +1002,32 @@ export const DepartmentsPage: React.FC = () => {
             ))}
           </div>
         )}
+
+        {/* Supervisor selector */}
+        <div>
+          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+            {t("departments.supervisor")}
+          </label>
+          <select
+            value={formData.supervisor_id}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                supervisor_id: e.target.value,
+              })
+            }
+            className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+          >
+            <option value="">{t("departments.noSupervisor")}</option>
+            {supervisorUsers?.data?.map((user: User) => (
+              <option key={user.id} value={user.id}>
+                {user.first_name || user.last_name
+                  ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+                  : user.username}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Import Result Modal */}
@@ -1756,7 +1799,10 @@ export const DepartmentsPage: React.FC = () => {
                                 onChange={() => toggleItem("role_ids", role.id)}
                                 className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] accent-[hsl(var(--primary))]"
                               />
-                              <span className="text-sm text-[hsl(var(--foreground))]">
+                              <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
+                                {role.is_department_manager && (
+                                  <Crown className="w-3.5 h-3.5 text-indigo-500" />
+                                )}
                                 {role.name}
                               </span>
                             </label>

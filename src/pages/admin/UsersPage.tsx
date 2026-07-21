@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -27,6 +27,7 @@ import {
   Phone,
   AlertTriangle,
   Key,
+  Crown,
   EyeOff,
   ChevronDown,
   FileSpreadsheet,
@@ -56,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { useAuthStore } from "../../stores/authStore";
 import i18n from "@/i18n";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 
@@ -110,10 +112,19 @@ export const UsersPage: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const { user: currentUser } = useAuthStore();
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
   const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
+
+  const isDepartmentManager = useMemo(
+    () =>
+      !isSuperAdmin &&
+      (currentUser?.roles || []).some((r) => r.is_department_manager),
+    [currentUser?.roles, isSuperAdmin],
+  );
+
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
@@ -253,17 +264,55 @@ export const UsersPage: React.FC = () => {
 
   const clearAllFilters = () => {
     setFilterRoleIds([]);
-    setFilterDepartmentIds([]);
-    setFilterLocationIds([]);
-    setFilterClassificationIds([]);
+    if (!isDepartmentManager) {
+      setFilterDepartmentIds([]);
+      setFilterLocationIds([]);
+      setFilterClassificationIds([]);
+    }
     setPage(1);
   };
 
-  const toggleRoleId = (id: string) => {
-    setFilterRoleIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const toggleRoleId = async (id: string) => {
+    const wasSelected = filterRoleIds.includes(id);
+    const newIds = wasSelected
+      ? filterRoleIds.filter((x) => x !== id)
+      : [...filterRoleIds, id];
+    setFilterRoleIds(newIds);
     setPage(1);
+
+    if (!wasSelected) {
+      const role = rolesData?.data?.find((r) => r.id === id);
+      if (role?.is_department_manager) {
+        try {
+          const resp = await userApi.list(1, 1000, "", [id], [], [], []);
+          const users = resp.data || [];
+          console.log("[DM Scope] Users fetched:", users.length, users);
+          const deptSet = new Set<string>();
+          const classSet = new Set<string>();
+          const locSet = new Set<string>();
+          for (const u of users) {
+            if (u.departments?.length)
+              u.departments.forEach((d) => deptSet.add(d.id));
+            else if (u.department_id) deptSet.add(u.department_id);
+            if (u.classifications?.length)
+              u.classifications.forEach((c) => classSet.add(c.id));
+            if (u.locations?.length)
+              u.locations.forEach((l) => locSet.add(l.id));
+            else if (u.location_id) locSet.add(u.location_id);
+          }
+          console.log("[DM Scope] Extracted:", {
+            dept: Array.from(deptSet),
+            class: Array.from(classSet),
+            loc: Array.from(locSet),
+          });
+          if (deptSet.size) setFilterDepartmentIds(Array.from(deptSet));
+          if (classSet.size) setFilterClassificationIds(Array.from(classSet));
+          if (locSet.size) setFilterLocationIds(Array.from(locSet));
+        } catch (e) {
+          console.error("[DM Scope] Failed:", e);
+        }
+      }
+    }
   };
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
@@ -300,9 +349,39 @@ export const UsersPage: React.FC = () => {
     queryFn: () => locationApi.getTree(),
   });
 
+  const { data: managerScope } = useQuery({
+    queryKey: ["admin", "users", "manager-scope"],
+    queryFn: () => roleApi.getManagerScope(),
+    enabled: isDepartmentManager,
+  });
+
+  // Auto-set filters from department manager scope
+  useEffect(() => {
+    if (isDepartmentManager && managerScope?.data) {
+      const scope = managerScope.data;
+      if (scope.department_id) {
+        setFilterDepartmentIds([scope.department_id]);
+      }
+      if (scope.classification_id) {
+        setFilterClassificationIds([scope.classification_id]);
+      }
+      if (scope.location_id) {
+        setFilterLocationIds([scope.location_id]);
+      }
+    }
+  }, [isDepartmentManager, managerScope?.data]);
+
+  const deptManagerDepartmentId = useMemo(
+    () =>
+      isDepartmentManager && managerScope?.data?.department_id
+        ? managerScope.data.department_id
+        : undefined,
+    [isDepartmentManager, managerScope?.data],
+  );
+
   const { data: rolesData } = useQuery({
-    queryKey: ["admin", "roles"],
-    queryFn: () => roleApi.list(),
+    queryKey: ["admin", "roles", deptManagerDepartmentId],
+    queryFn: () => roleApi.list(deptManagerDepartmentId),
   });
 
   const { data: classificationsTreeData } = useQuery({
@@ -1436,6 +1515,9 @@ export const UsersPage: React.FC = () => {
                     {filterRoleIds.includes(role.id) && (
                       <Check className="inline w-3 h-3 mr-1" />
                     )}
+                    {role.is_department_manager && (
+                      <Crown className="inline w-3 h-3 mr-1 text-indigo-500" />
+                    )}
                     {role.name}
                   </button>
                 ))}
@@ -1461,7 +1543,7 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterDepartmentIds.length > 0 && (
+                  {filterDepartmentIds.length > 0 && !isDepartmentManager && (
                     <button
                       onClick={() => {
                         setFilterDepartmentIds([]);
@@ -1472,28 +1554,43 @@ export const UsersPage: React.FC = () => {
                       {t("common.clear")}
                     </button>
                   )}
+                  {isDepartmentManager && filterDepartmentIds.length > 0 && (
+                    <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                      {t("users.scopeLocked")}
+                    </span>
+                  )}
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder={t("incidents.searchDepartments")}
-                    value={deptSearch}
-                    onChange={(e) => setDeptSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                {!isDepartmentManager && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      placeholder={t("incidents.searchDepartments")}
+                      value={deptSearch}
+                      onChange={(e) => setDeptSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                )}
+                <div
+                  className={
+                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
+                  }
+                >
+                  <HierarchicalTreeSelect
+                    data={filteredDepartmentsTree}
+                    selectedIds={filterDepartmentIds}
+                    onSelectionChange={(ids) => {
+                      if (!isDepartmentManager) {
+                        setFilterDepartmentIds(ids);
+                        setPage(1);
+                      }
+                    }}
+                    emptyMessage="No departments found"
+                    colorScheme="accent"
+                    maxHeight="220px"
                   />
                 </div>
-                <HierarchicalTreeSelect
-                  data={filteredDepartmentsTree}
-                  selectedIds={filterDepartmentIds}
-                  onSelectionChange={(ids) => {
-                    setFilterDepartmentIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No departments found"
-                  colorScheme="accent"
-                  maxHeight="220px"
-                />
               </div>
 
               {/* Locations */}
@@ -1507,7 +1604,7 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterLocationIds.length > 0 && (
+                  {filterLocationIds.length > 0 && !isDepartmentManager && (
                     <button
                       onClick={() => {
                         setFilterLocationIds([]);
@@ -1518,28 +1615,43 @@ export const UsersPage: React.FC = () => {
                       {t("common.clear")}
                     </button>
                   )}
+                  {isDepartmentManager && filterLocationIds.length > 0 && (
+                    <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                      {t("users.scopeLocked")}
+                    </span>
+                  )}
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder={t("users.searchLocations")}
-                    value={locSearch}
-                    onChange={(e) => setLocSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                {!isDepartmentManager && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      placeholder={t("users.searchLocations")}
+                      value={locSearch}
+                      onChange={(e) => setLocSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                )}
+                <div
+                  className={
+                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
+                  }
+                >
+                  <HierarchicalTreeSelect
+                    data={filteredLocationsTree}
+                    selectedIds={filterLocationIds}
+                    onSelectionChange={(ids) => {
+                      if (!isDepartmentManager) {
+                        setFilterLocationIds(ids);
+                        setPage(1);
+                      }
+                    }}
+                    emptyMessage="No locations found"
+                    colorScheme="success"
+                    maxHeight="220px"
                   />
                 </div>
-                <HierarchicalTreeSelect
-                  data={filteredLocationsTree}
-                  selectedIds={filterLocationIds}
-                  onSelectionChange={(ids) => {
-                    setFilterLocationIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No locations found"
-                  colorScheme="success"
-                  maxHeight="220px"
-                />
               </div>
 
               {/* Classifications */}
@@ -1554,39 +1666,56 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterClassificationIds.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setFilterClassificationIds([]);
-                        setPage(1);
-                      }}
-                      className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                    >
-                      {t("common.clear")}
-                    </button>
-                  )}
+                  {filterClassificationIds.length > 0 &&
+                    !isDepartmentManager && (
+                      <button
+                        onClick={() => {
+                          setFilterClassificationIds([]);
+                          setPage(1);
+                        }}
+                        className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                      >
+                        {t("common.clear")}
+                      </button>
+                    )}
+                  {isDepartmentManager &&
+                    filterClassificationIds.length > 0 && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                        {t("users.scopeLocked")}
+                      </span>
+                    )}
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder={t("users.searchClassifications")}
-                    value={classSearch}
-                    onChange={(e) => setClassSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                {!isDepartmentManager && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      placeholder={t("users.searchClassifications")}
+                      value={classSearch}
+                      onChange={(e) => setClassSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                )}
+                <div
+                  className={
+                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
+                  }
+                >
+                  <HierarchicalTreeSelect
+                    data={filteredClassificationsTree}
+                    selectedIds={filterClassificationIds}
+                    onSelectionChange={(ids) => {
+                      if (!isDepartmentManager) {
+                        setFilterClassificationIds(ids);
+                        setPage(1);
+                      }
+                    }}
+                    emptyMessage="No classifications found"
+                    colorScheme="warning"
+                    maxHeight="220px"
                   />
                 </div>
-                <HierarchicalTreeSelect
-                  data={filteredClassificationsTree}
-                  selectedIds={filterClassificationIds}
-                  onSelectionChange={(ids) => {
-                    setFilterClassificationIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No classifications found"
-                  colorScheme="warning"
-                  maxHeight="220px"
-                />
               </div>
             </div>
           </div>
@@ -1744,8 +1873,11 @@ export const UsersPage: React.FC = () => {
                           {user.roles?.slice(0, 2).map((role) => (
                             <span
                               key={role.id}
-                              className="px-2 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg"
+                              className="px-2 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg inline-flex items-center gap-1"
                             >
+                              {role.is_department_manager && (
+                                <Crown className="w-3 h-3 text-indigo-500" />
+                              )}
                               {role.name}
                             </span>
                           ))}
@@ -2341,12 +2473,15 @@ export const UsersPage: React.FC = () => {
                             type="button"
                             onClick={() => toggleRole(role.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-1",
                               formData.role_ids.includes(role.id)
                                 ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary)/0.2)]"
                                 : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]",
                             )}
                           >
+                            {role.is_department_manager && (
+                              <Crown className="w-3.5 h-3.5 text-indigo-500" />
+                            )}
                             {role.name}
                           </button>
                         ))
@@ -2801,12 +2936,15 @@ export const UsersPage: React.FC = () => {
                             type="button"
                             onClick={() => toggleCreateRole(role.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-1",
                               createFormData.role_ids.includes(role.id)
                                 ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary)/0.2)]"
                                 : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]",
                             )}
                           >
+                            {role.is_department_manager && (
+                              <Crown className="w-3.5 h-3.5 text-indigo-500" />
+                            )}
                             {role.name}
                           </button>
                         ))
@@ -3103,7 +3241,10 @@ export const UsersPage: React.FC = () => {
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))]">
                     {viewingUser.phone ? (
-                      <CallablePhone number={viewingUser.phone} className="text-sm" />
+                      <CallablePhone
+                        number={viewingUser.phone}
+                        className="text-sm"
+                      />
                     ) : (
                       t("users.notProvided")
                     )}
@@ -3241,8 +3382,11 @@ export const UsersPage: React.FC = () => {
                     viewingUser.roles.map((role) => (
                       <span
                         key={role.id}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] inline-flex items-center gap-1"
                       >
+                        {role.is_department_manager && (
+                          <Crown className="w-3 h-3 text-indigo-500" />
+                        )}
                         {role.name}
                       </span>
                     ))

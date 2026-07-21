@@ -36,6 +36,12 @@ export interface User {
   extension?: string;
   last_login_at: string | null;
   created_at: string;
+  dept_manager_department_id?: string | null;
+  dept_manager_department?: Department;
+  dept_manager_classification_id?: string | null;
+  dept_manager_classification?: Classification;
+  dept_manager_location_id?: string | null;
+  dept_manager_location?: Location;
 }
 
 export interface Permission {
@@ -56,6 +62,7 @@ export interface Role {
   description: string;
   is_system: boolean;
   is_active: boolean;
+  is_department_manager: boolean;
   permissions: Permission[];
   created_at: string;
 }
@@ -123,6 +130,8 @@ export interface Department {
   level: number;
   path: string;
   manager_id: string | null;
+  supervisor_id: string | null;
+  supervisor?: User;
   is_active: boolean;
   sort_order: number;
   children?: Department[];
@@ -319,6 +328,7 @@ export interface RoleBasic {
   code: string;
   is_system: boolean;
   is_active: boolean;
+  is_department_manager: boolean;
 }
 
 /** Slim user returned by POST /auth/login. Call GET /users/me for the full object. */
@@ -419,6 +429,16 @@ export interface UpdateProfileRequest {
   mobile_verified?: boolean;
 }
 
+export interface ManagerScopeResponse {
+  is_department_manager: boolean;
+  department_id?: string;
+  department?: Department;
+  classification_id?: string;
+  classification?: Classification;
+  location_id?: string;
+  location?: Location;
+}
+
 export interface ChangePasswordRequest {
   old_password: string;
   new_password: string;
@@ -498,6 +518,7 @@ export interface DepartmentCreateRequest {
   type?: "internal" | "external";
   parent_id?: string;
   manager_id?: string;
+  supervisor_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
   role_ids?: string[];
@@ -510,6 +531,7 @@ export interface DepartmentUpdateRequest {
   description?: string;
   type?: "internal" | "external";
   manager_id?: string;
+  supervisor_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
   role_ids?: string[];

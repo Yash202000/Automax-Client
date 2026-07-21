@@ -7,6 +7,7 @@ import {
   Save,
   Check,
   Key,
+  Crown,
   Users as UsersIcon,
   AlertCircle,
 } from "lucide-react";
@@ -214,6 +215,12 @@ export const RoleEditPage: React.FC = () => {
               )}
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+              {role.is_department_manager && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-sm mr-2">
+                  <Crown className="w-3 h-3" />
+                  {t("roles.departmentManager")}
+                </span>
+              )}
               {role.name} <span className="font-mono">({role.code})</span>
             </p>
           </div>

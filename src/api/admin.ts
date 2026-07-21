@@ -729,8 +729,20 @@ export const roleApi = {
     return response.data;
   },
 
-  list: async (): Promise<ApiResponse<Role[]>> => {
-    const response = await apiClient.get<ApiResponse<Role[]>>("/admin/roles");
+  list: async (departmentId?: string): Promise<ApiResponse<Role[]>> => {
+    const url = departmentId
+      ? `/admin/roles?department_id=${departmentId}`
+      : "/admin/roles";
+    const response = await apiClient.get<ApiResponse<Role[]>>(url);
+    return response.data;
+  },
+
+  getManagerScope: async (): Promise<
+    ApiResponse<import("../types").ManagerScopeResponse>
+  > => {
+    const response = await apiClient.get<
+      ApiResponse<import("../types").ManagerScopeResponse>
+    >("/admin/users/manager-scope");
     return response.data;
   },
 
