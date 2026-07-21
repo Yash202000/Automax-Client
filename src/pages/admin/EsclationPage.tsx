@@ -17,6 +17,7 @@ import {
   FileText,
   AlertTriangle,
   Clock,
+  X,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { cn } from "@/lib/utils";
@@ -222,8 +223,8 @@ const PoliciesTab: React.FC = () => {
 
       <div className="space-y-4">
         {/* Toolbar */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
             <input
               value={search}
@@ -231,25 +232,33 @@ const PoliciesTab: React.FC = () => {
               placeholder={t("escalation.policy.searchPlaceholder")}
               className="w-full pl-9 pr-3 h-9 text-sm rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
             />
+            {search ? (
+              <X
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-destructive cursor-pointer"
+                onClick={() => setSearch("")}
+              />
+            ) : null}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            isLoading={isRefetching}
-            leftIcon={<RefreshCw className="w-4 h-4" />}
-          >
-            {t("common.refresh")}
-          </Button>
-          {isSuperAdmin && (
+          <div className="flex items-center gap-2">
             <Button
+              variant="outline"
               size="sm"
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => setShowModal(true)}
+              onClick={() => refetch()}
+              isLoading={isRefetching}
+              leftIcon={<RefreshCw className="w-4 h-4" />}
             >
-              {t("escalation.policy.addNew")}
+              {t("common.refresh")}
             </Button>
-          )}
+            {isSuperAdmin && (
+              <Button
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => setShowModal(true)}
+              >
+                {t("escalation.policy.addNew")}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -468,8 +477,8 @@ const GroupsTab: React.FC = () => {
 
       <div className="space-y-4">
         {/* Toolbar */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex items-center justify-between gap-3 bg-white p-4 rounded-lg shadow-sm">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
             <input
               type="text"
@@ -478,25 +487,33 @@ const GroupsTab: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 h-9 text-sm rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
             />
+            {searchTerm ? (
+              <X
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-destructive cursor-pointer"
+                onClick={() => setSearchTerm("")}
+              />
+            ) : null}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            isLoading={isRefetching}
-            leftIcon={<RefreshCw className="w-4 h-4" />}
-          >
-            {t("common.refresh")}
-          </Button>
-          {canCreate && (
+          <div className="flex items-center gap-2">
             <Button
+              variant="outline"
               size="sm"
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => refetch()}
+              isLoading={isRefetching}
+              leftIcon={<RefreshCw className="w-4 h-4" />}
             >
-              {t("escalation.addNew")}
+              {t("common.refresh")}
             </Button>
-          )}
+            {canCreate && (
+              <Button
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => setShowCreateModal(true)}
+              >
+                {t("escalation.addNew")}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
