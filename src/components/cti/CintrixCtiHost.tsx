@@ -6,12 +6,15 @@
  */
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import apiClient from "@/api/client";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
+import { useAuthStore } from "@/stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/permissions";
 import { CallerSentimentModal } from "./CallerSentimentModal";
+import { SentimentStats } from "../sip/Softphone";
 
 interface WidgetTokenResponse {
   cintrix_url: string;
@@ -83,7 +86,14 @@ export const CintrixCtiHost: React.FC = () => {
     setIsCallerIncidentsMinimized,
   } = useSoftphoneStore();
   const { hasPermission } = usePermissions();
+  const { t } = useTranslation();
+  const { user } = useAuthStore();
   const canCreateSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_CREATE);
+  const canViewSentiment = hasPermission(PERMISSIONS.CALLER_SENTIMENT_VIEW);
+  // Caller number for the live call, driving the caller-history stats panel
+  // (parity with the native softphone's incoming-call SentimentStats,
+  // Softphone.tsx ~line 1178). Set on incoming, cleared on call-ended.
+  const [activeCaller, setActiveCaller] = useState<string | null>(null);
   // Post-call sentiment prompt (parity with the native softphone's modal,
   // Softphone.tsx ~line 727). Only one at a time — a fresh call-ended simply
   // replaces whatever was pending.
@@ -206,6 +216,7 @@ export const CintrixCtiHost: React.FC = () => {
       inCallRef.current = true;
       setIncomingCallNumber(d.number || "Unknown");
       setIncomingCallName(d.name || "");
+      setActiveCaller(d.number || null);
       setOpenCallerIncidents(true);
       // Only un-minimize for a NEW call: the enriched second fire of the
       // same call_uuid must not re-expand a panel the agent just minimized.
@@ -222,6 +233,7 @@ export const CintrixCtiHost: React.FC = () => {
     };
     const onEnded = (e: Event) => {
       inCallRef.current = false;
+      setActiveCaller(null);
       setOpenCallerIncidents(false);
       const d = (e as CustomEvent).detail || {};
       if (
@@ -283,6 +295,11 @@ export const CintrixCtiHost: React.FC = () => {
           >
             Retry
           </button>
+        </div>
+      )}
+      {canViewSentiment && user && activeCaller && (
+        <div className="w-80">
+          <SentimentStats calleeId={user.id} callerId={activeCaller} t={t} />
         </div>
       )}
       <div ref={containerRef} />
