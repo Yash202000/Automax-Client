@@ -1050,6 +1050,16 @@ export function IncidentCreatePage() {
   const selectedWorkflow = workflows.find((w) => w.id === formData.workflow_id);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
   const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
+  // Call-originated incident (agent hit "Create incident" on the Cintrix widget,
+  // or there's a live/last call in the softphone store): the reporter IS the
+  // caller, so always show the prefilled Caller Name/Phone fields even when the
+  // selected workflow doesn't list them — otherwise the prefilled values sit
+  // invisibly in state and the agent can't see/edit them.
+  const callOriginated =
+    Boolean((routerLocation.state as any)?.ctiPrefill) ||
+    Boolean(incomingCallNumber) ||
+    Boolean(formData.reporter_phone) ||
+    Boolean(formData.reporter_name);
 
   // List of valid form data fields for validation
   const validFormFields = [
@@ -1423,7 +1433,8 @@ export function IncidentCreatePage() {
                   />
                 )}
                 {(workflowRequiredFields.includes("reporter_name") ||
-                  workflowOptionalFields.includes("reporter_name")) && (
+                  workflowOptionalFields.includes("reporter_name") ||
+                  callOriginated) && (
                   <Input
                     label={t("incidents.reporterName", "Caller Name")}
                     value={formData.reporter_name || ""}
@@ -1459,7 +1470,8 @@ export function IncidentCreatePage() {
                   />
                 )}
                 {(workflowRequiredFields.includes("reporter_phone") ||
-                  workflowOptionalFields.includes("reporter_phone")) && (
+                  workflowOptionalFields.includes("reporter_phone") ||
+                  callOriginated) && (
                   <Input
                     label={t("incidents.reporterPhone", "Caller Phone Number")}
                     type="tel"
