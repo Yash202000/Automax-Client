@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/ui/tabs";
 import Select from "@/components/ui/SelectInput";
+import { format } from "date-fns";
 
 type Category = "inbox" | "sent" | "draft" | "trash";
 type ComposeChannel = "email" | "sms";
@@ -98,9 +99,6 @@ export const CommunicationsPage: React.FC = () => {
     setAppliedFilters(filtersToSet);
   };
 
-  const formatDate = (date?: Date) =>
-    date ? date.toISOString().split("T")[0] : undefined;
-
   const { data: notificationData, isFetching } = useQuery({
     queryKey: ["notifications", page, appliedFilters, channel],
     queryFn: () =>
@@ -110,8 +108,12 @@ export const CommunicationsPage: React.FC = () => {
         category: appliedFilters.category,
         channel: channel,
         status: appliedFilters.status,
-        start_date: formatDate(appliedFilters.startDate),
-        end_date: formatDate(appliedFilters.endDate),
+        start_date: appliedFilters.startDate
+          ? `${format(appliedFilters.startDate, "yyyy-MM-dd")}T00:00:00Z`
+          : undefined,
+        end_date: appliedFilters.endDate
+          ? `${format(appliedFilters.endDate, "yyyy-MM-dd")}T23:59:59Z`
+          : undefined,
         recipient: appliedFilters.recipient,
       }),
   });
