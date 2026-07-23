@@ -130,7 +130,7 @@ const DeleteModal: React.FC<{
 
 const PoliciesTab: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, hasPermission } = usePermissions();
 
   const [showModal, setShowModal] = useState(false);
   const [editPolicy, setEditPolicy] = useState<EscalationPolicy | undefined>();
@@ -138,6 +138,8 @@ const PoliciesTab: React.FC = () => {
     null,
   );
   const [search, setSearch] = useState("");
+  const canCreatePolicy =
+    isSuperAdmin || hasPermission(PERMISSIONS.ESCALATION_POLICY_CREATE);
 
   const {
     data: policiesData,
@@ -249,7 +251,7 @@ const PoliciesTab: React.FC = () => {
             >
               {t("common.refresh")}
             </Button>
-            {isSuperAdmin && (
+            {canCreatePolicy && (
               <Button
                 size="sm"
                 leftIcon={<Plus className="w-4 h-4" />}

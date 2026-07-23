@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/ui/popover";
 interface DatePickerWithRangeProps {
   value?: DateRange;
   onChange?: (range: DateRange | undefined) => void;
+  disabled?: any;
 }
 
 const today = new Date();
@@ -32,6 +33,7 @@ const presetRanges = {
 export function DatePickerWithRange({
   value,
   onChange,
+  disabled,
 }: DatePickerWithRangeProps) {
   const [open, setOpen] = React.useState(false);
   const [range, setRange] = React.useState<DateRange | undefined>(value);
@@ -84,6 +86,7 @@ export function DatePickerWithRange({
           numberOfMonths={2}
           defaultMonth={range?.from}
           min={1}
+          disabled={disabled}
         />
         <div className="border-t flex items-center justify-between">
           <div className="flex gap-2 p-3">

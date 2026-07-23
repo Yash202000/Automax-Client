@@ -181,6 +181,7 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
               setDateRange(r || {});
               setPage(1);
             }}
+            disabled={(date: any) => date > new Date()}
           />
         </div>
         <Button
