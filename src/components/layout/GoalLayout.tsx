@@ -524,6 +524,24 @@ export const GoalLayout: React.FC = () => {
               </>
             )}
           </NavLink>
+
+          <NavLink
+            to="/goals/kpi/entries"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <FileSpreadsheet size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">All Entries</span>
+                )}
+              </>
+            )}
+          </NavLink>
         </div>
 
         {/* Master Data Management */}

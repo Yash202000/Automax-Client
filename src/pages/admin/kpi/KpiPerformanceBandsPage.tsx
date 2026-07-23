@@ -160,8 +160,11 @@ export const KpiPerformanceBandsPage: React.FC = () => {
                 KPI-specific overrides
               </h2>
               {canManage && (
-                <Button size="sm" onClick={() => setShowForm(true)}>
-                  <Plus className="w-4 h-4" />
+                <Button
+                  size="sm"
+                  leftIcon={<Plus className="w-4 h-4" />}
+                  onClick={() => setShowForm(true)}
+                >
                   Add override
                 </Button>
               )}

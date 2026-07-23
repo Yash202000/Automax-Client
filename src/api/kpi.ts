@@ -27,7 +27,7 @@ import type {
   OperationalKPIRequest,
   AwardKPI,
   AwardKPIRequest,
-  KpiAnnualTarget,
+  KpiTarget,
   KpiAnnualTargetRequest,
   KpiPerformance,
   KpiPerformanceRequest,
@@ -61,6 +61,12 @@ import type {
   KpiComment,
   KpiActivity,
   KpiListResponse,
+  KpiEntry,
+  KpiEntryRequest,
+  KpiEntryEvidence,
+  KpiCollaboratorAssignment,
+  KpiCollaboratorAssignmentRequest,
+  CollaboratorPermissionMatrix,
 } from "../types/kpi";
 
 export const kpiMasterDataApi = {
@@ -417,16 +423,24 @@ export const kpiPerformanceApi = {
   listTargets: async (params?: {
     kpi_code?: string;
     year?: number;
-  }): Promise<ApiResponse<KpiAnnualTarget[]>> => {
+    metric_id?: string;
+    period_code?: string;
+    target_status?: string;
+  }): Promise<ApiResponse<KpiTarget[]>> => {
     const searchParams = new URLSearchParams();
     if (params?.kpi_code) searchParams.append("kpi_code", params.kpi_code);
     if (params?.year) searchParams.append("year", String(params.year));
+    if (params?.metric_id) searchParams.append("metric_id", params.metric_id);
+    if (params?.period_code)
+      searchParams.append("period_code", params.period_code);
+    if (params?.target_status)
+      searchParams.append("target_status", params.target_status);
     const res = await apiClient.get(`/kpi/targets?${searchParams.toString()}`);
     return res.data;
   },
   setTarget: async (
     data: KpiAnnualTargetRequest,
-  ): Promise<ApiResponse<KpiAnnualTarget>> => {
+  ): Promise<ApiResponse<KpiTarget>> => {
     const res = await apiClient.post("/kpi/targets", data);
     return res.data;
   },
@@ -889,6 +903,100 @@ export const kpiEngagementApi = {
     const res = await apiClient.get(
       `/kpi/${type}/${id}/activity?page=${page}&limit=${limit}`,
     );
+    return res.data;
+  },
+
+  // Entries
+  listAllEntries: async (params?: {
+    kpi_code?: string;
+    metric_name?: string;
+    reporting_year?: number;
+    period_code?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<KpiEntry>> => {
+    const res = await apiClient.get("/kpi/entries", { params });
+    return res.data;
+  },
+  listEntries: async (
+    type: string,
+    id: string,
+    metricId?: string,
+  ): Promise<ApiResponse<KpiEntry[]>> => {
+    const params = metricId ? `?metric_id=${metricId}` : "";
+    const res = await apiClient.get(`/kpi/${type}/${id}/entries${params}`);
+    return res.data;
+  },
+  createEntry: async (
+    type: string,
+    id: string,
+    data: KpiEntryRequest,
+  ): Promise<ApiResponse<KpiEntry>> => {
+    const res = await apiClient.post(`/kpi/${type}/${id}/entries`, data);
+    return res.data;
+  },
+  listEntryEvidence: async (
+    entryId: string,
+  ): Promise<ApiResponse<KpiEntryEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/entries/${entryId}/evidence`);
+    return res.data;
+  },
+
+  // ── Collaborator Assignments ──────────────────────────────────────────
+  listCollaboratorAssignments: async (
+    type: string,
+    id: string,
+    params?: { active?: string; collaborator_type?: string },
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/collaborator-assignments`,
+      { params },
+    );
+    return res.data;
+  },
+  getCollaboratorAssignment: async (
+    assignmentId: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment>> => {
+    const res = await apiClient.get(
+      `/kpi/collaborator-assignments/${assignmentId}`,
+    );
+    return res.data;
+  },
+  createCollaboratorAssignment: async (
+    type: string,
+    id: string,
+    data: KpiCollaboratorAssignmentRequest,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment>> => {
+    const res = await apiClient.post(
+      `/kpi/${type}/${id}/collaborator-assignments`,
+      data,
+    );
+    return res.data;
+  },
+  updateCollaboratorAssignment: async (
+    assignmentId: string,
+    data: KpiCollaboratorAssignmentRequest,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment>> => {
+    const res = await apiClient.put(
+      `/kpi/collaborator-assignments/${assignmentId}`,
+      data,
+    );
+    return res.data;
+  },
+  deleteCollaboratorAssignment: async (
+    assignmentId: string,
+  ): Promise<ApiResponse<null>> => {
+    const res = await apiClient.delete(
+      `/kpi/collaborator-assignments/${assignmentId}`,
+    );
+    return res.data;
+  },
+  getCollaboratorPermissionMatrix: async (): Promise<
+    ApiResponse<CollaboratorPermissionMatrix[]>
+  > => {
+    const res = await apiClient.get("/kpi/collaborator-permission-matrix");
     return res.data;
   },
 };

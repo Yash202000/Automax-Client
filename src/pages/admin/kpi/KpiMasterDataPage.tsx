@@ -1133,14 +1133,21 @@ function MasterTable<T extends { id: string }>({
         </p>
         <div className="flex gap-2 mt-4">
           {canManage && onAdd && (
-            <Button onClick={onAdd} size="sm">
-              <Plus className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={onAdd}
+              size="sm"
+            >
               {t("common.add")}
             </Button>
           )}
           {onImport && (
-            <Button onClick={onImport} size="sm" variant="secondary">
-              <Upload className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={onImport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.import")}
             </Button>
           )}
@@ -1154,19 +1161,30 @@ function MasterTable<T extends { id: string }>({
       {canManage && onAdd && (
         <div className="px-6 pt-4 pb-2 flex justify-end gap-2">
           {onExport && (
-            <Button onClick={onExport} size="sm" variant="secondary">
-              <Download className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={onExport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.export")}
             </Button>
           )}
           {onImport && (
-            <Button onClick={onImport} size="sm" variant="secondary">
-              <Upload className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={onImport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.import")}
             </Button>
           )}
-          <Button onClick={onAdd} size="sm">
-            <Plus className="w-4 h-4 me-1" />
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={onAdd}
+            size="sm"
+          >
             {t("common.add")}
           </Button>
         </div>

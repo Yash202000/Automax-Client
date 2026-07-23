@@ -669,8 +669,11 @@ function CorrectiveActionsPanel({ performanceId }: { performanceId: string }) {
           {t("kpi.correctiveActions.title")}
         </h2>
         {canManage && (
-          <Button size="sm" onClick={() => setShowForm(true)}>
-            <Plus className="w-4 h-4" />
+          <Button
+            size="sm"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setShowForm(true)}
+          >
             {t("kpi.correctiveActions.add")}
           </Button>
         )}
@@ -864,8 +867,11 @@ function EvidencePanel({
           <Paperclip className="w-5 h-5 text-slate-400" />
           {t("kpi.performance.detail.evidence")}
         </h2>
-        <Button size="sm" onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4" />
+        <Button
+          size="sm"
+          leftIcon={<Plus className="w-4 h-4" />}
+          onClick={() => setShowForm(true)}
+        >
           {t("kpi.performance.detail.addEvidence")}
         </Button>
       </div>
