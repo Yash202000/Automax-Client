@@ -233,6 +233,11 @@ const EmailPage = lazy(() =>
 const SMSPage = lazy(() =>
   import("./pages/admin/SMSPage").then((m) => ({ default: m.SMSPage })),
 );
+const CommunicationsPage = lazy(() =>
+  import("./pages/admin/CommunicationsPage").then((m) => ({
+    default: m.CommunicationsPage,
+  })),
+);
 const GoalsPage = lazy(() =>
   import("./pages/admin/GoalsPage").then((m) => ({ default: m.GoalsPage })),
 );
@@ -904,6 +909,10 @@ function App() {
                         element={<CallHistory />}
                       />
                       <Route
+                        path="/call-centre/communications"
+                        element={<CommunicationsPage />}
+                      />
+                      <Route
                         path="/call-centre/email"
                         element={<EmailPage />}
                       />
@@ -928,6 +937,10 @@ function App() {
                       <Route
                         path="/call-centre/history"
                         element={<CallHistory />}
+                      />
+                      <Route
+                        path="/call-centre/communications"
+                        element={<CommunicationsPage />}
                       />
                       <Route
                         path="/call-centre/email"

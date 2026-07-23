@@ -12,6 +12,7 @@ import {
   Sparkles,
   List,
   Phone,
+  Inbox,
   Languages,
   Mail,
   MessageSquare,
@@ -173,6 +174,32 @@ export const CallCentreLayout: React.FC = () => {
             )}
           </NavLink>
 
+          <NavLink
+            to="/call-centre/communications"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                isActive
+                  ? "bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                )}
+                <Inbox size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("sidebar.communications")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
           <NavLink
             to="/call-centre/email"
             end

@@ -114,6 +114,7 @@ import type {
   PublicIncidentFeedbackValidationResponse,
   PublicIncidentFeedbackSubmitResponse,
   WorkflowFilter,
+  NotificationFilter,
 } from "../types";
 import type {
   NotificationTemplateCreatePayload,
@@ -3012,6 +3013,46 @@ export const smsApi = {
     params.append("user_id", userId);
     const response = await apiClient.get<ApiResponse<any>>(
       `/notifications/stats?${params.toString()}`,
+    );
+    return response.data;
+  },
+};
+
+export const notificationTrackApi = {
+  list: async (
+    filter: NotificationFilter = {},
+  ): Promise<PaginatedResponse<Email>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.search) params.append("search", filter.search);
+    if (filter.start_date) params.append("start_date", filter.start_date);
+    if (filter.end_date) params.append("end_date", filter.end_date);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.channel) params.append("channel", filter.channel);
+    if (filter.sent_by) params.append("sent_by", filter.sent_by);
+    if (filter.is_starred !== undefined)
+      params.append("is_starred", String(filter.is_starred));
+    if (filter.category) params.append("category", filter.category);
+    if (filter.direction) params.append("direction", filter.direction);
+    if (filter.is_read !== undefined)
+      params.append("is_read", String(filter.is_read));
+    if (filter.received_by)
+      params.append("received_by", String(filter.received_by));
+    if (filter.is_draft !== undefined)
+      params.append("is_draft", String(filter.is_draft));
+    if (filter.recipient) {
+      params.append("recipient", String(filter.recipient));
+    }
+
+    const response = await apiClient.get<PaginatedResponse<Email>>(
+      `/admin/notification-monitoring?${params.toString()}`,
+    );
+    return response.data;
+  },
+  getById: async (id: string): Promise<ApiResponse<Email>> => {
+    const response = await apiClient.get<ApiResponse<Email>>(
+      `/admin/notification-monitoring/${id}`,
     );
     return response.data;
   },

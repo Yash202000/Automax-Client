@@ -233,7 +233,8 @@
     "nameAllowedCharacters": "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /.",
     "preview": "Preview",
     "source": "Source",
-    "allSources": "All Sources"
+    "allSources": "All Sources",
+    "sent": "Sent"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -1752,6 +1753,7 @@
     "callCentre": "Call Centre",
     "callHistory": "Call History",
     "contacts": "Contacts",
+    "communications": "Communications",
     "email": "Email",
     "newComplaint": "New Complaint",
     "newQuery": "New Query",
