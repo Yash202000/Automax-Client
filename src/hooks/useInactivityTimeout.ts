@@ -86,6 +86,7 @@ export function useInactivityTimeout() {
     }, 1000);
 
     const handleActivity = () => {
+      if (warningShownRef.current) return;
       const now = Date.now();
       if (now - lastActivityRef.current < 2000) return;
       lastActivityRef.current = now;

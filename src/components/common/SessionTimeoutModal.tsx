@@ -85,8 +85,12 @@ export const SessionTimeoutModal: React.FC<SessionTimeoutModalProps> = ({
             </div>
           </div>
 
-          <Button onClick={onStayLoggedIn} variant="default" className="w-full">
-            <RefreshCw className="w-4 h-4" />
+          <Button
+            onClick={onStayLoggedIn}
+            variant="default"
+            className="w-full"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
+          >
             {t("session.stayLoggedIn", {
               defaultValue: "Stay Logged In",
             })}
