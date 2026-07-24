@@ -1749,6 +1749,7 @@
     "viewIncidents": "عرض البلاغات",
     "callCentre": "مركز الاتصال",
     "contacts": "جهات الاتصال",
+    "communications": "Communications",
     "email": "Email",
     "callHistory": "سجل المكالمات",
     "newComplaint": "شكوى جديدة",
@@ -4431,3 +4432,4 @@
     }
   }
 }
+

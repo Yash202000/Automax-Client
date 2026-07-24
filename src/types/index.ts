@@ -1975,6 +1975,25 @@ export interface SMSFilter {
   received_by?: string;
 }
 
+export interface NotificationFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  channel?: string;
+  sent_by?: string;
+  is_starred?: boolean;
+  category?: string;
+  direction?: string;
+  is_read?: boolean;
+  is_draft?: boolean;
+  received_by?: string;
+  deleted_at?: string | null;
+  recipient?: string;
+}
+
 // Incident Merge Types
 export interface IncidentMergeOption {
   id: string;

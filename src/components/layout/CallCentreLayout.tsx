@@ -12,6 +12,7 @@ import {
   Sparkles,
   List,
   Phone,
+  Inbox,
   Languages,
   Mail,
   MessageSquare,
@@ -27,6 +28,7 @@ import { NotificationBell } from "../common/NotificationBell";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
 import { SoftphoneButton } from "../sip/SoftphoneButton";
 import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/constants/permissions";
 
 export const CallCentreLayout: React.FC = () => {
   const { t } = useTranslation();
@@ -40,7 +42,11 @@ export const CallCentreLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const langRef = useRef<HTMLDivElement>(null);
-  const { hasAnyPermission, isSuperAdmin } = usePermissions();
+  const { hasAnyPermission, isSuperAdmin, hasPermission } = usePermissions();
+
+  const canViewCommunications = hasPermission(
+    PERMISSIONS.COMMUNICATION_TRACK_VIEW,
+  );
 
   const handleLanguageChange = async (langCode: string) => {
     if (langCode === currentLang) {
@@ -173,6 +179,34 @@ export const CallCentreLayout: React.FC = () => {
             )}
           </NavLink>
 
+          {canViewCommunications ? (
+            <NavLink
+              to="/call-centre/communications"
+              end
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? "bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                  )}
+                  <Inbox size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("sidebar.communications")}
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          ) : null}
           <NavLink
             to="/call-centre/email"
             end
