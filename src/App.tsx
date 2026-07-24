@@ -372,6 +372,12 @@ const KpiPerformanceBandsPage = lazy(() =>
   })),
 );
 
+const KpiEntriesPage = lazy(() =>
+  import("./pages/admin/kpi/KpiEntriesPage").then((m) => ({
+    default: m.KpiEntriesPage,
+  })),
+);
+
 const KpiApprovalsPage = lazy(() =>
   import("./pages/admin/kpi/KpiApprovalsPage").then((m) => ({
     default: m.KpiApprovalsPage,
@@ -1054,6 +1060,10 @@ function App() {
                         <Route
                           path="/goals/kpi/performance-bands"
                           element={<KpiPerformanceBandsPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/entries"
+                          element={<KpiEntriesPage />}
                         />
                       </Route>
 

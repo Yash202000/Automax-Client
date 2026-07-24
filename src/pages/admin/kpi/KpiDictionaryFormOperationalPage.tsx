@@ -325,9 +325,9 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
           </Button>
           <Button
             type="submit"
+            leftIcon={<Save className="w-4 h-4" />}
             isLoading={isEdit ? updateKpi.isPending : createKpi.isPending}
           >
-            <Save className="w-4 h-4 me-1" />
             {t("common.save")}
           </Button>
         </div>

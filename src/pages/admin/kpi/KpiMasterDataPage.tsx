@@ -273,6 +273,17 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const handleSave = async () => {
     const isEdit = !!modalItem;
+    if (!form.name_en) {
+      toast.error(t("kpi.masterData.nameEnRequired"));
+      return;
+    }
+    if (
+      modalType === "award-sub-criterion" &&
+      (!form.award_criterion_id || !form.sub_no)
+    ) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
     try {
       if (modalType === "pillar") {
         const data: PillarRequest = {
@@ -406,7 +417,10 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const exportToExcel = (data: any[], label: string) =>
     exportToExcelUtil(
-      data,
+      data.map((r) => ({
+        ...r,
+        owner: r.owner?.name ?? getDepartmentName(r.owner_id) ?? "",
+      })),
       label,
       t("common.noDataToExport"),
       t("common.exported"),
@@ -431,8 +445,12 @@ export const KpiMasterDataPage: React.FC = () => {
           toast.error(t("common.emptyFile"));
           return;
         }
+        const validRows = json.filter((row: any) => {
+          const name = row.name_en || row.NameEn || row.Name || "";
+          return !!name;
+        });
         let imported = 0;
-        for (const row of json) {
+        for (const row of validRows) {
           try {
             await submitImportRow(importType, row);
             imported++;
@@ -449,6 +467,17 @@ export const KpiMasterDataPage: React.FC = () => {
     e.target.value = "";
   };
 
+  const resolveOwnerId = (row: any): string | undefined => {
+    if (row.owner_id) return row.owner_id;
+    const ownerName =
+      row.owner_name || row.OwnerName || row.owner || row.Owner || "";
+    if (!ownerName) return undefined;
+    const dept = departments.find(
+      (d) => d.name?.toLowerCase() === ownerName.toLowerCase(),
+    );
+    return dept?.id;
+  };
+
   const submitImportRow = async (type: EntityType, row: any) => {
     const name_en = row.name_en || row.NameEn || row.Name || "";
     const name_ar = row.name_ar || row.NameAr || "";
@@ -457,13 +486,13 @@ export const KpiMasterDataPage: React.FC = () => {
       await createPillar.mutateAsync({
         name_en,
         name_ar,
-        owner_id: row.owner_id || undefined,
+        owner_id: resolveOwnerId(row),
       } as PillarRequest);
     } else if (type === "enabler") {
       await createEnabler.mutateAsync({
         name_en,
         name_ar,
-        owner_id: row.owner_id || undefined,
+        owner_id: resolveOwnerId(row),
       } as EnablerRequest);
     } else if (type === "operational-objective") {
       await createOperationalObjective.mutateAsync({
@@ -492,7 +521,7 @@ export const KpiMasterDataPage: React.FC = () => {
         objective_id: row.objective_id || undefined,
         pillar_id: row.pillar_id || undefined,
         enabler_id: row.enabler_id || undefined,
-        owner_id: row.owner_id || undefined,
+        owner_id: resolveOwnerId(row),
         status: row.status || undefined,
       } as InitiativeRequest);
     } else if (type === "domain") {
@@ -692,7 +721,26 @@ export const KpiMasterDataPage: React.FC = () => {
             onEdit={(item) => handleEdit("initiative", item)}
             onDelete={(id) => handleDelete("initiative", id)}
             onAdd={() => handleAdd("initiative")}
-            onExport={() => exportToExcel(initiatives ?? [], "Initiatives")}
+            onExport={() =>
+              exportToExcel(
+                (initiatives ?? []).map((r) => ({
+                  name_en: r.name_en,
+                  name_ar: r.name_ar,
+                  [t("kpi.masterData.strategicGoal")]:
+                    r.goal?.title ?? r.goal_id ?? "",
+                  [t("kpi.masterData.operationalObjective")]:
+                    r.objective?.name_en ?? r.objective_id ?? "",
+                  [t("kpi.masterData.pillar")]:
+                    r.pillar?.name_en ?? r.pillar_id ?? "",
+                  [t("kpi.masterData.enabler")]:
+                    r.enabler?.name_en ?? r.enabler_id ?? "",
+                  [t("kpi.masterData.owner")]:
+                    r.owner?.name ?? getDepartmentName(r.owner_id),
+                  status: r.status,
+                })),
+                "Initiatives",
+              )
+            }
             onImport={() => handleImportExcel("initiative")}
           />
         )}
@@ -752,7 +800,16 @@ export const KpiMasterDataPage: React.FC = () => {
             onDelete={(id) => handleDelete("award-sub-criterion", id)}
             onAdd={() => handleAdd("award-sub-criterion")}
             onExport={() =>
-              exportToExcel(awardSubCriteria ?? [], "AwardSubCriteria")
+              exportToExcel(
+                (awardSubCriteria ?? []).map((r) => ({
+                  [t("kpi.masterData.awardCriterion")]:
+                    r.award_criterion?.name_en ?? r.award_criterion_id ?? "",
+                  sub_no: r.sub_no,
+                  name_en: r.name_en,
+                  name_ar: r.name_ar,
+                })),
+                "AwardSubCriteria",
+              )
             }
             onImport={() => handleImportExcel("award-sub-criterion")}
           />
@@ -1036,7 +1093,7 @@ export const KpiMasterDataPage: React.FC = () => {
           {modalType === "award-sub-criterion" && (
             <>
               <Select
-                label={t("kpi.masterData.awardCriterion")}
+                label={`${t("kpi.masterData.awardCriterion")} *`}
                 options={(awardCriteria ?? []).map((c: AwardCriterion) => ({
                   value: c.id,
                   label: `${c.criterion_no} - ${c.name_en}`,
@@ -1047,7 +1104,7 @@ export const KpiMasterDataPage: React.FC = () => {
                 placeholder={t("common.selectAnOption")}
               />
               <Input
-                label={t("kpi.masterData.subNo")}
+                label={`${t("kpi.masterData.subNo")} *`}
                 value={form.sub_no}
                 onChange={set("sub_no")}
               />
@@ -1133,14 +1190,21 @@ function MasterTable<T extends { id: string }>({
         </p>
         <div className="flex gap-2 mt-4">
           {canManage && onAdd && (
-            <Button onClick={onAdd} size="sm">
-              <Plus className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={onAdd}
+              size="sm"
+            >
               {t("common.add")}
             </Button>
           )}
           {onImport && (
-            <Button onClick={onImport} size="sm" variant="secondary">
-              <Upload className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={onImport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.import")}
             </Button>
           )}
@@ -1154,19 +1218,30 @@ function MasterTable<T extends { id: string }>({
       {canManage && onAdd && (
         <div className="px-6 pt-4 pb-2 flex justify-end gap-2">
           {onExport && (
-            <Button onClick={onExport} size="sm" variant="secondary">
-              <Download className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={onExport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.export")}
             </Button>
           )}
           {onImport && (
-            <Button onClick={onImport} size="sm" variant="secondary">
-              <Upload className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={onImport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.import")}
             </Button>
           )}
-          <Button onClick={onAdd} size="sm">
-            <Plus className="w-4 h-4 me-1" />
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={onAdd}
+            size="sm"
+          >
             {t("common.add")}
           </Button>
         </div>
