@@ -406,7 +406,10 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const exportToExcel = (data: any[], label: string) =>
     exportToExcelUtil(
-      data,
+      data.map((r) => ({
+        ...r,
+        owner: r.owner?.name ?? getDepartmentName(r.owner_id) ?? "",
+      })),
       label,
       t("common.noDataToExport"),
       t("common.exported"),
