@@ -909,9 +909,19 @@ function App() {
                         element={<CallHistory />}
                       />
                       <Route
-                        path="/call-centre/communications"
-                        element={<CommunicationsPage />}
-                      />
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
+                              PERMISSIONS.COMMUNICATION_TRACK_VIEW,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/communications"
+                          element={<CommunicationsPage />}
+                        />
+                      </Route>
                       <Route
                         path="/call-centre/email"
                         element={<EmailPage />}

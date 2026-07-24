@@ -36,6 +36,8 @@ import { Input } from "@/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/ui/tabs";
 import Select from "@/components/ui/SelectInput";
 import { format } from "date-fns";
+import { PERMISSIONS } from "@/constants/permissions";
+import usePermissions from "@/hooks/usePermissions";
 
 type Category = "inbox" | "sent" | "draft" | "trash";
 type ComposeChannel = "email" | "sms";
@@ -43,6 +45,7 @@ type ComposeChannel = "email" | "sms";
 export const CommunicationsPage: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
   const [currentCategory, setCurrentCategory] = useState<Category>("inbox");
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -86,6 +89,8 @@ export const CommunicationsPage: React.FC = () => {
   });
 
   const [appliedFilters, setAppliedFilters] = useState(filters);
+
+  const canUpdate = hasPermission(PERMISSIONS.COMMUNICATION_TRACK_UPDATE);
 
   const resetFilters = () => {
     const filtersToSet: any = {
@@ -599,20 +604,22 @@ export const CommunicationsPage: React.FC = () => {
     <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-border overflow-hidden shadow-sm">
       {/* Sidebar */}
       <div className="w-64 bg-card border-r border-border flex flex-col hidden md:flex">
-        <div className="p-4">
-          <Button
-            onClick={() => {
-              resetCompose();
-              setComposeChannel("email");
-              setIsComposeOpen(true);
-              setIsNewEmail(true);
-            }}
-            className="w-full"
-            leftIcon={<Plus className="w-5 h-5" />}
-          >
-            <span>Compose Notification</span>
-          </Button>
-        </div>
+        {canUpdate ? (
+          <div className="p-4">
+            <Button
+              onClick={() => {
+                resetCompose();
+                setComposeChannel("email");
+                setIsComposeOpen(true);
+                setIsNewEmail(true);
+              }}
+              className="w-full"
+              leftIcon={<Plus className="w-5 h-5" />}
+            >
+              <span>Compose</span>
+            </Button>
+          </div>
+        ) : null}
 
         <Tabs
           value={channel}
@@ -911,33 +918,35 @@ export const CommunicationsPage: React.FC = () => {
                       {new Date(selectedEmail.created_at).toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {!isSmsNotification(selectedEmail) && (
-                      <>
-                        <button
-                          onClick={handleReply}
-                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                          title={t("email.reply")}
-                        >
-                          <Reply className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleForward}
-                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                          title={t("email.forward")}
-                        >
-                          <Forward className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={(e) => deleteEmail(e, selectedEmail.id)}
-                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
-                      title={t("common.delete")}
-                    >
-                      <Trash className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {canUpdate ? (
+                    <div className="flex items-center gap-1">
+                      {!isSmsNotification(selectedEmail) && (
+                        <>
+                          <button
+                            onClick={handleReply}
+                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                            title={t("email.reply")}
+                          >
+                            <Reply className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleForward}
+                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                            title={t("email.forward")}
+                          >
+                            <Forward className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={(e) => deleteEmail(e, selectedEmail.id)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                        title={t("common.delete")}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-4 mb-4">
                   <button
@@ -1010,14 +1019,16 @@ export const CommunicationsPage: React.FC = () => {
                         {getFailureMessage(selectedEmail) || "Delivery failed"}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openRetryForNotification(selectedEmail)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Retry
-                    </button>
+                    {canUpdate ? (
+                      <button
+                        type="button"
+                        onClick={() => openRetryForNotification(selectedEmail)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Retry
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               )}
