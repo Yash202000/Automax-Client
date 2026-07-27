@@ -9,6 +9,7 @@ import usePermissions from "@/hooks/usePermissions";
 import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
 import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
 import { SessionTimeoutModal } from "@/components/common/SessionTimeoutModal";
+import { useGlobalWebSocket } from "@/hooks/useGlobalWebSocket";
 
 export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -22,6 +23,8 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const isOpen = useSoftphoneStore((s) => s.isOpen);
   const setIsOpen = useSoftphoneStore((s) => s.setIsOpen);
   const { isSuperAdmin, hasAnyPermission } = usePermissions();
+
+  useGlobalWebSocket();
 
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
 

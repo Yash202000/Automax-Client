@@ -46,7 +46,7 @@ import {
   locationApi,
   roleApi,
   classificationApi,
-  extensionApi,
+  // extensionApi, // Extension assignment disabled for user create/edit
 } from "../../api/admin";
 import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
@@ -172,6 +172,7 @@ export const UsersPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<UserImportResult | null>(
     null,
@@ -526,39 +527,40 @@ export const UsersPage: React.FC = () => {
       </p>
     ) : null;
 
-  const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
+  // Extension assignment disabled for user create/edit — not needed.
+  // const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
 
-  const hasAgentRole = createFormData.role_ids.some((id) => {
-    const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
-    return role?.permissions?.some(
-      (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
-    );
-  });
-  const editHasAgentRole = formData.role_ids.some((id) => {
-    const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
-    return role?.permissions?.some(
-      (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
-    );
-  });
+  // const hasAgentRole = createFormData.role_ids.some((id) => {
+  //   const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
+  //   return role?.permissions?.some(
+  //     (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
+  //   );
+  // });
+  // const editHasAgentRole = formData.role_ids.some((id) => {
+  //   const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
+  //   return role?.permissions?.some(
+  //     (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
+  //   );
+  // });
 
-  const updateAssignExtensionMutation = useMutation({
-    mutationFn: (payload: { user_id: string; extension: string }) =>
-      extensionApi.assign(payload),
-    onSuccess: () => {
-      toast.success(
-        t("users.userUpdatedSuccessfully") + " (Extension assigned)",
-      );
-      closeModal();
-    },
-    onError: (error: any) => {
-      toast.warning(
-        t("users.userUpdatedSuccessfully") +
-          " but failed to assign extension: " +
-          getApiErrorMessage(error, "Error"),
-      );
-      closeModal();
-    },
-  });
+  // const updateAssignExtensionMutation = useMutation({
+  //   mutationFn: (payload: { user_id: string; extension: string }) =>
+  //     extensionApi.assign(payload),
+  //   onSuccess: () => {
+  //     toast.success(
+  //       t("users.userUpdatedSuccessfully") + " (Extension assigned)",
+  //     );
+  //     closeModal();
+  //   },
+  //   onError: (error: any) => {
+  //     toast.warning(
+  //       t("users.userUpdatedSuccessfully") +
+  //         " but failed to assign extension: " +
+  //         getApiErrorMessage(error, "Error"),
+  //     );
+  //     closeModal();
+  //   },
+  // });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProfileRequest }) =>
@@ -566,20 +568,23 @@ export const UsersPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 
-      if (
-        canAssignExtensions &&
-        editHasAgentRole &&
-        formData.extension &&
-        editingUser?.id
-      ) {
-        updateAssignExtensionMutation.mutate({
-          user_id: editingUser.id,
-          extension: formData.extension,
-        });
-      } else {
-        toast.success(t("users.userUpdatedSuccessfully"));
-        closeModal();
-      }
+      // Extension assignment disabled — always take the non-assignment path.
+      // if (
+      //   canAssignExtensions &&
+      //   editHasAgentRole &&
+      //   formData.extension &&
+      //   editingUser?.id
+      // ) {
+      //   updateAssignExtensionMutation.mutate({
+      //     user_id: editingUser.id,
+      //     extension: formData.extension,
+      //   });
+      // } else {
+      //   toast.success(t("users.userUpdatedSuccessfully"));
+      //   closeModal();
+      // }
+      toast.success(t("users.userUpdatedSuccessfully"));
+      closeModal();
     },
     onError: (error: any) => {
       const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
@@ -587,60 +592,63 @@ export const UsersPage: React.FC = () => {
     },
   });
 
-  const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
-    queryKey: ["extensions"],
-    queryFn: () => extensionApi.list(),
-    enabled: canAssignExtensions && hasAgentRole && isCreateModalOpen,
-  });
+  // const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
+  //   queryKey: ["extensions"],
+  //   queryFn: () => extensionApi.list(),
+  //   enabled: canAssignExtensions && hasAgentRole && isCreateModalOpen,
+  // });
 
-  const availableExtensions = (extensionsData?.data || []).filter(
-    (ext: any) => ext.status === "available",
-  );
+  // const availableExtensions = (extensionsData?.data || []).filter(
+  //   (ext: any) => ext.status === "available",
+  // );
 
-  const assignExtensionMutation = useMutation({
-    mutationFn: (payload: { user_id: string; extension: string }) =>
-      extensionApi.assign(payload),
-    onSuccess: () => {
-      toast.success(
-        t("users.userCreatedSuccessfully") + " (Extension assigned)",
-      );
-      closeCreateModal();
-    },
-    onError: (error: any) => {
-      toast.warning(
-        t("users.userCreatedSuccessfully") +
-          " but failed to assign extension: " +
-          getApiErrorMessage(error, "Error"),
-      );
-      closeCreateModal();
-    },
-  });
+  // const assignExtensionMutation = useMutation({
+  //   mutationFn: (payload: { user_id: string; extension: string }) =>
+  //     extensionApi.assign(payload),
+  //   onSuccess: () => {
+  //     toast.success(
+  //       t("users.userCreatedSuccessfully") + " (Extension assigned)",
+  //     );
+  //     closeCreateModal();
+  //   },
+  //   onError: (error: any) => {
+  //     toast.warning(
+  //       t("users.userCreatedSuccessfully") +
+  //         " but failed to assign extension: " +
+  //         getApiErrorMessage(error, "Error"),
+  //     );
+  //     closeCreateModal();
+  //   },
+  // });
 
   const createMutation = useMutation({
     mutationFn: (params: { data: typeof createFormData; avatar?: File }) =>
       userApi.create(params.data, params.avatar),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 
-      const newUserId =
-        response.data?.id ||
-        (response as any)?.id ||
-        (response as any)?.data?.user?.id;
+      // Extension assignment disabled — always take the non-assignment path.
+      // const newUserId =
+      //   response.data?.id ||
+      //   (response as any)?.id ||
+      //   (response as any)?.data?.user?.id;
 
-      if (
-        canAssignExtensions &&
-        hasAgentRole &&
-        createFormData.extension &&
-        newUserId
-      ) {
-        assignExtensionMutation.mutate({
-          user_id: newUserId,
-          extension: createFormData.extension,
-        });
-      } else {
-        toast.success(t("users.userCreatedSuccessfully"));
-        closeCreateModal();
-      }
+      // if (
+      //   canAssignExtensions &&
+      //   hasAgentRole &&
+      //   createFormData.extension &&
+      //   newUserId
+      // ) {
+      //   assignExtensionMutation.mutate({
+      //     user_id: newUserId,
+      //     extension: createFormData.extension,
+      //   });
+      // } else {
+      //   toast.success(t("users.userCreatedSuccessfully"));
+      //   closeCreateModal();
+      // }
+      toast.success(t("users.userCreatedSuccessfully"));
+      closeCreateModal();
     },
     onError: (error: any) => {
       const errorMessage = getApiErrorMessage(error, t("users.createFailed"));
@@ -1343,39 +1351,78 @@ export const UsersPage: React.FC = () => {
             {t("users.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
-            onClick={handleExport}
-            isLoading={isExporting}
-          >
-            {isExporting
-              ? t("common.exporting")
-              : t("users.exportExcel", { defaultValue: "Export Excel" })}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={handleExportJson}
-            isLoading={isExporting}
-          >
-            {isExporting
-              ? t("common.exporting")
-              : t("users.exportJson", { defaultValue: "Export JSON" })}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
-            onClick={handleDownloadTemplate}
-          >
-            {t("users.downloadTemplate", {
-              defaultValue: "Download User Import Template",
-            })}
-          </Button>
+        <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3">
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<MoreHorizontal className="w-4 h-4" />}
+              rightIcon={
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 transition-transform",
+                    isActionsMenuOpen && "rotate-180",
+                  )}
+                />
+              }
+              onClick={() => setIsActionsMenuOpen((v) => !v)}
+            >
+              {t("common.moreActions", { defaultValue: "More Actions" })}
+            </Button>
+            {isActionsMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-[60]"
+                  onClick={() => setIsActionsMenuOpen(false)}
+                />
+                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-72 bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] py-1.5 z-[70] animate-scale-in origin-top-right">
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleExport();
+                    }}
+                    disabled={isExporting}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {isExporting
+                      ? t("common.exporting")
+                      : t("users.exportExcel", {
+                          defaultValue: "Export Excel",
+                        })}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleExportJson();
+                    }}
+                    disabled={isExporting}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    {isExporting
+                      ? t("common.exporting")
+                      : t("users.exportJson", {
+                          defaultValue: "Export JSON",
+                        })}
+                  </button>
+                  <div className="my-1 border-t border-[hsl(var(--border))]" />
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleDownloadTemplate();
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {t("users.downloadTemplate", {
+                      defaultValue: "Download User Import Template",
+                    })}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -2493,7 +2540,7 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Extension */}
+                {/* Extension assignment disabled for user create/edit.
                 {canAssignExtensions && editHasAgentRole && (
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2530,6 +2577,7 @@ export const UsersPage: React.FC = () => {
                     </select>
                   </div>
                 )}
+                */}
 
                 {/* Status */}
                 <div>
@@ -2956,7 +3004,7 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Extension */}
+                {/* Extension assignment disabled for user create/edit.
                 {canAssignExtensions && hasAgentRole && (
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2984,6 +3032,7 @@ export const UsersPage: React.FC = () => {
                     </select>
                   </div>
                 )}
+                */}
 
                 {createFormErrors?.form && (
                   <div className=" flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">

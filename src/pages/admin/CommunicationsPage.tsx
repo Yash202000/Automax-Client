@@ -10,14 +10,11 @@ import {
   Trash,
   Plus,
   Search,
-  Reply,
-  Forward,
   Paperclip,
   X,
   Loader2,
   AlertCircle,
   Download,
-  Save,
   Funnel,
   CheckCircle,
   RotateCcw,
@@ -39,15 +36,18 @@ import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permissions";
 import usePermissions from "@/hooks/usePermissions";
 import { COUNTRY_CODES } from "@/constants/template";
+import { AppPagination } from "@/components/ui/AppPagination";
 
 type Category = "inbox" | "sent" | "draft" | "trash";
 type ComposeChannel = "email" | "sms";
+
+const PAGE_LIMIT = 50;
 
 export const CommunicationsPage: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission } = usePermissions();
-  const [currentCategory, setCurrentCategory] = useState<Category>("inbox");
+  const [currentCategory] = useState<Category>("sent");
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,7 +113,7 @@ export const CommunicationsPage: React.FC = () => {
     queryFn: () =>
       notificationTrackApi.list({
         page,
-        limit: 100,
+        limit: PAGE_LIMIT,
         category: appliedFilters.category,
         channel: channel,
         status: appliedFilters.status,
@@ -161,6 +161,8 @@ export const CommunicationsPage: React.FC = () => {
   });
 
   const notifications = notificationData?.data || [];
+  const totalPages = notificationData?.total_pages || 0;
+  const totalItems = notificationData?.total_items || 0;
 
   // Helpers
   const getSender = (email: Email) => {
@@ -265,47 +267,47 @@ export const CommunicationsPage: React.FC = () => {
     },
   });
 
-  const saveDraftMutation = useMutation({
-    mutationFn: (data: {
-      to?: string;
-      cc?: string;
-      bcc?: string;
-      subject?: string;
-      body?: string;
-      attachments?: File[];
-    }) => emailApi.saveDraft(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      closeCompose();
-    },
-    onError: (error) => {
-      console.error("Failed to save draft:", error);
-    },
-  });
+  // const saveDraftMutation = useMutation({
+  //   mutationFn: (data: {
+  //     to?: string;
+  //     cc?: string;
+  //     bcc?: string;
+  //     subject?: string;
+  //     body?: string;
+  //     attachments?: File[];
+  //   }) => emailApi.saveDraft(data),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  //     closeCompose();
+  //   },
+  //   onError: (error) => {
+  //     console.error("Failed to save draft:", error);
+  //   },
+  // });
 
-  const updateDraftMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: {
-        to?: string;
-        cc?: string;
-        bcc?: string;
-        subject?: string;
-        body?: string;
-        attachments?: File[];
-      };
-    }) => emailApi.updateDraft(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      closeCompose();
-    },
-    onError: (error) => {
-      console.error("Failed to update draft:", error);
-    },
-  });
+  // const updateDraftMutation = useMutation({
+  //   mutationFn: ({
+  //     id,
+  //     data,
+  //   }: {
+  //     id: string;
+  //     data: {
+  //       to?: string;
+  //       cc?: string;
+  //       bcc?: string;
+  //       subject?: string;
+  //       body?: string;
+  //       attachments?: File[];
+  //     };
+  //   }) => emailApi.updateDraft(id, data),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  //     closeCompose();
+  //   },
+  //   onError: (error) => {
+  //     console.error("Failed to update draft:", error);
+  //   },
+  // });
 
   const sendDraftMutation = useMutation({
     mutationFn: (id: string) => emailApi.sendDraft(id),
@@ -361,22 +363,22 @@ export const CommunicationsPage: React.FC = () => {
     });
   };
 
-  const handleSaveDraft = () => {
-    const draftData = {
-      to: composeTo.length > 0 ? composeTo.join(",") : undefined,
-      cc: composeCc.length > 0 ? composeCc.join(",") : undefined,
-      bcc: composeBcc.length > 0 ? composeBcc.join(",") : undefined,
-      subject: composeSubject || undefined,
-      body: composeBody || undefined,
-      attachments: attachments.length > 0 ? attachments : undefined,
-    };
+  // const handleSaveDraft = () => {
+  //   const draftData = {
+  //     to: composeTo.length > 0 ? composeTo.join(",") : undefined,
+  //     cc: composeCc.length > 0 ? composeCc.join(",") : undefined,
+  //     bcc: composeBcc.length > 0 ? composeBcc.join(",") : undefined,
+  //     subject: composeSubject || undefined,
+  //     body: composeBody || undefined,
+  //     attachments: attachments.length > 0 ? attachments : undefined,
+  //   };
 
-    if (editingDraftId) {
-      updateDraftMutation.mutate({ id: editingDraftId, data: draftData });
-    } else {
-      saveDraftMutation.mutate(draftData);
-    }
-  };
+  //   if (editingDraftId) {
+  //     updateDraftMutation.mutate({ id: editingDraftId, data: draftData });
+  //   } else {
+  //     saveDraftMutation.mutate(draftData);
+  //   }
+  // };
 
   const fetchAttachmentsAsFiles = async (
     emailAttachments: EmailAttachment[],
@@ -533,62 +535,62 @@ export const CommunicationsPage: React.FC = () => {
     setDeleteConfirmation({ isOpen: false, id: null, isPermanent: false });
   };
 
-  const handleReply = async () => {
-    if (!selectedEmail || isSmsNotification(selectedEmail)) return;
-    const replyTo =
-      selectedEmail.direction === "outbound"
-        ? getRecipients(selectedEmail, "to")
-        : selectedEmail.sent_by_user?.email || selectedEmail.sender || "";
-    const sender = getSender(selectedEmail);
-    resetCompose();
-    setComposeChannel("email");
-    setEditingDraftId(null);
-    setComposeTo(splitEmails(replyTo));
-    setComposeSubject(
-      selectedEmail.subject.startsWith("Re: ")
-        ? selectedEmail.subject
-        : `Re: ${selectedEmail.subject}`,
-    );
-    setComposeBody(
-      `<br/><br/>---<br/>On ${new Date(selectedEmail.created_at).toLocaleString()}, ${sender} wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body_html || selectedEmail.body}</blockquote>`,
-    );
+  // const handleReply = async () => {
+  //   if (!selectedEmail || isSmsNotification(selectedEmail)) return;
+  //   const replyTo =
+  //     selectedEmail.direction === "outbound"
+  //       ? getRecipients(selectedEmail, "to")
+  //       : selectedEmail.sent_by_user?.email || selectedEmail.sender || "";
+  //   const sender = getSender(selectedEmail);
+  //   resetCompose();
+  //   setComposeChannel("email");
+  //   setEditingDraftId(null);
+  //   setComposeTo(splitEmails(replyTo));
+  //   setComposeSubject(
+  //     selectedEmail.subject.startsWith("Re: ")
+  //       ? selectedEmail.subject
+  //       : `Re: ${selectedEmail.subject}`,
+  //   );
+  //   setComposeBody(
+  //     `<br/><br/>---<br/>On ${new Date(selectedEmail.created_at).toLocaleString()}, ${sender} wrote:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body_html || selectedEmail.body}</blockquote>`,
+  //   );
 
-    if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
-      setIsCloningAttachments(true);
-      const files = await fetchAttachmentsAsFiles(selectedEmail.attachments);
-      setAttachments(files);
-      setIsCloningAttachments(false);
-    }
+  //   if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
+  //     setIsCloningAttachments(true);
+  //     const files = await fetchAttachmentsAsFiles(selectedEmail.attachments);
+  //     setAttachments(files);
+  //     setIsCloningAttachments(false);
+  //   }
 
-    setIsComposeOpen(true);
-    setIsNewEmail(false);
-  };
+  //   setIsComposeOpen(true);
+  //   setIsNewEmail(false);
+  // };
 
-  const handleForward = async () => {
-    if (!selectedEmail || isSmsNotification(selectedEmail)) return;
-    resetCompose();
-    setComposeChannel("email");
-    setEditingDraftId(null);
-    // composeTo stays [] — user picks forward recipient
-    setComposeSubject(
-      selectedEmail.subject.startsWith("Fwd: ")
-        ? selectedEmail.subject
-        : `Fwd: ${selectedEmail.subject}`,
-    );
-    setComposeBody(
-      `<br/><br/>---<br/>Forwarded message from ${getSender(selectedEmail)}:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body_html || selectedEmail.body}</blockquote>`,
-    );
+  // const handleForward = async () => {
+  //   if (!selectedEmail || isSmsNotification(selectedEmail)) return;
+  //   resetCompose();
+  //   setComposeChannel("email");
+  //   setEditingDraftId(null);
+  //   // composeTo stays [] — user picks forward recipient
+  //   setComposeSubject(
+  //     selectedEmail.subject.startsWith("Fwd: ")
+  //       ? selectedEmail.subject
+  //       : `Fwd: ${selectedEmail.subject}`,
+  //   );
+  //   setComposeBody(
+  //     `<br/><br/>---<br/>Forwarded message from ${getSender(selectedEmail)}:<br/><blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">${selectedEmail.body_html || selectedEmail.body}</blockquote>`,
+  //   );
 
-    if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
-      setIsCloningAttachments(true);
-      const files = await fetchAttachmentsAsFiles(selectedEmail.attachments);
-      setAttachments(files);
-      setIsCloningAttachments(false);
-    }
+  //   if (selectedEmail.attachments && selectedEmail.attachments.length > 0) {
+  //     setIsCloningAttachments(true);
+  //     const files = await fetchAttachmentsAsFiles(selectedEmail.attachments);
+  //     setAttachments(files);
+  //     setIsCloningAttachments(false);
+  //   }
 
-    setIsComposeOpen(true);
-    setIsNewEmail(false);
-  };
+  //   setIsComposeOpen(true);
+  //   setIsNewEmail(false);
+  // };
 
   const filteredNotifications = React.useMemo(() => {
     if (!searchTerm.trim()) return notifications;
@@ -610,8 +612,8 @@ export const CommunicationsPage: React.FC = () => {
     });
   }, [notifications, searchTerm]);
 
-  const isSavingDraft =
-    saveDraftMutation.isPending || updateDraftMutation.isPending;
+  // const isSavingDraft =
+  //   saveDraftMutation.isPending || updateDraftMutation.isPending;
   const isSendingDraft = sendDraftMutation.isPending;
   const isSending =
     sendEmailMutation.isPending || sendSMSMutation.isPending || isSendingDraft;
@@ -669,7 +671,7 @@ export const CommunicationsPage: React.FC = () => {
             </div>
 
             <div className="space-y-4 mt-4">
-              <FieldWrapper label="Category">
+              {/* <FieldWrapper label="Category">
                 <Select
                   placeholder="Select Category"
                   value={filters.category}
@@ -688,7 +690,7 @@ export const CommunicationsPage: React.FC = () => {
                   ]}
                   size="sm"
                 />
-              </FieldWrapper>
+              </FieldWrapper> */}
               <FieldWrapper label="Status">
                 <Select
                   placeholder="Select Status"
@@ -714,10 +716,15 @@ export const CommunicationsPage: React.FC = () => {
                     setFilters((prev) => ({
                       ...prev,
                       startDate: val,
+                      endDate:
+                        val && prev.endDate && val > prev.endDate
+                          ? undefined
+                          : prev.endDate,
                     }));
                   }}
                   value={filters.startDate}
                   format={DateFormats.DATE}
+                  disabledDate={(date: any) => date > new Date()}
                 />
               </FieldWrapper>
               <FieldWrapper label="End Date">
@@ -731,6 +738,16 @@ export const CommunicationsPage: React.FC = () => {
                   }}
                   value={filters.endDate}
                   format={DateFormats.DATE}
+                  disabledDate={(date: any) => {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(23, 59, 59, 999);
+                    if (!filters.startDate) {
+                      return date > tomorrow;
+                    }
+
+                    return date < filters.startDate || date > tomorrow;
+                  }}
                 />
               </FieldWrapper>
               <FieldWrapper label="Recipients">
@@ -786,7 +803,7 @@ export const CommunicationsPage: React.FC = () => {
             >
               Compose
             </button>
-            <select
+            {/* <select
               value={currentCategory}
               onChange={(e) => {
                 setCurrentCategory(e.target.value as Category);
@@ -798,7 +815,7 @@ export const CommunicationsPage: React.FC = () => {
               <option value="sent">{t("email.sent")}</option>
               <option value="draft">{t("email.drafts")}</option>
               <option value="trash">{t("email.trash")}</option>
-            </select>
+            </select> */}
           </div>
 
           <div className="relative">
@@ -909,6 +926,23 @@ export const CommunicationsPage: React.FC = () => {
             </div>
           )}
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 border-t border-[hsl(var(--border))] p-2">
+            <p className="text-sm text-muted-foreground">
+              Showing {(page - 1) * PAGE_LIMIT + 1}–
+              {Math.min(page * PAGE_LIMIT, totalItems)} of{" "}
+              <span className="font-medium text-foreground">
+                {totalItems}
+              </span>{" "}
+            </p>
+
+            <AppPagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={(newPage) => setPage(newPage)}
+            />
+          </div>
+        )}
       </div>
 
       <div
@@ -934,7 +968,7 @@ export const CommunicationsPage: React.FC = () => {
                       {new Date(selectedEmail.created_at).toLocaleString()}
                     </span>
                   </div>
-                  {canUpdate ? (
+                  {/* {canUpdate ? (
                     <div className="flex items-center gap-1">
                       {!isSmsNotification(selectedEmail) && (
                         <>
@@ -962,7 +996,7 @@ export const CommunicationsPage: React.FC = () => {
                         <Trash className="w-4 h-4" />
                       </button>
                     </div>
-                  ) : null}
+                  ) : null} */}
                 </div>
                 <div className="flex items-center gap-4 mb-4">
                   <button
@@ -1010,14 +1044,22 @@ export const CommunicationsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {selectedEmail.template_code ? (
-                  <div className="flex items-center gap-2 mt-3 pt-1 border-t">
-                    <Settings className="w-4 h-4 text-primary" />
-                    <span className="text-sm ">
-                      {selectedEmail.template_code}
+                <div className="mt-3 pt-2 border-t space-y-2">
+                  {selectedEmail.template_code ? (
+                    <div className="flex items-center gap-2 ">
+                      <Settings className="w-4 h-4 mx-0.5 text-primary " />
+                      <span className="text-sm ">
+                        {selectedEmail.template_code}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-primary py-0.5 px-1 rounded-md bg-primary/5">
+                      ID
                     </span>
+                    <span className="text-sm">{selectedEmail?.id}</span>
                   </div>
-                ) : null}
+                </div>
               </div>
             </div>
 
@@ -1414,8 +1456,8 @@ export const CommunicationsPage: React.FC = () => {
                   </div>
                 ) : null}
               </div>
-              <div className="px-6 py-4 border-t border-border flex justify-between gap-3">
-                {composeChannel === "email" ? (
+              <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+                {/* {composeChannel === "email" ? (
                   <button
                     type="button"
                     onClick={handleSaveDraft}
@@ -1431,7 +1473,7 @@ export const CommunicationsPage: React.FC = () => {
                   </button>
                 ) : (
                   <span />
-                )}
+                )} */}
 
                 <div className="flex gap-3">
                   <Button variant={"ghost"} onClick={closeCompose}>

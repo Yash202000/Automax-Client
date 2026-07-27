@@ -56,6 +56,7 @@
     "total": "الإجمالي",
     "export": "تصدير",
     "import": "استيراد",
+    "moreActions": "المزيد من الإجراءات",
     "noDataToExport": "لا توجد بيانات للتصدير",
     "exported": "تم التصدير بنجاح",
     "imported_one": "تم استيراد {{count}} سجل",

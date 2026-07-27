@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, X } from "lucide-react";
 import { format as formatDate } from "date-fns";
 
 import { Button } from "@/ui/button";
@@ -15,6 +15,7 @@ export interface DatePickerProps {
   disabled?: boolean;
   className?: string;
   format?: string;
+  disabledDate?: any;
 }
 
 export function DatePicker({
@@ -24,6 +25,7 @@ export function DatePicker({
   disabled,
   className,
   format = DateFormats.DATE,
+  disabledDate,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -33,27 +35,43 @@ export function DatePicker({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
+    <div className="relative">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            className={cn(
+              "w-full flex-1 justify-start font-normal",
+              !value && "text-muted-foreground",
+              className,
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4 " />
+
+            {value ? formatDate(value, format) : placeholder}
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={value}
+            onSelect={handleSelect}
+            disabled={disabledDate}
+          />
+        </PopoverContent>
+      </Popover>
+      {value && (
+        <button
           type="button"
-          variant="outline"
-          disabled={disabled}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground",
-            className,
-          )}
+          className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full p-1 hover:bg-white dark:hover:bg-background cursor-pointer"
+          onClick={() => onChange?.(undefined)}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-
-          {value ? formatDate(value, format) : placeholder}
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar mode="single" selected={value} onSelect={handleSelect} />
-      </PopoverContent>
-    </Popover>
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }
