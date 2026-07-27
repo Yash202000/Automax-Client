@@ -687,6 +687,11 @@ export const DepartmentsPage: React.FC = () => {
     setError(null);
     setErrors({});
   };
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     const name = formData.name.trim();
@@ -704,16 +709,17 @@ export const DepartmentsPage: React.FC = () => {
     if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
       newErrors.name_ar = t("departments.invalidArabicName");
     }
-
-    if (!code) {
-      newErrors.code = t("departments.codeRequired", {
-        defaultValue: "Department code is required",
-      });
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(code)) {
-      newErrors.code = t("departments.invalidCode", {
-        defaultValue:
-          "Department code can only contain letters, numbers and spaces",
-      });
+    if (!isEPM940) {
+      if (!code) {
+        newErrors.code = t("departments.codeRequired", {
+          defaultValue: "Department code is required",
+        });
+      } else if (!/^[a-zA-Z0-9\s]+$/.test(code)) {
+        newErrors.code = t("departments.invalidCode", {
+          defaultValue:
+            "Department code can only contain letters, numbers and spaces",
+        });
+      }
     }
 
     setErrors(newErrors);
@@ -1491,44 +1497,45 @@ export const DepartmentsPage: React.FC = () => {
                       )}
                     </div>
                   </div>
+                  {!isEPM940 && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                          {t("departments.code")}
+                          <span className="text-[hsl(var(--destructive))] ml-1">
+                            *
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={t("departments.codePlaceholder")}
+                          value={formData.code}
+                          onChange={(e) => {
+                            setFormData({ ...formData, code: e.target.value });
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                        {t("departments.code")}
-                        <span className="text-[hsl(var(--destructive))] ml-1">
-                          *
-                        </span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={t("departments.codePlaceholder")}
-                        value={formData.code}
-                        onChange={(e) => {
-                          setFormData({ ...formData, code: e.target.value });
-
-                          if (errors.code) {
-                            setErrors((prev) => ({
-                              ...prev,
-                              code: "",
-                            }));
-                          }
-                        }}
-                        // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                        className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all  ${
-                          errors.code
-                            ? "border-[hsl(var(--destructive))]"
-                            : "border-slate-300 dark:border-slate-600"
-                        }`}
-                        // required
-                      />
-                      {errors.code && (
-                        <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
-                          {errors.code}
-                        </p>
-                      )}
+                            if (errors.code) {
+                              setErrors((prev) => ({
+                                ...prev,
+                                code: "",
+                              }));
+                            }
+                          }}
+                          // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                          className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all  ${
+                            errors.code
+                              ? "border-[hsl(var(--destructive))]"
+                              : "border-slate-300 dark:border-slate-600"
+                          }`}
+                          // required
+                        />
+                        {errors.code && (
+                          <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
+                            {errors.code}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Department Type */}
                   <div>
