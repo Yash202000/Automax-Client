@@ -73,7 +73,7 @@ export const useGlobalWebSocket = () => {
                   });
                 }
               })
-              .catch((err) => {
+              .catch(() => {
                 // console.error("[Global WS] Error fetching profile after permission change:", err);
               });
           }
