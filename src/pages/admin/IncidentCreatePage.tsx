@@ -165,6 +165,10 @@ export function IncidentCreatePage() {
       ""
     ).toUpperCase() === "EPMCL";
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const shouldFilterDepartments =
     isEpmclClient &&
     Boolean(formData.location_id && formData.classification_id);
@@ -1556,6 +1560,7 @@ export function IncidentCreatePage() {
                   ]}
                   required={true}
                   error={errors.source}
+                  disabled={isEPM940}
                 />
                 {incidentLookupCategories
                   .filter((category) => category.code === "PRIORITY")
@@ -1781,6 +1786,7 @@ export function IncidentCreatePage() {
                 error={errors.workflow_id}
                 options={workflowOptions}
                 required
+                disabled={isEPM940}
               />
               {isAutoMatched && autoMatchedWorkflow && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-green-600">
