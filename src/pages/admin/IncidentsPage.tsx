@@ -309,6 +309,9 @@ export const IncidentsPage: React.FC = () => {
 
   const filter: IncidentFilter = useMemo(() => {
     const statusParam = searchParams.get("status");
+    // const search = searchParams.get("search");
+    // const momraRef = searchParams.get("momra_ref");
+    // const isMomraSearch = !!momraRef?.trim();
 
     let currentStateId: string | undefined = searchParams.get(
       "current_state_id",
@@ -329,8 +332,11 @@ export const IncidentsPage: React.FC = () => {
       page: Number(searchParams.get("page") || 1),
       limit: Number(searchParams.get("limit") || 10),
       record_type: "incident",
-
+      //when using momra search filter pass those values to search and select momra as the source.
+      // search: isMomraSearch ? momraRef : search || undefined,
+      // source: isMomraSearch ? "momra" : searchParams.get("source") || undefined,
       search: searchParams.get("search") || undefined,
+      source: searchParams.get("source") || undefined,
       workflow_id: searchParams.get("workflow_id") || undefined,
       assignee_id: searchParams.get("assignee_id") || undefined,
 
@@ -357,7 +363,6 @@ export const IncidentsPage: React.FC = () => {
         searchParams.get("converted_to_request") === "true" ? true : undefined,
       start_date: searchParams.get("start_date") || undefined,
       end_date: searchParams.get("end_date") || undefined,
-      source: searchParams.get("source") || undefined,
       reporter_phone: searchParams.get("reporter_phone") || undefined,
       reporter_phone_search:
         searchParams.get("reporter_phone_search") || undefined,
@@ -417,6 +422,8 @@ export const IncidentsPage: React.FC = () => {
     queryFn: () =>
       incidentApi.list({
         ...queryFilter,
+        search: queryFilter.momra_ref || queryFilter.search,
+        source: queryFilter.momra_ref ? "momra" : queryFilter.source,
         ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       }),
     enabled: !isShortSearch,
