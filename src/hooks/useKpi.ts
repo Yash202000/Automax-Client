@@ -829,6 +829,23 @@ export const useSetKpiTarget = () => {
   });
 };
 
+// Edits an existing target in place (PUT /kpi/targets/:id) — previously
+// "editing" a target silently called the create endpoint instead and
+// produced a duplicate row rather than updating the one being edited.
+export const useUpdateKpiTarget = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: KpiAnnualTargetRequest }) =>
+      kpiPerformanceApi.updateTarget(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
+      toast.success(t("kpi.targetSet"));
+    },
+    onError: () => toast.error(t("kpi.targetSetFailed")),
+  });
+};
+
 export const useKpiMetricsByCode = (kpiCode?: string) =>
   useQuery({
     queryKey: ["kpi", "metrics-by-code", kpiCode],
