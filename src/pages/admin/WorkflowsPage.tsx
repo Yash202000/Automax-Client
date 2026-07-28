@@ -344,14 +344,14 @@ export const WorkflowsPage: React.FC = () => {
     }
   };
 
-  const toggleClassification = (classId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      classification_ids: prev.classification_ids.includes(classId)
-        ? prev.classification_ids.filter((id) => id !== classId)
-        : [...prev.classification_ids, classId],
-    }));
-  };
+  // const toggleClassification = (classId: string) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     classification_ids: prev.classification_ids.includes(classId)
+  //       ? prev.classification_ids.filter((id) => id !== classId)
+  //       : [...prev.classification_ids, classId],
+  //   }));
+  // };
 
   const flattenClassifications = (
     classifications: Classification[],
@@ -369,9 +369,9 @@ export const WorkflowsPage: React.FC = () => {
     return result;
   };
 
-  const flatClassifications = classificationsData?.data
-    ? flattenClassifications(classificationsData.data)
-    : [];
+  // const flatClassifications = classificationsData?.data
+  //   ? flattenClassifications(classificationsData.data)
+  //   : [];
 
   const getWorkflowGradient = (workflow: Workflow) => {
     if (workflow.is_default) return "from-amber-500 to-orange-500";
