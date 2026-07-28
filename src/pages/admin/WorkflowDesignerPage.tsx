@@ -224,6 +224,9 @@ const STATE_COLORS = [
   { name: "Pink", value: "#ec4899" },
   { name: "Gray", value: "#6b7280" },
 ];
+const isEPM940 =
+  window.APP_CONFIG?.CLIENT === "EPM940" ||
+  import.meta.env.VITE_CLIENT === "EPM940";
 
 // Static constant moved outside component to avoid unstable reference in useMemo deps
 const baseFormFields: {
@@ -1332,22 +1335,23 @@ export const WorkflowDesignerPage: React.FC = () => {
       validationErrors.name = t("validation.nameRequired", {
         field: t("workflows.states"),
       });
+      // "State name can only contain letters, numbers, spaces, and basic punctuation (- ' . , & ( ) /)";
     } else if (!validateName(name)) {
       validationErrors.name = t("validation.invalidName", {
         field: t("workflows.states"),
       });
-
-      // "State name can only contain letters, numbers, spaces, and basic punctuation (- ' . , & ( ) /)";
     }
-
-    if (!validateRequired(code)) {
-      validationErrors.code = t("validation.codeRequired", {
-        field: t("workflows.states"),
-      });
-    } else if (!validateCode(code)) {
-      validationErrors.code = t("validation.invalidCode", {
-        field: t("workflows.states"),
-      });
+    //code auto generated from backend for epm940
+    if (!isEPM940) {
+      if (!validateRequired(code)) {
+        validationErrors.code = t("validation.codeRequired", {
+          field: t("workflows.states"),
+        });
+      } else if (!validateCode(code)) {
+        validationErrors.code = t("validation.invalidCode", {
+          field: t("workflows.states"),
+        });
+      }
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -1458,15 +1462,17 @@ export const WorkflowDesignerPage: React.FC = () => {
         field: t("workflows.transitions"),
       });
     }
-
-    if (!validateRequired(code)) {
-      validationErrors.code = t("validation.codeRequired", {
-        field: t("workflows.transitions"),
-      });
-    } else if (!validateCode(code)) {
-      validationErrors.code = t("validation.invalidCode", {
-        field: t("workflows.transitions"),
-      });
+    // trasnsition code generaeted from backedn for epm940
+    if (!isEPM940) {
+      if (!validateRequired(code)) {
+        validationErrors.code = t("validation.codeRequired", {
+          field: t("workflows.transitions"),
+        });
+      } else if (!validateCode(code)) {
+        validationErrors.code = t("validation.invalidCode", {
+          field: t("workflows.transitions"),
+        });
+      }
     }
 
     if (!validateRequired(fromState)) {
@@ -3412,46 +3418,50 @@ export const WorkflowDesignerPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("departments.code")}
-                    <span className="text-[hsl(var(--destructive))] ml-1">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={stateFormData.code}
-                    onChange={(e) => {
-                      setStateFormData({
-                        ...stateFormData,
-                        code: e.target.value,
-                      });
-                      if (stateErrors.code) {
-                        setStateErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                      if (stateDuplicateErrors.code) {
-                        setStateDuplicateErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                    }}
-                    // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
-                      stateDuplicateErrors.code || stateErrors.code
-                        ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    }`}
-                    // required
-                  />
-                  {renderFieldError(
-                    stateDuplicateErrors.code || stateErrors.code,
-                  )}
-                </div>
+                {/* code auto generated from backend for epm940 */}
+                {!isEPM940 && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("departments.code")}
+                      <span className="text-[hsl(var(--destructive))] ml-1">
+                        *
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={stateFormData.code}
+                      readOnly={isEPM940}
+                      onChange={(e) => {
+                        setStateFormData({
+                          ...stateFormData,
+                          code: e.target.value,
+                        });
+                        if (stateErrors.code) {
+                          setStateErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                        if (stateDuplicateErrors.code) {
+                          setStateDuplicateErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                      }}
+                      // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
+                        stateDuplicateErrors.code || stateErrors.code
+                          ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                          : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      }`}
+                      // required
+                    />
+                    {renderFieldError(
+                      stateDuplicateErrors.code || stateErrors.code,
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -3863,7 +3873,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-
                 {/* Creation-time Assignment — only for initial states */}
                 {stateFormData.state_type === "initial" && (
                   <div className="border-t border-[hsl(var(--border))] pt-5">
@@ -4063,7 +4072,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-
                 {editingState && (
                   <div className="pt-2 border-t border-[hsl(var(--border))]">
                     <IntegrationTriggersPanel
@@ -4072,7 +4080,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     />
                   </div>
                 )}
-
                 <div className="border-t border-[hsl(var(--border))] pt-5">
                   <div className="flex items-center gap-2 mb-1">
                     <Mail className="w-4 h-4 text-blue-500" />
@@ -4258,53 +4265,51 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("departments.code")}
-                    <span className="text-[hsl(var(--destructive))] ml-1">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={transitionFormData.code}
-                    onChange={(e) => {
-                      setTransitionFormData({
-                        ...transitionFormData,
-                        code: e.target.value,
-                      });
+                {!isEPM940 && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("departments.code")}
+                      <span className="text-[hsl(var(--destructive))] ml-1">
+                        *
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={transitionFormData.code}
+                      readOnly={isEPM940}
+                      onChange={(e) => {
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          code: e.target.value,
+                        });
 
-                      if (transitionErrors.code) {
-                        setTransitionErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                      if (transitionDuplicateErrors.code) {
-                        setTransitionDuplicateErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                    }}
-                    // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
-                      transitionDuplicateErrors.name || transitionErrors.name
-                        ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    }`}
-                    placeholder={t("workflows.stateKeyExample")}
-                    // required
-                  />
-                  {/* {transitionDuplicateErrors.code && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {transitionDuplicateErrors.code}
-                    </p>
-                  )} */}
-                  {renderFieldError(
-                    transitionDuplicateErrors.code || transitionErrors.code,
-                  )}
-                </div>
+                        if (transitionErrors.code) {
+                          setTransitionErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                        if (transitionDuplicateErrors.code) {
+                          setTransitionDuplicateErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                      }}
+                      // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
+                        transitionDuplicateErrors.name || transitionErrors.name
+                          ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                          : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      }`}
+                      placeholder={t("workflows.stateKeyExample")}
+                      // required
+                    />
+                    {renderFieldError(
+                      transitionDuplicateErrors.code || transitionErrors.code,
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
