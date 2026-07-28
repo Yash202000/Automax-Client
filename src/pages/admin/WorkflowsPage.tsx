@@ -386,10 +386,7 @@ export const WorkflowsPage: React.FC = () => {
     return gradients[index];
   };
 
-  const isEPM940 =
-    window.APP_CONFIG?.CLIENT === "EPM940" ||
-    import.meta.env.VITE_CLIENT === "EPM940";
-
+  const classifications = classificationsData?.data ?? [];
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -562,27 +559,25 @@ export const WorkflowsPage: React.FC = () => {
                     <div className="flex items-center gap-2 mb-3">
                       <Tag className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                       <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                        {workflow.classifications?.length || 0}{" "}
+                        {classifications?.length || 0}{" "}
                         {t("workflows.classifications")}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {workflow.classifications
-                        ?.slice(0, 3)
-                        .map((classification) => (
-                          <span
-                            key={classification.id}
-                            className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg"
-                          >
-                            {i18n.language === "ar" && classification.name_ar
-                              ? classification.name_ar
-                              : classification.name}
-                          </span>
-                        ))}
-                      {(workflow.classifications?.length || 0) > 3 && (
+                      {classifications?.slice(0, 3).map((classification) => (
+                        <span
+                          key={classification.id}
+                          className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg"
+                        >
+                          {i18n.language === "ar" && classification.name_ar
+                            ? classification.name_ar
+                            : classification.name}
+                        </span>
+                      ))}
+                      {(classifications?.length || 0) > 3 && (
                         <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
                           {t("workflows.moreClassifications", {
-                            count: workflow.classifications!.length - 3,
+                            count: (classifications?.length || 0) - 3,
                           })}
                         </span>
                       )}
@@ -971,7 +966,7 @@ export const WorkflowsPage: React.FC = () => {
                     </div>
 
                     {/* Classifications Section - Only shown in edit mode */}
-                    {!isEPM940 && (
+                    {/* { (
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <label className="text-sm font-medium text-[hsl(var(--foreground))]">
@@ -1034,7 +1029,7 @@ export const WorkflowsPage: React.FC = () => {
                           )}
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </>
                 )}
               </div>
