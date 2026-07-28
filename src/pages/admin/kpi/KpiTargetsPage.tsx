@@ -8,6 +8,11 @@ import {
   Trash2,
   X,
   HelpCircle,
+  Eye,
+  Copy,
+  ArrowUpRight,
+  Edit,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,8 +28,7 @@ import type {
   KpiTargetType,
   KpiTargetBasis,
   KpiThresholdMode,
-  KpiCalculationType,
-  KpiDirection,
+  KpiTargetStatus,
 } from "../../../types/kpi";
 import {
   getYearOptions,
@@ -49,6 +53,53 @@ const statusColorMap: Record<string, string> = {
     "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
 };
 
+const MONTH_NAMES_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function formatPeriodLabel(year: number, periodCode: string): string {
+  const monthIndex = parseInt(periodCode.replace(/[^0-9]/g, ""), 10) - 1;
+  if (monthIndex >= 0 && monthIndex < 12) {
+    return `${MONTH_NAMES_SHORT[monthIndex]} ${year}`;
+  }
+  return `${periodCode} ${year}`;
+}
+
+function formatTargetValue(
+  value: number | undefined | null,
+  direction: string,
+): string {
+  if (value == null) return "—";
+  return direction === "Percentage" || direction === "Percentage of Target"
+    ? `${value.toFixed(2)}%`
+    : value.toLocaleString();
+}
+
+function getPeriodStartEnd(
+  year: number,
+  periodCode: string,
+): { start: string; end: string } {
+  const monthIndex = parseInt(periodCode.replace(/[^0-9]/g, ""), 10) - 1;
+  if (monthIndex >= 0 && monthIndex < 12) {
+    const start = `${year}-${String(monthIndex + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const end = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return { start, end };
+  }
+  return { start: `${year}-01-01`, end: `${year}-12-31` };
+}
+
 export const KpiTargetsPage: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,10 +113,44 @@ export const KpiTargetsPage: React.FC = () => {
   const [periodFilter, setPeriodFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
+  const [pendingKpiCode, setPendingKpiCode] = useState(kpiCodeFilter);
+  const [pendingMetricFilter, setPendingMetricFilter] = useState("");
+  const [pendingPeriodFilter, setPendingPeriodFilter] = useState("");
+  const [pendingStatusFilter, setPendingStatusFilter] = useState("");
+
   useEffect(() => {
     const fromUrl = searchParams.get("kpi_code");
-    if (fromUrl) setKpiCodeFilter(fromUrl);
+    if (fromUrl) {
+      setKpiCodeFilter(fromUrl);
+      setPendingKpiCode(fromUrl);
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    setPendingKpiCode(kpiCodeFilter);
+  }, [kpiCodeFilter]);
+
+  const handleApplyFilters = () => {
+    setKpiCodeFilter(pendingKpiCode);
+    setMetricFilter(pendingMetricFilter);
+    setPeriodFilter(pendingPeriodFilter);
+    setStatusFilter(pendingStatusFilter);
+  };
+
+  const handleClearFilters = () => {
+    setPendingKpiCode("");
+    setPendingMetricFilter("");
+    setPendingPeriodFilter("");
+    setPendingStatusFilter("");
+    setKpiCodeFilter("");
+    setMetricFilter("");
+    setPeriodFilter("");
+    setStatusFilter("");
+    if (searchParams.get("kpi_code")) {
+      searchParams.delete("kpi_code");
+      setSearchParams(searchParams);
+    }
+  };
 
   const { data: allCards } = useKpiCardDefinitions();
   const cardOptions = useMemo(
@@ -98,6 +183,7 @@ export const KpiTargetsPage: React.FC = () => {
   const deleteTarget = useDeleteKpiTarget();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingTarget, setEditingTarget] = useState<KpiTarget | null>(null);
   const [formKpiCode, setFormKpiCode] = useState("");
   const [formKpiType, setFormKpiType] = useState<string>("strategic");
   const [formMetricId, setFormMetricId] = useState("");
@@ -117,8 +203,11 @@ export const KpiTargetsPage: React.FC = () => {
   const [formWarningThreshold, setFormWarningThreshold] = useState("");
   const [formRangeMin, setFormRangeMin] = useState("");
   const [formRangeMax, setFormRangeMax] = useState("");
-  const [formEffectiveFrom, setFormEffectiveFrom] = useState("");
-  const [formEffectiveTo, setFormEffectiveTo] = useState("");
+  const [formStatus, setFormStatus] = useState<KpiTargetStatus>("draft");
+
+  const { data: modalMetrics } = useKpiMetricsByCode(
+    modalOpen ? formKpiCode : undefined,
+  );
 
   const yearOptions = useMemo(() => getYearOptions(), []);
   const freq = selectedCard?.reporting_frequency;
@@ -127,14 +216,14 @@ export const KpiTargetsPage: React.FC = () => {
     [freq],
   );
 
-  const selectedMetric = (kpiMetrics ?? []).find(
+  const selectedMetric = (modalMetrics ?? kpiMetrics ?? []).find(
     (m: any) => m.id === formMetricId,
   );
-  const calcType: KpiCalculationType =
-    selectedMetric?.calculation_type ?? "Direct Value";
-  const direction: KpiDirection =
-    selectedMetric?.direction ?? "Higher is Better";
+  const calcType: string = selectedMetric?.calculation_type ?? "Direct Value";
+  const direction: string = selectedMetric?.direction ?? "Higher is Better";
   const isFormulaMetric = calcType === "Formula";
+
+  const periodDates = getPeriodStartEnd(formYear, formPeriodCode);
 
   const resetForm = () => {
     setFormKpiCode(kpiCodeFilter || "");
@@ -152,8 +241,8 @@ export const KpiTargetsPage: React.FC = () => {
     setFormWarningThreshold("");
     setFormRangeMin("");
     setFormRangeMax("");
-    setFormEffectiveFrom("");
-    setFormEffectiveTo("");
+    setFormStatus("draft");
+    setEditingTarget(null);
   };
 
   const handleOpenModal = () => {
@@ -161,7 +250,54 @@ export const KpiTargetsPage: React.FC = () => {
     setModalOpen(true);
   };
 
-  const handleSubmit = async () => {
+  const handleEditTarget = (target: KpiTarget) => {
+    setEditingTarget(target);
+    setFormKpiCode(target.kpi_code);
+    setFormKpiType(target.kpi_type);
+    setFormMetricId(target.metric_id);
+    setFormYear(target.target_year);
+    setFormPeriodCode(target.period_code);
+    setFormTargetValue(
+      target.target_value != null ? String(target.target_value) : "",
+    );
+    setFormTargetType(target.target_type);
+    setFormTargetBasis(target.target_basis);
+    setFormTargetRationale(target.target_rationale);
+    setFormThresholdMode(target.threshold_mode);
+    setFormExcellentThreshold(
+      target.excellent_threshold != null
+        ? String(target.excellent_threshold)
+        : "",
+    );
+    setFormAchievedThreshold(
+      target.achieved_threshold != null
+        ? String(target.achieved_threshold)
+        : "",
+    );
+    setFormWarningThreshold(
+      target.warning_threshold != null ? String(target.warning_threshold) : "",
+    );
+    setFormRangeMin(
+      target.target_range_min != null ? String(target.target_range_min) : "",
+    );
+    setFormRangeMax(
+      target.target_range_max != null ? String(target.target_range_max) : "",
+    );
+    setFormStatus(target.target_status);
+    setModalOpen(true);
+  };
+
+  const handleSaveDraft = async () => {
+    setFormStatus("draft");
+    await handleSubmit("draft");
+  };
+
+  const handleSubmitTarget = async () => {
+    setFormStatus("submitted");
+    await handleSubmit("submitted");
+  };
+
+  const handleSubmit = async (status?: KpiTargetStatus) => {
     if (!formKpiCode || !formMetricId) {
       toast.error("KPI and Metric are required");
       return;
@@ -179,7 +315,7 @@ export const KpiTargetsPage: React.FC = () => {
       return;
     }
 
-    await setTarget.mutateAsync({
+    const payload: any = {
       kpi_code: formKpiCode,
       kpi_type: formKpiType as any,
       metric_id: formMetricId,
@@ -202,9 +338,19 @@ export const KpiTargetsPage: React.FC = () => {
         : undefined,
       target_range_min: formRangeMin ? Number(formRangeMin) : undefined,
       target_range_max: formRangeMax ? Number(formRangeMax) : undefined,
-      effective_from: formEffectiveFrom || undefined,
-      effective_to: formEffectiveTo || undefined,
-    });
+      period_start: periodDates.start,
+      period_end: periodDates.end,
+    };
+
+    if (status) {
+      payload.target_status = status;
+    }
+
+    if (editingTarget) {
+      payload.id = editingTarget.id;
+    }
+
+    await setTarget.mutateAsync(payload);
     setModalOpen(false);
   };
 
@@ -212,6 +358,46 @@ export const KpiTargetsPage: React.FC = () => {
     if (window.confirm(t("common.confirmDelete"))) {
       deleteTarget.mutate(id);
     }
+  };
+
+  const handleViewTarget = (target: KpiTarget) => {
+    toast.info(`Target: ${target.id}`);
+  };
+
+  const handleCopyTarget = (target: KpiTarget) => {
+    resetForm();
+    setFormKpiCode(target.kpi_code);
+    setFormKpiType(target.kpi_type);
+    setFormMetricId(target.metric_id);
+    setFormYear(target.target_year);
+    setFormPeriodCode(target.period_code);
+    setFormTargetValue(
+      target.target_value != null ? String(target.target_value) : "",
+    );
+    setFormTargetType(target.target_type);
+    setFormTargetBasis(target.target_basis);
+    setFormTargetRationale(target.target_rationale);
+    setFormThresholdMode(target.threshold_mode);
+    setFormExcellentThreshold(
+      target.excellent_threshold != null
+        ? String(target.excellent_threshold)
+        : "",
+    );
+    setFormAchievedThreshold(
+      target.achieved_threshold != null
+        ? String(target.achieved_threshold)
+        : "",
+    );
+    setFormWarningThreshold(
+      target.warning_threshold != null ? String(target.warning_threshold) : "",
+    );
+    setFormRangeMin(
+      target.target_range_min != null ? String(target.target_range_min) : "",
+    );
+    setFormRangeMax(
+      target.target_range_max != null ? String(target.target_range_max) : "",
+    );
+    setModalOpen(true);
   };
 
   const items: KpiTarget[] = targets ?? [];
@@ -255,21 +441,14 @@ export const KpiTargetsPage: React.FC = () => {
         <div className="relative">
           <input
             type="text"
-            value={kpiCodeFilter}
-            onChange={(e) => setKpiCodeFilter(e.target.value)}
+            value={pendingKpiCode}
+            onChange={(e) => setPendingKpiCode(e.target.value)}
             placeholder={t("kpi.targets.searchPlaceholder")}
             className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 pe-8"
           />
-          {kpiCodeFilter && (
+          {pendingKpiCode && (
             <button
-              onClick={() => {
-                setKpiCodeFilter("");
-                setMetricFilter("");
-                if (searchParams.get("kpi_code")) {
-                  searchParams.delete("kpi_code");
-                  setSearchParams(searchParams);
-                }
-              }}
+              onClick={() => setPendingKpiCode("")}
               className="absolute end-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
               title={t("common.clear")}
             >
@@ -278,8 +457,8 @@ export const KpiTargetsPage: React.FC = () => {
           )}
         </div>
         <select
-          value={metricFilter}
-          onChange={(e) => setMetricFilter(e.target.value)}
+          value={pendingMetricFilter}
+          onChange={(e) => setPendingMetricFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Metrics</option>
@@ -290,8 +469,8 @@ export const KpiTargetsPage: React.FC = () => {
           ))}
         </select>
         <select
-          value={periodFilter}
-          onChange={(e) => setPeriodFilter(e.target.value)}
+          value={pendingPeriodFilter}
+          onChange={(e) => setPendingPeriodFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Periods</option>
@@ -302,8 +481,8 @@ export const KpiTargetsPage: React.FC = () => {
           ))}
         </select>
         <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          value={pendingStatusFilter}
+          onChange={(e) => setPendingStatusFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Statuses</option>
@@ -313,6 +492,15 @@ export const KpiTargetsPage: React.FC = () => {
             </option>
           ))}
         </select>
+        <Button onClick={handleApplyFilters}>Apply</Button>
+        {(kpiCodeFilter || metricFilter || periodFilter || statusFilter) && (
+          <button
+            onClick={handleClearFilters}
+            className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
@@ -342,7 +530,7 @@ export const KpiTargetsPage: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800">
                   <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    KPI
+                    Target ID
                   </th>
                   <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Metric
@@ -352,6 +540,12 @@ export const KpiTargetsPage: React.FC = () => {
                   </th>
                   <th className="px-4 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Target
+                  </th>
+                  <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Direction
+                  </th>
+                  <th className="px-4 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Threshold
                   </th>
                   <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Status
@@ -368,16 +562,28 @@ export const KpiTargetsPage: React.FC = () => {
                     className="border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <td className="px-4 py-4 text-sm font-mono text-slate-900 dark:text-white">
-                      {target.kpi_code}
+                      {target.id.slice(0, 8).toUpperCase()}
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300">
                       {target.metric?.name ?? "—"}
                     </td>
                     <td className="px-4 py-4 text-sm font-mono text-slate-700 dark:text-slate-300">
-                      {target.target_year} / {target.period_code}
+                      {formatPeriodLabel(
+                        target.target_year,
+                        target.period_code,
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm tabular-nums font-medium text-slate-900 dark:text-white ltr:text-right rtl:text-left">
-                      {target.target_value ?? "—"}
+                      {formatTargetValue(
+                        target.target_value,
+                        target.direction_snapshot,
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300">
+                      {target.direction_snapshot ?? "—"}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300">
+                      {target.threshold_mode ?? "—"}
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -387,13 +593,57 @@ export const KpiTargetsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <button
-                        onClick={() => handleDelete(target.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
-                        title={t("common.delete")}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleViewTarget(target)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleCopyTarget(target)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700/50 transition-colors"
+                          title="Copy"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditTarget(target)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        {(target.target_status === "draft" ||
+                          target.target_status === "returned") && (
+                          <button
+                            onClick={() => {
+                              toast.info("Submit workflow coming soon");
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-green-600 hover:bg-green-50 dark:hover:text-green-400 dark:hover:bg-green-900/20 transition-colors"
+                            title="Submit"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        )}
+                        {target.target_status === "superseded" && (
+                          <button
+                            onClick={() => handleCopyTarget(target)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:text-purple-400 dark:hover:bg-purple-900/20 transition-colors"
+                            title="Supersede"
+                          >
+                            <ArrowUpRight className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(target.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                          title={t("common.delete")}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -413,10 +663,12 @@ export const KpiTargetsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                    Set Target
+                    {editingTarget ? "Edit Target" : "Set Target"}
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Define a target for a KPI metric
+                    {editingTarget
+                      ? "Modify target details"
+                      : "Define a target for a KPI metric"}
                   </p>
                 </div>
               </div>
@@ -442,102 +694,78 @@ export const KpiTargetsPage: React.FC = () => {
 
               <fieldset className="border border-slate-200 dark:border-slate-700/60 rounded-lg p-4 space-y-4">
                 <legend className="text-sm font-semibold text-slate-700 dark:text-slate-300 px-1">
-                  Identity
+                  Basic Details & Period
                 </legend>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    KPI <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formKpiCode}
-                    onChange={(e) => {
-                      const c = cardOptions.find(
-                        (o) => o.code === e.target.value,
-                      );
-                      setFormKpiCode(e.target.value);
-                      if (c) setFormKpiType(c.type);
-                      setFormMetricId("");
-                    }}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">-- Select KPI --</option>
-                    {cardOptions.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      KPI <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formKpiCode}
+                      onChange={(e) => {
+                        const c = cardOptions.find(
+                          (o) => o.code === e.target.value,
+                        );
+                        setFormKpiCode(e.target.value);
+                        if (c) setFormKpiType(c.type);
+                        setFormMetricId("");
+                      }}
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    >
+                      <option value="">-- Select KPI --</option>
+                      {cardOptions.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Metric <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formMetricId}
+                      onChange={(e) => setFormMetricId(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    >
+                      <option value="">-- Select Metric --</option>
+                      {(modalMetrics ?? kpiMetrics ?? []).map((m: any) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Metric <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formMetricId}
-                    onChange={(e) => setFormMetricId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">-- Select Metric --</option>
-                    {(kpiMetrics ?? []).map((m: any) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </fieldset>
-
-              {selectedMetric && (
-                <fieldset className="border border-slate-200 dark:border-slate-700/60 rounded-lg p-4 space-y-3">
-                  <legend className="text-sm font-semibold text-slate-700 dark:text-slate-300 px-1">
-                    Metric Snapshot (Immutable)
-                  </legend>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                {selectedMetric && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="text-slate-500">Calc Type:</span>{" "}
-                      <span className="text-slate-900 dark:text-white font-medium">
-                        {calcType}
-                      </span>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Calculation Type
+                      </label>
+                      <input
+                        type="text"
+                        value={calcType}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 outline-none cursor-not-allowed"
+                      />
                     </div>
                     <div>
-                      <span className="text-slate-500">Direction:</span>{" "}
-                      <span className="text-slate-900 dark:text-white font-medium">
-                        {direction}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Unit:</span>{" "}
-                      <span className="text-slate-900 dark:text-white font-medium">
-                        {selectedMetric.unit || "Number"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Precision:</span>{" "}
-                      <span className="text-slate-900 dark:text-white font-medium">
-                        {selectedMetric.decimal_precision ?? 2}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Frequency:</span>{" "}
-                      <span className="text-slate-900 dark:text-white font-medium">
-                        {freq ?? "—"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Aggregation:</span>{" "}
-                      <span className="text-slate-900 dark:text-white font-medium">
-                        {selectedMetric.aggregation_method ?? "—"}
-                      </span>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Direction
+                      </label>
+                      <input
+                        type="text"
+                        value={direction}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 outline-none cursor-not-allowed"
+                      />
                     </div>
                   </div>
-                </fieldset>
-              )}
-
-              <fieldset className="border border-slate-200 dark:border-slate-700/60 rounded-lg p-4 space-y-4">
-                <legend className="text-sm font-semibold text-slate-700 dark:text-slate-300 px-1">
-                  Planning
-                </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Target Year <span className="text-red-500">*</span>
@@ -571,25 +799,39 @@ export const KpiTargetsPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Target Type
-                    </label>
-                    <select
-                      value={formTargetType}
-                      onChange={(e) =>
-                        setFormTargetType(e.target.value as KpiTargetType)
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      {TARGET_TYPE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
+                {formPeriodCode && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Period Start
+                      </label>
+                      <input
+                        type="text"
+                        value={periodDates.start}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 outline-none cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Period End
+                      </label>
+                      <input
+                        type="text"
+                        value={periodDates.end}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 outline-none cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                )}
+              </fieldset>
+
+              <fieldset className="border border-slate-200 dark:border-slate-700/60 rounded-lg p-4 space-y-4">
+                <legend className="text-sm font-semibold text-slate-700 dark:text-slate-300 px-1">
+                  Target Values & Basis
+                </legend>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -614,22 +856,40 @@ export const KpiTargetsPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Target Basis <span className="text-red-500">*</span>
+                      Target Type <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={formTargetBasis}
+                      value={formTargetType}
                       onChange={(e) =>
-                        setFormTargetBasis(e.target.value as KpiTargetBasis)
+                        setFormTargetType(e.target.value as KpiTargetType)
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                     >
-                      {TARGET_BASIS_OPTIONS.map((o) => (
+                      {TARGET_TYPE_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
                         </option>
                       ))}
                     </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Target Basis <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formTargetBasis}
+                    onChange={(e) =>
+                      setFormTargetBasis(e.target.value as KpiTargetBasis)
+                    }
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    {TARGET_BASIS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -647,7 +907,7 @@ export const KpiTargetsPage: React.FC = () => {
 
               <fieldset className="border border-slate-200 dark:border-slate-700/60 rounded-lg p-4 space-y-4">
                 <legend className="text-sm font-semibold text-slate-700 dark:text-slate-300 px-1">
-                  Thresholds
+                  Thresholds & Status
                 </legend>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -746,35 +1006,16 @@ export const KpiTargetsPage: React.FC = () => {
                       )}
                     </div>
                   )}
-              </fieldset>
-
-              <fieldset className="border border-slate-200 dark:border-slate-700/60 rounded-lg p-4 space-y-4">
-                <legend className="text-sm font-semibold text-slate-700 dark:text-slate-300 px-1">
-                  Governance
-                </legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Effective From
-                    </label>
-                    <input
-                      type="date"
-                      value={formEffectiveFrom}
-                      onChange={(e) => setFormEffectiveFrom(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Effective To
-                    </label>
-                    <input
-                      type="date"
-                      value={formEffectiveTo}
-                      onChange={(e) => setFormEffectiveTo(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Status
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTarget ? formStatus : "Draft (auto-set)"}
+                    readOnly
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 outline-none cursor-not-allowed capitalize"
+                  />
                 </div>
               </fieldset>
             </div>
@@ -787,15 +1028,30 @@ export const KpiTargetsPage: React.FC = () => {
               >
                 Cancel
               </Button>
+              {!editingTarget && (
+                <Button
+                  onClick={handleSaveDraft}
+                  disabled={setTarget.isPending || isFormulaMetric}
+                  variant="outline"
+                >
+                  {setTarget.isPending
+                    ? "Saving..."
+                    : isFormulaMetric
+                      ? "Phase 2 Only"
+                      : "Save Draft"}
+                </Button>
+              )}
               <Button
-                onClick={handleSubmit}
+                onClick={handleSubmitTarget}
                 disabled={setTarget.isPending || isFormulaMetric}
               >
                 {setTarget.isPending
                   ? "Saving..."
                   : isFormulaMetric
                     ? "Phase 2 Only"
-                    : "Save Target"}
+                    : editingTarget
+                      ? "Update Target"
+                      : "Submit Target"}
               </Button>
             </div>
           </div>

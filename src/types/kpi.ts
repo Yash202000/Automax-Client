@@ -139,10 +139,46 @@ export interface KpiSegmentationDimensionRequest {
   name_ar?: string;
 }
 
+export interface KpiOrganization {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  contact_info?: string;
+  is_active: boolean;
+}
+
+export interface KpiOrganizationRequest {
+  name_en: string;
+  name_ar?: string;
+  contact_info?: string;
+}
+
+export interface KpiSegmentationAxis {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  dimension_id: string;
+  dimension?: KpiSegmentationDimension;
+}
+
+export interface KpiAdministrativeUnit {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  department_id: string;
+  department?: DepartmentBrief;
+}
+
 export type KPIType = "strategic" | "operational" | "award";
 export type KPIPolarity = "ascending" | "descending";
 export type KPIActivationStatus = "draft" | "active" | "inactive";
-export type KPIFrequency = "monthly" | "quarterly" | "annually";
+export type KPIFrequency =
+  | "monthly"
+  | "quarterly"
+  | "semi_annual"
+  | "annually"
+  | "custom";
+export type KPIOwnerType = "internal" | "external";
 
 export interface KpiDashboardData {
   total_strategic: number;
@@ -224,8 +260,13 @@ export interface StrategicKPI {
   pillar?: Pillar;
   domain_id?: string;
   domain?: Domain;
+  owner_type: KPIOwnerType;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
   goal_id: string;
   goal?: GoalBrief;
   process_id?: string;
@@ -258,8 +299,15 @@ export interface OperationalKPI {
   operational_objective?: OperationalObjective;
   process_id: string;
   process?: Process;
+  domain_id?: string;
+  domain?: Domain;
+  owner_type: KPIOwnerType;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
   polarity: string;
   activation_status: string;
   description_en: string;
@@ -268,6 +316,7 @@ export interface OperationalKPI {
   baseline: number;
   unit_of_measure: string;
   reporting_frequency: string;
+  lifecycle: string;
   data_source: string;
   notes: string;
   created_at: string;
@@ -281,8 +330,15 @@ export interface AwardKPI {
   name_ar: string;
   award_sub_criterion_id: string;
   award_sub_criterion?: AwardSubCriterion;
+  domain_id?: string;
+  domain?: Domain;
+  owner_type: KPIOwnerType;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
   polarity: string;
   activation_status: string;
   description_en: string;
@@ -291,6 +347,7 @@ export interface AwardKPI {
   baseline: number;
   unit_of_measure: string;
   reporting_frequency: string;
+  lifecycle: string;
   data_source: string;
   notes: string;
   created_at: string;
@@ -547,7 +604,10 @@ export interface StrategicKPIRequest {
   name_ar?: string;
   pillar_id?: string;
   domain_id?: string;
+  owner_type?: KPIOwnerType;
   owner_dept_id?: string;
+  owner_org_id?: string;
+  owning_agency_id?: string;
   goal_id: string;
   process_id: string;
   polarity?: string;
@@ -572,7 +632,11 @@ export interface OperationalKPIRequest {
   goal_id: string;
   operational_objective_id: string;
   process_id: string;
+  domain_id?: string;
+  owner_type?: KPIOwnerType;
   owner_dept_id?: string;
+  owner_org_id?: string;
+  owning_agency_id?: string;
   polarity?: string;
   activation_status?: string;
   description_en?: string;
@@ -581,6 +645,7 @@ export interface OperationalKPIRequest {
   baseline?: number;
   unit_of_measure?: string;
   reporting_frequency?: string;
+  lifecycle?: string;
   data_source?: string;
   notes?: string;
 }
@@ -590,7 +655,11 @@ export interface AwardKPIRequest {
   name_en: string;
   name_ar?: string;
   award_sub_criterion_id: string;
+  domain_id?: string;
+  owner_type?: KPIOwnerType;
   owner_dept_id?: string;
+  owner_org_id?: string;
+  owning_agency_id?: string;
   polarity?: string;
   activation_status?: string;
   description_en?: string;
@@ -599,6 +668,7 @@ export interface AwardKPIRequest {
   baseline?: number;
   unit_of_measure?: string;
   reporting_frequency?: string;
+  lifecycle?: string;
   data_source?: string;
   notes?: string;
 }
@@ -1057,6 +1127,7 @@ export interface KpiEntry {
   approved_by?: UserBrief;
   entry_version: number;
   supersedes_entry_id?: string;
+  workflow_instance_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -1077,6 +1148,13 @@ export interface KpiEntryRequest {
   performance_commentary?: string;
   improvement_action?: string;
 }
+
+// Same editable surface as KpiEntryRequest, minus metric_id/period_code/
+// reporting_year — an entry's identity can't change after creation.
+export type KpiEntryUpdateRequest = Omit<
+  KpiEntryRequest,
+  "metric_id" | "reporting_year" | "period_code"
+>;
 
 export interface KpiEntryEvidence {
   id: string;
@@ -1380,3 +1458,65 @@ export const NOTIFICATION_PREF_OPTIONS: { value: string; label: string }[] = [
   { value: "Rejected", label: "Rejected" },
   { value: "Locked", label: "Locked" },
 ];
+
+// ─── Composed views (KPI Card / per-KPI Dashboard / annual rollup) ─────────
+// These come from the backend's kpi_composed_handler.go, which joins
+// dictionary + targets + performance bands server-side so the frontend
+// doesn't have to make 3+ round trips and assemble them itself.
+
+export interface KpiCardTargetRow {
+  target_year: number;
+  period_code: string;
+  target_value: number;
+  target_frequency: string;
+  notes: string;
+}
+
+export interface KpiPerformanceBand {
+  id?: string;
+  kpi_code?: string | null;
+  green_min: number;
+  amber_min: number;
+}
+
+export interface KpiCardResponse {
+  code: string;
+  type: KPIType;
+  name_en: string;
+  name_ar: string;
+  description_en: string;
+  description_ar: string;
+  activation_status: string;
+  lifecycle: string;
+  owner_label: string;
+  owner_type: KPIOwnerType;
+  pillar_enabler_label: string;
+  strategic_goal_label: string;
+  criterion_label: string;
+  reporting_frequency: string;
+  data_source: string;
+  related_units_label: string;
+  formula: string;
+  polarity: string;
+  unit_of_measure: string;
+  baseline: number;
+  target_plan: KpiCardTargetRow[];
+  bands: KpiPerformanceBand;
+}
+
+export interface KpiAnnualRollupRow {
+  year: number;
+  target: number | null;
+  actual: number | null;
+  achievement_pct: number | null;
+  is_derived: boolean;
+}
+
+export interface KpiSingleDashboardResponse {
+  card: KpiCardResponse;
+  annual_rollup: KpiAnnualRollupRow[];
+  trend_description: string;
+  justification: string;
+  corrective_action: string;
+  benchmarks: KpiBenchmark[];
+}

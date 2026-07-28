@@ -45,7 +45,7 @@ import {
   useDeleteKpiMetric,
   useKpiEngagementEvidence,
   useCreateKpiEvidence,
-  useKpiCollaborators,
+  useKpiCollaboratorAssignments,
   useKpiCheckIns,
   useCreateKpiCheckIn,
   useDeleteKpiCheckIn,
@@ -208,7 +208,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const kpiId = id ?? "";
   const { data: metrics } = useKpiMetrics(kpiType, kpiId);
   const { data: evidenceList } = useKpiEngagementEvidence(kpiType, kpiId);
-  const { data: collaborators } = useKpiCollaborators(kpiType, kpiId);
+  const { data: collaborators } = useKpiCollaboratorAssignments(kpiType, kpiId);
   const [checkInPage, setCheckInPage] = useState(1);
   const { data: checkInData } = useKpiCheckIns(kpiType, kpiId, checkInPage);
   const [commentPage, setCommentPage] = useState(1);
@@ -653,6 +653,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               <List className="w-4 h-4" />
               Entries
             </button>
+            <Link
+              to={`/goals/kpi/dictionary/${type}/${id}/card`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              Card
+            </Link>
+            <Link
+              to={`/goals/kpi/dictionary/${type}/${id}/dashboard`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
+            </Link>
             {canUpdateKpi() && (
               <Link
                 to={
