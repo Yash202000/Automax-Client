@@ -3741,9 +3741,9 @@
       }
     },
     "targets": {
-      "title": "Annual Targets",
-      "subtitle": "Set annual target values for KPIs",
-      "setTarget": "Set Target",
+      "title": "Targets",
+      "subtitle": "Create and govern approved target values by metric and reporting period.",
+      "setTarget": "Add Target",
       "searchPlaceholder": "Search by KPI code...",
       "empty": "No targets found.",
       "failedToLoad": "Failed to load targets.",
