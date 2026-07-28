@@ -9,6 +9,7 @@ import {
   kpiCorrectiveActionApi,
   kpiDashboardApi,
   kpiEngagementApi,
+  kpiComposedApi,
 } from "../api/kpi";
 import apiClient from "../api/client";
 import type {
@@ -29,7 +30,10 @@ import type {
   KpiCollaboratorAddRequest,
   KpiCheckInRequest,
   KpiEntryRequest,
+  KpiEntryUpdateRequest,
   KpiCollaboratorAssignmentRequest,
+  KPIType,
+  KpiOrganizationRequest,
 } from "../types/kpi";
 
 function getApiError(err: any): string {
@@ -561,6 +565,58 @@ export const useDeleteSegmentationDimension = () => {
       toast.success("Segmentation dimension deleted");
     },
     onError: () => toast.error("Failed to delete segmentation dimension"),
+  });
+};
+
+export const useOrganizations = () =>
+  useQuery({
+    queryKey: ["kpi", "organizations"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listOrganizations();
+      return res.data ?? [];
+    },
+  });
+
+export const useCreateOrganization = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: KpiOrganizationRequest) =>
+      kpiMasterDataApi.createOrganization(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "organizations"] });
+      toast.success("Organization saved");
+    },
+    onError: () => toast.error("Failed to save organization"),
+  });
+};
+
+export const useUpdateOrganization = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<KpiOrganizationRequest>;
+    }) => kpiMasterDataApi.updateOrganization(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "organizations"] });
+      toast.success("Organization updated");
+    },
+    onError: () => toast.error("Failed to update organization"),
+  });
+};
+
+export const useDeleteOrganization = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => kpiMasterDataApi.deleteOrganization(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "organizations"] });
+      toast.success("Organization deleted");
+    },
+    onError: () => toast.error("Failed to delete organization"),
   });
 };
 
@@ -1113,6 +1169,18 @@ export const useUpdateCorrectiveActionStatus = () => {
   });
 };
 
+// ─── Composed views (KPI Card / per-KPI Dashboard) ────────────────────────
+
+export const useKpiCard = (type?: KPIType | string, id?: string) =>
+  useQuery({
+    queryKey: ["kpi", "card", type, id],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getCard(type as KPIType, id!);
+      return res.data;
+    },
+    enabled: !!type && !!id,
+  });
+
 export const useKpiDashboard = (params?: {
   kpi_type?: string;
   year?: number;
@@ -1136,6 +1204,16 @@ export const useKpiDashboardTrends = (params?: {
       const res = await kpiDashboardApi.getTrends(params);
       return res.data ?? [];
     },
+  });
+
+export const useKpiSingleDashboard = (type: KPIType | string, id: string) =>
+  useQuery({
+    queryKey: ["kpi", "single-dashboard", type, id],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getDashboard(type as KPIType, id);
+      return res.data;
+    },
+    enabled: !!type && !!id,
   });
 
 export const useKpiCardDefinitions = (params?: {
@@ -1528,7 +1606,112 @@ export const useCreateKpiEntry = (type: string, id: string) => {
       qc.invalidateQueries({
         queryKey: ["kpi", "engagement", type, id, "activity"],
       });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
       toast.success("Entry added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// Not scoped to a single (type, id) pair — used both from KPI-scoped views
+// (ViewEntriesModal, which knows kpiType/kpiId) and the cross-KPI
+// KpiEntriesPage, where each row's entry carries its own kpi_type/kpi_id.
+export const useUpdateKpiEntry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      type,
+      id,
+      entryId,
+      data,
+    }: {
+      type: string;
+      id: string;
+      entryId: string;
+      data: KpiEntryUpdateRequest;
+    }) => kpiEngagementApi.updateEntry(type, id, entryId, data),
+    onSuccess: (_res, { type, id }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "entries"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "activity"],
+      });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
+      toast.success("Entry updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useDeleteKpiEntry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      type,
+      id,
+      entryId,
+    }: {
+      type: string;
+      id: string;
+      entryId: string;
+    }) => kpiEngagementApi.deleteEntry(type, id, entryId),
+    onSuccess: (_res, { type, id }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "entries"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "activity"],
+      });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
+      toast.success("Entry deleted");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useKpiAvailableEntryTransitions = (entryId: string) =>
+  useQuery({
+    queryKey: ["kpi", "entries", entryId, "transitions"],
+    queryFn: () => kpiEngagementApi.getAvailableEntryTransitions(entryId),
+    enabled: !!entryId,
+  });
+
+export const useKpiEntryHistory = (entryId: string) =>
+  useQuery({
+    queryKey: ["kpi", "entries", entryId, "history"],
+    queryFn: () => kpiEngagementApi.getEntryHistory(entryId),
+    enabled: !!entryId,
+  });
+
+// entryId alone doesn't tell us which (type, id) engagement scope the entry
+// belongs to, so on success we invalidate every KPI-engagement entries list
+// (predicate match) plus the cross-KPI "all entries" list and this entry's
+// own transitions/history — cheap over-invalidation beats a stale UI.
+export const useTransitionKpiEntry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      entryId,
+      transitionId,
+      comment,
+    }: {
+      entryId: string;
+      transitionId: string;
+      comment?: string;
+    }) => kpiEngagementApi.transitionEntry(entryId, transitionId, comment),
+    onSuccess: (_res, { entryId }) => {
+      qc.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey as unknown[];
+          return (
+            key[0] === "kpi" && key[1] === "engagement" && key[4] === "entries"
+          );
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", entryId] });
+      toast.success("Entry transitioned");
     },
     onError: (err) => toast.error(getApiError(err)),
   });

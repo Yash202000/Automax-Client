@@ -13,10 +13,33 @@ import {
   BarChart3,
   Clock,
   FileText,
+  Pencil,
+  Trash2,
+  Send,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
-import { useKpiAllEntries } from "../../../hooks/useKpi";
+import {
+  useKpiAllEntries,
+  useDeleteKpiEntry,
+  useKpiAvailableEntryTransitions,
+  useKpiEntryHistory,
+  useTransitionKpiEntry,
+} from "../../../hooks/useKpi";
+import { usePermissions } from "../../../hooks/usePermissions";
+import { kpiTransitionPermissionCode } from "../../../utils/kpiTransitionPermission";
 import { Modal } from "../../../components/ui/Modal";
-import type { KpiEntry } from "../../../types/kpi";
+import { Button } from "../../../components/ui/Button";
+import { Input } from "../../../components/ui/Input";
+import { AddEntryModal } from "../../../components/kpi/AddEntryModal";
+import type {
+  KpiEntry,
+  KpiMetric,
+  KpiWorkflowAction,
+  WorkflowTransitionBrief,
+} from "../../../types/kpi";
 
 const entryStatusColor: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
@@ -27,6 +50,59 @@ const entryStatusColor: Record<string, string> = {
   "Not Calculable":
     "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
 };
+
+const transitionIconMap: Record<string, React.ReactNode> = {
+  submit: <Send className="w-4 h-4" />,
+  review: <Eye className="w-4 h-4" />,
+  approve: <CheckCircle className="w-4 h-4" />,
+  reject: <XCircle className="w-4 h-4" />,
+  request_changes: <RotateCcw className="w-4 h-4" />,
+};
+
+const transitionColorMap: Record<string, string> = {
+  submit:
+    "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50",
+  review:
+    "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50",
+  approve:
+    "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50",
+  reject:
+    "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50",
+  request_changes:
+    "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50",
+};
+
+// The global entries list only knows an entry's metric as { id, name } — not
+// the full KpiMetric record. Reusing AddEntryModal here (edit mode) would
+// otherwise require an extra per-KPI metrics fetch; instead we reconstruct a
+// metric-shaped object straight from the entry's own configuration snapshot
+// (calculation_type_snapshot, direction_snapshot, etc.), which is exactly
+// what was captured at entry-creation time and is all AddEntryModal needs to
+// render its fields. Fields AddEntryModal never reads (weight, baseline,
+// audit) are filled with harmless placeholders.
+function entryToPseudoMetric(entry: KpiEntry): KpiMetric {
+  return {
+    id: entry.metric_id,
+    kpi_id: entry.kpi_id,
+    kpi_type: entry.kpi_type,
+    name: entry.metric?.name ?? entry.metric_id,
+    metric_type: "",
+    unit: entry.unit_snapshot,
+    baseline_value: 0,
+    current_value: entry.actual_value,
+    target_value: entry.target_value_snapshot ?? 0,
+    weight: 0,
+    calculation_type: entry.calculation_type_snapshot,
+    direction: entry.direction_snapshot,
+    decimal_precision: entry.decimal_precision_snapshot,
+    numerator_label: entry.numerator_label_snapshot,
+    denominator_label: entry.denominator_label_snapshot,
+    aggregation_method: entry.aggregation_method_snapshot,
+    created_by_id: "",
+    created_at: "",
+    updated_at: "",
+  };
+}
 
 function DetailRow({
   label,
@@ -47,13 +123,94 @@ function DetailRow({
   );
 }
 
+function EntryTransitionHistory({ entryId }: { entryId: string }) {
+  const { data: res, isLoading } = useKpiEntryHistory(entryId);
+  const actions: KpiWorkflowAction[] = res?.data ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="py-8 flex justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (actions.length === 0) {
+    return (
+      <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+        No transition history yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative space-y-4">
+      {actions.map((action, idx) => (
+        <div key={action.id} className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <div
+              className={`w-3 h-3 rounded-full border-2 ${
+                idx === actions.length - 1
+                  ? "bg-blue-600 border-blue-600"
+                  : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+              }`}
+            />
+            {idx < actions.length - 1 && (
+              <div className="w-px flex-1 bg-slate-200 dark:bg-slate-700 mt-1" />
+            )}
+          </div>
+          <div className="pb-4 flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {action.transition_name ?? action.id.slice(0, 8)}
+              </span>
+              {action.from_state_name && action.to_state_name && (
+                <span className="text-xs text-slate-400">
+                  {action.from_state_name} → {action.to_state_name}
+                </span>
+              )}
+            </div>
+            {action.comment && (
+              <p className="text-xs text-slate-500 mt-0.5">{action.comment}</p>
+            )}
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+              <span>
+                {action.performed_by?.name ??
+                  action.performed_by_id.slice(0, 8)}
+              </span>
+              <span>·</span>
+              <span>{new Date(action.performed_at).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EntryDetailModal({
   entry,
+  canEdit,
   onClose,
+  onEdit,
+  onDelete,
+  onTransition,
 }: {
   entry: KpiEntry | null;
+  canEdit: boolean;
   onClose: () => void;
+  onEdit: (entry: KpiEntry) => void;
+  onDelete: (entry: KpiEntry) => void;
+  onTransition: (entry: KpiEntry, transition: WorkflowTransitionBrief) => void;
 }) {
+  const { hasPermission } = usePermissions();
+  const { data: transResp } = useKpiAvailableEntryTransitions(entry?.id ?? "");
+  const transitions = entry
+    ? (transResp?.data ?? []).filter((tr) =>
+        hasPermission(kpiTransitionPermissionCode(tr.code)),
+      )
+    : [];
+
   if (!entry) return null;
   return (
     <Modal isOpen={!!entry} onClose={onClose} size="5xl">
@@ -66,6 +223,26 @@ function EntryDetailModal({
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {entry.reporting_year} / {entry.period_code}
             </p>
+          </div>
+          <div className="flex items-center gap-1 mr-8">
+            {entry.status === "draft" && canEdit && (
+              <>
+                <button
+                  onClick={() => onEdit(entry)}
+                  className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Edit"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(entry)}
+                  className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -295,6 +472,38 @@ function EntryDetailModal({
               )}
             </div>
           </div>
+
+          {transitions.length > 0 && (
+            <div className="border-t border-slate-200 dark:border-slate-700/60 pt-4">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                Available Actions
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {transitions.map((tr) => (
+                  <button
+                    key={tr.id}
+                    onClick={() => onTransition(entry, tr)}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      transitionColorMap[tr.code] ??
+                      "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    {transitionIconMap[tr.code] ?? <Send className="w-4 h-4" />}
+                    {tr.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-slate-200 dark:border-slate-700/60 pt-4">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Transition History
+            </h3>
+            <EntryTransitionHistory entryId={entry.id} />
+          </div>
         </div>
       </div>
     </Modal>
@@ -310,6 +519,20 @@ export const KpiEntriesPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [selectedEntry, setSelectedEntry] = useState<KpiEntry | null>(null);
   const limit = 20;
+
+  const { hasPermission } = usePermissions();
+  const canEdit = hasPermission("perf:submit");
+
+  const deleteEntry = useDeleteKpiEntry();
+  const transitionEntry = useTransitionKpiEntry();
+
+  const [editTarget, setEditTarget] = useState<KpiEntry | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<KpiEntry | null>(null);
+  const [transitionPick, setTransitionPick] = useState<{
+    entry: KpiEntry;
+    transition: WorkflowTransitionBrief;
+  } | null>(null);
+  const [comment, setComment] = useState("");
 
   const params = useMemo(
     () => ({
@@ -347,6 +570,29 @@ export const KpiEntriesPage: React.FC = () => {
     }
     return years;
   }, [currentYear, t]);
+
+  const editMetric = editTarget ? entryToPseudoMetric(editTarget) : null;
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteEntry.mutateAsync({
+      type: deleteTarget.kpi_type,
+      id: deleteTarget.kpi_id,
+      entryId: deleteTarget.id,
+    });
+    setDeleteTarget(null);
+  };
+
+  const handleTransition = async () => {
+    if (!transitionPick) return;
+    await transitionEntry.mutateAsync({
+      entryId: transitionPick.entry.id,
+      transitionId: transitionPick.transition.id,
+      comment: comment || undefined,
+    });
+    setTransitionPick(null);
+    setComment("");
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -498,13 +744,33 @@ export const KpiEntriesPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => setSelectedEntry(entry)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setSelectedEntry(entry)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </button>
+                          {entry.status === "draft" && canEdit && (
+                            <>
+                              <button
+                                onClick={() => setEditTarget(entry)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(entry)}
+                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -543,8 +809,110 @@ export const KpiEntriesPage: React.FC = () => {
       {/* Entry Detail Modal */}
       <EntryDetailModal
         entry={selectedEntry}
+        canEdit={canEdit}
         onClose={() => setSelectedEntry(null)}
+        onEdit={(entry) => {
+          setSelectedEntry(null);
+          setEditTarget(entry);
+        }}
+        onDelete={(entry) => {
+          setSelectedEntry(null);
+          setDeleteTarget(entry);
+        }}
+        onTransition={(entry, transition) => {
+          setSelectedEntry(null);
+          setTransitionPick({ entry, transition });
+        }}
       />
+
+      {/* Edit entry modal — reuses AddEntryModal in edit mode */}
+      <AddEntryModal
+        kpiType={editTarget?.kpi_type ?? ""}
+        kpiId={editTarget?.kpi_id ?? ""}
+        metric={editMetric}
+        entry={editTarget}
+        isOpen={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        onSuccess={() => setEditTarget(null)}
+      />
+
+      {/* Delete confirm */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        size="sm"
+      >
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Delete Entry
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Are you sure you want to delete the entry for{" "}
+            <strong>
+              {deleteTarget?.period_code} {deleteTarget?.reporting_year}
+            </strong>
+            ? This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteEntry.isPending}
+            >
+              {deleteEntry.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Transition confirm */}
+      <Modal
+        isOpen={!!transitionPick}
+        onClose={() => {
+          setTransitionPick(null);
+          setComment("");
+        }}
+        size="sm"
+      >
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            {transitionPick?.transition.name}
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Confirm this action for the entry (
+            {transitionPick?.entry.period_code}{" "}
+            {transitionPick?.entry.reporting_year}).
+          </p>
+          <Input
+            label="Comment (optional)"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTransitionPick(null);
+                setComment("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTransition}
+              disabled={transitionEntry.isPending}
+            >
+              {transitionEntry.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : null}
+              Confirm
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

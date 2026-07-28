@@ -21,6 +21,11 @@ import type {
   KpiDataSourceRequest,
   KpiSegmentationDimension,
   KpiSegmentationDimensionRequest,
+  KpiOrganization,
+  KpiOrganizationRequest,
+  KpiSegmentationAxis,
+  KpiAdministrativeUnit,
+  KPIType,
   StrategicKPI,
   StrategicKPIRequest,
   OperationalKPI,
@@ -63,10 +68,14 @@ import type {
   KpiListResponse,
   KpiEntry,
   KpiEntryRequest,
+  KpiEntryUpdateRequest,
   KpiEntryEvidence,
   KpiCollaboratorAssignment,
   KpiCollaboratorAssignmentRequest,
   CollaboratorPermissionMatrix,
+  KpiCardResponse,
+  KpiSingleDashboardResponse,
+  KpiAnnualRollupRow,
 } from "../types/kpi";
 
 export const kpiMasterDataApi = {
@@ -299,6 +308,78 @@ export const kpiMasterDataApi = {
     id: string,
   ): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/segmentation-dimensions/${id}`);
+    return res.data;
+  },
+
+  listOrganizations: async (): Promise<ApiResponse<KpiOrganization[]>> => {
+    const res = await apiClient.get("/kpi/organizations");
+    return res.data;
+  },
+  createOrganization: async (
+    data: KpiOrganizationRequest,
+  ): Promise<ApiResponse<KpiOrganization>> => {
+    const res = await apiClient.post("/kpi/organizations", data);
+    return res.data;
+  },
+  updateOrganization: async (
+    id: string,
+    data: Partial<KpiOrganizationRequest>,
+  ): Promise<ApiResponse<KpiOrganization>> => {
+    const res = await apiClient.put(`/kpi/organizations/${id}`, data);
+    return res.data;
+  },
+  deleteOrganization: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/organizations/${id}`);
+    return res.data;
+  },
+
+  listSegmentationAxes: async (
+    kpiType: KPIType,
+    kpiId: string,
+  ): Promise<ApiResponse<KpiSegmentationAxis[]>> => {
+    const res = await apiClient.get(
+      `/kpi/${kpiType}/${kpiId}/segmentation-axes`,
+    );
+    return res.data;
+  },
+  addSegmentationAxis: async (
+    kpiType: KPIType,
+    kpiId: string,
+    dimensionId: string,
+  ): Promise<ApiResponse<KpiSegmentationAxis>> => {
+    const res = await apiClient.post(
+      `/kpi/${kpiType}/${kpiId}/segmentation-axes`,
+      { dimension_id: dimensionId },
+    );
+    return res.data;
+  },
+  deleteSegmentationAxis: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/segmentation-axes/${id}`);
+    return res.data;
+  },
+
+  listAdministrativeUnits: async (
+    kpiType: KPIType,
+    kpiId: string,
+  ): Promise<ApiResponse<KpiAdministrativeUnit[]>> => {
+    const res = await apiClient.get(
+      `/kpi/${kpiType}/${kpiId}/administrative-units`,
+    );
+    return res.data;
+  },
+  addAdministrativeUnit: async (
+    kpiType: KPIType,
+    kpiId: string,
+    departmentId: string,
+  ): Promise<ApiResponse<KpiAdministrativeUnit>> => {
+    const res = await apiClient.post(
+      `/kpi/${kpiType}/${kpiId}/administrative-units`,
+      { department_id: departmentId },
+    );
+    return res.data;
+  },
+  deleteAdministrativeUnit: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/administrative-units/${id}`);
     return res.data;
   },
 };
@@ -937,10 +1018,53 @@ export const kpiEngagementApi = {
     const res = await apiClient.post(`/kpi/${type}/${id}/entries`, data);
     return res.data;
   },
+  updateEntry: async (
+    type: string,
+    id: string,
+    entryId: string,
+    data: KpiEntryUpdateRequest,
+  ): Promise<ApiResponse<KpiEntry>> => {
+    const res = await apiClient.put(
+      `/kpi/${type}/${id}/entries/${entryId}`,
+      data,
+    );
+    return res.data;
+  },
+  deleteEntry: async (
+    type: string,
+    id: string,
+    entryId: string,
+  ): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/${type}/${id}/entries/${entryId}`);
+    return res.data;
+  },
   listEntryEvidence: async (
     entryId: string,
   ): Promise<ApiResponse<KpiEntryEvidence[]>> => {
     const res = await apiClient.get(`/kpi/entries/${entryId}/evidence`);
+    return res.data;
+  },
+  transitionEntry: async (
+    entryId: string,
+    transitionId: string,
+    comment?: string,
+  ): Promise<ApiResponse<KpiEntry>> => {
+    const res = await apiClient.post(`/kpi/entries/${entryId}/transition`, {
+      transition_id: transitionId,
+      comment,
+    });
+    return res.data;
+  },
+  getAvailableEntryTransitions: async (
+    entryId: string,
+  ): Promise<ApiResponse<WorkflowTransitionBrief[]>> => {
+    const res = await apiClient.get(`/kpi/entries/${entryId}/transitions`);
+    return res.data;
+  },
+  getEntryHistory: async (
+    entryId: string,
+  ): Promise<ApiResponse<KpiWorkflowAction[]>> => {
+    const res = await apiClient.get(`/kpi/entries/${entryId}/history`);
     return res.data;
   },
 
@@ -997,6 +1121,33 @@ export const kpiEngagementApi = {
     ApiResponse<CollaboratorPermissionMatrix[]>
   > => {
     const res = await apiClient.get("/kpi/collaborator-permission-matrix");
+    return res.data;
+  },
+};
+
+// Composed views — KPI Card one-pager, per-KPI dashboard, annual rollup.
+// Each endpoint returns everything that page needs in one call instead of
+// the frontend stitching together dictionary + targets + bands itself.
+export const kpiComposedApi = {
+  getCard: async (
+    type: KPIType,
+    id: string,
+  ): Promise<ApiResponse<KpiCardResponse>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/card`);
+    return res.data;
+  },
+  getDashboard: async (
+    type: KPIType,
+    id: string,
+  ): Promise<ApiResponse<KpiSingleDashboardResponse>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/dashboard`);
+    return res.data;
+  },
+  getAnnualRollup: async (
+    type: KPIType,
+    id: string,
+  ): Promise<ApiResponse<KpiAnnualRollupRow[]>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/annual-rollup`);
     return res.data;
   },
 };

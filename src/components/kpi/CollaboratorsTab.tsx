@@ -24,6 +24,8 @@ import {
   useUpdateKpiCollaboratorAssignment,
   useDeleteKpiCollaboratorAssignment,
   useKpiCollaboratorPermissionMatrix,
+  useKpiMetrics,
+  useOrganizations,
 } from "../../hooks/useKpi";
 import {
   COLLABORATOR_TYPE_OPTIONS,
@@ -71,6 +73,8 @@ export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
   const createAssignment = useCreateKpiCollaboratorAssignment(type, id);
   const updateAssignment = useUpdateKpiCollaboratorAssignment(type, id);
   const deleteAssignment = useDeleteKpiCollaboratorAssignment(type, id);
+  const { data: organizations = [] } = useOrganizations();
+  const { data: metrics = [] } = useKpiMetrics(type, id);
 
   const { data: users = [] } = useQuery({
     queryKey: ["users", "active"],
@@ -329,13 +333,30 @@ export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
             />
           </div>
 
+          {form.metric_scope === "Selected Metrics" && (
+            <MultiSelect
+              label="Metrics"
+              value={form.metric_scope_ids ?? []}
+              onChange={(v) => setForm((p) => ({ ...p, metric_scope_ids: v }))}
+              options={metrics.map((m: any) => ({
+                value: m.id,
+                label: m.name,
+              }))}
+              searchable
+              placeholder="Select metrics..."
+            />
+          )}
+
           <MultiSelect
             label="Organization Scope"
             value={form.organization_scope ?? []}
             onChange={(v) => setForm((p) => ({ ...p, organization_scope: v }))}
-            options={[]}
+            options={organizations.map((o: any) => ({
+              value: o.id,
+              label: o.name_en,
+            }))}
             searchable
-            placeholder="Type org unit names..."
+            placeholder="Select organizations..."
           />
 
           <MultiSelect

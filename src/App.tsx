@@ -326,6 +326,16 @@ const KpiDictionaryFormAwardPage = lazy(() =>
     default: m.KpiDictionaryFormAwardPage,
   })),
 );
+const KpiCardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiCardPage").then((m) => ({
+    default: m.KpiCardPage,
+  })),
+);
+const KpiSingleDashboardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiSingleDashboardPage").then((m) => ({
+    default: m.KpiSingleDashboardPage,
+  })),
+);
 const KpiPerformancePage = lazy(() =>
   import("./pages/admin/kpi/KpiPerformancePage").then((m) => ({
     default: m.KpiPerformancePage,
@@ -1029,6 +1039,14 @@ function App() {
                         <Route
                           path="/goals/kpi/dictionary/:type/:id"
                           element={<KpiDictionaryDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id/card"
+                          element={<KpiCardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id/dashboard"
+                          element={<KpiSingleDashboardPage />}
                         />
                         <Route
                           path="/goals/kpi/report"

@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { X, FileUp, Plus, Trash2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
-import { useCreateKpiEntry } from "../../hooks/useKpi";
+import { useCreateKpiEntry, useUpdateKpiEntry } from "../../hooks/useKpi";
 import type {
   KpiMetric,
   KpiCalculationType,
@@ -10,6 +10,7 @@ import type {
   KpiDataQualityStatus,
   KpiEntryComponentValue,
   KpiPerformanceStatus,
+  KpiEntry,
 } from "../../types/kpi";
 import {
   getPeriodOptionsByFrequency,
@@ -27,6 +28,11 @@ interface AddEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  // When provided, the modal opens in edit mode: fields are prefilled from
+  // this entry and submitting calls updateEntry (PUT) instead of
+  // createEntry (POST). Only draft entries should ever be passed here — the
+  // backend enforces that anyway and returns a 403 otherwise.
+  entry?: KpiEntry | null;
 }
 
 function calculateActual(
@@ -124,8 +130,11 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  entry,
 }) => {
+  const isEditMode = !!entry;
   const createEntry = useCreateKpiEntry(kpiType, kpiId);
+  const updateEntry = useUpdateKpiEntry();
 
   const calcType = metric?.calculation_type ?? "Direct Value";
   const isRatioType = calcType === "Percentage - Ratio" || calcType === "Ratio";
@@ -189,8 +198,6 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     [actualCalc.value, targetVal, dir],
   );
 
-  if (!isOpen) return null;
-
   const resetForm = () => {
     setReportingYear(new Date().getFullYear());
     setPeriodCode("");
@@ -208,6 +215,51 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     setPerformanceCommentary("");
     setImprovementAction("");
   };
+
+  // Prefill from the existing entry when opening in edit mode; reset to a
+  // blank form when opening in create mode. Runs on isOpen/entry change
+  // rather than mount, since this component instance stays mounted across
+  // opens/closes in its parent.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (entry) {
+      setReportingYear(entry.reporting_year);
+      setPeriodCode(entry.period_code);
+      setDirectActualValue(
+        entry.direct_actual_value != null
+          ? String(entry.direct_actual_value)
+          : "",
+      );
+      setNumeratorValue(
+        entry.numerator_value != null ? String(entry.numerator_value) : "",
+      );
+      setDenominatorValue(
+        entry.denominator_value != null ? String(entry.denominator_value) : "",
+      );
+      setComponents(
+        entry.component_values && entry.component_values.length > 0
+          ? entry.component_values
+          : [{ component: "", value: 0, weight: 1, sequence: 1 }],
+      );
+      setDataSourceType(entry.data_source_type);
+      setSourceReference(entry.source_reference ?? "");
+      setDataCutoffDate(
+        entry.data_cutoff_date ? entry.data_cutoff_date.slice(0, 10) : "",
+      );
+      setDataQualityStatus(entry.data_quality_status);
+      setDataQualityNotes(entry.data_quality_notes ?? "");
+      setPeriodStartDate(
+        entry.period_start ? entry.period_start.slice(0, 10) : "",
+      );
+      setPeriodEndDate(entry.period_end ? entry.period_end.slice(0, 10) : "");
+      setPerformanceCommentary(entry.performance_commentary ?? "");
+      setImprovementAction(entry.improvement_action ?? "");
+    } else {
+      resetForm();
+    }
+  }, [isOpen, entry]);
+
+  if (!isOpen) return null;
 
   const handleClose = () => {
     resetForm();
@@ -275,7 +327,20 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         }));
     }
 
-    await createEntry.mutateAsync(payload as any);
+    if (isEditMode && entry) {
+      // metric_id/reporting_year/period_code can't change after creation —
+      // KpiEntryUpdateRequest omits them, so strip before sending.
+      const { metric_id, reporting_year, period_code, ...updatePayload } =
+        payload;
+      await updateEntry.mutateAsync({
+        type: kpiType,
+        id: kpiId,
+        entryId: entry.id,
+        data: updatePayload,
+      });
+    } else {
+      await createEntry.mutateAsync(payload as any);
+    }
     resetForm();
     onSuccess?.();
     onClose();
@@ -331,10 +396,12 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Add Entry — {metric.name}
+                {isEditMode ? "Edit Entry" : "Add Entry"} — {metric.name}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Record a performance value for this metric
+                {isEditMode
+                  ? "Update this draft entry's values"
+                  : "Record a performance value for this metric"}
               </p>
             </div>
           </div>
@@ -401,7 +468,13 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 <select
                   value={reportingYear}
                   onChange={(e) => setReportingYear(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={isEditMode}
+                  title={
+                    isEditMode
+                      ? "Year can't be changed after creation — delete and recreate instead"
+                      : undefined
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {yearOptions.map((y) => (
                     <option key={y.value} value={y.value}>
@@ -417,7 +490,13 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 <select
                   value={periodCode}
                   onChange={(e) => setPeriodCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={isEditMode}
+                  title={
+                    isEditMode
+                      ? "Period can't be changed after creation — delete and recreate instead"
+                      : undefined
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="">Select period</option>
                   {periodOptions.map((p) => (
@@ -796,19 +875,23 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={createEntry.isPending}
+              disabled={createEntry.isPending || updateEntry.isPending}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={createEntry.isPending || isFormulaType}
+              disabled={
+                createEntry.isPending || updateEntry.isPending || isFormulaType
+              }
             >
-              {createEntry.isPending
+              {createEntry.isPending || updateEntry.isPending
                 ? "Saving..."
                 : isFormulaType
                   ? "Phase 2 Only"
-                  : "Save Entry"}
+                  : isEditMode
+                    ? "Update Entry"
+                    : "Save Entry"}
             </Button>
           </div>
         </form>

@@ -55,6 +55,10 @@ import {
   useCreateSegmentationDimension,
   useUpdateSegmentationDimension,
   useDeleteSegmentationDimension,
+  useOrganizations,
+  useCreateOrganization,
+  useUpdateOrganization,
+  useDeleteOrganization,
 } from "../../../hooks/useKpi";
 import { useGoals } from "../../../hooks/useGoals";
 import { usePermissions } from "../../../hooks/usePermissions";
@@ -75,6 +79,7 @@ import type {
   AwardSubCriterion,
   KpiDataSource,
   KpiSegmentationDimension,
+  KpiOrganization,
   PillarRequest,
   EnablerRequest,
   OperationalObjectiveRequest,
@@ -85,6 +90,7 @@ import type {
   AwardSubCriterionRequest,
   KpiDataSourceRequest,
   KpiSegmentationDimensionRequest,
+  KpiOrganizationRequest,
 } from "../../../types/kpi";
 
 type EntityType =
@@ -98,7 +104,8 @@ type EntityType =
   | "award-criterion"
   | "award-sub-criterion"
   | "data-source"
-  | "segmentation-dimension";
+  | "segmentation-dimension"
+  | "organization";
 
 interface FormState {
   name_en: string;
@@ -116,6 +123,7 @@ interface FormState {
   criterion_no: string;
   award_criterion_id: string;
   sub_no: string;
+  contact_info: string;
 }
 
 const initialForm: FormState = {
@@ -134,6 +142,7 @@ const initialForm: FormState = {
   criterion_no: "",
   award_criterion_id: "",
   sub_no: "",
+  contact_info: "",
 };
 
 export const KpiMasterDataPage: React.FC = () => {
@@ -157,6 +166,7 @@ export const KpiMasterDataPage: React.FC = () => {
       key: "segmentation-dimension",
       label: t("kpi.masterData.segmentationDimensions"),
     },
+    { key: "organization", label: t("kpi.masterData.organizations") },
   ];
   const validKeys = tabs.map((t) => t.key);
   const activeTab: EntityType =
@@ -183,6 +193,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const { data: awardSubCriteria } = useAwardSubCriteria();
   const { data: dataSources } = useDataSources();
   const { data: segmentationDimensions } = useSegmentationDimensions();
+  const { data: organizations } = useOrganizations();
 
   const { data: departmentsData } = useQuery({
     queryKey: ["admin", "departments", "all"],
@@ -221,6 +232,9 @@ export const KpiMasterDataPage: React.FC = () => {
   const createSegmentationDimension = useCreateSegmentationDimension();
   const updateSegmentationDimension = useUpdateSegmentationDimension();
   const deleteSegmentationDimension = useDeleteSegmentationDimension();
+  const createOrganization = useCreateOrganization();
+  const updateOrganization = useUpdateOrganization();
+  const deleteOrganization = useDeleteOrganization();
 
   const canManage = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_MANAGE);
 
@@ -267,6 +281,7 @@ export const KpiMasterDataPage: React.FC = () => {
         item.criterion_no !== undefined ? String(item.criterion_no) : "",
       award_criterion_id: item.award_criterion_id || "",
       sub_no: item.sub_no || "",
+      contact_info: item.contact_info || "",
     });
     setModalOpen(true);
   };
@@ -388,6 +403,15 @@ export const KpiMasterDataPage: React.FC = () => {
             data,
           });
         else await createSegmentationDimension.mutateAsync(data);
+      } else if (modalType === "organization") {
+        const data: KpiOrganizationRequest = {
+          name_en: form.name_en,
+          name_ar: form.name_ar,
+          contact_info: form.contact_info || undefined,
+        };
+        if (isEdit)
+          await updateOrganization.mutateAsync({ id: modalItem.id, data });
+        else await createOrganization.mutateAsync(data);
       }
       setModalOpen(false);
     } catch {
@@ -407,6 +431,7 @@ export const KpiMasterDataPage: React.FC = () => {
       "award-sub-criterion": (i) => deleteAwardSubCriterion.mutate(i),
       "data-source": (i) => deleteDataSource.mutate(i),
       "segmentation-dimension": (i) => deleteSegmentationDimension.mutate(i),
+      organization: (i) => deleteOrganization.mutate(i),
     };
     actions[type]?.(id);
   };
@@ -553,6 +578,12 @@ export const KpiMasterDataPage: React.FC = () => {
         name_en,
         name_ar,
       } as KpiSegmentationDimensionRequest);
+    } else if (type === "organization") {
+      await createOrganization.mutateAsync({
+        name_en,
+        name_ar,
+        contact_info: row.contact_info || row.ContactInfo || undefined,
+      } as KpiOrganizationRequest);
     }
   };
 
@@ -574,6 +605,7 @@ export const KpiMasterDataPage: React.FC = () => {
     "award-sub-criterion": "awardSubCriteria",
     "data-source": "dataSources",
     "segmentation-dimension": "segmentationDimensions",
+    organization: "organizations",
   };
   const modalTitle = modalItem ? t("common.edit") : t("common.add");
   const modalEntityLabel = t(
@@ -861,6 +893,31 @@ export const KpiMasterDataPage: React.FC = () => {
             onImport={() => handleImportExcel("segmentation-dimension")}
           />
         )}
+        {activeTab === "organization" && (
+          <MasterTable<KpiOrganization>
+            data={organizations ?? []}
+            columns={[
+              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
+              {
+                header: t("common.contactInfo"),
+                accessor: (r) => r.contact_info ?? "-",
+              },
+              {
+                header: t("kpi.masterData.active"),
+                accessor: (r) =>
+                  r.is_active ? t("common.yes") : t("common.no"),
+              },
+            ]}
+            emptyMessage={t("kpi.masterData.noOrganizations")}
+            canManage={canManage}
+            onEdit={(item) => handleEdit("organization", item)}
+            onDelete={(id) => handleDelete("organization", id)}
+            onAdd={() => handleAdd("organization")}
+            onExport={() => exportToExcel(organizations ?? [], "Organizations")}
+            onImport={() => handleImportExcel("organization")}
+          />
+        )}
       </div>
 
       <input
@@ -1087,6 +1144,14 @@ export const KpiMasterDataPage: React.FC = () => {
               value={form.criterion_no}
               onChange={set("criterion_no")}
               type="number"
+            />
+          )}
+
+          {modalType === "organization" && (
+            <Input
+              label={t("common.contactInfo")}
+              value={form.contact_info}
+              onChange={set("contact_info")}
             />
           )}
 
