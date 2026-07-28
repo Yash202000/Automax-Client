@@ -152,6 +152,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   const [dataQualityStatus, setDataQualityStatus] =
     useState<KpiDataQualityStatus>("Complete");
   const [dataQualityNotes, setDataQualityNotes] = useState("");
+  const [periodStartDate, setPeriodStartDate] = useState("");
+  const [periodEndDate, setPeriodEndDate] = useState("");
   const [performanceCommentary, setPerformanceCommentary] = useState("");
   const [improvementAction, setImprovementAction] = useState("");
 
@@ -201,6 +203,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     setDataCutoffDate("");
     setDataQualityStatus("Complete");
     setDataQualityNotes("");
+    setPeriodStartDate("");
+    setPeriodEndDate("");
     setPerformanceCommentary("");
     setImprovementAction("");
   };
@@ -243,6 +247,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
       metric_id: metric?.id ?? "",
       reporting_year: reportingYear,
       period_code: periodCode,
+      period_start_date: periodStartDate || undefined,
+      period_end_date: periodEndDate || undefined,
       data_source_type: dataSourceType,
       source_reference: sourceReference.trim(),
       data_cutoff_date: dataCutoffDate,
@@ -425,21 +431,23 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Period Start
                 </label>
-                <p className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700/60">
-                  {periodCode
-                    ? `${reportingYear}-${periodCode.toUpperCase()}-01`
-                    : "—"}
-                </p>
+                <input
+                  type="date"
+                  value={periodStartDate}
+                  onChange={(e) => setPeriodStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Period End
                 </label>
-                <p className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700/60">
-                  {periodCode
-                    ? `${reportingYear}-${periodCode.toUpperCase()}-28`
-                    : "—"}
-                </p>
+                <input
+                  type="date"
+                  value={periodEndDate}
+                  onChange={(e) => setPeriodEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
               </div>
             </div>
           </fieldset>
