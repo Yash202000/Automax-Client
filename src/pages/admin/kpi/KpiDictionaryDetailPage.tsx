@@ -1512,10 +1512,45 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                           </span>
                         )}
                     </div>
-                    <div className="mt-3 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                      <span>Baseline: {m.baseline_value}</span>
-                      <span>Current: {m.current_value}</span>
-                      <span>Target: {m.target_value}</span>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
+                        <span className="text-slate-400 dark:text-slate-500">
+                          Target Source
+                        </span>
+                        <p className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                          {m.calculation_type === "Formula"
+                            ? "Formula"
+                            : "Annual Target"}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
+                        <span className="text-slate-400 dark:text-slate-500">
+                          Target Value
+                        </span>
+                        <p className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                          {m.target_value} {m.custom_unit_label || m.unit || ""}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
+                        <span className="text-slate-400 dark:text-slate-500">
+                          Current Actual
+                        </span>
+                        <p className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                          {m.current_value}{" "}
+                          {m.custom_unit_label || m.unit || ""}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
+                        <span className="text-slate-400 dark:text-slate-500">
+                          Current Period
+                        </span>
+                        <p className="font-semibold text-slate-700 dark:text-slate-200">
+                          {m.reporting_frequency
+                            ? m.reporting_frequency.charAt(0).toUpperCase() +
+                              m.reporting_frequency.slice(1)
+                            : "—"}
+                        </p>
+                      </div>
                     </div>
                     <div className="mt-2">
                       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
@@ -1561,6 +1596,11 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       {m.evidence_required && (
                         <span className="text-amber-600 dark:text-amber-400">
                           Evidence required
+                        </span>
+                      )}
+                      {m.updated_at && (
+                        <span>
+                          Last Updated: {formatDateTime(m.updated_at)}
                         </span>
                       )}
                     </div>
@@ -2155,7 +2195,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
         kpiType={kpiType}
         kpiId={kpiId}
         metric={entryMetric}
-        reportingFrequency={kpi?.reporting_frequency}
+        reportingFrequency={
+          entryMetric?.reporting_frequency || kpi?.reporting_frequency
+        }
         kpiCode={kpi?.code}
         isOpen={showAddEntry}
         onClose={() => setShowAddEntry(false)}
