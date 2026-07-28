@@ -386,6 +386,10 @@ export const WorkflowsPage: React.FC = () => {
     return gradients[index];
   };
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -967,68 +971,70 @@ export const WorkflowsPage: React.FC = () => {
                     </div>
 
                     {/* Classifications Section - Only shown in edit mode */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {t("workflows.classificationsLabel")}
-                        </label>
-                        <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
-                          {formData.classification_ids.length}{" "}
-                          {t("workflows.selected")}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                        {t("workflows.assignClassifications")}
-                      </p>
+                    {!isEPM940 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.classificationsLabel")}
+                          </label>
+                          <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
+                            {formData.classification_ids.length}{" "}
+                            {t("workflows.selected")}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                          {t("workflows.assignClassifications")}
+                        </p>
 
-                      <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
-                        {flatClassifications.length === 0 ? (
-                          <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
-                            {t("workflows.noClassifications")}
-                          </div>
-                        ) : (
-                          <div className="p-3 space-y-2">
-                            {flatClassifications.map((classification) => (
-                              <label
-                                key={classification.id}
-                                className={cn(
-                                  "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
-                                  formData.classification_ids.includes(
-                                    classification.id,
-                                  )
-                                    ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
-                                    : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]",
-                                )}
-                                style={{
-                                  paddingLeft: `${(classification.level || 0) * 16 + 12}px`,
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={formData.classification_ids.includes(
-                                    classification.id,
+                        <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                          {flatClassifications.length === 0 ? (
+                            <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
+                              {t("workflows.noClassifications")}
+                            </div>
+                          ) : (
+                            <div className="p-3 space-y-2">
+                              {flatClassifications.map((classification) => (
+                                <label
+                                  key={classification.id}
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
+                                    formData.classification_ids.includes(
+                                      classification.id,
+                                    )
+                                      ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
+                                      : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]",
                                   )}
-                                  onChange={() =>
-                                    toggleClassification(classification.id)
-                                  }
-                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-sm font-medium text-[hsl(var(--foreground))] block truncate">
-                                    {classification.name}
-                                  </span>
-                                  {classification.description && (
-                                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                      {classification.description}
+                                  style={{
+                                    paddingLeft: `${(classification.level || 0) * 16 + 12}px`,
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.classification_ids.includes(
+                                      classification.id,
+                                    )}
+                                    onChange={() =>
+                                      toggleClassification(classification.id)
+                                    }
+                                    className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-sm font-medium text-[hsl(var(--foreground))] block truncate">
+                                      {classification.name}
                                     </span>
-                                  )}
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        )}
+                                    {classification.description && (
+                                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                        {classification.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
               </div>
