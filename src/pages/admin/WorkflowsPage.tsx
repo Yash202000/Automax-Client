@@ -27,7 +27,6 @@ import {
 import { workflowApi, classificationApi } from "../../api/admin";
 import type {
   Workflow,
-  Classification,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
   WorkflowFilter,
