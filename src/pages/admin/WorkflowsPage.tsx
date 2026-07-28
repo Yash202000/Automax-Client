@@ -353,21 +353,21 @@ export const WorkflowsPage: React.FC = () => {
   //   }));
   // };
 
-  const flattenClassifications = (
-    classifications: Classification[],
-  ): Classification[] => {
-    const result: Classification[] = [];
-    const flatten = (items: Classification[], level = 0) => {
-      for (const item of items) {
-        result.push({ ...item, level });
-        if (item.children && item.children.length > 0) {
-          flatten(item.children, level + 1);
-        }
-      }
-    };
-    flatten(classifications);
-    return result;
-  };
+  // const flattenClassifications = (
+  //   classifications: Classification[],
+  // ): Classification[] => {
+  //   const result: Classification[] = [];
+  //   const flatten = (items: Classification[], level = 0) => {
+  //     for (const item of items) {
+  //       result.push({ ...item, level });
+  //       if (item.children && item.children.length > 0) {
+  //         flatten(item.children, level + 1);
+  //       }
+  //     }
+  //   };
+  //   flatten(classifications);
+  //   return result;
+  // };
 
   // const flatClassifications = classificationsData?.data
   //   ? flattenClassifications(classificationsData.data)
