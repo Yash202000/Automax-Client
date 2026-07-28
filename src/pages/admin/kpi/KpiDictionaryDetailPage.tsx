@@ -43,6 +43,8 @@ import {
   useKpiMetrics,
   useCreateKpiMetric,
   useDeleteKpiMetric,
+  useUpdateKpiMetric,
+  useKpiEntries,
   useKpiEngagementEvidence,
   useCreateKpiEvidence,
   useKpiCollaboratorAssignments,
@@ -79,7 +81,10 @@ import type {
   KpiCalculationType,
   KpiDirection,
   KpiAggregationMethod,
+  KpiMetric,
+  KpiMetricRequest,
 } from "../../../types/kpi";
+import { REPORTING_MONTHS } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -207,6 +212,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const kpiType = type ?? "strategic";
   const kpiId = id ?? "";
   const { data: metrics } = useKpiMetrics(kpiType, kpiId);
+  const { data: allMetricEntries } = useKpiEntries(kpiType, kpiId);
   const { data: evidenceList } = useKpiEngagementEvidence(kpiType, kpiId);
   const { data: collaborators } = useKpiCollaboratorAssignments(kpiType, kpiId);
   const [checkInPage, setCheckInPage] = useState(1);
@@ -298,6 +304,161 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [showViewEntries, setShowViewEntries] = useState(false);
   const [showAllEntries, setShowAllEntries] = useState(false);
+
+  // ── Metric Configuration (selected metric edit form) ─
+  const [selectedMetricId, setSelectedMetricId] = useState<string | null>(null);
+  const [configForm, setConfigForm] = useState<KpiMetricRequest | null>(null);
+  const updateMetric = useUpdateKpiMetric(kpiType, kpiId);
+
+  React.useEffect(() => {
+    if (!metrics || metrics.length === 0) return;
+    if (!selectedMetricId || !metrics.some((m) => m.id === selectedMetricId)) {
+      setSelectedMetricId(metrics[0].id);
+    }
+  }, [metrics, selectedMetricId]);
+
+  const selectedMetric =
+    (metrics ?? []).find((m) => m.id === selectedMetricId) ?? null;
+
+  const metricToRequest = (m: KpiMetric): KpiMetricRequest => ({
+    name: m.name,
+    metric_code: m.metric_code,
+    metric_description: m.metric_description,
+    metric_status: m.metric_status,
+    display_order: m.display_order,
+    metric_type: m.metric_type,
+    unit: m.unit,
+    custom_unit_label: m.custom_unit_label,
+    baseline_value: m.baseline_value,
+    target_value: m.target_value,
+    weight: m.weight,
+    formula: m.formula,
+    calculation_type: m.calculation_type,
+    direction: m.direction,
+    decimal_precision: m.decimal_precision,
+    aggregation_method: m.aggregation_method,
+    reporting_frequency: m.reporting_frequency,
+    numerator_label: m.numerator_label,
+    numerator_variable_code: m.numerator_variable_code,
+    denominator_label: m.denominator_label,
+    denominator_variable_code: m.denominator_variable_code,
+    direct_actual_label: m.direct_actual_label,
+    allow_manual_actual_override: m.allow_manual_actual_override,
+    advanced_formula_enabled: m.advanced_formula_enabled,
+    formula_code: m.formula_code,
+    divide_by_zero_handling: m.divide_by_zero_handling,
+    rounding_rule: m.rounding_rule,
+    calculation_trace_required: m.calculation_trace_required,
+    metric_owner_id: m.metric_owner_id,
+    data_source: m.data_source,
+    evidence_required: m.evidence_required,
+    start_date: m.start_date,
+    due_date: m.due_date,
+  });
+
+  // Re-hydrate the config form whenever the *selection* changes — not on
+  // every metrics refetch — so in-progress edits survive background refetches.
+  React.useEffect(() => {
+    setConfigForm(selectedMetric ? metricToRequest(selectedMetric) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMetric?.id]);
+
+  const handleCancelMetricConfig = () => {
+    if (selectedMetric) setConfigForm(metricToRequest(selectedMetric));
+  };
+
+  const handleSaveMetricConfig = async () => {
+    if (!selectedMetric || !configForm) return;
+    if (!configForm.name.trim()) {
+      toast.error("Metric name is required");
+      return;
+    }
+    await updateMetric.mutateAsync({
+      metricId: selectedMetric.id,
+      data: configForm,
+    });
+  };
+
+  const FULL_MONTH_NAMES = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const formatEntryPeriodLabel = (entry?: {
+    reporting_year: number;
+    period_code: string;
+  }) => {
+    if (!entry) return "No published period yet";
+    const code = entry.period_code?.toLowerCase();
+    const monthIdx = REPORTING_MONTHS.findIndex(
+      (m) => m.toLowerCase() === code,
+    );
+    if (monthIdx >= 0)
+      return `${FULL_MONTH_NAMES[monthIdx]} ${entry.reporting_year}`;
+    if (["q1", "q2", "q3", "q4", "h1", "h2"].includes(code)) {
+      return `${code.toUpperCase()} ${entry.reporting_year}`;
+    }
+    if (code === "annual") return `Annual ${entry.reporting_year}`;
+    return String(entry.reporting_year);
+  };
+
+  const getMetricLatestApprovedEntry = (metricId: string) => {
+    const entries = (allMetricEntries ?? []).filter(
+      (e) => e.metric_id === metricId && e.status === "approved",
+    );
+    if (entries.length === 0) return undefined;
+    return [...entries].sort((a, b) => {
+      if (a.reporting_year !== b.reporting_year)
+        return b.reporting_year - a.reporting_year;
+      return (b.period_start || "").localeCompare(a.period_start || "");
+    })[0];
+  };
+
+  const getMetricAchievement = (m: KpiMetric) => {
+    const latestEntry = getMetricLatestApprovedEntry(m.id);
+    if (
+      latestEntry?.achievement_percentage !== undefined &&
+      latestEntry?.achievement_percentage !== null
+    ) {
+      return latestEntry.achievement_percentage;
+    }
+    const targetVal = m.target_value || 0;
+    if (!targetVal) return 0;
+    if (m.direction === "Lower is Better") {
+      return m.current_value ? (targetVal / m.current_value) * 100 : 0;
+    }
+    return (m.current_value / targetVal) * 100;
+  };
+
+  const metricStatusBadgeClass = (s?: string) => {
+    switch (s) {
+      case "Draft":
+        return "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+      case "Inactive":
+        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+      case "Archived":
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+      default:
+        return "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
+    }
+  };
+
+  const formatMetricValue = (m: KpiMetric, value: number) => {
+    const precision = m.decimal_precision ?? 2;
+    const unit = m.custom_unit_label || m.unit || "";
+    const num = Number.isFinite(value) ? value.toFixed(precision) : "0";
+    return unit ? `${num} ${unit}` : num;
+  };
 
   const transitions = transitionConfig[status] ?? [];
 
@@ -850,13 +1011,19 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       {/* ── Metrics Tab ───────────────────────────── */}
       {activeTab === "metrics" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Metrics ({(metrics ?? []).length})
-            </h2>
-            {canUpdateKpi() && (
+          {/* Published-values info banner */}
+          <div className="rounded-r-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              Published values are controlled: Current comes from approved
+              Entries; Target comes from approved Targets.
+            </p>
+          </div>
+
+          {canUpdateKpi() && (
+            <div className="flex justify-end">
               <Button
                 size="sm"
+                variant="outline"
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => {
                   if (!showAddMetric && latestKpiTargetValue !== undefined) {
@@ -870,8 +1037,8 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               >
                 Add Metric
               </Button>
-            )}
-          </div>
+            </div>
+          )}
 
           {showAddMetric && (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6 space-y-6">
@@ -1431,197 +1598,108 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             </div>
           )}
 
+          {/* Per-metric mini cards */}
           {(metrics ?? []).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(metrics ?? []).map((m) => {
-                const polarity = kpi?.polarity ?? "ascending";
-                const targetVal = m.target_value || 1;
-                const rawAchievement = (m.current_value / targetVal) * 100;
-                const achievement = Math.min(
-                  100,
-                  Math.max(
-                    0,
-                    polarity === "descending"
-                      ? 100 - rawAchievement
-                      : rawAchievement,
-                  ),
-                );
+                const achievement = getMetricAchievement(m);
+                const barWidth = Math.min(100, Math.max(0, achievement));
                 const progressColor =
                   achievement >= 80
-                    ? "bg-green-500"
+                    ? "bg-teal-500"
                     : achievement >= 50
                       ? "bg-amber-500"
                       : "bg-red-500";
+                const latestEntry = getMetricLatestApprovedEntry(m.id);
+                const periodLabel = formatEntryPeriodLabel(latestEntry);
+                const isSelected = selectedMetricId === m.id;
                 return (
                   <div
                     key={m.id}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4"
+                    onClick={() => setSelectedMetricId(m.id)}
+                    className={`rounded-xl border bg-white dark:bg-slate-800/80 p-4 cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-blue-400 dark:border-blue-500 ring-1 ring-blue-400 dark:ring-blue-500"
+                        : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                            {m.name}
-                          </p>
-                          {m.metric_status && m.metric_status !== "Active" && (
-                            <span
-                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
-                                m.metric_status === "Draft"
-                                  ? "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-                                  : m.metric_status === "Inactive"
-                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                    : m.metric_status === "Archived"
-                                      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                              }`}
-                            >
-                              {m.metric_status}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {m.metric_type} · weight {m.weight} ·{" "}
-                          {m.custom_unit_label || m.unit || "Number"}
-                        </p>
-                        {m.metric_code && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                            {m.metric_code}
-                          </p>
-                        )}
-                      </div>
-                      {canUpdateKpi() && (
-                        <button
-                          onClick={() => deleteMetric.mutate(m.id)}
-                          className="p-1 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400 shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    {m.metric_description && (
-                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
-                        {m.metric_description}
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                        {m.name}
                       </p>
-                    )}
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {m.calculation_type && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30">
-                          {m.calculation_type}
-                        </span>
-                      )}
-                      {m.direction && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 border border-purple-100 dark:border-purple-800/30">
-                          {m.direction}
-                        </span>
-                      )}
-                      {m.aggregation_method && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400 border border-teal-100 dark:border-teal-800/30">
-                          {m.aggregation_method}
-                        </span>
-                      )}
-                      {m.decimal_precision !== undefined &&
-                        m.decimal_precision > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                            {m.decimal_precision} decimals
-                          </span>
-                        )}
+                      <span
+                        className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${metricStatusBadgeClass(m.metric_status)}`}
+                      >
+                        {m.metric_status || "Active"}
+                      </span>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
-                        <span className="text-slate-400 dark:text-slate-500">
-                          Target Source
-                        </span>
-                        <p className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
-                          {m.calculation_type === "Formula"
-                            ? "Formula"
-                            : "Annual Target"}
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {m.metric_code || "—"} · {m.metric_status || "Active"}
+                    </p>
+
+                    <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700">
+                      <div className="pe-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Baseline
+                        </p>
+                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatMetricValue(m, m.baseline_value)}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
-                        <span className="text-slate-400 dark:text-slate-500">
-                          Target Value
-                        </span>
-                        <p className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
-                          {m.target_value} {m.custom_unit_label || m.unit || ""}
+                      <div className="px-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Current
+                        </p>
+                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatMetricValue(m, m.current_value)}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
-                        <span className="text-slate-400 dark:text-slate-500">
-                          Current Actual
-                        </span>
-                        <p className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
-                          {m.current_value}{" "}
-                          {m.custom_unit_label || m.unit || ""}
+                      <div className="ps-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Target
                         </p>
-                      </div>
-                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 p-2">
-                        <span className="text-slate-400 dark:text-slate-500">
-                          Current Period
-                        </span>
-                        <p className="font-semibold text-slate-700 dark:text-slate-200">
-                          {m.reporting_frequency
-                            ? m.reporting_frequency.charAt(0).toUpperCase() +
-                              m.reporting_frequency.slice(1)
-                            : "—"}
+                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatMetricValue(m, m.target_value)}
                         </p>
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        <span>{Math.round(achievement)}%</span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                          {polarity === "descending"
-                            ? "↓ Descending"
-                            : "↑ Ascending"}
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                        Achievement
+                      </p>
+                      <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                         <div
-                          className={`h-full ${progressColor} rounded-full transition-all duration-500`}
-                          style={{ width: `${achievement}%` }}
+                          className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+                          style={{ width: `${barWidth}%` }}
                         />
                       </div>
+                      <div className="mt-1.5 flex items-center justify-between text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {periodLabel}
+                        </span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                          {achievement.toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
-                    {m.calculation_type === "Formula" && (
-                      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-md px-2 py-1">
-                        <HelpCircle className="w-3 h-3 shrink-0" />
-                        <span className="italic">
-                          Formula (Phase 2) — Not available yet
-                        </span>
-                      </div>
-                    )}
-                    {m.formula_code && (
-                      <div className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                        Formula code: {m.formula_code}
-                      </div>
-                    )}
-                    {(m.start_date || m.due_date) && (
-                      <div className="mt-2 flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
-                        {m.start_date && (
-                          <span>Start: {formatDate(m.start_date)}</span>
-                        )}
-                        {m.due_date && (
-                          <span>Due: {formatDate(m.due_date)}</span>
-                        )}
-                      </div>
-                    )}
-                    <div className="mt-2 flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
-                      {m.data_source && <span>Source: {m.data_source}</span>}
-                      {m.evidence_required && (
-                        <span className="text-amber-600 dark:text-amber-400">
-                          Evidence required
-                        </span>
-                      )}
-                      {m.updated_at && (
-                        <span>
-                          Last Updated: {formatDateTime(m.updated_at)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
+
+                    <div
+                      className="mt-4 flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Button
                         size="sm"
-                        leftIcon={<Plus className="w-3.5 h-3.5" />}
+                        variant="outline"
+                        onClick={() => {
+                          setEntryMetric(m);
+                          setShowViewEntries(true);
+                        }}
+                      >
+                        Entries
+                      </Button>
+                      <Button
+                        size="sm"
                         disabled={
                           m.metric_status === "Inactive" ||
                           m.metric_status === "Archived"
@@ -1632,17 +1710,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                         }}
                       >
                         Add Entry
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                        onClick={() => {
-                          setEntryMetric(m);
-                          setShowViewEntries(true);
-                        }}
-                      >
-                        View Entries
                       </Button>
                     </div>
                   </div>
@@ -1655,6 +1722,389 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 No metrics yet.
               </p>
+            </div>
+          )}
+
+          {/* Metric Configuration ─ edit form for the selected metric */}
+          {selectedMetric && configForm && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Metric Configuration
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400">
+                    Editable by KPI Editor
+                  </span>
+                  {canUpdateKpi() && (
+                    <button
+                      onClick={() => {
+                        deleteMetric.mutate(selectedMetric.id);
+                        setSelectedMetricId(null);
+                      }}
+                      title="Delete metric"
+                      className="p-1.5 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Input
+                  label="Metric Name *"
+                  value={configForm.name}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, name: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Metric Code *"
+                  value={configForm.metric_code ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, metric_code: e.target.value } : p,
+                    )
+                  }
+                />
+                <Select
+                  label="Metric Status *"
+                  value={configForm.metric_status ?? "Active"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, metric_status: e.target.value } : p,
+                    )
+                  }
+                  options={[
+                    { value: "Draft", label: "Draft" },
+                    { value: "Active", label: "Active" },
+                    { value: "Inactive", label: "Inactive" },
+                    { value: "Archived", label: "Archived" },
+                  ]}
+                />
+                <Input
+                  label="Display Order"
+                  type="number"
+                  value={configForm.display_order ?? 0}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, display_order: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+
+                <div className="sm:col-span-2 lg:col-span-4">
+                  <Textarea
+                    label="Metric Description *"
+                    rows={2}
+                    value={configForm.metric_description ?? ""}
+                    disabled={!canUpdateKpi()}
+                    onChange={(e) =>
+                      setConfigForm((p) =>
+                        p ? { ...p, metric_description: e.target.value } : p,
+                      )
+                    }
+                  />
+                </div>
+
+                <Select
+                  label="Calculation Type *"
+                  value={configForm.calculation_type ?? "Direct Value"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            calculation_type: e.target
+                              .value as KpiCalculationType,
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "Direct Value", label: "Direct Value" },
+                    {
+                      value: "Percentage - Ratio",
+                      label: "Percentage - Ratio",
+                    },
+                    { value: "Ratio", label: "Ratio" },
+                    { value: "Average", label: "Average" },
+                    { value: "Sum", label: "Sum" },
+                    { value: "Difference", label: "Difference" },
+                    { value: "Weighted Average", label: "Weighted Average" },
+                    { value: "Formula", label: "Formula (Phase 2)" },
+                  ]}
+                />
+                <Select
+                  label="Direction *"
+                  value={configForm.direction ?? "Higher is Better"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? { ...p, direction: e.target.value as KpiDirection }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "Higher is Better", label: "Higher is Better" },
+                    { value: "Lower is Better", label: "Lower is Better" },
+                    { value: "Target Range", label: "Target Range" },
+                    { value: "Exact Target", label: "Exact Target" },
+                    { value: "Informational", label: "Informational" },
+                  ]}
+                />
+                <Select
+                  label="Unit *"
+                  value={configForm.unit ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, unit: e.target.value } : p,
+                    )
+                  }
+                  options={[
+                    { value: "%", label: "%" },
+                    { value: "Number", label: "Number" },
+                    { value: "Seconds", label: "Seconds" },
+                    { value: "Minutes", label: "Minutes" },
+                    { value: "Hours", label: "Hours" },
+                    { value: "Days", label: "Days" },
+                    { value: "SAR", label: "SAR" },
+                    { value: "Employees", label: "Employees" },
+                    { value: "Requests", label: "Requests" },
+                    { value: "Complaints", label: "Complaints" },
+                    { value: "Tasks", label: "Tasks" },
+                    { value: "Kilometers", label: "Kilometers" },
+                    { value: "Square Meters", label: "Square Meters" },
+                    { value: "Score", label: "Score" },
+                    { value: "Custom", label: "Custom" },
+                  ]}
+                />
+                <Select
+                  label="Decimal Precision *"
+                  value={String(configForm.decimal_precision ?? 2)}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            decimal_precision: Number(e.target.value),
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "0", label: "0" },
+                    { value: "1", label: "1" },
+                    { value: "2", label: "2" },
+                    { value: "3", label: "3" },
+                    { value: "4", label: "4" },
+                  ]}
+                />
+
+                <Select
+                  label="Aggregation Method *"
+                  value={configForm.aggregation_method ?? "Sum"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            aggregation_method: e.target
+                              .value as KpiAggregationMethod,
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "Sum", label: "Sum" },
+                    { value: "Average", label: "Average" },
+                    {
+                      value: "Latest Approved Value",
+                      label: "Latest Approved Value",
+                    },
+                    { value: "Minimum", label: "Minimum" },
+                    { value: "Maximum", label: "Maximum" },
+                    { value: "Weighted Average", label: "Weighted Average" },
+                    { value: "No Aggregation", label: "No Aggregation" },
+                  ]}
+                />
+                <Select
+                  label="Reporting Frequency *"
+                  value={configForm.reporting_frequency ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, reporting_frequency: e.target.value } : p,
+                    )
+                  }
+                  options={[
+                    { value: "", label: "Inherit from KPI" },
+                    { value: "Monthly", label: "Monthly" },
+                    { value: "Quarterly", label: "Quarterly" },
+                    { value: "Semiannual", label: "Semiannual" },
+                    { value: "Annual", label: "Annual" },
+                    { value: "Ad Hoc", label: "Ad Hoc" },
+                  ]}
+                />
+                <Input
+                  label="Target Source *"
+                  value={
+                    configForm.calculation_type === "Formula"
+                      ? "Formula"
+                      : "Approved Period Target"
+                  }
+                  disabled
+                  hint="Controlled by the approved Targets workflow"
+                />
+                <Select
+                  label="Manual Actual Override"
+                  value={configForm.allow_manual_actual_override ? "Yes" : "No"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            allow_manual_actual_override:
+                              e.target.value === "Yes",
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "No", label: "No" },
+                    { value: "Yes", label: "Yes" },
+                  ]}
+                />
+
+                <Input
+                  label="Numerator Label *"
+                  value={configForm.numerator_label ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, numerator_label: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Numerator Variable Code *"
+                  value={configForm.numerator_variable_code ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            numerator_variable_code: e.target.value,
+                          }
+                        : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Denominator Label *"
+                  value={configForm.denominator_label ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, denominator_label: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Denominator Variable Code *"
+                  value={configForm.denominator_variable_code ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            denominator_variable_code: e.target.value,
+                          }
+                        : p,
+                    )
+                  }
+                />
+
+                <Input
+                  label="Metric Owner *"
+                  value={configForm.metric_owner_id ?? ""}
+                  disabled={!canUpdateKpi()}
+                  placeholder="User UUID"
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, metric_owner_id: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Data Source *"
+                  value={configForm.data_source ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, data_source: e.target.value } : p,
+                    )
+                  }
+                />
+                <Select
+                  label="Evidence Required *"
+                  value={configForm.evidence_required ? "Yes" : "No"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            evidence_required: e.target.value === "Yes",
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "No", label: "No" },
+                    { value: "Yes", label: "Yes" },
+                  ]}
+                />
+              </div>
+
+              {configForm.calculation_type === "Formula" && (
+                <div className="mt-4 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+                  <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="italic">
+                    Formula-based calculation is Phase 2 — not available yet.
+                  </span>
+                </div>
+              )}
+
+              {canUpdateKpi() && (
+                <div className="mt-6 flex justify-end gap-3">
+                  <Button variant="outline" onClick={handleCancelMetricConfig}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="success"
+                    isLoading={updateMetric.isPending}
+                    onClick={handleSaveMetricConfig}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
