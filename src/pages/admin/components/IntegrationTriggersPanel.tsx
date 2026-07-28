@@ -20,10 +20,7 @@ import type {
 } from "../../../api/integration";
 import type { Classification } from "../../../types";
 import { classificationApi } from "../../../api/admin";
-import {
-  HierarchicalCheckboxTree,
-  type TreeNode,
-} from "../../../components/workflow/HierarchicalCheckboxTree";
+import { HierarchicalTreeSelect, type TreeNode } from "../../../components/ui";
 import { t } from "i18next";
 
 const inputCls =
@@ -309,14 +306,13 @@ const TriggerForm: React.FC<TriggerFormProps> = ({
             (empty = run for all classifications)
           </span>
         </label>
-        <HierarchicalCheckboxTree
+        <HierarchicalTreeSelect
           data={(classificationTree ?? []) as unknown as TreeNode[]}
           selectedIds={form.classification_ids ?? []}
           onSelectionChange={(ids) =>
             setForm({ ...form, classification_ids: ids })
           }
           emptyMessage="No classifications found"
-          showSelectAll={false}
         />
       </div>
 

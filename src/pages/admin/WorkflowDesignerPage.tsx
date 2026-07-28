@@ -39,7 +39,7 @@ import {
   commentTemplateApi,
   notificationTemplateApi,
 } from "../../api/admin";
-import { HierarchicalCheckboxTree } from "../../components/workflow/HierarchicalCheckboxTree";
+import { HierarchicalTreeSelect } from "../../components/ui";
 import type {
   WorkflowState,
   WorkflowTransition,
@@ -76,6 +76,14 @@ import {
 } from "@/utils/validations";
 
 type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
+
+type MatchingRecordType =
+  | "incident"
+  | "request"
+  | "complaint"
+  | "query"
+  | "both"
+  | "all";
 
 const parseCommaSeparatedPhones = (value: string) =>
   value
@@ -625,13 +633,7 @@ export const WorkflowDesignerPage: React.FC = () => {
     location_ids: string[];
     sources: string[];
     priorities: number[];
-    record_type:
-      | "incident"
-      | "request"
-      | "complaint"
-      | "query"
-      | "both"
-      | "all";
+    record_type: MatchingRecordType;
   }>({
     classification_ids: [],
     location_ids: [],
@@ -639,6 +641,25 @@ export const WorkflowDesignerPage: React.FC = () => {
     priorities: [],
     record_type: "incident",
   });
+
+  // Remembers each record type's own classification selection so switching
+  // record types (including passing through a type with no classifications
+  // configured at all) never destroys another type's selection — only the
+  // currently active type's ids are ever cleared/restored.
+  const [classificationSelectionsByType, setClassificationSelectionsByType] =
+    useState<Partial<Record<MatchingRecordType, string[]>>>({});
+
+  const handleRecordTypeChange = (newType: MatchingRecordType) => {
+    setClassificationSelectionsByType((byType) => ({
+      ...byType,
+      [matchingConfig.record_type]: matchingConfig.classification_ids,
+    }));
+    setMatchingConfig((prev) => ({
+      ...prev,
+      record_type: newType,
+      classification_ids: classificationSelectionsByType[newType] ?? [],
+    }));
+  };
 
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
@@ -2412,19 +2433,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="incident"
                       checked={matchingConfig.record_type === "incident"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("incident")}
                       className="sr-only"
                     />
                     <div
@@ -2461,19 +2470,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="request"
                       checked={matchingConfig.record_type === "request"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("request")}
                       className="sr-only"
                     />
                     <div
@@ -2510,19 +2507,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="both"
                       checked={matchingConfig.record_type === "both"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("both")}
                       className="sr-only"
                     />
                     <div
@@ -2559,19 +2544,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="complaint"
                       checked={matchingConfig.record_type === "complaint"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("complaint")}
                       className="sr-only"
                     />
                     <div
@@ -2608,19 +2581,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="query"
                       checked={matchingConfig.record_type === "query"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("query")}
                       className="sr-only"
                     />
                     <div
@@ -2657,19 +2618,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="all"
                       checked={matchingConfig.record_type === "all"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("all")}
                       className="sr-only"
                     />
                     <div
@@ -2707,7 +2656,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       "workflows.selectWhichClassificationsThisWorkflowAppliesTo",
                     )}
                   </p>
-                  <HierarchicalCheckboxTree
+                  <HierarchicalTreeSelect
                     data={classifications as any}
                     selectedIds={matchingConfig.classification_ids}
                     onSelectionChange={(selectedIds) => {
@@ -2715,10 +2664,22 @@ export const WorkflowDesignerPage: React.FC = () => {
                         ...prev,
                         classification_ids: selectedIds,
                       }));
+                      setClassificationSelectionsByType((byType) => ({
+                        ...byType,
+                        [matchingConfig.record_type]: selectedIds,
+                      }));
                     }}
                     emptyMessage="No classifications available"
-                    showSelectAll={true}
                   />
+                  {matchingConfig.classification_ids.length === 0 &&
+                    classifications.length > 0 && (
+                      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mt-2">
+                        <strong>{t("workflows.noSelection")}</strong>{" "}
+                        {t("workflows.thisWorkflowWillMatch")}
+                        <strong>{t("workflows.allItems")}</strong>
+                        {t("workflows.inThisCategory")}
+                      </p>
+                    )}
                 </div>
 
                 {/* Locations */}
@@ -2729,7 +2690,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                     {t("workflows.selectWhichLocationsThisWorkflowAppliesTo")}
                   </p>
-                  <HierarchicalCheckboxTree
+                  <HierarchicalTreeSelect
                     data={locations as any}
                     selectedIds={matchingConfig.location_ids}
                     onSelectionChange={(selectedIds) => {
@@ -2739,8 +2700,16 @@ export const WorkflowDesignerPage: React.FC = () => {
                       }));
                     }}
                     emptyMessage="No locations available"
-                    showSelectAll={true}
                   />
+                  {matchingConfig.location_ids.length === 0 &&
+                    locations.length > 0 && (
+                      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mt-2">
+                        <strong>{t("workflows.noSelection")}</strong>{" "}
+                        {t("workflows.thisWorkflowWillMatch")}
+                        <strong>{t("workflows.allItems")}</strong>
+                        {t("workflows.inThisCategory")}
+                      </p>
+                    )}
                 </div>
 
                 {/* Sources */}
