@@ -450,8 +450,16 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     enabled: targetLookupEnabled,
   });
   const liveTargets: KpiTarget[] = liveTargetsRes?.data ?? [];
-  const approvedTarget: KpiTarget | undefined =
-    liveTargets.find((t) => t.target_status === "approved") ?? liveTargets[0];
+  const approvedTarget: KpiTarget | undefined = liveTargets.find(
+    (t) => t.target_status === "approved",
+  );
+  // REL-09: entry creation is hard-blocked server-side without a genuinely
+  // approved target for this exact metric+period, so the UI must not treat a
+  // draft/submitted target as usable here — surface the block before the user
+  // hits submit rather than only after a server error.
+  const targetLookupResolved =
+    targetLookupEnabled && liveTargetsRes !== undefined;
+  const noApprovedTargetForPeriod = targetLookupResolved && !approvedTarget;
 
   const targetVal: number | undefined =
     isEditMode && entry
@@ -714,6 +722,12 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
       toast.error("Formula-based entries are not available in Phase 1");
       return;
     }
+    if (!isEditMode && noApprovedTargetForPeriod) {
+      toast.error(
+        "No approved target exists for this period — create and approve a target first",
+      );
+      return;
+    }
 
     const payload: any = {
       metric_id: metric?.id ?? "",
@@ -877,6 +891,16 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
               <span>
                 Formula-based entries are not available in Phase 1. This metric
                 will be supported in a future release.
+              </span>
+            </div>
+          )}
+          {!isEditMode && noApprovedTargetForPeriod && (
+            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 p-4 text-sm text-red-700 dark:text-red-400 flex items-start gap-3">
+              <HelpCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>
+                No approved target exists for this metric in {periodCode}/
+                {reportingYear}. Create and approve a target on the Targets page
+                before recording an entry for this period.
               </span>
             </div>
           )}
@@ -1372,20 +1396,32 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
             type="button"
             variant="outline"
             onClick={() => handleSave("draft")}
-            disabled={isSaving || isFormulaType}
+            disabled={isSaving || isFormulaType || noApprovedTargetForPeriod}
+            title={
+              noApprovedTargetForPeriod
+                ? "No approved target exists for this period"
+                : undefined
+            }
           >
             {pendingAction === "draft" ? "Saving..." : "Save Draft"}
           </Button>
           <Button
             type="button"
             onClick={() => handleSave("submit")}
-            disabled={isSaving || isFormulaType}
+            disabled={isSaving || isFormulaType || noApprovedTargetForPeriod}
+            title={
+              noApprovedTargetForPeriod
+                ? "No approved target exists for this period"
+                : undefined
+            }
           >
             {pendingAction === "submit"
               ? "Submitting..."
               : isFormulaType
                 ? "Phase 2 Only"
-                : "Submit Entry"}
+                : noApprovedTargetForPeriod
+                  ? "No Target Approved"
+                  : "Submit Entry"}
           </Button>
         </div>
       </div>
