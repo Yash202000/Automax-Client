@@ -42,6 +42,7 @@ export interface User {
   dept_manager_classification?: Classification;
   dept_manager_location_id?: string | null;
   dept_manager_location?: Location;
+  call_status?: string;
 }
 
 export interface Permission {
@@ -1447,6 +1448,7 @@ export interface IncidentFilter {
   transition_id?: string;
   reporter_phone?: string;
   reporter_phone_search?: string;
+  momra_ref?: string;
 }
 
 // Convert Incident to Request types

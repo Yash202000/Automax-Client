@@ -829,6 +829,45 @@ export const useSetKpiTarget = () => {
   });
 };
 
+// Edits an existing target in place (PUT /kpi/targets/:id) — previously
+// "editing" a target silently called the create endpoint instead and
+// produced a duplicate row rather than updating the one being edited.
+export const useUpdateKpiTarget = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: KpiAnnualTargetRequest }) =>
+      kpiPerformanceApi.updateTarget(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
+      toast.success(t("kpi.targetSet"));
+    },
+    onError: () => toast.error(t("kpi.targetSetFailed")),
+  });
+};
+
+// Approve/reject/return a submitted target — previously there was no way at
+// all to approve a target despite the "targets:approve" permission already
+// existing and the mockup implying an Approved state was reachable.
+export const useTransitionKpiTarget = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: string;
+      action: "approve" | "reject" | "return";
+    }) => kpiPerformanceApi.transitionTarget(id, action),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
+      toast.success(t("kpi.targetSet"));
+    },
+    onError: (err: any) => toast.error(getApiError(err)),
+  });
+};
+
 export const useKpiMetricsByCode = (kpiCode?: string) =>
   useQuery({
     queryKey: ["kpi", "metrics-by-code", kpiCode],
@@ -1704,8 +1743,16 @@ export const useTransitionKpiEntry = () => {
       qc.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey as unknown[];
+          // Also invalidate the metrics list ("metrics", not just "entries")
+          // — approving an entry pushes its actual value onto the metric's
+          // current_value on the backend, but the Metric Card's Baseline/
+          // Current/Target tiles read from this separate cached query, so
+          // without this they kept showing the stale pre-approval value
+          // even though the Achievement bar (sourced from entries) updated.
           return (
-            key[0] === "kpi" && key[1] === "engagement" && key[4] === "entries"
+            key[0] === "kpi" &&
+            key[1] === "engagement" &&
+            (key[4] === "entries" || key[4] === "metrics")
           );
         },
       });

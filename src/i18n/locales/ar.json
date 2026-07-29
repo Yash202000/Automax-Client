@@ -753,7 +753,9 @@
     "appliedWhenIncidentIsCreated": "يُطبَّق عند وضع البلاغ في هذه الحالة عند الإنشاء",
     "transitionInfo": "معلومات الانتقال",
     "transitionSuccess": "تم تنفيذ الانتقال بنجاح",
-    "department_id": "القسم"
+    "department_id": "القسم",
+    "momraRefNumLabel": "رقم مرجع وزارة الشؤون البلدية والقروية والإسكان",
+    "momraRefNumPlaceholder": "أدخل رقم مرجع وزارة الشؤون البلدية والقروية والإسكان"
   },
   "priorities": {
     "critical": "حرج",

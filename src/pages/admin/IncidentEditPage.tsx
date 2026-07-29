@@ -49,6 +49,38 @@ import type {
 import { DynamicLookupField } from "../../components/common/DynamicLookupField";
 import { useAuthStore } from "../../stores/authStore";
 import { Modal } from "../../components/ui";
+import {
+  Select as AppSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select";
+import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
+import { VirtualizedList } from "@/components/ui/virtualized-list";
+import { getAvatarName } from "@/lib/utils";
+
+const statusBadgeColor: any = {
+  online: "bg-green-500",
+  connected: "bg-blue-500",
+  offline: "bg-gray-400",
+  disconnected: "bg-red-500",
+};
+
+const getUserLabel = (user: any) =>
+  [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+  user?.username ||
+  user?.email ||
+  "";
+
+const normalizeStatus = (status?: string) => status?.toLowerCase() ?? "";
+
+const statusOrder: Record<string, number> = {
+  online: 0,
+  connected: 1,
+  offline: 2,
+  disconnected: 3,
+};
 
 export function IncidentEditPage() {
   const { t } = useTranslation();
@@ -144,7 +176,6 @@ export function IncidentEditPage() {
         [],
         locIds ? [locIds] : [],
         classIds ? [classIds] : [],
-        "online",
       );
     },
     enabled: incidentSuccess,
@@ -682,25 +713,45 @@ export function IncidentEditPage() {
   const userOptions = useMemo(() => {
     const userList = [...users];
 
+    // Keep current assignee even if not returned from API
     if (
       incident?.assignee &&
-      !userList.some((user) => user.id === incident.assignee?.id)
+      !userList.some((u) => u.id === incident.assignee?.id)
     ) {
-      userList.unshift(incident.assignee);
+      userList.push(incident.assignee);
     }
 
+    const options = userList.map((user: any) => ({
+      value: user.id,
+      label: getUserLabel(user),
+      status: normalizeStatus(user.call_status),
+      statusOrder: statusOrder[normalizeStatus(user.call_status)] ?? 99,
+      avatar: getAvatarName(getUserLabel(user)),
+    }));
+
+    options.sort((a, b) => {
+      if (a.statusOrder !== b.statusOrder) {
+        return a.statusOrder - b.statusOrder;
+      }
+
+      return a.label.localeCompare(b.label);
+    });
+
     return [
-      { value: "", label: t("incidents.unassigned") },
-      ...userList.map((user) => ({
-        value: user.id,
-        label:
-          [user.first_name, user.last_name].filter(Boolean).join(" ") ||
-          user.username ||
-          user.email ||
-          "",
-      })),
+      {
+        value: "",
+        label: t("incidents.unassigned"),
+        status: "offline",
+        avatar: getAvatarName(t("incidents.unassigned")),
+      },
+      ...options,
     ];
   }, [users, incident, t]);
+
+  const selectedAssignee = useMemo(
+    () => userOptions.find((u) => u.value === formData.assignee_id),
+    [userOptions, formData.assignee_id],
+  );
 
   const departmentOptions = [
     { value: "", label: t("incidents.noDepartment") },
@@ -1078,14 +1129,47 @@ export function IncidentEditPage() {
                 {t("incidents.assignment")}
               </h2>
               <div className="space-y-4">
-                <Select
-                  label={t("incidents.assignee")}
-                  value={formData.assignee_id || ""}
-                  onChange={(e) => handleChange("assignee_id", e.target.value)}
-                  options={userOptions}
-                  required={workflowRequiredFields.includes("assignee_id")}
-                  error={errors.assignee_id}
-                />
+                <AppSelect
+                  value={formData.assignee_id || incident?.assignee?.id || ""}
+                  onValueChange={(value) => handleChange("assignee_id", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("incidents.unassigned")}>
+                      {selectedAssignee?.label || t("incidents.selectAssignee")}
+                    </SelectValue>
+                  </SelectTrigger>
+
+                  <SelectContent position="popper">
+                    <VirtualizedList
+                      items={userOptions}
+                      height="h-72"
+                      estimateSize={48}
+                      getKey={(user) => user.value}
+                      renderItem={(user: any) => (
+                        <SelectItem value={user.value}>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-7 w-7">
+                              <AvatarFallback className="text-xs">
+                                {user.avatar}
+                              </AvatarFallback>
+
+                              {user?.value ? (
+                                <AvatarBadge
+                                  className={
+                                    statusBadgeColor[user?.status] ??
+                                    "bg-gray-400"
+                                  }
+                                />
+                              ) : null}
+                            </Avatar>
+
+                            <span className="truncate">{user.label}</span>
+                          </div>
+                        </SelectItem>
+                      )}
+                    />
+                  </SelectContent>
+                </AppSelect>
                 <Select
                   label={t("incidents.department")}
                   value={formData.department_id || ""}

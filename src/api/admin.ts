@@ -1356,6 +1356,9 @@ export const incidentApi = {
     if (filter.reporter_phone_search) {
       params.append("reporter_phone_search", filter.reporter_phone_search);
     }
+    if (filter.momra_ref) {
+      params.append("momra_ref", filter.momra_ref);
+    }
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
     );
@@ -2639,7 +2642,11 @@ export const callLogApi = {
       page: String(page),
       limit: String(limit),
     });
-    if (userId) params.append("user_id", userId);
+
+    // if (userId) params.append("user_id", userId);
+
+    if (userId) params.append("agent_id", userId);
+
     const response = await apiClient.get(
       `/admin/call-logs?${params.toString()}`,
     );

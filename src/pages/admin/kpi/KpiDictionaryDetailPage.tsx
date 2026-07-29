@@ -55,7 +55,6 @@ import {
   useAddKpiComment,
   useDeleteKpiComment,
   useKpiActivity,
-  useKpiTargets,
   useUploadKpiAttachment,
   useDownloadKpiEvidence,
   useDeleteKpiEvidence,
@@ -222,13 +221,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const [activityPage, setActivityPage] = useState(1);
   const { data: activityData } = useKpiActivity(kpiType, kpiId, activityPage);
 
-  // Latest annual target already set for this KPI (list is year DESC) — reused
-  // to auto-fill a new metric's target instead of asking for it again.
-  const { data: kpiTargets } = useKpiTargets(
-    kpi?.code ? { kpi_code: kpi.code } : undefined,
-  );
-  const latestKpiTargetValue = kpiTargets?.[0]?.target_value;
-
   // ── Mutations ────────────────────────────────────────
   const [transitionModal, setTransitionModal] = useState<{
     open: boolean;
@@ -248,7 +240,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     unit: "",
     custom_unit_label: "",
     baseline_value: 0,
-    target_value: 0,
     weight: 1,
     formula: "",
     calculation_type: "Direct Value",
@@ -330,7 +321,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     unit: m.unit,
     custom_unit_label: m.custom_unit_label,
     baseline_value: m.baseline_value,
-    target_value: m.target_value,
     weight: m.weight,
     formula: m.formula,
     calculation_type: m.calculation_type,
@@ -432,10 +422,14 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     ) {
       return latestEntry.achievement_percentage;
     }
-    const targetVal = m.target_value || 0;
-    if (!targetVal) return 0;
+    // No metric-level fallback target anymore — a period with no approved
+    // Target genuinely has nothing to measure against, so return null
+    // ("not calculable") rather than compute a percentage against an
+    // unrelated static number.
+    const targetVal = m.effective_target_value;
+    if (!targetVal) return null;
     if (m.direction === "Lower is Better") {
-      return m.current_value ? (targetVal / m.current_value) * 100 : 0;
+      return m.current_value ? (targetVal / m.current_value) * 100 : null;
     }
     return (m.current_value / targetVal) * 100;
   };
@@ -510,10 +504,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const handleCreateMetric = async () => {
     if (!metricForm.name.trim()) {
       toast.error("Name is required");
-      return;
-    }
-    if (!metricForm.target_value) {
-      toast.error("Target value is required and must be greater than 0");
       return;
     }
     if (metricAttachmentFile) {
@@ -1025,15 +1015,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 size="sm"
                 variant="outline"
                 leftIcon={<Plus className="w-4 h-4" />}
-                onClick={() => {
-                  if (!showAddMetric && latestKpiTargetValue !== undefined) {
-                    setMetricForm((p) => ({
-                      ...p,
-                      target_value: latestKpiTargetValue,
-                    }));
-                  }
-                  setShowAddMetric(!showAddMetric);
-                }}
+                onClick={() => setShowAddMetric(!showAddMetric)}
               >
                 Add Metric
               </Button>
@@ -1135,26 +1117,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
-                <div>
-                  <Input
-                    label="Target *"
-                    type="number"
-                    value={metricForm.target_value}
-                    onChange={(e) =>
-                      setMetricForm((p) => ({
-                        ...p,
-                        target_value: Number(e.target.value),
-                      }))
-                    }
-                  />
-                  {latestKpiTargetValue !== undefined && (
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Auto-filled from this KPI's current target (
-                      {latestKpiTargetValue}). Adjust if this metric tracks a
-                      different value.
-                    </p>
-                  )}
-                </div>
                 <Input
                   label="Weight"
                   type="number"
@@ -1603,15 +1565,30 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(metrics ?? []).map((m) => {
                 const achievement = getMetricAchievement(m);
-                const barWidth = Math.min(100, Math.max(0, achievement));
+                const barWidth =
+                  achievement === null
+                    ? 0
+                    : Math.min(100, Math.max(0, achievement));
                 const progressColor =
-                  achievement >= 80
-                    ? "bg-teal-500"
-                    : achievement >= 50
-                      ? "bg-amber-500"
-                      : "bg-red-500";
+                  achievement === null
+                    ? "bg-slate-300 dark:bg-slate-600"
+                    : achievement >= 80
+                      ? "bg-teal-500"
+                      : achievement >= 50
+                        ? "bg-amber-500"
+                        : "bg-red-500";
                 const latestEntry = getMetricLatestApprovedEntry(m.id);
                 const periodLabel = formatEntryPeriodLabel(latestEntry);
+                // Show the target for whichever period Achievement is actually
+                // reporting on — the latest approved entry's own snapshot when
+                // one exists — instead of the "current calendar period" target,
+                // which can silently be a different period than the entry.
+                const displayTargetValue =
+                  latestEntry?.target_value_snapshot ??
+                  m.effective_target_value;
+                const displayTargetPeriod = latestEntry
+                  ? periodLabel
+                  : m.effective_target_period;
                 const isSelected = selectedMetricId === m.id;
                 return (
                   <div
@@ -1658,9 +1635,25 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                           Target
                         </p>
-                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
-                          {formatMetricValue(m, m.target_value)}
+                        <p
+                          className={`mt-1 text-base font-bold tabular-nums ${
+                            displayTargetValue !== undefined
+                              ? "text-slate-900 dark:text-white"
+                              : "text-slate-400 dark:text-slate-500 text-sm font-medium"
+                          }`}
+                        >
+                          {displayTargetValue !== undefined
+                            ? formatMetricValue(m, displayTargetValue)
+                            : "No target set"}
                         </p>
+                        {displayTargetPeriod && (
+                          <p
+                            className="text-[10px] text-blue-600 dark:text-blue-400 truncate"
+                            title={`Approved target for ${displayTargetPeriod}`}
+                          >
+                            {displayTargetPeriod}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1679,7 +1672,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                           {periodLabel}
                         </span>
                         <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
-                          {achievement.toFixed(2)}%
+                          {achievement === null
+                            ? "No target for this period"
+                            : `${achievement.toFixed(2)}%`}
                         </span>
                       </div>
                     </div>

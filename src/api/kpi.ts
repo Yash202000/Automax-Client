@@ -525,8 +525,24 @@ export const kpiPerformanceApi = {
     const res = await apiClient.post("/kpi/targets", data);
     return res.data;
   },
+  updateTarget: async (
+    id: string,
+    data: KpiAnnualTargetRequest,
+  ): Promise<ApiResponse<KpiTarget>> => {
+    const res = await apiClient.put(`/kpi/targets/${id}`, data);
+    return res.data;
+  },
   deleteTarget: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/targets/${id}`);
+    return res.data;
+  },
+  transitionTarget: async (
+    id: string,
+    action: "approve" | "reject" | "return",
+  ): Promise<ApiResponse<KpiTarget>> => {
+    const res = await apiClient.post(`/kpi/targets/${id}/transition`, {
+      action,
+    });
     return res.data;
   },
 

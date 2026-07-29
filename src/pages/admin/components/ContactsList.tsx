@@ -12,11 +12,18 @@ import {
   ChevronRight,
   User as UserIcon,
 } from "lucide-react";
-import { Button } from "../../../components/ui";
+import {
+  Button,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  ModalTitle,
+} from "../../../components/ui";
 import { userApi } from "../../../api/admin";
 import type { User } from "../../../types";
 import { cn } from "@/lib/utils";
 import CallablePhone from "@/components/common/CallablePhone";
+import { CallHistory } from "./CallHistory";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -29,6 +36,8 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const limit = 10;
+  const [openCallLogs, setOpenCallLogs] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<any>();
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "users", page, limit],
@@ -202,11 +211,16 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                               />
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold ">
+                          <div
+                            onClick={() => {
+                              setOpenCallLogs(true);
+                              setSelectedUser(user);
+                            }}
+                          >
+                            <p className="text-sm font-semibold cursor-pointer hover:underline hover:text-primary">
                               {user.first_name} {user.last_name}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-500 cursor-pointer hover:underline hover:text-primary">
                               @{user.username}
                             </p>
                           </div>
@@ -427,6 +441,24 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           </>
         )}
       </div>
+      <Modal
+        size="4xl"
+        isOpen={openCallLogs}
+        onOpenChange={setOpenCallLogs}
+        onClose={() => setOpenCallLogs(false)}
+      >
+        <ModalHeader>
+          <ModalTitle>
+            Call History of{" "}
+            {[selectedUser?.first_name, selectedUser?.last_name]
+              .filter(Boolean)
+              .join(" ") || selectedUser?.username}
+          </ModalTitle>
+        </ModalHeader>
+        <ModalBody className="max-h-[70vh]">
+          <CallHistory userId={selectedUser?.id} />
+        </ModalBody>
+      </Modal>
     </div>
   );
 };

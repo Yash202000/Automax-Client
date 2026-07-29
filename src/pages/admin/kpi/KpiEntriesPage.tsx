@@ -90,7 +90,6 @@ function entryToPseudoMetric(entry: KpiEntry): KpiMetric {
     unit: entry.unit_snapshot,
     baseline_value: 0,
     current_value: entry.actual_value,
-    target_value: entry.target_value_snapshot ?? 0,
     weight: 0,
     calculation_type: entry.calculation_type_snapshot,
     direction: entry.direction_snapshot,

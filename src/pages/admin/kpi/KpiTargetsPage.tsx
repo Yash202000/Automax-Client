@@ -6,10 +6,14 @@ import { toast } from "sonner";
 import {
   useKpiTargets,
   useSetKpiTarget,
+  useUpdateKpiTarget,
+  useDeleteKpiTarget,
+  useTransitionKpiTarget,
   useKpiCardDefinitions,
   useKpiMetricsByCode,
 } from "../../../hooks/useKpi";
 import { Button } from "../../../components/ui/Button";
+import { Modal } from "../../../components/ui/Modal";
 import type {
   KpiTarget,
   KpiTargetType,
@@ -140,6 +144,10 @@ type FormMode = "create" | "edit" | "view";
 
 // Row-level Actions column links vary by target_status, mirroring the
 // approved reference UI (Approved -> View/Copy/Supersede, Draft -> Edit/Submit).
+// Delete isn't in the mockup's Actions column, but there's otherwise no way
+// to remove a target at all from the UI despite the backend fully
+// supporting it — added for draft/returned/rejected targets only, same
+// statuses the backend's DeleteTarget/UpdateTarget endpoints allow editing.
 function getActionLinks(
   target: KpiTarget,
   handlers: {
@@ -148,6 +156,9 @@ function getActionLinks(
     onCopy: (t: KpiTarget) => void;
     onSupersede: (t: KpiTarget) => void;
     onQuickSubmit: (t: KpiTarget) => void;
+    onDelete: (t: KpiTarget) => void;
+    onApprove: (t: KpiTarget) => void;
+    onReject: (t: KpiTarget) => void;
   },
 ): { label: string; onClick: () => void }[] {
   switch (target.target_status) {
@@ -157,6 +168,13 @@ function getActionLinks(
       return [
         { label: "Edit", onClick: () => handlers.onEdit(target) },
         { label: "Submit", onClick: () => handlers.onQuickSubmit(target) },
+        { label: "Delete", onClick: () => handlers.onDelete(target) },
+      ];
+    case "submitted":
+      return [
+        { label: "View", onClick: () => handlers.onView(target) },
+        { label: "Approve", onClick: () => handlers.onApprove(target) },
+        { label: "Reject", onClick: () => handlers.onReject(target) },
       ];
     case "approved":
       return [
@@ -170,7 +188,7 @@ function getActionLinks(
         { label: "Copy", onClick: () => handlers.onCopy(target) },
       ];
     default:
-      // submitted, locked — awaiting workflow, read-only for now.
+      // locked — awaiting workflow, read-only for now.
       return [{ label: "View", onClick: () => handlers.onView(target) }];
   }
 }
@@ -204,6 +222,12 @@ export const KpiTargetsPage: React.FC = () => {
   useEffect(() => {
     setPendingKpiCode(kpiCodeFilter);
   }, [kpiCodeFilter]);
+
+  // Drop a stale metric selection from a previous search — the Metric
+  // dropdown's options are about to change with the new KPI code.
+  useEffect(() => {
+    setPendingMetricFilter("");
+  }, [pendingKpiCode]);
 
   const handleApplyFilters = () => {
     setKpiCodeFilter(pendingKpiCode);
@@ -239,8 +263,17 @@ export const KpiTargetsPage: React.FC = () => {
     [allCards],
   );
 
-  const selectedCard = cardOptions.find((c) => c.code === kpiCodeFilter);
-  const { data: kpiMetrics } = useKpiMetricsByCode(selectedCard?.code);
+  // Keyed off pendingKpiCode (what's typed right now), not the applied
+  // kpiCodeFilter (only updated by the Apply button) — the Metric/Period
+  // dropdowns are search assistance and should react as you type; only the
+  // actual results table (useKpiTargets below) waits for Apply.
+  const selectedCard = cardOptions.find((c) => c.code === pendingKpiCode);
+  // Fetch metrics directly off the typed KPI code, not gated behind finding a
+  // match in cardOptions first — the API only ever needed the code string,
+  // and requiring a cardOptions match caused the Metric dropdown to stay
+  // empty for any KPI not present in that separately-loaded list, even
+  // though /kpi/metrics-by-code/:code itself returns data just fine.
+  const { data: kpiMetrics } = useKpiMetricsByCode(pendingKpiCode || undefined);
 
   const {
     data: targets,
@@ -255,6 +288,24 @@ export const KpiTargetsPage: React.FC = () => {
   });
 
   const setTarget = useSetKpiTarget();
+  const updateTarget = useUpdateKpiTarget();
+  const isSavingTarget = setTarget.isPending || updateTarget.isPending;
+  const deleteTarget = useDeleteKpiTarget();
+  const [deleteConfirmTarget, setDeleteConfirmTarget] =
+    useState<KpiTarget | null>(null);
+  const handleConfirmDeleteTarget = async () => {
+    if (!deleteConfirmTarget) return;
+    await deleteTarget.mutateAsync(deleteConfirmTarget.id);
+    setDeleteConfirmTarget(null);
+  };
+
+  const transitionTarget = useTransitionKpiTarget();
+  const handleApproveTarget = async (target: KpiTarget) => {
+    await transitionTarget.mutateAsync({ id: target.id, action: "approve" });
+  };
+  const handleRejectTarget = async (target: KpiTarget) => {
+    await transitionTarget.mutateAsync({ id: target.id, action: "reject" });
+  };
 
   // ─── Create / Edit Target — inline section (approved reference UI keeps
   // this below the table rather than in a modal; see report for rationale) ──
@@ -287,15 +338,22 @@ export const KpiTargetsPage: React.FC = () => {
   const { data: formMetrics } = useKpiMetricsByCode(formKpiCode || undefined);
 
   const yearOptions = useMemo(() => getYearOptions(), []);
-  const freq = selectedCard?.reporting_frequency;
+  // Fall back to the fetched metrics' own reporting_frequency when the KPI
+  // isn't present in cardOptions — same class of bug as the Metric dropdown
+  // above: don't let a secondary, separately-loaded list gate data we
+  // already fetched directly off the typed KPI code.
+  const freq =
+    selectedCard?.reporting_frequency || kpiMetrics?.[0]?.reporting_frequency;
   const periodOptions = useMemo(
     () => getPeriodOptionsByFrequency(freq),
     [freq],
   );
   const formCard = cardOptions.find((c) => c.code === formKpiCode);
+  const formFreq =
+    formCard?.reporting_frequency || formMetrics?.[0]?.reporting_frequency;
   const formPeriodOptions = useMemo(
-    () => getPeriodOptionsByFrequency(formCard?.reporting_frequency),
-    [formCard],
+    () => getPeriodOptionsByFrequency(formFreq),
+    [formFreq],
   );
 
   const selectedMetric = (formMetrics ?? kpiMetrics ?? []).find(
@@ -326,7 +384,9 @@ export const KpiTargetsPage: React.FC = () => {
   const resetForm = () => {
     setFormMode("create");
     setFormKpiCode(kpiCodeFilter || "");
-    setFormKpiType(selectedCard?.type ?? "strategic");
+    setFormKpiType(
+      selectedCard?.type ?? kpiMetrics?.[0]?.kpi_type ?? "strategic",
+    );
     setFormMetricId("");
     setFormYear(year);
     setFormPeriodCode("");
@@ -477,38 +537,46 @@ export const KpiTargetsPage: React.FC = () => {
       payload.target_status = status;
     }
 
+    // Editing an existing target must PUT to it, not POST a new one —
+    // previously this just tacked payload.id onto a create call, which the
+    // backend had no update endpoint to act on and silently created a
+    // duplicate row instead of changing the one being edited.
     if (editingTarget) {
-      payload.id = editingTarget.id;
+      await updateTarget.mutateAsync({ id: editingTarget.id, data: payload });
+    } else {
+      await setTarget.mutateAsync(payload);
     }
-
-    await setTarget.mutateAsync(payload);
     resetForm();
   };
 
   // Row-level "Submit" quick action — submits the target as-is without
-  // opening the editor first.
+  // opening the editor first. Updates the existing row's status in place
+  // (same fix as handleSubmit above — this used to call the create endpoint
+  // with the target's own id tacked on, creating a duplicate row).
   const handleQuickSubmit = async (target: KpiTarget) => {
-    await setTarget.mutateAsync({
+    await updateTarget.mutateAsync({
       id: target.id,
-      kpi_code: target.kpi_code,
-      kpi_type: target.kpi_type,
-      metric_id: target.metric_id,
-      target_year: target.target_year,
-      period_code: target.period_code,
-      target_value: target.target_value,
-      target_type: target.target_type,
-      target_basis: target.target_basis,
-      target_rationale: target.target_rationale,
-      threshold_mode: target.threshold_mode,
-      excellent_threshold: target.excellent_threshold,
-      achieved_threshold: target.achieved_threshold,
-      warning_threshold: target.warning_threshold,
-      target_range_min: target.target_range_min,
-      target_range_max: target.target_range_max,
-      period_start: target.period_start,
-      period_end: target.period_end,
-      target_status: "submitted",
-    } as any);
+      data: {
+        kpi_code: target.kpi_code,
+        kpi_type: target.kpi_type,
+        metric_id: target.metric_id,
+        target_year: target.target_year,
+        period_code: target.period_code,
+        target_value: target.target_value,
+        target_type: target.target_type,
+        target_basis: target.target_basis,
+        target_rationale: target.target_rationale,
+        threshold_mode: target.threshold_mode,
+        excellent_threshold: target.excellent_threshold,
+        achieved_threshold: target.achieved_threshold,
+        warning_threshold: target.warning_threshold,
+        target_range_min: target.target_range_min,
+        target_range_max: target.target_range_max,
+        period_start: target.period_start,
+        period_end: target.period_end,
+        target_status: "submitted",
+      },
+    });
   };
 
   const items: KpiTarget[] = targets ?? [];
@@ -701,6 +769,9 @@ export const KpiTargetsPage: React.FC = () => {
                     onCopy: handleCopyTarget,
                     onSupersede: handleSupersedeTarget,
                     onQuickSubmit: handleQuickSubmit,
+                    onDelete: setDeleteConfirmTarget,
+                    onApprove: handleApproveTarget,
+                    onReject: handleRejectTarget,
                   });
                   return (
                     <tr
@@ -1121,7 +1192,7 @@ export const KpiTargetsPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleCancelForm}
-            disabled={setTarget.isPending}
+            disabled={isSavingTarget}
           >
             {formReadOnly ? "Close" : "Cancel"}
           </Button>
@@ -1130,9 +1201,9 @@ export const KpiTargetsPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={handleSaveDraft}
-                disabled={setTarget.isPending || isFormulaMetric}
+                disabled={isSavingTarget || isFormulaMetric}
               >
-                {setTarget.isPending
+                {isSavingTarget
                   ? "Saving..."
                   : isFormulaMetric
                     ? "Phase 2 Only"
@@ -1140,9 +1211,9 @@ export const KpiTargetsPage: React.FC = () => {
               </Button>
               <Button
                 onClick={handleSubmitTarget}
-                disabled={setTarget.isPending || isFormulaMetric}
+                disabled={isSavingTarget || isFormulaMetric}
               >
-                {setTarget.isPending
+                {isSavingTarget
                   ? "Saving..."
                   : isFormulaMetric
                     ? "Phase 2 Only"
@@ -1152,6 +1223,44 @@ export const KpiTargetsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={!!deleteConfirmTarget}
+        onClose={() => setDeleteConfirmTarget(null)}
+        size="sm"
+      >
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Delete Target
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Are you sure you want to delete the target for{" "}
+            <strong>
+              {deleteConfirmTarget &&
+                formatPeriodLabel(
+                  deleteConfirmTarget.target_year,
+                  deleteConfirmTarget.period_code,
+                )}
+            </strong>
+            ? This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteTarget}
+              disabled={deleteTarget.isPending}
+            >
+              {deleteTarget.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
