@@ -888,7 +888,6 @@ export interface KpiMetric extends KpiMetricSnapshot {
   custom_unit_label?: string;
   baseline_value: number;
   current_value: number;
-  target_value: number;
   weight: number;
   formula?: string;
   reporting_frequency?: string;
@@ -913,6 +912,13 @@ export interface KpiMetric extends KpiMetricSnapshot {
   created_by?: UserBrief;
   created_at: string;
   updated_at: string;
+  // Computed server-side (not stored) — the current reporting period's
+  // approved KpiAnnualTarget for this metric, if one exists. There's no
+  // metric-level fallback anymore: a single timeless number can't represent
+  // a target meant to progress period over period, so undefined means
+  // honestly "no target set for this period", not "use some other number".
+  effective_target_value?: number;
+  effective_target_period?: string;
 }
 
 export interface KpiMetricRequest {
@@ -925,7 +931,6 @@ export interface KpiMetricRequest {
   unit?: string;
   custom_unit_label?: string;
   baseline_value?: number;
-  target_value: number;
   weight?: number;
   formula?: string;
   calculation_type?: KpiCalculationType;
