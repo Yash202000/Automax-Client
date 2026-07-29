@@ -2639,7 +2639,11 @@ export const callLogApi = {
       page: String(page),
       limit: String(limit),
     });
-    if (userId) params.append("user_id", userId);
+
+    // if (userId) params.append("user_id", userId);
+
+    if (userId) params.append("agent_id", userId);
+
     const response = await apiClient.get(
       `/admin/call-logs?${params.toString()}`,
     );
