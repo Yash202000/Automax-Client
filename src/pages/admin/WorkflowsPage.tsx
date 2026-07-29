@@ -1,30 +1,22 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Plus,
-  Edit2,
   Trash2,
   X,
   Check,
   GitBranch,
-  Copy,
   Settings2,
   AlertTriangle,
-  Circle,
-  ArrowRight,
-  Tag,
-  Sparkles,
   RotateCcw,
   Archive,
   ChevronDown,
   ChevronUp,
-  Download,
   Upload,
 } from "lucide-react";
-import { workflowApi, classificationApi } from "../../api/admin";
+import { workflowApi } from "../../api/admin";
 import type {
   Workflow,
   WorkflowCreateRequest,
@@ -58,8 +50,7 @@ const initialFormData: WorkflowFormData = {
 };
 
 export const WorkflowsPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,10 +102,10 @@ export const WorkflowsPage: React.FC = () => {
     queryFn: () => workflowApi.listWithFilters(filter),
   });
 
-  const { data: classificationsData } = useQuery({
-    queryKey: ["admin", "classifications", "tree"],
-    queryFn: () => classificationApi.getTree(),
-  });
+  // const { data: classificationsData } = useQuery({
+  //   queryKey: ["admin", "classifications", "tree"],
+  //   queryFn: () => classificationApi.getTree(),
+  // });
 
   const { data: deletedWorkflowsData, isLoading: isLoadingDeleted } = useQuery({
     queryKey: ["admin", "workflows", "deleted"],
