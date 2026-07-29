@@ -8,6 +8,7 @@ import {
   useSetKpiTarget,
   useUpdateKpiTarget,
   useDeleteKpiTarget,
+  useTransitionKpiTarget,
   useKpiCardDefinitions,
   useKpiMetricsByCode,
 } from "../../../hooks/useKpi";
@@ -156,6 +157,8 @@ function getActionLinks(
     onSupersede: (t: KpiTarget) => void;
     onQuickSubmit: (t: KpiTarget) => void;
     onDelete: (t: KpiTarget) => void;
+    onApprove: (t: KpiTarget) => void;
+    onReject: (t: KpiTarget) => void;
   },
 ): { label: string; onClick: () => void }[] {
   switch (target.target_status) {
@@ -166,6 +169,12 @@ function getActionLinks(
         { label: "Edit", onClick: () => handlers.onEdit(target) },
         { label: "Submit", onClick: () => handlers.onQuickSubmit(target) },
         { label: "Delete", onClick: () => handlers.onDelete(target) },
+      ];
+    case "submitted":
+      return [
+        { label: "View", onClick: () => handlers.onView(target) },
+        { label: "Approve", onClick: () => handlers.onApprove(target) },
+        { label: "Reject", onClick: () => handlers.onReject(target) },
       ];
     case "approved":
       return [
@@ -179,7 +188,7 @@ function getActionLinks(
         { label: "Copy", onClick: () => handlers.onCopy(target) },
       ];
     default:
-      // submitted, locked — awaiting workflow, read-only for now.
+      // locked — awaiting workflow, read-only for now.
       return [{ label: "View", onClick: () => handlers.onView(target) }];
   }
 }
@@ -288,6 +297,14 @@ export const KpiTargetsPage: React.FC = () => {
     if (!deleteConfirmTarget) return;
     await deleteTarget.mutateAsync(deleteConfirmTarget.id);
     setDeleteConfirmTarget(null);
+  };
+
+  const transitionTarget = useTransitionKpiTarget();
+  const handleApproveTarget = async (target: KpiTarget) => {
+    await transitionTarget.mutateAsync({ id: target.id, action: "approve" });
+  };
+  const handleRejectTarget = async (target: KpiTarget) => {
+    await transitionTarget.mutateAsync({ id: target.id, action: "reject" });
   };
 
   // ─── Create / Edit Target — inline section (approved reference UI keeps
@@ -753,6 +770,8 @@ export const KpiTargetsPage: React.FC = () => {
                     onSupersede: handleSupersedeTarget,
                     onQuickSubmit: handleQuickSubmit,
                     onDelete: setDeleteConfirmTarget,
+                    onApprove: handleApproveTarget,
+                    onReject: handleRejectTarget,
                   });
                   return (
                     <tr

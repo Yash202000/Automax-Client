@@ -995,9 +995,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 title={targetId}
                 value={
                   targetVal !== undefined
-                    ? targetId
-                      ? `${targetId} · ${formatMetricValue(targetVal, unit, precision)}`
-                      : formatMetricValue(targetVal, unit, precision)
+                    ? formatMetricValue(targetVal, unit, precision)
                     : "—"
                 }
               />
