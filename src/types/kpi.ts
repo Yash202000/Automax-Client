@@ -679,6 +679,8 @@ export interface KpiAnnualTargetRequest {
   metric_id: string;
   target_year: number;
   period_code: string;
+  period_start?: string;
+  period_end?: string;
   target_value?: number;
   target_type: KpiTargetType;
   target_basis: KpiTargetBasis;
@@ -692,6 +694,7 @@ export interface KpiAnnualTargetRequest {
   segmentation_values?: KpiTargetSegmentationValue[];
   effective_from?: string;
   effective_to?: string;
+  target_status?: KpiTargetStatus;
 }
 
 export interface KpiPerformanceRequest {
