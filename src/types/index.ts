@@ -42,6 +42,7 @@ export interface User {
   dept_manager_classification?: Classification;
   dept_manager_location_id?: string | null;
   dept_manager_location?: Location;
+  call_status?: string;
 }
 
 export interface Permission {

@@ -61,6 +61,38 @@ import { AttachmentPreview } from "@/components/common/AttachmentPreview";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
+import {
+  Select as AppSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select";
+import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
+import { getAvatarName } from "@/lib/utils";
+import { VirtualizedList } from "@/components/ui/virtualized-list";
+
+const statusBadgeColor: any = {
+  online: "bg-green-500",
+  connected: "bg-blue-500",
+  offline: "bg-gray-400",
+  disconnected: "bg-red-500",
+};
+
+const getUserLabel = (user: any) =>
+  [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+  user?.username ||
+  user?.email ||
+  "";
+
+const normalizeStatus = (status?: string) => status?.toLowerCase() ?? "";
+
+const statusOrder: Record<string, number> = {
+  online: 0,
+  connected: 1,
+  offline: 2,
+  disconnected: 3,
+};
 
 export function IncidentCreatePage() {
   const { t } = useTranslation();
@@ -1221,7 +1253,9 @@ export function IncidentCreatePage() {
     };
 
     // Ensure empty strings are not sent for optional UUID fields
-    if (submitData.assignee_id === "") submitData.assignee_id = undefined;
+    if (submitData.assignee_id === "") {
+      submitData.assignee_id = undefined;
+    }
     if (submitData.department_id === "") submitData.department_id = undefined;
     if (submitData.location_id === "") submitData.location_id = undefined;
     if (submitData.classification_id === "")
@@ -1286,20 +1320,38 @@ export function IncidentCreatePage() {
   // Convert classifications to TreeSelectNode format
   const classificationTree = classifications as unknown as TreeSelectNode[];
 
-  const userOptions = [
-    { value: "", label: t("incidents.unassigned") },
-    ...users.map((u) => {
-      const label =
-        [u.first_name, u.last_name].filter(Boolean).join(" ") ||
-        u.username ||
-        u.email ||
-        "";
-      return {
-        value: u.id,
-        label,
-      };
-    }),
-  ];
+  const userOptions = useMemo(() => {
+    const options = users.map((user: any) => ({
+      value: user.id,
+      label: getUserLabel(user),
+      status: normalizeStatus(user.call_status),
+      statusOrder: statusOrder[normalizeStatus(user.call_status)] ?? 99,
+      avatar: getAvatarName(getUserLabel(user)),
+    }));
+
+    options.sort((a, b) => {
+      if (a.statusOrder !== b.statusOrder) {
+        return a.statusOrder - b.statusOrder;
+      }
+
+      return a.label.localeCompare(b.label);
+    });
+
+    return [
+      {
+        value: "",
+        label: t("incidents.unassigned"),
+        status: "offline",
+        avatar: getAvatarName(t("incidents.unassigned")),
+      },
+      ...options,
+    ];
+  }, [users, t]);
+
+  const selectedAssignee = useMemo(
+    () => userOptions.find((user) => user.value === formData.assignee_id),
+    [userOptions, formData.assignee_id],
+  );
 
   const departmentOptions = [
     { value: "", label: t("incidents.noDepartment") },
@@ -1847,18 +1899,49 @@ export function IncidentCreatePage() {
                   {initialStateAssignmentMode === "none" &&
                     (workflowRequiredFields.includes("assignee_id") ||
                       workflowOptionalFields.includes("assignee_id")) && (
-                      <Select
-                        label={t("incidents.assignee")}
-                        value={formData.assignee_id || ""}
-                        onChange={(e) =>
-                          handleChange("assignee_id", e.target.value)
+                      <AppSelect
+                        value={formData.assignee_id}
+                        onValueChange={(value) =>
+                          handleChange("assignee_id", value)
                         }
-                        options={userOptions}
-                        required={workflowRequiredFields.includes(
-                          "assignee_id",
-                        )}
-                        error={errors.assignee_id}
-                      />
+                      >
+                        <SelectTrigger className="w-full" size="md">
+                          <SelectValue placeholder={t("incidents.unassigned")}>
+                            {selectedAssignee?.label ||
+                              t("incidents.selectAssignee")}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <VirtualizedList
+                            items={userOptions}
+                            height="h-72"
+                            estimateSize={48}
+                            getKey={(user) => user.value}
+                            renderItem={(user: any) => (
+                              <SelectItem value={user.value}>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-7 w-7">
+                                    <AvatarFallback className="text-xs">
+                                      {user?.avatar}
+                                    </AvatarFallback>
+
+                                    {user?.value ? (
+                                      <AvatarBadge
+                                        className={
+                                          statusBadgeColor[user?.status] ??
+                                          "bg-gray-400"
+                                        }
+                                      />
+                                    ) : null}
+                                  </Avatar>
+
+                                  <span className="truncate">{user.label}</span>
+                                </div>
+                              </SelectItem>
+                            )}
+                          />
+                        </SelectContent>
+                      </AppSelect>
                     )}
                   {(workflowRequiredFields.includes("department_id") ||
                     workflowOptionalFields.includes("department_id")) && (
