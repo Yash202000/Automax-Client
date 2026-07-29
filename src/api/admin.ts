@@ -1356,6 +1356,9 @@ export const incidentApi = {
     if (filter.reporter_phone_search) {
       params.append("reporter_phone_search", filter.reporter_phone_search);
     }
+    if (filter.momra_ref) {
+      params.append("momra_ref", filter.momra_ref);
+    }
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
     );

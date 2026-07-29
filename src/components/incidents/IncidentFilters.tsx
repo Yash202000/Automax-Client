@@ -93,6 +93,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   const [reporterPhoneInput, setReporterPhoneInput] = useState(
     filter.reporter_phone_search || "",
   );
+  const [momraRefNum, setMomraRefNum] = useState(filter.momra_ref || "");
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin } = usePermissions();
 
@@ -288,7 +289,42 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     return () => window.clearTimeout(timeoutId);
   }, [reporterPhoneInput, filter.reporter_phone_search, onFilterChange]);
 
+  useEffect(() => {
+    setMomraRefNum(filter.momra_ref || "");
+  }, [filter.momra_ref]);
+
+  useEffect(() => {
+    const currentValue = (filter.momra_ref || "").trim();
+    const nextValue = momraRefNum.trim();
+
+    if (currentValue === nextValue) return;
+
+    const timeoutId = window.setTimeout(() => {
+      if (!searchParams || !setSearchParams) return;
+      const params = new URLSearchParams(searchParams);
+      // normal search cleared when momra search
+      params.delete("search");
+
+      if (nextValue) {
+        params.set("momra_ref", nextValue);
+        params.set("source", "momra");
+      } else {
+        params.delete("momra_ref");
+        params.delete("source");
+      }
+
+      params.set("page", "1");
+      setSearchParams(params);
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [momraRefNum, filter.momra_ref, onFilterChange]);
+
   const visibleColumnCount = columns?.filter((c) => c.visible).length ?? 0;
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
 
   return (
     <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
@@ -298,10 +334,29 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
           <input
             type="text"
             placeholder={t("incidents.searchPlaceholder")}
-            value={filter.search || ""}
-            onChange={(e) =>
-              onFilterChange("search", e.target.value || undefined)
-            }
+            value={searchParams?.get("search") || ""}
+            onChange={(e) => {
+              // setMomraRefNum("");
+              // onFilterChange("momra_ref", undefined);
+              // onFilterChange("source", undefined);
+              // onFilterChange("search", e.target.value || undefined);
+              const value = e.target.value;
+              setMomraRefNum("");
+              if (!searchParams || !setSearchParams) return;
+              const params = new URLSearchParams(searchParams);
+
+              params.delete("momra_ref");
+              params.delete("source");
+
+              if (value) {
+                params.set("search", value);
+              } else {
+                params.delete("search");
+              }
+
+              params.set("page", "1");
+              setSearchParams(params);
+            }}
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
           />
         </div>
@@ -663,6 +718,22 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
                   "Phone number",
                 )}
                 inputMode="tel"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              />
+            </div>
+          ) : null}
+          {isEPM940 ? (
+            <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                {t("incidents.momraRefNumLabel", "MOMRA Reference Number")}
+              </label>
+              <Input
+                value={momraRefNum}
+                onChange={(e) => setMomraRefNum(e.target.value)}
+                placeholder={t(
+                  "incidents.momraRefNumPlaceholder",
+                  "Enter MOMRA reference number",
+                )}
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
               />
             </div>
