@@ -43,6 +43,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { useAuthStore } from "@/stores/authStore";
 
 // Column configuration
 interface ColumnConfig {
@@ -87,6 +88,7 @@ export const RequestsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState<IncidentFilter>({
     page: 1,
@@ -101,9 +103,9 @@ export const RequestsPage: React.FC = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const canViewAllRequests =
-    isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL);
-  const canTransitionRequest =
-    isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_TRANSITION);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canCreateRequest =
     isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_CREATE);
 
@@ -113,21 +115,13 @@ export const RequestsPage: React.FC = () => {
   const hasUrlFilter = !!urlStatusParam || urlSlaBreachedParam === "true";
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
-  useEffect(() => {
-    if (!canViewAllRequests && !hasUrlFilter) {
-      if (canTransitionRequest) {
-        navigate("/requests/my-assigned", { replace: true });
-      } else if (canCreateRequest) {
-        navigate("/requests/my-created", { replace: true });
-      }
-    }
-  }, [
-    canViewAllRequests,
-    canTransitionRequest,
-    canCreateRequest,
-    hasUrlFilter,
-    navigate,
-  ]);
+  // useEffect(() => {
+  //   if (!canViewAllRequests && !hasUrlFilter) {
+  //     if (canCreateRequest) {
+  //       navigate("/requests/my-created", { replace: true });
+  //     }
+  //   }
+  // }, [canViewAllRequests, canCreateRequest, hasUrlFilter, navigate]);
   const [showColumnConfig, setShowColumnConfig] = useState(false);
   const columnConfigRef = useRef<HTMLDivElement>(null);
 
@@ -255,8 +249,15 @@ export const RequestsPage: React.FC = () => {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["requests", filter],
-    queryFn: () => incidentApi.list(filter),
+    queryKey: [
+      "requests",
+      { ...filter, ...(canViewAllRequests ? {} : { my_record: user?.id }) },
+    ],
+    queryFn: () =>
+      incidentApi.list({
+        ...filter,
+        ...(canViewAllRequests ? {} : { my_record: user?.id }),
+      }),
     placeholderData: keepPreviousData,
   });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BookOpen, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -9,10 +10,13 @@ import {
   useAwardKPIDetail,
   useAwardSubCriteria,
   useDataSources,
+  useDomains,
+  useOrganizations,
 } from "../../../hooks/useKpi";
+import { departmentApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
-import type { AwardKPIRequest } from "../../../types/kpi";
+import type { AwardKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormAwardPage: React.FC = () => {
   const { t } = useTranslation();
@@ -25,15 +29,29 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
 
   const { data: subCriteriaData } = useAwardSubCriteria();
   const { data: dataSourcesData } = useDataSources();
+  const { data: domainsData } = useDomains();
+  const { data: organizationsData } = useOrganizations();
+  const { data: departmentsData } = useQuery({
+    queryKey: ["admin", "departments", "all"],
+    queryFn: () => departmentApi.list(),
+  });
 
   const subCriteria = subCriteriaData ?? [];
   const dataSources = dataSourcesData ?? [];
+  const domains = domainsData ?? [];
+  const organizations = organizationsData ?? [];
+  const departments = departmentsData?.data ?? [];
 
   const [form, setForm] = useState({
     code: "",
     name_en: "",
     name_ar: "",
     award_sub_criterion_id: "",
+    domain_id: "",
+    owner_type: "internal" as KPIOwnerType,
+    owner_dept_id: "",
+    owner_org_id: "",
+    owning_agency_id: "",
     polarity: "ascending",
     activation_status: "draft",
     description_en: "",
@@ -42,6 +60,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     baseline: 0,
     unit_of_measure: "",
     reporting_frequency: "quarterly",
+    lifecycle: "",
     data_source: "",
     notes: "",
   });
@@ -54,6 +73,11 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       name_en: kpi.name_en,
       name_ar: kpi.name_ar ?? "",
       award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      domain_id: kpi.domain_id ?? "",
+      owner_type: kpi.owner_type ?? "internal",
+      owner_dept_id: kpi.owner_dept_id ?? "",
+      owner_org_id: kpi.owner_org_id ?? "",
+      owning_agency_id: kpi.owning_agency_id ?? "",
       polarity: kpi.polarity,
       activation_status: kpi.activation_status,
       description_en: kpi.description_en ?? "",
@@ -62,6 +86,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       baseline: kpi.baseline,
       unit_of_measure: kpi.unit_of_measure ?? "",
       reporting_frequency: kpi.reporting_frequency ?? "quarterly",
+      lifecycle: kpi.lifecycle ?? "",
       data_source: kpi.data_source ?? "",
       notes: kpi.notes ?? "",
     });
@@ -88,6 +113,13 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     const data: AwardKPIRequest = {
       ...form,
       baseline: Number(form.baseline),
+      domain_id: form.domain_id || undefined,
+      owner_dept_id: form.owner_dept_id || undefined,
+      owning_agency_id: form.owning_agency_id || undefined,
+      owner_org_id:
+        form.owner_type === "external"
+          ? form.owner_org_id || undefined
+          : undefined,
     };
 
     if (isEdit) {
@@ -164,6 +196,93 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             />
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label={t("kpi.masterData.domains")}
+              value={form.domain_id}
+              onChange={(v) =>
+                setForm((prev) => ({ ...prev, domain_id: v.target.value }))
+              }
+              options={domains.map((d: any) => ({
+                value: d.id,
+                label: d.name_en,
+              }))}
+              placeholder={t("common.selectAnOption")}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label={t("kpi.dictionary.fieldOwnerType")}
+              value={form.owner_type}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  owner_type: v.target.value as KPIOwnerType,
+                  owner_org_id:
+                    v.target.value === "internal" ? "" : prev.owner_org_id,
+                }))
+              }
+              options={[
+                {
+                  value: "internal",
+                  label: t("kpi.dictionary.ownerTypeInternal"),
+                },
+                {
+                  value: "external",
+                  label: t("kpi.dictionary.ownerTypeExternal"),
+                },
+              ]}
+            />
+            <Select
+              label={t("kpi.dictionary.fieldOwnerDept")}
+              value={form.owner_dept_id}
+              onChange={(v) =>
+                setForm((prev) => ({ ...prev, owner_dept_id: v.target.value }))
+              }
+              options={departments.map((d: any) => ({
+                value: d.id,
+                label: d.name,
+              }))}
+              placeholder={t("common.selectAnOption")}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label={t("kpi.dictionary.fieldOwningAgency")}
+              value={form.owning_agency_id}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  owning_agency_id: v.target.value,
+                }))
+              }
+              options={departments.map((d: any) => ({
+                value: d.id,
+                label: d.name,
+              }))}
+              placeholder={t("common.selectAnOption")}
+            />
+            {form.owner_type === "external" && (
+              <Select
+                label={t("kpi.dictionary.fieldOwnerOrg")}
+                value={form.owner_org_id}
+                onChange={(v) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    owner_org_id: v.target.value,
+                  }))
+                }
+                options={organizations.map((o: any) => ({
+                  value: o.id,
+                  label: o.name_en,
+                }))}
+                placeholder={t("common.selectAnOption")}
+              />
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
               label={t("kpi.dictionary.fieldPolarity")}
@@ -188,7 +307,15 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               options={[
                 { value: "monthly", label: "Monthly" },
                 { value: "quarterly", label: "Quarterly" },
+                {
+                  value: "semi_annual",
+                  label: t("kpi.dictionary.fieldFrequencySemiAnnual"),
+                },
                 { value: "annually", label: "Annually" },
+                {
+                  value: "custom",
+                  label: t("kpi.dictionary.fieldFrequencyCustom"),
+                },
               ]}
             />
             <Select
@@ -251,6 +378,11 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={t("kpi.dictionary.fieldLifecycle")}
+              value={form.lifecycle}
+              onChange={handleChange("lifecycle")}
+            />
             <Select
               label={t("kpi.dictionary.fieldDataSource")}
               value={form.data_source}
@@ -282,9 +414,9 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
           </Button>
           <Button
             type="submit"
+            leftIcon={<Save className="w-4 h-4" />}
             isLoading={isEdit ? updateKpi.isPending : createKpi.isPending}
           >
-            <Save className="w-4 h-4 me-1" />
             {t("common.save")}
           </Button>
         </div>

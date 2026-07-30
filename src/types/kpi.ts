@@ -80,9 +80,11 @@ export interface Initiative {
   objective_id?: string;
   objective?: OperationalObjective;
   pillar_id?: string;
+  pillar?: Pillar;
   enabler_id?: string;
+  enabler?: Enabler;
   owner_id?: string;
-  owner?: UserBrief;
+  owner?: DepartmentBrief;
   status: string;
   created_at: string;
 }
@@ -137,10 +139,46 @@ export interface KpiSegmentationDimensionRequest {
   name_ar?: string;
 }
 
+export interface KpiOrganization {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  contact_info?: string;
+  is_active: boolean;
+}
+
+export interface KpiOrganizationRequest {
+  name_en: string;
+  name_ar?: string;
+  contact_info?: string;
+}
+
+export interface KpiSegmentationAxis {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  dimension_id: string;
+  dimension?: KpiSegmentationDimension;
+}
+
+export interface KpiAdministrativeUnit {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  department_id: string;
+  department?: DepartmentBrief;
+}
+
 export type KPIType = "strategic" | "operational" | "award";
 export type KPIPolarity = "ascending" | "descending";
 export type KPIActivationStatus = "draft" | "active" | "inactive";
-export type KPIFrequency = "monthly" | "quarterly" | "annually";
+export type KPIFrequency =
+  | "monthly"
+  | "quarterly"
+  | "semi_annual"
+  | "annually"
+  | "custom";
+export type KPIOwnerType = "internal" | "external";
 
 export interface KpiDashboardData {
   total_strategic: number;
@@ -222,8 +260,13 @@ export interface StrategicKPI {
   pillar?: Pillar;
   domain_id?: string;
   domain?: Domain;
+  owner_type: KPIOwnerType;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
   goal_id: string;
   goal?: GoalBrief;
   process_id?: string;
@@ -256,8 +299,15 @@ export interface OperationalKPI {
   operational_objective?: OperationalObjective;
   process_id: string;
   process?: Process;
+  domain_id?: string;
+  domain?: Domain;
+  owner_type: KPIOwnerType;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
   polarity: string;
   activation_status: string;
   description_en: string;
@@ -266,6 +316,7 @@ export interface OperationalKPI {
   baseline: number;
   unit_of_measure: string;
   reporting_frequency: string;
+  lifecycle: string;
   data_source: string;
   notes: string;
   created_at: string;
@@ -279,8 +330,15 @@ export interface AwardKPI {
   name_ar: string;
   award_sub_criterion_id: string;
   award_sub_criterion?: AwardSubCriterion;
+  domain_id?: string;
+  domain?: Domain;
+  owner_type: KPIOwnerType;
   owner_dept_id?: string;
   owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
   polarity: string;
   activation_status: string;
   description_en: string;
@@ -289,6 +347,7 @@ export interface AwardKPI {
   baseline: number;
   unit_of_measure: string;
   reporting_frequency: string;
+  lifecycle: string;
   data_source: string;
   notes: string;
   created_at: string;
@@ -310,16 +369,74 @@ export type KPIPeriodType =
   | "annual"
   | "custom";
 
-export interface KpiAnnualTarget {
+export type KpiTargetStatus =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "returned"
+  | "rejected"
+  | "locked"
+  | "superseded";
+
+export type KpiTargetType =
+  | "Period Target"
+  | "Annual Target"
+  | "Milestone / Ad Hoc";
+
+export type KpiTargetBasis =
+  | "Strategic Plan"
+  | "Previous Year"
+  | "Benchmark"
+  | "Regulatory Requirement"
+  | "Contract / SLA"
+  | "Management Decision"
+  | "Forecast"
+  | "Other";
+
+export interface KpiTargetSegmentationValue {
+  dimension: string;
+  value: string;
+}
+
+export interface KpiTarget {
   id: string;
   kpi_code: string;
   kpi_type: KPIType;
-  year: number;
-  period_type: KPIPeriodType;
-  period_key: string;
-  target_value: number;
+  metric_id: string;
+  metric?: { id: string; name: string };
+  calculation_type_snapshot: KpiCalculationType;
+  direction_snapshot: KpiDirection;
+  unit_snapshot: string;
+  decimal_precision_snapshot: number;
+  reporting_frequency_snapshot: string;
+  target_year: number;
+  period_code: string;
+  period_start: string;
+  period_end: string;
+  target_value?: number;
+  target_type: KpiTargetType;
+  target_basis: KpiTargetBasis;
+  target_rationale: string;
+  threshold_mode: KpiThresholdMode;
+  excellent_threshold?: number;
+  achieved_threshold?: number;
+  warning_threshold?: number;
+  target_range_min?: number;
+  target_range_max?: number;
+  segmentation_values?: KpiTargetSegmentationValue[];
+  target_status: KpiTargetStatus;
+  effective_from?: string;
+  effective_to?: string;
+  approved_by_id?: string;
+  approved_by?: UserBrief;
+  approved_at?: string;
+  supersedes_entry_id?: string;
   created_at: string;
+  updated_at: string;
 }
+
+// Keep the old name as alias for backward compatibility
+export type KpiAnnualTarget = KpiTarget;
 
 export interface KpiPerformance {
   id: string;
@@ -487,7 +604,10 @@ export interface StrategicKPIRequest {
   name_ar?: string;
   pillar_id?: string;
   domain_id?: string;
+  owner_type?: KPIOwnerType;
   owner_dept_id?: string;
+  owner_org_id?: string;
+  owning_agency_id?: string;
   goal_id: string;
   process_id: string;
   polarity?: string;
@@ -512,7 +632,11 @@ export interface OperationalKPIRequest {
   goal_id: string;
   operational_objective_id: string;
   process_id: string;
+  domain_id?: string;
+  owner_type?: KPIOwnerType;
   owner_dept_id?: string;
+  owner_org_id?: string;
+  owning_agency_id?: string;
   polarity?: string;
   activation_status?: string;
   description_en?: string;
@@ -521,6 +645,7 @@ export interface OperationalKPIRequest {
   baseline?: number;
   unit_of_measure?: string;
   reporting_frequency?: string;
+  lifecycle?: string;
   data_source?: string;
   notes?: string;
 }
@@ -530,7 +655,11 @@ export interface AwardKPIRequest {
   name_en: string;
   name_ar?: string;
   award_sub_criterion_id: string;
+  domain_id?: string;
+  owner_type?: KPIOwnerType;
   owner_dept_id?: string;
+  owner_org_id?: string;
+  owning_agency_id?: string;
   polarity?: string;
   activation_status?: string;
   description_en?: string;
@@ -539,6 +668,7 @@ export interface AwardKPIRequest {
   baseline?: number;
   unit_of_measure?: string;
   reporting_frequency?: string;
+  lifecycle?: string;
   data_source?: string;
   notes?: string;
 }
@@ -546,10 +676,25 @@ export interface AwardKPIRequest {
 export interface KpiAnnualTargetRequest {
   kpi_code: string;
   kpi_type: KPIType;
-  year: number;
-  period_type?: KPIPeriodType;
-  period_key?: string;
-  target_value: number;
+  metric_id: string;
+  target_year: number;
+  period_code: string;
+  period_start?: string;
+  period_end?: string;
+  target_value?: number;
+  target_type: KpiTargetType;
+  target_basis: KpiTargetBasis;
+  target_rationale: string;
+  threshold_mode: KpiThresholdMode;
+  excellent_threshold?: number;
+  achieved_threshold?: number;
+  warning_threshold?: number;
+  target_range_min?: number;
+  target_range_max?: number;
+  segmentation_values?: KpiTargetSegmentationValue[];
+  effective_from?: string;
+  effective_to?: string;
+  target_status?: KpiTargetStatus;
 }
 
 export interface KpiPerformanceRequest {
@@ -660,34 +805,153 @@ export interface PaginatedResponse<T> {
 
 // ─── KPI Engagement (Metrics, Evidence, Collaborators, Check-ins, Comments, Activity) ──
 
-export interface KpiMetric {
+export type KpiCalculationType =
+  | "Direct Value"
+  | "Percentage - Ratio"
+  | "Ratio"
+  | "Average"
+  | "Sum"
+  | "Difference"
+  | "Weighted Average"
+  | "Formula";
+
+export type KpiDirection =
+  | "Higher is Better"
+  | "Lower is Better"
+  | "Target Range"
+  | "Exact Target"
+  | "Informational";
+
+export type KpiAggregationMethod =
+  | "Sum"
+  | "Average"
+  | "Latest Approved Value"
+  | "Minimum"
+  | "Maximum"
+  | "Weighted Average"
+  | "No Aggregation";
+
+export type KpiThresholdMode =
+  | "Use Global KPI Rules"
+  | "Percentage of Target"
+  | "Absolute Values"
+  | "Target Range"
+  | "No Thresholds";
+
+export type KpiPerformanceStatus =
+  | "Exceeded"
+  | "Achieved"
+  | "Warning"
+  | "Below Target"
+  | "In Range"
+  | "Out of Range"
+  | "Informational"
+  | "Not Calculable";
+
+export type KpiDataSourceType =
+  | "Manual"
+  | "System Integration"
+  | "File Import"
+  | "Database Query"
+  | "Certified Report"
+  | "Other";
+
+export type KpiDataQualityStatus =
+  | "Complete"
+  | "Partial"
+  | "Estimated"
+  | "Provisional"
+  | "Corrected"
+  | "Not Verified";
+
+export interface KpiMetricSnapshot {
+  calculation_type: KpiCalculationType;
+  direction: KpiDirection;
+  unit?: string;
+  decimal_precision: number;
+  numerator_label?: string;
+  denominator_label?: string;
+  aggregation_method: KpiAggregationMethod;
+}
+
+export interface KpiMetric extends KpiMetricSnapshot {
   id: string;
   kpi_id: string;
   kpi_type: KPIType;
   name: string;
+  metric_code?: string;
+  metric_description?: string;
+  metric_status?: string;
+  display_order?: number;
   metric_type: string;
-  unit: string;
+  unit?: string;
+  custom_unit_label?: string;
   baseline_value: number;
   current_value: number;
-  target_value: number;
   weight: number;
   formula?: string;
+  reporting_frequency?: string;
+  numerator_label?: string;
+  numerator_variable_code?: string;
+  denominator_label?: string;
+  denominator_variable_code?: string;
+  direct_actual_label?: string;
+  allow_manual_actual_override?: boolean;
+  advanced_formula_enabled?: boolean;
+  formula_code?: string;
+  divide_by_zero_handling?: string;
+  rounding_rule?: string;
+  calculation_trace_required?: boolean;
+  metric_owner_id?: string;
+  metric_owner?: UserBrief;
+  data_source?: string;
+  evidence_required?: boolean;
   start_date?: string;
   due_date?: string;
   created_by_id: string;
   created_by?: UserBrief;
   created_at: string;
   updated_at: string;
+  // Computed server-side (not stored) — the current reporting period's
+  // approved KpiAnnualTarget for this metric, if one exists. There's no
+  // metric-level fallback anymore: a single timeless number can't represent
+  // a target meant to progress period over period, so undefined means
+  // honestly "no target set for this period", not "use some other number".
+  effective_target_value?: number;
+  effective_target_period?: string;
 }
 
 export interface KpiMetricRequest {
   name: string;
+  metric_code?: string;
+  metric_description?: string;
+  metric_status?: string;
+  display_order?: number;
   metric_type?: string;
   unit?: string;
+  custom_unit_label?: string;
   baseline_value?: number;
-  target_value: number;
   weight?: number;
   formula?: string;
+  calculation_type?: KpiCalculationType;
+  direction?: KpiDirection;
+  decimal_precision?: number;
+  aggregation_method?: KpiAggregationMethod;
+  reporting_frequency?: string;
+  numerator_label?: string;
+  numerator_variable_code?: string;
+  denominator_label?: string;
+  denominator_variable_code?: string;
+  direct_actual_label?: string;
+  allow_manual_actual_override?: boolean;
+  advanced_formula_enabled?: boolean;
+  formula_code?: string;
+  divide_by_zero_handling?: string;
+  rounding_rule?: string;
+  calculation_trace_required?: boolean;
+  metric_owner_id?: string;
+  data_source?: string;
+  evidence_required?: boolean;
   start_date?: string;
   due_date?: string;
 }
@@ -812,4 +1076,455 @@ export interface KpiListResponse<T> {
   total: number;
   page: number;
   limit: number;
+}
+
+// ─── KPI Entries ──────────────────────────────────────────────────────────
+
+export type KpiEntryStatus = "draft" | "submitted" | "approved" | "rejected";
+
+export interface KpiEntryComponentValue {
+  component: string;
+  value: number;
+  weight?: number;
+  sequence: number;
+}
+
+export interface KpiEntry {
+  id: string;
+  kpi_id: string;
+  kpi_type: KPIType;
+  metric_id: string;
+  metric?: { id: string; name: string };
+  reporting_year: number;
+  period_code: string;
+  period_start: string;
+  period_end: string;
+  calculation_type_snapshot: KpiCalculationType;
+  direction_snapshot: KpiDirection;
+  unit_snapshot: string;
+  decimal_precision_snapshot: number;
+  numerator_label_snapshot?: string;
+  denominator_label_snapshot?: string;
+  aggregation_method_snapshot: KpiAggregationMethod;
+  target_id?: string;
+  target_value_snapshot?: number;
+  threshold_mode_snapshot: KpiThresholdMode;
+  direct_actual_value?: number;
+  numerator_value?: number;
+  denominator_value?: number;
+  component_values?: KpiEntryComponentValue[];
+  actual_value: number;
+  actual_calculation_trace: string;
+  achievement_percentage?: number;
+  variance_value?: number;
+  performance_status: KpiPerformanceStatus;
+  aggregated_value?: number;
+  data_source_type: KpiDataSourceType;
+  source_reference: string;
+  data_cutoff_date: string;
+  data_quality_status: KpiDataQualityStatus;
+  data_quality_notes?: string;
+  evidence?: KpiEntryEvidence[];
+  evidence_count: number;
+  performance_commentary?: string;
+  improvement_action?: string;
+  status: KpiEntryStatus;
+  submitted_by_id?: string;
+  submitted_by?: UserBrief;
+  approved_by_id?: string;
+  approved_by?: UserBrief;
+  entry_version: number;
+  supersedes_entry_id?: string;
+  workflow_instance_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiEntryRequest {
+  metric_id: string;
+  reporting_year: number;
+  period_code: string;
+  direct_actual_value?: number;
+  numerator_value?: number;
+  denominator_value?: number;
+  component_values?: KpiEntryComponentValue[];
+  data_source_type: KpiDataSourceType;
+  source_reference: string;
+  data_cutoff_date: string;
+  data_quality_status: KpiDataQualityStatus;
+  data_quality_notes?: string;
+  performance_commentary?: string;
+  improvement_action?: string;
+}
+
+// Same editable surface as KpiEntryRequest, minus metric_id/period_code/
+// reporting_year — an entry's identity can't change after creation.
+export type KpiEntryUpdateRequest = Omit<
+  KpiEntryRequest,
+  "metric_id" | "reporting_year" | "period_code"
+>;
+
+export interface KpiEntryEvidence {
+  id: string;
+  entry_id: string;
+  title: string;
+  evidence_type: KpiEvidenceType;
+  description: string;
+  file_url: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  uploaded_by_id: string;
+  uploaded_by?: UserBrief;
+  created_at: string;
+}
+
+// ─── Period & Entry Utility Constants ──────────────────────────────────────
+
+export const REPORTING_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+export const REPORTING_QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
+
+export const REPORTING_SEMI_ANNUALS = ["H1", "H2"] as const;
+
+export const DATA_SOURCE_TYPE_OPTIONS: {
+  value: KpiDataSourceType;
+  label: string;
+}[] = [
+  { value: "Manual", label: "Manual" },
+  { value: "System Integration", label: "System Integration" },
+  { value: "File Import", label: "File Import" },
+  { value: "Database Query", label: "Database Query" },
+  { value: "Certified Report", label: "Certified Report" },
+  { value: "Other", label: "Other" },
+];
+
+export const DATA_QUALITY_STATUS_OPTIONS: {
+  value: KpiDataQualityStatus;
+  label: string;
+}[] = [
+  { value: "Complete", label: "Complete" },
+  { value: "Partial", label: "Partial" },
+  { value: "Estimated", label: "Estimated" },
+  { value: "Provisional", label: "Provisional" },
+  { value: "Corrected", label: "Corrected" },
+  { value: "Not Verified", label: "Not Verified" },
+];
+
+export const CALCULATION_TYPE_OPTIONS: {
+  value: KpiCalculationType;
+  label: string;
+}[] = [
+  { value: "Direct Value", label: "Direct Value" },
+  { value: "Percentage - Ratio", label: "Percentage - Ratio" },
+  { value: "Ratio", label: "Ratio" },
+  { value: "Average", label: "Average" },
+  { value: "Sum", label: "Sum" },
+  { value: "Difference", label: "Difference" },
+  { value: "Weighted Average", label: "Weighted Average" },
+  { value: "Formula", label: "Formula (Phase 2)" },
+];
+
+export const DIRECTION_OPTIONS: { value: KpiDirection; label: string }[] = [
+  { value: "Higher is Better", label: "Higher is Better" },
+  { value: "Lower is Better", label: "Lower is Better" },
+  { value: "Target Range", label: "Target Range" },
+  { value: "Exact Target", label: "Exact Target" },
+  { value: "Informational", label: "Informational" },
+];
+
+export const AGGREGATION_METHOD_OPTIONS: {
+  value: KpiAggregationMethod;
+  label: string;
+}[] = [
+  { value: "Sum", label: "Sum" },
+  { value: "Average", label: "Average" },
+  { value: "Latest Approved Value", label: "Latest Approved Value" },
+  { value: "Minimum", label: "Minimum" },
+  { value: "Maximum", label: "Maximum" },
+  { value: "Weighted Average", label: "Weighted Average" },
+  { value: "No Aggregation", label: "No Aggregation" },
+];
+
+export const THRESHOLD_MODE_OPTIONS: {
+  value: KpiThresholdMode;
+  label: string;
+}[] = [
+  { value: "Use Global KPI Rules", label: "Use Global KPI Rules" },
+  { value: "Percentage of Target", label: "Percentage of Target" },
+  { value: "Absolute Values", label: "Absolute Values" },
+  { value: "Target Range", label: "Target Range" },
+  { value: "No Thresholds", label: "No Thresholds" },
+];
+
+export function getPeriodOptionsByFrequency(
+  frequency?: string,
+): { value: string; label: string }[] {
+  switch (frequency) {
+    case "monthly":
+      return REPORTING_MONTHS.map((m) => ({
+        value: m.toLowerCase(),
+        label: m,
+      }));
+    case "quarterly":
+      return REPORTING_QUARTERS.map((q) => ({
+        value: q.toLowerCase(),
+        label: q,
+      }));
+    case "semi_annual":
+    case "semiannual":
+      return REPORTING_SEMI_ANNUALS.map((h) => ({
+        value: h.toLowerCase(),
+        label: h,
+      }));
+    case "annually":
+    case "annual":
+      return [{ value: "annual", label: "Annual" }];
+    default:
+      return REPORTING_MONTHS.map((m) => ({
+        value: m.toLowerCase(),
+        label: m,
+      }));
+  }
+}
+
+export function getYearOptions(): { value: number; label: string }[] {
+  const current = new Date().getFullYear();
+  const years: { value: number; label: string }[] = [];
+  for (let y = current - 2; y <= current + 3; y++) {
+    years.push({ value: y, label: String(y) });
+  }
+  return years;
+}
+
+export function formatPeriodDate(year: number, periodCode: string): string {
+  return `${year}-${periodCode.toUpperCase()}-01`;
+}
+
+// ─── Target Utility Constants ─────────────────────────────────────────────
+
+export const TARGET_TYPE_OPTIONS: { value: KpiTargetType; label: string }[] = [
+  { value: "Period Target", label: "Period Target" },
+  { value: "Annual Target", label: "Annual Target" },
+  { value: "Milestone / Ad Hoc", label: "Milestone / Ad Hoc" },
+];
+
+export const TARGET_BASIS_OPTIONS: { value: KpiTargetBasis; label: string }[] =
+  [
+    { value: "Strategic Plan", label: "Strategic Plan" },
+    { value: "Previous Year", label: "Previous Year" },
+    { value: "Benchmark", label: "Benchmark" },
+    { value: "Regulatory Requirement", label: "Regulatory Requirement" },
+    { value: "Contract / SLA", label: "Contract / SLA" },
+    { value: "Management Decision", label: "Management Decision" },
+    { value: "Forecast", label: "Forecast" },
+    { value: "Other", label: "Other" },
+  ];
+
+export const TARGET_STATUS_OPTIONS: {
+  value: KpiTargetStatus;
+  label: string;
+}[] = [
+  { value: "draft", label: "Draft" },
+  { value: "submitted", label: "Submitted" },
+  { value: "approved", label: "Approved" },
+  { value: "returned", label: "Returned" },
+  { value: "rejected", label: "Rejected" },
+  { value: "locked", label: "Locked" },
+  { value: "superseded", label: "Superseded" },
+];
+
+// ─── Collaborator Assignment Types ─────────────────────────────────────────
+
+export interface KpiCollaboratorAssignment {
+  id: string;
+  kpi_id: string;
+  kpi_type: string;
+  user_id: string;
+  user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
+  user_category: string;
+  collaborator_type: string;
+  organization_scope: string[];
+  metric_scope: string;
+  metric_scope_ids: string[];
+  period_scope: string;
+  period_scope_year: number;
+  period_scope_periods: string[];
+  effective_from: string;
+  effective_to?: string;
+  is_active: boolean;
+  delegate_for_user_id?: string;
+  delegate_for_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
+  delegation_reason?: string;
+  notification_prefs: string[];
+  created_by_id: string;
+  created_by?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiCollaboratorAssignmentRequest {
+  user_id: string;
+  user_category: string;
+  collaborator_type: string;
+  organization_scope?: string[];
+  metric_scope?: string;
+  metric_scope_ids?: string[];
+  period_scope?: string;
+  period_scope_year?: number;
+  period_scope_periods?: string[];
+  effective_from: string;
+  effective_to?: string;
+  is_active?: boolean;
+  delegate_for_user_id?: string;
+  delegation_reason?: string;
+  notification_prefs?: string[];
+}
+
+export interface CollaboratorPermissionMatrix {
+  collaborator_type: string;
+  view_kpi: boolean;
+  view_entries: boolean;
+  create_draft: boolean;
+  edit_own_draft: boolean;
+  edit_others_draft: string;
+  submit_entry: boolean;
+  review: string;
+  return: boolean;
+  approve_reject: string;
+  manage_targets: string;
+  manage_collaborators: boolean;
+  scope_rule: string;
+  critical_constraint: string;
+}
+
+export const COLLABORATOR_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "KPI Owner", label: "KPI Owner" },
+  { value: "Data Contributor", label: "Data Contributor" },
+  { value: "Data Submitter", label: "Data Submitter" },
+  { value: "Reviewer", label: "Reviewer" },
+  { value: "Approver", label: "Approver" },
+  { value: "Viewer", label: "Viewer" },
+];
+
+export const USER_CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: "Internal Employee", label: "Internal Employee" },
+  { value: "External Consultant", label: "External Consultant" },
+  { value: "Contractor", label: "Contractor" },
+  { value: "Service Provider", label: "Service Provider" },
+  {
+    value: "System / Integration Account",
+    label: "System / Integration Account",
+  },
+];
+
+export const PERIOD_SCOPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "All Periods", label: "All Periods" },
+  { value: "Current Period", label: "Current Period" },
+  { value: "Specific Year", label: "Specific Year" },
+  { value: "Specific Periods", label: "Specific Periods" },
+];
+
+export const NOTIFICATION_PREF_OPTIONS: { value: string; label: string }[] = [
+  { value: "Assignment", label: "Assignment" },
+  { value: "Period Open", label: "Period Open" },
+  { value: "Reminder", label: "Reminder" },
+  { value: "Submitted", label: "Submitted" },
+  { value: "Returned", label: "Returned" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Locked", label: "Locked" },
+];
+
+// ─── Composed views (KPI Card / per-KPI Dashboard / annual rollup) ─────────
+// These come from the backend's kpi_composed_handler.go, which joins
+// dictionary + targets + performance bands server-side so the frontend
+// doesn't have to make 3+ round trips and assemble them itself.
+
+export interface KpiCardTargetRow {
+  target_year: number;
+  period_code: string;
+  target_value: number;
+  target_frequency: string;
+  notes: string;
+}
+
+export interface KpiPerformanceBand {
+  id?: string;
+  kpi_code?: string | null;
+  green_min: number;
+  amber_min: number;
+}
+
+export interface KpiCardResponse {
+  code: string;
+  type: KPIType;
+  name_en: string;
+  name_ar: string;
+  description_en: string;
+  description_ar: string;
+  activation_status: string;
+  lifecycle: string;
+  owner_label: string;
+  owner_type: KPIOwnerType;
+  pillar_enabler_label: string;
+  strategic_goal_label: string;
+  criterion_label: string;
+  reporting_frequency: string;
+  data_source: string;
+  related_units_label: string;
+  formula: string;
+  polarity: string;
+  unit_of_measure: string;
+  baseline: number;
+  target_plan: KpiCardTargetRow[];
+  bands: KpiPerformanceBand;
+}
+
+export interface KpiAnnualRollupRow {
+  year: number;
+  target: number | null;
+  actual: number | null;
+  achievement_pct: number | null;
+  is_derived: boolean;
+}
+
+export interface KpiSingleDashboardResponse {
+  card: KpiCardResponse;
+  annual_rollup: KpiAnnualRollupRow[];
+  trend_description: string;
+  justification: string;
+  corrective_action: string;
+  benchmarks: KpiBenchmark[];
 }

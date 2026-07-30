@@ -24,12 +24,12 @@ import { Button } from "../../components/ui";
 import { MultiTreeSelect } from "../../components/ui/MultiTreeSelect";
 import CallablePhone from "../../components/common/CallablePhone";
 import {
-  queryApi,
   workflowApi,
   userApi,
   departmentApi,
   classificationApi,
   locationApi,
+  incidentApi,
 } from "../../api/admin";
 import type {
   Incident,
@@ -109,10 +109,10 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
 
   const canCreateQuery =
     isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_CREATE);
-  const canTransitionQuery =
-    isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_TRANSITION);
   const canViewAllQueries =
-    isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.QUERIES_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
 
   // Get status from URL - users with view permission can access if status filter is applied
   const urlStatusParam = searchParams.get("status");
@@ -132,22 +132,19 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
         : t("queries.subtitle");
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
-  useEffect(() => {
-    if (!canViewAllQueries && !hasUrlFilter && !isScopedList) {
-      if (canTransitionQuery) {
-        navigate("/queries/my-assigned", { replace: true });
-      } else if (canCreateQuery) {
-        navigate("/queries/my-created", { replace: true });
-      }
-    }
-  }, [
-    canViewAllQueries,
-    canTransitionQuery,
-    canCreateQuery,
-    hasUrlFilter,
-    isScopedList,
-    navigate,
-  ]);
+  // useEffect(() => {
+  //   if (!canViewAllQueries && !hasUrlFilter && !isScopedList) {
+  //     if (canCreateQuery) {
+  //       navigate("/queries/my-created", { replace: true });
+  //     }
+  //   }
+  // }, [
+  //   canViewAllQueries,
+  //   canCreateQuery,
+  //   hasUrlFilter,
+  //   isScopedList,
+  //   navigate,
+  // ]);
 
   useEffect(() => {
     setFilter({
@@ -267,8 +264,15 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["queries", filter],
-    queryFn: () => queryApi.list(filter),
+    queryKey: [
+      "queries",
+      { ...filter, ...(canViewAllQueries ? {} : { my_record: user?.id }) },
+    ],
+    queryFn: () =>
+      incidentApi.list({
+        ...filter,
+        ...(canViewAllQueries ? {} : { my_record: user?.id }),
+      }),
     placeholderData: keepPreviousData,
   });
 

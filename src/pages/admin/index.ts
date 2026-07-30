@@ -36,6 +36,7 @@ export { CallCentrePage } from "./CallCentrePage";
 export { CallHistory } from "./components/CallHistory";
 export { EmailPage } from "./EmailPage";
 export { SMSPage } from "./SMSPage";
+export { CommunicationsPage } from "./CommunicationsPage";
 export { GoalsPage } from "./GoalsPage";
 export { GoalDetailPage } from "./GoalDetailPage";
 export { GoalCreatePage } from "./GoalCreatePage";

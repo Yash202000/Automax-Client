@@ -10,6 +10,7 @@ import {
   Key,
   AlertTriangle,
   Sparkles,
+  Crown,
   Download,
   Upload,
   Info,
@@ -229,7 +230,10 @@ export const RolesPage: React.FC = () => {
                         <Shield className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                        <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                          {role.is_department_manager && (
+                            <Crown className="w-4 h-4 text-indigo-500" />
+                          )}
                           {role.name}
                         </h3>
                         <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
@@ -238,7 +242,7 @@ export const RolesPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {!role.is_system && (
+                    {(!role.is_system || role.is_department_manager) && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {canUpdateRole && (
                           <button
@@ -251,13 +255,15 @@ export const RolesPage: React.FC = () => {
                             <Edit2 className="w-4 h-4" />
                           </button>
                         )}
-                        <button
-                          onClick={() => setDeleteConfirm(role.id)}
-                          className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
-                          aria-label={t("roles.deleteRole")}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {!role.is_system && (
+                          <button
+                            onClick={() => setDeleteConfirm(role.id)}
+                            className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
+                            aria-label={t("roles.deleteRole")}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -296,6 +302,14 @@ export const RolesPage: React.FC = () => {
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg shadow-sm">
                         <Sparkles className="w-3 h-3" />
                         {t("roles.systemRole")}
+                      </span>
+                    </div>
+                  )}
+                  {role.is_department_manager && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-sm">
+                        <Crown className="w-3 h-3" />
+                        {t("roles.departmentManager")}
                       </span>
                     </div>
                   )}

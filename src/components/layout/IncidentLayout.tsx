@@ -75,7 +75,9 @@ export const IncidentLayout: React.FC = () => {
   const canViewIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
   const canViewAllIncidents =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canViewRequests =
     isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW);
   const canCreateRequest =

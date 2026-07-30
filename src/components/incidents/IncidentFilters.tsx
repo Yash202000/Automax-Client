@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Filter, Settings2, Check } from "lucide-react";
-import { Button } from "../ui";
+import { Button, Input } from "../ui";
 import { MultiTreeSelect } from "../ui/MultiTreeSelect";
 import {
   workflowApi,
@@ -22,6 +22,8 @@ import {
 import { cn, getLocalizedName } from "@/lib/utils";
 import i18n from "@/i18n";
 import { useAuthStore } from "@/stores/authStore";
+import { PERMISSIONS } from "@/constants/permissions";
+import usePermissions from "@/hooks/usePermissions";
 
 // Column configuration (shared across pages)
 export interface ColumnConfig {
@@ -54,6 +56,8 @@ export interface IncidentFiltersProps {
   onResetColumns?: () => void;
   /** Whether the state filter should be disabled */
   disableStateFilter?: boolean;
+  /** Restrict state dropdown to only these state IDs (null = show all) */
+  visibleStateIds?: Set<string> | null;
   /** Whether the SLA filter should be disabled */
   disableSlaFilter?: boolean;
   /** Whether can view all incidents (affects clear filter visibility) */
@@ -79,13 +83,22 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   disableStateFilter = false,
   disableSlaFilter = false,
   canViewAllIncidents = false,
+  visibleStateIds = null,
   searchParams,
   setSearchParams,
 }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [showColumnDropdown, setShowColumnDropdown] = useState(false);
+  const [reporterPhoneInput, setReporterPhoneInput] = useState(
+    filter.reporter_phone_search || "",
+  );
+  const [momraRefNum, setMomraRefNum] = useState(filter.momra_ref || "");
   const columnConfigRef = useRef<HTMLDivElement>(null);
+  const { hasPermission, isSuperAdmin } = usePermissions();
+
+  const hasReporterPhonePermission =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_FILTER_REPORTER_PHONE);
 
   const { user } = useAuthStore();
 
@@ -139,6 +152,15 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
         return acc;
       }, []),
     [allStates],
+  );
+
+  // Filter states to only those visible in the sidebar (from stats API)
+  const filteredStates = React.useMemo(
+    () =>
+      visibleStateIds
+        ? uniqueStates.filter((s) => visibleStateIds.has(s.id))
+        : uniqueStates,
+    [uniqueStates, visibleStateIds],
   );
 
   // Transition filter data (only when a state is selected)
@@ -250,7 +272,59 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     }));
   }, [sourceData, i18n.language]);
 
+  useEffect(() => {
+    setReporterPhoneInput(filter.reporter_phone_search || "");
+  }, [filter.reporter_phone_search]);
+
+  useEffect(() => {
+    const currentValue = (filter.reporter_phone_search || "").trim();
+    const nextValue = reporterPhoneInput.trim();
+
+    if (currentValue === nextValue) return;
+
+    const timeoutId = window.setTimeout(() => {
+      onFilterChange("reporter_phone_search", nextValue || undefined);
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [reporterPhoneInput, filter.reporter_phone_search, onFilterChange]);
+
+  useEffect(() => {
+    setMomraRefNum(filter.momra_ref || "");
+  }, [filter.momra_ref]);
+
+  useEffect(() => {
+    const currentValue = (filter.momra_ref || "").trim();
+    const nextValue = momraRefNum.trim();
+
+    if (currentValue === nextValue) return;
+
+    const timeoutId = window.setTimeout(() => {
+      if (!searchParams || !setSearchParams) return;
+      const params = new URLSearchParams(searchParams);
+      // normal search cleared when momra search
+      params.delete("search");
+
+      if (nextValue) {
+        params.set("momra_ref", nextValue);
+        params.set("source", "momra");
+      } else {
+        params.delete("momra_ref");
+        params.delete("source");
+      }
+
+      params.set("page", "1");
+      setSearchParams(params);
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [momraRefNum, filter.momra_ref, onFilterChange]);
+
   const visibleColumnCount = columns?.filter((c) => c.visible).length ?? 0;
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
 
   return (
     <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
@@ -260,10 +334,29 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
           <input
             type="text"
             placeholder={t("incidents.searchPlaceholder")}
-            value={filter.search || ""}
-            onChange={(e) =>
-              onFilterChange("search", e.target.value || undefined)
-            }
+            value={searchParams?.get("search") || ""}
+            onChange={(e) => {
+              // setMomraRefNum("");
+              // onFilterChange("momra_ref", undefined);
+              // onFilterChange("source", undefined);
+              // onFilterChange("search", e.target.value || undefined);
+              const value = e.target.value;
+              setMomraRefNum("");
+              if (!searchParams || !setSearchParams) return;
+              const params = new URLSearchParams(searchParams);
+
+              params.delete("momra_ref");
+              params.delete("source");
+
+              if (value) {
+                params.set("search", value);
+              } else {
+                params.delete("search");
+              }
+
+              params.set("page", "1");
+              setSearchParams(params);
+            }}
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
           />
         </div>
@@ -404,7 +497,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               )}
             >
               <option value="">{t("common.allStates")}</option>
-              {uniqueStates.map((state: WorkflowState) => (
+              {filteredStates.map((state: WorkflowState) => (
                 <option key={state.id} value={state.id}>
                   {getLocalizedName(state)}
                 </option>
@@ -612,6 +705,39 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               ))}
             </select>
           </div>
+          {hasReporterPhonePermission ? (
+            <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                {t("common.reporterPhone", "Reporter Phone")}
+              </label>
+              <Input
+                value={reporterPhoneInput}
+                onChange={(e) => setReporterPhoneInput(e.target.value)}
+                placeholder={t(
+                  "common.reporterPhonePlaceholder",
+                  "Phone number",
+                )}
+                inputMode="tel"
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              />
+            </div>
+          ) : null}
+          {isEPM940 ? (
+            <div>
+              <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                {t("incidents.momraRefNumLabel", "MOMRA Reference Number")}
+              </label>
+              <Input
+                value={momraRefNum}
+                onChange={(e) => setMomraRefNum(e.target.value)}
+                placeholder={t(
+                  "incidents.momraRefNumPlaceholder",
+                  "Enter MOMRA reference number",
+                )}
+                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+              />
+            </div>
+          ) : null}
         </div>
       )}
     </div>

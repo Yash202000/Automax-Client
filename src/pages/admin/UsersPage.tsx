@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -27,6 +27,7 @@ import {
   Phone,
   AlertTriangle,
   Key,
+  Crown,
   EyeOff,
   ChevronDown,
   FileSpreadsheet,
@@ -45,7 +46,7 @@ import {
   locationApi,
   roleApi,
   classificationApi,
-  extensionApi,
+  // extensionApi, // Extension assignment disabled for user create/edit
 } from "../../api/admin";
 import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { useAuthStore } from "../../stores/authStore";
 import i18n from "@/i18n";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 
@@ -110,10 +112,20 @@ export const UsersPage: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const { user: currentUser } = useAuthStore();
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
   const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
+  const canPasswordReset = hasPermission(PERMISSIONS.USER_RESET_PASSWORD);
+
+  const isDepartmentManager = useMemo(
+    () =>
+      !isSuperAdmin &&
+      (currentUser?.roles || []).some((r) => r.is_department_manager),
+    [currentUser?.roles, isSuperAdmin],
+  );
+
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
@@ -160,6 +172,7 @@ export const UsersPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<UserImportResult | null>(
     null,
@@ -253,17 +266,55 @@ export const UsersPage: React.FC = () => {
 
   const clearAllFilters = () => {
     setFilterRoleIds([]);
-    setFilterDepartmentIds([]);
-    setFilterLocationIds([]);
-    setFilterClassificationIds([]);
+    if (!isDepartmentManager) {
+      setFilterDepartmentIds([]);
+      setFilterLocationIds([]);
+      setFilterClassificationIds([]);
+    }
     setPage(1);
   };
 
-  const toggleRoleId = (id: string) => {
-    setFilterRoleIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const toggleRoleId = async (id: string) => {
+    const wasSelected = filterRoleIds.includes(id);
+    const newIds = wasSelected
+      ? filterRoleIds.filter((x) => x !== id)
+      : [...filterRoleIds, id];
+    setFilterRoleIds(newIds);
     setPage(1);
+
+    if (!wasSelected) {
+      const role = rolesData?.data?.find((r) => r.id === id);
+      if (role?.is_department_manager) {
+        try {
+          const resp = await userApi.list(1, 1000, "", [id], [], [], []);
+          const users = resp.data || [];
+          console.log("[DM Scope] Users fetched:", users.length, users);
+          const deptSet = new Set<string>();
+          const classSet = new Set<string>();
+          const locSet = new Set<string>();
+          for (const u of users) {
+            if (u.departments?.length)
+              u.departments.forEach((d) => deptSet.add(d.id));
+            else if (u.department_id) deptSet.add(u.department_id);
+            if (u.classifications?.length)
+              u.classifications.forEach((c) => classSet.add(c.id));
+            if (u.locations?.length)
+              u.locations.forEach((l) => locSet.add(l.id));
+            else if (u.location_id) locSet.add(u.location_id);
+          }
+          console.log("[DM Scope] Extracted:", {
+            dept: Array.from(deptSet),
+            class: Array.from(classSet),
+            loc: Array.from(locSet),
+          });
+          if (deptSet.size) setFilterDepartmentIds(Array.from(deptSet));
+          if (classSet.size) setFilterClassificationIds(Array.from(classSet));
+          if (locSet.size) setFilterLocationIds(Array.from(locSet));
+        } catch (e) {
+          console.error("[DM Scope] Failed:", e);
+        }
+      }
+    }
   };
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
@@ -300,9 +351,39 @@ export const UsersPage: React.FC = () => {
     queryFn: () => locationApi.getTree(),
   });
 
+  const { data: managerScope } = useQuery({
+    queryKey: ["admin", "users", "manager-scope"],
+    queryFn: () => roleApi.getManagerScope(),
+    enabled: isDepartmentManager,
+  });
+
+  // Auto-set filters from department manager scope
+  useEffect(() => {
+    if (isDepartmentManager && managerScope?.data) {
+      const scope = managerScope.data;
+      if (scope.department_id) {
+        setFilterDepartmentIds([scope.department_id]);
+      }
+      if (scope.classification_id) {
+        setFilterClassificationIds([scope.classification_id]);
+      }
+      if (scope.location_id) {
+        setFilterLocationIds([scope.location_id]);
+      }
+    }
+  }, [isDepartmentManager, managerScope?.data]);
+
+  const deptManagerDepartmentId = useMemo(
+    () =>
+      isDepartmentManager && managerScope?.data?.department_id
+        ? managerScope.data.department_id
+        : undefined,
+    [isDepartmentManager, managerScope?.data],
+  );
+
   const { data: rolesData } = useQuery({
-    queryKey: ["admin", "roles"],
-    queryFn: () => roleApi.list(),
+    queryKey: ["admin", "roles", deptManagerDepartmentId],
+    queryFn: () => roleApi.list(deptManagerDepartmentId),
   });
 
   const { data: classificationsTreeData } = useQuery({
@@ -313,10 +394,16 @@ export const UsersPage: React.FC = () => {
   // Transform tree data to TreeNode format
   const transformToTreeNodes = useCallback((data: unknown[]): TreeNode[] => {
     return (data || []).map((item: unknown) => {
-      const node = item as { id: string; name: string; children?: unknown[] };
+      const node = item as {
+        id: string;
+        name: string;
+        children?: unknown[];
+        types?: string[];
+      };
       return {
         id: node.id,
         name: node.name,
+        types: node.types,
         children: node.children
           ? transformToTreeNodes(node.children)
           : undefined,
@@ -446,39 +533,40 @@ export const UsersPage: React.FC = () => {
       </p>
     ) : null;
 
-  const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
+  // Extension assignment disabled for user create/edit — not needed.
+  // const canAssignExtensions = hasPermission(PERMISSIONS.EXTENSIONS_ASSIGN);
 
-  const hasAgentRole = createFormData.role_ids.some((id) => {
-    const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
-    return role?.permissions?.some(
-      (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
-    );
-  });
-  const editHasAgentRole = formData.role_ids.some((id) => {
-    const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
-    return role?.permissions?.some(
-      (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
-    );
-  });
+  // const hasAgentRole = createFormData.role_ids.some((id) => {
+  //   const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
+  //   return role?.permissions?.some(
+  //     (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
+  //   );
+  // });
+  // const editHasAgentRole = formData.role_ids.some((id) => {
+  //   const role = (rolesData?.data as Role[])?.find((r) => r.id === id);
+  //   return role?.permissions?.some(
+  //     (p) => p.code === PERMISSIONS.DASHBOARD_CALL_CENTRE,
+  //   );
+  // });
 
-  const updateAssignExtensionMutation = useMutation({
-    mutationFn: (payload: { user_id: string; extension: string }) =>
-      extensionApi.assign(payload),
-    onSuccess: () => {
-      toast.success(
-        t("users.userUpdatedSuccessfully") + " (Extension assigned)",
-      );
-      closeModal();
-    },
-    onError: (error: any) => {
-      toast.warning(
-        t("users.userUpdatedSuccessfully") +
-          " but failed to assign extension: " +
-          getApiErrorMessage(error, "Error"),
-      );
-      closeModal();
-    },
-  });
+  // const updateAssignExtensionMutation = useMutation({
+  //   mutationFn: (payload: { user_id: string; extension: string }) =>
+  //     extensionApi.assign(payload),
+  //   onSuccess: () => {
+  //     toast.success(
+  //       t("users.userUpdatedSuccessfully") + " (Extension assigned)",
+  //     );
+  //     closeModal();
+  //   },
+  //   onError: (error: any) => {
+  //     toast.warning(
+  //       t("users.userUpdatedSuccessfully") +
+  //         " but failed to assign extension: " +
+  //         getApiErrorMessage(error, "Error"),
+  //     );
+  //     closeModal();
+  //   },
+  // });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProfileRequest }) =>
@@ -486,20 +574,23 @@ export const UsersPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 
-      if (
-        canAssignExtensions &&
-        editHasAgentRole &&
-        formData.extension &&
-        editingUser?.id
-      ) {
-        updateAssignExtensionMutation.mutate({
-          user_id: editingUser.id,
-          extension: formData.extension,
-        });
-      } else {
-        toast.success(t("users.userUpdatedSuccessfully"));
-        closeModal();
-      }
+      // Extension assignment disabled — always take the non-assignment path.
+      // if (
+      //   canAssignExtensions &&
+      //   editHasAgentRole &&
+      //   formData.extension &&
+      //   editingUser?.id
+      // ) {
+      //   updateAssignExtensionMutation.mutate({
+      //     user_id: editingUser.id,
+      //     extension: formData.extension,
+      //   });
+      // } else {
+      //   toast.success(t("users.userUpdatedSuccessfully"));
+      //   closeModal();
+      // }
+      toast.success(t("users.userUpdatedSuccessfully"));
+      closeModal();
     },
     onError: (error: any) => {
       const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
@@ -507,60 +598,63 @@ export const UsersPage: React.FC = () => {
     },
   });
 
-  const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
-    queryKey: ["extensions"],
-    queryFn: () => extensionApi.list(),
-    enabled: canAssignExtensions && hasAgentRole && isCreateModalOpen,
-  });
+  // const { data: extensionsData, isLoading: extensionsLoading } = useQuery({
+  //   queryKey: ["extensions"],
+  //   queryFn: () => extensionApi.list(),
+  //   enabled: canAssignExtensions && hasAgentRole && isCreateModalOpen,
+  // });
 
-  const availableExtensions = (extensionsData?.data || []).filter(
-    (ext: any) => ext.status === "available",
-  );
+  // const availableExtensions = (extensionsData?.data || []).filter(
+  //   (ext: any) => ext.status === "available",
+  // );
 
-  const assignExtensionMutation = useMutation({
-    mutationFn: (payload: { user_id: string; extension: string }) =>
-      extensionApi.assign(payload),
-    onSuccess: () => {
-      toast.success(
-        t("users.userCreatedSuccessfully") + " (Extension assigned)",
-      );
-      closeCreateModal();
-    },
-    onError: (error: any) => {
-      toast.warning(
-        t("users.userCreatedSuccessfully") +
-          " but failed to assign extension: " +
-          getApiErrorMessage(error, "Error"),
-      );
-      closeCreateModal();
-    },
-  });
+  // const assignExtensionMutation = useMutation({
+  //   mutationFn: (payload: { user_id: string; extension: string }) =>
+  //     extensionApi.assign(payload),
+  //   onSuccess: () => {
+  //     toast.success(
+  //       t("users.userCreatedSuccessfully") + " (Extension assigned)",
+  //     );
+  //     closeCreateModal();
+  //   },
+  //   onError: (error: any) => {
+  //     toast.warning(
+  //       t("users.userCreatedSuccessfully") +
+  //         " but failed to assign extension: " +
+  //         getApiErrorMessage(error, "Error"),
+  //     );
+  //     closeCreateModal();
+  //   },
+  // });
 
   const createMutation = useMutation({
     mutationFn: (params: { data: typeof createFormData; avatar?: File }) =>
       userApi.create(params.data, params.avatar),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 
-      const newUserId =
-        response.data?.id ||
-        (response as any)?.id ||
-        (response as any)?.data?.user?.id;
+      // Extension assignment disabled — always take the non-assignment path.
+      // const newUserId =
+      //   response.data?.id ||
+      //   (response as any)?.id ||
+      //   (response as any)?.data?.user?.id;
 
-      if (
-        canAssignExtensions &&
-        hasAgentRole &&
-        createFormData.extension &&
-        newUserId
-      ) {
-        assignExtensionMutation.mutate({
-          user_id: newUserId,
-          extension: createFormData.extension,
-        });
-      } else {
-        toast.success(t("users.userCreatedSuccessfully"));
-        closeCreateModal();
-      }
+      // if (
+      //   canAssignExtensions &&
+      //   hasAgentRole &&
+      //   createFormData.extension &&
+      //   newUserId
+      // ) {
+      //   assignExtensionMutation.mutate({
+      //     user_id: newUserId,
+      //     extension: createFormData.extension,
+      //   });
+      // } else {
+      //   toast.success(t("users.userCreatedSuccessfully"));
+      //   closeCreateModal();
+      // }
+      toast.success(t("users.userCreatedSuccessfully"));
+      closeCreateModal();
     },
     onError: (error: any) => {
       const errorMessage = getApiErrorMessage(error, t("users.createFailed"));
@@ -955,7 +1049,6 @@ export const UsersPage: React.FC = () => {
       [
         "username (Required)",
         "email (Required)",
-        "password (Required)",
         "first_name (Optional)",
         "last_name (Optional)",
         "phone (Optional)",
@@ -965,7 +1058,6 @@ export const UsersPage: React.FC = () => {
     ws["!cols"] = [
       { wch: 20 },
       { wch: 30 },
-      { wch: 20 },
       { wch: 20 },
       { wch: 20 },
       { wch: 20 },
@@ -1011,7 +1103,7 @@ export const UsersPage: React.FC = () => {
   };
 
   const validateImportRows = (
-    rows: Array<{ username?: string; email?: string; password?: string }>,
+    rows: Array<{ username?: string; email?: string }>,
   ): string[] => {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1031,11 +1123,6 @@ export const UsersPage: React.FC = () => {
       } else if (!usernameRegex.test(row.username.trim())) {
         errors.push(
           `${rowLabel}: "${row.username}" - ${t("auth.usernameInvalidChars", { defaultValue: "Username can only contain letters, numbers, and underscores" })}`,
-        );
-      }
-      if (!row.password?.trim()) {
-        errors.push(
-          `${rowLabel}: ${t("users.importPasswordRequired", { defaultValue: "Password is required" })}`,
         );
       }
       if (!row.email?.trim()) {
@@ -1089,7 +1176,6 @@ export const UsersPage: React.FC = () => {
       let jsonRows: Array<{
         username: string;
         email: string;
-        password: string;
         first_name: string;
         last_name: string;
         phone: string;
@@ -1124,7 +1210,6 @@ export const UsersPage: React.FC = () => {
         jsonRows = normalizedRows.map((row) => ({
           username: row.username || "",
           email: row.email || "",
-          password: row.password || "",
           first_name: row.first_name || "",
           last_name: row.last_name || "",
           phone: row.phone || "",
@@ -1170,9 +1255,6 @@ export const UsersPage: React.FC = () => {
           rowErrors.push(
             `Row ${rowNum}: "${row.username || ""}" - Invalid username`,
           );
-        }
-        if (!row.password?.trim()) {
-          rowErrors.push(`Row ${rowNum}: Password is required`);
         }
 
         if (rowErrors.length > 0) {
@@ -1263,39 +1345,78 @@ export const UsersPage: React.FC = () => {
             {t("users.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
-            onClick={handleExport}
-            isLoading={isExporting}
-          >
-            {isExporting
-              ? t("common.exporting")
-              : t("users.exportExcel", { defaultValue: "Export Excel" })}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={handleExportJson}
-            isLoading={isExporting}
-          >
-            {isExporting
-              ? t("common.exporting")
-              : t("users.exportJson", { defaultValue: "Export JSON" })}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
-            onClick={handleDownloadTemplate}
-          >
-            {t("users.downloadTemplate", {
-              defaultValue: "Download User Import Template",
-            })}
-          </Button>
+        <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3">
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<MoreHorizontal className="w-4 h-4" />}
+              rightIcon={
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 transition-transform",
+                    isActionsMenuOpen && "rotate-180",
+                  )}
+                />
+              }
+              onClick={() => setIsActionsMenuOpen((v) => !v)}
+            >
+              {t("common.moreActions", { defaultValue: "More Actions" })}
+            </Button>
+            {isActionsMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-[60]"
+                  onClick={() => setIsActionsMenuOpen(false)}
+                />
+                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-72 bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] py-1.5 z-[70] animate-scale-in origin-top-right">
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleExport();
+                    }}
+                    disabled={isExporting}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {isExporting
+                      ? t("common.exporting")
+                      : t("users.exportExcel", {
+                          defaultValue: "Export Excel",
+                        })}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleExportJson();
+                    }}
+                    disabled={isExporting}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    {isExporting
+                      ? t("common.exporting")
+                      : t("users.exportJson", {
+                          defaultValue: "Export JSON",
+                        })}
+                  </button>
+                  <div className="my-1 border-t border-[hsl(var(--border))]" />
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleDownloadTemplate();
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {t("users.downloadTemplate", {
+                      defaultValue: "Download User Import Template",
+                    })}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -1436,6 +1557,9 @@ export const UsersPage: React.FC = () => {
                     {filterRoleIds.includes(role.id) && (
                       <Check className="inline w-3 h-3 mr-1" />
                     )}
+                    {role.is_department_manager && (
+                      <Crown className="inline w-3 h-3 mr-1 text-indigo-500" />
+                    )}
                     {role.name}
                   </button>
                 ))}
@@ -1461,7 +1585,7 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterDepartmentIds.length > 0 && (
+                  {filterDepartmentIds.length > 0 && !isDepartmentManager && (
                     <button
                       onClick={() => {
                         setFilterDepartmentIds([]);
@@ -1472,28 +1596,43 @@ export const UsersPage: React.FC = () => {
                       {t("common.clear")}
                     </button>
                   )}
+                  {isDepartmentManager && filterDepartmentIds.length > 0 && (
+                    <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                      {t("users.scopeLocked")}
+                    </span>
+                  )}
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder={t("incidents.searchDepartments")}
-                    value={deptSearch}
-                    onChange={(e) => setDeptSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                {!isDepartmentManager && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      placeholder={t("incidents.searchDepartments")}
+                      value={deptSearch}
+                      onChange={(e) => setDeptSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                )}
+                <div
+                  className={
+                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
+                  }
+                >
+                  <HierarchicalTreeSelect
+                    data={filteredDepartmentsTree}
+                    selectedIds={filterDepartmentIds}
+                    onSelectionChange={(ids) => {
+                      if (!isDepartmentManager) {
+                        setFilterDepartmentIds(ids);
+                        setPage(1);
+                      }
+                    }}
+                    emptyMessage="No departments found"
+                    colorScheme="accent"
+                    maxHeight="220px"
                   />
                 </div>
-                <HierarchicalTreeSelect
-                  data={filteredDepartmentsTree}
-                  selectedIds={filterDepartmentIds}
-                  onSelectionChange={(ids) => {
-                    setFilterDepartmentIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No departments found"
-                  colorScheme="accent"
-                  maxHeight="220px"
-                />
               </div>
 
               {/* Locations */}
@@ -1507,7 +1646,7 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterLocationIds.length > 0 && (
+                  {filterLocationIds.length > 0 && !isDepartmentManager && (
                     <button
                       onClick={() => {
                         setFilterLocationIds([]);
@@ -1518,28 +1657,43 @@ export const UsersPage: React.FC = () => {
                       {t("common.clear")}
                     </button>
                   )}
+                  {isDepartmentManager && filterLocationIds.length > 0 && (
+                    <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                      {t("users.scopeLocked")}
+                    </span>
+                  )}
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder={t("users.searchLocations")}
-                    value={locSearch}
-                    onChange={(e) => setLocSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                {!isDepartmentManager && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      placeholder={t("users.searchLocations")}
+                      value={locSearch}
+                      onChange={(e) => setLocSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                )}
+                <div
+                  className={
+                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
+                  }
+                >
+                  <HierarchicalTreeSelect
+                    data={filteredLocationsTree}
+                    selectedIds={filterLocationIds}
+                    onSelectionChange={(ids) => {
+                      if (!isDepartmentManager) {
+                        setFilterLocationIds(ids);
+                        setPage(1);
+                      }
+                    }}
+                    emptyMessage="No locations found"
+                    colorScheme="success"
+                    maxHeight="220px"
                   />
                 </div>
-                <HierarchicalTreeSelect
-                  data={filteredLocationsTree}
-                  selectedIds={filterLocationIds}
-                  onSelectionChange={(ids) => {
-                    setFilterLocationIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No locations found"
-                  colorScheme="success"
-                  maxHeight="220px"
-                />
               </div>
 
               {/* Classifications */}
@@ -1554,39 +1708,56 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterClassificationIds.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setFilterClassificationIds([]);
-                        setPage(1);
-                      }}
-                      className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                    >
-                      {t("common.clear")}
-                    </button>
-                  )}
+                  {filterClassificationIds.length > 0 &&
+                    !isDepartmentManager && (
+                      <button
+                        onClick={() => {
+                          setFilterClassificationIds([]);
+                          setPage(1);
+                        }}
+                        className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                      >
+                        {t("common.clear")}
+                      </button>
+                    )}
+                  {isDepartmentManager &&
+                    filterClassificationIds.length > 0 && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                        {t("users.scopeLocked")}
+                      </span>
+                    )}
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                  <input
-                    type="text"
-                    placeholder={t("users.searchClassifications")}
-                    value={classSearch}
-                    onChange={(e) => setClassSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                {!isDepartmentManager && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      type="text"
+                      placeholder={t("users.searchClassifications")}
+                      value={classSearch}
+                      onChange={(e) => setClassSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                )}
+                <div
+                  className={
+                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
+                  }
+                >
+                  <HierarchicalTreeSelect
+                    data={filteredClassificationsTree}
+                    selectedIds={filterClassificationIds}
+                    onSelectionChange={(ids) => {
+                      if (!isDepartmentManager) {
+                        setFilterClassificationIds(ids);
+                        setPage(1);
+                      }
+                    }}
+                    emptyMessage="No classifications found"
+                    colorScheme="warning"
+                    maxHeight="220px"
                   />
                 </div>
-                <HierarchicalTreeSelect
-                  data={filteredClassificationsTree}
-                  selectedIds={filterClassificationIds}
-                  onSelectionChange={(ids) => {
-                    setFilterClassificationIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No classifications found"
-                  colorScheme="warning"
-                  maxHeight="220px"
-                />
               </div>
             </div>
           </div>
@@ -1744,8 +1915,11 @@ export const UsersPage: React.FC = () => {
                           {user.roles?.slice(0, 2).map((role) => (
                             <span
                               key={role.id}
-                              className="px-2 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg"
+                              className="px-2 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg inline-flex items-center gap-1"
                             >
+                              {role.is_department_manager && (
+                                <Crown className="w-3 h-3 text-indigo-500" />
+                              )}
                               {role.name}
                             </span>
                           ))}
@@ -2087,154 +2261,156 @@ export const UsersPage: React.FC = () => {
                 </div>
 
                 {/* Password Reset */}
-                {canUpdateUser && !editingUser?.is_ad_user && (
-                  <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPasswordForm(!showPasswordForm);
-                        setNewPassword("");
-                        setConfirmPassword("");
-                      }}
-                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Key className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span>
-                          {t("users.resetPassword", {
-                            defaultValue: "Reset Password",
-                          })}
-                        </span>
-                      </div>
-                      <ChevronDown
-                        className={cn(
-                          "w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform",
-                          showPasswordForm && "rotate-180",
-                        )}
-                      />
-                    </button>
-                    {showPasswordForm && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-[hsl(var(--border))] pt-3">
-                        <div>
-                          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                            {t("users.newPassword", {
-                              defaultValue: "New Password",
+                {canPasswordReset &&
+                  canUpdateUser &&
+                  !editingUser?.is_ad_user && (
+                    <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPasswordForm(!showPasswordForm);
+                          setNewPassword("");
+                          setConfirmPassword("");
+                        }}
+                        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Key className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                          <span>
+                            {t("users.resetPassword", {
+                              defaultValue: "Reset Password",
                             })}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showNewPassword ? "text" : "password"}
-                              placeholder="••••••••"
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              className="w-full px-4 py-2.5 pr-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                          </span>
+                        </div>
+                        <ChevronDown
+                          className={cn(
+                            "w-4 h-4 text-[hsl(var(--muted-foreground))] transition-transform",
+                            showPasswordForm && "rotate-180",
+                          )}
+                        />
+                      </button>
+                      {showPasswordForm && (
+                        <div className="px-4 pb-4 space-y-3 border-t border-[hsl(var(--border))] pt-3">
+                          <div>
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                              {t("users.newPassword", {
+                                defaultValue: "New Password",
+                              })}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showNewPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 pr-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowNewPassword(!showNewPassword)
+                                }
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                              >
+                                {showNewPassword ? (
+                                  <EyeOff className="w-4 h-4" />
+                                ) : (
+                                  <Eye className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                              {t("users.confirmPassword", {
+                                defaultValue: "Confirm Password",
+                              })}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={confirmPassword}
+                                onChange={(e) =>
+                                  setConfirmPassword(e.target.value)
+                                }
+                                className="w-full px-4 py-2.5 pr-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowConfirmPassword(!showConfirmPassword)
+                                }
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                              >
+                                {showConfirmPassword ? (
+                                  <EyeOff className="w-4 h-4" />
+                                ) : (
+                                  <Eye className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                          {newPassword && (
+                            <PasswordChecklist
+                              requirements={adminResetPasswordRequirements}
                             />
-                            <button
+                          )}
+                          <div className="flex justify-end">
+                            <Button
                               type="button"
-                              onClick={() =>
-                                setShowNewPassword(!showNewPassword)
+                              size="sm"
+                              disabled={
+                                !isAdminResetPasswordValid ||
+                                !doAdminResetPasswordsMatch ||
+                                resetPasswordMutation.isPending
                               }
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                              onClick={() => {
+                                if (!newPassword) {
+                                  toast.error(
+                                    t("users.passwordRequired", {
+                                      defaultValue: "Password is required",
+                                    }),
+                                  );
+                                  return;
+                                }
+                                if (!isAdminResetPasswordValid) {
+                                  toast.error(t("users.passwordPolicy"));
+                                  return;
+                                }
+                                if (newPassword !== confirmPassword) {
+                                  toast.error(
+                                    t("users.passwordsDoNotMatch", {
+                                      defaultValue: "Passwords do not match",
+                                    }),
+                                  );
+                                  return;
+                                }
+                                resetPasswordMutation.mutate({
+                                  id: editingUser!.id,
+                                  newPassword,
+                                });
+                              }}
+                              isLoading={resetPasswordMutation.isPending}
+                              leftIcon={
+                                !resetPasswordMutation.isPending ? (
+                                  <Key className="w-3.5 h-3.5" />
+                                ) : undefined
+                              }
                             >
-                              {showNewPassword ? (
-                                <EyeOff className="w-4 h-4" />
-                              ) : (
-                                <Eye className="w-4 h-4" />
-                              )}
-                            </button>
+                              {resetPasswordMutation.isPending
+                                ? t("users.resetting", {
+                                    defaultValue: "Resetting...",
+                                  })
+                                : t("users.updatePassword", {
+                                    defaultValue: "Update Password",
+                                  })}
+                            </Button>
                           </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                            {t("users.confirmPassword", {
-                              defaultValue: "Confirm Password",
-                            })}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showConfirmPassword ? "text" : "password"}
-                              placeholder="••••••••"
-                              value={confirmPassword}
-                              onChange={(e) =>
-                                setConfirmPassword(e.target.value)
-                              }
-                              className="w-full px-4 py-2.5 pr-10 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setShowConfirmPassword(!showConfirmPassword)
-                              }
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                            >
-                              {showConfirmPassword ? (
-                                <EyeOff className="w-4 h-4" />
-                              ) : (
-                                <Eye className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                        {newPassword && (
-                          <PasswordChecklist
-                            requirements={adminResetPasswordRequirements}
-                          />
-                        )}
-                        <div className="flex justify-end">
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={
-                              !isAdminResetPasswordValid ||
-                              !doAdminResetPasswordsMatch ||
-                              resetPasswordMutation.isPending
-                            }
-                            onClick={() => {
-                              if (!newPassword) {
-                                toast.error(
-                                  t("users.passwordRequired", {
-                                    defaultValue: "Password is required",
-                                  }),
-                                );
-                                return;
-                              }
-                              if (!isAdminResetPasswordValid) {
-                                toast.error(t("users.passwordPolicy"));
-                                return;
-                              }
-                              if (newPassword !== confirmPassword) {
-                                toast.error(
-                                  t("users.passwordsDoNotMatch", {
-                                    defaultValue: "Passwords do not match",
-                                  }),
-                                );
-                                return;
-                              }
-                              resetPasswordMutation.mutate({
-                                id: editingUser!.id,
-                                newPassword,
-                              });
-                            }}
-                            isLoading={resetPasswordMutation.isPending}
-                            leftIcon={
-                              !resetPasswordMutation.isPending ? (
-                                <Key className="w-3.5 h-3.5" />
-                              ) : undefined
-                            }
-                          >
-                            {resetPasswordMutation.isPending
-                              ? t("users.resetting", {
-                                  defaultValue: "Resetting...",
-                                })
-                              : t("users.updatePassword", {
-                                  defaultValue: "Update Password",
-                                })}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
 
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
@@ -2315,6 +2491,7 @@ export const UsersPage: React.FC = () => {
                   emptyMessage={t("users.noClassificationsAvailable")}
                   colorScheme="warning"
                   maxHeight="180px"
+                  hierarchyType="classification"
                 />
 
                 {/* Roles */}
@@ -2341,12 +2518,15 @@ export const UsersPage: React.FC = () => {
                             type="button"
                             onClick={() => toggleRole(role.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-1",
                               formData.role_ids.includes(role.id)
                                 ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary)/0.2)]"
                                 : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]",
                             )}
                           >
+                            {role.is_department_manager && (
+                              <Crown className="w-3.5 h-3.5 text-indigo-500" />
+                            )}
                             {role.name}
                           </button>
                         ))
@@ -2355,7 +2535,7 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Extension */}
+                {/* Extension assignment disabled for user create/edit.
                 {canAssignExtensions && editHasAgentRole && (
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2392,6 +2572,7 @@ export const UsersPage: React.FC = () => {
                     </select>
                   </div>
                 )}
+                */}
 
                 {/* Status */}
                 <div>
@@ -2775,6 +2956,7 @@ export const UsersPage: React.FC = () => {
                   emptyMessage={t("users.noClassificationsAvailable")}
                   colorScheme="warning"
                   maxHeight="180px"
+                  hierarchyType="classification"
                 />
 
                 {/* Roles */}
@@ -2801,12 +2983,15 @@ export const UsersPage: React.FC = () => {
                             type="button"
                             onClick={() => toggleCreateRole(role.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                              "px-3 py-1.5 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-1",
                               createFormData.role_ids.includes(role.id)
                                 ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary)/0.2)]"
                                 : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]",
                             )}
                           >
+                            {role.is_department_manager && (
+                              <Crown className="w-3.5 h-3.5 text-indigo-500" />
+                            )}
                             {role.name}
                           </button>
                         ))
@@ -2815,7 +3000,7 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Extension */}
+                {/* Extension assignment disabled for user create/edit.
                 {canAssignExtensions && hasAgentRole && (
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -2843,6 +3028,7 @@ export const UsersPage: React.FC = () => {
                     </select>
                   </div>
                 )}
+                */}
 
                 {createFormErrors?.form && (
                   <div className=" flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
@@ -3103,7 +3289,10 @@ export const UsersPage: React.FC = () => {
                   </p>
                   <p className="text-sm text-[hsl(var(--foreground))]">
                     {viewingUser.phone ? (
-                      <CallablePhone number={viewingUser.phone} className="text-sm" />
+                      <CallablePhone
+                        number={viewingUser.phone}
+                        className="text-sm"
+                      />
                     ) : (
                       t("users.notProvided")
                     )}
@@ -3241,8 +3430,11 @@ export const UsersPage: React.FC = () => {
                     viewingUser.roles.map((role) => (
                       <span
                         key={role.id}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] inline-flex items-center gap-1"
                       >
+                        {role.is_department_manager && (
+                          <Crown className="w-3 h-3 text-indigo-500" />
+                        )}
                         {role.name}
                       </span>
                     ))

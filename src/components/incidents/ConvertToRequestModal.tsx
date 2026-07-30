@@ -78,6 +78,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   const [showRequestSearch, setShowRequestSearch] = useState(true);
   const [searchedRequests, setSearchedRequests] = useState<Incident[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [convertableRequestStateId, setConvertableRequestStateId] = useState<
+    string | null
+  >(null);
 
   // Query for available transitions
   const { data: transitionsData } = useQuery({
@@ -122,6 +125,12 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         (item, index, self) =>
           index === self.findIndex((t) => t.id === item.id),
       );
+      if (unique?.length && unique[0]?.states?.length) {
+        const convertableRequestState =
+          unique[0].states.find((x: any) => x.state_type === "initial")?.id ||
+          "";
+        setConvertableRequestStateId(convertableRequestState);
+      }
       return { success: true, data: unique };
     },
     enabled: isOpen && currentStep === "workflow",
@@ -225,6 +234,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         const params: any = {
           record_type: "request",
           limit: 20,
+          current_state_id: convertableRequestStateId,
         };
         if (requestSearch && requestSearch.length >= 2) {
           params.search = requestSearch;

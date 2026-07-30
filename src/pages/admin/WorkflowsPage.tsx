@@ -1,41 +1,35 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Plus,
-  Edit2,
   Trash2,
   X,
   Check,
   GitBranch,
-  Copy,
   Settings2,
   AlertTriangle,
-  Circle,
-  ArrowRight,
-  Tag,
-  Sparkles,
   RotateCcw,
   Archive,
   ChevronDown,
   ChevronUp,
-  Download,
   Upload,
 } from "lucide-react";
-import { workflowApi, classificationApi } from "../../api/admin";
+import { workflowApi } from "../../api/admin";
 import type {
   Workflow,
-  Classification,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
+  WorkflowFilter,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { validateName, validateRequired } from "@/utils/validations";
+import { WorkflowFilters } from "@/components/workflow";
+import WorkflowCard from "@/components/workflow/WorkflowCard";
 
 interface WorkflowFormData {
   name: string;
@@ -56,8 +50,7 @@ const initialFormData: WorkflowFormData = {
 };
 
 export const WorkflowsPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,15 +71,41 @@ export const WorkflowsPage: React.FC = () => {
     Record<string, string>
   >({});
 
+  const defaultFilter: WorkflowFilter = {
+    page: 1,
+    limit: 20,
+    search: "",
+  };
+  const [filter, setFilter] = useState<WorkflowFilter>(defaultFilter);
+  const onFilterChange = <K extends keyof WorkflowFilter>(
+    key: K,
+    value: WorkflowFilter[K],
+  ) => {
+    setFilter((prev) => {
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
+  };
+
+  const onClearFilters = () => {
+    setFilter(defaultFilter);
+  };
+
+  const hasActiveFilters = Object.entries(filter)
+    .filter(([key]) => !["page", "limit"].includes(key))
+    .some(([, value]) => value !== "" && value !== null && value !== undefined);
+
   const { data: workflowsData, isLoading } = useQuery({
-    queryKey: ["admin", "workflows"],
-    queryFn: () => workflowApi.list(),
+    queryKey: ["admin", "workflows", filter],
+    queryFn: () => workflowApi.listWithFilters(filter),
   });
 
-  const { data: classificationsData } = useQuery({
-    queryKey: ["admin", "classifications", "tree"],
-    queryFn: () => classificationApi.getTree(),
-  });
+  // const { data: classificationsData } = useQuery({
+  //   queryKey: ["admin", "classifications", "tree"],
+  //   queryFn: () => classificationApi.getTree(),
+  // });
 
   const { data: deletedWorkflowsData, isLoading: isLoadingDeleted } = useQuery({
     queryKey: ["admin", "workflows", "deleted"],
@@ -316,34 +335,34 @@ export const WorkflowsPage: React.FC = () => {
     }
   };
 
-  const toggleClassification = (classId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      classification_ids: prev.classification_ids.includes(classId)
-        ? prev.classification_ids.filter((id) => id !== classId)
-        : [...prev.classification_ids, classId],
-    }));
-  };
+  // const toggleClassification = (classId: string) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     classification_ids: prev.classification_ids.includes(classId)
+  //       ? prev.classification_ids.filter((id) => id !== classId)
+  //       : [...prev.classification_ids, classId],
+  //   }));
+  // };
 
-  const flattenClassifications = (
-    classifications: Classification[],
-  ): Classification[] => {
-    const result: Classification[] = [];
-    const flatten = (items: Classification[], level = 0) => {
-      for (const item of items) {
-        result.push({ ...item, level });
-        if (item.children && item.children.length > 0) {
-          flatten(item.children, level + 1);
-        }
-      }
-    };
-    flatten(classifications);
-    return result;
-  };
+  // const flattenClassifications = (
+  //   classifications: Classification[],
+  // ): Classification[] => {
+  //   const result: Classification[] = [];
+  //   const flatten = (items: Classification[], level = 0) => {
+  //     for (const item of items) {
+  //       result.push({ ...item, level });
+  //       if (item.children && item.children.length > 0) {
+  //         flatten(item.children, level + 1);
+  //       }
+  //     }
+  //   };
+  //   flatten(classifications);
+  //   return result;
+  // };
 
-  const flatClassifications = classificationsData?.data
-    ? flattenClassifications(classificationsData.data)
-    : [];
+  // const flatClassifications = classificationsData?.data
+  //   ? flattenClassifications(classificationsData.data)
+  //   : [];
 
   const getWorkflowGradient = (workflow: Workflow) => {
     if (workflow.is_default) return "from-amber-500 to-orange-500";
@@ -375,6 +394,7 @@ export const WorkflowsPage: React.FC = () => {
             {t("workflows.subtitle")}
           </p>
         </div>
+
         {canCreateWorkflow && (
           <div className="flex gap-2">
             <Button
@@ -393,6 +413,14 @@ export const WorkflowsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* SEARCH AND FILTER */}
+      <WorkflowFilters
+        filter={filter}
+        onFilterChange={onFilterChange}
+        onClearFilters={onClearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Workflows Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -416,154 +444,15 @@ export const WorkflowsPage: React.FC = () => {
               </div>
             ))
           : workflowsData?.data?.map((workflow: Workflow) => (
-              <div
+              <WorkflowCard
                 key={workflow.id}
-                className="group relative bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 hover:shadow-xl hover:shadow-[hsl(var(--foreground)/0.05)] hover:border-[hsl(var(--border))] transition-all duration-300"
-              >
-                {/* Gradient decoration */}
-                <div
-                  className={cn(
-                    "absolute top-0 right-0 w-24 h-24 bg-gradient-to-br opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity",
-                    getWorkflowGradient(workflow),
-                  )}
-                />
-
-                <div className="relative">
-                  <div className="flex items-start  justify-between mb-4">
-                    <div className="flex overflow-hidden whitespace-nowrap  group-hover:max-w-[175px] items-center gap-3">
-                      <div
-                        className={cn(
-                          "w-12 h-12 bg-gradient-to-br rounded-xl flex shrink-0 items-center justify-center shadow-lg",
-                          getWorkflowGradient(workflow),
-                        )}
-                      >
-                        <GitBranch className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="min-w-0 group-hover:max-w-[175px] ">
-                        <h3 className="group-hover:truncate text-lg font-semibold text-[hsl(var(--foreground))]">
-                          {i18n.language === "ar" && workflow.name_ar
-                            ? workflow.name_ar
-                            : workflow.name}
-                        </h3>
-                        <p className="group-hover:truncate text-sm text-[hsl(var(--muted-foreground))] font-mono">
-                          {workflow.code}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="items-center gap-1 hidden group-hover:flex justify-end shrink-0">
-                      <button
-                        onClick={() => navigate(`/workflows/${workflow.id}`)}
-                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
-                        title={t("workflows.designWorkflow")}
-                      >
-                        <Settings2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(workflow)}
-                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] rounded-lg transition-colors"
-                        title={t("common.edit")}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => duplicateMutation.mutate(workflow.id)}
-                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                        title={t("workflows.duplicateWorkflow")}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          exportMutation.mutate(workflow.id);
-                        }}
-                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-colors"
-                        title={t("workflows.exportWorkflow")}
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(workflow.id)}
-                        className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg transition-colors"
-                        title={t("common.delete")}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
-                    {i18n.language === "ar" && workflow.description_ar
-                      ? workflow.description_ar
-                      : workflow.description || t("workflows.noDescription")}
-                  </p>
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Circle className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {workflow.states_count || 0} {t("workflows.states")}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {workflow.transitions_count || 0}{" "}
-                        {t("workflows.transitions")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Classifications */}
-                  <div className="pt-4 border-t border-[hsl(var(--border))]">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Tag className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                      <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                        {workflow.classifications?.length || 0}{" "}
-                        {t("workflows.classifications")}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {workflow.classifications
-                        ?.slice(0, 3)
-                        .map((classification) => (
-                          <span
-                            key={classification.id}
-                            className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg"
-                          >
-                            {i18n.language === "ar" && classification.name_ar
-                              ? classification.name_ar
-                              : classification.name}
-                          </span>
-                        ))}
-                      {(workflow.classifications?.length || 0) > 3 && (
-                        <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
-                          {t("workflows.moreClassifications", {
-                            count: workflow.classifications!.length - 3,
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Badges */}
-                  <div className="flex items-center gap-2 mt-4">
-                    {workflow.is_default && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg shadow-sm">
-                        <Sparkles className="w-3 h-3" />
-                        {t("workflows.default")}
-                      </span>
-                    )}
-                    {!workflow.is_active && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-lg">
-                        {t("workflows.inactive")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+                workflow={workflow}
+                onEdit={openEditModal}
+                getWorkflowGradient={getWorkflowGradient}
+                onDelete={setDeleteConfirm}
+                onDuplicate={(id) => duplicateMutation.mutate(id)}
+                onExport={(id) => exportMutation.mutate(id)}
+              />
             ))}
       </div>
 
@@ -930,68 +819,70 @@ export const WorkflowsPage: React.FC = () => {
                     </div>
 
                     {/* Classifications Section - Only shown in edit mode */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {t("workflows.classificationsLabel")}
-                        </label>
-                        <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
-                          {formData.classification_ids.length}{" "}
-                          {t("workflows.selected")}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                        {t("workflows.assignClassifications")}
-                      </p>
+                    {/* { (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.classificationsLabel")}
+                          </label>
+                          <span className="px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg">
+                            {formData.classification_ids.length}{" "}
+                            {t("workflows.selected")}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                          {t("workflows.assignClassifications")}
+                        </p>
 
-                      <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
-                        {flatClassifications.length === 0 ? (
-                          <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
-                            {t("workflows.noClassifications")}
-                          </div>
-                        ) : (
-                          <div className="p-3 space-y-2">
-                            {flatClassifications.map((classification) => (
-                              <label
-                                key={classification.id}
-                                className={cn(
-                                  "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
-                                  formData.classification_ids.includes(
-                                    classification.id,
-                                  )
-                                    ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
-                                    : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]",
-                                )}
-                                style={{
-                                  paddingLeft: `${(classification.level || 0) * 16 + 12}px`,
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={formData.classification_ids.includes(
-                                    classification.id,
+                        <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                          {flatClassifications.length === 0 ? (
+                            <div className="p-6 text-center text-[hsl(var(--muted-foreground))] text-sm">
+                              {t("workflows.noClassifications")}
+                            </div>
+                          ) : (
+                            <div className="p-3 space-y-2">
+                              {flatClassifications.map((classification) => (
+                                <label
+                                  key={classification.id}
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
+                                    formData.classification_ids.includes(
+                                      classification.id,
+                                    )
+                                      ? "bg-[hsl(var(--primary)/0.05)] border-2 border-[hsl(var(--primary)/0.3)]"
+                                      : "bg-[hsl(var(--background))] border-2 border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground)/0.3)]",
                                   )}
-                                  onChange={() =>
-                                    toggleClassification(classification.id)
-                                  }
-                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-sm font-medium text-[hsl(var(--foreground))] block truncate">
-                                    {classification.name}
-                                  </span>
-                                  {classification.description && (
-                                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                      {classification.description}
+                                  style={{
+                                    paddingLeft: `${(classification.level || 0) * 16 + 12}px`,
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.classification_ids.includes(
+                                      classification.id,
+                                    )}
+                                    onChange={() =>
+                                      toggleClassification(classification.id)
+                                    }
+                                    className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--primary))]"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-sm font-medium text-[hsl(var(--foreground))] block truncate">
+                                      {classification.name}
                                     </span>
-                                  )}
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        )}
+                                    {classification.description && (
+                                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                        {classification.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )} */}
                   </>
                 )}
               </div>

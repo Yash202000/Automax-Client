@@ -233,6 +233,11 @@ const EmailPage = lazy(() =>
 const SMSPage = lazy(() =>
   import("./pages/admin/SMSPage").then((m) => ({ default: m.SMSPage })),
 );
+const CommunicationsPage = lazy(() =>
+  import("./pages/admin/CommunicationsPage").then((m) => ({
+    default: m.CommunicationsPage,
+  })),
+);
 const GoalsPage = lazy(() =>
   import("./pages/admin/GoalsPage").then((m) => ({ default: m.GoalsPage })),
 );
@@ -326,6 +331,16 @@ const KpiDictionaryFormAwardPage = lazy(() =>
     default: m.KpiDictionaryFormAwardPage,
   })),
 );
+const KpiCardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiCardPage").then((m) => ({
+    default: m.KpiCardPage,
+  })),
+);
+const KpiSingleDashboardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiSingleDashboardPage").then((m) => ({
+    default: m.KpiSingleDashboardPage,
+  })),
+);
 const KpiPerformancePage = lazy(() =>
   import("./pages/admin/kpi/KpiPerformancePage").then((m) => ({
     default: m.KpiPerformancePage,
@@ -364,6 +379,12 @@ const KpiReportPage = lazy(() =>
 const KpiPerformanceBandsPage = lazy(() =>
   import("./pages/admin/kpi/KpiPerformanceBandsPage").then((m) => ({
     default: m.KpiPerformanceBandsPage,
+  })),
+);
+
+const KpiEntriesPage = lazy(() =>
+  import("./pages/admin/kpi/KpiEntriesPage").then((m) => ({
+    default: m.KpiEntriesPage,
   })),
 );
 
@@ -904,6 +925,20 @@ function App() {
                         element={<CallHistory />}
                       />
                       <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
+                              PERMISSIONS.COMMUNICATION_TRACK_VIEW,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/communications"
+                          element={<CommunicationsPage />}
+                        />
+                      </Route>
+                      <Route
                         path="/call-centre/email"
                         element={<EmailPage />}
                       />
@@ -928,6 +963,10 @@ function App() {
                       <Route
                         path="/call-centre/history"
                         element={<CallHistory />}
+                      />
+                      <Route
+                        path="/call-centre/communications"
+                        element={<CommunicationsPage />}
                       />
                       <Route
                         path="/call-centre/email"
@@ -1025,12 +1064,24 @@ function App() {
                           element={<KpiDictionaryDetailPage />}
                         />
                         <Route
+                          path="/goals/kpi/dictionary/:type/:id/card"
+                          element={<KpiCardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id/dashboard"
+                          element={<KpiSingleDashboardPage />}
+                        />
+                        <Route
                           path="/goals/kpi/report"
                           element={<KpiReportPage />}
                         />
                         <Route
                           path="/goals/kpi/performance-bands"
                           element={<KpiPerformanceBandsPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/entries"
+                          element={<KpiEntriesPage />}
                         />
                       </Route>
 

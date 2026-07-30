@@ -143,7 +143,9 @@ export const IncidentsPage: React.FC = () => {
   } | null>(null);
 
   const canViewAllIncidents =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canTransitionIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
   const canCreateIncident =
@@ -307,6 +309,9 @@ export const IncidentsPage: React.FC = () => {
 
   const filter: IncidentFilter = useMemo(() => {
     const statusParam = searchParams.get("status");
+    // const search = searchParams.get("search");
+    // const momraRef = searchParams.get("momra_ref");
+    // const isMomraSearch = !!momraRef?.trim();
 
     let currentStateId: string | undefined = searchParams.get(
       "current_state_id",
@@ -327,8 +332,11 @@ export const IncidentsPage: React.FC = () => {
       page: Number(searchParams.get("page") || 1),
       limit: Number(searchParams.get("limit") || 10),
       record_type: "incident",
-
+      //when using momra search filter pass those values to search and select momra as the source.
+      // search: isMomraSearch ? momraRef : search || undefined,
+      // source: isMomraSearch ? "momra" : searchParams.get("source") || undefined,
       search: searchParams.get("search") || undefined,
+      source: searchParams.get("source") || undefined,
       workflow_id: searchParams.get("workflow_id") || undefined,
       assignee_id: searchParams.get("assignee_id") || undefined,
 
@@ -355,7 +363,10 @@ export const IncidentsPage: React.FC = () => {
         searchParams.get("converted_to_request") === "true" ? true : undefined,
       start_date: searchParams.get("start_date") || undefined,
       end_date: searchParams.get("end_date") || undefined,
-      source: searchParams.get("source") || undefined,
+      reporter_phone: searchParams.get("reporter_phone") || undefined,
+      reporter_phone_search:
+        searchParams.get("reporter_phone_search") || undefined,
+      momra_ref: searchParams.get("momra_ref") || undefined,
     };
   }, [searchParams, uniqueStates]);
 
@@ -411,6 +422,8 @@ export const IncidentsPage: React.FC = () => {
     queryFn: () =>
       incidentApi.list({
         ...queryFilter,
+        search: queryFilter.momra_ref || queryFilter.search,
+        source: queryFilter.momra_ref ? "momra" : queryFilter.source,
         ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       }),
     enabled: !isShortSearch,
@@ -424,6 +437,16 @@ export const IncidentsPage: React.FC = () => {
   const incidents = incidentsData?.data || [];
   const totalPages = incidentsData?.total_pages ?? 1;
   const totalItems = incidentsData?.total_items ?? 0;
+
+  // Derive visible state IDs from stats sidebar for non-admin users
+  const visibleStateIds = useMemo(() => {
+    if (canViewAllIncidents || !stats?.workflow_stats) return null;
+    return new Set(
+      stats.workflow_stats.flatMap((w: any) =>
+        w.by_state_details.map((s: any) => s.id),
+      ),
+    );
+  }, [stats, canViewAllIncidents]);
 
   const handleFilterChange = (key: keyof IncidentFilter, value: any) => {
     const params = new URLSearchParams(searchParams);
@@ -474,7 +497,10 @@ export const IncidentsPage: React.FC = () => {
     filter.priority !== undefined ||
     !!filter.start_date ||
     !!filter.end_date ||
-    filter.source !== undefined
+    filter.source !== undefined ||
+    !!filter.reporter_phone ||
+    !!filter.reporter_phone_search ||
+    !!filter.momra_ref
   );
 
   const getLookupValue = (incident: Incident, categoryCode: string) => {
@@ -797,7 +823,8 @@ export const IncidentsPage: React.FC = () => {
         columns={columns}
         onToggleColumn={toggleColumn}
         onResetColumns={() => setColumns(defaultColumns)}
-        disableStateFilter={!canViewAllIncidents || hasStatusFilter}
+        disableStateFilter={hasStatusFilter}
+        visibleStateIds={visibleStateIds}
         disableSlaFilter={!canViewAllIncidents && hasUrlFilter}
         canViewAllIncidents={canViewAllIncidents}
         hasStatusFilter={hasStatusFilter}

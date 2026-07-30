@@ -108,7 +108,9 @@ export const usePermissions = () => {
 
     // Incident permissions
     canViewIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_VIEW),
-    canViewAllIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL),
+    canViewAllIncidents: () =>
+      hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+      hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY),
     canCreateIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_CREATE),
     canUpdateIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_UPDATE),
     canDeleteIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_DELETE),

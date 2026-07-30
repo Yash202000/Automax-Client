@@ -12,11 +12,20 @@ import {
   ChevronRight,
   User as UserIcon,
 } from "lucide-react";
-import { Button } from "../../../components/ui";
+import {
+  Button,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  ModalTitle,
+} from "../../../components/ui";
 import { userApi } from "../../../api/admin";
 import type { User } from "../../../types";
 import { cn } from "@/lib/utils";
 import CallablePhone from "@/components/common/CallablePhone";
+import { CallHistory } from "./CallHistory";
+import usePermissions from "@/hooks/usePermissions";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -29,19 +38,18 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const limit = 10;
+  const [openCallLogs, setOpenCallLogs] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<any>();
+  const { isSuperAdmin } = usePermissions();
+
+  const debouncedSearch = useDebounce(search, 600);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "users", page, limit],
-    queryFn: () => userApi.list(page, limit),
+    queryKey: ["admin", "users", page, limit, debouncedSearch],
+    queryFn: () => userApi.list(page, limit, debouncedSearch),
   });
 
-  const filteredUsers = data?.data?.filter(
-    (user: User) =>
-      user.username.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredUsers = data?.data;
 
   const totalPages = data?.total_pages ?? 1;
 
@@ -202,11 +210,30 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                               />
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold ">
+                          <div
+                            onClick={() => {
+                              if (!isSuperAdmin) return;
+
+                              setOpenCallLogs(true);
+                              setSelectedUser(user);
+                            }}
+                          >
+                            <p
+                              className={`text-sm font-semibold ${
+                                isSuperAdmin
+                                  ? "cursor-pointer hover:underline hover:text-primary"
+                                  : ""
+                              }`}
+                            >
                               {user.first_name} {user.last_name}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p
+                              className={`text-sm text-slate-500 ${
+                                isSuperAdmin
+                                  ? "cursor-pointer hover:underline hover:text-primary"
+                                  : ""
+                              }`}
+                            >
                               @{user.username}
                             </p>
                           </div>
@@ -427,6 +454,24 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           </>
         )}
       </div>
+      <Modal
+        size="4xl"
+        isOpen={openCallLogs}
+        onOpenChange={setOpenCallLogs}
+        onClose={() => setOpenCallLogs(false)}
+      >
+        <ModalHeader>
+          <ModalTitle>
+            Call History of{" "}
+            {[selectedUser?.first_name, selectedUser?.last_name]
+              .filter(Boolean)
+              .join(" ") || selectedUser?.username}
+          </ModalTitle>
+        </ModalHeader>
+        <ModalBody className="max-h-[70vh]">
+          <CallHistory userId={selectedUser?.id} />
+        </ModalBody>
+      </Modal>
     </div>
   );
 };

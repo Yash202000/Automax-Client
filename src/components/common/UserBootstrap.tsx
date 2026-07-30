@@ -7,6 +7,9 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import usePermissions from "@/hooks/usePermissions";
 import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
+import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
+import { SessionTimeoutModal } from "@/components/common/SessionTimeoutModal";
+import { useGlobalWebSocket } from "@/hooks/useGlobalWebSocket";
 
 export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -20,6 +23,8 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const isOpen = useSoftphoneStore((s) => s.isOpen);
   const setIsOpen = useSoftphoneStore((s) => s.setIsOpen);
   const { isSuperAdmin, hasAnyPermission } = usePermissions();
+
+  useGlobalWebSocket();
 
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
 
@@ -39,6 +44,9 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [isAuthenticated, dispatch]);
 
+  const { showWarning, remainingSeconds, totalWarningSeconds, stayLoggedIn } =
+    useInactivityTimeout();
+
   // Memoize the settings/auth object props so SoftPhone's effects don't
   // re-fire on every UserBootstrap render. Without this, fresh object
   // literals here would produce a new reference each render even when
@@ -46,8 +54,7 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const softphoneSettings = useMemo(
     () => ({
       domain: settings?.sip_domain || "zkff.automaxsw.com",
-      socketURL:
-        settings?.sip_socket_url || "wss://zkff.automaxsw.com:7443",
+      socketURL: settings?.sip_socket_url || "wss://zkff.automaxsw.com:7443",
     }),
     [settings?.sip_domain, settings?.sip_socket_url],
   );
@@ -76,6 +83,12 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
       {isAuthenticated && canViewSoftphone && isCintrixCti && (
         <CintrixCtiHost />
       )}
+      <SessionTimeoutModal
+        isOpen={showWarning}
+        remainingSeconds={remainingSeconds}
+        totalWarningSeconds={totalWarningSeconds}
+        onStayLoggedIn={stayLoggedIn}
+      />
     </>
   );
 };

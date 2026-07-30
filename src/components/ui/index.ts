@@ -10,7 +10,11 @@ export {
   StatCard,
 } from "./Card";
 export { HierarchicalTreeSelect } from "./HierarchicalTreeSelect";
-export type { TreeNode } from "./HierarchicalTreeSelect";
+export type {
+  TreeNode,
+  TreeNodeRecordType,
+  HierarchicalTreeKind,
+} from "./HierarchicalTreeSelect";
 export { TreeSelect } from "./TreeSelect";
 export type { TreeSelectNode } from "../../utils/treeUtils";
 export { LocationPicker } from "./LocationPicker";

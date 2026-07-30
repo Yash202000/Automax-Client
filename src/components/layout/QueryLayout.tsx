@@ -31,7 +31,7 @@ import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
 import { setLoggingOut } from "../../api/client";
 import { incidentApi } from "../../api/admin";
-import {
+import i18n, {
   setLanguage,
   getCurrentLanguage,
   supportedLanguages,
@@ -64,7 +64,9 @@ export const QueryLayout: React.FC = () => {
   const canViewQueries =
     isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW);
   const canViewAllQueries =
-    isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.QUERIES_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canCreateQuery =
     isSuperAdmin || hasPermission(PERMISSIONS.QUERIES_CREATE);
   const canTransitionQuery =
@@ -93,9 +95,17 @@ export const QueryLayout: React.FC = () => {
 
   // Fetch query stats
   const { data: statsData } = useQuery({
-    queryKey: ["queries", "stats", canViewAllQueries ? "all" : "assigned"],
+    queryKey: [
+      "queries",
+      "stats",
+      "query",
+      canViewAllQueries ? "all" : "assigned",
+    ],
     queryFn: () =>
-      incidentApi.getStats("query", canViewAllQueries ? undefined : "assigned"),
+      incidentApi.getIncidentStatsV2(
+        canViewAllQueries ? undefined : { my_record: user?.id },
+        "query",
+      ),
   });
 
   const handleLogout = async () => {
@@ -117,12 +127,8 @@ export const QueryLayout: React.FC = () => {
   };
 
   // Build sidebar items from stats
-  const statusItems = statsData?.data?.by_state
-    ? Object.entries(statsData.data.by_state).map(([stateName, count]) => ({
-        name: stateName,
-        count: count as number,
-      }))
-    : [];
+  const workflowStats = statsData?.data?.workflow_stats || [];
+  const isSingleWorkflow = (workflowStats || []).length === 1;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -158,38 +164,36 @@ export const QueryLayout: React.FC = () => {
           </p>
         )}
         <div className="space-y-1">
-          {canViewAllQueries && (
-            <NavLink
-              to="/queries"
-              end
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) => {
-                const isAllQueriesActive = isActive && !currentStatus;
-                return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isAllQueriesActive
-                    ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`;
-              }}
-            >
-              {({ isActive }) => {
-                const isAllQueriesActive = isActive && !currentStatus;
-                return (
-                  <>
-                    {isAllQueriesActive && (
-                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
-                    )}
-                    <List size={20} className="flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="ms-3 font-medium text-sm">
-                        {t("sidebar.allQueries")}
-                      </span>
-                    )}
-                  </>
-                );
-              }}
-            </NavLink>
-          )}
+          <NavLink
+            to="/queries"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => {
+              const isAllQueriesActive = isActive && !currentStatus;
+              return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                isAllQueriesActive
+                  ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`;
+            }}
+          >
+            {({ isActive }) => {
+              const isAllQueriesActive = isActive && !currentStatus;
+              return (
+                <>
+                  {isAllQueriesActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                  )}
+                  <List size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("sidebar.allQueries")}
+                    </span>
+                  )}
+                </>
+              );
+            }}
+          </NavLink>
 
           {canCreateQuery && (
             <button
@@ -289,7 +293,7 @@ export const QueryLayout: React.FC = () => {
         </div>
 
         {/* Status Filters */}
-        {canViewQueries && statusItems.length > 0 && (
+        {canViewQueries && workflowStats.length > 0 && (
           <>
             {!collapsed && (
               <>
@@ -300,54 +304,66 @@ export const QueryLayout: React.FC = () => {
               </>
             )}
             <div className="space-y-1">
-              {statusItems.map((status) => (
-                <NavLink
-                  key={status.name}
-                  to={`/queries?status=${encodeURIComponent(status.name)}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) => {
-                    const isItemActive =
-                      isActive && currentStatus === status.name;
-                    return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
-                      isItemActive ? "bg-white/10 text-white shadow-sm" : ""
-                    }`;
-                  }}
-                >
-                  {({ isActive }) => {
-                    const isItemActive =
-                      isActive && currentStatus === status.name;
-                    return (
-                      <>
-                        <Circle
-                          size={8}
-                          className={`flex-shrink-0 fill-current ${
-                            isItemActive
-                              ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-                              : "text-slate-500"
-                          }`}
-                        />
-                        {!collapsed && (
+              {workflowStats.map((workflow) => (
+                <div key={workflow.workflow_id}>
+                  {!isSingleWorkflow && (
+                    <div className="px-3 mt-3 mb-1 text-xs text-slate-500 uppercase">
+                      {workflow.workflow_name}
+                    </div>
+                  )}
+
+                  {(workflow.by_state_details || []).map((state) => (
+                    <NavLink
+                      key={state.name}
+                      to={`/queries?status=${encodeURIComponent(state.name)}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) => {
+                        const isItemActive =
+                          isActive && currentStatus === state.name;
+                        return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                          isItemActive ? "bg-white/10 text-white shadow-sm" : ""
+                        }`;
+                      }}
+                    >
+                      {({ isActive }) => {
+                        const isItemActive =
+                          isActive && currentStatus === state.name;
+                        return (
                           <>
-                            <span
-                              className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
-                            >
-                              {status.name}
-                            </span>
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                            <Circle
+                              size={8}
+                              className={`flex-shrink-0 fill-current ${
                                 isItemActive
-                                  ? "bg-primary text-white"
-                                  : "bg-slate-700 text-slate-300"
+                                  ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                  : "text-slate-500"
                               }`}
-                            >
-                              {status.count}
-                            </span>
+                            />
+                            {!collapsed && (
+                              <>
+                                <span
+                                  className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
+                                >
+                                  {i18n.language === "ar" && state.name_ar
+                                    ? state.name_ar
+                                    : state.name}
+                                </span>
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                                    isItemActive
+                                      ? "bg-primary text-white"
+                                      : "bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  {state.count}
+                                </span>
+                              </>
+                            )}
                           </>
-                        )}
-                      </>
-                    );
-                  }}
-                </NavLink>
+                        );
+                      }}
+                    </NavLink>
+                  ))}
+                </div>
               ))}
             </div>
           </>

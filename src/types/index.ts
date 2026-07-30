@@ -36,6 +36,13 @@ export interface User {
   extension?: string;
   last_login_at: string | null;
   created_at: string;
+  dept_manager_department_id?: string | null;
+  dept_manager_department?: Department;
+  dept_manager_classification_id?: string | null;
+  dept_manager_classification?: Classification;
+  dept_manager_location_id?: string | null;
+  dept_manager_location?: Location;
+  call_status?: string;
 }
 
 export interface Permission {
@@ -56,6 +63,7 @@ export interface Role {
   description: string;
   is_system: boolean;
   is_active: boolean;
+  is_department_manager: boolean;
   permissions: Permission[];
   created_at: string;
 }
@@ -123,6 +131,8 @@ export interface Department {
   level: number;
   path: string;
   manager_id: string | null;
+  supervisor_id: string | null;
+  supervisor?: User;
   is_active: boolean;
   sort_order: number;
   children?: Department[];
@@ -319,6 +329,7 @@ export interface RoleBasic {
   code: string;
   is_system: boolean;
   is_active: boolean;
+  is_department_manager: boolean;
 }
 
 /** Slim user returned by POST /auth/login. Call GET /users/me for the full object. */
@@ -419,6 +430,16 @@ export interface UpdateProfileRequest {
   mobile_verified?: boolean;
 }
 
+export interface ManagerScopeResponse {
+  is_department_manager: boolean;
+  department_id?: string;
+  department?: Department;
+  classification_id?: string;
+  classification?: Classification;
+  location_id?: string;
+  location?: Location;
+}
+
 export interface ChangePasswordRequest {
   old_password: string;
   new_password: string;
@@ -498,6 +519,7 @@ export interface DepartmentCreateRequest {
   type?: "internal" | "external";
   parent_id?: string;
   manager_id?: string;
+  supervisor_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
   role_ids?: string[];
@@ -510,6 +532,7 @@ export interface DepartmentUpdateRequest {
   description?: string;
   type?: "internal" | "external";
   manager_id?: string;
+  supervisor_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
   role_ids?: string[];
@@ -895,7 +918,19 @@ export interface WorkflowUpdateRequest {
   required_fields?: IncidentFormField[];
   optional_fields?: IncidentFormField[];
 }
-
+export interface WorkflowFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  record_type?: ClassificationType;
+  created_by?: string;
+  created_from?: string;
+  created_to?: string;
+  modified_from?: string;
+  modified_to?: string;
+  active_only?: boolean;
+}
 export interface WorkflowStateCreateRequest {
   name: string;
   name_ar?: string;
@@ -1412,6 +1447,8 @@ export interface IncidentFilter {
   limit?: number;
   transition_id?: string;
   reporter_phone?: string;
+  reporter_phone_search?: string;
+  momra_ref?: string;
 }
 
 // Convert Incident to Request types
@@ -1938,6 +1975,25 @@ export interface SMSFilter {
   direction?: string;
   is_read?: boolean;
   received_by?: string;
+}
+
+export interface NotificationFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  channel?: string;
+  sent_by?: string;
+  is_starred?: boolean;
+  category?: string;
+  direction?: string;
+  is_read?: boolean;
+  is_draft?: boolean;
+  received_by?: string;
+  deleted_at?: string | null;
+  recipient?: string;
 }
 
 // Incident Merge Types

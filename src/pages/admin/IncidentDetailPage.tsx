@@ -46,6 +46,7 @@ import {
   ShieldCheck,
   Phone,
   Maximize2,
+  Mail,
 } from "lucide-react";
 import {
   Button,
@@ -59,6 +60,7 @@ import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { MiniWorkflowView } from "../../components/workflow";
 import {
   RevisionHistory,
+  CommunicationHistory,
   ConvertToRequestModal,
   UnmergeIncidentsModal,
   BulkUnmergeModal,
@@ -157,6 +159,7 @@ export const IncidentDetailPage: React.FC = () => {
     | "comments"
     | "attachments"
     | "revisions"
+    | "communications"
     | "rejections"
     | "ai-quality"
     | "linked-systems"
@@ -2059,6 +2062,22 @@ export const IncidentDetailPage: React.FC = () => {
                   {t("incidents.revisions")}
                 </span>
               </button>
+              {hasPermission(PERMISSIONS.NOTIFICATIONS_READ) && (
+                <button
+                  onClick={() => setActiveTab("communications")}
+                  className={cn(
+                    "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
+                    activeTab === "communications"
+                      ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                      : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    {t("incidents.communications", "Communication")}
+                  </span>
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab("rejections")}
                 className={cn(
@@ -2938,6 +2957,12 @@ export const IncidentDetailPage: React.FC = () => {
               {activeTab === "revisions" && (
                 <RevisionHistory incidentId={id!} />
               )}
+
+              {/* Communication Tab */}
+              {activeTab === "communications" &&
+                hasPermission(PERMISSIONS.NOTIFICATIONS_READ) && (
+                  <CommunicationHistory incidentId={id!} />
+                )}
 
               {/* AI Quality Tab */}
               {activeTab === "ai-quality" && (

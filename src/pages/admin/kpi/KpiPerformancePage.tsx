@@ -107,8 +107,10 @@ export const KpiPerformancePage: React.FC = () => {
           </div>
         </div>
         {canSubmitKpiPerformance() && (
-          <Button onClick={() => setShowAddActual(true)}>
-            <Plus className="w-4 h-4" />
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setShowAddActual(true)}
+          >
             {t("kpi.performance.addActual.title")}
           </Button>
         )}

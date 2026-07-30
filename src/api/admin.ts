@@ -113,6 +113,8 @@ import type {
   PublicIncidentFeedbackRequest,
   PublicIncidentFeedbackValidationResponse,
   PublicIncidentFeedbackSubmitResponse,
+  WorkflowFilter,
+  NotificationFilter,
 } from "../types";
 import type {
   NotificationTemplateCreatePayload,
@@ -728,8 +730,20 @@ export const roleApi = {
     return response.data;
   },
 
-  list: async (): Promise<ApiResponse<Role[]>> => {
-    const response = await apiClient.get<ApiResponse<Role[]>>("/admin/roles");
+  list: async (departmentId?: string): Promise<ApiResponse<Role[]>> => {
+    const url = departmentId
+      ? `/admin/roles?department_id=${departmentId}`
+      : "/admin/roles";
+    const response = await apiClient.get<ApiResponse<Role[]>>(url);
+    return response.data;
+  },
+
+  getManagerScope: async (): Promise<
+    ApiResponse<import("../types").ManagerScopeResponse>
+  > => {
+    const response = await apiClient.get<
+      ApiResponse<import("../types").ManagerScopeResponse>
+    >("/admin/users/manager-scope");
     return response.data;
   },
 
@@ -960,6 +974,33 @@ export const workflowApi = {
     if (recordType) params.append("record_type", recordType);
     const url = `/admin/workflows${params.toString() ? "?" + params.toString() : ""}`;
     const response = await apiClient.get<ApiResponse<Workflow[]>>(url);
+    return response.data;
+  },
+  //searching workflows with filters
+  listWithFilters: async (
+    filter: WorkflowFilter,
+  ): Promise<ApiResponse<Workflow[]>> => {
+    const params = new URLSearchParams();
+
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.search) params.append("search", filter.search);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.record_type) params.append("record_type", filter.record_type);
+    if (filter.created_by) params.append("created_by", filter.created_by);
+    if (filter.created_from) params.append("created_from", filter.created_from);
+    if (filter.created_to) params.append("created_to", filter.created_to);
+    if (filter.modified_from)
+      params.append("modified_from", filter.modified_from);
+    if (filter.modified_to) params.append("modified_to", filter.modified_to);
+    if (filter.active_only !== undefined) {
+      params.append("active_only", String(filter.active_only));
+    }
+
+    const response = await apiClient.get<ApiResponse<Workflow[]>>(
+      `/admin/workflows${params.toString() ? `?${params.toString()}` : ""}`,
+    );
+
     return response.data;
   },
 
@@ -1312,7 +1353,12 @@ export const incidentApi = {
     if (filter.end_date) params.append("end_date", filter.end_date);
     if (filter.transition_id)
       params.append("transition_id", filter.transition_id);
-    console.log(filter);
+    if (filter.reporter_phone_search) {
+      params.append("reporter_phone_search", filter.reporter_phone_search);
+    }
+    if (filter.momra_ref) {
+      params.append("momra_ref", filter.momra_ref);
+    }
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
     );
@@ -1620,6 +1666,31 @@ export const incidentApi = {
     return response.data;
   },
 
+  // Full SMS/Email communication history for this incident's audit trail.
+  getCommunications: async (
+    incidentId: string,
+    filter: {
+      page?: number;
+      limit?: number;
+      channel?: "sms" | "email";
+      start_date?: string;
+      end_date?: string;
+    } = {},
+  ): Promise<PaginatedResponse<Email>> => {
+    const params = new URLSearchParams();
+    params.append("incident_id", incidentId);
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.channel) params.append("channel", filter.channel);
+    if (filter.start_date) params.append("start_date", filter.start_date);
+    if (filter.end_date) params.append("end_date", filter.end_date);
+
+    const response = await apiClient.get<PaginatedResponse<Email>>(
+      `/notifications?${params.toString()}`,
+    );
+    return response.data;
+  },
+
   // Download Report
   downloadReport: async (
     incidentId: string,
@@ -1636,11 +1707,12 @@ export const incidentApi = {
   },
 
   getIncidentStatsV2: async (
-    params = {},
+    params: Record<string, unknown> = {},
+    recordType: "incident" | "request" | "complaint" | "query" = "incident",
   ): Promise<ApiResponse<IncidentStats>> => {
     try {
       const response = await apiClient.get("/incidents/stats/v2", {
-        params: { ...params, record_type: "incident" },
+        params: { ...params, record_type: recordType },
       });
       if (response.data && response.data.success) {
         return { success: true, data: response.data.data };
@@ -1739,6 +1811,7 @@ export const complaintApi = {
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.search) params.append("search", filter.search);
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+    if (filter.my_record) params.append("my_record", filter.my_record);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
     filter.classification_ids?.forEach((id) =>
@@ -1940,6 +2013,7 @@ export const queryApi = {
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.search) params.append("search", filter.search);
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+    if (filter.my_record) params.append("my_record", filter.my_record);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
     filter.classification_ids?.forEach((id) =>
@@ -2568,7 +2642,11 @@ export const callLogApi = {
       page: String(page),
       limit: String(limit),
     });
-    if (userId) params.append("user_id", userId);
+
+    // if (userId) params.append("user_id", userId);
+
+    if (userId) params.append("agent_id", userId);
+
     const response = await apiClient.get(
       `/admin/call-logs?${params.toString()}`,
     );
@@ -2942,6 +3020,46 @@ export const smsApi = {
     params.append("user_id", userId);
     const response = await apiClient.get<ApiResponse<any>>(
       `/notifications/stats?${params.toString()}`,
+    );
+    return response.data;
+  },
+};
+
+export const notificationTrackApi = {
+  list: async (
+    filter: NotificationFilter = {},
+  ): Promise<PaginatedResponse<Email>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.search) params.append("search", filter.search);
+    if (filter.start_date) params.append("start_date", filter.start_date);
+    if (filter.end_date) params.append("end_date", filter.end_date);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.channel) params.append("channel", filter.channel);
+    if (filter.sent_by) params.append("sent_by", filter.sent_by);
+    if (filter.is_starred !== undefined)
+      params.append("is_starred", String(filter.is_starred));
+    if (filter.category) params.append("category", filter.category);
+    if (filter.direction) params.append("direction", filter.direction);
+    if (filter.is_read !== undefined)
+      params.append("is_read", String(filter.is_read));
+    if (filter.received_by)
+      params.append("received_by", String(filter.received_by));
+    if (filter.is_draft !== undefined)
+      params.append("is_draft", String(filter.is_draft));
+    if (filter.recipient) {
+      params.append("recipient", String(filter.recipient));
+    }
+
+    const response = await apiClient.get<PaginatedResponse<Email>>(
+      `/admin/notification-monitoring?${params.toString()}`,
+    );
+    return response.data;
+  },
+  getById: async (id: string): Promise<ApiResponse<Email>> => {
+    const response = await apiClient.get<ApiResponse<Email>>(
+      `/admin/notification-monitoring/${id}`,
     );
     return response.data;
   },

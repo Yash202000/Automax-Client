@@ -55,6 +55,10 @@ import {
   useCreateSegmentationDimension,
   useUpdateSegmentationDimension,
   useDeleteSegmentationDimension,
+  useOrganizations,
+  useCreateOrganization,
+  useUpdateOrganization,
+  useDeleteOrganization,
 } from "../../../hooks/useKpi";
 import { useGoals } from "../../../hooks/useGoals";
 import { usePermissions } from "../../../hooks/usePermissions";
@@ -63,7 +67,7 @@ import { Modal } from "../../../components/ui/Modal";
 import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/SelectInput";
-import { userApi, departmentApi } from "../../../api/admin";
+import { departmentApi } from "../../../api/admin";
 import { exportToExcel as exportToExcelUtil } from "../../../utils/exportExcel";
 import type {
   Pillar,
@@ -75,6 +79,7 @@ import type {
   AwardSubCriterion,
   KpiDataSource,
   KpiSegmentationDimension,
+  KpiOrganization,
   PillarRequest,
   EnablerRequest,
   OperationalObjectiveRequest,
@@ -85,6 +90,7 @@ import type {
   AwardSubCriterionRequest,
   KpiDataSourceRequest,
   KpiSegmentationDimensionRequest,
+  KpiOrganizationRequest,
 } from "../../../types/kpi";
 
 type EntityType =
@@ -98,7 +104,8 @@ type EntityType =
   | "award-criterion"
   | "award-sub-criterion"
   | "data-source"
-  | "segmentation-dimension";
+  | "segmentation-dimension"
+  | "organization";
 
 interface FormState {
   name_en: string;
@@ -116,6 +123,7 @@ interface FormState {
   criterion_no: string;
   award_criterion_id: string;
   sub_no: string;
+  contact_info: string;
 }
 
 const initialForm: FormState = {
@@ -134,6 +142,7 @@ const initialForm: FormState = {
   criterion_no: "",
   award_criterion_id: "",
   sub_no: "",
+  contact_info: "",
 };
 
 export const KpiMasterDataPage: React.FC = () => {
@@ -157,6 +166,7 @@ export const KpiMasterDataPage: React.FC = () => {
       key: "segmentation-dimension",
       label: t("kpi.masterData.segmentationDimensions"),
     },
+    { key: "organization", label: t("kpi.masterData.organizations") },
   ];
   const validKeys = tabs.map((t) => t.key);
   const activeTab: EntityType =
@@ -183,13 +193,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const { data: awardSubCriteria } = useAwardSubCriteria();
   const { data: dataSources } = useDataSources();
   const { data: segmentationDimensions } = useSegmentationDimensions();
-
-  const { data: usersData } = useQuery({
-    queryKey: ["admin", "users", "all"],
-    queryFn: () => userApi.list(1, 1000),
-  });
-
-  const users = (usersData as any)?.data ?? [];
+  const { data: organizations } = useOrganizations();
 
   const { data: departmentsData } = useQuery({
     queryKey: ["admin", "departments", "all"],
@@ -228,13 +232,11 @@ export const KpiMasterDataPage: React.FC = () => {
   const createSegmentationDimension = useCreateSegmentationDimension();
   const updateSegmentationDimension = useUpdateSegmentationDimension();
   const deleteSegmentationDimension = useDeleteSegmentationDimension();
+  const createOrganization = useCreateOrganization();
+  const updateOrganization = useUpdateOrganization();
+  const deleteOrganization = useDeleteOrganization();
 
   const canManage = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_MANAGE);
-
-  const userOptions = users.map((u: any) => ({
-    value: u.id,
-    label: `${u.first_name} ${u.last_name} (${u.email})`,
-  }));
 
   const departmentOptions = departments.map((d) => ({
     value: d.id,
@@ -279,12 +281,24 @@ export const KpiMasterDataPage: React.FC = () => {
         item.criterion_no !== undefined ? String(item.criterion_no) : "",
       award_criterion_id: item.award_criterion_id || "",
       sub_no: item.sub_no || "",
+      contact_info: item.contact_info || "",
     });
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     const isEdit = !!modalItem;
+    if (!form.name_en) {
+      toast.error(t("kpi.masterData.nameEnRequired"));
+      return;
+    }
+    if (
+      modalType === "award-sub-criterion" &&
+      (!form.award_criterion_id || !form.sub_no)
+    ) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
     try {
       if (modalType === "pillar") {
         const data: PillarRequest = {
@@ -389,6 +403,15 @@ export const KpiMasterDataPage: React.FC = () => {
             data,
           });
         else await createSegmentationDimension.mutateAsync(data);
+      } else if (modalType === "organization") {
+        const data: KpiOrganizationRequest = {
+          name_en: form.name_en,
+          name_ar: form.name_ar,
+          contact_info: form.contact_info || undefined,
+        };
+        if (isEdit)
+          await updateOrganization.mutateAsync({ id: modalItem.id, data });
+        else await createOrganization.mutateAsync(data);
       }
       setModalOpen(false);
     } catch {
@@ -408,6 +431,7 @@ export const KpiMasterDataPage: React.FC = () => {
       "award-sub-criterion": (i) => deleteAwardSubCriterion.mutate(i),
       "data-source": (i) => deleteDataSource.mutate(i),
       "segmentation-dimension": (i) => deleteSegmentationDimension.mutate(i),
+      organization: (i) => deleteOrganization.mutate(i),
     };
     actions[type]?.(id);
   };
@@ -418,7 +442,10 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const exportToExcel = (data: any[], label: string) =>
     exportToExcelUtil(
-      data,
+      data.map((r) => ({
+        ...r,
+        owner: r.owner?.name ?? getDepartmentName(r.owner_id) ?? "",
+      })),
       label,
       t("common.noDataToExport"),
       t("common.exported"),
@@ -443,8 +470,12 @@ export const KpiMasterDataPage: React.FC = () => {
           toast.error(t("common.emptyFile"));
           return;
         }
+        const validRows = json.filter((row: any) => {
+          const name = row.name_en || row.NameEn || row.Name || "";
+          return !!name;
+        });
         let imported = 0;
-        for (const row of json) {
+        for (const row of validRows) {
           try {
             await submitImportRow(importType, row);
             imported++;
@@ -461,6 +492,17 @@ export const KpiMasterDataPage: React.FC = () => {
     e.target.value = "";
   };
 
+  const resolveOwnerId = (row: any): string | undefined => {
+    if (row.owner_id) return row.owner_id;
+    const ownerName =
+      row.owner_name || row.OwnerName || row.owner || row.Owner || "";
+    if (!ownerName) return undefined;
+    const dept = departments.find(
+      (d) => d.name?.toLowerCase() === ownerName.toLowerCase(),
+    );
+    return dept?.id;
+  };
+
   const submitImportRow = async (type: EntityType, row: any) => {
     const name_en = row.name_en || row.NameEn || row.Name || "";
     const name_ar = row.name_ar || row.NameAr || "";
@@ -469,13 +511,13 @@ export const KpiMasterDataPage: React.FC = () => {
       await createPillar.mutateAsync({
         name_en,
         name_ar,
-        owner_id: row.owner_id || undefined,
+        owner_id: resolveOwnerId(row),
       } as PillarRequest);
     } else if (type === "enabler") {
       await createEnabler.mutateAsync({
         name_en,
         name_ar,
-        owner_id: row.owner_id || undefined,
+        owner_id: resolveOwnerId(row),
       } as EnablerRequest);
     } else if (type === "operational-objective") {
       await createOperationalObjective.mutateAsync({
@@ -504,7 +546,7 @@ export const KpiMasterDataPage: React.FC = () => {
         objective_id: row.objective_id || undefined,
         pillar_id: row.pillar_id || undefined,
         enabler_id: row.enabler_id || undefined,
-        owner_id: row.owner_id || undefined,
+        owner_id: resolveOwnerId(row),
         status: row.status || undefined,
       } as InitiativeRequest);
     } else if (type === "domain") {
@@ -536,13 +578,13 @@ export const KpiMasterDataPage: React.FC = () => {
         name_en,
         name_ar,
       } as KpiSegmentationDimensionRequest);
+    } else if (type === "organization") {
+      await createOrganization.mutateAsync({
+        name_en,
+        name_ar,
+        contact_info: row.contact_info || row.ContactInfo || undefined,
+      } as KpiOrganizationRequest);
     }
-  };
-
-  const getUserName = (userId?: string) => {
-    if (!userId) return "-";
-    const u = users.find((x: any) => x.id === userId);
-    return u ? `${u.first_name} ${u.last_name}` : userId;
   };
 
   const getDepartmentName = (departmentId?: string) => {
@@ -563,6 +605,7 @@ export const KpiMasterDataPage: React.FC = () => {
     "award-sub-criterion": "awardSubCriteria",
     "data-source": "dataSources",
     "segmentation-dimension": "segmentationDimensions",
+    organization: "organizations",
   };
   const modalTitle = modalItem ? t("common.edit") : t("common.add");
   const modalEntityLabel = t(
@@ -701,7 +744,7 @@ export const KpiMasterDataPage: React.FC = () => {
               },
               {
                 header: t("kpi.masterData.owner"),
-                accessor: (r) => getUserName(r.owner_id),
+                accessor: (r) => r.owner?.name ?? getDepartmentName(r.owner_id),
               },
               { header: t("kpi.masterData.status"), accessor: "status" },
             ]}
@@ -710,7 +753,26 @@ export const KpiMasterDataPage: React.FC = () => {
             onEdit={(item) => handleEdit("initiative", item)}
             onDelete={(id) => handleDelete("initiative", id)}
             onAdd={() => handleAdd("initiative")}
-            onExport={() => exportToExcel(initiatives ?? [], "Initiatives")}
+            onExport={() =>
+              exportToExcel(
+                (initiatives ?? []).map((r) => ({
+                  name_en: r.name_en,
+                  name_ar: r.name_ar,
+                  [t("kpi.masterData.strategicGoal")]:
+                    r.goal?.title ?? r.goal_id ?? "",
+                  [t("kpi.masterData.operationalObjective")]:
+                    r.objective?.name_en ?? r.objective_id ?? "",
+                  [t("kpi.masterData.pillar")]:
+                    r.pillar?.name_en ?? r.pillar_id ?? "",
+                  [t("kpi.masterData.enabler")]:
+                    r.enabler?.name_en ?? r.enabler_id ?? "",
+                  [t("kpi.masterData.owner")]:
+                    r.owner?.name ?? getDepartmentName(r.owner_id),
+                  status: r.status,
+                })),
+                "Initiatives",
+              )
+            }
             onImport={() => handleImportExcel("initiative")}
           />
         )}
@@ -770,7 +832,16 @@ export const KpiMasterDataPage: React.FC = () => {
             onDelete={(id) => handleDelete("award-sub-criterion", id)}
             onAdd={() => handleAdd("award-sub-criterion")}
             onExport={() =>
-              exportToExcel(awardSubCriteria ?? [], "AwardSubCriteria")
+              exportToExcel(
+                (awardSubCriteria ?? []).map((r) => ({
+                  [t("kpi.masterData.awardCriterion")]:
+                    r.award_criterion?.name_en ?? r.award_criterion_id ?? "",
+                  sub_no: r.sub_no,
+                  name_en: r.name_en,
+                  name_ar: r.name_ar,
+                })),
+                "AwardSubCriteria",
+              )
             }
             onImport={() => handleImportExcel("award-sub-criterion")}
           />
@@ -820,6 +891,31 @@ export const KpiMasterDataPage: React.FC = () => {
               )
             }
             onImport={() => handleImportExcel("segmentation-dimension")}
+          />
+        )}
+        {activeTab === "organization" && (
+          <MasterTable<KpiOrganization>
+            data={organizations ?? []}
+            columns={[
+              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
+              {
+                header: t("common.contactInfo"),
+                accessor: (r) => r.contact_info ?? "-",
+              },
+              {
+                header: t("kpi.masterData.active"),
+                accessor: (r) =>
+                  r.is_active ? t("common.yes") : t("common.no"),
+              },
+            ]}
+            emptyMessage={t("kpi.masterData.noOrganizations")}
+            canManage={canManage}
+            onEdit={(item) => handleEdit("organization", item)}
+            onDelete={(id) => handleDelete("organization", id)}
+            onAdd={() => handleAdd("organization")}
+            onExport={() => exportToExcel(organizations ?? [], "Organizations")}
+            onImport={() => handleImportExcel("organization")}
           />
         )}
       </div>
@@ -1008,7 +1104,7 @@ export const KpiMasterDataPage: React.FC = () => {
               />
               <Select
                 label={t("kpi.masterData.owner")}
-                options={userOptions}
+                options={departmentOptions}
                 value={form.owner_id}
                 onChange={setSel("owner_id")}
                 searchable
@@ -1051,10 +1147,18 @@ export const KpiMasterDataPage: React.FC = () => {
             />
           )}
 
+          {modalType === "organization" && (
+            <Input
+              label={t("common.contactInfo")}
+              value={form.contact_info}
+              onChange={set("contact_info")}
+            />
+          )}
+
           {modalType === "award-sub-criterion" && (
             <>
               <Select
-                label={t("kpi.masterData.awardCriterion")}
+                label={`${t("kpi.masterData.awardCriterion")} *`}
                 options={(awardCriteria ?? []).map((c: AwardCriterion) => ({
                   value: c.id,
                   label: `${c.criterion_no} - ${c.name_en}`,
@@ -1065,7 +1169,7 @@ export const KpiMasterDataPage: React.FC = () => {
                 placeholder={t("common.selectAnOption")}
               />
               <Input
-                label={t("kpi.masterData.subNo")}
+                label={`${t("kpi.masterData.subNo")} *`}
                 value={form.sub_no}
                 onChange={set("sub_no")}
               />
@@ -1151,14 +1255,21 @@ function MasterTable<T extends { id: string }>({
         </p>
         <div className="flex gap-2 mt-4">
           {canManage && onAdd && (
-            <Button onClick={onAdd} size="sm">
-              <Plus className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={onAdd}
+              size="sm"
+            >
               {t("common.add")}
             </Button>
           )}
           {onImport && (
-            <Button onClick={onImport} size="sm" variant="secondary">
-              <Upload className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={onImport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.import")}
             </Button>
           )}
@@ -1172,19 +1283,30 @@ function MasterTable<T extends { id: string }>({
       {canManage && onAdd && (
         <div className="px-6 pt-4 pb-2 flex justify-end gap-2">
           {onExport && (
-            <Button onClick={onExport} size="sm" variant="secondary">
-              <Download className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={onExport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.export")}
             </Button>
           )}
           {onImport && (
-            <Button onClick={onImport} size="sm" variant="secondary">
-              <Upload className="w-4 h-4 me-1" />
+            <Button
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={onImport}
+              size="sm"
+              variant="secondary"
+            >
               {t("common.import")}
             </Button>
           )}
-          <Button onClick={onAdd} size="sm">
-            <Plus className="w-4 h-4 me-1" />
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={onAdd}
+            size="sm"
+          >
             {t("common.add")}
           </Button>
         </div>

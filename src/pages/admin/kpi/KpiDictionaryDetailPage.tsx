@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -18,6 +17,7 @@ import {
   Layers,
   Tag,
   Calendar,
+  ChevronDown,
   GitBranch,
   ClipboardCheck,
   BarChart3,
@@ -30,8 +30,10 @@ import {
   Send,
   User,
   Pencil,
-  Upload,
   Download,
+  List,
+  ExternalLink,
+  HelpCircle,
 } from "lucide-react";
 import {
   useStrategicKPIDetail,
@@ -40,14 +42,12 @@ import {
   useKpiStatusTransition,
   useKpiMetrics,
   useCreateKpiMetric,
-  useUpdateKpiMetricValue,
   useDeleteKpiMetric,
+  useUpdateKpiMetric,
+  useKpiEntries,
   useKpiEngagementEvidence,
   useCreateKpiEvidence,
-  useDeleteKpiEvidence,
-  useKpiCollaborators,
-  useAddKpiCollaborator,
-  useRemoveKpiCollaborator,
+  useKpiCollaboratorAssignments,
   useKpiCheckIns,
   useCreateKpiCheckIn,
   useDeleteKpiCheckIn,
@@ -55,23 +55,35 @@ import {
   useAddKpiComment,
   useDeleteKpiComment,
   useKpiActivity,
-  useKpiTargets,
   useUploadKpiAttachment,
   useDownloadKpiEvidence,
+  useDeleteKpiEvidence,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuthStore } from "../../../stores/authStore";
-import { userApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
-import { Modal } from "../../../components/ui/Modal";
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalFooter,
+} from "../../../components/ui/Modal";
 import { Input, Select, Textarea } from "../../../components/ui/Input";
+import { AddEntryModal } from "../../../components/kpi/AddEntryModal";
+import { ViewEntriesModal } from "../../../components/kpi/ViewEntriesModal";
+import { CollaboratorsTab } from "../../../components/kpi/CollaboratorsTab";
 import { KpiEvidenceUploadModal } from "../../../components/kpi/KpiEvidenceUploadModal";
 import type {
   KpiCheckInStatus,
-  KpiCollaboratorRole,
   KpiEvidenceType,
+  KpiCalculationType,
+  KpiDirection,
+  KpiAggregationMethod,
+  KpiMetric,
+  KpiMetricRequest,
 } from "../../../types/kpi";
-import { KPI_EVIDENCE_TYPE_OPTIONS } from "../../../types/kpi";
+import { REPORTING_MONTHS } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -108,6 +120,27 @@ const activityActionColors: Record<string, string> = {
   check_in:
     "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   view: "bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400",
+  add: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+  remove: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  approve:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  reject: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  submit: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  target_set:
+    "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  entry_create:
+    "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+};
+
+const moduleLabelMap: Record<string, string> = {
+  target: "Target",
+  entry: "Entry",
+  evidence: "Evidence",
+  collaborator: "Collaborator",
+  metric: "Metric",
+  kpi: "KPI",
+  check_in: "Check-in",
+  comment: "Comment",
 };
 
 const transitionConfig: Record<
@@ -178,27 +211,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const kpiType = type ?? "strategic";
   const kpiId = id ?? "";
   const { data: metrics } = useKpiMetrics(kpiType, kpiId);
+  const { data: allMetricEntries } = useKpiEntries(kpiType, kpiId);
   const { data: evidenceList } = useKpiEngagementEvidence(kpiType, kpiId);
-  const { data: collaborators } = useKpiCollaborators(kpiType, kpiId);
+  const { data: collaborators } = useKpiCollaboratorAssignments(kpiType, kpiId);
   const [checkInPage, setCheckInPage] = useState(1);
   const { data: checkInData } = useKpiCheckIns(kpiType, kpiId, checkInPage);
   const [commentPage, setCommentPage] = useState(1);
   const { data: commentData } = useKpiComments(kpiType, kpiId, commentPage);
   const [activityPage, setActivityPage] = useState(1);
   const { data: activityData } = useKpiActivity(kpiType, kpiId, activityPage);
-
-  const { data: usersData } = useQuery({
-    queryKey: ["admin", "users", "all"],
-    queryFn: () => userApi.list(1, 1000),
-  });
-  const users = (usersData as any)?.data ?? [];
-
-  // Latest annual target already set for this KPI (list is year DESC) — reused
-  // to auto-fill a new metric's target instead of asking for it again.
-  const { data: kpiTargets } = useKpiTargets(
-    kpi?.code ? { kpi_code: kpi.code } : undefined,
-  );
-  const latestKpiTargetValue = kpiTargets?.[0]?.target_value;
 
   // ── Mutations ────────────────────────────────────────
   const [transitionModal, setTransitionModal] = useState<{
@@ -211,12 +232,35 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const [showAddMetric, setShowAddMetric] = useState(false);
   const emptyMetricForm = {
     name: "",
+    metric_code: "",
+    metric_description: "",
+    metric_status: "Active",
+    display_order: 0,
     metric_type: "Numeric",
     unit: "",
+    custom_unit_label: "",
     baseline_value: 0,
-    target_value: 0,
     weight: 1,
     formula: "",
+    calculation_type: "Direct Value",
+    direction: "Higher is Better",
+    decimal_precision: 2,
+    aggregation_method: "Sum",
+    reporting_frequency: "",
+    numerator_label: "",
+    numerator_variable_code: "",
+    denominator_label: "",
+    denominator_variable_code: "",
+    direct_actual_label: "",
+    allow_manual_actual_override: false,
+    advanced_formula_enabled: false,
+    formula_code: "",
+    divide_by_zero_handling: "Block Submission",
+    rounding_rule: "Standard Round",
+    calculation_trace_required: true,
+    metric_owner_id: "",
+    data_source: "",
+    evidence_required: false,
     start_date: "",
     due_date: "",
   };
@@ -224,8 +268,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const [metricAttachmentFile, setMetricAttachmentFile] = useState<File | null>(
     null,
   );
-  const [isDraggingMetricAttachment, setIsDraggingMetricAttachment] =
-    useState(false);
   const [metricEvidenceTitle, setMetricEvidenceTitle] = useState("");
   const [metricEvidenceType, setMetricEvidenceType] =
     useState<KpiEvidenceType>("Report");
@@ -234,20 +276,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const uploadAttachment = useUploadKpiAttachment(kpiType, kpiId);
   const createEvidence = useCreateKpiEvidence(kpiType, kpiId);
   const downloadEvidence = useDownloadKpiEvidence();
-  const updateMetricValue = useUpdateKpiMetricValue(kpiType, kpiId);
-  const deleteMetric = useDeleteKpiMetric(kpiType, kpiId);
-  const [metricValueDrafts, setMetricValueDrafts] = useState<
-    Record<string, string>
-  >({});
-
-  const [showEvidenceUpload, setShowEvidenceUpload] = useState(false);
   const deleteEvidence = useDeleteKpiEvidence(kpiType, kpiId);
-
-  const [collabUserId, setCollabUserId] = useState("");
-  const [collabRole, setCollabRole] =
-    useState<KpiCollaboratorRole>("collaborator");
-  const addCollaborator = useAddKpiCollaborator(kpiType, kpiId);
-  const removeCollaborator = useRemoveKpiCollaborator(kpiType, kpiId);
+  const deleteMetric = useDeleteKpiMetric(kpiType, kpiId);
+  const [showEvidenceUpload, setShowEvidenceUpload] = useState(false);
+  const [evidenceToDelete, setEvidenceToDelete] = useState<string | null>(null);
 
   const [checkInStatus, setCheckInStatus] =
     useState<KpiCheckInStatus>("on_track");
@@ -258,6 +290,169 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const [commentText, setCommentText] = useState("");
   const addComment = useAddKpiComment(kpiType, kpiId);
   const deleteComment = useDeleteKpiComment(kpiType, kpiId);
+
+  const [entryMetric, setEntryMetric] = useState<any>(null);
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [showViewEntries, setShowViewEntries] = useState(false);
+  const [showAllEntries, setShowAllEntries] = useState(false);
+
+  // ── Metric Configuration (selected metric edit form) ─
+  const [selectedMetricId, setSelectedMetricId] = useState<string | null>(null);
+  const [configForm, setConfigForm] = useState<KpiMetricRequest | null>(null);
+  const updateMetric = useUpdateKpiMetric(kpiType, kpiId);
+
+  React.useEffect(() => {
+    if (!metrics || metrics.length === 0) return;
+    if (!selectedMetricId || !metrics.some((m) => m.id === selectedMetricId)) {
+      setSelectedMetricId(metrics[0].id);
+    }
+  }, [metrics, selectedMetricId]);
+
+  const selectedMetric =
+    (metrics ?? []).find((m) => m.id === selectedMetricId) ?? null;
+
+  const metricToRequest = (m: KpiMetric): KpiMetricRequest => ({
+    name: m.name,
+    metric_code: m.metric_code,
+    metric_description: m.metric_description,
+    metric_status: m.metric_status,
+    display_order: m.display_order,
+    metric_type: m.metric_type,
+    unit: m.unit,
+    custom_unit_label: m.custom_unit_label,
+    baseline_value: m.baseline_value,
+    weight: m.weight,
+    formula: m.formula,
+    calculation_type: m.calculation_type,
+    direction: m.direction,
+    decimal_precision: m.decimal_precision,
+    aggregation_method: m.aggregation_method,
+    reporting_frequency: m.reporting_frequency,
+    numerator_label: m.numerator_label,
+    numerator_variable_code: m.numerator_variable_code,
+    denominator_label: m.denominator_label,
+    denominator_variable_code: m.denominator_variable_code,
+    direct_actual_label: m.direct_actual_label,
+    allow_manual_actual_override: m.allow_manual_actual_override,
+    advanced_formula_enabled: m.advanced_formula_enabled,
+    formula_code: m.formula_code,
+    divide_by_zero_handling: m.divide_by_zero_handling,
+    rounding_rule: m.rounding_rule,
+    calculation_trace_required: m.calculation_trace_required,
+    metric_owner_id: m.metric_owner_id,
+    data_source: m.data_source,
+    evidence_required: m.evidence_required,
+    start_date: m.start_date,
+    due_date: m.due_date,
+  });
+
+  // Re-hydrate the config form whenever the *selection* changes — not on
+  // every metrics refetch — so in-progress edits survive background refetches.
+  React.useEffect(() => {
+    setConfigForm(selectedMetric ? metricToRequest(selectedMetric) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMetric?.id]);
+
+  const handleCancelMetricConfig = () => {
+    if (selectedMetric) setConfigForm(metricToRequest(selectedMetric));
+  };
+
+  const handleSaveMetricConfig = async () => {
+    if (!selectedMetric || !configForm) return;
+    if (!configForm.name.trim()) {
+      toast.error("Metric name is required");
+      return;
+    }
+    await updateMetric.mutateAsync({
+      metricId: selectedMetric.id,
+      data: configForm,
+    });
+  };
+
+  const FULL_MONTH_NAMES = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const formatEntryPeriodLabel = (entry?: {
+    reporting_year: number;
+    period_code: string;
+  }) => {
+    if (!entry) return "No published period yet";
+    const code = entry.period_code?.toLowerCase();
+    const monthIdx = REPORTING_MONTHS.findIndex(
+      (m) => m.toLowerCase() === code,
+    );
+    if (monthIdx >= 0)
+      return `${FULL_MONTH_NAMES[monthIdx]} ${entry.reporting_year}`;
+    if (["q1", "q2", "q3", "q4", "h1", "h2"].includes(code)) {
+      return `${code.toUpperCase()} ${entry.reporting_year}`;
+    }
+    if (code === "annual") return `Annual ${entry.reporting_year}`;
+    return String(entry.reporting_year);
+  };
+
+  const getMetricLatestApprovedEntry = (metricId: string) => {
+    const entries = (allMetricEntries ?? []).filter(
+      (e) => e.metric_id === metricId && e.status === "approved",
+    );
+    if (entries.length === 0) return undefined;
+    return [...entries].sort((a, b) => {
+      if (a.reporting_year !== b.reporting_year)
+        return b.reporting_year - a.reporting_year;
+      return (b.period_start || "").localeCompare(a.period_start || "");
+    })[0];
+  };
+
+  const getMetricAchievement = (m: KpiMetric) => {
+    const latestEntry = getMetricLatestApprovedEntry(m.id);
+    if (
+      latestEntry?.achievement_percentage !== undefined &&
+      latestEntry?.achievement_percentage !== null
+    ) {
+      return latestEntry.achievement_percentage;
+    }
+    // No metric-level fallback target anymore — a period with no approved
+    // Target genuinely has nothing to measure against, so return null
+    // ("not calculable") rather than compute a percentage against an
+    // unrelated static number.
+    const targetVal = m.effective_target_value;
+    if (!targetVal) return null;
+    if (m.direction === "Lower is Better") {
+      return m.current_value ? (targetVal / m.current_value) * 100 : null;
+    }
+    return (m.current_value / targetVal) * 100;
+  };
+
+  const metricStatusBadgeClass = (s?: string) => {
+    switch (s) {
+      case "Draft":
+        return "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+      case "Inactive":
+        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+      case "Archived":
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+      default:
+        return "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
+    }
+  };
+
+  const formatMetricValue = (m: KpiMetric, value: number) => {
+    const precision = m.decimal_precision ?? 2;
+    const unit = m.custom_unit_label || m.unit || "";
+    const num = Number.isFinite(value) ? value.toFixed(precision) : "0";
+    return unit ? `${num} ${unit}` : num;
+  };
 
   const transitions = transitionConfig[status] ?? [];
 
@@ -311,10 +506,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       toast.error("Name is required");
       return;
     }
-    if (!metricForm.target_value) {
-      toast.error("Target value is required and must be greater than 0");
-      return;
-    }
     if (metricAttachmentFile) {
       if (!metricEvidenceTitle.trim() || !metricEvidenceComment.trim()) {
         toast.error(
@@ -326,6 +517,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
 
     const created = await createMetric.mutateAsync({
       ...metricForm,
+      calculation_type: metricForm.calculation_type as KpiCalculationType,
+      direction: metricForm.direction as KpiDirection,
+      aggregation_method: metricForm.aggregation_method as KpiAggregationMethod,
       start_date: metricForm.start_date
         ? `${metricForm.start_date}T00:00:00Z`
         : undefined,
@@ -353,33 +547,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     setShowAddMetric(false);
     setMetricForm(emptyMetricForm);
     resetMetricAttachment();
-  };
-
-  const handleSaveMetricValue = async (metricId: string) => {
-    const raw = metricValueDrafts[metricId];
-    if (raw === undefined || raw === "") return;
-    await updateMetricValue.mutateAsync({
-      metricId,
-      value: Number(raw),
-    });
-    setMetricValueDrafts((prev) => {
-      const next = { ...prev };
-      delete next[metricId];
-      return next;
-    });
-  };
-
-  const handleAddCollaborator = async () => {
-    if (!collabUserId) {
-      toast.error("Select a user");
-      return;
-    }
-    await addCollaborator.mutateAsync({
-      user_id: collabUserId,
-      role: collabRole,
-    });
-    setCollabUserId("");
-    setCollabRole("collaborator");
   };
 
   const handleCreateCheckIn = async () => {
@@ -630,6 +797,27 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               <Target className="w-4 h-4" />
               Targets
             </Link>
+            <button
+              onClick={() => setShowAllEntries(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <List className="w-4 h-4" />
+              Entries
+            </button>
+            <Link
+              to={`/goals/kpi/dictionary/${type}/${id}/card`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              Card
+            </Link>
+            <Link
+              to={`/goals/kpi/dictionary/${type}/${id}/dashboard`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
+            </Link>
             {canUpdateKpi() && (
               <Link
                 to={
@@ -813,31 +1001,29 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       {/* ── Metrics Tab ───────────────────────────── */}
       {activeTab === "metrics" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Metrics ({(metrics ?? []).length})
-            </h2>
-            {canUpdateKpi() && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  if (!showAddMetric && latestKpiTargetValue !== undefined) {
-                    setMetricForm((p) => ({
-                      ...p,
-                      target_value: latestKpiTargetValue,
-                    }));
-                  }
-                  setShowAddMetric(!showAddMetric);
-                }}
-              >
-                <Plus className="w-4 h-4 me-1" />
-                Add Metric
-              </Button>
-            )}
+          {/* Published-values info banner */}
+          <div className="rounded-r-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              Published values are controlled: Current comes from approved
+              Entries; Target comes from approved Targets.
+            </p>
           </div>
 
+          {canUpdateKpi() && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => setShowAddMetric(!showAddMetric)}
+              >
+                Add Metric
+              </Button>
+            </div>
+          )}
+
           {showAddMetric && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6 space-y-4">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Input
                   label="Name *"
@@ -847,12 +1033,79 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
+                  label="Metric Code"
+                  value={metricForm.metric_code}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      metric_code: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. MET-CLEAN-EXEC"
+                />
+                <Select
+                  label="Metric Type"
+                  value={metricForm.metric_type}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      metric_type: e.target.value,
+                    }))
+                  }
+                  options={[
+                    { value: "Numeric", label: "Numeric" },
+                    { value: "Percentage", label: "Percentage" },
+                    { value: "Currency", label: "Currency" },
+                    { value: "Text", label: "Text" },
+                  ]}
+                />
+                <Select
+                  label="Status"
+                  value={metricForm.metric_status}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      metric_status: e.target.value,
+                    }))
+                  }
+                  options={[
+                    { value: "Draft", label: "Draft" },
+                    { value: "Active", label: "Active" },
+                    { value: "Inactive", label: "Inactive" },
+                    { value: "Archived", label: "Archived" },
+                  ]}
+                />
+                <Input
+                  label="Display Order"
+                  type="number"
+                  value={metricForm.display_order}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      display_order: Number(e.target.value),
+                    }))
+                  }
+                />
+                <Input
                   label="Unit"
                   value={metricForm.unit}
                   onChange={(e) =>
                     setMetricForm((p) => ({ ...p, unit: e.target.value }))
                   }
                 />
+                {metricForm.unit === "Custom" && (
+                  <Input
+                    label="Custom Unit Label"
+                    value={metricForm.custom_unit_label}
+                    onChange={(e) =>
+                      setMetricForm((p) => ({
+                        ...p,
+                        custom_unit_label: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Inspection Points"
+                  />
+                )}
                 <Input
                   label="Baseline"
                   type="number"
@@ -864,26 +1117,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
-                <div>
-                  <Input
-                    label="Target *"
-                    type="number"
-                    value={metricForm.target_value}
-                    onChange={(e) =>
-                      setMetricForm((p) => ({
-                        ...p,
-                        target_value: Number(e.target.value),
-                      }))
-                    }
-                  />
-                  {latestKpiTargetValue !== undefined && (
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Auto-filled from this KPI's current target (
-                      {latestKpiTargetValue}). Adjust if this metric tracks a
-                      different value.
-                    </p>
-                  )}
-                </div>
                 <Input
                   label="Weight"
                   type="number"
@@ -901,10 +1134,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   type="date"
                   value={metricForm.start_date}
                   onChange={(e) =>
-                    setMetricForm((p) => ({
-                      ...p,
-                      start_date: e.target.value,
-                    }))
+                    setMetricForm((p) => ({ ...p, start_date: e.target.value }))
                   }
                 />
                 <Input
@@ -916,113 +1146,393 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
               </div>
+
               <Textarea
-                label="Formula (optional)"
-                value={metricForm.formula}
+                label="Metric Description"
+                value={metricForm.metric_description}
                 onChange={(e) =>
-                  setMetricForm((p) => ({ ...p, formula: e.target.value }))
+                  setMetricForm((p) => ({
+                    ...p,
+                    metric_description: e.target.value,
+                  }))
                 }
                 rows={2}
+                placeholder="Define exactly what is measured and the business scope..."
               />
 
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 p-4 space-y-4">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Evidence (optional)
-                </p>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    File
-                  </label>
-                  {metricAttachmentFile ? (
-                    <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-700/30">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Paperclip className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                        <span className="text-sm text-slate-700 dark:text-slate-200 truncate">
-                          {metricAttachmentFile.name}
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
-                          ({formatFileSize(metricAttachmentFile.size)})
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setMetricAttachmentFile(null)}
-                        className="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
-                        aria-label="Remove file"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label
-                      htmlFor="metric-evidence-file-input"
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setIsDraggingMetricAttachment(true);
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault();
-                        setIsDraggingMetricAttachment(false);
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        setIsDraggingMetricAttachment(false);
-                        const dropped = e.dataTransfer?.files?.[0];
-                        if (dropped) setMetricAttachmentFile(dropped);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-1.5 p-5 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                        isDraggingMetricAttachment
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
-                      }`}
-                    >
-                      <Upload className="w-6 h-6 text-slate-400" />
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
-                        {isDraggingMetricAttachment
-                          ? "Drop to select"
-                          : "Click to select a file"}
-                      </span>
-                      <span className="text-xs text-slate-400 dark:text-slate-500">
-                        or drag and drop
-                      </span>
-                    </label>
-                  )}
-                  <input
-                    id="metric-evidence-file-input"
-                    type="file"
-                    className="hidden"
-                    onChange={(e) => {
-                      const selected = e.target.files?.[0];
-                      if (selected) setMetricAttachmentFile(selected);
-                    }}
-                  />
-                </div>
-                {metricAttachmentFile && (
-                  <>
-                    <Input
-                      label="Title *"
-                      value={metricEvidenceTitle}
-                      onChange={(e) => setMetricEvidenceTitle(e.target.value)}
-                      placeholder="e.g. Baseline Survey"
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-700/60">
+                <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors">
+                  <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                  Measurement Configuration
+                </summary>
+                <div className="p-4 border-t border-slate-200 dark:border-slate-700/60 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Select
+                      label="Calculation Type *"
+                      value={metricForm.calculation_type}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          calculation_type: e.target.value,
+                        }))
+                      }
+                      options={[
+                        { value: "Direct Value", label: "Direct Value" },
+                        {
+                          value: "Percentage - Ratio",
+                          label: "Percentage - Ratio",
+                        },
+                        { value: "Ratio", label: "Ratio" },
+                        { value: "Average", label: "Average" },
+                        { value: "Sum", label: "Sum" },
+                        { value: "Difference", label: "Difference" },
+                        {
+                          value: "Weighted Average",
+                          label: "Weighted Average",
+                        },
+                        { value: "Formula", label: "Formula (Phase 2)" },
+                      ]}
                     />
                     <Select
-                      label="Evidence Type"
-                      value={metricEvidenceType}
+                      label="Direction *"
+                      value={metricForm.direction}
                       onChange={(e) =>
-                        setMetricEvidenceType(e.target.value as KpiEvidenceType)
+                        setMetricForm((p) => ({
+                          ...p,
+                          direction: e.target.value,
+                        }))
                       }
-                      options={KPI_EVIDENCE_TYPE_OPTIONS}
+                      options={[
+                        {
+                          value: "Higher is Better",
+                          label: "Higher is Better",
+                        },
+                        { value: "Lower is Better", label: "Lower is Better" },
+                        { value: "Target Range", label: "Target Range" },
+                        { value: "Exact Target", label: "Exact Target" },
+                        { value: "Informational", label: "Informational" },
+                      ]}
+                    />
+                    <Select
+                      label="Unit"
+                      value={metricForm.unit}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({ ...p, unit: e.target.value }))
+                      }
+                      options={[
+                        { value: "%", label: "%" },
+                        { value: "Number", label: "Number" },
+                        { value: "Seconds", label: "Seconds" },
+                        { value: "Minutes", label: "Minutes" },
+                        { value: "Hours", label: "Hours" },
+                        { value: "Days", label: "Days" },
+                        { value: "SAR", label: "SAR" },
+                        { value: "Employees", label: "Employees" },
+                        { value: "Requests", label: "Requests" },
+                        { value: "Complaints", label: "Complaints" },
+                        { value: "Tasks", label: "Tasks" },
+                        { value: "Kilometers", label: "Kilometers" },
+                        { value: "Square Meters", label: "Square Meters" },
+                        { value: "Score", label: "Score" },
+                        { value: "Custom", label: "Custom" },
+                      ]}
+                    />
+                    <Select
+                      label="Decimal Precision"
+                      value={metricForm.decimal_precision}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          decimal_precision: Number(e.target.value),
+                        }))
+                      }
+                      options={[
+                        { value: "0", label: "0" },
+                        { value: "1", label: "1" },
+                        { value: "2", label: "2" },
+                        { value: "3", label: "3" },
+                        { value: "4", label: "4" },
+                      ]}
+                    />
+                    <Select
+                      label="Aggregation Method *"
+                      value={metricForm.aggregation_method}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          aggregation_method: e.target.value,
+                        }))
+                      }
+                      options={[
+                        { value: "Sum", label: "Sum" },
+                        { value: "Average", label: "Average" },
+                        {
+                          value: "Latest Approved Value",
+                          label: "Latest Approved Value",
+                        },
+                        { value: "Minimum", label: "Minimum" },
+                        { value: "Maximum", label: "Maximum" },
+                        {
+                          value: "Weighted Average",
+                          label: "Weighted Average",
+                        },
+                        { value: "No Aggregation", label: "No Aggregation" },
+                      ]}
+                    />
+                    <Select
+                      label="Reporting Frequency"
+                      value={metricForm.reporting_frequency}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          reporting_frequency: e.target.value,
+                        }))
+                      }
+                      options={[
+                        { value: "", label: "Inherit from KPI" },
+                        { value: "Monthly", label: "Monthly" },
+                        { value: "Quarterly", label: "Quarterly" },
+                        { value: "Semiannual", label: "Semiannual" },
+                        { value: "Annual", label: "Annual" },
+                        { value: "Ad Hoc", label: "Ad Hoc" },
+                      ]}
+                    />
+                  </div>
+                </div>
+              </details>
+
+              {(metricForm.calculation_type === "Percentage - Ratio" ||
+                metricForm.calculation_type === "Ratio") && (
+                <details className="group rounded-lg border border-slate-200 dark:border-slate-700/60">
+                  <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors">
+                    <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    Input Definition — Ratio
+                  </summary>
+                  <div className="p-4 border-t border-slate-200 dark:border-slate-700/60 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Numerator Label"
+                        value={metricForm.numerator_label}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            numerator_label: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Completed tasks"
+                      />
+                      <Input
+                        label="Numerator Variable Code"
+                        value={metricForm.numerator_variable_code}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            numerator_variable_code: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. NUM_COMPLETED_TASKS"
+                      />
+                      <Input
+                        label="Denominator Label"
+                        value={metricForm.denominator_label}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            denominator_label: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Planned tasks"
+                      />
+                      <Input
+                        label="Denominator Variable Code"
+                        value={metricForm.denominator_variable_code}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            denominator_variable_code: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. DEN_PLANNED_TASKS"
+                      />
+                    </div>
+                  </div>
+                </details>
+              )}
+
+              {metricForm.calculation_type === "Direct Value" && (
+                <Input
+                  label="Direct Actual Label"
+                  value={metricForm.direct_actual_label}
+                  onChange={(e) =>
+                    setMetricForm((p) => ({
+                      ...p,
+                      direct_actual_label: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Average response time"
+                />
+              )}
+
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-700/60">
+                <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors">
+                  <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                  Formula Readiness (Phase 2)
+                </summary>
+                <div className="p-4 border-t border-slate-200 dark:border-slate-700/60 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={metricForm.advanced_formula_enabled}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            advanced_formula_enabled: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Advanced Formula Enabled
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={metricForm.calculation_trace_required}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            calculation_trace_required: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Calculation Trace Required
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={metricForm.allow_manual_actual_override}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            allow_manual_actual_override: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Allow Manual Override
+                    </label>
+                    <Input
+                      label="Formula Code"
+                      value={metricForm.formula_code}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          formula_code: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. FORM-CLEAN-001"
+                    />
+                    <Select
+                      label="Divide by Zero Handling"
+                      value={metricForm.divide_by_zero_handling}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          divide_by_zero_handling: e.target.value,
+                        }))
+                      }
+                      options={[
+                        {
+                          value: "Block Submission",
+                          label: "Block Submission",
+                        },
+                        { value: "Return Null", label: "Return Null" },
+                        { value: "Return Zero", label: "Return Zero" },
+                        {
+                          value: "Require Exception Approval",
+                          label: "Require Exception Approval",
+                        },
+                      ]}
+                    />
+                    <Select
+                      label="Rounding Rule"
+                      value={metricForm.rounding_rule}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          rounding_rule: e.target.value,
+                        }))
+                      }
+                      options={[
+                        { value: "Standard Round", label: "Standard Round" },
+                        { value: "Round Up", label: "Round Up" },
+                        { value: "Round Down", label: "Round Down" },
+                        { value: "No Rounding", label: "No Rounding" },
+                      ]}
                     />
                     <Textarea
-                      label="Comment *"
-                      value={metricEvidenceComment}
-                      onChange={(e) => setMetricEvidenceComment(e.target.value)}
+                      label="Formula (optional)"
+                      value={metricForm.formula}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          formula: e.target.value,
+                        }))
+                      }
                       rows={2}
-                      placeholder="Describe this evidence..."
+                      placeholder="e.g. (A / B) * 100"
                     />
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              </details>
+
+              <details className="group rounded-lg border border-slate-200 dark:border-slate-700/60">
+                <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-lg transition-colors">
+                  <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                  Governance
+                </summary>
+                <div className="p-4 border-t border-slate-200 dark:border-slate-700/60 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Input
+                      label="Metric Owner ID"
+                      value={metricForm.metric_owner_id}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          metric_owner_id: e.target.value,
+                        }))
+                      }
+                      placeholder="User UUID"
+                    />
+                    <Input
+                      label="Data Source"
+                      value={metricForm.data_source}
+                      onChange={(e) =>
+                        setMetricForm((p) => ({
+                          ...p,
+                          data_source: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. EcoCycle, Manual Entry"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 pt-6">
+                      <input
+                        type="checkbox"
+                        checked={metricForm.evidence_required}
+                        onChange={(e) =>
+                          setMetricForm((p) => ({
+                            ...p,
+                            evidence_required: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Evidence Required
+                    </label>
+                  </div>
+                </div>
+              </details>
 
               <div className="flex justify-end gap-3">
                 <Button
@@ -1050,90 +1560,153 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             </div>
           )}
 
+          {/* Per-metric mini cards */}
           {(metrics ?? []).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(metrics ?? []).map((m) => {
-                const progress =
-                  m.target_value !== 0
-                    ? Math.min(
-                        100,
-                        Math.round((m.current_value / m.target_value) * 100),
-                      )
-                    : 0;
+                const achievement = getMetricAchievement(m);
+                const barWidth =
+                  achievement === null
+                    ? 0
+                    : Math.min(100, Math.max(0, achievement));
+                const progressColor =
+                  achievement === null
+                    ? "bg-slate-300 dark:bg-slate-600"
+                    : achievement >= 80
+                      ? "bg-teal-500"
+                      : achievement >= 50
+                        ? "bg-amber-500"
+                        : "bg-red-500";
+                const latestEntry = getMetricLatestApprovedEntry(m.id);
+                const periodLabel = formatEntryPeriodLabel(latestEntry);
+                // Show the target for whichever period Achievement is actually
+                // reporting on — the latest approved entry's own snapshot when
+                // one exists — instead of the "current calendar period" target,
+                // which can silently be a different period than the entry.
+                const displayTargetValue =
+                  latestEntry?.target_value_snapshot ??
+                  m.effective_target_value;
+                const displayTargetPeriod = latestEntry
+                  ? periodLabel
+                  : m.effective_target_period;
+                const isSelected = selectedMetricId === m.id;
                 return (
                   <div
                     key={m.id}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4"
+                    onClick={() => setSelectedMetricId(m.id)}
+                    className={`rounded-xl border bg-white dark:bg-slate-800/80 p-4 cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-blue-400 dark:border-blue-500 ring-1 ring-blue-400 dark:ring-blue-500"
+                        : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                          {m.name}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {m.metric_type} · weight {m.weight}
-                        </p>
-                      </div>
-                      {canUpdateKpi() && (
-                        <button
-                          onClick={() => deleteMetric.mutate(m.id)}
-                          className="p-1 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                      <span>Baseline: {m.baseline_value}</span>
-                      <span>Current: {m.current_value}</span>
-                      <span>Target: {m.target_value}</span>
-                      {m.unit && <span>{m.unit}</span>}
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    {m.formula && (
-                      <p className="mt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">
-                        {m.formula}
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                        {m.name}
                       </p>
-                    )}
-                    {(m.start_date || m.due_date) && (
-                      <div className="mt-2 flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
-                        {m.start_date && (
-                          <span>Start: {formatDate(m.start_date)}</span>
-                        )}
-                        {m.due_date && (
-                          <span>Due: {formatDate(m.due_date)}</span>
-                        )}
+                      <span
+                        className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${metricStatusBadgeClass(m.metric_status)}`}
+                      >
+                        {m.metric_status || "Active"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {m.metric_code || "—"} · {m.metric_status || "Active"}
+                    </p>
+
+                    <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700">
+                      <div className="pe-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Baseline
+                        </p>
+                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatMetricValue(m, m.baseline_value)}
+                        </p>
                       </div>
-                    )}
-                    {canUpdateKpi() && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <input
-                          type="number"
-                          placeholder="Update value..."
-                          value={metricValueDrafts[m.id] ?? ""}
-                          onChange={(e) =>
-                            setMetricValueDrafts((prev) => ({
-                              ...prev,
-                              [m.id]: e.target.value,
-                            }))
-                          }
-                          className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleSaveMetricValue(m.id)}
-                          disabled={updateMetricValue.isPending}
+                      <div className="px-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Current
+                        </p>
+                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatMetricValue(m, m.current_value)}
+                        </p>
+                      </div>
+                      <div className="ps-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Target
+                        </p>
+                        <p
+                          className={`mt-1 text-base font-bold tabular-nums ${
+                            displayTargetValue !== undefined
+                              ? "text-slate-900 dark:text-white"
+                              : "text-slate-400 dark:text-slate-500 text-sm font-medium"
+                          }`}
                         >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
+                          {displayTargetValue !== undefined
+                            ? formatMetricValue(m, displayTargetValue)
+                            : "No target set"}
+                        </p>
+                        {displayTargetPeriod && (
+                          <p
+                            className="text-[10px] text-blue-600 dark:text-blue-400 truncate"
+                            title={`Approved target for ${displayTargetPeriod}`}
+                          >
+                            {displayTargetPeriod}
+                          </p>
+                        )}
                       </div>
-                    )}
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                        Achievement
+                      </p>
+                      <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {periodLabel}
+                        </span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                          {achievement === null
+                            ? "No target for this period"
+                            : `${achievement.toFixed(2)}%`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      className="mt-4 flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEntryMetric(m);
+                          setShowViewEntries(true);
+                        }}
+                      >
+                        Entries
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={
+                          m.metric_status === "Inactive" ||
+                          m.metric_status === "Archived"
+                        }
+                        onClick={() => {
+                          setEntryMetric(m);
+                          setShowAddEntry(true);
+                        }}
+                      >
+                        Add Entry
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -1146,6 +1719,389 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               </p>
             </div>
           )}
+
+          {/* Metric Configuration ─ edit form for the selected metric */}
+          {selectedMetric && configForm && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Metric Configuration
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400">
+                    Editable by KPI Editor
+                  </span>
+                  {canUpdateKpi() && (
+                    <button
+                      onClick={() => {
+                        deleteMetric.mutate(selectedMetric.id);
+                        setSelectedMetricId(null);
+                      }}
+                      title="Delete metric"
+                      className="p-1.5 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Input
+                  label="Metric Name *"
+                  value={configForm.name}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, name: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Metric Code *"
+                  value={configForm.metric_code ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, metric_code: e.target.value } : p,
+                    )
+                  }
+                />
+                <Select
+                  label="Metric Status *"
+                  value={configForm.metric_status ?? "Active"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, metric_status: e.target.value } : p,
+                    )
+                  }
+                  options={[
+                    { value: "Draft", label: "Draft" },
+                    { value: "Active", label: "Active" },
+                    { value: "Inactive", label: "Inactive" },
+                    { value: "Archived", label: "Archived" },
+                  ]}
+                />
+                <Input
+                  label="Display Order"
+                  type="number"
+                  value={configForm.display_order ?? 0}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, display_order: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+
+                <div className="sm:col-span-2 lg:col-span-4">
+                  <Textarea
+                    label="Metric Description *"
+                    rows={2}
+                    value={configForm.metric_description ?? ""}
+                    disabled={!canUpdateKpi()}
+                    onChange={(e) =>
+                      setConfigForm((p) =>
+                        p ? { ...p, metric_description: e.target.value } : p,
+                      )
+                    }
+                  />
+                </div>
+
+                <Select
+                  label="Calculation Type *"
+                  value={configForm.calculation_type ?? "Direct Value"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            calculation_type: e.target
+                              .value as KpiCalculationType,
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "Direct Value", label: "Direct Value" },
+                    {
+                      value: "Percentage - Ratio",
+                      label: "Percentage - Ratio",
+                    },
+                    { value: "Ratio", label: "Ratio" },
+                    { value: "Average", label: "Average" },
+                    { value: "Sum", label: "Sum" },
+                    { value: "Difference", label: "Difference" },
+                    { value: "Weighted Average", label: "Weighted Average" },
+                    { value: "Formula", label: "Formula (Phase 2)" },
+                  ]}
+                />
+                <Select
+                  label="Direction *"
+                  value={configForm.direction ?? "Higher is Better"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? { ...p, direction: e.target.value as KpiDirection }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "Higher is Better", label: "Higher is Better" },
+                    { value: "Lower is Better", label: "Lower is Better" },
+                    { value: "Target Range", label: "Target Range" },
+                    { value: "Exact Target", label: "Exact Target" },
+                    { value: "Informational", label: "Informational" },
+                  ]}
+                />
+                <Select
+                  label="Unit *"
+                  value={configForm.unit ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, unit: e.target.value } : p,
+                    )
+                  }
+                  options={[
+                    { value: "%", label: "%" },
+                    { value: "Number", label: "Number" },
+                    { value: "Seconds", label: "Seconds" },
+                    { value: "Minutes", label: "Minutes" },
+                    { value: "Hours", label: "Hours" },
+                    { value: "Days", label: "Days" },
+                    { value: "SAR", label: "SAR" },
+                    { value: "Employees", label: "Employees" },
+                    { value: "Requests", label: "Requests" },
+                    { value: "Complaints", label: "Complaints" },
+                    { value: "Tasks", label: "Tasks" },
+                    { value: "Kilometers", label: "Kilometers" },
+                    { value: "Square Meters", label: "Square Meters" },
+                    { value: "Score", label: "Score" },
+                    { value: "Custom", label: "Custom" },
+                  ]}
+                />
+                <Select
+                  label="Decimal Precision *"
+                  value={String(configForm.decimal_precision ?? 2)}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            decimal_precision: Number(e.target.value),
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "0", label: "0" },
+                    { value: "1", label: "1" },
+                    { value: "2", label: "2" },
+                    { value: "3", label: "3" },
+                    { value: "4", label: "4" },
+                  ]}
+                />
+
+                <Select
+                  label="Aggregation Method *"
+                  value={configForm.aggregation_method ?? "Sum"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            aggregation_method: e.target
+                              .value as KpiAggregationMethod,
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "Sum", label: "Sum" },
+                    { value: "Average", label: "Average" },
+                    {
+                      value: "Latest Approved Value",
+                      label: "Latest Approved Value",
+                    },
+                    { value: "Minimum", label: "Minimum" },
+                    { value: "Maximum", label: "Maximum" },
+                    { value: "Weighted Average", label: "Weighted Average" },
+                    { value: "No Aggregation", label: "No Aggregation" },
+                  ]}
+                />
+                <Select
+                  label="Reporting Frequency *"
+                  value={configForm.reporting_frequency ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, reporting_frequency: e.target.value } : p,
+                    )
+                  }
+                  options={[
+                    { value: "", label: "Inherit from KPI" },
+                    { value: "Monthly", label: "Monthly" },
+                    { value: "Quarterly", label: "Quarterly" },
+                    { value: "Semiannual", label: "Semiannual" },
+                    { value: "Annual", label: "Annual" },
+                    { value: "Ad Hoc", label: "Ad Hoc" },
+                  ]}
+                />
+                <Input
+                  label="Target Source *"
+                  value={
+                    configForm.calculation_type === "Formula"
+                      ? "Formula"
+                      : "Approved Period Target"
+                  }
+                  disabled
+                  hint="Controlled by the approved Targets workflow"
+                />
+                <Select
+                  label="Manual Actual Override"
+                  value={configForm.allow_manual_actual_override ? "Yes" : "No"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            allow_manual_actual_override:
+                              e.target.value === "Yes",
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "No", label: "No" },
+                    { value: "Yes", label: "Yes" },
+                  ]}
+                />
+
+                <Input
+                  label="Numerator Label *"
+                  value={configForm.numerator_label ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, numerator_label: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Numerator Variable Code *"
+                  value={configForm.numerator_variable_code ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            numerator_variable_code: e.target.value,
+                          }
+                        : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Denominator Label *"
+                  value={configForm.denominator_label ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, denominator_label: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Denominator Variable Code *"
+                  value={configForm.denominator_variable_code ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            denominator_variable_code: e.target.value,
+                          }
+                        : p,
+                    )
+                  }
+                />
+
+                <Input
+                  label="Metric Owner *"
+                  value={configForm.metric_owner_id ?? ""}
+                  disabled={!canUpdateKpi()}
+                  placeholder="User UUID"
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, metric_owner_id: e.target.value } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Data Source *"
+                  value={configForm.data_source ?? ""}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, data_source: e.target.value } : p,
+                    )
+                  }
+                />
+                <Select
+                  label="Evidence Required *"
+                  value={configForm.evidence_required ? "Yes" : "No"}
+                  disabled={!canUpdateKpi()}
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p
+                        ? {
+                            ...p,
+                            evidence_required: e.target.value === "Yes",
+                          }
+                        : p,
+                    )
+                  }
+                  options={[
+                    { value: "No", label: "No" },
+                    { value: "Yes", label: "Yes" },
+                  ]}
+                />
+              </div>
+
+              {configForm.calculation_type === "Formula" && (
+                <div className="mt-4 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+                  <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="italic">
+                    Formula-based calculation is Phase 2 — not available yet.
+                  </span>
+                </div>
+              )}
+
+              {canUpdateKpi() && (
+                <div className="mt-6 flex justify-end gap-3">
+                  <Button variant="outline" onClick={handleCancelMetricConfig}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="success"
+                    isLoading={updateMetric.isPending}
+                    onClick={handleSaveMetricConfig}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1154,14 +2110,19 @@ export const KpiDictionaryDetailPage: React.FC = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Evidence ({(evidenceList ?? []).length})
+              Evidence Summaries ({(evidenceList ?? []).length})
             </h2>
-            {canUpdateKpi() && (
-              <Button size="sm" onClick={() => setShowEvidenceUpload(true)}>
-                <Upload className="w-4 h-4 me-1" />
-                Upload Evidence
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {canUpdateKpi() && (
+                <Button
+                  size="sm"
+                  leftIcon={<Plus className="w-4 h-4" />}
+                  onClick={() => setShowEvidenceUpload(true)}
+                >
+                  Add Evidence
+                </Button>
+              )}
+            </div>
           </div>
 
           {(evidenceList ?? []).length > 0 ? (
@@ -1169,10 +2130,16 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               {(evidenceList ?? []).map((e) => (
                 <div
                   key={e.id}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4"
+                  className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer"
+                  onClick={() => {
+                    if (e.metric) {
+                      setEntryMetric(e.metric);
+                      setShowViewEntries(true);
+                    }
+                  }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">
                         {e.title}
                       </p>
@@ -1186,59 +2153,70 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                    </div>
-                    {canUpdateKpi() && (
-                      <button
-                        onClick={() => deleteEvidence.mutate(e.id)}
-                        className="p-1 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  {e.description && (
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
-                      {e.description}
-                    </p>
-                  )}
-                  {e.file_name ? (
-                    <button
-                      onClick={() =>
-                        downloadEvidence.mutate({
-                          evidenceId: e.id,
-                          fileName: e.file_name!,
-                        })
-                      }
-                      disabled={downloadEvidence.isPending}
-                      className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 disabled:opacity-50"
-                    >
-                      <Download className="w-3 h-3" />
-                      {e.file_name}
-                      {e.file_size !== undefined && (
-                        <span className="text-slate-400">
-                          ({formatFileSize(e.file_size)})
-                        </span>
+                      {e.description && (
+                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                          {e.description}
+                        </p>
                       )}
-                    </button>
-                  ) : (
-                    e.file_url && (
-                      <a
-                        href={e.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                      >
-                        <Paperclip className="w-3 h-3" />
-                        {e.file_url}
-                      </a>
-                    )
-                  )}
-                  <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                    {e.uploaded_by
-                      ? `${e.uploaded_by.first_name} ${e.uploaded_by.last_name}`
-                      : ""}{" "}
-                    · {formatDate(e.created_at)}
-                  </p>
+                      {e.file_name ? (
+                        <button
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            downloadEvidence.mutate({
+                              evidenceId: e.id,
+                              fileName: e.file_name!,
+                            });
+                          }}
+                          disabled={downloadEvidence.isPending}
+                          className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 disabled:opacity-50"
+                        >
+                          <Download className="w-3 h-3" />
+                          {e.file_name}
+                          {e.file_size !== undefined && (
+                            <span className="text-slate-400">
+                              ({formatFileSize(e.file_size)})
+                            </span>
+                          )}
+                        </button>
+                      ) : (
+                        e.file_url && (
+                          <a
+                            href={e.file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(ev) => ev.stopPropagation()}
+                            className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                          >
+                            <Paperclip className="w-3 h-3" />
+                            {e.file_url}
+                          </a>
+                        )
+                      )}
+                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                        {e.uploaded_by
+                          ? `${e.uploaded_by.first_name} ${e.uploaded_by.last_name}`
+                          : ""}{" "}
+                        · {formatDate(e.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                      {canUpdateKpi() && (
+                        <button
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setEvidenceToDelete(e.id);
+                          }}
+                          className="p-1 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-colors"
+                          title="Delete evidence"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {e.metric && (
+                        <ExternalLink className="w-4 h-4 text-slate-300 dark:text-slate-600" />
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1253,94 +2231,54 @@ export const KpiDictionaryDetailPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── Evidence Delete Confirmation ─────────── */}
+      <Modal
+        isOpen={!!evidenceToDelete}
+        onClose={() => setEvidenceToDelete(null)}
+      >
+        <ModalHeader>
+          <ModalTitle>Delete Evidence</ModalTitle>
+          <ModalDescription>
+            Are you sure you want to delete this evidence? This action cannot be
+            undone.
+          </ModalDescription>
+        </ModalHeader>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setEvidenceToDelete(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            leftIcon={<Trash2 className="w-4 h-4" />}
+            isLoading={deleteEvidence.isPending}
+            onClick={async () => {
+              if (evidenceToDelete) {
+                await deleteEvidence.mutateAsync(evidenceToDelete);
+                setEvidenceToDelete(null);
+              }
+            }}
+          >
+            Delete
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* ── Evidence Upload Modal ─────────────────── */}
+      <KpiEvidenceUploadModal
+        kpiType={kpiType}
+        kpiId={kpiId}
+        isOpen={showEvidenceUpload}
+        onClose={() => setShowEvidenceUpload(false)}
+        metrics={metrics ?? []}
+      />
+
       {/* ── Collaborators Tab ─────────────────────── */}
       {activeTab === "collaborators" && (
-        <div className="space-y-6">
-          {canAssignKpi() && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Add Collaborator
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                <Select
-                  label="User"
-                  value={collabUserId}
-                  onChange={(v) => setCollabUserId(v.target.value)}
-                  options={users.map((u: any) => ({
-                    value: u.id,
-                    label: `${u.first_name} ${u.last_name} (${u.email})`,
-                  }))}
-                  placeholder="Select a user"
-                />
-                <Select
-                  label="Role"
-                  value={collabRole}
-                  onChange={(v) =>
-                    setCollabRole(v.target.value as KpiCollaboratorRole)
-                  }
-                  options={[
-                    { value: "collaborator", label: "Collaborator" },
-                    { value: "reviewer", label: "Reviewer" },
-                  ]}
-                />
-                <Button
-                  onClick={handleAddCollaborator}
-                  disabled={addCollaborator.isPending}
-                >
-                  <Plus className="w-4 h-4 me-1" />
-                  Add
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {(collaborators ?? []).length > 0 ? (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 divide-y divide-slate-100 dark:divide-slate-700/30">
-              {(collaborators ?? []).map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between px-6 py-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {c.user
-                          ? `${c.user.first_name} ${c.user.last_name}`
-                          : c.user_id}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {c.user?.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300 capitalize">
-                      {c.role}
-                    </span>
-                    {canAssignKpi() && (
-                      <button
-                        onClick={() => removeCollaborator.mutate(c.user_id)}
-                        className="p-1 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">
-              <Users className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                No collaborators yet.
-              </p>
-            </div>
-          )}
-        </div>
+        <CollaboratorsTab
+          type={type ?? ""}
+          id={id ?? ""}
+          canAssign={canAssignKpi()}
+        />
       )}
 
       {/* ── Check-ins Tab ─────────────────────────── */}
@@ -1376,10 +2314,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               </div>
               <div className="flex justify-end">
                 <Button
+                  leftIcon={<Send className="w-4 h-4" />}
                   onClick={handleCreateCheckIn}
                   disabled={createCheckIn.isPending}
                 >
-                  <Send className="w-4 h-4 me-1" />
                   {createCheckIn.isPending ? "Posting..." : "Post Check-in"}
                 </Button>
               </div>
@@ -1476,10 +2414,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               />
               <div className="flex justify-end">
                 <Button
+                  leftIcon={<Send className="w-4 h-4" />}
                   onClick={handleAddComment}
                   disabled={addComment.isPending || !commentText.trim()}
                 >
-                  <Send className="w-4 h-4 me-1" />
                   {addComment.isPending ? "Posting..." : "Post"}
                 </Button>
               </div>
@@ -1583,12 +2521,16 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700/60" />
                 <div className="space-y-6">
                   {(activityData?.data ?? []).map((entry) => {
+                    const actionKey = entry.action?.toLowerCase();
                     const colorClass =
-                      activityActionColors[entry.action?.toLowerCase()] ??
+                      activityActionColors[actionKey] ??
                       activityActionColors.view;
                     const userName = entry.user
                       ? `${entry.user.first_name} ${entry.user.last_name}`.trim()
                       : "System";
+                    const moduleLabel =
+                      moduleLabelMap[entry.module?.toLowerCase()] ??
+                      entry.module;
                     return (
                       <div key={entry.id} className="relative pl-10">
                         <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 bg-slate-400 dark:bg-slate-500 z-10" />
@@ -1598,6 +2540,11 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                           >
                             {entry.action}
                           </span>
+                          {moduleLabel && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
+                              {moduleLabel}
+                            </span>
+                          )}
                           <span className="text-sm text-slate-700 dark:text-slate-300">
                             {entry.description}
                           </span>
@@ -1703,12 +2650,34 @@ export const KpiDictionaryDetailPage: React.FC = () => {
         </div>
       </Modal>
 
-      <KpiEvidenceUploadModal
+      <AddEntryModal
         kpiType={kpiType}
         kpiId={kpiId}
-        isOpen={showEvidenceUpload}
-        onClose={() => setShowEvidenceUpload(false)}
-        metrics={metrics}
+        metric={entryMetric}
+        reportingFrequency={
+          entryMetric?.reporting_frequency || kpi?.reporting_frequency
+        }
+        kpiCode={kpi?.code}
+        isOpen={showAddEntry}
+        onClose={() => setShowAddEntry(false)}
+      />
+
+      <ViewEntriesModal
+        kpiType={kpiType}
+        kpiId={kpiId}
+        metricId={entryMetric?.id ?? ""}
+        metricName={entryMetric?.name ?? ""}
+        isOpen={showViewEntries}
+        onClose={() => setShowViewEntries(false)}
+      />
+
+      <ViewEntriesModal
+        kpiType={kpiType}
+        kpiId={kpiId}
+        metricId=""
+        metricName="All Metrics"
+        isOpen={showAllEntries}
+        onClose={() => setShowAllEntries(false)}
       />
     </div>
   );

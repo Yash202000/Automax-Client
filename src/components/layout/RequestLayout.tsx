@@ -32,7 +32,7 @@ import { authApi } from "../../api/auth";
 import { setLoggingOut } from "../../api/client";
 import { SoftphoneButton } from "../sip/SoftphoneButton";
 import { incidentApi } from "../../api/admin";
-import {
+import i18n, {
   setLanguage,
   getCurrentLanguage,
   supportedLanguages,
@@ -64,7 +64,9 @@ export const RequestLayout: React.FC = () => {
   const canViewRequests =
     isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW);
   const canViewAllRequests =
-    isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canCreateRequest =
     isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_CREATE);
   const canTransitionRequest =
@@ -93,11 +95,16 @@ export const RequestLayout: React.FC = () => {
 
   // Fetch request stats
   const { data: statsData } = useQuery({
-    queryKey: ["requests", "stats", canViewAllRequests ? "all" : "assigned"],
+    queryKey: [
+      "requests",
+      "stats",
+      "request",
+      canViewAllRequests ? "all" : "assigned",
+    ],
     queryFn: () =>
-      incidentApi.getStats(
+      incidentApi.getIncidentStatsV2(
+        canViewAllRequests ? undefined : { my_record: user?.id },
         "request",
-        canViewAllRequests ? undefined : "assigned",
       ),
   });
 
@@ -164,38 +171,36 @@ export const RequestLayout: React.FC = () => {
           </p>
         )}
         <div className="space-y-1">
-          {canViewAllRequests && (
-            <NavLink
-              to="/requests"
-              end
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) => {
-                const isAllRequestsActive = isActive && !currentStatus;
-                return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isAllRequestsActive
-                    ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-primary/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`;
-              }}
-            >
-              {({ isActive }) => {
-                const isAllRequestsActive = isActive && !currentStatus;
-                return (
-                  <>
-                    {isAllRequestsActive && (
-                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
-                    )}
-                    <List size={20} className="flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="ms-3 font-medium text-sm">
-                        {t("sidebar.allRequests")}
-                      </span>
-                    )}
-                  </>
-                );
-              }}
-            </NavLink>
-          )}
+          <NavLink
+            to="/requests"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => {
+              const isAllRequestsActive = isActive && !currentStatus;
+              return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                isAllRequestsActive
+                  ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-primary/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`;
+            }}
+          >
+            {({ isActive }) => {
+              const isAllRequestsActive = isActive && !currentStatus;
+              return (
+                <>
+                  {isAllRequestsActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                  )}
+                  <List size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("sidebar.allRequests")}
+                    </span>
+                  )}
+                </>
+              );
+            }}
+          </NavLink>
 
           {canCreateRequest && (
             <button
@@ -314,60 +319,58 @@ export const RequestLayout: React.FC = () => {
                     </div>
                   )}
 
-                  {Object.entries(workflow.by_state || {}).map(
-                    ([stateName, count]) => (
-                      <NavLink
-                        key={stateName}
-                        to={`/requests?status=${encodeURIComponent(stateName)}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={({ isActive }) => {
-                          const isItemActive =
-                            isActive && currentStatus === stateName;
-                          return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
-                            isItemActive
-                              ? "bg-white/10 text-white shadow-sm"
-                              : ""
-                          }`;
-                        }}
-                      >
-                        {({ isActive }) => {
-                          const isItemActive =
-                            isActive && currentStatus === stateName;
-                          return (
-                            <>
-                              <Circle
-                                size={8}
-                                className={`flex-shrink-0 fill-current ${
-                                  isItemActive
-                                    ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-                                    : "text-slate-500"
-                                }`}
-                              />
+                  {(workflow.by_state_details || []).map((state) => (
+                    <NavLink
+                      key={state.name}
+                      to={`/requests?status=${encodeURIComponent(state.name)}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) => {
+                        const isItemActive =
+                          isActive && currentStatus === state.name;
+                        return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                          isItemActive ? "bg-white/10 text-white shadow-sm" : ""
+                        }`;
+                      }}
+                    >
+                      {({ isActive }) => {
+                        const isItemActive =
+                          isActive && currentStatus === state.name;
+                        return (
+                          <>
+                            <Circle
+                              size={8}
+                              className={`flex-shrink-0 fill-current ${
+                                isItemActive
+                                  ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                  : "text-slate-500"
+                              }`}
+                            />
 
-                              {!collapsed && (
-                                <>
-                                  <span
-                                    className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
-                                  >
-                                    {stateName}
-                                  </span>
-                                  <span
-                                    className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
-                                      isItemActive
-                                        ? "bg-primary text-white"
-                                        : "bg-slate-700 text-slate-300"
-                                    }`}
-                                  >
-                                    {count as number}
-                                  </span>
-                                </>
-                              )}
-                            </>
-                          );
-                        }}
-                      </NavLink>
-                    ),
-                  )}
+                            {!collapsed && (
+                              <>
+                                <span
+                                  className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
+                                >
+                                  {i18n.language === "ar" && state.name_ar
+                                    ? state.name_ar
+                                    : state.name}
+                                </span>
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                                    isItemActive
+                                      ? "bg-primary text-white"
+                                      : "bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  {state.count}
+                                </span>
+                              </>
+                            )}
+                          </>
+                        );
+                      }}
+                    </NavLink>
+                  ))}
                 </div>
               ))}
             </div>

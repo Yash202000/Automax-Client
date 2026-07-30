@@ -18,14 +18,18 @@ import { AudioPlayer } from "../../../components/common/AudioPlayer";
 import { cn } from "@/lib/utils";
 import CallablePhone from "../../../components/common/CallablePhone";
 
-export const CallHistory: React.FC = () => {
+interface CallHistoryProps {
+  userId?: any;
+}
+
+export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const limit = 20;
 
   const { data, isLoading, refetch, isFetching, error } = useQuery({
-    queryKey: ["call-logs", page, limit],
-    queryFn: () => callLogApi.list(page, limit),
+    queryKey: ["call-logs", page, limit, userId],
+    queryFn: () => callLogApi.list(page, limit, userId),
     retry: 1,
     // New calls (CTI webhooks) land without any user action on this page —
     // poll so they show up without a manual refresh, same as the notification
@@ -119,24 +123,28 @@ export const CallHistory: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t("callCentre.callHistory")}</h1>
-          <p className="text-slate-500 mt-1">
-            {t("callCentre.historySubtitle")}
-          </p>
+      {!userId ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              {t("callCentre.callHistory")}
+            </h1>
+            <p className="text-slate-500 mt-1">
+              {t("callCentre.historySubtitle")}
+            </p>
+          </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+            />
+            <span className="text-sm font-medium">{t("common.refresh")}</span>
+          </button>
         </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw
-            className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
-          />
-          <span className="text-sm font-medium">{t("common.refresh")}</span>
-        </button>
-      </div>
+      ) : null}
 
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border">
@@ -191,8 +199,7 @@ export const CallHistory: React.FC = () => {
                 <p className="text-sm text-slate-500">
                   {t("common.page")}
                   {page}
-                  {t("common.of")}
-                  {data.total_pages}
+                  {t("common.of")} {data.total_pages}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -314,7 +321,8 @@ const CallHistoryItem: React.FC<{
           )}
           <button
             onClick={() => {
-              const number = call.other_party_extension || call.other_party_phone;
+              const number =
+                call.other_party_extension || call.other_party_phone;
               if (number) {
                 window.dispatchEvent(
                   new CustomEvent("initiate-call", {
