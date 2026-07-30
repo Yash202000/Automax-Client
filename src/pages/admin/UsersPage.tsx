@@ -394,10 +394,16 @@ export const UsersPage: React.FC = () => {
   // Transform tree data to TreeNode format
   const transformToTreeNodes = useCallback((data: unknown[]): TreeNode[] => {
     return (data || []).map((item: unknown) => {
-      const node = item as { id: string; name: string; children?: unknown[] };
+      const node = item as {
+        id: string;
+        name: string;
+        children?: unknown[];
+        types?: string[];
+      };
       return {
         id: node.id,
         name: node.name,
+        types: node.types,
         children: node.children
           ? transformToTreeNodes(node.children)
           : undefined,
@@ -2497,6 +2503,7 @@ export const UsersPage: React.FC = () => {
                   emptyMessage={t("users.noClassificationsAvailable")}
                   colorScheme="warning"
                   maxHeight="180px"
+                  hierarchyType="classification"
                 />
 
                 {/* Roles */}
@@ -2961,6 +2968,7 @@ export const UsersPage: React.FC = () => {
                   emptyMessage={t("users.noClassificationsAvailable")}
                   colorScheme="warning"
                   maxHeight="180px"
+                  hierarchyType="classification"
                 />
 
                 {/* Roles */}
