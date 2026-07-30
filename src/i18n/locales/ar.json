@@ -1063,7 +1063,7 @@
     "validJsonRequired": "يتم قبول ملفات JSON الصالحة فقط.",
     "failedImportsDownloadNote": "يمكن تنزيل عمليات الاستيراد الفاشلة كملف JSON بعد المعالجة.",
     "importFailed": "فشل استيراد المستخدمين. تحقق من الملف وحاول مرة أخرى.",
-    "imported": "تم استيراد {{count}}",
+    "imported": "تم استيراد",
     "importSummary": "نجح {{success}} وفشل {{errors}}",
     "downloadFailedImports": "تنزيل عمليات الاستيراد الفاشلة",
     "userAgent": "وكيل المستخدم",

@@ -24,6 +24,8 @@ import type { User } from "../../../types";
 import { cn } from "@/lib/utils";
 import CallablePhone from "@/components/common/CallablePhone";
 import { CallHistory } from "./CallHistory";
+import usePermissions from "@/hooks/usePermissions";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -38,19 +40,16 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   const limit = 10;
   const [openCallLogs, setOpenCallLogs] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<any>();
+  const { isSuperAdmin } = usePermissions();
+
+  const debouncedSearch = useDebounce(search, 600);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "users", page, limit],
-    queryFn: () => userApi.list(page, limit),
+    queryKey: ["admin", "users", page, limit, debouncedSearch],
+    queryFn: () => userApi.list(page, limit, debouncedSearch),
   });
 
-  const filteredUsers = data?.data?.filter(
-    (user: User) =>
-      user.username.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredUsers = data?.data;
 
   const totalPages = data?.total_pages ?? 1;
 
@@ -213,14 +212,28 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                           </div>
                           <div
                             onClick={() => {
+                              if (!isSuperAdmin) return;
+
                               setOpenCallLogs(true);
                               setSelectedUser(user);
                             }}
                           >
-                            <p className="text-sm font-semibold cursor-pointer hover:underline hover:text-primary">
+                            <p
+                              className={`text-sm font-semibold ${
+                                isSuperAdmin
+                                  ? "cursor-pointer hover:underline hover:text-primary"
+                                  : ""
+                              }`}
+                            >
                               {user.first_name} {user.last_name}
                             </p>
-                            <p className="text-sm text-slate-500 cursor-pointer hover:underline hover:text-primary">
+                            <p
+                              className={`text-sm text-slate-500 ${
+                                isSuperAdmin
+                                  ? "cursor-pointer hover:underline hover:text-primary"
+                                  : ""
+                              }`}
+                            >
                               @{user.username}
                             </p>
                           </div>
