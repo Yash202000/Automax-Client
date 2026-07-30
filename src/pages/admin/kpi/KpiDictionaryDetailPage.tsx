@@ -34,6 +34,7 @@ import {
   List,
   ExternalLink,
   HelpCircle,
+  ListTree,
 } from "lucide-react";
 import {
   useStrategicKPIDetail,
@@ -58,6 +59,8 @@ import {
   useUploadKpiAttachment,
   useDownloadKpiEvidence,
   useDeleteKpiEvidence,
+  useOperationalObjectives,
+  useProcesses,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuthStore } from "../../../stores/authStore";
@@ -82,6 +85,8 @@ import type {
   KpiAggregationMethod,
   KpiMetric,
   KpiMetricRequest,
+  OperationalObjective,
+  Process,
 } from "../../../types/kpi";
 import { REPORTING_MONTHS } from "../../../types/kpi";
 
@@ -212,6 +217,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const kpiId = id ?? "";
   const { data: metrics } = useKpiMetrics(kpiType, kpiId);
   const { data: allMetricEntries } = useKpiEntries(kpiType, kpiId);
+  const { data: operationalObjectivesRes } = useOperationalObjectives();
+  const { data: processesRes } = useProcesses();
+  const [showObjectivesModal, setShowObjectivesModal] = useState(false);
   const { data: evidenceList } = useKpiEngagementEvidence(kpiType, kpiId);
   const { data: collaborators } = useKpiCollaboratorAssignments(kpiType, kpiId);
   const [checkInPage, setCheckInPage] = useState(1);
@@ -598,12 +606,36 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     );
   }
 
+  // ── Parent Objective resolution ─────────────────────
+  // Operational KPIs carry operational_objective_id directly; Strategic (and
+  // Award) KPIs have no such field, so fall back to matching an Operational
+  // Objective by shared goal_id — the closest read-only equivalent of "this
+  // KPI's parent objective" available from the current data model.
+  const allOperationalObjectives = operationalObjectivesRes ?? [];
+  const allProcesses = processesRes ?? [];
+  const parentObjective: OperationalObjective | undefined =
+    kpi.operational_objective ??
+    allOperationalObjectives.find(
+      (o: OperationalObjective) => o.id === kpi.operational_objective_id,
+    ) ??
+    (kpi.goal_id
+      ? allOperationalObjectives.find(
+          (o: OperationalObjective) => o.goal_id === kpi.goal_id,
+        )
+      : undefined);
+  const childObjectives = parentObjective
+    ? allProcesses.filter(
+        (p: Process) => p.operational_objective_id === parentObjective.id,
+      )
+    : [];
+
   // ── Info tiles (type-specific relations) ────────────
   const infoTiles: {
     icon: React.ReactNode;
     bg: string;
     label: string;
     value: string;
+    onClick?: () => void;
   }[] = [];
 
   if (kpi.goal) {
@@ -666,6 +698,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       bg: "bg-slate-100 dark:bg-slate-700/40",
       label: t("kpi.dictionary.fieldFrequency"),
       value: kpi.reporting_frequency,
+    });
+  }
+  if (parentObjective) {
+    infoTiles.push({
+      icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
+      bg: "bg-teal-50 dark:bg-teal-900/20",
+      label: "Objectives Hierarchy",
+      value: parentObjective.name_en,
+      onClick: () => setShowObjectivesModal(true),
     });
   }
 
@@ -900,9 +941,19 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {tile.label}
                       </p>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                        {tile.value || "-"}
-                      </p>
+                      {tile.onClick ? (
+                        <button
+                          type="button"
+                          onClick={tile.onClick}
+                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate block text-left"
+                        >
+                          {tile.value || "-"}
+                        </button>
+                      ) : (
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                          {tile.value || "-"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2599,6 +2650,67 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ── Objectives Hierarchy Modal ─────────────── */}
+      <Modal
+        isOpen={showObjectivesModal}
+        onClose={() => setShowObjectivesModal(false)}
+      >
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Objectives Hierarchy
+          </h2>
+          {parentObjective && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-teal-200 dark:border-teal-700/50 bg-teal-50 dark:bg-teal-900/20 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-400">
+                  Parent Objective
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+                  {parentObjective.name_en}
+                </p>
+                {parentObjective.name_ar && (
+                  <p
+                    className="text-xs text-slate-500 dark:text-slate-400"
+                    dir="rtl"
+                  >
+                    {parentObjective.name_ar}
+                  </p>
+                )}
+              </div>
+              <div className="ps-4 space-y-2">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Child Objectives
+                </p>
+                {childObjectives.length > 0 ? (
+                  childObjectives.map((child: Process) => (
+                    <div
+                      key={child.id}
+                      className="rounded-lg border border-slate-200 dark:border-slate-700/60 p-3"
+                    >
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {child.name_en}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400 dark:text-slate-500">
+                    No child objectives under this parent yet.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowObjectivesModal(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── Transition Modal ──────────────────────── */}
       <Modal
