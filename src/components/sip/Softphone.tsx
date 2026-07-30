@@ -116,7 +116,10 @@ export const SentimentStats: React.FC<{
   t: any;
 }> = ({ calleeId, callerId, t }) => {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["caller-sentiment-stats", calleeId],
+    // Key on BOTH ids: the stats are per (agent, caller) pair. Keying on
+    // calleeId alone made every caller share one cache entry, so switching
+    // callers could show the previous caller's stats until a refetch landed.
+    queryKey: ["caller-sentiment-stats", calleeId, callerId],
     queryFn: () =>
       callerFeedbackApi.get({ callee_id: calleeId, caller_id: callerId }),
     enabled: !!calleeId && !!callerId,

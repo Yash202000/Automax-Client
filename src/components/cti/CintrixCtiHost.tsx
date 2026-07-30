@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import apiClient from "@/api/client";
+import { userApi } from "@/api/admin";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
 import { useAuthStore } from "@/stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
@@ -77,6 +78,12 @@ export const CintrixCtiHost: React.FC = () => {
   const inCallRef = useRef(false);
   // Lets the Retry button re-run boot() without remounting the component.
   const bootRef = useRef<() => void>(() => {});
+  // The Cintrix-allocated extension for this agent, the key the availability
+  // sync posts against (PUT /users/:extension/status resolves the user through
+  // extension_assignments, which GetWidgetToken already syncs to this value).
+  // Preferred over authStore's user.extension, which can be stale until the
+  // next profile fetch.
+  const extensionRef = useRef<string>("");
   // True while a boot() attempt is in flight; collapses concurrent attempts.
   const bootingRef = useRef(false);
   const {
@@ -134,6 +141,9 @@ export const CintrixCtiHost: React.FC = () => {
         const { data } =
           await apiClient.get<WidgetTokenResponse>("/cti/widget-token");
         if (cancelled || !containerRef.current) return;
+        // Captured before the script load so the availability bridge has it
+        // even if the widget mounts (and the agent picks a status) fast.
+        if (data.extension) extensionRef.current = data.extension;
         await loadScript(
           `${data.cintrix_url.replace(/\/$/, "")}/cti-widget.js`,
         );
@@ -212,6 +222,41 @@ export const CintrixCtiHost: React.FC = () => {
         onInitiateCall as EventListener,
       );
   }, []);
+
+  // Bridge the widget's Availability selector → Automax's users.call_status.
+  // This is what makes an agent eligible for incident round-robin
+  // (FindMatchingOnline matches call_status = 'online'); without it the widget
+  // only ever tells Cintrix's ACD, and no Automax agent is ever assignable.
+  // Replaces the native softphone's syncUserPresenceStatus, which no longer
+  // runs at all under CTI_PROVIDER=cintrix (UserBootstrap doesn't mount it).
+  const lastCallStatusRef = useRef<string>("");
+  useEffect(() => {
+    const onPresenceChanged = (e: Event) => {
+      const status = (e as CustomEvent<{ status?: string }>).detail?.status;
+      const extension = extensionRef.current || user?.extension || "";
+      if (!status || !extension) return;
+      // Cintrix vocabulary (available/away/offline) → Automax call_status.
+      // Only 'online' is routable; 'busy' and 'offline' both keep the agent
+      // out of round-robin, but stay distinguishable in the UI and reports.
+      const callStatus = status === "available" ? "online" : "offline";
+      // The widget re-emits presence on device selection and on
+      // reconnect-recovery, so the same value arrives repeatedly — skip the
+      // redundant writes (parity with the native softphone's dedupe).
+      if (callStatus === lastCallStatusRef.current) return;
+      lastCallStatusRef.current = callStatus;
+      void userApi
+        .updateUserStatus({ extension, status: callStatus })
+        .catch((err) => {
+          // Let the next change retry from a clean slate rather than being
+          // deduped away against a status that never persisted.
+          lastCallStatusRef.current = "";
+          console.error("Failed to sync availability to Automax:", err);
+        });
+    };
+    window.addEventListener("cintrix:presence-changed", onPresenceChanged);
+    return () =>
+      window.removeEventListener("cintrix:presence-changed", onPresenceChanged);
+  }, [user?.extension]);
 
   // Bridge widget events → Automax behaviors (screen-pop parity).
   // NOTE: cintrix:incoming-call fires TWICE per call (first with
