@@ -45,6 +45,7 @@ import {
   BulkTransitionModal,
   SMSLegends,
   IncidentFilters,
+  IncidentStatusStatsRow,
 } from "../../components/incidents";
 import LocationMap from "@/components/maps/LocationMap";
 
@@ -221,13 +222,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     placeholderData: keepPreviousData,
   });
 
+  // Same filter the list query uses, so the stats — and the by-status
+  // breakdown derived from them — reflect exactly what the list table shows.
   const { data: statsData } = useQuery({
-    queryKey: ["incidents", "stats", type],
-    queryFn: () =>
-      incidentApi.getIncidentStatsV2({
-        assignee_id: type === "assigned" ? user?.id : undefined,
-        reporter_id: type === "created" ? user?.id : undefined,
-      }),
+    queryKey: ["incidents", "stats", type, finalFilter],
+    queryFn: () => incidentApi.getIncidentStatsV2(finalFilter),
+    enabled: !isShortSearch && !!user?.id,
   });
 
   // Real-time viewer count updates via WebSocket (no polling!)
@@ -516,6 +516,16 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           </div>
         </div>
       </div>
+
+      {/* Stats by Status */}
+      <IncidentStatusStatsRow
+        workflowStats={stats?.workflow_stats}
+        total={stats?.total || 0}
+        activeStateId={filter.current_state_id}
+        onStatusClick={(stateId) =>
+          handleFilterChange("current_state_id", stateId)
+        }
+      />
 
       {showMap && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">

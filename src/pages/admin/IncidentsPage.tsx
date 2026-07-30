@@ -44,6 +44,7 @@ import {
   BulkTransitionModal,
   SMSLegends,
   IncidentFilters,
+  IncidentStatusStatsRow,
 } from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import { useAuthStore } from "@/stores/authStore";
@@ -384,19 +385,6 @@ export const IncidentsPage: React.FC = () => {
     );
   }, [user, workflowsData?.data, isSuperAdmin]);
 
-  const { data: statsData } = useQuery({
-    queryKey: [
-      "incidents",
-      "stats",
-      "incident",
-      canViewAllIncidents ? "all" : "assigned",
-    ],
-    queryFn: () =>
-      incidentApi.getIncidentStatsV2(
-        canViewAllIncidents ? undefined : { my_record: user?.id },
-      ),
-  });
-
   // Skip the API call when search is 1-2 chars — wait for 3+ before fetching
   const isShortSearch = !!(
     filter.search &&
@@ -404,6 +392,22 @@ export const IncidentsPage: React.FC = () => {
     filter.search.length < 3
   );
   const queryFilter = isShortSearch ? { ...filter, search: undefined } : filter;
+
+  // Same params the list query uses (momra_ref resolution + my_record scoping),
+  // so the stats — and the by-status breakdown derived from them — reflect
+  // exactly what the incident list table is currently showing.
+  const statsFilter = {
+    ...queryFilter,
+    search: queryFilter.momra_ref || queryFilter.search,
+    source: queryFilter.momra_ref ? "momra" : queryFilter.source,
+    ...(canViewAllIncidents ? {} : { my_record: user?.id }),
+  };
+
+  const { data: statsData } = useQuery({
+    queryKey: ["incidents", "stats", "incident", statsFilter],
+    queryFn: () => incidentApi.getIncidentStatsV2(statsFilter),
+    enabled: !isShortSearch,
+  });
 
   const {
     data: incidentsData,
@@ -804,6 +808,16 @@ export const IncidentsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Stats by Status */}
+      <IncidentStatusStatsRow
+        workflowStats={stats?.workflow_stats}
+        total={stats?.total || 0}
+        activeStateId={filter.current_state_id}
+        onStatusClick={(stateId) =>
+          setSearchParams({ current_state_id: stateId })
+        }
+      />
 
       {showMap && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">

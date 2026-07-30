@@ -8,3 +8,4 @@ export { BulkTransitionModal } from "./BulkTransitionModal";
 export { SMSLegends } from "./SMSLegends";
 export { IncidentFilters } from "./IncidentFilters";
 export type { IncidentFiltersProps, ColumnConfig } from "./IncidentFilters";
+export { IncidentStatusStatsRow } from "./IncidentStatusStatsRow";
