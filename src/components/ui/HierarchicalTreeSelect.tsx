@@ -3,11 +3,34 @@ import { ChevronRight, ChevronDown, Check, Minus, Search } from "lucide-react";
 import { cn, getLocalizedName } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
+export type TreeNodeRecordType =
+  | "incident"
+  | "request"
+  | "complaint"
+  | "query"
+  | "mobile"
+  | "ivr";
+
+const RECORD_TYPES: TreeNodeRecordType[] = [
+  "incident",
+  "request",
+  "complaint",
+  "query",
+  "mobile",
+  "ivr",
+];
+
+// What kind of hierarchy this tree represents. Only "classification" nodes
+// carry a `types` array, so it's the only kind that gets the type badges and
+// the type filter dropdown.
+export type HierarchicalTreeKind = "location" | "classification" | "department";
+
 export interface TreeNode {
   id: string;
   name: string;
   name_ar?: string | null;
   children?: TreeNode[];
+  types?: string[];
 }
 
 interface HierarchicalTreeSelectProps {
@@ -20,7 +43,36 @@ interface HierarchicalTreeSelectProps {
   maxHeight?: string;
   colorScheme?: "primary" | "success" | "warning" | "accent";
   leafOnly?: boolean; // Only allow selecting leaf nodes (no children)
+  hierarchyType?: HierarchicalTreeKind;
+  // Initial value for the type filter (only relevant when
+  // hierarchyType === "classification"); the user can change it afterwards
+  // via the type filter dropdown shown in the options row.
+  type?: TreeNodeRecordType;
 }
+
+// Strictly prunes the tree down to nodes tagged with `type` (or that have a
+// matching descendant) — unlike the live search filter below, this never
+// falls back to showing a matched parent's untouched original children.
+const filterByType = (
+  nodes: TreeNode[],
+  type: TreeNodeRecordType,
+): TreeNode[] =>
+  nodes
+    .map((node) => {
+      const ownMatch = !!node.types?.includes(type);
+      const filteredChildren = node.children
+        ? filterByType(node.children, type)
+        : [];
+
+      if (ownMatch || filteredChildren.length > 0) {
+        return {
+          ...node,
+          children: filteredChildren.length > 0 ? filteredChildren : undefined,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean) as TreeNode[];
 
 const getLeafDescendantIds = (node: TreeNode): string[] => {
   if (!node.children?.length) return [node.id];
@@ -74,6 +126,9 @@ const areSomeChildrenSelected = (
   );
 };
 
+const formatTypeLabel = (type: string): string =>
+  type === "ivr" ? "IVR" : type.charAt(0).toUpperCase() + type.slice(1);
+
 interface TreeNodeItemProps {
   node: TreeNode;
   level: number;
@@ -83,6 +138,7 @@ interface TreeNodeItemProps {
   onToggleSelect: (node: TreeNode) => void;
   colorScheme: "primary" | "success" | "warning" | "accent";
   leafOnly: boolean;
+  showTypes: boolean;
 }
 
 const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
@@ -94,6 +150,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   onToggleSelect,
   colorScheme,
   leafOnly,
+  showTypes,
 }) => {
   const hasChildren = node.children && node.children.length > 0;
   const isExpanded = expandedIds.includes(node.id);
@@ -213,9 +270,23 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           {getLocalizedName(node)}
         </span>
 
+        {/* Classification type tags */}
+        {showTypes && node.types && node.types.length > 0 && (
+          <span className="flex items-center gap-1 flex-wrap justify-end">
+            {node.types.map((nodeType) => (
+              <span
+                key={nodeType}
+                className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] px-1.5 py-0.5 rounded-full"
+              >
+                {formatTypeLabel(nodeType)}
+              </span>
+            ))}
+          </span>
+        )}
+
         {/* Children count badge */}
         {hasChildren && (
-          <span className="text-xs text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] px-1.5 py-0.5 rounded">
+          <span className="text-xs text-[hsl(var(--muted-foreground))] border-[1px] border-[hsl(var(--border))] px-1.5 py-0.5 rounded">
             {node.children!.length}
           </span>
         )}
@@ -235,6 +306,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               onToggleSelect={onToggleSelect}
               colorScheme={colorScheme}
               leafOnly={leafOnly}
+              showTypes={showTypes}
             />
           ))}
         </div>
@@ -253,12 +325,26 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   maxHeight = "200px",
   colorScheme = "primary",
   leafOnly = false,
+  hierarchyType,
+  type,
 }) => {
   const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
+  const isClassification = hierarchyType === "classification";
+  const [typeFilter, setTypeFilter] = useState<TreeNodeRecordType | undefined>(
+    type,
+  );
+
+  // The type filter is a structural pre-filter — everything below (search,
+  // selection, select-all) operates on this narrowed set, as if the caller
+  // had passed a smaller `data` array in the first place.
+  const effectiveData = useMemo(
+    () => (typeFilter ? filterByType(data, typeFilter) : data),
+    [data, typeFilter],
+  );
 
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return data;
+    if (!searchQuery.trim()) return effectiveData;
 
     const query = searchQuery.toLowerCase();
 
@@ -285,8 +371,8 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         .filter(Boolean) as TreeNode[];
     };
 
-    return filterNodes(data);
-  }, [data, searchQuery, i18n.language]);
+    return filterNodes(effectiveData);
+  }, [effectiveData, searchQuery, i18n.language]);
 
   const [expandedIds, setExpandedIds] = useState<string[]>(() => {
     // Auto-expand nodes that have selected children
@@ -301,7 +387,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         }
       });
     };
-    checkAndExpand(data);
+    checkAndExpand(effectiveData);
     return expanded;
   });
 
@@ -322,7 +408,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         selectedIds.includes(id),
       );
 
-      const validLeafIds = new Set(getAllLeafIds(data));
+      const validLeafIds = new Set(getAllLeafIds(effectiveData));
       const normalizedSelection = selectedIds.filter((id) =>
         validLeafIds.has(id),
       );
@@ -333,7 +419,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
       onSelectionChange(
         leafOnly
           ? nextLeafIds
-          : withPartiallySelectedParents(data, nextLeafIds),
+          : withPartiallySelectedParents(effectiveData, nextLeafIds),
       );
 
       // Auto-expand when clicking a parent with children
@@ -341,7 +427,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         setExpandedIds((prev) => [...prev, node.id]);
       }
     },
-    [selectedIds, onSelectionChange, expandedIds, leafOnly, data],
+    [selectedIds, onSelectionChange, expandedIds, leafOnly, effectiveData],
   );
 
   const allLeafIds = useMemo(() => getAllLeafIds(filteredData), [filteredData]);
@@ -372,7 +458,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
     onSelectionChange(
       leafOnly
         ? selectableIds
-        : withPartiallySelectedParents(data, selectableIds),
+        : withPartiallySelectedParents(effectiveData, selectableIds),
     );
   };
 
@@ -442,16 +528,40 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("common.search", { defaultValue: "Search..." })}
-          className="w-full pl-9 pr-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-        />
+      {/* Search Input + Type Filter */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("common.search", { defaultValue: "Search..." })}
+            className="w-full pl-9 pr-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+          />
+        </div>
+        {isClassification && (
+          <select
+            value={typeFilter ?? ""}
+            onChange={(e) =>
+              setTypeFilter(
+                e.target.value
+                  ? (e.target.value as TreeNodeRecordType)
+                  : undefined,
+              )
+            }
+            className="px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+          >
+            <option value="">
+              {t("common.allTypes", { defaultValue: "All Types" })}
+            </option>
+            {RECORD_TYPES.map((recordType) => (
+              <option key={recordType} value={recordType}>
+                {formatTypeLabel(recordType)}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Tree Container */}
@@ -475,6 +585,7 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
               onToggleSelect={toggleSelect}
               colorScheme={colorScheme}
               leafOnly={leafOnly}
+              showTypes={isClassification}
             />
           ))
         )}

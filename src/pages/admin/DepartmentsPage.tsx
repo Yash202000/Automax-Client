@@ -37,13 +37,11 @@ import type {
   Department,
   DepartmentCreateRequest,
   DepartmentUpdateRequest,
-  Location,
-  Classification,
   Role,
   User,
 } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button } from "../../components/ui";
+import { Button, HierarchicalTreeSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "sonner";
@@ -77,144 +75,6 @@ const initialFormData: DepartmentFormData = {
   classification_ids: [],
   role_ids: [],
 };
-
-type HierarchicalFormNode = {
-  id: string;
-  children?: HierarchicalFormNode[];
-};
-
-const getHierarchicalIds = (nodes: HierarchicalFormNode[]): string[] =>
-  nodes.flatMap((node) => [
-    node.id,
-    ...getHierarchicalIds(node.children ?? []),
-  ]);
-
-const normalizeHierarchicalSelection = (
-  nodes: HierarchicalFormNode[],
-  selectedIds: Set<string>,
-): string[] => {
-  const visit = (node: HierarchicalFormNode): boolean => {
-    if (!node.children?.length) return selectedIds.has(node.id);
-    const allChildrenSelected = node.children.map(visit).every(Boolean);
-    if (allChildrenSelected) selectedIds.add(node.id);
-    else selectedIds.delete(node.id);
-    return allChildrenSelected;
-  };
-  nodes.forEach(visit);
-  return Array.from(selectedIds);
-};
-// Tree checkbox components for hierarchical selection
-function LocationTreeCheckbox({
-  nodes,
-  selectedIds,
-  onToggle,
-  depth,
-}: {
-  nodes: Location[];
-  selectedIds: string[];
-  onToggle: (node: Location) => void;
-  depth: number;
-}) {
-  const { i18n } = useTranslation();
-  return (
-    <>
-      {nodes.map((node) => {
-        const nodeIds = getHierarchicalIds([node]);
-        const isChecked = nodeIds.every((id) => selectedIds.includes(id));
-        const isIndeterminate =
-          !isChecked && nodeIds.some((id) => selectedIds.includes(id));
-        return (
-          <div key={node.id}>
-            <label
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
-              style={{ paddingLeft: `${8 + depth * 16}px` }}
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                ref={(input) => {
-                  if (input) input.indeterminate = isIndeterminate;
-                }}
-                onChange={() => onToggle(node)}
-                className="w-4 h-4 rounded border-[hsl(var(--border))] accent-[hsl(var(--primary))]"
-              />
-              <MapPin className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
-              <span className="text-sm text-[hsl(var(--foreground))]">
-                {i18n.language === "ar" && node.name_ar
-                  ? node.name_ar
-                  : node.name}
-              </span>
-            </label>
-            {node.children && node.children.length > 0 && (
-              <LocationTreeCheckbox
-                nodes={node.children}
-                selectedIds={selectedIds}
-                onToggle={onToggle}
-                depth={depth + 1}
-              />
-            )}
-          </div>
-        );
-      })}
-    </>
-  );
-}
-
-function ClassificationTreeCheckbox({
-  nodes,
-  selectedIds,
-  onToggle,
-  depth,
-}: {
-  nodes: Classification[];
-  selectedIds: string[];
-  onToggle: (node: Classification) => void;
-  depth: number;
-}) {
-  const { i18n } = useTranslation();
-  return (
-    <>
-      {nodes.map((node) => {
-        const nodeIds = getHierarchicalIds([node]);
-        const isChecked = nodeIds.every((id) => selectedIds.includes(id));
-        const isIndeterminate =
-          !isChecked && nodeIds.some((id) => selectedIds.includes(id));
-        return (
-          <div key={node.id}>
-            <label
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
-              style={{ paddingLeft: `${8 + depth * 16}px` }}
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                ref={(input) => {
-                  if (input) input.indeterminate = isIndeterminate;
-                }}
-                onChange={() => onToggle(node)}
-                className="w-4 h-4 rounded border-[hsl(var(--border))] accent-[hsl(var(--primary))]"
-              />
-              <FolderTree className="w-3 h-3 text-[hsl(var(--muted-foreground))] shrink-0" />
-              <span className="text-sm text-[hsl(var(--foreground))]">
-                {i18n.language === "ar" && node.name_ar
-                  ? node.name_ar
-                  : node.name}
-              </span>
-            </label>
-            {node.children && node.children.length > 0 && (
-              <ClassificationTreeCheckbox
-                nodes={node.children}
-                selectedIds={selectedIds}
-                onToggle={onToggle}
-                depth={depth + 1}
-              />
-            )}
-          </div>
-        );
-      })}
-    </>
-  );
-}
 
 const levelGradients = [
   "from-[hsl(var(--primary))] to-[hsl(var(--accent))]",
@@ -769,40 +629,6 @@ export const DepartmentsPage: React.FC = () => {
         ? prev[field].filter((i) => i !== id)
         : [...prev[field], id],
     }));
-  };
-
-  const toggleTreeItem = (
-    field: "location_ids" | "classification_ids",
-    node: HierarchicalFormNode,
-    tree: HierarchicalFormNode[],
-  ) => {
-    setFormData((prev) => {
-      const selectedIds = new Set(prev[field]);
-      const nodeIds = getHierarchicalIds([node]);
-      const isFullySelected = nodeIds.every((id) => selectedIds.has(id));
-      nodeIds.forEach((id) => {
-        if (isFullySelected) selectedIds.delete(id);
-        else selectedIds.add(id);
-      });
-      return {
-        ...prev,
-        [field]: normalizeHierarchicalSelection(tree, selectedIds),
-      };
-    });
-  };
-
-  const getAllIds = (
-    nodes: Array<{ id: string; children?: any[] }>,
-  ): string[] => {
-    const ids: string[] = [];
-    const collect = (items: Array<{ id: string; children?: any[] }>) => {
-      for (const item of items) {
-        ids.push(item.id);
-        if (item.children?.length) collect(item.children);
-      }
-    };
-    collect(nodes);
-    return ids;
   };
 
   const selectAll = (
@@ -1638,118 +1464,45 @@ export const DepartmentsPage: React.FC = () => {
 
                   {/* Locations */}
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {t("departments.locations")}
-                      </label>
-                      <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-md">
-                        {formData.location_ids.length}{" "}
-                        {t("common.selected").toLowerCase()}
-                      </span>
-                      <div className="ml-auto flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            selectAll(
-                              "location_ids",
-                              getAllIds(locationsData?.data || []),
-                            )
-                          }
-                          className="text-xs text-[hsl(var(--primary))] hover:underline"
-                        >
-                          {t("common.selectAll")}
-                        </button>
-                        <span className="text-[hsl(var(--muted-foreground))]">
-                          ·
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => clearAll("location_ids")}
-                          className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
-                        >
-                          {t("common.clear")}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="border border-[hsl(var(--border))] rounded-xl max-h-48 overflow-y-auto p-2">
-                      {locationsData?.data?.length === 0 ? (
-                        <p className="text-sm text-[hsl(var(--muted-foreground))] p-2">
-                          {t("departments.noLocationsAvailable")}
-                        </p>
-                      ) : (
-                        <LocationTreeCheckbox
-                          nodes={locationsData?.data || []}
-                          selectedIds={formData.location_ids}
-                          onToggle={(node) =>
-                            toggleTreeItem(
-                              "location_ids",
-                              node,
-                              locationsData?.data || [],
-                            )
-                          }
-                          depth={0}
-                        />
-                      )}
-                    </div>
+                    <HierarchicalTreeSelect
+                      data={locationsData?.data || []}
+                      selectedIds={formData.location_ids}
+                      onSelectionChange={(ids) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          location_ids: ids,
+                        }))
+                      }
+                      label={t("departments.locations")}
+                      icon={
+                        <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                      }
+                      emptyMessage={t("departments.noLocationsAvailable")}
+                      colorScheme="primary"
+                      maxHeight="192px"
+                    />
                   </div>
 
                   {/* Classifications */}
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <FolderTree className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                      <label className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        {t("departments.classifications")}
-                      </label>
-                      <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))] rounded-md">
-                        {formData.classification_ids.length}{" "}
-                        {t("common.selected").toLowerCase()}
-                      </span>
-                      <div className="ml-auto flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            selectAll(
-                              "classification_ids",
-                              getAllIds(classificationsData?.data || []),
-                            )
-                          }
-                          className="text-xs text-[hsl(var(--primary))] hover:underline"
-                        >
-                          {t("common.selectAll")}
-                        </button>
-                        <span className="text-[hsl(var(--muted-foreground))]">
-                          ·
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => clearAll("classification_ids")}
-                          className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
-                        >
-                          {t("common.clear")}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="border border-[hsl(var(--border))] rounded-xl max-h-48 overflow-y-auto p-2">
-                      {classificationsData?.data?.length === 0 ? (
-                        <p className="text-sm text-[hsl(var(--muted-foreground))] p-2">
-                          {t("departments.noClassificationsAvailable")}
-                        </p>
-                      ) : (
-                        <ClassificationTreeCheckbox
-                          nodes={classificationsData?.data || []}
-                          selectedIds={formData.classification_ids}
-                          onToggle={(node) =>
-                            toggleTreeItem(
-                              "classification_ids",
-                              node,
-                              classificationsData?.data || [],
-                            )
-                          }
-                          depth={0}
-                        />
-                      )}
-                    </div>
+                    <HierarchicalTreeSelect
+                      data={classificationsData?.data || []}
+                      selectedIds={formData.classification_ids}
+                      onSelectionChange={(ids) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          classification_ids: ids,
+                        }))
+                      }
+                      label={t("departments.classifications")}
+                      icon={
+                        <FolderTree className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                      }
+                      emptyMessage={t("departments.noClassificationsAvailable")}
+                      colorScheme="accent"
+                      maxHeight="192px"
+                      hierarchyType="classification"
+                    />
                   </div>
 
                   {/* Roles */}
