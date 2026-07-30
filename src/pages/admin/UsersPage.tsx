@@ -1043,7 +1043,6 @@ export const UsersPage: React.FC = () => {
       [
         "username (Required)",
         "email (Required)",
-        "password (Required)",
         "first_name (Optional)",
         "last_name (Optional)",
         "phone (Optional)",
@@ -1053,7 +1052,6 @@ export const UsersPage: React.FC = () => {
     ws["!cols"] = [
       { wch: 20 },
       { wch: 30 },
-      { wch: 20 },
       { wch: 20 },
       { wch: 20 },
       { wch: 20 },
@@ -1099,7 +1097,7 @@ export const UsersPage: React.FC = () => {
   };
 
   const validateImportRows = (
-    rows: Array<{ username?: string; email?: string; password?: string }>,
+    rows: Array<{ username?: string; email?: string }>,
   ): string[] => {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1119,11 +1117,6 @@ export const UsersPage: React.FC = () => {
       } else if (!usernameRegex.test(row.username.trim())) {
         errors.push(
           `${rowLabel}: "${row.username}" - ${t("auth.usernameInvalidChars", { defaultValue: "Username can only contain letters, numbers, and underscores" })}`,
-        );
-      }
-      if (!row.password?.trim()) {
-        errors.push(
-          `${rowLabel}: ${t("users.importPasswordRequired", { defaultValue: "Password is required" })}`,
         );
       }
       if (!row.email?.trim()) {
@@ -1177,7 +1170,6 @@ export const UsersPage: React.FC = () => {
       let jsonRows: Array<{
         username: string;
         email: string;
-        password: string;
         first_name: string;
         last_name: string;
         phone: string;
@@ -1212,7 +1204,6 @@ export const UsersPage: React.FC = () => {
         jsonRows = normalizedRows.map((row) => ({
           username: row.username || "",
           email: row.email || "",
-          password: row.password || "",
           first_name: row.first_name || "",
           last_name: row.last_name || "",
           phone: row.phone || "",
@@ -1258,9 +1249,6 @@ export const UsersPage: React.FC = () => {
           rowErrors.push(
             `Row ${rowNum}: "${row.username || ""}" - Invalid username`,
           );
-        }
-        if (!row.password?.trim()) {
-          rowErrors.push(`Row ${rowNum}: Password is required`);
         }
 
         if (rowErrors.length > 0) {

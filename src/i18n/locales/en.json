@@ -1072,7 +1072,7 @@
     "validJsonRequired": "Only valid JSON files are accepted.",
     "failedImportsDownloadNote": "Failed imports can be downloaded as a JSON file after processing.",
     "importFailed": "User import failed. Please check the file and try again.",
-    "imported": "{{count}} imported",
+    "imported": "Imported",
     "importSummary": "{{success}} succeeded, {{errors}} failed",
     "downloadFailedImports": "Download Failed Imports",
     "userAgent": "User Agent",
