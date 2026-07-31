@@ -398,8 +398,6 @@ export const IncidentsPage: React.FC = () => {
   // exactly what the incident list table is currently showing.
   const statsFilter = {
     ...queryFilter,
-    search: queryFilter.momra_ref || queryFilter.search,
-    source: queryFilter.momra_ref ? "momra" : queryFilter.source,
     ...(canViewAllIncidents ? {} : { my_record: user?.id }),
   };
 
@@ -426,8 +424,6 @@ export const IncidentsPage: React.FC = () => {
     queryFn: () =>
       incidentApi.list({
         ...queryFilter,
-        search: queryFilter.momra_ref || queryFilter.search,
-        source: queryFilter.momra_ref ? "momra" : queryFilter.source,
         ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       }),
     enabled: !isShortSearch,
