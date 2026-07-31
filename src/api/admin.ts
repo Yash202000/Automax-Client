@@ -1707,13 +1707,54 @@ export const incidentApi = {
   },
 
   getIncidentStatsV2: async (
-    params: Record<string, unknown> = {},
+    filter: IncidentFilter = {},
     recordType: "incident" | "request" | "complaint" | "query" = "incident",
   ): Promise<ApiResponse<IncidentStats>> => {
     try {
-      const response = await apiClient.get("/incidents/stats/v2", {
-        params: { ...params, record_type: recordType },
-      });
+      // Mirrors list()'s param mapping — the backend expects singular,
+      // repeatable keys (classification_id, department_id, location_id) for
+      // what the frontend filter tracks as plural _ids arrays. Passing the
+      // filter object straight through (as this used to) silently drops
+      // those three filters since the key names never match.
+      const params = new URLSearchParams();
+      if (filter.search) params.append("search", filter.search);
+      if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+      if (filter.my_record) params.append("my_record", filter.my_record);
+      if (filter.current_state_id)
+        params.append("current_state_id", filter.current_state_id);
+      filter.classification_ids?.forEach((id) =>
+        params.append("classification_id", id),
+      );
+      if (filter.priority) params.append("priority", String(filter.priority));
+      if (filter.reporter_phone)
+        params.append("reporter_phone", filter.reporter_phone);
+      if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
+      if (filter.reporter_id) params.append("reporter_id", filter.reporter_id);
+      filter.department_ids?.forEach((id) =>
+        params.append("department_id", id),
+      );
+      filter.location_ids?.forEach((id) => params.append("location_id", id));
+      if (filter.source) params.append("source", filter.source);
+      if (filter.sla_breached !== undefined)
+        params.append("sla_breached", String(filter.sla_breached));
+      if (filter.converted_to_request !== undefined)
+        params.append(
+          "converted_to_request",
+          String(filter.converted_to_request),
+        );
+      if (filter.start_date) params.append("start_date", filter.start_date);
+      if (filter.end_date) params.append("end_date", filter.end_date);
+      if (filter.transition_id)
+        params.append("transition_id", filter.transition_id);
+      if (filter.reporter_phone_search) {
+        params.append("reporter_phone_search", filter.reporter_phone_search);
+      }
+      if (filter.momra_ref) params.append("momra_ref", filter.momra_ref);
+      params.append("record_type", recordType);
+
+      const response = await apiClient.get(
+        `/incidents/stats/v2?${params.toString()}`,
+      );
       if (response.data && response.data.success) {
         return { success: true, data: response.data.data };
       }
