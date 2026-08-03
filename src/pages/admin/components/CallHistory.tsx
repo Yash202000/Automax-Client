@@ -13,37 +13,25 @@ import {
   PhoneIncoming,
   Headphones,
 } from "lucide-react";
-import { callLogApi, userApi } from "../../../api/admin";
+import { callLogApi } from "../../../api/admin";
 import { AudioPlayer } from "../../../components/common/AudioPlayer";
 import { cn } from "@/lib/utils";
 import CallablePhone from "../../../components/common/CallablePhone";
-import { usePermissions } from "../../../hooks/usePermissions";
-import type { User } from "../../../types";
 
 export const CallHistory: React.FC = () => {
   const { t } = useTranslation();
-  const { canViewAllCallLogs } = usePermissions();
   const [page, setPage] = useState(1);
-  const [agentId, setAgentId] = useState<string | undefined>(undefined);
   const limit = 20;
 
   const { data, isLoading, refetch, isFetching, error } = useQuery({
-    queryKey: ["call-logs", page, limit, agentId],
-    queryFn: () => callLogApi.list(page, limit, agentId),
+    queryKey: ["call-logs", page, limit],
+    queryFn: () => callLogApi.list(page, limit),
     retry: 1,
     // New calls (CTI webhooks) land without any user action on this page —
     // poll so they show up without a manual refresh, same as the notification
     // bell / incident layout's backoff-polling convention.
     refetchInterval: 10_000,
     refetchOnWindowFocus: true,
-  });
-
-  // Agent picker source: reuse the same admin users list query used elsewhere
-  // (e.g. IncidentFilters, RequestsPage) to populate assignee/agent dropdowns.
-  const { data: usersData } = useQuery({
-    queryKey: ["admin", "users", 1, 100],
-    queryFn: () => userApi.list(1, 100),
-    enabled: canViewAllCallLogs(),
   });
 
   const calls = data?.data || [];
@@ -138,37 +126,16 @@ export const CallHistory: React.FC = () => {
             {t("callCentre.historySubtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {canViewAllCallLogs() && (
-            <select
-              value={agentId || ""}
-              onChange={(e) => {
-                setAgentId(e.target.value || undefined);
-                setPage(1);
-              }}
-              className="px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            >
-              <option value="">{t("callCentre.allAgents", { defaultValue: "All agents" })}</option>
-              {usersData?.data?.map((user: User) => (
-                <option key={user.id} value={user.id}>
-                  {user.first_name
-                    ? `${user.first_name} ${user.last_name || ""}`
-                    : user.username}
-                </option>
-              ))}
-            </select>
-          )}
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
-            />
-            <span className="text-sm font-medium">{t("common.refresh")}</span>
-          </button>
-        </div>
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
+          />
+          <span className="text-sm font-medium">{t("common.refresh")}</span>
+        </button>
       </div>
 
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">

@@ -117,10 +117,6 @@ export const usePermissions = () => {
     canAssignIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_ASSIGN),
     canCommentIncidents: () => hasPermission(PERMISSIONS.INCIDENTS_COMMENT),
 
-    // Call log permissions
-    canViewCallLogs: () => hasPermission(PERMISSIONS.CALL_LOGS_VIEW),
-    canViewAllCallLogs: () => hasPermission(PERMISSIONS.CALL_LOGS_VIEW_ALL),
-
     // Request permissions
     canViewRequests: () => hasPermission(PERMISSIONS.REQUESTS_VIEW),
     canViewAllRequests: () => hasPermission(PERMISSIONS.REQUESTS_VIEW_ALL),
