@@ -755,7 +755,8 @@
     "transitionSuccess": "تم تنفيذ الانتقال بنجاح",
     "department_id": "القسم",
     "momraRefNumLabel": "رقم مرجع وزارة الشؤون البلدية والقروية والإسكان",
-    "momraRefNumPlaceholder": "أدخل رقم مرجع وزارة الشؤون البلدية والقروية والإسكان"
+    "momraRefNumPlaceholder": "أدخل رقم مرجع وزارة الشؤون البلدية والقروية والإسكان",
+    "momraIncidentNumber": "رقم حادثة مُمرا"
   },
   "priorities": {
     "critical": "حرج",
@@ -4494,4 +4495,3 @@
     }
   }
 }
-
