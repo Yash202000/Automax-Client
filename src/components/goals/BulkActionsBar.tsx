@@ -35,9 +35,9 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
     return transitions.includes("Closed");
   });
 
-  const handleExportSelected = () => {
+  const handleExportSelected = async () => {
     try {
-      exportGoalsToXlsx(selectedGoals);
+      await exportGoalsToXlsx(selectedGoals);
       toast.success(
         selectedCount === 1
           ? t("goals.components.bulk.exportedOne", { count: selectedCount })

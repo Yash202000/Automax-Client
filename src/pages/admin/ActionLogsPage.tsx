@@ -27,7 +27,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import type { ActionLog, ActionLogFilter } from "../../types";
 import { cn } from "@/lib/utils";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 const actionColors: Record<string, string> = {
   create: "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]",
@@ -148,7 +148,7 @@ const exportToCSV = (logs: ActionLog[], t: (key: string) => string) => {
   URL.revokeObjectURL(url);
 };
 
-const exportToExcel = (logs: ActionLog[], t: (key: string) => string) => {
+const exportToExcel = async (logs: ActionLog[], t: (key: string) => string) => {
   const formattedData = logs.map((log) => ({
     [t("actionLogs.time")]: new Date(log?.created_at).toLocaleString(),
     [t("users.user")]:
@@ -167,33 +167,22 @@ const exportToExcel = (logs: ActionLog[], t: (key: string) => string) => {
     // [t("actionLogs.ipAddress")]: log?.ip_address,
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = await new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(t("reports.dataSources.actionLogs"));
 
-  worksheet["!cols"] = [
-    { wch: 22 },
-    { wch: 22 },
-    { wch: 18 },
-    { wch: 15 },
-    { wch: 18 },
-    { wch: 40 },
-    { wch: 40 },
-    { wch: 40 },
-    { wch: 14 },
-    { wch: 20 },
-  ];
+  const headers = Object.keys(formattedData[0] ?? {});
 
-  const workbook = XLSX.utils.book_new();
+  worksheet.columns = headers.map((header, index) => ({
+    header,
+    key: header,
+    width: [22, 22, 18, 15, 18, 40, 40, 40, 14, 20][index] ?? 20,
+  }));
 
-  XLSX.utils.book_append_sheet(
-    workbook,
-    worksheet,
-    t("reports.dataSources.actionLogs"),
-  );
-
-  const excelBuffer = XLSX.write(workbook, {
-    bookType: "xlsx",
-    type: "array",
+  formattedData.forEach((item) => {
+    worksheet.addRow(item);
   });
+
+  const excelBuffer = await workbook.xlsx.writeBuffer();
 
   const blob = new Blob([excelBuffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
