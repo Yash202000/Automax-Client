@@ -70,6 +70,10 @@ export const PERMISSIONS = {
   INCIDENTS_EDIT_CLOSED: "incidents:edit-closed",
   INCIDENTS_REQUEST_INFO: "incidents:request-info",
 
+  // Call log permissions
+  CALL_LOGS_VIEW: "call-logs:view",
+  CALL_LOGS_VIEW_ALL: "call-logs:view-all",
+
   // Request permissions
   REQUESTS_VIEW: "requests:view",
   REQUESTS_VIEW_ALL: "requests:view_all",
