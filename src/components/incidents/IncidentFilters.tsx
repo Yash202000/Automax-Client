@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, Settings2, Check } from "lucide-react";
+import { Search, Filter, Settings2, Check, X } from "lucide-react";
 import { Button, Input } from "../ui";
 import { MultiTreeSelect } from "../ui/MultiTreeSelect";
 import {
@@ -61,8 +61,6 @@ export interface IncidentFiltersProps {
   visibleStateIds?: Set<string> | null;
   /** Whether the SLA filter should be disabled */
   disableSlaFilter?: boolean;
-  /** Whether can view all incidents (affects clear filter visibility) */
-  canViewAllIncidents?: boolean;
   /** Whether a status filter was applied from URL */
   hasStatusFilter?: boolean;
   /** For transition filter: uses searchParams directly */
@@ -83,7 +81,6 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   onResetColumns,
   disableStateFilter = false,
   disableSlaFilter = false,
-  canViewAllIncidents = false,
   visibleStateIds = null,
   searchParams,
   setSearchParams,
@@ -273,6 +270,165 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     }));
   }, [sourceData, i18n.language]);
 
+  const priorityLabels: Record<number, string> = {
+    1: t("priorities.critical", "Critical"),
+    2: t("priorities.high", "High"),
+    3: t("priorities.medium", "Medium"),
+    4: t("priorities.low", "Low"),
+    5: t("priorities.veryLow", "Very Low"),
+  };
+
+  const findTreeNodeName = (nodes: any[], id: string): string | undefined => {
+    for (const node of nodes) {
+      if (node.id === id) {
+        return i18n.language === "ar" && node.name_ar
+          ? node.name_ar
+          : node.name;
+      }
+      if (node.children?.length) {
+        const found = findTreeNodeName(node.children, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+
+  // A simple pill per active filter field, so it's obvious at a glance what's
+  // applied without needing to expand the filters panel.
+  const filterBadges: { key: string; label: string; onClear: () => void }[] =
+    [];
+
+  if (filter.search) {
+    filterBadges.push({
+      key: "search",
+      label: `${t("common.search")}: ${filter.search}`,
+      onClear: () => onFilterChange("search", undefined),
+    });
+  }
+  if (filter.current_state_id) {
+    const state = allStates.find((s) => s.id === filter.current_state_id);
+    const name = state
+      ? i18n.language === "ar" && state.name_ar
+        ? state.name_ar
+        : state.name
+      : filter.current_state_id;
+    filterBadges.push({
+      key: "current_state_id",
+      label: `${t("common.status", "Status")}: ${name}`,
+      onClear: () => onFilterChange("current_state_id", undefined),
+    });
+  }
+  if (filter.workflow_id) {
+    const workflow = workflowsData?.data?.find(
+      (w: Workflow) => w.id === filter.workflow_id,
+    );
+    filterBadges.push({
+      key: "workflow_id",
+      label: `${t("common.workflow")}: ${workflow ? getLocalizedName(workflow) : filter.workflow_id}`,
+      onClear: () => onFilterChange("workflow_id", undefined),
+    });
+  }
+  if (filter.priority !== undefined) {
+    filterBadges.push({
+      key: "priority",
+      label: `${t("common.priority", "Priority")}: ${priorityLabels[filter.priority] || filter.priority}`,
+      onClear: () => onFilterChange("priority", undefined),
+    });
+  }
+  if (filter.classification_ids && filter.classification_ids.length > 0) {
+    const label =
+      filter.classification_ids.length === 1
+        ? findTreeNodeName(
+            classificationsData?.data || [],
+            filter.classification_ids[0],
+          ) || t("common.classification", "Classification")
+        : `${t("common.classification", "Classification")} (${filter.classification_ids.length})`;
+    filterBadges.push({
+      key: "classification_ids",
+      label,
+      onClear: () => onFilterChange("classification_ids", []),
+    });
+  }
+  if (filter.location_ids && filter.location_ids.length > 0) {
+    const label =
+      filter.location_ids.length === 1
+        ? findTreeNodeName(locationsData?.data || [], filter.location_ids[0]) ||
+          t("common.location", "Location")
+        : `${t("common.location", "Location")} (${filter.location_ids.length})`;
+    filterBadges.push({
+      key: "location_ids",
+      label,
+      onClear: () => onFilterChange("location_ids", []),
+    });
+  }
+  if (filter.department_ids && filter.department_ids.length > 0) {
+    const label =
+      filter.department_ids.length === 1
+        ? findTreeNodeName(
+            departmentsData?.data || [],
+            filter.department_ids[0],
+          ) || t("common.department", "Department")
+        : `${t("common.department", "Department")} (${filter.department_ids.length})`;
+    filterBadges.push({
+      key: "department_ids",
+      label,
+      onClear: () => onFilterChange("department_ids", []),
+    });
+  }
+  if (filter.sla_breached !== undefined) {
+    filterBadges.push({
+      key: "sla_breached",
+      label: `${t("common.sla", "SLA")}: ${filter.sla_breached ? t("common.breached", "Breached") : t("common.notBreached", "Not Breached")}`,
+      onClear: () => onFilterChange("sla_breached", undefined),
+    });
+  }
+  if (filter.converted_to_request !== undefined) {
+    filterBadges.push({
+      key: "converted_to_request",
+      label: `${t("incidents.convertedToRequest", "Converted to Request")}: ${filter.converted_to_request ? t("common.yes") : t("common.no")}`,
+      onClear: () => onFilterChange("converted_to_request", undefined),
+    });
+  }
+  if (filter.source) {
+    const src = sourceOptions.find((s) => s.value === filter.source);
+    filterBadges.push({
+      key: "source",
+      label: `${t("common.source", "Source")}: ${src ? src.label : filter.source}`,
+      onClear: () => onFilterChange("source", undefined),
+    });
+  }
+  if (filter.start_date || filter.end_date) {
+    filterBadges.push({
+      key: "date_range",
+      label: `${t("common.date", "Date")}: ${filter.start_date || "…"} - ${filter.end_date || "…"}`,
+      onClear: () => {
+        onFilterChange("start_date", undefined);
+        onFilterChange("end_date", undefined);
+      },
+    });
+  }
+  if (filter.reporter_phone) {
+    filterBadges.push({
+      key: "reporter_phone",
+      label: `${t("common.phone", "Phone")}: ${filter.reporter_phone}`,
+      onClear: () => onFilterChange("reporter_phone", undefined),
+    });
+  }
+  if (filter.reporter_phone_search) {
+    filterBadges.push({
+      key: "reporter_phone_search",
+      label: `${t("common.phone", "Phone")}: ${filter.reporter_phone_search}`,
+      onClear: () => onFilterChange("reporter_phone_search", undefined),
+    });
+  }
+  if (filter.momra_ref) {
+    filterBadges.push({
+      key: "momra_ref",
+      label: `${t("incidents.momraRef", "Momra Ref")}: ${filter.momra_ref}`,
+      onClear: () => onFilterChange("momra_ref", undefined),
+    });
+  }
+
   useEffect(() => {
     setReporterPhoneInput(filter.reporter_phone_search || "");
   }, [filter.reporter_phone_search]);
@@ -333,7 +489,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               <span className="ml-1 w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />
             )}
           </Button>
-          {hasActiveFilters && canViewAllIncidents && (
+          {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={onClearFilters}>
               {t("common.clear")}
             </Button>
@@ -419,6 +575,28 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
           )}
         </div>
       </div>
+
+      {/* Active Filter Badges */}
+      {filterBadges.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {filterBadges.map((badge) => (
+            <span
+              key={badge.key}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))]"
+            >
+              {badge.label}
+              <button
+                type="button"
+                onClick={badge.onClear}
+                className="hover:opacity-70 transition-opacity"
+                aria-label={t("common.clear")}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Expanded Filters */}
       {showFilters && (

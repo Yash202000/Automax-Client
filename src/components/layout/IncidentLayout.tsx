@@ -31,6 +31,7 @@ import {
   Bot,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
+import { useIncidentFilterStore } from "../../stores/incidentFilterStore";
 import { authApi } from "../../api/auth";
 import { setLoggingOut } from "../../api/client";
 import { incidentApi, emailApi } from "../../api/admin";
@@ -60,6 +61,7 @@ export const IncidentLayout: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const currentStatus = queryParams.get("status");
+  const currentStateId = queryParams.get("current_state_id");
   const isSlaBreached = queryParams.get("sla_breached") === "true";
   const queryClient = useQueryClient();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -170,19 +172,50 @@ export const IncidentLayout: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch incident stats to get statuses
+  // Fetch incident stats to get statuses. Merges in whatever filter is
+  // currently shared across the incident views (All/Assigned to
+  // me/Created by me) so the "By Status" counts stay consistent with
+  // whichever filter the user last applied, not just permission scoping.
+  // The status filter itself is excluded — this sidebar IS the by-status
+  // breakdown, so it needs every status's count, not just the one the list
+  // happens to be filtered down to.
+  // Global cross-view filtering is a VD2-specific requirement — other
+  // clients keep the sidebar counts scoped only by permissions, as before.
+  const isVD2Client =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
+  const sharedIncidentFilter = useIncidentFilterStore((s) => s.filter);
+  const sidebarStatsFilter = isVD2Client
+    ? { ...sharedIncidentFilter, current_state_id: undefined }
+    : {};
   const { data: statsData } = useQuery({
     queryKey: [
       "incidents",
       "stats",
       "incident",
       canViewAllIncidents ? "all" : "assigned",
+      sidebarStatsFilter,
     ],
     queryFn: () =>
-      incidentApi.getIncidentStatsV2(
-        canViewAllIncidents ? undefined : { my_record: user?.id },
-      ),
+      incidentApi.getIncidentStatsV2({
+        ...sidebarStatsFilter,
+        ...(canViewAllIncidents ? {} : { my_record: user?.id }),
+      }),
   });
+
+  // Builds the "By Status" sidebar link target. On VD2, IncidentsPage merges
+  // any URL field that's absent from the shared filter store, so this only
+  // needs to set the status itself — it always replaces whatever status was
+  // previously selected rather than merging with it, while every other
+  // active filter (search, classification, priority, etc.) is picked up
+  // from the store on arrival. Other clients keep the original bare
+  // `?status=name` link.
+  const buildStatusLinkTo = (stateId: string, stateName: string) => {
+    if (!isVD2Client) {
+      return `/incidents?status=${encodeURIComponent(stateName)}`;
+    }
+    return `/incidents?current_state_id=${encodeURIComponent(stateId)}&page=1`;
+  };
 
   const handleLogout = async () => {
     // Set flag to prevent 401 interceptor from running during logout
@@ -439,19 +472,21 @@ export const IncidentLayout: React.FC = () => {
                   {(workflow.by_state_details || []).map((state) => (
                     <NavLink
                       key={state.name}
-                      to={`/incidents?status=${encodeURIComponent(state.name)}`}
+                      to={buildStatusLinkTo(state.id, state.name)}
                       onClick={() => setMobileMenuOpen(false)}
                       className={({ isActive }) => {
-                        const isItemActive =
-                          isActive && currentStatus === state.name;
+                        const isItemActive = isVD2Client
+                          ? currentStateId === state.id
+                          : isActive && currentStatus === state.name;
                         return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
                           isItemActive ? "bg-white/10 text-white shadow-sm" : ""
                         }`;
                       }}
                     >
                       {({ isActive }) => {
-                        const isItemActive =
-                          isActive && currentStatus === state.name;
+                        const isItemActive = isVD2Client
+                          ? currentStateId === state.id
+                          : isActive && currentStatus === state.name;
                         return (
                           <>
                             <Circle
