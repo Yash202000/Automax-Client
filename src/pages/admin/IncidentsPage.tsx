@@ -48,6 +48,12 @@ import {
 } from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import { useAuthStore } from "@/stores/authStore";
+import {
+  useIncidentFilterStore,
+  pickSharedIncidentFilter,
+  sharedIncidentFilterKeys,
+  type SharedIncidentFilter,
+} from "@/stores/incidentFilterStore";
 import { LocationMap } from "@/components/maps";
 
 // Column configuration
@@ -308,17 +314,26 @@ export const IncidentsPage: React.FC = () => {
     [allStates],
   );
 
-  const filter: IncidentFilter = useMemo(() => {
-    const statusParam = searchParams.get("status");
-    // const search = searchParams.get("search");
-    // const momraRef = searchParams.get("momra_ref");
-    // const isMomraSearch = !!momraRef?.trim();
+  // Global cross-view filtering is a VD2-specific requirement — other
+  // clients keep each incident view's filter fully independent.
+  const isVD2Client =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
 
-    let currentStateId: string | undefined = searchParams.get(
-      "current_state_id",
-    )
-      ? String(searchParams.get("current_state_id"))
-      : undefined;
+  const filter: IncidentFilter = useMemo(() => {
+    // On VD2, any field the URL doesn't specify falls back to whatever was
+    // last set from another incident view (Assigned to me/Created by me) or
+    // the sidebar's "By Status" links, so filtering feels global across
+    // views without every navigation having to bake the whole filter into
+    // its own URL. A field present in the URL always wins outright.
+    const stored = isVD2Client
+      ? useIncidentFilterStore.getState().filter
+      : ({} as SharedIncidentFilter);
+
+    const statusParam = searchParams.get("status");
+
+    let currentStateId: string | undefined =
+      searchParams.get("current_state_id") || stored.current_state_id;
 
     if (statusParam && uniqueStates.length) {
       const matchingState = uniqueStates.find(
@@ -329,47 +344,63 @@ export const IncidentsPage: React.FC = () => {
         currentStateId = matchingState.id;
       }
     }
+
+    const departmentIds = searchParams.getAll("department_ids");
+    const locationIds = searchParams.getAll("location_ids");
+    const classificationIds = searchParams.getAll("classification_ids");
+
     return {
       page: Number(searchParams.get("page") || 1),
       limit: Number(searchParams.get("limit") || 10),
       record_type: "incident",
-      //when using momra search filter pass those values to search and select momra as the source.
-      // search: isMomraSearch ? momraRef : search || undefined,
-      // source: isMomraSearch ? "momra" : searchParams.get("source") || undefined,
-      search: searchParams.get("search") || undefined,
-      source: searchParams.get("source") || undefined,
-      workflow_id: searchParams.get("workflow_id") || undefined,
+      search: searchParams.get("search") || stored.search,
+      source: searchParams.get("source") || stored.source,
+      workflow_id: searchParams.get("workflow_id") || stored.workflow_id,
       assignee_id: searchParams.get("assignee_id") || undefined,
 
       priority: searchParams.get("priority")
         ? Number(searchParams.get("priority"))
-        : undefined,
+        : stored.priority,
 
       status: searchParams.get("status") || undefined,
 
-      sla_breached:
-        searchParams.get("sla_breached") === "true"
-          ? true
-          : searchParams.get("sla_breached") === "false"
-            ? false
-            : undefined,
+      sla_breached: searchParams.has("sla_breached")
+        ? searchParams.get("sla_breached") === "true"
+        : stored.sla_breached,
 
-      department_ids: searchParams.getAll("department_ids"),
-      location_ids: searchParams.getAll("location_ids"),
-      classification_ids: searchParams.getAll("classification_ids"),
+      department_ids: departmentIds.length
+        ? departmentIds
+        : stored.department_ids,
+      location_ids: locationIds.length ? locationIds : stored.location_ids,
+      classification_ids: classificationIds.length
+        ? classificationIds
+        : stored.classification_ids,
 
       current_state_id: currentStateId,
-      transition_id: searchParams.get("transition_id") || undefined,
-      converted_to_request:
-        searchParams.get("converted_to_request") === "true" ? true : undefined,
-      start_date: searchParams.get("start_date") || undefined,
-      end_date: searchParams.get("end_date") || undefined,
-      reporter_phone: searchParams.get("reporter_phone") || undefined,
+      transition_id: searchParams.get("transition_id") || stored.transition_id,
+      converted_to_request: searchParams.has("converted_to_request")
+        ? searchParams.get("converted_to_request") === "true"
+        : stored.converted_to_request,
+      start_date: searchParams.get("start_date") || stored.start_date,
+      end_date: searchParams.get("end_date") || stored.end_date,
+      reporter_phone:
+        searchParams.get("reporter_phone") || stored.reporter_phone,
       reporter_phone_search:
-        searchParams.get("reporter_phone_search") || undefined,
-      momra_ref: searchParams.get("momra_ref") || undefined,
+        searchParams.get("reporter_phone_search") ||
+        stored.reporter_phone_search,
+      momra_ref: searchParams.get("momra_ref") || stored.momra_ref,
     };
-  }, [searchParams, uniqueStates]);
+  }, [searchParams, uniqueStates, isVD2Client]);
+
+  const setSharedIncidentFilter = useIncidentFilterStore((s) => s.setFilter);
+
+  // Keep the shared filter store in sync so the sidebar's "By Status" counts
+  // and the Assigned-to-me/Created-by-me views reflect whatever is applied
+  // here.
+  useEffect(() => {
+    if (!isVD2Client) return;
+    setSharedIncidentFilter(pickSharedIncidentFilter(filter));
+  }, [filter, setSharedIncidentFilter, isVD2Client]);
 
   const canConvertToRequest = useMemo(() => {
     if (isSuperAdmin) return true;
@@ -469,9 +500,31 @@ export const IncidentsPage: React.FC = () => {
     params.set("page", "1");
 
     setSearchParams(params);
+
+    // Update the shared store for this exact key immediately (not via the
+    // reactive effect below, which only runs after re-render): otherwise
+    // clearing a single field here — while other filters stay applied —
+    // would read as "not specified" in the merge above and get instantly
+    // repopulated from the still-stale stored value.
+    if (
+      isVD2Client &&
+      sharedIncidentFilterKeys.includes(key as keyof SharedIncidentFilter)
+    ) {
+      const current = useIncidentFilterStore.getState().filter;
+      useIncidentFilterStore
+        .getState()
+        .setFilter({ ...current, [key]: value === "" ? undefined : value });
+    }
   };
 
   const clearFilters = () => {
+    // Clear the shared store too — otherwise the merge-from-store fallback
+    // above would immediately repopulate every field this just cleared from
+    // the URL, since a bare URL field reads as "not specified, use the
+    // store's value".
+    if (isVD2Client) {
+      useIncidentFilterStore.getState().clearFilter();
+    }
     setSearchParams({
       page: "1",
       limit: "10",
@@ -805,15 +858,19 @@ export const IncidentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Stats by Status */}
-      <IncidentStatusStatsRow
-        workflowStats={stats?.workflow_stats}
-        total={stats?.total || 0}
-        activeStateId={filter.current_state_id}
-        onStatusClick={(stateId) =>
-          setSearchParams({ current_state_id: stateId })
-        }
-      />
+      {/* Stats by Status — hidden once a status filter is active, since the
+          list is already narrowed to one status at that point (the filter
+          badges row above already shows/clears it). */}
+      {!filter.current_state_id && (
+        <IncidentStatusStatsRow
+          workflowStats={stats?.workflow_stats}
+          total={stats?.total || 0}
+          activeStateId={filter.current_state_id}
+          onStatusClick={(stateId) =>
+            setSearchParams({ current_state_id: stateId })
+          }
+        />
+      )}
 
       {showMap && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
@@ -836,7 +893,6 @@ export const IncidentsPage: React.FC = () => {
         disableStateFilter={hasStatusFilter}
         visibleStateIds={visibleStateIds}
         disableSlaFilter={!canViewAllIncidents && hasUrlFilter}
-        canViewAllIncidents={canViewAllIncidents}
         hasStatusFilter={hasStatusFilter}
         searchParams={searchParams}
         setSearchParams={setSearchParams}
