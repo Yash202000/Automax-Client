@@ -24,6 +24,7 @@ import i18n from "@/i18n";
 import { useAuthStore } from "@/stores/authStore";
 import { PERMISSIONS } from "@/constants/permissions";
 import usePermissions from "@/hooks/usePermissions";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // Column configuration (shared across pages)
 export interface ColumnConfig {
@@ -289,36 +290,15 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     return () => window.clearTimeout(timeoutId);
   }, [reporterPhoneInput, filter.reporter_phone_search, onFilterChange]);
 
+  const debouncedMomraSearch = useDebounce(momraRefNum, 600);
+
+  useEffect(() => {
+    onFilterChange("momra_ref", debouncedMomraSearch);
+  }, [debouncedMomraSearch]);
+
   useEffect(() => {
     setMomraRefNum(filter.momra_ref || "");
   }, [filter.momra_ref]);
-
-  useEffect(() => {
-    const currentValue = (filter.momra_ref || "").trim();
-    const nextValue = momraRefNum.trim();
-
-    if (currentValue === nextValue) return;
-
-    const timeoutId = window.setTimeout(() => {
-      if (!searchParams || !setSearchParams) return;
-      const params = new URLSearchParams(searchParams);
-      // normal search cleared when momra search
-      params.delete("search");
-
-      if (nextValue) {
-        params.set("momra_ref", nextValue);
-        params.set("source", "momra");
-      } else {
-        params.delete("momra_ref");
-        params.delete("source");
-      }
-
-      params.set("page", "1");
-      setSearchParams(params);
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [momraRefNum, filter.momra_ref, onFilterChange]);
 
   const visibleColumnCount = columns?.filter((c) => c.visible).length ?? 0;
 
@@ -334,29 +314,10 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
           <input
             type="text"
             placeholder={t("incidents.searchPlaceholder")}
-            value={searchParams?.get("search") || ""}
-            onChange={(e) => {
-              // setMomraRefNum("");
-              // onFilterChange("momra_ref", undefined);
-              // onFilterChange("source", undefined);
-              // onFilterChange("search", e.target.value || undefined);
-              const value = e.target.value;
-              setMomraRefNum("");
-              if (!searchParams || !setSearchParams) return;
-              const params = new URLSearchParams(searchParams);
-
-              params.delete("momra_ref");
-              params.delete("source");
-
-              if (value) {
-                params.set("search", value);
-              } else {
-                params.delete("search");
-              }
-
-              params.set("page", "1");
-              setSearchParams(params);
-            }}
+            value={filter.search || ""}
+            onChange={(e) =>
+              onFilterChange("search", e.target.value || undefined)
+            }
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
           />
         </div>

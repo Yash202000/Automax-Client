@@ -193,6 +193,8 @@ export const PERMISSIONS = {
   // Communication Tracking - CCM
   COMMUNICATION_TRACK_VIEW: "communication-tracking:view",
   COMMUNICATION_TRACK_UPDATE: "communication-tracking:update",
+
+  VIEW_ALL_CALL_LOGS: "call-logs:view_all",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
