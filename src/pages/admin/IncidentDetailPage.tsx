@@ -1466,6 +1466,12 @@ export const IncidentDetailPage: React.FC = () => {
     );
   }
 
+  const customFields = incident?.custom_fields
+    ? JSON.parse(incident.custom_fields)
+    : null;
+
+  const momra_ref = customFields?.momra_incident_no;
+
   return (
     <div className="space-y-6">
       {/* Presence Indicator - Show who else is viewing this incident */}
@@ -2005,7 +2011,7 @@ export const IncidentDetailPage: React.FC = () => {
 
           {/* Tabs */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm overflow-hidden">
-            <div className="flex border-b border-[hsl(var(--border))] overflow-x-auto scrollbar-hide">
+            <div className="flex border-b border-[hsl(var(--border))] overflow-x-auto">
               <button
                 onClick={() => setActiveTab("activity")}
                 className={cn(
@@ -3330,6 +3336,19 @@ export const IncidentDetailPage: React.FC = () => {
                       <Radio className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                       <span className="capitalize">
                         {incident.source.replace("_", " ")}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {momra_ref && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t("incidents.momraIncidentNumber")}
+                    </label>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <span className="capitalize font-semibold">
+                        {momra_ref}
                       </span>
                     </div>
                   </div>
