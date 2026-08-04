@@ -1449,6 +1449,7 @@ export interface IncidentFilter {
   reporter_phone?: string;
   reporter_phone_search?: string;
   momra_ref?: string;
+  current_state_code?: string;
 }
 
 // Convert Incident to Request types
