@@ -1220,6 +1220,8 @@ export const incidentFields: ReportFieldDefinition[] = [
     category: "Core",
     sortable: false,
     filterable: false,
+    dynamicOptions: "users",
+    relationField: "name",
   },
 
   {
