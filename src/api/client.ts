@@ -17,6 +17,7 @@ declare global {
       CTI_PROVIDER?: string;
       SESSION_TIMEOUT_MINUTES?: string;
       APP_VERSION?: string;
+      ENABLE_SIGNUP?: string;
     };
   }
 }
