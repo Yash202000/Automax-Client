@@ -1359,6 +1359,9 @@ export const incidentApi = {
     if (filter.momra_ref) {
       params.append("momra_ref", filter.momra_ref);
     }
+    if (filter.current_state_code) {
+      params.append("current_state_code", filter.current_state_code);
+    }
     const response = await apiClient.get<PaginatedResponse<Incident>>(
       `/incidents?${params.toString()}`,
     );
