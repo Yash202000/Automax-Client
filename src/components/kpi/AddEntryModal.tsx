@@ -27,6 +27,7 @@ import type {
 import {
   getPeriodOptionsByFrequency,
   getYearOptions,
+  getCurrentPeriodCode,
   DATA_SOURCE_TYPE_OPTIONS,
   DATA_QUALITY_STATUS_OPTIONS,
   REPORTING_MONTHS,
@@ -349,7 +350,13 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   const currentUser = useAuthStore((s) => s.user);
 
   const [reportingYear, setReportingYear] = useState(new Date().getFullYear());
-  const [periodCode, setPeriodCode] = useState("");
+  // Defaults to the ACTUAL current period (not blank) — a blank value has no
+  // matching <option>, so the <select> visually shows its first option
+  // ("Jan") without that ever being the real selected value, making it easy
+  // to submit an entry for the wrong period without noticing.
+  const [periodCode, setPeriodCode] = useState(() =>
+    getCurrentPeriodCode(reportingFrequency),
+  );
   const [directActualValue, setDirectActualValue] = useState("");
   const [numeratorValue, setNumeratorValue] = useState("");
   const [denominatorValue, setDenominatorValue] = useState("");
@@ -576,7 +583,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
   const resetForm = () => {
     setReportingYear(new Date().getFullYear());
-    setPeriodCode("");
+    setPeriodCode(getCurrentPeriodCode(reportingFrequency));
     setDirectActualValue("");
     setNumeratorValue("");
     setDenominatorValue("");

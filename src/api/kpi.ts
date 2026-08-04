@@ -76,6 +76,9 @@ import type {
   KpiCardResponse,
   KpiSingleDashboardResponse,
   KpiAnnualRollupRow,
+  KpiMetricPeriodRollup,
+  KpiCompositeScoreResult,
+  KpiMetricPeriodSeries,
 } from "../types/kpi";
 
 export const kpiMasterDataApi = {
@@ -1164,6 +1167,61 @@ export const kpiComposedApi = {
     id: string,
   ): Promise<ApiResponse<KpiAnnualRollupRow[]>> => {
     const res = await apiClient.get(`/kpi/${type}/${id}/annual-rollup`);
+    return res.data;
+  },
+  getMetricPeriodRollup: async (
+    type: KPIType,
+    id: string,
+    metricId: string,
+    year: number,
+    periodCode: string,
+  ): Promise<ApiResponse<KpiMetricPeriodRollup>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/metrics/${metricId}/period-rollup`,
+      { params: { year, period_code: periodCode } },
+    );
+    return res.data;
+  },
+  getMetricDisplayRollup: async (
+    type: KPIType,
+    id: string,
+    metricId: string,
+  ): Promise<ApiResponse<KpiMetricPeriodRollup>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/metrics/${metricId}/display-rollup`,
+    );
+    return res.data;
+  },
+  getCompositeScore: async (
+    type: KPIType,
+    id: string,
+    year: number,
+    periodCode: string,
+  ): Promise<ApiResponse<KpiCompositeScoreResult>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/composite-score`, {
+      params: { year, period_code: periodCode },
+    });
+    return res.data;
+  },
+  getCompositeScoreLatest: async (
+    type: KPIType,
+    id: string,
+  ): Promise<ApiResponse<KpiCompositeScoreResult>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/composite-score-latest`,
+    );
+    return res.data;
+  },
+  getMetricPeriodSeries: async (
+    type: KPIType,
+    id: string,
+    metricId: string,
+    year: number,
+  ): Promise<ApiResponse<KpiMetricPeriodSeries>> => {
+    const res = await apiClient.get(
+      `/kpi/${type}/${id}/metrics/${metricId}/period-series`,
+      { params: { year } },
+    );
     return res.data;
   },
 };
