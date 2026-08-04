@@ -45,7 +45,6 @@ import {
   useCreateKpiMetric,
   useDeleteKpiMetric,
   useUpdateKpiMetric,
-  useKpiEntries,
   useKpiEngagementEvidence,
   useCreateKpiEvidence,
   useKpiCollaboratorAssignments,
@@ -61,6 +60,8 @@ import {
   useDeleteKpiEvidence,
   useOperationalObjectives,
   useProcesses,
+  useKpiMetricDisplayRollup,
+  useKpiCompositeScoreLatest,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuthStore } from "../../../stores/authStore";
@@ -88,7 +89,6 @@ import type {
   OperationalObjective,
   Process,
 } from "../../../types/kpi";
-import { REPORTING_MONTHS } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -187,6 +187,207 @@ type TabType =
   | "comments"
   | "activity";
 
+// ── Metric mini card ────────────────────────────────────────────────────
+// The period's Actual/Achievement now come from the aggregated
+// period-rollup endpoint (sum-numerator/sum-denominator for ratio metrics,
+// never a single Entry's own value — see AggregateMetricPeriod on the
+// backend) instead of "the latest approved entry". A separate component so
+// each metric's rollup query is its own hook call, not one called inside a
+// .map() loop.
+interface MetricRollupCardProps {
+  metric: KpiMetric;
+  kpiType: string;
+  kpiId: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  onViewEntries: () => void;
+  onAddEntry: () => void;
+  formatValue: (m: KpiMetric, value: number) => string;
+  statusBadgeClass: (s?: string) => string;
+}
+
+const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
+  metric: m,
+  kpiType,
+  kpiId,
+  isSelected,
+  onSelect,
+  onViewEntries,
+  onAddEntry,
+  formatValue,
+  statusBadgeClass,
+}) => {
+  // The server resolves which period to show: the real current period if it
+  // has data, otherwise the most recent period that does — so a metric
+  // populated for a different period (testing next month, backfilling a
+  // past one) doesn't read as "No Data" purely because the calendar hasn't
+  // caught up to it.
+  const { data: rollup } = useKpiMetricDisplayRollup(kpiType, kpiId, m.id);
+
+  const hasData = !!rollup?.has_data;
+  const hasTarget = hasData && rollup?.target != null;
+  const achievement =
+    hasTarget && rollup?.achievement_capped != null
+      ? rollup.achievement_capped
+      : null;
+  const achievementRaw =
+    hasTarget && rollup?.achievement_raw != null
+      ? rollup.achievement_raw
+      : null;
+
+  const barWidth =
+    achievement === null ? 0 : Math.min(100, Math.max(0, achievement));
+  const progressColor =
+    achievement === null
+      ? "bg-slate-300 dark:bg-slate-600"
+      : achievement >= 80
+        ? "bg-teal-500"
+        : achievement >= 50
+          ? "bg-amber-500"
+          : "bg-red-500";
+
+  const periodLabel = rollup
+    ? `${rollup.period_code.toUpperCase()} ${rollup.year}`
+    : "—";
+
+  return (
+    <div
+      onClick={onSelect}
+      className={`rounded-xl border bg-white dark:bg-slate-800/80 p-4 cursor-pointer transition-colors ${
+        isSelected
+          ? "border-blue-400 dark:border-blue-500 ring-1 ring-blue-400 dark:ring-blue-500"
+          : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+          {m.name}
+        </p>
+        <span
+          className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadgeClass(m.metric_status)}`}
+        >
+          {m.metric_status || "Active"}
+        </span>
+      </div>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        {m.metric_code || "—"} · {m.metric_status || "Active"}
+      </p>
+
+      <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700">
+        <div className="pe-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            Baseline
+          </p>
+          <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
+            {formatValue(m, m.baseline_value)}
+          </p>
+        </div>
+        <div className="px-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            Current
+          </p>
+          <p
+            className={`mt-1 text-base font-bold tabular-nums ${
+              hasData
+                ? "text-slate-900 dark:text-white"
+                : "text-slate-400 dark:text-slate-500 text-sm font-medium"
+            }`}
+          >
+            {hasData && rollup?.actual != null
+              ? formatValue(m, rollup.actual)
+              : "No Data"}
+          </p>
+        </div>
+        <div className="ps-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            Target
+          </p>
+          <p
+            className={`mt-1 text-base font-bold tabular-nums ${
+              hasTarget
+                ? "text-slate-900 dark:text-white"
+                : "text-slate-400 dark:text-slate-500 text-sm font-medium"
+            }`}
+          >
+            {hasTarget && rollup?.target != null
+              ? formatValue(m, rollup.target)
+              : "No target set"}
+          </p>
+          <p
+            className="text-[10px] text-blue-600 dark:text-blue-400 truncate"
+            title={
+              rollup?.is_fallback_period
+                ? `No data for the current period yet — showing ${periodLabel}, the most recent period with approved data`
+                : `${rollup?.entry_count ?? 0} approved entr${rollup?.entry_count === 1 ? "y" : "ies"} for ${periodLabel}`
+            }
+          >
+            {periodLabel} · {rollup?.entry_count ?? 0} entr
+            {rollup?.entry_count === 1 ? "y" : "ies"}
+            {rollup?.is_fallback_period ? " (latest)" : ""}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+          Achievement
+        </p>
+        <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+            style={{ width: `${barWidth}%` }}
+          />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between text-xs">
+          <span className="text-slate-500 dark:text-slate-400">
+            {periodLabel}
+            {rollup?.is_fallback_period && (
+              <span
+                className="ms-1 text-blue-500 dark:text-blue-400"
+                title="Current period has no data — showing the most recent period that does"
+              >
+                (latest)
+              </span>
+            )}
+          </span>
+          <span
+            className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums"
+            title={
+              achievementRaw !== null && achievementRaw !== achievement
+                ? `Raw (uncapped): ${achievementRaw.toFixed(2)}%`
+                : undefined
+            }
+          >
+            {!hasData
+              ? "No Data"
+              : !hasTarget
+                ? "No target for this period"
+                : `${achievement!.toFixed(2)}%`}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className="mt-4 flex items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Button size="sm" variant="outline" onClick={onViewEntries}>
+          Entries
+        </Button>
+        <Button
+          size="sm"
+          disabled={
+            m.metric_status === "Inactive" || m.metric_status === "Archived"
+          }
+          onClick={onAddEntry}
+        >
+          Add Entry
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export const KpiDictionaryDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
@@ -216,7 +417,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const kpiType = type ?? "strategic";
   const kpiId = id ?? "";
   const { data: metrics } = useKpiMetrics(kpiType, kpiId);
-  const { data: allMetricEntries } = useKpiEntries(kpiType, kpiId);
+  // Each metric contributes its own most-recent period with data, rather
+  // than requiring every metric to already share one identical period — see
+  // useKpiCompositeScoreLatest.
+  const { data: compositeScore } = useKpiCompositeScoreLatest(kpiType, kpiId);
   const { data: operationalObjectivesRes } = useOperationalObjectives();
   const { data: processesRes } = useProcesses();
   const [showObjectivesModal, setShowObjectivesModal] = useState(false);
@@ -375,71 +579,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       metricId: selectedMetric.id,
       data: configForm,
     });
-  };
-
-  const FULL_MONTH_NAMES = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const formatEntryPeriodLabel = (entry?: {
-    reporting_year: number;
-    period_code: string;
-  }) => {
-    if (!entry) return "No published period yet";
-    const code = entry.period_code?.toLowerCase();
-    const monthIdx = REPORTING_MONTHS.findIndex(
-      (m) => m.toLowerCase() === code,
-    );
-    if (monthIdx >= 0)
-      return `${FULL_MONTH_NAMES[monthIdx]} ${entry.reporting_year}`;
-    if (["q1", "q2", "q3", "q4", "h1", "h2"].includes(code)) {
-      return `${code.toUpperCase()} ${entry.reporting_year}`;
-    }
-    if (code === "annual") return `Annual ${entry.reporting_year}`;
-    return String(entry.reporting_year);
-  };
-
-  const getMetricLatestApprovedEntry = (metricId: string) => {
-    const entries = (allMetricEntries ?? []).filter(
-      (e) => e.metric_id === metricId && e.status === "approved",
-    );
-    if (entries.length === 0) return undefined;
-    return [...entries].sort((a, b) => {
-      if (a.reporting_year !== b.reporting_year)
-        return b.reporting_year - a.reporting_year;
-      return (b.period_start || "").localeCompare(a.period_start || "");
-    })[0];
-  };
-
-  const getMetricAchievement = (m: KpiMetric) => {
-    const latestEntry = getMetricLatestApprovedEntry(m.id);
-    if (
-      latestEntry?.achievement_percentage !== undefined &&
-      latestEntry?.achievement_percentage !== null
-    ) {
-      return latestEntry.achievement_percentage;
-    }
-    // No metric-level fallback target anymore — a period with no approved
-    // Target genuinely has nothing to measure against, so return null
-    // ("not calculable") rather than compute a percentage against an
-    // unrelated static number.
-    const targetVal = m.effective_target_value;
-    if (!targetVal) return null;
-    if (m.direction === "Lower is Better") {
-      return m.current_value ? (targetVal / m.current_value) * 100 : null;
-    }
-    return (m.current_value / targetVal) * 100;
   };
 
   const metricStatusBadgeClass = (s?: string) => {
@@ -958,6 +1097,133 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Composite KPI Score */}
+          {(metrics ?? []).length > 0 && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Composite KPI Score
+                  </h2>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Latest available data per metric — see each row's period
+                  </p>
+                </div>
+                {compositeScore?.has_data && (
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 tabular-nums">
+                      {compositeScore.capped_score?.toFixed(2)}%
+                    </p>
+                    {compositeScore.raw_score !==
+                      compositeScore.capped_score && (
+                      <p
+                        className="text-xs text-slate-400 dark:text-slate-500"
+                        title="Uncapped score, retained for audit"
+                      >
+                        Raw: {compositeScore.raw_score?.toFixed(2)}%
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {compositeScore?.has_data &&
+                (() => {
+                  const weightSum = compositeScore.metrics.reduce(
+                    (s, m) => s + m.weight,
+                    0,
+                  );
+                  if (Math.abs(weightSum - 100) < 0.01) return null;
+                  return (
+                    <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 p-3 text-xs text-amber-700 dark:text-amber-400">
+                      Metric weights sum to {weightSum.toFixed(2)}%, not 100% —
+                      the score below won't reflect true performance until each
+                      metric's Weight (Metric Configuration) is corrected to add
+                      up to 100% across this KPI.
+                    </div>
+                  );
+                })()}
+
+              {!compositeScore?.has_data ? (
+                <p className="text-sm text-slate-400 dark:text-slate-500">
+                  No Data — none of this KPI's metrics have any approved entries
+                  or approved target yet.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700/60">
+                        <th className="py-2 pe-3">Metric</th>
+                        <th className="py-2 px-3">Period</th>
+                        <th className="py-2 px-3">Actual</th>
+                        <th className="py-2 px-3">Target</th>
+                        <th className="py-2 px-3">Achievement</th>
+                        <th className="py-2 px-3">Weight</th>
+                        <th className="py-2 ps-3">Weighted Result</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                      {compositeScore.metrics.map((row) => (
+                        <tr key={row.metric_id}>
+                          <td className="py-2 pe-3 font-medium text-slate-900 dark:text-white">
+                            {row.metric_name}
+                          </td>
+                          <td className="py-2 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {row.period_code ? (
+                              <>
+                                {row.period_code.toUpperCase()} {row.year}
+                                {row.is_fallback_period && (
+                                  <span
+                                    className="ms-1 text-blue-500 dark:text-blue-400"
+                                    title="Current period has no data — showing the most recent period that does"
+                                  >
+                                    (latest)
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="py-2 px-3 tabular-nums text-slate-700 dark:text-slate-300">
+                            {row.has_data ? row.actual?.toFixed(2) : "No Data"}
+                          </td>
+                          <td className="py-2 px-3 tabular-nums text-slate-700 dark:text-slate-300">
+                            {row.target != null ? row.target.toFixed(2) : "—"}
+                          </td>
+                          <td className="py-2 px-3 tabular-nums text-slate-700 dark:text-slate-300">
+                            {row.achievement_raw != null
+                              ? `${row.achievement_raw.toFixed(2)}%`
+                              : "—"}
+                          </td>
+                          <td className="py-2 px-3 tabular-nums text-slate-700 dark:text-slate-300">
+                            {row.weight.toFixed(0)}%
+                          </td>
+                          <td className="py-2 ps-3 tabular-nums font-semibold text-slate-900 dark:text-white">
+                            {row.weighted_result != null
+                              ? `${row.weighted_result.toFixed(2)}%`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-slate-200 dark:border-slate-700/60 font-semibold text-slate-900 dark:text-white">
+                        <td className="py-2 pe-3" colSpan={6}>
+                          Raw Overall KPI Score
+                        </td>
+                        <td className="py-2 ps-3 tabular-nums">
+                          {compositeScore.raw_score?.toFixed(2)}%
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -1614,153 +1880,26 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           {/* Per-metric mini cards */}
           {(metrics ?? []).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(metrics ?? []).map((m) => {
-                const achievement = getMetricAchievement(m);
-                const barWidth =
-                  achievement === null
-                    ? 0
-                    : Math.min(100, Math.max(0, achievement));
-                const progressColor =
-                  achievement === null
-                    ? "bg-slate-300 dark:bg-slate-600"
-                    : achievement >= 80
-                      ? "bg-teal-500"
-                      : achievement >= 50
-                        ? "bg-amber-500"
-                        : "bg-red-500";
-                const latestEntry = getMetricLatestApprovedEntry(m.id);
-                const periodLabel = formatEntryPeriodLabel(latestEntry);
-                // Show the target for whichever period Achievement is actually
-                // reporting on — the latest approved entry's own snapshot when
-                // one exists — instead of the "current calendar period" target,
-                // which can silently be a different period than the entry.
-                const displayTargetValue =
-                  latestEntry?.target_value_snapshot ??
-                  m.effective_target_value;
-                const displayTargetPeriod = latestEntry
-                  ? periodLabel
-                  : m.effective_target_period;
-                const isSelected = selectedMetricId === m.id;
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => setSelectedMetricId(m.id)}
-                    className={`rounded-xl border bg-white dark:bg-slate-800/80 p-4 cursor-pointer transition-colors ${
-                      isSelected
-                        ? "border-blue-400 dark:border-blue-500 ring-1 ring-blue-400 dark:ring-blue-500"
-                        : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                        {m.name}
-                      </p>
-                      <span
-                        className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${metricStatusBadgeClass(m.metric_status)}`}
-                      >
-                        {m.metric_status || "Active"}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      {m.metric_code || "—"} · {m.metric_status || "Active"}
-                    </p>
-
-                    <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700">
-                      <div className="pe-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                          Baseline
-                        </p>
-                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
-                          {formatMetricValue(m, m.baseline_value)}
-                        </p>
-                      </div>
-                      <div className="px-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                          Current
-                        </p>
-                        <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
-                          {formatMetricValue(m, m.current_value)}
-                        </p>
-                      </div>
-                      <div className="ps-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                          Target
-                        </p>
-                        <p
-                          className={`mt-1 text-base font-bold tabular-nums ${
-                            displayTargetValue !== undefined
-                              ? "text-slate-900 dark:text-white"
-                              : "text-slate-400 dark:text-slate-500 text-sm font-medium"
-                          }`}
-                        >
-                          {displayTargetValue !== undefined
-                            ? formatMetricValue(m, displayTargetValue)
-                            : "No target set"}
-                        </p>
-                        {displayTargetPeriod && (
-                          <p
-                            className="text-[10px] text-blue-600 dark:text-blue-400 truncate"
-                            title={`Approved target for ${displayTargetPeriod}`}
-                          >
-                            {displayTargetPeriod}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                        Achievement
-                      </p>
-                      <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                      <div className="mt-1.5 flex items-center justify-between text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">
-                          {periodLabel}
-                        </span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
-                          {achievement === null
-                            ? "No target for this period"
-                            : `${achievement.toFixed(2)}%`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div
-                      className="mt-4 flex items-center gap-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEntryMetric(m);
-                          setShowViewEntries(true);
-                        }}
-                      >
-                        Entries
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={
-                          m.metric_status === "Inactive" ||
-                          m.metric_status === "Archived"
-                        }
-                        onClick={() => {
-                          setEntryMetric(m);
-                          setShowAddEntry(true);
-                        }}
-                      >
-                        Add Entry
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+              {(metrics ?? []).map((m) => (
+                <MetricRollupCard
+                  key={m.id}
+                  metric={m}
+                  kpiType={kpiType}
+                  kpiId={kpiId}
+                  isSelected={selectedMetricId === m.id}
+                  onSelect={() => setSelectedMetricId(m.id)}
+                  onViewEntries={() => {
+                    setEntryMetric(m);
+                    setShowViewEntries(true);
+                  }}
+                  onAddEntry={() => {
+                    setEntryMetric(m);
+                    setShowAddEntry(true);
+                  }}
+                  formatValue={formatMetricValue}
+                  statusBadgeClass={metricStatusBadgeClass}
+                />
+              ))}
             </div>
           ) : (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-12 text-center">

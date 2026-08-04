@@ -1255,6 +1255,125 @@ export const useKpiSingleDashboard = (type: KPIType | string, id: string) =>
     enabled: !!type && !!id,
   });
 
+// A metric's period Actual is an aggregate across every Approved Entry in
+// that period (sum-numerator/sum-denominator for ratio metrics), not any
+// single Entry's own value — see kpiComposedApi.getMetricPeriodRollup.
+export const useKpiMetricPeriodRollup = (
+  type: KPIType | string,
+  id: string,
+  metricId?: string,
+  year?: number,
+  periodCode?: string,
+) =>
+  useQuery({
+    queryKey: [
+      "kpi",
+      "metric-period-rollup",
+      type,
+      id,
+      metricId,
+      year,
+      periodCode,
+    ],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getMetricPeriodRollup(
+        type as KPIType,
+        id,
+        metricId!,
+        year!,
+        periodCode!,
+      );
+      return res.data;
+    },
+    enabled: !!type && !!id && !!metricId && !!year && !!periodCode,
+  });
+
+// What the Metric Card actually displays: the server resolves which period
+// to show (the real current period if it has data, otherwise the most
+// recent period that does), so a metric populated for a different period
+// (testing next month, backfilling a past one) doesn't read as a misleading
+// "No Data" purely because the calendar hasn't caught up to it yet.
+export const useKpiMetricDisplayRollup = (
+  type: KPIType | string,
+  id: string,
+  metricId?: string,
+) =>
+  useQuery({
+    queryKey: ["kpi", "metric-display-rollup", type, id, metricId],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getMetricDisplayRollup(
+        type as KPIType,
+        id,
+        metricId!,
+      );
+      return res.data;
+    },
+    enabled: !!type && !!id && !!metricId,
+  });
+
+export const useKpiCompositeScore = (
+  type: KPIType | string,
+  id: string,
+  year?: number,
+  periodCode?: string,
+) =>
+  useQuery({
+    queryKey: ["kpi", "composite-score", type, id, year, periodCode],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getCompositeScore(
+        type as KPIType,
+        id,
+        year!,
+        periodCode!,
+      );
+      return res.data;
+    },
+    enabled: !!type && !!id && !!year && !!periodCode,
+  });
+
+// Each metric contributes its own most-recent period with data (same
+// resolution as useKpiMetricDisplayRollup) instead of requiring every metric
+// to already have data for one identical shared period — so metrics on
+// different cadences all show up instead of the whole composite reading "No
+// Data" purely because they don't line up on the same period.
+export const useKpiCompositeScoreLatest = (
+  type: KPIType | string,
+  id: string,
+) =>
+  useQuery({
+    queryKey: ["kpi", "composite-score-latest", type, id],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getCompositeScoreLatest(
+        type as KPIType,
+        id,
+      );
+      return res.data;
+    },
+    enabled: !!type && !!id,
+  });
+
+// Full-year Baseline/Target/Actual trend for one metric (doc Figure 1) — one
+// request instead of one round trip per period.
+export const useKpiMetricPeriodSeries = (
+  type: KPIType | string,
+  id: string,
+  metricId?: string,
+  year?: number,
+) =>
+  useQuery({
+    queryKey: ["kpi", "metric-period-series", type, id, metricId, year],
+    queryFn: async () => {
+      const res = await kpiComposedApi.getMetricPeriodSeries(
+        type as KPIType,
+        id,
+        metricId!,
+        year!,
+      );
+      return res.data;
+    },
+    enabled: !!type && !!id && !!metricId && !!year,
+  });
+
 export const useKpiCardDefinitions = (params?: {
   type?: string;
   search?: string;
@@ -1749,10 +1868,27 @@ export const useTransitionKpiEntry = () => {
           // Current/Target tiles read from this separate cached query, so
           // without this they kept showing the stale pre-approval value
           // even though the Achievement bar (sourced from entries) updated.
-          return (
+          if (
             key[0] === "kpi" &&
             key[1] === "engagement" &&
             (key[4] === "entries" || key[4] === "metrics")
+          ) {
+            return true;
+          }
+          // The period-rollup/composite-score/period-series endpoints
+          // aggregate approved Entries server-side — approving or rejecting
+          // one changes their result too, but they live under different
+          // query-key roots than the "engagement" shape checked above, so
+          // they need their own match here or the Metric Card / dashboard
+          // silently keep showing the pre-approval "No Data" they cached
+          // before this entry was approved.
+          return (
+            key[0] === "kpi" &&
+            (key[1] === "metric-period-rollup" ||
+              key[1] === "metric-display-rollup" ||
+              key[1] === "composite-score" ||
+              key[1] === "composite-score-latest" ||
+              key[1] === "metric-period-series")
           );
         },
       });
