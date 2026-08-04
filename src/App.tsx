@@ -411,6 +411,10 @@ function RouteFallback() {
 }
 
 function App() {
+  const enableSignup =
+    (window.APP_CONFIG?.ENABLE_SIGNUP ?? import.meta.env.VITE_ENABLE_SIGNUP) !==
+    "false";
+
   return (
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>
@@ -429,7 +433,16 @@ function App() {
                   {/* Auth routes */}
                   <Route element={<AuthLayout />}>
                     <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
+                    <Route
+                      path="/register"
+                      element={
+                        enableSignup ? (
+                          <RegisterPage />
+                        ) : (
+                          <Navigate to="/login" replace />
+                        )
+                      }
+                    />
                     <Route
                       path="/forgot-password"
                       element={<ForgotPasswordPage />}
