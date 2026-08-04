@@ -1,10 +1,11 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { toast } from "sonner";
 
 // Flattens a list of plain objects into an .xlsx download — one row per item,
 // one column per key (excluding "id"). Used anywhere a KPI list needs a real
 // spreadsheet export rather than just print/PDF.
-export function exportToExcel(
+export async function exportToExcel(
   data: any[],
   label: string,
   noDataMessage = "No data to export",
@@ -36,9 +37,16 @@ export function exportToExcel(
       return val ?? "";
     }),
   );
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, label);
-  XLSX.writeFile(wb, `${label}.xlsx`);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(label);
+  worksheet.addRow(headers);
+  rows.forEach((row) => {
+    worksheet.addRow(row);
+  });
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  saveAs(blob, `${label}.xlsx`);
   toast.success(successMessage);
 }

@@ -52,7 +52,8 @@ import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
 import type { User, Role, UpdateProfileRequest } from "../../types";
 import type { LDAPUserListItem } from "../../api/ldap";
-import * as XLSX from "xlsx";
+import ExcelJs from "exceljs";
+import { saveAs } from "file-saver";
 import { cn } from "@/lib/utils";
 import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -939,52 +940,47 @@ export const UsersPage: React.FC = () => {
               .filter(Boolean)
               .join(", ")
           : "";
-      const rows = users.map((u: Record<string, unknown>) => [
-        u.username,
-        u.email,
-        u.first_name,
-        u.last_name,
-        u.phone,
-        resolveNames(u.department_ids, departmentNameMap),
-        resolveNames(u.location_ids, locationNameMap),
-        resolveNames(u.classification_ids, classificationNameMap),
-        resolveNames(u.role_ids, roleNameMap),
-        u.is_active ? "Yes" : "No",
-        u.is_super_admin ? "Yes" : "No",
-      ]);
-      const ws = XLSX.utils.aoa_to_sheet([
-        [
-          "username",
-          "email",
-          "first_name",
-          "last_name",
-          "phone",
-          "departments",
-          "locations",
-          "classifications",
-          "roles",
-          "is_active",
-          "is_super_admin",
-        ],
-        ...rows,
-      ]);
-      ws["!cols"] = [
-        { wch: 20 },
-        { wch: 30 },
-        { wch: 20 },
-        { wch: 20 },
-        { wch: 20 },
-        { wch: 40 },
-        { wch: 40 },
-        { wch: 40 },
-        { wch: 40 },
-        { wch: 10 },
-        { wch: 16 },
+      const workbook = new ExcelJs.Workbook();
+      const worksheet = workbook.addWorksheet("Users");
+
+      worksheet.columns = [
+        { header: "username", key: "username", width: 20 },
+        { header: "email", key: "email", width: 30 },
+        { header: "first_name", key: "first_name", width: 20 },
+        { header: "last_name", key: "last_name", width: 20 },
+        { header: "phone", key: "phone", width: 20 },
+        { header: "departments", key: "departments", width: 40 },
+        { header: "locations", key: "locations", width: 40 },
+        { header: "classifications", key: "classifications", width: 40 },
+        { header: "roles", key: "roles", width: 40 },
+        { header: "is_active", key: "is_active", width: 10 },
+        { header: "is_super_admin", key: "is_super_admin", width: 16 },
       ];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Users");
-      XLSX.writeFile(
-        wb,
+      users.forEach((u: Record<string, unknown>) => {
+        worksheet.addRow({
+          username: u.username,
+          email: u.email,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          phone: u.phone,
+          departments: resolveNames(u.department_ids, departmentNameMap),
+          locations: resolveNames(u.location_ids, locationNameMap),
+          classifications: resolveNames(
+            u.classification_ids,
+            classificationNameMap,
+          ),
+          roles: resolveNames(u.role_ids, roleNameMap),
+          is_active: u.is_active ? "Yes" : "No",
+          is_super_admin: u.is_super_admin ? "Yes" : "No",
+        });
+      });
+
+      const excelBuffer = await workbook.xlsx.writeBuffer();
+      const excelBlob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      saveAs(
+        excelBlob,
         `users_export_${new Date().toISOString().split("T")[0]}.xlsx`,
       );
     } catch (error) {
@@ -1044,28 +1040,25 @@ export const UsersPage: React.FC = () => {
     });
   };
 
-  const handleDownloadTemplate = () => {
-    const ws = XLSX.utils.aoa_to_sheet([
-      [
-        "username (Required)",
-        "email (Required)",
-        "first_name (Optional)",
-        "last_name (Optional)",
-        "phone (Optional)",
-        "extension (Optional)",
-      ],
-    ]);
-    ws["!cols"] = [
-      { wch: 20 },
-      { wch: 30 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 15 },
+  const handleDownloadTemplate = async () => {
+    const workbook = new ExcelJs.Workbook();
+
+    const worksheet = workbook.addWorksheet("Users");
+
+    worksheet.columns = [
+      { header: "username (Required)", key: "username", width: 20 },
+      { header: "email (Required)", key: "email", width: 20 },
+      { header: "first_name (Optional)", key: "first_name", width: 20 },
+      { header: "last_name (Optional)", key: "last_name", width: 20 },
+      { header: "phone (Optional)", key: "phone", width: 20 },
+      { header: "extension (Optional)", key: "extension", width: 20 },
     ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Users");
-    XLSX.writeFile(wb, "users_import_template.xlsx");
+
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, "users_import_template.xlsx");
   };
 
   const closeImportModal = () => {
@@ -1183,15 +1176,34 @@ export const UsersPage: React.FC = () => {
         is_active: boolean;
         is_super_admin: boolean;
       }>;
-
       if (importFile.name.toLowerCase().endsWith(".xlsx")) {
         const arrayBuffer = await importFile.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer);
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
-          defval: "",
+        const workbook = new ExcelJs.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
+        const worksheet = workbook.getWorksheet(1);
+        if (!worksheet) {
+          throw new Error("Worksheet not found");
+        }
+
+        //sheet to json
+        const headers: string[] = [];
+        worksheet.getRow(1).eachCell((cell) => {
+          headers.push(cell.text ?? "");
         });
+        //building rows
+        const rows: Record<string, string>[] = [];
+
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return;
+
+          const obj: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            obj[header] = row.getCell(index + 1).text || "";
+          });
+
+          rows.push(obj);
+        });
+
         const normalizedRows = (rows || [])
           .filter((row) => !isImportMetadataRow(row))
           .map((row) => {
