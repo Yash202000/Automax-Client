@@ -11,7 +11,8 @@ import {
   Download,
   Upload,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+
+import ExcelJS from "exceljs";
 import { toast } from "sonner";
 import { KpiObjectivesTree } from "../../../components/kpi/KpiObjectivesTree";
 import {
@@ -440,8 +441,8 @@ export const KpiMasterDataPage: React.FC = () => {
 
   const [importType, setImportType] = useState<EntityType>("pillar");
 
-  const exportToExcel = (data: any[], label: string) =>
-    exportToExcelUtil(
+  const exportToExcel = async (data: any[], label: string) =>
+    await exportToExcelUtil(
       data.map((r) => ({
         ...r,
         owner: r.owner?.name ?? getDepartmentName(r.owner_id) ?? "",
@@ -459,37 +460,61 @@ export const KpiMasterDataPage: React.FC = () => {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<any>(sheet);
-        if (!json.length) {
-          toast.error(t("common.emptyFile"));
-          return;
-        }
-        const validRows = json.filter((row: any) => {
-          const name = row.name_en || row.NameEn || row.Name || "";
-          return !!name;
-        });
-        let imported = 0;
-        for (const row of validRows) {
-          try {
-            await submitImportRow(importType, row);
-            imported++;
-          } catch {
-            // skip failed rows
-          }
-        }
-        toast.success(t("common.imported", { count: imported }));
-      } catch {
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await file.arrayBuffer());
+
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
         toast.error(t("common.invalidFile"));
+        return;
       }
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value = "";
+
+      const rows: Record<string, unknown>[] = [];
+      let headers: string[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        const values = (row.values as unknown[]).slice(1);
+
+        if (rowNumber === 1) {
+          headers = values.map((header) => String(header ?? "").trim());
+        } else {
+          const obj: Record<string, unknown> = {};
+          headers.forEach((header, index) => {
+            obj[header] = values[index];
+          });
+          rows.push(obj);
+        }
+      });
+
+      if (!rows.length) {
+        toast.error(t("common.emptyFile"));
+        return;
+      }
+
+      const validRows = rows.filter((row) => {
+        const name = row.name_en || row.NameEn || row.Name || "";
+        return !!name;
+      });
+
+      let imported = 0;
+
+      for (const row of validRows) {
+        try {
+          await submitImportRow(importType, row);
+          imported++;
+        } catch {
+          // Skip failed rows
+        }
+      }
+
+      toast.success(t("common.imported", { count: imported }));
+    } catch {
+      toast.error(t("common.invalidFile"));
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const resolveOwnerId = (row: any): string | undefined => {

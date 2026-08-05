@@ -199,7 +199,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             : "cursor-default hover:bg-[hsl(var(--muted)/0.3)]",
           isSelectable && isChecked && colorClasses[colorScheme].selected,
         )}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingInlineStart: `${level * 16 + 8}px` }}
       >
         {/* Expand/Collapse button */}
         {hasChildren ? (

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -27,12 +27,18 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { useKpiSingleDashboard } from "../../../hooks/useKpi";
+import {
+  useKpiSingleDashboard,
+  useKpiMetrics,
+  useKpiMetricPeriodSeries,
+  useKpiEntries,
+} from "../../../hooks/useKpi";
 import {
   getBandColor,
   BAND_BAR_CLASS,
   BAND_TEXT_CLASS,
 } from "../../../utils/kpiBand";
+import { getYearOptions } from "../../../types/kpi";
 import type { KpiAnnualRollupRow } from "../../../types/kpi";
 
 const typeColorMap: Record<string, string> = {
@@ -57,6 +63,36 @@ export const KpiSingleDashboardPage: React.FC = () => {
     isLoading,
     error,
   } = useKpiSingleDashboard(type ?? "", id ?? "");
+
+  const { data: metrics } = useKpiMetrics(type ?? "", id ?? "");
+  const [selectedMetricId, setSelectedMetricId] = useState<string>("");
+  const [seriesYear, setSeriesYear] = useState<number>(
+    new Date().getFullYear(),
+  );
+  const [drillDownPeriod, setDrillDownPeriod] = useState<string | null>(null);
+
+  const activeMetricId = selectedMetricId || metrics?.[0]?.id || "";
+  const { data: periodSeries } = useKpiMetricPeriodSeries(
+    type ?? "",
+    id ?? "",
+    activeMetricId,
+    seriesYear,
+  );
+
+  const { data: allEntriesForMetric } = useKpiEntries(
+    type ?? "",
+    id ?? "",
+    activeMetricId,
+  );
+  const drillDownEntries = useMemo(() => {
+    if (!drillDownPeriod) return [];
+    return (allEntriesForMetric ?? []).filter(
+      (e) =>
+        e.period_code === drillDownPeriod &&
+        e.reporting_year === seriesYear &&
+        e.status === "approved",
+    );
+  }, [allEntriesForMetric, drillDownPeriod, seriesYear]);
 
   if (isLoading) {
     return (
@@ -338,6 +374,188 @@ export const KpiSingleDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Metric Period Trend — Baseline / Target / Actual, doc Figure 1 */}
+      {(metrics ?? []).length > 0 && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <TrendingUp size={20} className="text-teal-500" />
+              {t(
+                "kpi.dashboard.metricPeriodTrend",
+                "Monthly Performance — Baseline, Target & Actual",
+              )}
+            </h3>
+            <div className="flex items-center gap-2">
+              <select
+                value={activeMetricId}
+                onChange={(e) => {
+                  setSelectedMetricId(e.target.value);
+                  setDrillDownPeriod(null);
+                }}
+                className="text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-1.5 text-slate-700 dark:text-slate-300"
+              >
+                {(metrics ?? []).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={seriesYear}
+                onChange={(e) => {
+                  setSeriesYear(Number(e.target.value));
+                  setDrillDownPeriod(null);
+                }}
+                className="text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-1.5 text-slate-700 dark:text-slate-300"
+              >
+                {getYearOptions().map((y) => (
+                  <option key={y.value} value={y.value}>
+                    {y.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {!periodSeries || periodSeries.points.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-8">
+              {t("kpi.dashboard.noTrendData", "No trend data")}
+            </p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart
+                  data={periodSeries.points}
+                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                  onClick={(state) => {
+                    const idx = Number(state?.activeTooltipIndex);
+                    if (!Number.isFinite(idx)) return;
+                    const point = periodSeries.points[idx];
+                    if (point?.has_data) {
+                      setDrillDownPeriod(
+                        point.period_code === drillDownPeriod
+                          ? null
+                          : point.period_code,
+                      );
+                    }
+                  }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-slate-200 dark:stroke-slate-700"
+                  />
+                  <XAxis
+                    dataKey="period_label"
+                    tick={{ fontSize: 11 }}
+                    className="text-slate-500"
+                  />
+                  <YAxis tick={{ fontSize: 11 }} className="text-slate-500" />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload || payload.length === 0)
+                        return null;
+                      const p = payload[0]
+                        .payload as (typeof periodSeries.points)[number];
+                      return (
+                        <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs shadow-lg space-y-1">
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            {p.period_label}
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            Baseline: {p.baseline}
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            Target: {p.target ?? "—"}
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            Actual: {p.has_data ? p.actual : "No Data"}
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            Achievement:{" "}
+                            {p.achievement_raw != null
+                              ? `${p.achievement_raw.toFixed(2)}%`
+                              : "—"}
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            Entries: {p.entry_count}
+                          </p>
+                          {p.has_data && (
+                            <p className="text-blue-500 dark:text-blue-400 pt-1">
+                              Click to view approved entries
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="baseline"
+                    name="Baseline"
+                    stroke="#3b82f6"
+                    strokeDasharray="2 2"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="target"
+                    name="Target"
+                    stroke="#f59e0b"
+                    strokeDasharray="6 3"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="actual"
+                    name="Actual"
+                    stroke="#22c55e"
+                    strokeWidth={2.5}
+                    dot={{ r: 4 }}
+                    connectNulls
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+
+              {drillDownPeriod && (
+                <div className="mt-4 rounded-lg border border-slate-200 dark:border-slate-700/60 p-4">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                    Approved entries for{" "}
+                    {periodSeries.points.find(
+                      (p) => p.period_code === drillDownPeriod,
+                    )?.period_label ?? drillDownPeriod}
+                  </p>
+                  {drillDownEntries.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      No approved entries found.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {drillDownEntries.map((e) => (
+                        <div
+                          key={e.id}
+                          className="flex items-center justify-between text-sm border-b border-slate-100 dark:border-slate-700/40 pb-2 last:border-0"
+                        >
+                          <span className="text-slate-500 dark:text-slate-400">
+                            {e.source_reference || e.id}
+                          </span>
+                          <span className="tabular-nums text-slate-700 dark:text-slate-300">
+                            {e.actual_value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Trend Chart */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-5">

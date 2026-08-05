@@ -1,8 +1,8 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import type { Goal } from "../types/goal";
 
-export function exportGoalsToXlsx(goals: Goal[]) {
+export async function exportGoalsToXlsx(goals: Goal[]) {
   const rows: Record<string, string | number>[] = [];
 
   for (const goal of goals) {
@@ -55,26 +55,32 @@ export function exportGoalsToXlsx(goals: Goal[]) {
       }
     }
   }
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Goals");
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Goals");
+  if (rows.length > 0) {
+    const headers = Object.keys(rows[0]);
+
+    worksheet.addRow(headers);
+
+    rows.forEach((row) => {
+      worksheet.addRow(headers.map((header) => row[header]));
+    });
+  }
 
   // Auto-size columns
-  const maxWidths: number[] = [];
-  const headers = Object.keys(rows[0] || {});
-  headers.forEach((h, i) => {
-    maxWidths[i] = h.length;
-  });
-  rows.forEach((row) => {
-    headers.forEach((h, i) => {
-      const val = String(row[h] ?? "");
-      if (val.length > maxWidths[i]) maxWidths[i] = val.length;
-    });
-  });
-  worksheet["!cols"] = maxWidths.map((w) => ({ wch: Math.min(w + 2, 50) }));
+  for (let i = 1; i <= worksheet.columnCount; i++) {
+    const column = worksheet.getColumn(i);
+    let maxLength = 0;
 
-  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    column.eachCell({ includeEmpty: true }, (cell) => {
+      const value = cell.value?.toString() ?? "";
+      maxLength = Math.max(maxLength, value.length);
+    });
+    column.width = Math.min(maxLength + 2, 50);
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });

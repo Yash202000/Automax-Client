@@ -28,6 +28,10 @@ export const LoginForm: React.FC = () => {
     (window.APP_CONFIG?.LOGIN_SSO ?? import.meta.env.VITE_LOGIN_SSO) !==
     "false";
 
+  const enableSignup =
+    (window.APP_CONFIG?.ENABLE_SIGNUP ?? import.meta.env.VITE_ENABLE_SIGNUP) !==
+    "false";
+
   const enabledModes = [
     ...(showRegular ? ["regular" as const] : []),
     ...(showLdap ? ["ldap" as const] : []),
@@ -381,7 +385,7 @@ export const LoginForm: React.FC = () => {
         </form>
       )}
 
-      {!isLdap && (
+      {!isLdap && enableSignup ? (
         <p className="mt-8 text-center text-gray-600">
           {t("auth.noAccount")}{" "}
           <Link
@@ -391,7 +395,7 @@ export const LoginForm: React.FC = () => {
             {t("auth.signUp")}
           </Link>
         </p>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -1301,6 +1301,26 @@ export function getPeriodOptionsByFrequency(
   }
 }
 
+// Mirrors the backend's services.CurrentPeriodCode so the Metric Card
+// requests the rollup for the exact same "current period" the entry-creation
+// hard-block and effective-target lookup already use.
+export function getCurrentPeriodCode(
+  frequency?: string,
+  now: Date = new Date(),
+): string {
+  switch (frequency) {
+    case "monthly":
+      return REPORTING_MONTHS[now.getMonth()].toLowerCase();
+    case "quarterly":
+      return `q${Math.floor(now.getMonth() / 3) + 1}`;
+    case "semi_annual":
+    case "semiannual":
+      return now.getMonth() < 6 ? "h1" : "h2";
+    default:
+      return "annual";
+  }
+}
+
 export function getYearOptions(): { value: number; label: string }[] {
   const current = new Date().getFullYear();
   const years: { value: number; label: string }[] = [];
@@ -1527,4 +1547,80 @@ export interface KpiSingleDashboardResponse {
   justification: string;
   corrective_action: string;
   benchmarks: KpiBenchmark[];
+}
+
+// ── Period rollup / composite score ─────────────────────────────────────
+// A metric's period Actual is now an AGGREGATE across every Approved Entry
+// in that period (sum-numerator/sum-denominator for ratio metrics,
+// AggregationMethod-driven otherwise) — never a single entry's own value.
+// has_data is explicitly false (with actual/target/achievement all null)
+// when no Approved entries exist, so callers can render "No Data" instead
+// of a misleading zero.
+export interface KpiMetricPeriodRollup {
+  metric_id: string;
+  metric_name: string;
+  period_code: string;
+  year: number;
+  baseline: number;
+  has_data: boolean;
+  entry_count: number;
+  actual: number | null;
+  sum_numerator: number | null;
+  sum_denominator: number | null;
+  target?: number | null;
+  achievement_raw?: number | null;
+  achievement_capped?: number | null;
+  performance_status?: string;
+  // Only present on the display-rollup endpoint: true when the returned
+  // period_code/year isn't the real current period, because the current
+  // period had no data and this is the most recent period that does.
+  is_fallback_period?: boolean;
+}
+
+export interface KpiMetricScoreBreakdown {
+  metric_id: string;
+  metric_name: string;
+  baseline: number;
+  actual: number | null;
+  target: number | null;
+  weight: number;
+  has_data: boolean;
+  entry_count: number;
+  achievement_raw: number | null;
+  achievement_capped: number | null;
+  weighted_result: number | null;
+  // Only present from the "latest" composite endpoint, where each metric
+  // contributes its own most-recent period with data rather than one shared
+  // period across the whole KPI.
+  period_code?: string;
+  year?: number;
+  is_fallback_period?: boolean;
+}
+
+export interface KpiCompositeScoreResult {
+  has_data: boolean;
+  raw_score: number | null;
+  capped_score: number | null;
+  metrics: KpiMetricScoreBreakdown[];
+}
+
+// One point on the Baseline/Target/Actual trend chart (doc Figure 1) — a
+// full year of a metric's period rollups in one response.
+export interface KpiMetricPeriodPoint {
+  period_code: string;
+  period_label: string;
+  baseline: number;
+  has_data: boolean;
+  entry_count: number;
+  actual: number | null;
+  target: number | null;
+  achievement_raw: number | null;
+  achievement_capped: number | null;
+}
+
+export interface KpiMetricPeriodSeries {
+  metric_id: string;
+  metric_name: string;
+  year: number;
+  points: KpiMetricPeriodPoint[];
 }
