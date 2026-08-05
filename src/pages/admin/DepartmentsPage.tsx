@@ -370,17 +370,6 @@ export const DepartmentsPage: React.FC = () => {
     queryFn: () => roleApi.list(),
   });
 
-  const supervisorRoleId = (rolesData?.data as Role[] | undefined)?.find(
-    (r: Role) => r.code === "supervisor",
-  )?.id;
-
-  const { data: supervisorUsers } = useQuery({
-    queryKey: ["admin", "users", "supervisor", supervisorRoleId],
-    queryFn: () =>
-      userApi.list(1, 100, "", supervisorRoleId ? [supervisorRoleId] : []),
-    enabled: !!supervisorRoleId,
-  });
-
   const createMutation = useMutation({
     mutationFn: (data: DepartmentCreateRequest) => departmentApi.create(data),
     onSuccess: () => {
@@ -834,32 +823,6 @@ export const DepartmentsPage: React.FC = () => {
             ))}
           </div>
         )}
-
-        {/* Supervisor selector */}
-        {/* <div>
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            {t("departments.supervisor")}
-          </label>
-          <select
-            value={formData.supervisor_id}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                supervisor_id: e.target.value,
-              })
-            }
-            className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-          >
-            <option value="">{t("departments.noSupervisor")}</option>
-            {supervisorUsers?.data?.map((user: User) => (
-              <option key={user.id} value={user.id}>
-                {user.first_name || user.last_name
-                  ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
-                  : user.username}
-              </option>
-            ))}
-          </select>
-        </div> */}
       </div>
 
       {/* Import Result Modal */}
