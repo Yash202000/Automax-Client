@@ -1322,48 +1322,43 @@ export const incidentApi = {
   list: async (
     filter: IncidentFilter = {},
   ): Promise<PaginatedResponse<Incident>> => {
-    const params = new URLSearchParams();
-    if (filter.page) params.append("page", String(filter.page));
-    if (filter.limit) params.append("limit", String(filter.limit));
-    if (filter.search) params.append("search", filter.search);
-    if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
-    if (filter.my_record) params.append("my_record", filter.my_record);
+    // Use POST /incidents/search to send filters in the request body,
+    // avoiding URL length limits when many filter values are selected.
+    // Field names are mapped to match the backend's json tags.
+    const body: Record<string, unknown> = {};
+    if (filter.page) body.page = filter.page;
+    if (filter.limit) body.limit = filter.limit;
+    if (filter.search) body.search = filter.search;
+    if (filter.workflow_id) body.workflow_id = [filter.workflow_id];
+    if (filter.my_record) body.my_record = filter.my_record;
     if (filter.current_state_id)
-      params.append("current_state_id", filter.current_state_id);
-    filter.classification_ids?.forEach((id) =>
-      params.append("classification_id", id),
-    );
-    if (filter.priority) params.append("priority", String(filter.priority));
-    if (filter.reporter_phone)
-      params.append("reporter_phone", filter.reporter_phone);
-    if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
-    if (filter.reporter_id) params.append("reporter_id", filter.reporter_id);
-    filter.department_ids?.forEach((id) => params.append("department_id", id));
-    filter.location_ids?.forEach((id) => params.append("location_id", id));
-    if (filter.source) params.append("source", filter.source);
+      body.current_state_id = [filter.current_state_id];
+    if (filter.classification_ids?.length)
+      body.classification_id = filter.classification_ids;
+    if (filter.priority) body.priority = filter.priority;
+    if (filter.reporter_phone) body.reporter_phone = filter.reporter_phone;
+    if (filter.assignee_id) body.assignee_id = [filter.assignee_id];
+    if (filter.reporter_id) body.reporter_id = [filter.reporter_id];
+    if (filter.department_ids?.length)
+      body.department_id = filter.department_ids;
+    if (filter.location_ids?.length) body.location_id = filter.location_ids;
+    if (filter.source) body.source = filter.source;
     if (filter.sla_breached !== undefined)
-      params.append("sla_breached", String(filter.sla_breached));
+      body.sla_breached = filter.sla_breached;
     if (filter.converted_to_request !== undefined)
-      params.append(
-        "converted_to_request",
-        String(filter.converted_to_request),
-      );
-    if (filter.record_type) params.append("record_type", filter.record_type);
-    if (filter.start_date) params.append("start_date", filter.start_date);
-    if (filter.end_date) params.append("end_date", filter.end_date);
-    if (filter.transition_id)
-      params.append("transition_id", filter.transition_id);
-    if (filter.reporter_phone_search) {
-      params.append("reporter_phone_search", filter.reporter_phone_search);
-    }
-    if (filter.momra_ref) {
-      params.append("momra_ref", filter.momra_ref);
-    }
-    if (filter.current_state_code) {
-      params.append("current_state_code", filter.current_state_code);
-    }
-    const response = await apiClient.get<PaginatedResponse<Incident>>(
-      `/incidents?${params.toString()}`,
+      body.converted_to_request = filter.converted_to_request;
+    if (filter.record_type) body.record_type = filter.record_type;
+    if (filter.start_date) body.start_date_str = filter.start_date;
+    if (filter.end_date) body.end_date_str = filter.end_date;
+    if (filter.transition_id) body.transition_id = filter.transition_id;
+    if (filter.reporter_phone_search)
+      body.reporter_phone_search = filter.reporter_phone_search;
+    if (filter.momra_ref) body.momra_ref = filter.momra_ref;
+    if (filter.current_state_code)
+      body.current_state_code = [filter.current_state_code];
+    const response = await apiClient.post<PaginatedResponse<Incident>>(
+      "/incidents/search",
+      body,
     );
     return response.data;
   },
