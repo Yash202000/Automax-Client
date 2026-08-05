@@ -36,6 +36,8 @@
     "date": "التاريخ",
     "type": "النوع",
     "view": "عرض",
+    "viewMoreWithCount": "عرض المزيد ({{count}})",
+    "viewLess": "عرض أقل",
     "add": "إضافة",
     "update": "تحديث",
     "remove": "إزالة",

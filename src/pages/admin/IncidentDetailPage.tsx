@@ -244,6 +244,8 @@ export const IncidentDetailPage: React.FC = () => {
   const [disableApproveTransition, setDisableApproveTransition] =
     useState(false);
 
+  const [showAllAssignees, setShowAllAssignees] = useState<boolean>();
+
   // Queries
   const {
     data: incidentData,
@@ -3538,34 +3540,60 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
                 <div className="mt-1">
                   {incident.assignees && incident.assignees.length > 0 ? (
-                    <div className="flex flex-col gap-1">
-                      {incident.assignees.map((assignee) => (
-                        <div
-                          key={assignee.id}
-                          className="inline-flex items-center gap-1.5"
+                    <>
+                      <div
+                        className={`flex flex-col gap-1 ${
+                          showAllAssignees
+                            ? "max-h-48 overflow-y-auto pr-1"
+                            : ""
+                        }`}
+                      >
+                        {(showAllAssignees
+                          ? incident.assignees
+                          : incident.assignees.slice(0, 5)
+                        ).map((assignee) => (
+                          <div
+                            key={assignee.id}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            {assignee.avatar ? (
+                              <img
+                                src={assignee.avatar}
+                                alt={assignee.username}
+                                className="w-5 h-5 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-linear-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center shrink-0">
+                                <span className="text-white text-[10px] font-semibold">
+                                  {assignee.first_name?.[0] ||
+                                    assignee.username[0]}
+                                </span>
+                              </div>
+                            )}
+
+                            <span className="text-xs text-[hsl(var(--foreground))]">
+                              {assignee.first_name
+                                ? `${assignee.first_name} ${assignee.last_name || ""}`.trim()
+                                : assignee.username}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {incident.assignees.length > 5 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllAssignees((prev) => !prev)}
+                          className="mt-2 text-xs font-medium text-[hsl(var(--primary))] hover:underline"
                         >
-                          {assignee.avatar ? (
-                            <img
-                              src={assignee.avatar}
-                              alt={assignee.username}
-                              className="w-5 h-5 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center flex-shrink-0">
-                              <span className="text-white text-[10px] font-semibold">
-                                {assignee.first_name?.[0] ||
-                                  assignee.username[0]}
-                              </span>
-                            </div>
-                          )}
-                          <span className="text-xs text-[hsl(var(--foreground))]">
-                            {assignee.first_name
-                              ? `${assignee.first_name} ${assignee.last_name || ""}`.trim()
-                              : assignee.username}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                          {showAllAssignees
+                            ? t("common.viewLess")
+                            : t("common.viewMoreWithCount", {
+                                count: incident.assignees.length - 5,
+                              })}
+                        </button>
+                      )}
+                    </>
                   ) : incident.assignee ? (
                     <div className="inline-flex items-center gap-1.5 bg-[hsl(var(--muted)/0.5)] px-2 py-1 rounded-md">
                       {incident.assignee.avatar ? (

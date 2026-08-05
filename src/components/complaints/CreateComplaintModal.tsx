@@ -41,6 +41,7 @@ import type {
 } from "../../types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface CreateComplaintModalProps {
   isOpen: boolean;
@@ -176,35 +177,31 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     enabled: isOpen,
   });
 
+  const debouncedIncidentSearch = useDebounce(incidentSearch, 600);
+
   // Query for incidents created by the current user (for source incident search)
   const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
-    queryKey: ["incidents", "my-reported", "search", incidentSearch],
+    queryKey: ["incidents", "my-reported", "search", debouncedIncidentSearch],
     queryFn: async () => {
-      // Get incidents and complaints created by current user
-      const [incidentsRes, complaintsRes] = await Promise.all([
-        incidentApi.getMyReported(1, 50, "incident"),
-        incidentApi.getMyReported(1, 50, "complaint"),
-      ]);
-      const combined = [
-        ...(incidentsRes.data || []),
-        ...(complaintsRes.data || []),
-      ];
-      // Filter by search term
-      if (incidentSearch) {
-        const searchLower = incidentSearch.toLowerCase();
-        return {
-          data: combined
-            .filter(
-              (i) =>
-                i.incident_number.toLowerCase().includes(searchLower) ||
-                i.title.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 10),
-        };
-      }
-      return { data: combined.slice(0, 10) };
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 3);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+      // Get incidents created by current user and last 3 month
+      return incidentApi.list({
+        page: 1,
+        limit: 50,
+        record_type: "incident",
+        current_state_code: "closed",
+        reporter_id: user?.id,
+        search: debouncedIncidentSearch,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+      });
     },
-    enabled: isOpen && incidentSearch.length >= 2,
+    enabled: isOpen && debouncedIncidentSearch.length >= 2,
   });
 
   const rawClassifications = useMemo(
@@ -300,7 +297,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   );
 
   const { data: sourceData } = useQuery({
-    queryKey: ["lookups", "categories"],
+    queryKey: ["lookups", "categories", "sources"],
     queryFn: async () => {
       const categories = await lookupApi.listCategories();
       return (
@@ -687,6 +684,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       source_incident_id: sourceIncident?.id,
       lookup_value_ids: lookupIds.length > 0 ? lookupIds : undefined,
+      reporter_id: user?.id,
     };
 
     createMutation.mutate({ data, files: attachments });
