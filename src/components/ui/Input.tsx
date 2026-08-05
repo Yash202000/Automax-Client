@@ -221,7 +221,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           )}
           {options.map((option) => (
             <option
-              className="bg-background text-foreground]"
+              className="bg-background text-foreground"
               key={option.value}
               value={option.value}
             >
