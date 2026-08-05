@@ -836,7 +836,7 @@ export const DepartmentsPage: React.FC = () => {
         )}
 
         {/* Supervisor selector */}
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
             {t("departments.supervisor")}
           </label>
@@ -859,7 +859,7 @@ export const DepartmentsPage: React.FC = () => {
               </option>
             ))}
           </select>
-        </div>
+        </div> */}
       </div>
 
       {/* Import Result Modal */}
