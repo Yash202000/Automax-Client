@@ -36,6 +36,8 @@
     "date": "Date",
     "type": "Type",
     "view": "View",
+    "viewMoreWithCount": "View More ({{count}})",
+    "viewLess": "View Less",
     "add": "Add",
     "update": "Update",
     "remove": "Remove",
