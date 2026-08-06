@@ -45,6 +45,16 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "sonner";
 
+// Draft criticality row: max_closing_minutes stays nullable in the form so the
+// input can render empty until the admin types a value; normalized to a number
+// (defaulting to 0) when building the API payload on submit.
+type CriticalityDraft = Omit<
+  ClassificationCriticalityCreateRequest,
+  "max_closing_minutes"
+> & {
+  max_closing_minutes: number | null;
+};
+
 interface ClassificationFormData {
   name: string;
   name_ar: string;
@@ -54,7 +64,7 @@ interface ClassificationFormData {
   parent_name: string;
   sort_order: number;
   types: string[];
-  criticalities: ClassificationCriticalityCreateRequest[];
+  criticalities: CriticalityDraft[];
 }
 
 const initialFormData: ClassificationFormData = {
