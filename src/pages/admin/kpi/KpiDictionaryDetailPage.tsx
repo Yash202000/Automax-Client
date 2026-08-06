@@ -15,7 +15,6 @@ import {
   Target,
   Building2,
   Layers,
-  Tag,
   Calendar,
   ChevronDown,
   GitBranch,
@@ -785,6 +784,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.goal.title,
     });
   }
+  if (parentObjective) {
+    infoTiles.push({
+      icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
+      bg: "bg-teal-50 dark:bg-teal-900/20",
+      label: "Objective",
+      value: parentObjective.name_en,
+      onClick: () => setShowObjectivesModal(true),
+    });
+  }
   if (kpi.owner_dept) {
     infoTiles.push({
       icon: (
@@ -801,14 +809,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       bg: "bg-green-50 dark:bg-green-900/20",
       label: t("kpi.masterData.pillar"),
       value: kpi.pillar.name_en,
-    });
-  }
-  if (type === "strategic" && kpi.domain) {
-    infoTiles.push({
-      icon: <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400" />,
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      label: "Domain",
-      value: kpi.domain.name_en,
     });
   }
   if (type === "operational" && kpi.process) {
@@ -837,15 +837,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       bg: "bg-slate-100 dark:bg-slate-700/40",
       label: t("kpi.dictionary.fieldFrequency"),
       value: kpi.reporting_frequency,
-    });
-  }
-  if (parentObjective) {
-    infoTiles.push({
-      icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
-      bg: "bg-teal-50 dark:bg-teal-900/20",
-      label: "Objectives Hierarchy",
-      value: parentObjective.name_en,
-      onClick: () => setShowObjectivesModal(true),
     });
   }
 
