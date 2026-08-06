@@ -6,6 +6,7 @@ import SoftPhone from "../sip/Softphone";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import usePermissions from "@/hooks/usePermissions";
+import { useUserStatusWebSocket } from "../../lib/services/userStatusWebSocket";
 
 export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -21,6 +22,10 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const { isSuperAdmin, hasAnyPermission } = usePermissions();
 
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
+
+  // Keep a live broadcast connection so agent availability (call_status) shown
+  // in assignee dropdowns updates in real time. No-ops until a token exists.
+  useUserStatusWebSocket();
 
   useEffect(() => {
     if (isAuthenticated) {

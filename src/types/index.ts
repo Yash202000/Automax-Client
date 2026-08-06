@@ -34,6 +34,8 @@ export interface User {
   is_ad_user?: boolean;
   mobile_verified?: boolean;
   extension?: string;
+  /** Live agent availability: offline | online | busy | in_call */
+  call_status?: string;
   last_login_at: string | null;
   created_at: string;
 }
