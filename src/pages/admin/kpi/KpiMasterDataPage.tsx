@@ -954,7 +954,7 @@ export const KpiMasterDataPage: React.FC = () => {
       />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="lg">
-        <div className="p-6 space-y-4">
+        <div className="max-h-[75vh] overflow-y-auto p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             {modalTitle} {modalEntityLabel}
           </h2>
