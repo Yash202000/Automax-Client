@@ -1210,7 +1210,7 @@ export const incidentFields: ReportFieldDefinition[] = [
 
   {
     field: "first_response_minutes",
-    label: "First Response Minutes",
+    label: "First Response Time", //label need to be time
     label_ar: "دقائق أول استجابة",
     type: "number",
     category: "Core",
