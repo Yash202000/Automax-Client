@@ -14,6 +14,8 @@ import {
 } from "../../../hooks/useKpi";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
+import { usePermissions } from "../../../hooks/usePermissions";
+import { PERMISSIONS } from "../../../constants/permissions";
 import type {
   KpiTarget,
   KpiTargetType,
@@ -148,6 +150,45 @@ type FormMode = "create" | "edit" | "view";
 // to remove a target at all from the UI despite the backend fully
 // supporting it — added for draft/returned/rejected targets only, same
 // statuses the backend's DeleteTarget/UpdateTarget endpoints allow editing.
+//
+// Each action also declares which permission it requires, mirroring the
+// backend's own gating exactly (cmd/server/main.go route registrations):
+//   - Edit / Submit (quick) / Copy / Supersede -> targets:set
+//     (these all end up calling SetTarget/UpdateTarget)
+//   - Delete -> targets:delete (DeleteTarget)
+//   - Approve -> targets:approve, Reject -> targets:reject (both go through
+//     TransitionTarget, which itself checks the finer-grained permission
+//     once it knows which action was requested — see the backend handler)
+//   - View -> no extra permission; the page itself already sits behind a
+//     targets:view PermissionRoute (see App.tsx), so if a user can reach
+//     this page at all they can view targets.
+// Actions the current user lacks permission for are filtered out entirely
+// (not just disabled) — an unauthorized user should not see them, per the
+// workflow-permission requirement, not merely be blocked from clicking them.
+type TargetActionKey =
+  | "view"
+  | "edit"
+  | "submit"
+  | "delete"
+  | "approve"
+  | "reject"
+  | "copy"
+  | "supersede";
+
+type TargetPermissionKey = "set" | "delete" | "approve" | "reject";
+
+const TARGET_ACTION_PERMISSION: Partial<
+  Record<TargetActionKey, TargetPermissionKey>
+> = {
+  edit: "set",
+  submit: "set",
+  delete: "delete",
+  copy: "set",
+  supersede: "set",
+  approve: "approve",
+  reject: "reject",
+};
+
 function getActionLinks(
   target: KpiTarget,
   handlers: {
@@ -160,41 +201,116 @@ function getActionLinks(
     onApprove: (t: KpiTarget) => void;
     onReject: (t: KpiTarget) => void;
   },
+  permissions: Record<TargetPermissionKey, boolean>,
 ): { label: string; onClick: () => void }[] {
-  switch (target.target_status) {
-    case "draft":
-    case "returned":
-    case "rejected":
-      return [
-        { label: "Edit", onClick: () => handlers.onEdit(target) },
-        { label: "Submit", onClick: () => handlers.onQuickSubmit(target) },
-        { label: "Delete", onClick: () => handlers.onDelete(target) },
-      ];
-    case "submitted":
-      return [
-        { label: "View", onClick: () => handlers.onView(target) },
-        { label: "Approve", onClick: () => handlers.onApprove(target) },
-        { label: "Reject", onClick: () => handlers.onReject(target) },
-      ];
-    case "approved":
-      return [
-        { label: "View", onClick: () => handlers.onView(target) },
-        { label: "Copy", onClick: () => handlers.onCopy(target) },
-        { label: "Supersede", onClick: () => handlers.onSupersede(target) },
-      ];
-    case "superseded":
-      return [
-        { label: "View", onClick: () => handlers.onView(target) },
-        { label: "Copy", onClick: () => handlers.onCopy(target) },
-      ];
-    default:
-      // locked — awaiting workflow, read-only for now.
-      return [{ label: "View", onClick: () => handlers.onView(target) }];
-  }
+  const allActions: {
+    key: TargetActionKey;
+    label: string;
+    onClick: () => void;
+  }[] = (() => {
+    switch (target.target_status) {
+      case "draft":
+      case "returned":
+      case "rejected":
+        return [
+          {
+            key: "edit",
+            label: "Edit",
+            onClick: () => handlers.onEdit(target),
+          },
+          {
+            key: "submit",
+            label: "Submit",
+            onClick: () => handlers.onQuickSubmit(target),
+          },
+          {
+            key: "delete",
+            label: "Delete",
+            onClick: () => handlers.onDelete(target),
+          },
+        ];
+      case "submitted":
+        return [
+          {
+            key: "view",
+            label: "View",
+            onClick: () => handlers.onView(target),
+          },
+          {
+            key: "approve",
+            label: "Approve",
+            onClick: () => handlers.onApprove(target),
+          },
+          {
+            key: "reject",
+            label: "Reject",
+            onClick: () => handlers.onReject(target),
+          },
+        ];
+      case "approved":
+        return [
+          {
+            key: "view",
+            label: "View",
+            onClick: () => handlers.onView(target),
+          },
+          {
+            key: "copy",
+            label: "Copy",
+            onClick: () => handlers.onCopy(target),
+          },
+          {
+            key: "supersede",
+            label: "Supersede",
+            onClick: () => handlers.onSupersede(target),
+          },
+        ];
+      case "superseded":
+        return [
+          {
+            key: "view",
+            label: "View",
+            onClick: () => handlers.onView(target),
+          },
+          {
+            key: "copy",
+            label: "Copy",
+            onClick: () => handlers.onCopy(target),
+          },
+        ];
+      default:
+        // locked — awaiting workflow, read-only for now.
+        return [
+          {
+            key: "view",
+            label: "View",
+            onClick: () => handlers.onView(target),
+          },
+        ];
+    }
+  })();
+
+  return allActions
+    .filter((action) => {
+      const required = TARGET_ACTION_PERMISSION[action.key];
+      if (!required) return true; // "view" — no extra permission required
+      return permissions[required];
+    })
+    .map(({ label, onClick }) => ({ label, onClick }));
 }
 
 export const KpiTargetsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermissions();
+  // Mirrors the backend's own gating exactly: targets:set for create/update
+  // (SetTarget/UpdateTarget), targets:delete for DeleteTarget, and
+  // targets:approve / targets:reject for the two sides of the TransitionTarget
+  // workflow action. See getActionLinks below for how these apply per-row on
+  // top of the existing target_status gating.
+  const canSetTargets = hasPermission(PERMISSIONS.TARGETS_SET);
+  const canDeleteTargets = hasPermission(PERMISSIONS.TARGETS_DELETE);
+  const canApproveTargets = hasPermission(PERMISSIONS.TARGETS_APPROVE);
+  const canRejectTargets = hasPermission(PERMISSIONS.TARGETS_REJECT);
   const [searchParams, setSearchParams] = useSearchParams();
   const currentYear = new Date().getFullYear();
 
@@ -597,12 +713,14 @@ export const KpiTargetsPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <Button
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={handleOpenCreate}
-        >
-          {t("kpi.targets.setTarget")}
-        </Button>
+        {canSetTargets && (
+          <Button
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={handleOpenCreate}
+          >
+            {t("kpi.targets.setTarget")}
+          </Button>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4">
@@ -763,16 +881,25 @@ export const KpiTargetsPage: React.FC = () => {
               </thead>
               <tbody>
                 {items.map((target: KpiTarget) => {
-                  const actions = getActionLinks(target, {
-                    onView: handleViewTarget,
-                    onEdit: handleEditTarget,
-                    onCopy: handleCopyTarget,
-                    onSupersede: handleSupersedeTarget,
-                    onQuickSubmit: handleQuickSubmit,
-                    onDelete: setDeleteConfirmTarget,
-                    onApprove: handleApproveTarget,
-                    onReject: handleRejectTarget,
-                  });
+                  const actions = getActionLinks(
+                    target,
+                    {
+                      onView: handleViewTarget,
+                      onEdit: handleEditTarget,
+                      onCopy: handleCopyTarget,
+                      onSupersede: handleSupersedeTarget,
+                      onQuickSubmit: handleQuickSubmit,
+                      onDelete: setDeleteConfirmTarget,
+                      onApprove: handleApproveTarget,
+                      onReject: handleRejectTarget,
+                    },
+                    {
+                      set: canSetTargets,
+                      delete: canDeleteTargets,
+                      approve: canApproveTargets,
+                      reject: canRejectTargets,
+                    },
+                  );
                   return (
                     <tr
                       key={target.id}
@@ -1196,7 +1323,7 @@ export const KpiTargetsPage: React.FC = () => {
           >
             {formReadOnly ? "Close" : "Cancel"}
           </Button>
-          {!formReadOnly && (
+          {!formReadOnly && canSetTargets && (
             <>
               <Button
                 variant="outline"
