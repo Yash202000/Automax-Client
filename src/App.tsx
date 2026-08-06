@@ -468,7 +468,16 @@ function App() {
                   {/* Admin routes */}
                   <Route element={<AdminProtectedRoute />}>
                     <Route element={<AdminLayout />}>
-                      <Route path="/admin" element={<AdminDashboard />} />
+                      {/* Admin dashboard - requires dashboard:admin permission */}
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.DASHBOARD_ADMIN]}
+                          />
+                        }
+                      >
+                        <Route path="/admin" element={<AdminDashboard />} />
+                      </Route>
                       {/* User management - requires users:view permission */}
                       <Route
                         element={

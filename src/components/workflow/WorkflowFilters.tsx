@@ -4,8 +4,9 @@ import { Search, Filter } from "lucide-react";
 import { Button } from "../ui";
 import type { WorkflowFilter, User } from "../../types";
 import { useQuery } from "@tanstack/react-query";
-import { permissionApi, userApi } from "@/api/admin";
+import { userApi } from "@/api/admin";
 import { PERMISSIONS } from "@/constants/permissions";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export interface WorkflowFilterProps {
   filter: WorkflowFilter;
@@ -25,24 +26,12 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
 }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", 1, 100],
     queryFn: () => userApi.list(1, 100),
   });
-  /* fetching workflow record type based on dashboard permissions for clients.  */
-  const { data: permissionsData } = useQuery({
-    queryKey: ["admin", "permissions"],
-    queryFn: () => permissionApi.list(),
-  });
-
-  const availablePermissionCodes = React.useMemo(
-    () =>
-      new Set<string>(
-        permissionsData?.data?.map((permission) => permission.code) ?? [],
-      ),
-    [permissionsData],
-  );
 
   const RECORD_TYPE_PERMISSION_MAP = [
     {
@@ -73,7 +62,7 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
   ] as const;
 
   const recordTypeOptions = RECORD_TYPE_PERMISSION_MAP.filter(
-    ({ permission }) => availablePermissionCodes.has(permission),
+    ({ permission }) => hasPermission(permission),
   );
 
   return (
