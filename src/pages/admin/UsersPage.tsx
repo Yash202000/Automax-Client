@@ -493,7 +493,32 @@ export const UsersPage: React.FC = () => {
     [],
   );
 
-  const getApiFieldErrors = useCallback((message: string): UserFieldErrors => {
+  const getApiFieldErrors = useCallback((error: any): UserFieldErrors => {
+    const apiErrors = error.response?.data?.errors;
+    if (apiErrors) {
+      const fieldErrors: UserFieldErrors = {};
+
+      Object.entries(apiErrors).forEach(([field, message]) => {
+        const lowerField = field.toLowerCase();
+
+        if (lowerField === "email") {
+          fieldErrors.email = message as string;
+        } else if (lowerField === "username") {
+          fieldErrors.username = message as string;
+        } else if (lowerField === "password") {
+          fieldErrors.password = message as string;
+        } else if (lowerField === "phone") {
+          fieldErrors.phone = message as string;
+        } else {
+          fieldErrors.form = message as string;
+        }
+      });
+
+      return fieldErrors;
+    }
+    const message =
+      error.response?.data?.error || error.message || t("users.updateFailed");
+
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes("email")) {
@@ -594,8 +619,12 @@ export const UsersPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
-      setFormErrors(getApiFieldErrors(errorMessage));
+      const fieldErros = getApiFieldErrors(error);
+      setFormErrors(fieldErros);
+
+      if (Object.keys(fieldErros).length > 0) {
+        toast.error(t("errors.validationError"));
+      }
     },
   });
 
