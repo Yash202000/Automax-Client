@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { withCallStatusDot } from "../../utils/callStatus";
 import {
   useParams,
   useNavigate,
@@ -5394,10 +5395,14 @@ export const IncidentDetailPage: React.FC = () => {
                 <option value="">{t("incidents.selectUser")}</option>
                 {usersData?.data?.map((user: UserType) => (
                   <option key={user.id} value={user.id}>
-                    {user.first_name
-                      ? `${user.first_name} ${user.last_name || ""}`
-                      : user.username}{" "}
-                    ({user.email})
+                    {withCallStatusDot(
+                      `${
+                        user.first_name
+                          ? `${user.first_name} ${user.last_name || ""}`
+                          : user.username
+                      } (${user.email})`,
+                      user.call_status,
+                    )}
                   </option>
                 ))}
               </select>
