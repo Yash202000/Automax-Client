@@ -170,15 +170,7 @@ export const incidentFields: ReportFieldDefinition[] = [
       { value: 5, label: "Minimal" },
     ],
   },
-  {
-    field: "reopen1_comment",
-    label: "Reopened1 comment",
-    label_ar: "تعليق إعادة الفتح 1",
-    type: "string",
-    category: "Core",
-    sortable: true,
-    filterable: true,
-  },
+
   {
     field: "reopen1_feedback",
     label: "Reopened Feedback",
@@ -469,15 +461,6 @@ export const incidentFields: ReportFieldDefinition[] = [
     field: "reopen1_comment",
     label: "Reopened1 comment",
     label_ar: "تعليق إعادة الفتح 1",
-    type: "string",
-    category: "Core",
-    sortable: true,
-    filterable: true,
-  },
-  {
-    field: "reopen1_feedback",
-    label: "Reopened1 Feedback",
-    label_ar: "ملاحظات إعادة الفتح 1",
     type: "string",
     category: "Core",
     sortable: true,
@@ -1183,52 +1166,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: false,
     filterable: false,
   },
-  {
-    field: "first_response_action",
-    label: "First Response Action",
-    label_ar: "إجراء أول استجابة",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-  },
-  {
-    field: "first_response_description",
-    label: "First Response Description",
-    label_ar: "وصف أول استجابة",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-  },
-  {
-    field: "first_responder_id",
-    label: "First Responder",
-    label_ar: "أول مستجيب",
-    type: "enum",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-    dynamicOptions: "users",
-  },
-  {
-    field: "first_response_minutes",
-    label: "First Response Minutes",
-    label_ar: "دقائق أول استجابة",
-    type: "number",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-  },
-  {
-    field: "first_response_at",
-    label: "First Response At",
-    label_ar: "وقت أول استجابة",
-    type: "datetime",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-  },
+
   {
     field: "first_response_action",
     label: "First Response Action",
@@ -1272,7 +1210,7 @@ export const incidentFields: ReportFieldDefinition[] = [
 
   {
     field: "first_response_minutes",
-    label: "First Response Minutes",
+    label: "First Response Time", //label need to be time
     label_ar: "دقائق أول استجابة",
     type: "number",
     category: "Core",
@@ -2684,6 +2622,21 @@ export const getFieldsForDataSource = (
   dataSource: string,
 ): ReportFieldDefinition[] => {
   const source = DATA_SOURCES.find((ds) => ds.key === dataSource);
+  // if (source) {
+  //   const duplicates = source.fields.reduce(
+  //     (acc, field) => {
+  //       acc[field.field] = (acc[field.field] ?? 0) + 1;
+  //       return acc;
+  //     },
+  //     {} as Record<string, number>,
+  //   );
+  //   console.log(`Data Source: ${dataSource}`);
+  //   console.table(
+  //     Object.entries(duplicates)
+  //       .filter(([, count]) => count > 1)
+  //       .map(([field, count]) => ({ field, count })),
+  //   );
+  // }
   return source?.fields || [];
 };
 
