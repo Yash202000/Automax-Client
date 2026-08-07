@@ -1054,7 +1054,10 @@ export const WorkflowDesignerPage: React.FC = () => {
                 {t("workflows.slaLimitExceeded")}
               </p>
               <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--muted-foreground))]">
-                {errorMessage}
+                {t("workflows.slaViolationSummary", {
+                  slaLabel: violationData.workflow_sla_label,
+                  count: violationData.total_classification_count,
+                })}
               </p>
               <button
                 type="button"
