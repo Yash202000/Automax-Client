@@ -1862,7 +1862,7 @@ export const UsersPage: React.FC = () => {
                         {t("users.status")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-right">
+                    <th className="sticky right-0 z-10 bg-[hsl(var(--card))] px-6 py-4 text-right">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.actions")}
                       </span>
@@ -2052,11 +2052,11 @@ export const UsersPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="sticky right-0 z-10 bg-[hsl(var(--card))] group-hover:bg-[hsl(var(--muted))] px-6 py-4 text-right transition-colors">
                         <button
                           id={`action-btn-${user.id}`}
                           onClick={() => handleDropdownToggle(user.id)}
-                          className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+                          className="p-2 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-[hsl(var(--muted))] transition-opacity"
                         >
                           <MoreHorizontal className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                         </button>

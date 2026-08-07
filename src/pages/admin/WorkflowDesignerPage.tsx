@@ -1035,6 +1035,14 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
       closeStateModal();
     },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        t("workflows.failedToSaveState");
+      toast.error(errorMessage, { duration: 6000 });
+    },
   });
 
   const updateStateMutation = useMutation({
@@ -1053,6 +1061,14 @@ export const WorkflowDesignerPage: React.FC = () => {
         queryKey: ["admin", "workflow", id, "states"],
       });
       closeStateModal();
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        t("workflows.failedToSaveState");
+      toast.error(errorMessage, { duration: 6000 });
     },
   });
 

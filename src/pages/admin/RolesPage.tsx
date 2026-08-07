@@ -242,7 +242,9 @@ export const RolesPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {(!role.is_system || role.is_department_manager) && (
+                    {(!role.is_system ||
+                      role.is_department_manager ||
+                      isSuperAdmin) && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {canUpdateRole && (
                           <button

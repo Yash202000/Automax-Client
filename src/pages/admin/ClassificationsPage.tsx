@@ -45,6 +45,16 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "sonner";
 
+// Draft criticality row: max_closing_minutes stays nullable in the form so the
+// input can render empty until the admin types a value; normalized to a number
+// (defaulting to 0) when building the API payload on submit.
+type CriticalityDraft = Omit<
+  ClassificationCriticalityCreateRequest,
+  "max_closing_minutes"
+> & {
+  max_closing_minutes: number | null;
+};
+
 interface ClassificationFormData {
   name: string;
   name_ar: string;
@@ -54,7 +64,7 @@ interface ClassificationFormData {
   parent_name: string;
   sort_order: number;
   types: string[];
-  criticalities: ClassificationCriticalityCreateRequest[];
+  criticalities: CriticalityDraft[];
 }
 
 const initialFormData: ClassificationFormData = {
@@ -489,11 +499,11 @@ export const ClassificationsPage: React.FC = () => {
 
   const openCreateModal = (parentId: string = "", parentName: string = "") => {
     setEditingClassification(null);
-    // Initialize criticalities with default values (0 hours, 30 minutes) for each priority
+    // Initialize criticalities with default values (0 hours, unset minutes) for each priority
     const defaultCriticalities = priorityValues.map((priority) => ({
       criticality_id: priority.id,
       max_closing_hours: 0,
-      max_closing_minutes: 30,
+      max_closing_minutes: null as number | null,
       escalation_policy_id: undefined as string | undefined,
     }));
     setFormData({
@@ -530,7 +540,7 @@ export const ClassificationsPage: React.FC = () => {
       return {
         criticality_id: priority.id,
         max_closing_hours: 0,
-        max_closing_minutes: 30,
+        max_closing_minutes: null as number | null,
         escalation_policy_id: undefined as string | undefined,
       };
     });
@@ -597,8 +607,8 @@ export const ClassificationsPage: React.FC = () => {
       (c) =>
         c.max_closing_hours < 0 ||
         c.max_closing_hours > 840 ||
-        c.max_closing_minutes < 0 ||
-        c.max_closing_minutes > 59,
+        (c.max_closing_minutes ?? 0) < 0 ||
+        (c.max_closing_minutes ?? 0) > 59,
     );
 
     if (hasInvalidCriticality) {
@@ -626,7 +636,10 @@ export const ClassificationsPage: React.FC = () => {
       parent_id: formData.parent_id || undefined,
       sort_order: formData.sort_order,
       types: formData.types,
-      criticalities: formData.criticalities,
+      criticalities: formData.criticalities.map((c) => ({
+        ...c,
+        max_closing_minutes: c.max_closing_minutes ?? 0,
+      })),
     };
 
     if (editingClassification) {
@@ -1470,18 +1483,22 @@ export const ClassificationsPage: React.FC = () => {
                               type="number"
                               min="0"
                               max="59"
-                              value={criticality?.max_closing_minutes || 0}
+                              value={criticality?.max_closing_minutes ?? ""}
                               onChange={(e) => {
                                 const newCriticalities = [
                                   ...formData.criticalities,
                                 ];
                                 if (index >= 0) {
+                                  const rawValue = e.target.value;
                                   newCriticalities[index] = {
                                     ...newCriticalities[index],
-                                    max_closing_minutes: Math.min(
-                                      59,
-                                      parseInt(e.target.value) || 0,
-                                    ),
+                                    max_closing_minutes:
+                                      rawValue === ""
+                                        ? null
+                                        : Math.min(
+                                            59,
+                                            parseInt(rawValue, 10) || 0,
+                                          ),
                                   };
                                 }
                                 setFormData({

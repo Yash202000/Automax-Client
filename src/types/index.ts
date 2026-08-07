@@ -34,6 +34,8 @@ export interface User {
   is_ad_user?: boolean;
   mobile_verified?: boolean;
   extension?: string;
+  /** Live agent availability: offline | online | busy | in_call */
+  call_status?: string;
   last_login_at: string | null;
   created_at: string;
   dept_manager_department_id?: string | null;
@@ -42,7 +44,6 @@ export interface User {
   dept_manager_classification?: Classification;
   dept_manager_location_id?: string | null;
   dept_manager_location?: Location;
-  call_status?: string;
 }
 
 export interface Permission {
