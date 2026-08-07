@@ -91,6 +91,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   const [reporterPhoneInput, setReporterPhoneInput] = useState(
     filter.reporter_phone_search || "",
   );
+  const [reporterPhoneError, setReporterPhoneError] = useState("");
   const [momraRefNum, setMomraRefNum] = useState(filter.momra_ref || "");
   const columnConfigRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin } = usePermissions();
@@ -851,14 +852,35 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               </label>
               <Input
                 value={reporterPhoneInput}
-                onChange={(e) => setReporterPhoneInput(e.target.value)}
+                type="tel"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setReporterPhoneInput(value);
+                  // const telValidation = /^\+?\d+$/;
+                  const telValidation = /^\+?\d*$/;
+                  if (value && !telValidation.test(value)) {
+                    setReporterPhoneError("invalid phone number");
+                  } else {
+                    setReporterPhoneError("");
+                  }
+                }}
                 placeholder={t(
                   "common.reporterPhonePlaceholder",
                   "Phone number",
                 )}
                 inputMode="tel"
-                className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                className={cn(
+                  "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2",
+                  reporterPhoneError
+                    ? "border-[hsl(var(--destructive))] focus:border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive)/0.2)]"
+                    : "border-[hsl(var(--border))] focus:border-[hsl(var(--primary))] focus:ring-[hsl(var(--primary)/0.2)]",
+                )}
               />
+              {reporterPhoneError && (
+                <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
+                  {t("users.invalidPhone")}
+                </p>
+              )}
             </div>
           ) : null}
           {isEPM940 ? (
