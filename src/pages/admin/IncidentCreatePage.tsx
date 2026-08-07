@@ -36,6 +36,7 @@ import {
   ModalFooter,
 } from "../../components/ui";
 import type { TreeSelectNode, LocationData } from "../../components/ui";
+import { withCallStatusDot } from "../../utils/callStatus";
 import {
   workflowApi,
   classificationApi,
@@ -1874,7 +1875,10 @@ export function IncidentCreatePage() {
                         { value: "", label: t("incidents.selectAssignee") },
                         ...matchingUsers.map((u) => ({
                           value: u.id,
-                          label: `${u.first_name} ${u.last_name}${u.email ? ` (${u.email})` : ""}`,
+                          label: withCallStatusDot(
+                            `${u.first_name} ${u.last_name}${u.email ? ` (${u.email})` : ""}`,
+                            u.call_status,
+                          ),
                         })),
                       ]}
                       required

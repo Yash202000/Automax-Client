@@ -6,6 +6,7 @@ import SoftPhone from "../sip/Softphone";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import usePermissions from "@/hooks/usePermissions";
+import { useUserStatusWebSocket } from "../../lib/services/userStatusWebSocket";
 import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
 import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
 import { SessionTimeoutModal } from "@/components/common/SessionTimeoutModal";
@@ -27,6 +28,10 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   useGlobalWebSocket();
 
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
+
+  // Keep a live broadcast connection so agent availability (call_status) shown
+  // in assignee dropdowns updates in real time. No-ops until a token exists.
+  useUserStatusWebSocket();
 
   // When Cintrix is the CTI provider, the native SoftPhone must not mount at
   // all: its auto-connect effect registers the native JsSIP stack whenever

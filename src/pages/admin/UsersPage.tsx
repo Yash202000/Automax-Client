@@ -493,7 +493,32 @@ export const UsersPage: React.FC = () => {
     [],
   );
 
-  const getApiFieldErrors = useCallback((message: string): UserFieldErrors => {
+  const getApiFieldErrors = useCallback((error: any): UserFieldErrors => {
+    const apiErrors = error.response?.data?.errors;
+    if (apiErrors) {
+      const fieldErrors: UserFieldErrors = {};
+
+      Object.entries(apiErrors).forEach(([field, message]) => {
+        const lowerField = field.toLowerCase();
+
+        if (lowerField === "email") {
+          fieldErrors.email = message as string;
+        } else if (lowerField === "username") {
+          fieldErrors.username = message as string;
+        } else if (lowerField === "password") {
+          fieldErrors.password = message as string;
+        } else if (lowerField === "phone") {
+          fieldErrors.phone = message as string;
+        } else {
+          fieldErrors.form = message as string;
+        }
+      });
+
+      return fieldErrors;
+    }
+    const message =
+      error.response?.data?.error || error.message || t("users.updateFailed");
+
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes("email")) {
@@ -594,8 +619,12 @@ export const UsersPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      const errorMessage = getApiErrorMessage(error, t("users.updateFailed"));
-      setFormErrors(getApiFieldErrors(errorMessage));
+      const fieldErros = getApiFieldErrors(error);
+      setFormErrors(fieldErros);
+
+      if (Object.keys(fieldErros).length > 0) {
+        toast.error(t("errors.validationError"));
+      }
     },
   });
 
@@ -1833,7 +1862,7 @@ export const UsersPage: React.FC = () => {
                         {t("users.status")}
                       </span>
                     </th>
-                    <th className="px-6 py-4 text-right">
+                    <th className="sticky right-0 z-10 bg-[hsl(var(--card))] px-6 py-4 text-right">
                       <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                         {t("common.actions")}
                       </span>
@@ -2023,11 +2052,11 @@ export const UsersPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="sticky right-0 z-10 bg-[hsl(var(--card))] group-hover:bg-[hsl(var(--muted))] px-6 py-4 text-right transition-colors">
                         <button
                           id={`action-btn-${user.id}`}
                           onClick={() => handleDropdownToggle(user.id)}
-                          className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+                          className="p-2 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-[hsl(var(--muted))] transition-opacity"
                         >
                           <MoreHorizontal className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                         </button>

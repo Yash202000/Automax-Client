@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { withCallStatusDot } from "../../utils/callStatus";
 import {
   useParams,
   useNavigate,
@@ -5394,10 +5395,14 @@ export const IncidentDetailPage: React.FC = () => {
                 <option value="">{t("incidents.selectUser")}</option>
                 {usersData?.data?.map((user: UserType) => (
                   <option key={user.id} value={user.id}>
-                    {user.first_name
-                      ? `${user.first_name} ${user.last_name || ""}`
-                      : user.username}{" "}
-                    ({user.email})
+                    {withCallStatusDot(
+                      `${
+                        user.first_name
+                          ? `${user.first_name} ${user.last_name || ""}`
+                          : user.username
+                      } (${user.email})`,
+                      user.call_status,
+                    )}
                   </option>
                 ))}
               </select>
@@ -5465,67 +5470,6 @@ export const IncidentDetailPage: React.FC = () => {
               className="max-w-[90vw] max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2">
-              <p className="truncate">{lightboxImage?.attachment?.file_name}</p>
-              <p className="text-xs text-white/70 mt-0.5">
-                {formatFileSize(lightboxImage?.attachment?.file_size)} •{" "}
-                {formatDateTime(lightboxImage?.attachment?.created_at)}
-              </p>
-              {lightboxImage?.attachment?.uploaded_by && (
-                <p className="truncate text-white/70 mt-0.5">
-                  {lightboxImage?.attachment?.uploaded_by.first_name}{" "}
-                  {lightboxImage?.attachment?.uploaded_by.last_name}
-                  <span className="ml-1 opacity-60">
-                    ·{" "}
-                    {lightboxImage?.attachment?.uploaded_by.roles?.[0]?.name ||
-                      "No Role"}
-                  </span>
-                  <span className="ml-1">
-                    ·{" "}
-                    {(lightboxImage?.attachment?.uploaded_by?.departments || [])
-                      .map((department: any) => department.name)
-                      .join(", ") || "No Department"}
-                  </span>
-                </p>
-              )}
-
-              {/* transition */}
-              {getHistoryById(
-                lightboxImage?.attachment?.transition_history_id || "",
-              ) && (
-                <div className="flex justify-start items-center gap-2">
-                  <span
-                    className={
-                      "text-xs  mt-0.5" +
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.from_state?.color
-                    }
-                  >
-                    {
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.from_state?.name
-                    }
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                  <span
-                    className={
-                      "text-xs  mt-0.5" +
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.to_state?.color
-                    }
-                  >
-                    {
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.to_state?.name
-                    }
-                  </span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
