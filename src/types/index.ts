@@ -979,6 +979,21 @@ export interface WorkflowStateUpdateRequest {
   new_incident_sms_template_code?: string;
 }
 
+export interface SLAViolationGroup {
+  criticality_id: string;
+  criticality_name: string;
+  max_allowed_sla_minutes: number;
+  max_allowed_sla_label: string;
+  classification_count: number;
+  classifications: string[];
+}
+
+export interface SLAValidationErrorData {
+  workflow_sla_label: string;
+  total_classification_count: number;
+  violations: SLAViolationGroup[];
+}
+
 export interface WorkflowTransitionCreateRequest {
   name: string;
   name_ar?: string;
