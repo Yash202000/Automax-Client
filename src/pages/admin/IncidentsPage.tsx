@@ -356,7 +356,7 @@ export const IncidentsPage: React.FC = () => {
       search: searchParams.get("search") || stored.search,
       source: searchParams.get("source") || stored.source,
       workflow_id: searchParams.get("workflow_id") || stored.workflow_id,
-      assignee_id: searchParams.get("assignee_id") || undefined,
+      assignee_id: searchParams.get("assignee_id") || stored.assignee_id,
 
       priority: searchParams.get("priority")
         ? Number(searchParams.get("priority"))
