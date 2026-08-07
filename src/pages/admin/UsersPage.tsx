@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -114,6 +120,10 @@ export const UsersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { user: currentUser } = useAuthStore();
+  // Guards against out-of-order resolution when department selection
+  // changes again before a previous department-details lookup finishes.
+  const editDeptLookupSeqRef = useRef(0);
+  const createDeptLookupSeqRef = useRef(0);
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
@@ -2429,15 +2439,18 @@ export const UsersPage: React.FC = () => {
                   data={departmentsTree}
                   selectedIds={formData.department_ids}
                   onSelectionChange={async (ids) => {
-                    setFormData({ ...formData, department_ids: ids });
+                    const seq = ++editDeptLookupSeqRef.current;
+                    setFormData((prev) => ({ ...prev, department_ids: ids }));
 
                     // Auto-populate classifications and locations from departments
                     try {
                       const allClassifications = new Set<string>();
                       const allLocations = new Set<string>();
 
-                      for (const deptId of ids) {
-                        const dept = await departmentApi.getById(deptId);
+                      const depts = await Promise.all(
+                        ids.map((deptId) => departmentApi.getById(deptId)),
+                      );
+                      for (const dept of depts) {
                         if (dept.success && dept.data) {
                           // Add department's classifications
                           dept.data.classifications?.forEach((c) =>
@@ -2450,6 +2463,11 @@ export const UsersPage: React.FC = () => {
                         }
                       }
 
+                      // Discard this result if a newer selection change has
+                      // started since — prevents a stale response from
+                      // overwriting the latest classification/location lists.
+                      if (seq !== editDeptLookupSeqRef.current) return;
+
                       setFormData((prev) => ({
                         ...prev,
                         department_ids: ids,
@@ -2461,7 +2479,8 @@ export const UsersPage: React.FC = () => {
                         "Error fetching department details:",
                         error,
                       );
-                      setFormData({ ...formData, department_ids: ids });
+                      if (seq !== editDeptLookupSeqRef.current) return;
+                      setFormData((prev) => ({ ...prev, department_ids: ids }));
                     }
                   }}
                   label={t("users.departments")}
@@ -2891,12 +2910,15 @@ export const UsersPage: React.FC = () => {
                   selectedIds={createFormData.department_ids}
                   onSelectionChange={async (ids) => {
                     // Auto-populate classifications and locations from departments
+                    const seq = ++createDeptLookupSeqRef.current;
                     try {
                       const allClassifications = new Set<string>();
                       const allLocations = new Set<string>();
 
-                      for (const deptId of ids) {
-                        const dept = await departmentApi.getById(deptId);
+                      const depts = await Promise.all(
+                        ids.map((deptId) => departmentApi.getById(deptId)),
+                      );
+                      for (const dept of depts) {
                         if (dept.success && dept.data) {
                           // Add department's classifications
                           dept.data.classifications?.forEach((c) =>
@@ -2909,6 +2931,11 @@ export const UsersPage: React.FC = () => {
                         }
                       }
 
+                      // Discard this result if a newer selection change has
+                      // started since — prevents a stale response from
+                      // overwriting the latest classification/location lists.
+                      if (seq !== createDeptLookupSeqRef.current) return;
+
                       setCreateFormData((prev) => ({
                         ...prev,
                         department_ids: ids,
@@ -2920,10 +2947,11 @@ export const UsersPage: React.FC = () => {
                         "Error fetching department details:",
                         error,
                       );
-                      setCreateFormData({
-                        ...createFormData,
+                      if (seq !== createDeptLookupSeqRef.current) return;
+                      setCreateFormData((prev) => ({
+                        ...prev,
                         department_ids: ids,
-                      });
+                      }));
                     }
                   }}
                   label={t("users.departments")}

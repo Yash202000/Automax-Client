@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Download,
   PenLine,
+  Eye,
 } from "lucide-react";
 import {
   workflowApi,
@@ -58,6 +59,7 @@ import type {
   IncidentFormField,
   LookupCategory,
   NotificationTemplate,
+  SLAValidationErrorData,
 } from "../../types";
 import {
   EMAIL_RECIPIENTS,
@@ -614,6 +616,8 @@ export const WorkflowDesignerPage: React.FC = () => {
   const [deleteTransitionConfirm, setDeleteTransitionConfirm] = useState<
     string | null
   >(null);
+  const [slaViolationDetails, setSlaViolationDetails] =
+    useState<SLAValidationErrorData | null>(null);
 
   // Requirements, Actions & Field Changes config
   const [requirements, setRequirements] = useState<
@@ -1024,6 +1028,63 @@ export const WorkflowDesignerPage: React.FC = () => {
     },
   });
 
+  // Surfaces the SLA-vs-closure-SLA validation error from create/update state.
+  // Falls back to the existing plain-message toast for every other error.
+  const handleStateSaveError = (error: any) => {
+    const violationData: SLAValidationErrorData | undefined = error.response
+      ?.data?.data?.violations
+      ? error.response.data.data
+      : undefined;
+    const errorMessage =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message ||
+      t("workflows.failedToSaveState");
+
+    if (violationData) {
+      toast.custom(
+        (id) => (
+          <div className="relative flex w-full max-w-sm gap-3 overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 pl-5 shadow-lg">
+            <span className="absolute inset-y-0 left-0 w-1 bg-[hsl(var(--destructive))]" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--destructive)/0.12)]">
+              <AlertTriangle className="h-4 w-4 text-[hsl(var(--destructive))]" />
+            </div>
+            <div className="min-w-0 flex-1 pr-4">
+              <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                {t("workflows.slaLimitExceeded")}
+              </p>
+              <p className="mt-1 text-[13px] leading-snug text-[hsl(var(--muted-foreground))]">
+                {errorMessage}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSlaViolationDetails(violationData);
+                  toast.dismiss(id);
+                }}
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-[hsl(var(--destructive)/0.35)] px-2.5 py-1 text-xs font-semibold text-[hsl(var(--destructive))] transition-colors hover:bg-[hsl(var(--destructive)/0.08)]"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                {t("workflows.viewAffectedClassifications")}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => toast.dismiss(id)}
+              className="absolute right-3 top-3 rounded-md p-1 text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ),
+        { duration: 10000 },
+      );
+      return;
+    }
+
+    toast.error(errorMessage, { duration: 6000 });
+  };
+
   // State mutations
   const createStateMutation = useMutation({
     mutationFn: (data: WorkflowStateCreateRequest) =>
@@ -1035,14 +1096,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
       closeStateModal();
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        t("workflows.failedToSaveState");
-      toast.error(errorMessage, { duration: 6000 });
-    },
+    onError: handleStateSaveError,
   });
 
   const updateStateMutation = useMutation({
@@ -1062,14 +1116,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
       closeStateModal();
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        t("workflows.failedToSaveState");
-      toast.error(errorMessage, { duration: 6000 });
-    },
+    onError: handleStateSaveError,
   });
 
   const deleteStateMutation = useMutation({
@@ -6150,6 +6197,64 @@ export const WorkflowDesignerPage: React.FC = () => {
                   {t("workflows.deleteTransition")}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SLA Violation Details */}
+      {slaViolationDetails && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col animate-scale-in">
+            <div className="p-6 border-b border-[hsl(var(--border))] shrink-0">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-[hsl(var(--destructive)/0.1)] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-[hsl(var(--destructive))]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    {t("workflows.affectedClassifications")}
+                  </h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                    {t("workflows.slaViolationSummary", {
+                      slaLabel: slaViolationDetails.workflow_sla_label,
+                      count: slaViolationDetails.total_classification_count,
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-3">
+              {slaViolationDetails.violations.map((group) => (
+                <div
+                  key={group.criticality_id}
+                  className="border border-[hsl(var(--border))] rounded-lg p-4"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="font-medium text-[hsl(var(--foreground))]">
+                      {group.criticality_name}
+                    </span>
+                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                      {t("workflows.maxAllowedSLA")}:{" "}
+                      {group.max_allowed_sla_label}
+                      {" · "}
+                      {group.classification_count}{" "}
+                      {t("workflows.classifications")}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    {group.classifications.join(", ")}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="p-6 border-t border-[hsl(var(--border))] shrink-0 flex justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => setSlaViolationDetails(null)}
+              >
+                {t("common.close")}
+              </Button>
             </div>
           </div>
         </div>
