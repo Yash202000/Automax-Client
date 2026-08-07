@@ -3,9 +3,12 @@ import type { IncidentFilter } from "../types";
 
 // The subset of IncidentFilter that should carry over between the "All
 // Incidents", "Assigned to me" and "Created by me" views, and feed the
-// sidebar's "By Status" counts. Deliberately excludes the fields that define
-// which view you're in (assignee_id/reporter_id/my_record) and per-page
-// mechanics (page/limit/record_type) — those aren't filters, they're scope.
+// sidebar's "By Status" counts. Includes assignee_id — the Incidents page
+// has an explicit "Assignee" filter dropdown that can target any user, which
+// is a real filter, not view scope. Deliberately excludes reporter_id/
+// my_record and per-page mechanics (page/limit/record_type) — those define
+// which view you're in (there's no equivalent "any reporter" filter
+// dropdown), not something a user filters by, so they stay page-local.
 export type SharedIncidentFilter = Pick<
   IncidentFilter,
   | "search"
@@ -15,6 +18,7 @@ export type SharedIncidentFilter = Pick<
   | "priority"
   | "department_ids"
   | "location_ids"
+  | "assignee_id"
   | "sla_breached"
   | "source"
   | "converted_to_request"
@@ -35,6 +39,7 @@ export const sharedIncidentFilterKeys: (keyof SharedIncidentFilter)[] = [
   "priority",
   "department_ids",
   "location_ids",
+  "assignee_id",
   "sla_breached",
   "source",
   "converted_to_request",
