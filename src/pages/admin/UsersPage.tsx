@@ -919,7 +919,6 @@ export const UsersPage: React.FC = () => {
     }
 
     setFormErrors(errors);
-    console.log({ errors });
     if (Object.keys(errors).length > 0) {
       toast.error(t("errors.validationError"));
       return;
