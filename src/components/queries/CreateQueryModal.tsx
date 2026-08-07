@@ -38,9 +38,7 @@ import type {
   User as UserType,
   Incident,
   CreateQueryRequest,
-  IncidentSource,
 } from "../../types";
-import { INCIDENT_SOURCES } from "../../types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -63,7 +61,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [comment, setComment] = useState("");
-  const [source, setSource] = useState<IncidentSource | undefined>("web");
+  const [source, setSource] = useState<string | undefined>("web");
   const [channel, setChannel] = useState("");
   const [classificationId, setClassificationId] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -187,6 +185,21 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
     queryFn: () => lookupApi.listCategories(),
     enabled: isOpen,
   });
+
+  const sourceOptions = useMemo(() => {
+    if (!lookupCategoriesData?.data?.length) return [];
+    return (lookupCategoriesData?.data || [])
+      .filter((cat) => cat.code === "SOURCE")
+      .flatMap((cat) =>
+        (cat.values || []).map((value) => ({
+          value: value.code.toLowerCase(),
+          label:
+            i18n.language === "ar" && value.name_ar
+              ? value.name_ar
+              : value.name,
+        })),
+      );
+  }, [lookupCategoriesData, i18n.language]);
 
   // Query for incidents created by the current user (for source incident search)
   const { data: incidentsData, isLoading: incidentsLoading } = useQuery({
@@ -655,7 +668,10 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
   }, [isRecording]);
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error(t("errors.validationError"));
+      return;
+    }
 
     const lookupIds = Object.values(lookupValues).filter(Boolean);
 
@@ -693,6 +709,11 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
 
   const handleLookupChange = (categoryId: string, valueId: string) => {
     setLookupValues((prev) => ({ ...prev, [categoryId]: valueId }));
+    // clearing the error once user select a priority
+    const category = requestLookupCategories.find((c) => c.id === categoryId);
+    if (category) {
+      setErrors((prev) => ({ ...prev, [`lookup:${category.code}`]: "" }));
+    }
   };
 
   const handleLocationChange = (location: LocationData | undefined) => {
@@ -814,12 +835,12 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                 <select
                   value={source || ""}
                   onChange={(e) =>
-                    setSource((e.target.value as IncidentSource) || undefined)
+                    setSource((e.target.value as string) || undefined)
                   }
                   className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
                   <option value="">{t("queries.selectSource")}</option>
-                  {INCIDENT_SOURCES.map((s) => (
+                  {sourceOptions.map((s) => (
                     <option key={s.value} value={s.value}>
                       {s.label}
                     </option>
@@ -829,34 +850,47 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
               {/* Priority */}
               {requestLookupCategories
                 .filter((cat) => cat.code === "PRIORITY")
-                .map((category) => (
-                  <div key={category.id} className="space-y-2">
-                    <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                      {i18n.language === "ar"
-                        ? category.name_ar || category.name
-                        : category.name}
-                      {workflowRequiredFields.includes("lookup:PRIORITY") && (
-                        <span className="text-red-500 ml-1">*</span>
+                .map((category) => {
+                  const lookupFieldKey = `lookup:${category.code}`;
+                  return (
+                    <div key={category.id} className="space-y-2">
+                      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                        {i18n.language === "ar"
+                          ? category.name_ar || category.name
+                          : category.name}
+                        {workflowRequiredFields.includes("lookup:PRIORITY") && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                      </label>
+                      <select
+                        value={lookupValues[category.id] || ""}
+                        onChange={(e) =>
+                          handleLookupChange(category.id, e.target.value)
+                        }
+                        className={cn(
+                          "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                          errors[lookupFieldKey]
+                            ? "border-red-500"
+                            : "border-[hsl(var(--border))]",
+                        )}
+                      >
+                        <option value="">{t("common.select")}</option>
+                        {(category.values || []).map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {i18n.language === "ar" && v.name_ar
+                              ? v.name_ar
+                              : v.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors[lookupFieldKey] && (
+                        <p className="text-xs text-red-500">
+                          {errors[lookupFieldKey]}
+                        </p>
                       )}
-                    </label>
-                    <select
-                      value={lookupValues[category.id] || ""}
-                      onChange={(e) =>
-                        handleLookupChange(category.id, e.target.value)
-                      }
-                      className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    >
-                      <option value="">{t("common.select")}</option>
-                      {(category.values || []).map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {i18n.language === "ar" && v.name_ar
-                            ? v.name_ar
-                            : v.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
             </div>
           </div>
 

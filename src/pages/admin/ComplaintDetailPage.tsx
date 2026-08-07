@@ -874,7 +874,7 @@ export const ComplaintDetailPage: React.FC = () => {
               {complaint.channel && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-4 h-4 text-primary" />
+                    <Radio className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -903,10 +903,20 @@ export const ComplaintDetailPage: React.FC = () => {
                       </p>
                     )}
                     {complaint.created_by_mobile && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent("initiate-call", {
+                              detail: { number: complaint.created_by_mobile },
+                            }),
+                          );
+                        }}
+                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1 mt-0.5"
+                      >
                         <Phone className="w-3 h-3" />
                         {complaint.created_by_mobile}
-                      </p>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1087,17 +1097,17 @@ export const ComplaintDetailPage: React.FC = () => {
               )}
 
               {/* Channel */}
-              {complaint.channel && (
+              {complaint.reporter_phone && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <Radio className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t("complaints.channel", "Channel")}
+                      {t("complaints.reporter", "Reporter")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">
-                      {complaint.channel.replace("_", " ")}
+                      {complaint.reporter_phone}
                     </p>
                   </div>
                 </div>

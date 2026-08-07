@@ -30,6 +30,7 @@ import {
   classificationApi,
   userApi,
   workflowApi,
+  lookupApi,
 } from "../../api/admin";
 import { getValidFilters } from "@/utils/reportUtils";
 import {
@@ -52,6 +53,12 @@ import { saveAs } from "file-saver";
 import i18n from "@/i18n";
 import { useAuthStore } from "@/stores/authStore";
 
+interface DynamicReportOption {
+  value: string;
+  label: string;
+  children?: DynamicReportOption[];
+}
+
 // Helper to build hierarchical label with path
 // const buildHierarchicalLabel = (item: { name: string; path?: string; level?: number }, allItems: { id: string; name: string; parent_id?: string | null }[]): string => {
 //   if (item.path) {
@@ -66,35 +73,21 @@ import { useAuthStore } from "@/stores/authStore";
 //   return indent + item.name;
 // };
 
-// Helper to flatten tree structure with hierarchical labels
-const flattenTreeWithLabels = <
+// Preserve dynamic hierarchy so report filters can render a tree selector.
+const mapTreeOptions = <
   T extends {
     id: string;
     name: string;
-    path?: string;
-    level?: number;
     children?: T[];
   },
 >(
   items: T[],
-  level: number = 0,
-): { value: string; label: string }[] => {
-  const result: { value: string; label: string }[] = [];
-
-  for (const item of items) {
-    const indent = level > 0 ? "│  ".repeat(level - 1) + "├─ " : "";
-    result.push({
-      value: item.id,
-      label: indent + item.name,
-    });
-
-    if (item.children && item.children.length > 0) {
-      result.push(...flattenTreeWithLabels(item.children, level + 1));
-    }
-  }
-
-  return result;
-};
+): DynamicReportOption[] =>
+  items.map((item) => ({
+    value: item.id,
+    label: item.name,
+    children: item.children?.length ? mapTreeOptions(item.children) : undefined,
+  }));
 
 interface CollapsibleSectionProps {
   title: string;
@@ -206,9 +199,28 @@ export const ReportBuilderPage: React.FC = () => {
     queryFn: () => workflowApi.list(false, "request"),
   });
 
+  const { data: sourceData } = useQuery({
+    queryKey: ["lookups", "categories"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find((cat) => cat.code === "SOURCE") || null
+      );
+    },
+  });
+
+  const sourceOptions = useMemo(() => {
+    if (!sourceData) return [];
+    return (sourceData.values || []).map((value) => ({
+      value: value.code.toLowerCase(),
+      label:
+        i18n.language === "ar" && value.name_ar ? value.name_ar : value.name,
+    }));
+  }, [sourceData, i18n.language]);
+
   // Build hierarchical options from tree data
   const dynamicOptionsMap = useMemo(() => {
-    const map: Record<string, { value: string; label: string }[]> = {};
+    const map: Record<string, DynamicReportOption[]> = {};
 
     if (stateOptions?.data && stateOptions.data.length > 0) {
       map.states = stateOptions.data[0].states?.map((state) => ({
@@ -237,19 +249,19 @@ export const ReportBuilderPage: React.FC = () => {
     }
 
     if (departmentsTree?.data) {
-      map.departments = flattenTreeWithLabels(
+      map.departments = mapTreeOptions(
         departmentsTree.data as (Department & { children?: Department[] })[],
       );
     }
 
     if (locationsTree?.data) {
-      map.locations = flattenTreeWithLabels(
+      map.locations = mapTreeOptions(
         locationsTree.data as (Location & { children?: Location[] })[],
       );
     }
 
     if (classificationsTree?.data) {
-      map.classifications = flattenTreeWithLabels(
+      map.classifications = mapTreeOptions(
         classificationsTree.data as (Classification & {
           children?: Classification[];
         })[],
@@ -265,9 +277,18 @@ export const ReportBuilderPage: React.FC = () => {
             : user.username || user.email,
       }));
     }
+    if (sourceOptions?.length) {
+      map.sources = sourceOptions;
+    }
 
     return map;
-  }, [departmentsTree, locationsTree, classificationsTree, userOptions]);
+  }, [
+    departmentsTree,
+    locationsTree,
+    classificationsTree,
+    userOptions,
+    sourceOptions,
+  ]);
 
   // Get fields for current data source with dynamic options enhanced
   const fields = useMemo(() => {

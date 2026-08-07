@@ -1,4 +1,5 @@
 export { RevisionHistory } from "./RevisionHistory";
+export { CommunicationHistory } from "./CommunicationHistory";
 export { ConvertToRequestModal } from "./ConvertToRequestModal";
 export { MergeIncidentsModal } from "./MergeIncidentsModal";
 export { UnmergeIncidentsModal } from "./UnmergeIncidentsModal";
@@ -7,3 +8,4 @@ export { BulkTransitionModal } from "./BulkTransitionModal";
 export { SMSLegends } from "./SMSLegends";
 export { IncidentFilters } from "./IncidentFilters";
 export type { IncidentFiltersProps, ColumnConfig } from "./IncidentFilters";
+export { IncidentStatusStatsRow } from "./IncidentStatusStatsRow";

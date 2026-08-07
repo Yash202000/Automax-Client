@@ -28,6 +28,10 @@ export const LoginForm: React.FC = () => {
     (window.APP_CONFIG?.LOGIN_SSO ?? import.meta.env.VITE_LOGIN_SSO) !==
     "false";
 
+  const enableSignup =
+    (window.APP_CONFIG?.ENABLE_SIGNUP ?? import.meta.env.VITE_ENABLE_SIGNUP) !==
+    "false";
+
   const enabledModes = [
     ...(showRegular ? ["regular" as const] : []),
     ...(showLdap ? ["ldap" as const] : []),
@@ -204,9 +208,15 @@ export const LoginForm: React.FC = () => {
   const isSso = loginMode === "sso";
   const isLdap = loginMode === "ldap";
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   return (
     <div className="animate-fade-in-up">
-      <div className="mb-8">
+      <div
+        className={`mb-8 ${isEPM940 ? "flex flex-col items-center text-center" : ""}`}
+      >
         <h1 className="text-3xl font-bold ">
           {isSso
             ? t("auth.ssoLoginTitle")
@@ -375,7 +385,7 @@ export const LoginForm: React.FC = () => {
         </form>
       )}
 
-      {!isLdap && (
+      {!isLdap && enableSignup ? (
         <p className="mt-8 text-center text-gray-600">
           {t("auth.noAccount")}{" "}
           <Link
@@ -385,7 +395,7 @@ export const LoginForm: React.FC = () => {
             {t("auth.signUp")}
           </Link>
         </p>
-      )}
+      ) : null}
     </div>
   );
 };

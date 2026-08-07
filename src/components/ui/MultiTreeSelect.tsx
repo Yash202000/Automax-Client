@@ -16,20 +16,29 @@ interface MultiTreeSelectProps {
   leafOnly?: boolean;
   colorScheme?: "primary" | "success" | "warning" | "accent";
   maxHeight?: string;
+  maxTags?: number;
   className?: string;
 }
 
-// Flatten tree to look up node names
-const findNames = (nodes: TreeNode[], ids: string[]): string[] => {
-  const names: string[] = [];
+// Parent nodes control their descendants; chips and counts represent leaves only.
+const findSelectedLeaves = (
+  nodes: TreeNode[],
+  ids: string[],
+): { id: string; name: string }[] => {
+  const selected: { id: string; name: string }[] = [];
+
   const search = (list: TreeNode[]) => {
-    list.forEach((n) => {
-      if (ids.includes(n.id)) names.push(n.name);
-      if (n.children) search(n.children);
+    list.forEach((node) => {
+      if (node.children?.length) {
+        search(node.children);
+      } else if (ids.includes(node.id)) {
+        selected.push({ id: node.id, name: node.name });
+      }
     });
   };
+
   search(nodes);
-  return names;
+  return selected;
 };
 
 export const MultiTreeSelect: React.FC<MultiTreeSelectProps> = ({
@@ -41,6 +50,7 @@ export const MultiTreeSelect: React.FC<MultiTreeSelectProps> = ({
   leafOnly = true,
   colorScheme = "primary",
   maxHeight = "240px",
+  maxTags,
   className,
 }) => {
   const { t } = useTranslation();
@@ -60,15 +70,17 @@ export const MultiTreeSelect: React.FC<MultiTreeSelectProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectedNames = findNames(data, selectedIds);
+  const selectedItems = findSelectedLeaves(data, selectedIds);
+  const selectedNames = selectedItems.map((item) => item.name);
+  const selectedCount = selectedItems.length;
   const displayText =
-    selectedIds.length === 0
+    selectedCount === 0
       ? (placeholder ?? t("common.all"))
-      : selectedIds.length === 1
+      : selectedCount === 1
         ? selectedNames[0] || t("common.selectedCount", { count: 1 })
-        : t("common.selectedCount", { count: selectedIds.length });
+        : t("common.selectedCount", { count: selectedCount });
 
-  const hasSelection = selectedIds.length > 0;
+  const hasSelection = selectedCount > 0;
 
   return (
     <div className={cn("relative", className)} ref={containerRef}>
@@ -89,16 +101,35 @@ export const MultiTreeSelect: React.FC<MultiTreeSelectProps> = ({
             "ring-2 ring-[hsl(var(--primary)/0.2)] border-[hsl(var(--primary))]",
         )}
       >
-        <span
-          className={cn(
-            "flex-1 truncate text-sm",
-            hasSelection
-              ? "text-[hsl(var(--foreground))]"
-              : "text-[hsl(var(--muted-foreground))]",
-          )}
-        >
-          {displayText}
-        </span>
+        {maxTags !== undefined && hasSelection ? (
+          <span className="flex flex-1 items-center gap-1 overflow-hidden">
+            {selectedNames.slice(0, Math.max(0, maxTags)).map((name, index) => (
+              <span
+                key={selectedItems[index].id}
+                className="max-w-32 truncate rounded-md bg-[hsl(var(--primary)/0.1)] px-2 py-0.5 text-xs font-medium text-[hsl(var(--primary))]"
+                title={name}
+              >
+                {name}
+              </span>
+            ))}
+            {selectedCount > Math.max(0, maxTags) && (
+              <span className="shrink-0 rounded-md bg-[hsl(var(--muted))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                +{selectedCount - Math.max(0, maxTags)}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "flex-1 truncate text-sm",
+              hasSelection
+                ? "text-[hsl(var(--foreground))]"
+                : "text-[hsl(var(--muted-foreground))]",
+            )}
+          >
+            {displayText}
+          </span>
+        )}
         <div className="flex items-center gap-1 ml-2">
           {hasSelection && (
             <button

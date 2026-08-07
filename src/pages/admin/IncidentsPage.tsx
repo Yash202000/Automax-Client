@@ -44,9 +44,16 @@ import {
   BulkTransitionModal,
   SMSLegends,
   IncidentFilters,
+  IncidentStatusStatsRow,
 } from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import { useAuthStore } from "@/stores/authStore";
+import {
+  useIncidentFilterStore,
+  pickSharedIncidentFilter,
+  sharedIncidentFilterKeys,
+  type SharedIncidentFilter,
+} from "@/stores/incidentFilterStore";
 import { LocationMap } from "@/components/maps";
 
 // Column configuration
@@ -143,7 +150,9 @@ export const IncidentsPage: React.FC = () => {
   } | null>(null);
 
   const canViewAllIncidents =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canTransitionIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
   const canCreateIncident =
@@ -204,21 +213,21 @@ export const IncidentsPage: React.FC = () => {
   const hasStatusFilter = !!urlStatusParam;
 
   // Redirect if user doesn't have view_all permission AND no status filter is applied
-  useEffect(() => {
-    if (!canViewAllIncidents && !hasUrlFilter) {
-      if (canTransitionIncident) {
-        navigate("/incidents/my-assigned", { replace: true });
-      } else if (canCreateIncident) {
-        navigate("/incidents/my-created", { replace: true });
-      }
-    }
-  }, [
-    canViewAllIncidents,
-    canTransitionIncident,
-    canCreateIncident,
-    hasUrlFilter,
-    navigate,
-  ]);
+  // useEffect(() => {
+  //   if (!canViewAllIncidents && !hasUrlFilter) {
+  //     if (canTransitionIncident) {
+  //       navigate("/incidents/my-assigned", { replace: true });
+  //     } else if (canCreateIncident) {
+  //       navigate("/incidents/my-created", { replace: true });
+  //     }
+  //   }
+  // }, [
+  //   canViewAllIncidents,
+  //   canTransitionIncident,
+  //   canCreateIncident,
+  //   hasUrlFilter,
+  //   navigate,
+  // ]);
 
   // Save columns to localStorage when changed
   useEffect(() => {
@@ -305,14 +314,26 @@ export const IncidentsPage: React.FC = () => {
     [allStates],
   );
 
+  // Global cross-view filtering is a VD2-specific requirement — other
+  // clients keep each incident view's filter fully independent.
+  const isVD2Client =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
+
   const filter: IncidentFilter = useMemo(() => {
+    // On VD2, any field the URL doesn't specify falls back to whatever was
+    // last set from another incident view (Assigned to me/Created by me) or
+    // the sidebar's "By Status" links, so filtering feels global across
+    // views without every navigation having to bake the whole filter into
+    // its own URL. A field present in the URL always wins outright.
+    const stored = isVD2Client
+      ? useIncidentFilterStore.getState().filter
+      : ({} as SharedIncidentFilter);
+
     const statusParam = searchParams.get("status");
 
-    let currentStateId: string | undefined = searchParams.get(
-      "current_state_id",
-    )
-      ? String(searchParams.get("current_state_id"))
-      : undefined;
+    let currentStateId: string | undefined =
+      searchParams.get("current_state_id") || stored.current_state_id;
 
     if (statusParam && uniqueStates.length) {
       const matchingState = uniqueStates.find(
@@ -323,40 +344,63 @@ export const IncidentsPage: React.FC = () => {
         currentStateId = matchingState.id;
       }
     }
+
+    const departmentIds = searchParams.getAll("department_ids");
+    const locationIds = searchParams.getAll("location_ids");
+    const classificationIds = searchParams.getAll("classification_ids");
+
     return {
       page: Number(searchParams.get("page") || 1),
       limit: Number(searchParams.get("limit") || 10),
       record_type: "incident",
-
-      search: searchParams.get("search") || undefined,
-      workflow_id: searchParams.get("workflow_id") || undefined,
+      search: searchParams.get("search") || stored.search,
+      source: searchParams.get("source") || stored.source,
+      workflow_id: searchParams.get("workflow_id") || stored.workflow_id,
       assignee_id: searchParams.get("assignee_id") || undefined,
 
       priority: searchParams.get("priority")
         ? Number(searchParams.get("priority"))
-        : undefined,
+        : stored.priority,
 
       status: searchParams.get("status") || undefined,
 
-      sla_breached:
-        searchParams.get("sla_breached") === "true"
-          ? true
-          : searchParams.get("sla_breached") === "false"
-            ? false
-            : undefined,
+      sla_breached: searchParams.has("sla_breached")
+        ? searchParams.get("sla_breached") === "true"
+        : stored.sla_breached,
 
-      department_ids: searchParams.getAll("department_ids"),
-      location_ids: searchParams.getAll("location_ids"),
-      classification_ids: searchParams.getAll("classification_ids"),
+      department_ids: departmentIds.length
+        ? departmentIds
+        : stored.department_ids,
+      location_ids: locationIds.length ? locationIds : stored.location_ids,
+      classification_ids: classificationIds.length
+        ? classificationIds
+        : stored.classification_ids,
 
       current_state_id: currentStateId,
-      transition_id: searchParams.get("transition_id") || undefined,
-      converted_to_request:
-        searchParams.get("converted_to_request") === "true" ? true : undefined,
-      start_date: searchParams.get("start_date") || undefined,
-      end_date: searchParams.get("end_date") || undefined,
+      transition_id: searchParams.get("transition_id") || stored.transition_id,
+      converted_to_request: searchParams.has("converted_to_request")
+        ? searchParams.get("converted_to_request") === "true"
+        : stored.converted_to_request,
+      start_date: searchParams.get("start_date") || stored.start_date,
+      end_date: searchParams.get("end_date") || stored.end_date,
+      reporter_phone:
+        searchParams.get("reporter_phone") || stored.reporter_phone,
+      reporter_phone_search:
+        searchParams.get("reporter_phone_search") ||
+        stored.reporter_phone_search,
+      momra_ref: searchParams.get("momra_ref") || stored.momra_ref,
     };
-  }, [searchParams, uniqueStates]);
+  }, [searchParams, uniqueStates, isVD2Client]);
+
+  const setSharedIncidentFilter = useIncidentFilterStore((s) => s.setFilter);
+
+  // Keep the shared filter store in sync so the sidebar's "By Status" counts
+  // and the Assigned-to-me/Created-by-me views reflect whatever is applied
+  // here.
+  useEffect(() => {
+    if (!isVD2Client) return;
+    setSharedIncidentFilter(pickSharedIncidentFilter(filter));
+  }, [filter, setSharedIncidentFilter, isVD2Client]);
 
   const canConvertToRequest = useMemo(() => {
     if (isSuperAdmin) return true;
@@ -372,20 +416,6 @@ export const IncidentsPage: React.FC = () => {
     );
   }, [user, workflowsData?.data, isSuperAdmin]);
 
-  const { data: statsData } = useQuery({
-    queryKey: [
-      "incidents",
-      "stats",
-      "incident",
-      canViewAllIncidents ? "all" : "assigned",
-    ],
-    queryFn: () =>
-      incidentApi.getStats(
-        "incident",
-        canViewAllIncidents ? undefined : "assigned",
-      ),
-  });
-
   // Skip the API call when search is 1-2 chars — wait for 3+ before fetching
   const isShortSearch = !!(
     filter.search &&
@@ -393,6 +423,20 @@ export const IncidentsPage: React.FC = () => {
     filter.search.length < 3
   );
   const queryFilter = isShortSearch ? { ...filter, search: undefined } : filter;
+
+  // Same params the list query uses (momra_ref resolution + my_record scoping),
+  // so the stats — and the by-status breakdown derived from them — reflect
+  // exactly what the incident list table is currently showing.
+  const statsFilter = {
+    ...queryFilter,
+    ...(canViewAllIncidents ? {} : { my_record: user?.id }),
+  };
+
+  const { data: statsData } = useQuery({
+    queryKey: ["incidents", "stats", "incident", statsFilter],
+    queryFn: () => incidentApi.getIncidentStatsV2(statsFilter),
+    enabled: !isShortSearch,
+  });
 
   const {
     data: incidentsData,
@@ -405,13 +449,13 @@ export const IncidentsPage: React.FC = () => {
       "incidents",
       {
         ...queryFilter,
-        assignee_id: canViewAllIncidents ? queryFilter.assignee_id : user?.id,
+        ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       },
     ],
     queryFn: () =>
       incidentApi.list({
         ...queryFilter,
-        assignee_id: canViewAllIncidents ? queryFilter.assignee_id : user?.id,
+        ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       }),
     enabled: !isShortSearch,
     placeholderData: keepPreviousData,
@@ -424,6 +468,16 @@ export const IncidentsPage: React.FC = () => {
   const incidents = incidentsData?.data || [];
   const totalPages = incidentsData?.total_pages ?? 1;
   const totalItems = incidentsData?.total_items ?? 0;
+
+  // Derive visible state IDs from stats sidebar for non-admin users
+  const visibleStateIds = useMemo(() => {
+    if (canViewAllIncidents || !stats?.workflow_stats) return null;
+    return new Set(
+      stats.workflow_stats.flatMap((w: any) =>
+        w.by_state_details.map((s: any) => s.id),
+      ),
+    );
+  }, [stats, canViewAllIncidents]);
 
   const handleFilterChange = (key: keyof IncidentFilter, value: any) => {
     const params = new URLSearchParams(searchParams);
@@ -446,9 +500,31 @@ export const IncidentsPage: React.FC = () => {
     params.set("page", "1");
 
     setSearchParams(params);
+
+    // Update the shared store for this exact key immediately (not via the
+    // reactive effect below, which only runs after re-render): otherwise
+    // clearing a single field here — while other filters stay applied —
+    // would read as "not specified" in the merge above and get instantly
+    // repopulated from the still-stale stored value.
+    if (
+      isVD2Client &&
+      sharedIncidentFilterKeys.includes(key as keyof SharedIncidentFilter)
+    ) {
+      const current = useIncidentFilterStore.getState().filter;
+      useIncidentFilterStore
+        .getState()
+        .setFilter({ ...current, [key]: value === "" ? undefined : value });
+    }
   };
 
   const clearFilters = () => {
+    // Clear the shared store too — otherwise the merge-from-store fallback
+    // above would immediately repopulate every field this just cleared from
+    // the URL, since a bare URL field reads as "not specified, use the
+    // store's value".
+    if (isVD2Client) {
+      useIncidentFilterStore.getState().clearFilter();
+    }
     setSearchParams({
       page: "1",
       limit: "10",
@@ -473,7 +549,11 @@ export const IncidentsPage: React.FC = () => {
     filter.converted_to_request !== undefined ||
     filter.priority !== undefined ||
     !!filter.start_date ||
-    !!filter.end_date
+    !!filter.end_date ||
+    filter.source !== undefined ||
+    !!filter.reporter_phone ||
+    !!filter.reporter_phone_search ||
+    !!filter.momra_ref
   );
 
   const getLookupValue = (incident: Incident, categoryCode: string) => {
@@ -778,6 +858,20 @@ export const IncidentsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Stats by Status — hidden once a status filter is active, since the
+          list is already narrowed to one status at that point (the filter
+          badges row above already shows/clears it). */}
+      {!filter.current_state_id && (
+        <IncidentStatusStatsRow
+          workflowStats={stats?.workflow_stats}
+          total={stats?.total || 0}
+          activeStateId={filter.current_state_id}
+          onStatusClick={(stateId) =>
+            setSearchParams({ current_state_id: stateId })
+          }
+        />
+      )}
+
       {showMap && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
           <LocationMap locations={getLocation()} height="450px" />
@@ -796,9 +890,9 @@ export const IncidentsPage: React.FC = () => {
         columns={columns}
         onToggleColumn={toggleColumn}
         onResetColumns={() => setColumns(defaultColumns)}
-        disableStateFilter={!canViewAllIncidents || hasStatusFilter}
+        disableStateFilter={hasStatusFilter}
+        visibleStateIds={visibleStateIds}
         disableSlaFilter={!canViewAllIncidents && hasUrlFilter}
-        canViewAllIncidents={canViewAllIncidents}
         hasStatusFilter={hasStatusFilter}
         searchParams={searchParams}
         setSearchParams={setSearchParams}

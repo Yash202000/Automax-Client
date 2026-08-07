@@ -233,6 +233,11 @@ const EmailPage = lazy(() =>
 const SMSPage = lazy(() =>
   import("./pages/admin/SMSPage").then((m) => ({ default: m.SMSPage })),
 );
+const CommunicationsPage = lazy(() =>
+  import("./pages/admin/CommunicationsPage").then((m) => ({
+    default: m.CommunicationsPage,
+  })),
+);
 const GoalsPage = lazy(() =>
   import("./pages/admin/GoalsPage").then((m) => ({ default: m.GoalsPage })),
 );
@@ -291,7 +296,103 @@ const QualityAuditPage = lazy(() => import("./pages/admin/QualityAuditPage"));
 const TemplatesPage = lazy(
   () => import("./pages/admin/templates/TemplatesPage"),
 );
+const KpiDashboardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDashboardPage").then((m) => ({
+    default: m.KpiDashboardPage,
+  })),
+);
+const KpiMasterDataPage = lazy(() =>
+  import("./pages/admin/kpi/KpiMasterDataPage").then((m) => ({
+    default: m.KpiMasterDataPage,
+  })),
+);
+const KpiDictionaryPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
+    default: m.KpiDictionaryPage,
+  })),
+);
+const KpiDictionaryDetailPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryDetailPage").then((m) => ({
+    default: m.KpiDictionaryDetailPage,
+  })),
+);
+const KpiDictionaryFormPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryFormPage").then((m) => ({
+    default: m.KpiDictionaryFormPage,
+  })),
+);
+const KpiDictionaryFormOperationalPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryFormOperationalPage").then((m) => ({
+    default: m.KpiDictionaryFormOperationalPage,
+  })),
+);
+const KpiDictionaryFormAwardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryFormAwardPage").then((m) => ({
+    default: m.KpiDictionaryFormAwardPage,
+  })),
+);
+const KpiCardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiCardPage").then((m) => ({
+    default: m.KpiCardPage,
+  })),
+);
+const KpiSingleDashboardPage = lazy(() =>
+  import("./pages/admin/kpi/KpiSingleDashboardPage").then((m) => ({
+    default: m.KpiSingleDashboardPage,
+  })),
+);
+const KpiPerformancePage = lazy(() =>
+  import("./pages/admin/kpi/KpiPerformancePage").then((m) => ({
+    default: m.KpiPerformancePage,
+  })),
+);
+const KpiPerformanceDetailPage = lazy(() =>
+  import("./pages/admin/kpi/KpiPerformanceDetailPage").then((m) => ({
+    default: m.KpiPerformanceDetailPage,
+  })),
+);
 
+const KpiTargetsPage = lazy(() =>
+  import("./pages/admin/kpi/KpiTargetsPage").then((m) => ({
+    default: m.KpiTargetsPage,
+  })),
+);
+
+const KpiBenchmarkPage = lazy(() =>
+  import("./pages/admin/kpi/KpiBenchmarkPage").then((m) => ({
+    default: m.KpiBenchmarkPage,
+  })),
+);
+
+const KpiSegmentationPage = lazy(() =>
+  import("./pages/admin/kpi/KpiSegmentationPage").then((m) => ({
+    default: m.KpiSegmentationPage,
+  })),
+);
+
+const KpiReportPage = lazy(() =>
+  import("./pages/admin/kpi/KpiReportPage").then((m) => ({
+    default: m.KpiReportPage,
+  })),
+);
+
+const KpiPerformanceBandsPage = lazy(() =>
+  import("./pages/admin/kpi/KpiPerformanceBandsPage").then((m) => ({
+    default: m.KpiPerformanceBandsPage,
+  })),
+);
+
+const KpiEntriesPage = lazy(() =>
+  import("./pages/admin/kpi/KpiEntriesPage").then((m) => ({
+    default: m.KpiEntriesPage,
+  })),
+);
+
+const KpiApprovalsPage = lazy(() =>
+  import("./pages/admin/kpi/KpiApprovalsPage").then((m) => ({
+    default: m.KpiApprovalsPage,
+  })),
+);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -310,6 +411,10 @@ function RouteFallback() {
 }
 
 function App() {
+  const enableSignup =
+    (window.APP_CONFIG?.ENABLE_SIGNUP ?? import.meta.env.VITE_ENABLE_SIGNUP) !==
+    "false";
+
   return (
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>
@@ -328,7 +433,16 @@ function App() {
                   {/* Auth routes */}
                   <Route element={<AuthLayout />}>
                     <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
+                    <Route
+                      path="/register"
+                      element={
+                        enableSignup ? (
+                          <RegisterPage />
+                        ) : (
+                          <Navigate to="/login" replace />
+                        )
+                      }
+                    />
                     <Route
                       path="/forgot-password"
                       element={<ForgotPasswordPage />}
@@ -354,7 +468,16 @@ function App() {
                   {/* Admin routes */}
                   <Route element={<AdminProtectedRoute />}>
                     <Route element={<AdminLayout />}>
-                      <Route path="/admin" element={<AdminDashboard />} />
+                      {/* Admin dashboard - requires dashboard:admin permission */}
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.DASHBOARD_ADMIN]}
+                          />
+                        }
+                      >
+                        <Route path="/admin" element={<AdminDashboard />} />
+                      </Route>
                       {/* User management - requires users:view permission */}
                       <Route
                         element={
@@ -824,6 +947,20 @@ function App() {
                         element={<CallHistory />}
                       />
                       <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
+                              PERMISSIONS.COMMUNICATION_TRACK_VIEW,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/communications"
+                          element={<CommunicationsPage />}
+                        />
+                      </Route>
+                      <Route
                         path="/call-centre/email"
                         element={<EmailPage />}
                       />
@@ -848,6 +985,10 @@ function App() {
                       <Route
                         path="/call-centre/history"
                         element={<CallHistory />}
+                      />
+                      <Route
+                        path="/call-centre/communications"
+                        element={<CommunicationsPage />}
                       />
                       <Route
                         path="/call-centre/email"
@@ -919,6 +1060,165 @@ function App() {
                         <Route
                           path="/goals/:id/edit"
                           element={<GoalEditPage />}
+                        />
+                      </Route>
+
+                      {/* KPI routes — gated per the actual backend permission each
+                          page's underlying list endpoint requires, not one blanket
+                          Goals permission. Write actions are gated inside each page. */}
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.KPI_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi"
+                          element={<KpiDashboardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary"
+                          element={<KpiDictionaryPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id"
+                          element={<KpiDictionaryDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id/card"
+                          element={<KpiCardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/:type/:id/dashboard"
+                          element={<KpiSingleDashboardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/report"
+                          element={<KpiReportPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/performance-bands"
+                          element={<KpiPerformanceBandsPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/entries"
+                          element={<KpiEntriesPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.KPI_CREATE]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/dictionary/new"
+                          element={<KpiDictionaryFormPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/new/operational"
+                          element={<KpiDictionaryFormOperationalPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/new/award"
+                          element={<KpiDictionaryFormAwardPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.KPI_UPDATE]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/dictionary/:id/edit"
+                          element={<KpiDictionaryFormPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/operational/:id/edit"
+                          element={<KpiDictionaryFormOperationalPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/award/:id/edit"
+                          element={<KpiDictionaryFormAwardPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.GOALS_MANAGE]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/master-data"
+                          element={<KpiMasterDataPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.PERF_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/performance"
+                          element={<KpiPerformancePage />}
+                        />
+                        <Route
+                          path="/goals/kpi/performance/:id"
+                          element={<KpiPerformanceDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/approvals"
+                          element={<KpiApprovalsPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.TARGETS_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/targets"
+                          element={<KpiTargetsPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.BENCHMARK_MANAGE]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/benchmarks"
+                          element={<KpiBenchmarkPage />}
+                        />
+                      </Route>
+
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.SEGMENT_MANAGE]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/goals/kpi/segmentation"
+                          element={<KpiSegmentationPage />}
                         />
                       </Route>
                     </Route>

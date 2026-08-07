@@ -5,7 +5,6 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  Phone,
   Shield,
   FileText,
   RefreshCw,
@@ -19,10 +18,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui";
 import { incidentApi } from "../../api/admin";
 import type { IncidentRevisionActionType } from "../../types";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useAppSelector } from "../../hooks/redux";
 import RenderWithIncidentMentions from "../common/RenderWithIncidentMentions";
+import CallablePhone from "../common/CallablePhone";
 
 interface RevisionHistoryProps {
   incidentId: string;
@@ -121,11 +121,21 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
       Mobile: rev.performed_by_phone || rev.performed_by?.phone || "",
     }));
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Revisions");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Revisions");
 
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const headers = Object.keys(rows[0] ?? {});
+    worksheet.columns = headers.map((head) => ({
+      head,
+      key: head,
+    }));
+
+    rows.forEach((row) => {
+      worksheet.addRow(row);
+    });
+
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+
     const blob = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
@@ -355,11 +365,13 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     <td className="px-4 py-3">
                       {revision.performed_by_phone ||
                       revision.performed_by?.phone ? (
-                        <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
-                          <Phone className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                          {revision.performed_by_phone ||
-                            revision.performed_by?.phone}
-                        </div>
+                        <CallablePhone
+                          number={
+                            revision.performed_by_phone ||
+                            revision.performed_by?.phone
+                          }
+                          className="text-sm"
+                        />
                       ) : (
                         <span className="text-sm text-[hsl(var(--muted-foreground))]">
                           -

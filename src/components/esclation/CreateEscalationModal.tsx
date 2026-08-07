@@ -470,6 +470,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
                 <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   <User className="w-4 h-4" />
                   {t("escalation.usersDirectly", "Or select users directly")}
+                  <span className="text-red-500">*</span>
                 </h4>
 
                 <MultiSelect

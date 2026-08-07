@@ -38,6 +38,12 @@ export interface User {
   call_status?: string;
   last_login_at: string | null;
   created_at: string;
+  dept_manager_department_id?: string | null;
+  dept_manager_department?: Department;
+  dept_manager_classification_id?: string | null;
+  dept_manager_classification?: Classification;
+  dept_manager_location_id?: string | null;
+  dept_manager_location?: Location;
 }
 
 export interface Permission {
@@ -58,6 +64,7 @@ export interface Role {
   description: string;
   is_system: boolean;
   is_active: boolean;
+  is_department_manager: boolean;
   permissions: Permission[];
   created_at: string;
 }
@@ -125,6 +132,8 @@ export interface Department {
   level: number;
   path: string;
   manager_id: string | null;
+  supervisor_id: string | null;
+  supervisor?: User;
   is_active: boolean;
   sort_order: number;
   children?: Department[];
@@ -321,6 +330,7 @@ export interface RoleBasic {
   code: string;
   is_system: boolean;
   is_active: boolean;
+  is_department_manager: boolean;
 }
 
 /** Slim user returned by POST /auth/login. Call GET /users/me for the full object. */
@@ -421,6 +431,16 @@ export interface UpdateProfileRequest {
   mobile_verified?: boolean;
 }
 
+export interface ManagerScopeResponse {
+  is_department_manager: boolean;
+  department_id?: string;
+  department?: Department;
+  classification_id?: string;
+  classification?: Classification;
+  location_id?: string;
+  location?: Location;
+}
+
 export interface ChangePasswordRequest {
   old_password: string;
   new_password: string;
@@ -500,6 +520,7 @@ export interface DepartmentCreateRequest {
   type?: "internal" | "external";
   parent_id?: string;
   manager_id?: string;
+  supervisor_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
   role_ids?: string[];
@@ -512,6 +533,7 @@ export interface DepartmentUpdateRequest {
   description?: string;
   type?: "internal" | "external";
   manager_id?: string;
+  supervisor_id?: string;
   location_ids?: string[];
   classification_ids?: string[];
   role_ids?: string[];
@@ -653,106 +675,6 @@ export interface TransitionEmailConfig {
   include_comments: boolean;
 }
 
-// Incident Source types
-export type IncidentSource =
-  | "web"
-  | "mobile"
-  | "email"
-  | "phone"
-  | "ivr"
-  | "sms-link"
-  | "walk_in"
-  | "api"
-  | "social_media"
-  | "940_system"
-  | "940_manual"
-  | "field"
-  | "manual"
-  | "viusional"
-  | "other";
-
-export const INCIDENT_SOURCES: {
-  value: IncidentSource;
-  label: string;
-  label_ar: string;
-}[] = [
-  {
-    value: "web",
-    label: "Web Portal",
-    label_ar: "بوابة الويب",
-  },
-  {
-    value: "mobile",
-    label: "Mobile App",
-    label_ar: "تطبيق الهاتف المحمول",
-  },
-  {
-    value: "email",
-    label: "Email",
-    label_ar: "البريد الإلكتروني",
-  },
-  {
-    value: "phone",
-    label: "Phone",
-    label_ar: "الهاتف",
-  },
-  {
-    value: "ivr",
-    label: "IVR",
-    label_ar: "نظام الرد الصوتي التفاعلي",
-  },
-  {
-    value: "sms-link",
-    label: "SMS Link",
-    label_ar: "رابط الرسائل النصية",
-  },
-  {
-    value: "walk_in",
-    label: "Walk-in",
-    label_ar: "زيارة مباشرة",
-  },
-  {
-    value: "api",
-    label: "API Integration",
-    label_ar: "تكامل واجهة برمجة التطبيقات",
-  },
-  {
-    value: "social_media",
-    label: "Social Media",
-    label_ar: "وسائل التواصل الاجتماعي",
-  },
-  {
-    value: "940_system",
-    label: "940 System",
-    label_ar: "نظام 940",
-  },
-  {
-    value: "940_manual",
-    label: "940 Manual",
-    label_ar: "940 يدوي",
-  },
-  {
-    value: "field",
-    label: "Field",
-    label_ar: "ميداني",
-  },
-  {
-    value: "manual",
-    label: "Manual Entry",
-    label_ar: "إدخال يدوي",
-  },
-  {
-    value: "viusional",
-    label: "Viusional",
-    label_ar: "فيوجنال",
-  },
-  {
-    value: "other",
-    label: "Other",
-    label_ar: "أخرى",
-  },
-];
-
 // Workflow matching API request/response
 export interface WorkflowMatchRequest {
   classification_id?: string;
@@ -777,7 +699,7 @@ export interface WorkflowMatchResponse {
 export interface WorkflowMatchConfig {
   classification_ids?: string[];
   location_ids?: string[];
-  sources?: IncidentSource[];
+  sources?: string[];
   priority_min?: number;
   priority_max?: number;
 }
@@ -825,7 +747,7 @@ export interface Workflow {
   convert_to_request_roles?: Role[];
   merge_allowed_roles?: Role[];
   locations?: Location[];
-  sources?: IncidentSource[];
+  sources?: string[];
   priorities?: number[];
   match_config?: WorkflowMatchConfig;
   states_count: number;
@@ -930,6 +852,7 @@ export interface TransitionRequirement {
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
+  is_multiple?: boolean;
   error_message?: string;
 }
 
@@ -967,13 +890,12 @@ export interface TransitionFieldChangeRequest {
 export interface WorkflowCreateRequest {
   name: string;
   name_ar?: string;
-  code: string;
   description?: string;
   description_ar?: string;
   record_type?: ClassificationType;
   classification_ids?: string[];
   location_ids?: string[];
-  sources?: IncidentSource[];
+  sources?: string[];
   priorities?: number[];
   required_fields?: IncidentFormField[];
 }
@@ -992,12 +914,24 @@ export interface WorkflowUpdateRequest {
   convert_to_request_role_ids?: string[];
   merge_allowed_role_ids?: string[];
   location_ids?: string[];
-  sources?: IncidentSource[];
+  sources?: string[];
   priorities?: number[];
   required_fields?: IncidentFormField[];
   optional_fields?: IncidentFormField[];
 }
-
+export interface WorkflowFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  record_type?: ClassificationType;
+  created_by?: string;
+  created_from?: string;
+  created_to?: string;
+  modified_from?: string;
+  modified_to?: string;
+  active_only?: boolean;
+}
 export interface WorkflowStateCreateRequest {
   name: string;
   name_ar?: string;
@@ -1117,6 +1051,7 @@ export interface TransitionRequirementRequest {
   field_name?: string;
   field_value?: string;
   is_mandatory: boolean;
+  is_multiple?: boolean;
   error_message?: string;
 }
 
@@ -1170,7 +1105,7 @@ export interface Incident {
   workflow?: Workflow;
   current_state?: WorkflowState;
   lookup_values?: LookupValue[];
-  source?: IncidentSource;
+  source?: string;
   assignee?: User;
   assignees?: User[];
   department?: Department;
@@ -1358,6 +1293,7 @@ export interface StateStatDetail {
   name: string;
   count: number;
   state_type?: string;
+  name_ar?: string;
 }
 
 export interface WorkflowStats {
@@ -1385,7 +1321,7 @@ export interface IncidentCreateRequest {
   description?: string;
   classification_id?: string;
   workflow_id?: string; // Now optional - can be auto-matched
-  source?: IncidentSource;
+  source?: string;
   assignee_id?: string;
   department_id?: string;
   location_id?: string;
@@ -1498,6 +1434,7 @@ export interface IncidentFilter {
   priority?: number;
   assignee_id?: string;
   department_ids?: string[];
+  my_record?: string;
   location_ids?: string[];
   reporter_id?: string;
   sla_breached?: boolean;
@@ -1511,6 +1448,9 @@ export interface IncidentFilter {
   limit?: number;
   transition_id?: string;
   reporter_phone?: string;
+  reporter_phone_search?: string;
+  momra_ref?: string;
+  current_state_code?: string;
 }
 
 // Convert Incident to Request types
@@ -1564,7 +1504,7 @@ export interface CreateComplaintRequest {
   classification_id: string;
   workflow_id: string;
   source_incident_id?: string;
-  source?: IncidentSource;
+  source?: string;
   channel?: string;
   reporter_id?: string; // Link to user who reported/created the complaint
   department_id?: string;
@@ -1588,7 +1528,7 @@ export interface CreateQueryRequest {
   classification_id: string;
   workflow_id: string;
   source_incident_id?: string;
-  source?: IncidentSource;
+  source?: string;
   channel?: string;
   department_id?: string;
   assignee_id?: string;
@@ -1611,7 +1551,7 @@ export interface CreateRequestRequest {
   classification_id: string;
   workflow_id: string;
   source_incident_id?: string;
-  source?: IncidentSource;
+  source?: string;
   channel?: string;
   department_id?: string;
   assignee_id?: string;
@@ -1696,7 +1636,7 @@ export interface ReportFieldDefinition {
   sortable: boolean;
   filterable: boolean;
   defaultSelected?: boolean;
-  options?: { value: string | number; label: string }[];
+  options?: ReportFieldOption[];
   relationField?: string;
   description?: string;
   dynamicOptions?: "departments" | "locations" | "classifications" | any; // For hierarchical dropdowns
@@ -1704,6 +1644,12 @@ export interface ReportFieldDefinition {
   multiselect?: boolean;
   hidden?: boolean;
   isUrl?: boolean;
+}
+
+export interface ReportFieldOption {
+  value: string | number;
+  label: string;
+  children?: ReportFieldOption[];
 }
 
 // Data Source Definition
@@ -1867,6 +1813,7 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
+  sms_max_length: number;
   updated_at: string;
 }
 
@@ -2030,6 +1977,25 @@ export interface SMSFilter {
   direction?: string;
   is_read?: boolean;
   received_by?: string;
+}
+
+export interface NotificationFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  channel?: string;
+  sent_by?: string;
+  is_starred?: boolean;
+  category?: string;
+  direction?: string;
+  is_read?: boolean;
+  is_draft?: boolean;
+  received_by?: string;
+  deleted_at?: string | null;
+  recipient?: string;
 }
 
 // Incident Merge Types

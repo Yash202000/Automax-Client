@@ -11,11 +11,27 @@ import {
   ChevronLeft,
   ChevronRight,
   User as UserIcon,
+  Crown,
+  X,
+  Filter,
+  Shield,
+  Check,
 } from "lucide-react";
-import { Button } from "../../../components/ui";
-import { userApi } from "../../../api/admin";
+import {
+  Button,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  ModalTitle,
+} from "../../../components/ui";
+import { roleApi, userApi } from "../../../api/admin";
 import type { User } from "../../../types";
 import { cn } from "@/lib/utils";
+import CallablePhone from "@/components/common/CallablePhone";
+import { CallHistory } from "./CallHistory";
+import usePermissions from "@/hooks/usePermissions";
+import { useDebounce } from "@/hooks/useDebounce";
+import { PERMISSIONS } from "@/constants/permissions";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -28,21 +44,46 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const limit = 10;
+  const [openCallLogs, setOpenCallLogs] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<any>();
+  const { hasPermission } = usePermissions();
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
+
+  const viewAllCallLogs = hasPermission(PERMISSIONS.VIEW_ALL_CALL_LOGS);
+
+  const debouncedSearch = useDebounce(search, 600);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "users", page, limit],
-    queryFn: () => userApi.list(page, limit),
+    queryKey: ["admin", "users", page, limit, debouncedSearch, filterRoleIds],
+    queryFn: () => userApi.list(page, limit, debouncedSearch, filterRoleIds),
   });
 
-  const filteredUsers = data?.data?.filter(
-    (user: User) =>
-      user.username.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const { data: rolesData } = useQuery({
+    queryKey: ["admin", "roles"],
+    queryFn: () => roleApi.list(),
+  });
+
+  const filteredUsers = data?.data;
 
   const totalPages = data?.total_pages ?? 1;
+
+  const toggleRoleId = async (id: string) => {
+    const wasSelected = filterRoleIds.includes(id);
+    const newIds = wasSelected
+      ? filterRoleIds.filter((x) => x !== id)
+      : [...filterRoleIds, id];
+    setFilterRoleIds(newIds);
+    setPage(1);
+  };
+
+  const activeFilterCount = filterRoleIds.length;
+
+  const clearAllFilters = () => {
+    setFilterRoleIds([]);
+
+    setPage(1);
+  };
 
   const getUserStatus = (userId: string) => {
     const lastChar = userId.charCodeAt(userId.length - 1);
@@ -86,20 +127,48 @@ export const ContactsList: React.FC<ContactsListProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Filters Bar */}
-      <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm">
+        <div className="p-4 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute start-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
             <input
               type="text"
-              placeholder={t("users.searchPlaceholder")}
+              placeholder={t("callCentre.searchPlaceholder")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full ps-12 pe-4 py-3 bg-slate-50 dark:bg-background border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
             />
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsFilterOpen((v) => !v)}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all",
+                isFilterOpen || activeFilterCount > 0
+                  ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary)/0.3)] text-[hsl(var(--primary))]"
+                  : "bg-transparent border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]",
+              )}
+            >
+              <Filter className="w-4 h-4" />
+              {t("common.filter")}
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 text-xs font-bold bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] rounded-lg border border-transparent transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+                {t("common.clear")}
+              </button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -113,6 +182,63 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             </Button>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {isFilterOpen && (
+          <div className="border-t border-[hsl(var(--border))] p-5 space-y-5">
+            {/* Roles — flat chips */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" /> {t("users.roles")}
+                  {filterRoleIds.length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded">
+                      {filterRoleIds.length}
+                    </span>
+                  )}
+                </p>
+                {filterRoleIds.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setFilterRoleIds([]);
+                      setPage(1);
+                    }}
+                    className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                  >
+                    {t("common.clear")}
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rolesData?.data?.map((role: any) => (
+                  <button
+                    key={role.id}
+                    onClick={() => toggleRoleId(role.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                      filterRoleIds.includes(role.id)
+                        ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)]"
+                        : "bg-[hsl(var(--muted)/0.5)] text-[hsl(var(--foreground))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]",
+                    )}
+                  >
+                    {filterRoleIds.includes(role.id) && (
+                      <Check className="inline w-3 h-3 mr-1" />
+                    )}
+                    {role.is_department_manager && (
+                      <Crown className="inline w-3 h-3 mr-1 text-indigo-500" />
+                    )}
+                    {role.name}
+                  </button>
+                ))}
+                {!rolesData?.data?.length && (
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {t("users.noRolesAvailable")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}
@@ -201,11 +327,30 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                               />
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold ">
+                          <div
+                            onClick={() => {
+                              if (!viewAllCallLogs) return;
+
+                              setOpenCallLogs(true);
+                              setSelectedUser(user);
+                            }}
+                          >
+                            <p
+                              className={`text-sm font-semibold ${
+                                viewAllCallLogs
+                                  ? "cursor-pointer hover:underline hover:text-primary"
+                                  : ""
+                              }`}
+                            >
                               {user.first_name} {user.last_name}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p
+                              className={`text-sm text-slate-500 ${
+                                viewAllCallLogs
+                                  ? "cursor-pointer hover:underline hover:text-primary"
+                                  : ""
+                              }`}
+                            >
                               @{user.username}
                             </p>
                           </div>
@@ -213,12 +358,10 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                       </td>
                       <td className="px-6 py-4">
                         {user.phone ? (
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-slate-400" />
-                            <span className="text-sm text-slate-700 font-medium">
-                              {user.phone}
-                            </span>
-                          </div>
+                          <CallablePhone
+                            number={user.phone}
+                            className="text-sm font-medium"
+                          />
                         ) : (
                           <span className="text-sm text-slate-400 italic">
                             {t("users.noPhone")}
@@ -230,7 +373,11 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                           {(user as any).extension ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-primary/10 text-primary rounded-lg border border-violet-200">
                               <Phone className="w-3 h-3" />
-                              Ext. {(user as any).extension}
+                              Ext.{" "}
+                              <CallablePhone
+                                number={(user as any).extension}
+                                showIcon={false}
+                              />
                             </span>
                           ) : (
                             <span className="text-sm text-slate-400">—</span>
@@ -424,6 +571,24 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           </>
         )}
       </div>
+      <Modal
+        size="4xl"
+        isOpen={openCallLogs}
+        onOpenChange={setOpenCallLogs}
+        onClose={() => setOpenCallLogs(false)}
+      >
+        <ModalHeader>
+          <ModalTitle>
+            Call History of{" "}
+            {[selectedUser?.first_name, selectedUser?.last_name]
+              .filter(Boolean)
+              .join(" ") || selectedUser?.username}
+          </ModalTitle>
+        </ModalHeader>
+        <ModalBody className="max-h-[70vh]">
+          <CallHistory userId={selectedUser?.id} />
+        </ModalBody>
+      </Modal>
     </div>
   );
 };

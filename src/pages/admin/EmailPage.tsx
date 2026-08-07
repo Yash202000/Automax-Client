@@ -26,6 +26,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui";
 import { EmailChipInput } from "@/components/ui/EmailChipInput";
 import { ConfirmationModal } from "../../components/common/ConfirmationModal";
+import DOMPurify from "dompurify";
 
 type Folder = "inbox" | "sent" | "drafts" | "trash";
 
@@ -510,8 +511,8 @@ export const EmailPage: React.FC = () => {
               setIsNewEmail(true);
             }}
             className="w-full"
+            leftIcon={<Plus className="w-5 h-5" />}
           >
-            <Plus className="w-5 h-5" />
             <span>{t("email.compose")}</span>
           </Button>
         </div>
@@ -583,7 +584,7 @@ export const EmailPage: React.FC = () => {
             />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-background">
           {isLoading ? (
             <div className="flex justify-center p-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -593,7 +594,7 @@ export const EmailPage: React.FC = () => {
               <p>{t("email.noEmailsFound")}</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 ">
               {emails.map((email: Email) => (
                 <div
                   key={email.id}
@@ -604,7 +605,7 @@ export const EmailPage: React.FC = () => {
                       getEmailById(email.id);
                     }
                   }}
-                  className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors ${selectedEmail?.id === email.id ? "bg-violet-50 hover:bg-violet-50" : ""} ${!email.is_read ? "bg-slate-50" : ""}`}
+                  className={`p-4 cursor-pointer m-2 border border-border rounded-lg hover:bg-slate-50  transition-colors bg-card ${selectedEmail?.id === email.id ? "bg-white  hover:bg-violet-50" : ""} ${!email.is_read ? "bg-slate-50" : ""}`}
                 >
                   <div className="flex items-start justify-between mb-1">
                     <h3
@@ -634,7 +635,7 @@ export const EmailPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0 flex-1">
                       <p
                         className={`text-sm mb-1 truncate ${!email.is_read ? "text-slate-900 font-medium" : "text-slate-600"}`}
@@ -645,6 +646,21 @@ export const EmailPage: React.FC = () => {
                         {stripHtml(email.body)}
                       </p>
                     </div>
+
+                    {currentFolder === "drafts" && (
+                      <button
+                        onClick={(e) => deleteEmail(e, email.id)}
+                        className="ml-2 p-1 hover:bg-red-50 rounded-full text-slate-300 hover:text-red-500 transition-colors"
+                        title={t("email.deleteDraft")}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="bg-primary text-white px-2 py-0.5 rounded-md mt-2 text-xs uppercase font-medium">
+                      {email.status}
+                    </span>
                     {currentFolder !== "drafts" && (
                       <div className="ml-2 flex flex-col gap-2">
                         <button
@@ -654,15 +670,6 @@ export const EmailPage: React.FC = () => {
                           <Star className="w-4 h-4 fill-current" />
                         </button>
                       </div>
-                    )}
-                    {currentFolder === "drafts" && (
-                      <button
-                        onClick={(e) => deleteEmail(e, email.id)}
-                        className="ml-2 p-1 hover:bg-red-50 rounded-full text-slate-300 hover:text-red-500 transition-colors"
-                        title={t("email.deleteDraft")}
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
                     )}
                   </div>
                 </div>
@@ -679,7 +686,7 @@ export const EmailPage: React.FC = () => {
         {selectedEmail ? (
           <>
             {/* Header */}
-            <div className="p-6 border-b border-border flex items-start justify-between bg-white">
+            <div className="p-6 border-b border-border flex items-start justify-between bg-background">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-4 mb-4">
                   <button
@@ -688,7 +695,7 @@ export const EmailPage: React.FC = () => {
                   >
                     <X className="w-5 h-5 text-slate-500" />
                   </button>
-                  <h2 className="text-xl font-bold text-slate-900 truncate">
+                  <h2 className="text-xl font-bold  truncate">
                     {selectedEmail.subject}
                   </h2>
                   <div className="flex items-center gap-1">
@@ -699,12 +706,12 @@ export const EmailPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-primary font-bold">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                       {getSender(selectedEmail).charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-900">
+                        <span className="font-semibold ">
                           {getSender(selectedEmail)}
                         </span>
                       </div>
@@ -753,9 +760,11 @@ export const EmailPage: React.FC = () => {
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
               <div
-                className="prose max-w-none text-slate-800"
+                className="prose max-w-none  border border-border p-4 rounded-lg"
                 dangerouslySetInnerHTML={{
-                  __html: selectedEmail.body_html || selectedEmail.body,
+                  __html: DOMPurify.sanitize(
+                    selectedEmail.body_html || selectedEmail.body || "",
+                  ),
                 }}
               />
 

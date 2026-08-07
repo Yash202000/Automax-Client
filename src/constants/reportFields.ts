@@ -1,9 +1,7 @@
-import i18n from "@/i18n";
 import {
   type DataSourceDefinition,
   type ReportFieldDefinition,
   type FilterOperator,
-  INCIDENT_SOURCES,
 } from "../types";
 
 // Filter operators by field type
@@ -63,12 +61,6 @@ export const FILTER_OPERATORS_BY_TYPE: Record<
     { value: "is_not_empty", label: "Is not empty" },
   ],
 };
-
-const sourceOptions = INCIDENT_SOURCES.map((source) => ({
-  value: source.value,
-  label:
-    i18n.language === "ar" && source.label_ar ? source.label_ar : source.label,
-}));
 
 // Incidents Data Source Fields
 export const incidentFields: ReportFieldDefinition[] = [
@@ -315,8 +307,8 @@ export const incidentFields: ReportFieldDefinition[] = [
   },
   {
     field: "reporter_id",
-    label: "Reporter",
-    label_ar: "المبلّغ",
+    label: "Creator",
+    label_ar: "المبدع",
     type: "enum",
     category: "Core",
     sortable: true,
@@ -556,7 +548,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: sourceOptions,
+    dynamicOptions: "sources",
   },
   {
     field: "created_by_id",
@@ -653,7 +645,7 @@ export const incidentFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: sourceOptions,
+    dynamicOptions: "sources",
   },
   {
     field: "version",
@@ -1077,46 +1069,6 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: false,
   },
   {
-    field: "before_attachments",
-    label: "Before Attachments",
-    label_ar: "المرفقات قبل التنفيذ",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-    isUrl: true,
-  },
-  {
-    field: "before_attachment_array",
-    label: "Before Attachment Array",
-    label_ar: "مصفوفة المرفقات قبل التنفيذ",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-    isUrl: true,
-  },
-  {
-    field: "after_attachments",
-    label: "After Attachments",
-    label_ar: "المرفقات بعد التنفيذ",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-    isUrl: true,
-  },
-  {
-    field: "after_attachment_array",
-    label: "After Attachment Array",
-    label_ar: "مصفوفة المرفقات بعد التنفيذ",
-    type: "string",
-    category: "Core",
-    sortable: false,
-    filterable: false,
-    isUrl: true,
-  },
-  {
     field: "attachments",
     label: "Attachments",
     label_ar: "المرفقات",
@@ -1222,6 +1174,111 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: false,
     isUrl: true,
   },
+  {
+    field: "first_response_at",
+    label: "First Response At",
+    label_ar: "وقت أول استجابة",
+    type: "datetime",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_response_action",
+    label: "First Response Action",
+    label_ar: "إجراء أول استجابة",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_response_description",
+    label: "First Response Description",
+    label_ar: "وصف أول استجابة",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_responder_id",
+    label: "First Responder",
+    label_ar: "أول مستجيب",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+    dynamicOptions: "users",
+  },
+  {
+    field: "first_response_minutes",
+    label: "First Response Minutes",
+    label_ar: "دقائق أول استجابة",
+    type: "number",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_response_at",
+    label: "First Response At",
+    label_ar: "وقت أول استجابة",
+    type: "datetime",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_response_action",
+    label: "First Response Action",
+    label_ar: "إجراء أول استجابة",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_response_description",
+    label: "First Response Description",
+    label_ar: "وصف أول استجابة",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_responder_id",
+    label: "First Responder",
+    label_ar: "أول مستجيب",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+    dynamicOptions: "users",
+  },
+
+  {
+    field: "first_responder_name",
+    label: "First Responder Name",
+    label_ar: "أول مستجيب",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+    dynamicOptions: "users",
+    relationField: "name",
+  },
+
+  {
+    field: "first_response_minutes",
+    label: "First Response Minutes",
+    label_ar: "دقائق أول استجابة",
+    type: "number",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
 ];
 
 export const requestFields: ReportFieldDefinition[] = [
@@ -1244,7 +1301,7 @@ export const requestFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: sourceOptions,
+    dynamicOptions: "sources",
   },
   {
     field: "status_id",
@@ -2076,7 +2133,7 @@ export const locationFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: sourceOptions,
+    dynamicOptions: "sources",
   },
   {
     field: "parent_location_name",
@@ -2257,7 +2314,7 @@ export const classificationFields: ReportFieldDefinition[] = [
     sortable: true,
     filterable: true,
     multiselect: true,
-    options: sourceOptions,
+    dynamicOptions: "sources",
   },
   {
     field: "status_name",

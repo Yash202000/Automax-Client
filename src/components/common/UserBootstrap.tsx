@@ -7,6 +7,10 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import usePermissions from "@/hooks/usePermissions";
 import { useUserStatusWebSocket } from "../../lib/services/userStatusWebSocket";
+import { CintrixCtiHost } from "@/components/cti/CintrixCtiHost";
+import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
+import { SessionTimeoutModal } from "@/components/common/SessionTimeoutModal";
+import { useGlobalWebSocket } from "@/hooks/useGlobalWebSocket";
 
 export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -21,17 +25,32 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const setIsOpen = useSoftphoneStore((s) => s.setIsOpen);
   const { isSuperAdmin, hasAnyPermission } = usePermissions();
 
+  useGlobalWebSocket();
+
   const canViewSoftphone = isSuperAdmin || hasAnyPermission(["dashboard:ccm"]);
 
   // Keep a live broadcast connection so agent availability (call_status) shown
   // in assignee dropdowns updates in real time. No-ops until a token exists.
   useUserStatusWebSocket();
 
+  // When Cintrix is the CTI provider, the native SoftPhone must not mount at
+  // all: its auto-connect effect registers the native JsSIP stack whenever
+  // the persisted `shouldConnect` is true, giving previously-connected agents
+  // a second SIP registration (double ringtone, native panel popping over the
+  // widget) alongside CintrixCtiHost. Plain flag (not an early return) so all
+  // hooks above/below still run unconditionally.
+  const isCintrixCti =
+    (window.APP_CONFIG?.CTI_PROVIDER ?? import.meta.env.VITE_CTI_PROVIDER) ===
+    "cintrix";
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchUsers());
     }
   }, [isAuthenticated, dispatch]);
+
+  const { showWarning, remainingSeconds, totalWarningSeconds, stayLoggedIn } =
+    useInactivityTimeout();
 
   // Memoize the settings/auth object props so SoftPhone's effects don't
   // re-fire on every UserBootstrap render. Without this, fresh object
@@ -40,8 +59,7 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   const softphoneSettings = useMemo(
     () => ({
       domain: settings?.sip_domain || "zkff.automaxsw.com",
-      socketURL:
-        settings?.sip_socket_url || "wss://zkff.automaxsw.com:7443",
+      socketURL: settings?.sip_socket_url || "wss://zkff.automaxsw.com:7443",
     }),
     [settings?.sip_domain, settings?.sip_socket_url],
   );
@@ -59,7 +77,7 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
   return (
     <>
       {children}
-      {isAuthenticated && canViewSoftphone && (
+      {isAuthenticated && canViewSoftphone && !isCintrixCti && (
         <SoftPhone
           showSip={isOpen}
           onClose={() => setIsOpen(false)}
@@ -67,6 +85,15 @@ export const UserBootstrap: React.FC<{ children: React.ReactNode }> = ({
           auth={softphoneAuth}
         />
       )}
+      {isAuthenticated && canViewSoftphone && isCintrixCti && (
+        <CintrixCtiHost />
+      )}
+      <SessionTimeoutModal
+        isOpen={showWarning}
+        remainingSeconds={remainingSeconds}
+        totalWarningSeconds={totalWarningSeconds}
+        onStayLoggedIn={stayLoggedIn}
+      />
     </>
   );
 };

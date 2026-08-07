@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import type { Location } from '../../types';
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import type { Location } from "../../types";
 
 // Fix default marker icon issue with webpack/vite
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -28,23 +28,27 @@ interface LocationMapProps {
 // Color mapping for location types
 const getMarkerColor = (type?: string): string => {
   const colorMap: Record<string, string> = {
-    country: '#3b82f6', // blue
-    state: '#22c55e',   // green
-    city: '#f59e0b',    // amber
-    building: '#ef4444', // red
-    floor: '#8b5cf6',   // purple
-    room: '#ec4899',    // pink
+    country: "#3b82f6", // blue
+    state: "#22c55e", // green
+    city: "#f59e0b", // amber
+    building: "#ef4444", // red
+    floor: "#8b5cf6", // purple
+    room: "#ec4899", // pink
   };
-  return colorMap[type?.toLowerCase() || ''] || '#6b7280'; // gray default
+  return colorMap[type?.toLowerCase() || ""] || "#6b7280"; // gray default
 };
 
-const createColoredIcon = (color: string, isSelected: boolean = false, count: number = 1): L.DivIcon => {
+const createColoredIcon = (
+  color: string,
+  isSelected: boolean = false,
+  count: number = 1,
+): L.DivIcon => {
   const size = isSelected ? 32 : 24;
   const borderWidth = isSelected ? 3 : 2;
   const isGroup = count > 1;
 
   return L.divIcon({
-    className: 'custom-marker',
+    className: "custom-marker",
     html: `
       <div style="
         width: ${size}px;
@@ -59,9 +63,9 @@ const createColoredIcon = (color: string, isSelected: boolean = false, count: nu
         color: white;
         font-weight: bold;
         font-size: ${size * 0.4}px;
-        ${isSelected ? 'transform: scale(1.2);' : ''}
+        ${isSelected ? "transform: scale(1.2);" : ""}
       ">
-        ${isGroup ? count : ''}
+        ${isGroup ? count : ""}
       </div>
     `,
     iconSize: [size, size],
@@ -74,8 +78,8 @@ export default function LocationMap({
   locations,
   selectedId,
   onSelect,
-  height = '400px',
-  className = '',
+  height = "400px",
+  className = "",
   center = [0, 0],
   zoom = 2,
 }: LocationMapProps) {
@@ -85,7 +89,7 @@ export default function LocationMap({
 
   // Filter locations that have coordinates
   const locationsWithCoords = locations.filter(
-    (loc) => loc.latitude !== undefined && loc.longitude !== undefined
+    (loc) => loc.latitude !== undefined && loc.longitude !== undefined,
   );
 
   useEffect(() => {
@@ -96,8 +100,9 @@ export default function LocationMap({
     mapRef.current = map;
 
     // Add tile layer (OpenStreetMap)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
     return () => {
@@ -131,7 +136,7 @@ export default function LocationMap({
     const bounds = L.latLngBounds([]);
 
     groups.forEach((items, coords) => {
-      const [lat, lng] = coords.split(',').map(Number);
+      const [lat, lng] = coords.split(",").map(Number);
       const isSelected = items.some((item) => item.id === selectedId);
       const count = items.length;
 
@@ -145,26 +150,30 @@ export default function LocationMap({
       const isGroup = count > 1;
       const popupContent = `
         <div style="min-width: 200px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
-          ${isGroup ? `<h4 style="margin: 0 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; font-weight: bold;">${count} Incidents</h4>` : ''}
-          ${items.map((location, idx) => `
-            <div style="margin-bottom: 12px; padding-bottom: 8px; ${idx < items.length - 1 ? 'border-bottom: 1px dashed #eee;' : ''}">
+          ${isGroup ? `<h4 style="margin: 0 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; font-weight: bold;">${count} Incidents</h4>` : ""}
+          ${items
+            .map(
+              (location, idx) => `
+            <div style="margin-bottom: 12px; padding-bottom: 8px; ${idx < items.length - 1 ? "border-bottom: 1px dashed #eee;" : ""}">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                 <strong style="font-size: 14px; color: #1e293b; display: block;">${location.name}</strong>
                 <span style="font-size: 10px; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #64748b;">${location.code}</span>
               </div>
-              <p style="margin: 4px 0; font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${location.description || ''}</p>
-              ${location.address ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">${location.address}</div>` : ''}
+              <p style="margin: 4px 0; font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${location.description || ""}</p>
+              ${location.address ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">${location.address}</div>` : ""}
               <div style="margin-top: 6px;">
-                <a href="/incidents/${location.id}" style="color: #3b82f6; font-size: 12px; text-decoration: none; font-weight: 500;">View Detail →</a>
+                <a href="${window.location.origin}${import.meta.env.VITE_BASE_PATH}incidents/${location.id}" style="color: #3b82f6; font-size: 12px; text-decoration: none; font-weight: 500;">View Detail →</a>
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </div>
       `;
       marker.bindPopup(popupContent);
 
       // Handle click
-      marker.on('click', () => {
+      marker.on("click", () => {
         if (onSelect && items.length === 1) {
           onSelect(items[0]);
         }
@@ -198,7 +207,7 @@ export default function LocationMap({
     <div
       ref={containerRef}
       className={`rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}
-      style={{ height, width: '100%' }}
+      style={{ height, width: "100%" }}
     />
   );
 }

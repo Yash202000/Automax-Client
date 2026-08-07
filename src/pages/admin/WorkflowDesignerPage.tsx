@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -39,7 +39,7 @@ import {
   commentTemplateApi,
   notificationTemplateApi,
 } from "../../api/admin";
-import { HierarchicalCheckboxTree } from "../../components/workflow/HierarchicalCheckboxTree";
+import { HierarchicalTreeSelect } from "../../components/ui";
 import type {
   WorkflowState,
   WorkflowTransition,
@@ -55,13 +55,11 @@ import type {
   Location,
   Department,
   User,
-  IncidentSource,
   IncidentFormField,
   LookupCategory,
   NotificationTemplate,
 } from "../../types";
 import {
-  INCIDENT_SOURCES,
   EMAIL_RECIPIENTS,
   type EmailRecipientType,
   type TransitionEmailConfig,
@@ -78,6 +76,14 @@ import {
 } from "@/utils/validations";
 
 type TabType = "visual" | "states" | "transitions" | "matching" | "fields";
+
+type MatchingRecordType =
+  | "incident"
+  | "request"
+  | "complaint"
+  | "query"
+  | "both"
+  | "all";
 
 const parseCommaSeparatedPhones = (value: string) =>
   value
@@ -108,7 +114,7 @@ interface StateFormData {
   is_ai_qa: boolean;
   is_ready_to_close: boolean;
   is_partial_close: boolean;
-  duration_options: string; // comma-separated input string
+  duration_options: { value: number | undefined; unit: string }[];
   viewable_role_ids: string[];
   editable_role_ids: string[];
   // Creation-time assignment
@@ -150,6 +156,18 @@ type TransitionFormErrors = Partial<
   Record<"name" | "code" | "fromState" | "toState", string>
 >;
 
+// Parses a stored label like "2 Week" / "2 Weeks" back into {value, unit} for editing.
+const parseDurationOptionLabel = (
+  label: string,
+): { value: number | undefined; unit: string } | null => {
+  const match = label.trim().match(/^(\d+)\s+(Day|Week|Month)s?$/i);
+  if (!match) return null;
+  return {
+    value: parseInt(match[1], 10),
+    unit: match[2][0].toUpperCase() + match[2].slice(1).toLowerCase(),
+  };
+};
+
 const initialStateFormData: StateFormData = {
   name: "",
   name_ar: "",
@@ -165,7 +183,7 @@ const initialStateFormData: StateFormData = {
   is_ai_qa: false,
   is_ready_to_close: false,
   is_partial_close: false,
-  duration_options: "",
+  duration_options: [],
   viewable_role_ids: [],
   editable_role_ids: [],
   // Creation-time assignment
@@ -214,6 +232,9 @@ const STATE_COLORS = [
   { name: "Pink", value: "#ec4899" },
   { name: "Gray", value: "#6b7280" },
 ];
+const isEPM940 =
+  window.APP_CONFIG?.CLIENT === "EPM940" ||
+  import.meta.env.VITE_CLIENT === "EPM940";
 
 // Static constant moved outside component to avoid unstable reference in useMemo deps
 const baseFormFields: {
@@ -613,15 +634,9 @@ export const WorkflowDesignerPage: React.FC = () => {
   const [matchingConfig, setMatchingConfig] = useState<{
     classification_ids: string[];
     location_ids: string[];
-    sources: IncidentSource[];
+    sources: string[];
     priorities: number[];
-    record_type:
-      | "incident"
-      | "request"
-      | "complaint"
-      | "query"
-      | "both"
-      | "all";
+    record_type: MatchingRecordType;
   }>({
     classification_ids: [],
     location_ids: [],
@@ -629,6 +644,25 @@ export const WorkflowDesignerPage: React.FC = () => {
     priorities: [],
     record_type: "incident",
   });
+
+  // Remembers each record type's own classification selection so switching
+  // record types (including passing through a type with no classifications
+  // configured at all) never destroys another type's selection — only the
+  // currently active type's ids are ever cleared/restored.
+  const [classificationSelectionsByType, setClassificationSelectionsByType] =
+    useState<Partial<Record<MatchingRecordType, string[]>>>({});
+
+  const handleRecordTypeChange = (newType: MatchingRecordType) => {
+    setClassificationSelectionsByType((byType) => ({
+      ...byType,
+      [matchingConfig.record_type]: matchingConfig.classification_ids,
+    }));
+    setMatchingConfig((prev) => ({
+      ...prev,
+      record_type: newType,
+      classification_ids: classificationSelectionsByType[newType] ?? [],
+    }));
+  };
 
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
@@ -781,6 +815,33 @@ export const WorkflowDesignerPage: React.FC = () => {
   const emailTemplates: NotificationTemplate[] = emailTemplatesData?.data || [];
   const smsTemplates: NotificationTemplate[] = smsTemplatesData?.data || [];
 
+  const fromStatusAccessibleRoleIds = useMemo(() => {
+    const status = states.find(
+      (s) => s.id === transitionFormData.from_state_id,
+    );
+
+    if (!status) return [];
+
+    return [
+      ...new Set([
+        ...(status.viewable_roles?.map((r) => r.id) ?? []),
+        ...(status.editable_roles?.map((r) => r.id) ?? []),
+      ]),
+    ];
+  }, [transitionFormData.from_state_id, states]);
+
+  const recommendedRoles = useMemo(() => {
+    return roles.filter((role) =>
+      fromStatusAccessibleRoleIds.includes(role.id),
+    );
+  }, [fromStatusAccessibleRoleIds, roles]);
+
+  const otherRoles = useMemo(() => {
+    return roles.filter(
+      (role) => !fromStatusAccessibleRoleIds.includes(role.id),
+    );
+  }, [fromStatusAccessibleRoleIds, roles]);
+
   // Get Priority and Severity categories for matching rules
   const allLookupCategories: LookupCategory[] =
     lookupCategoriesData?.data || [];
@@ -790,6 +851,21 @@ export const WorkflowDesignerPage: React.FC = () => {
   const priorityValues = (priorityCategory?.values || []).sort(
     (a, b) => a.sort_order - b.sort_order,
   );
+
+  const sourceOptions = useMemo(() => {
+    if (!lookupCategoriesData?.data?.length) return [];
+    return (lookupCategoriesData?.data || [])
+      .filter((cat) => cat.code === "SOURCE")
+      .flatMap((cat) =>
+        (cat.values || []).map((value) => ({
+          value: value.code.toLowerCase(),
+          label:
+            i18n.language === "ar" && value.name_ar
+              ? value.name_ar
+              : value.name,
+        })),
+      );
+  }, [lookupCategoriesData, i18n.language]);
 
   // Available form fields including dynamic lookup categories
   const availableFormFields = React.useMemo(() => {
@@ -959,6 +1035,14 @@ export const WorkflowDesignerPage: React.FC = () => {
       });
       closeStateModal();
     },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        t("workflows.failedToSaveState");
+      toast.error(errorMessage, { duration: 6000 });
+    },
   });
 
   const updateStateMutation = useMutation({
@@ -977,6 +1061,14 @@ export const WorkflowDesignerPage: React.FC = () => {
         queryKey: ["admin", "workflow", id, "states"],
       });
       closeStateModal();
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        t("workflows.failedToSaveState");
+      toast.error(errorMessage, { duration: 6000 });
     },
   });
 
@@ -1108,7 +1200,12 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ai_qa: state.is_ai_qa || false,
       is_ready_to_close: state.is_ready_to_close || false,
       is_partial_close: state.is_partial_close || false,
-      duration_options: (state.duration_options || []).join(", "),
+      duration_options: (state.duration_options || [])
+        .map((label) => parseDurationOptionLabel(label))
+        .filter(
+          (parsed): parsed is { value: number; unit: string } =>
+            parsed !== null && parsed.value !== undefined,
+        ),
       viewable_role_ids: state.viewable_roles?.map((r) => r.id) || [],
       editable_role_ids: state.editable_roles?.map((r) => r.id) || [],
       // Creation-time assignment
@@ -1275,22 +1372,23 @@ export const WorkflowDesignerPage: React.FC = () => {
       validationErrors.name = t("validation.nameRequired", {
         field: t("workflows.states"),
       });
+      // "State name can only contain letters, numbers, spaces, and basic punctuation (- ' . , & ( ) /)";
     } else if (!validateName(name)) {
       validationErrors.name = t("validation.invalidName", {
         field: t("workflows.states"),
       });
-
-      // "State name can only contain letters, numbers, spaces, and basic punctuation (- ' . , & ( ) /)";
     }
-
-    if (!validateRequired(code)) {
-      validationErrors.code = t("validation.codeRequired", {
-        field: t("workflows.states"),
-      });
-    } else if (!validateCode(code)) {
-      validationErrors.code = t("validation.invalidCode", {
-        field: t("workflows.states"),
-      });
+    //code auto generated from backend for epm940
+    if (!isEPM940) {
+      if (!validateRequired(code)) {
+        validationErrors.code = t("validation.codeRequired", {
+          field: t("workflows.states"),
+        });
+      } else if (!validateCode(code)) {
+        validationErrors.code = t("validation.invalidCode", {
+          field: t("workflows.states"),
+        });
+      }
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -1356,11 +1454,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_ready_to_close: stateFormData.is_ready_to_close,
       is_partial_close: stateFormData.is_partial_close,
       duration_options: stateFormData.duration_options
-        ? stateFormData.duration_options
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
+        .filter(
+          (opt) =>
+            opt.value !== undefined && opt.value !== null && opt.value > 0,
+        )
+        .map((opt) => `${opt.value} ${opt.unit}`),
       viewable_role_ids: stateFormData.viewable_role_ids,
       editable_role_ids: stateFormData.editable_role_ids,
       // Creation-time assignment
@@ -1401,15 +1499,17 @@ export const WorkflowDesignerPage: React.FC = () => {
         field: t("workflows.transitions"),
       });
     }
-
-    if (!validateRequired(code)) {
-      validationErrors.code = t("validation.codeRequired", {
-        field: t("workflows.transitions"),
-      });
-    } else if (!validateCode(code)) {
-      validationErrors.code = t("validation.invalidCode", {
-        field: t("workflows.transitions"),
-      });
+    // trasnsition code generaeted from backedn for epm940
+    if (!isEPM940) {
+      if (!validateRequired(code)) {
+        validationErrors.code = t("validation.codeRequired", {
+          field: t("workflows.transitions"),
+        });
+      } else if (!validateCode(code)) {
+        validationErrors.code = t("validation.invalidCode", {
+          field: t("workflows.transitions"),
+        });
+      }
     }
 
     if (!validateRequired(fromState)) {
@@ -1615,21 +1715,64 @@ export const WorkflowDesignerPage: React.FC = () => {
   };
 
   const toggleStateRole = (roleId: string) => {
-    setStateFormData((prev) => ({
-      ...prev,
-      viewable_role_ids: prev.viewable_role_ids.includes(roleId)
-        ? prev.viewable_role_ids.filter((id) => id !== roleId)
-        : [...prev.viewable_role_ids, roleId],
-    }));
+    const isViewable = stateFormData.viewable_role_ids.includes(roleId);
+    const isEditable = stateFormData.editable_role_ids.includes(roleId);
+    //prevent removing viewable role if edit permission for the role is added
+    if (isViewable && isEditable) {
+      const roleName = roles.find((role) => role.id === roleId)?.name ?? "Role";
+      toast.error(
+        t("workflows.pleaseRemoveEditPermissionFirst", {
+          role: roleName,
+        }),
+      );
+      return;
+    }
+    setStateFormData((prev) => {
+      return {
+        ...prev,
+        viewable_role_ids: prev.viewable_role_ids.includes(roleId)
+          ? prev.viewable_role_ids.filter((id) => id !== roleId)
+          : [...prev.viewable_role_ids, roleId],
+      };
+    });
   };
 
   const toggleEditableStateRole = (roleId: string) => {
-    setStateFormData((prev) => ({
-      ...prev,
-      editable_role_ids: prev.editable_role_ids.includes(roleId)
-        ? prev.editable_role_ids.filter((id) => id !== roleId)
-        : [...prev.editable_role_ids, roleId],
-    }));
+    const isEditable = stateFormData.editable_role_ids.includes(roleId);
+    const wasViewable = stateFormData.viewable_role_ids.includes(roleId);
+
+    // adding editable roles will automatically add viewable roles so showing toast
+    if (!isEditable && !wasViewable) {
+      const roleName = roles.find((role) => role.id === roleId)?.name ?? "Role";
+      toast.info(
+        t("workflows.viewPermissionAutomaticallyAdded", {
+          role: roleName,
+        }),
+      );
+    }
+    setStateFormData((prev) => {
+      if (prev.editable_role_ids.includes(roleId)) {
+        // Removing edit permission should also remove view permission
+        return {
+          ...prev,
+          editable_role_ids: prev.editable_role_ids.filter(
+            (id) => id !== roleId,
+          ),
+          viewable_role_ids: prev.viewable_role_ids.filter(
+            (id) => id !== roleId,
+          ),
+        };
+      }
+
+      // adding edit permission should also add view permission if not added yet
+      return {
+        ...prev,
+        editable_role_ids: [...prev.editable_role_ids, roleId],
+        viewable_role_ids: prev.viewable_role_ids.includes(roleId)
+          ? prev.viewable_role_ids
+          : [...prev.viewable_role_ids, roleId],
+      };
+    });
   };
 
   const toggleStateAssignmentRole = (roleId: string) => {
@@ -1734,6 +1877,12 @@ export const WorkflowDesignerPage: React.FC = () => {
     } catch (error) {
       console.error("Export failed:", error);
     }
+  };
+
+  const getStatus = (id: string) => {
+    const state = states.find((s) => s.id === id);
+    if (!state) return "Unknown";
+    return i18n.language === "ar" && state.name_ar ? state.name_ar : state.name;
   };
 
   if (isLoading) {
@@ -2306,19 +2455,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="incident"
                       checked={matchingConfig.record_type === "incident"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("incident")}
                       className="sr-only"
                     />
                     <div
@@ -2355,19 +2492,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="request"
                       checked={matchingConfig.record_type === "request"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("request")}
                       className="sr-only"
                     />
                     <div
@@ -2404,19 +2529,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="both"
                       checked={matchingConfig.record_type === "both"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("both")}
                       className="sr-only"
                     />
                     <div
@@ -2453,19 +2566,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="complaint"
                       checked={matchingConfig.record_type === "complaint"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("complaint")}
                       className="sr-only"
                     />
                     <div
@@ -2502,19 +2603,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="query"
                       checked={matchingConfig.record_type === "query"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("query")}
                       className="sr-only"
                     />
                     <div
@@ -2551,19 +2640,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       name="record_type"
                       value="all"
                       checked={matchingConfig.record_type === "all"}
-                      onChange={(e) =>
-                        setMatchingConfig((prev) => ({
-                          ...prev,
-                          record_type: e.target.value as
-                            | "incident"
-                            | "request"
-                            | "complaint"
-                            | "query"
-                            | "both"
-                            | "all",
-                          classification_ids: [], // Clear classifications when record type changes
-                        }))
-                      }
+                      onChange={() => handleRecordTypeChange("all")}
                       className="sr-only"
                     />
                     <div
@@ -2601,7 +2678,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                       "workflows.selectWhichClassificationsThisWorkflowAppliesTo",
                     )}
                   </p>
-                  <HierarchicalCheckboxTree
+                  <HierarchicalTreeSelect
                     data={classifications as any}
                     selectedIds={matchingConfig.classification_ids}
                     onSelectionChange={(selectedIds) => {
@@ -2609,10 +2686,22 @@ export const WorkflowDesignerPage: React.FC = () => {
                         ...prev,
                         classification_ids: selectedIds,
                       }));
+                      setClassificationSelectionsByType((byType) => ({
+                        ...byType,
+                        [matchingConfig.record_type]: selectedIds,
+                      }));
                     }}
                     emptyMessage="No classifications available"
-                    showSelectAll={true}
                   />
+                  {matchingConfig.classification_ids.length === 0 &&
+                    classifications.length > 0 && (
+                      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mt-2">
+                        <strong>{t("workflows.noSelection")}</strong>{" "}
+                        {t("workflows.thisWorkflowWillMatch")}
+                        <strong>{t("workflows.allItems")}</strong>
+                        {t("workflows.inThisCategory")}
+                      </p>
+                    )}
                 </div>
 
                 {/* Locations */}
@@ -2623,7 +2712,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                     {t("workflows.selectWhichLocationsThisWorkflowAppliesTo")}
                   </p>
-                  <HierarchicalCheckboxTree
+                  <HierarchicalTreeSelect
                     data={locations as any}
                     selectedIds={matchingConfig.location_ids}
                     onSelectionChange={(selectedIds) => {
@@ -2633,8 +2722,16 @@ export const WorkflowDesignerPage: React.FC = () => {
                       }));
                     }}
                     emptyMessage="No locations available"
-                    showSelectAll={true}
                   />
+                  {matchingConfig.location_ids.length === 0 &&
+                    locations.length > 0 && (
+                      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mt-2">
+                        <strong>{t("workflows.noSelection")}</strong>{" "}
+                        {t("workflows.thisWorkflowWillMatch")}
+                        <strong>{t("workflows.allItems")}</strong>
+                        {t("workflows.inThisCategory")}
+                      </p>
+                    )}
                 </div>
 
                 {/* Sources */}
@@ -2648,7 +2745,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                     )}
                   </p>
                   <div className="space-y-2">
-                    {INCIDENT_SOURCES.map((source) => (
+                    {sourceOptions.map((source) => (
                       <label
                         key={source.value}
                         className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted)/0.5)] rounded-lg cursor-pointer"
@@ -2676,13 +2773,7 @@ export const WorkflowDesignerPage: React.FC = () => {
                           className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                         />
                         <span className="text-sm text-[hsl(var(--foreground))]">
-                          {/* {t(
-                            `workflows.incidentSources.${source.value}`,
-                            source.label,
-                          )} */}
-                          {i18n.language === "ar"
-                            ? source.label_ar
-                            : source.label}
+                          {source.label}
                         </span>
                       </label>
                     ))}
@@ -3312,46 +3403,50 @@ export const WorkflowDesignerPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("departments.code")}
-                    <span className="text-[hsl(var(--destructive))] ml-1">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={stateFormData.code}
-                    onChange={(e) => {
-                      setStateFormData({
-                        ...stateFormData,
-                        code: e.target.value,
-                      });
-                      if (stateErrors.code) {
-                        setStateErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                      if (stateDuplicateErrors.code) {
-                        setStateDuplicateErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                    }}
-                    // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
-                      stateDuplicateErrors.code || stateErrors.code
-                        ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    }`}
-                    // required
-                  />
-                  {renderFieldError(
-                    stateDuplicateErrors.code || stateErrors.code,
-                  )}
-                </div>
+                {/* code auto generated from backend for epm940 */}
+                {!isEPM940 && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("departments.code")}
+                      <span className="text-[hsl(var(--destructive))] ml-1">
+                        *
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={stateFormData.code}
+                      readOnly={isEPM940}
+                      onChange={(e) => {
+                        setStateFormData({
+                          ...stateFormData,
+                          code: e.target.value,
+                        });
+                        if (stateErrors.code) {
+                          setStateErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                        if (stateDuplicateErrors.code) {
+                          setStateDuplicateErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                      }}
+                      // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
+                        stateDuplicateErrors.code || stateErrors.code
+                          ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                          : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      }`}
+                      // required
+                    />
+                    {renderFieldError(
+                      stateDuplicateErrors.code || stateErrors.code,
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -3596,28 +3691,95 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
                 {stateFormData.is_partial_close && (
                   <div className="ml-7 space-y-2">
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                       {t("workflows.durationOptions", "Duration Options")}
-                      <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                        {t("workflows.commaSeparatedLeaveEmptyToUseGlobal")}
-                      </span>
                     </label>
-                    <input
-                      type="text"
-                      value={stateFormData.duration_options}
-                      onChange={(e) =>
-                        setStateFormData({
-                          ...stateFormData,
-                          duration_options: e.target.value,
-                        })
-                      }
-                      placeholder={t(
-                        "workflows.durationExample",
-                        "e.g. 1 Day, 2 Days, 1 Week, 1 Month",
-                      )}
-                      className="w-full px-3 py-2 text-sm bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    />
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <div className="space-y-2">
+                      {stateFormData.duration_options.map((opt, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={opt.value ?? ""}
+                            onChange={(e) => {
+                              const next = [...stateFormData.duration_options];
+                              next[index] = {
+                                ...next[index],
+                                value: e.target.value
+                                  ? parseInt(e.target.value)
+                                  : undefined,
+                              };
+                              setStateFormData({
+                                ...stateFormData,
+                                duration_options: next,
+                              });
+                            }}
+                            placeholder={t("workflows.escalationHoursExample")}
+                            className="flex-1 px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                          />
+                          <select
+                            value={opt.unit}
+                            onChange={(e) => {
+                              const next = [...stateFormData.duration_options];
+                              next[index] = {
+                                ...next[index],
+                                unit: e.target.value,
+                              };
+                              setStateFormData({
+                                ...stateFormData,
+                                duration_options: next,
+                              });
+                            }}
+                            className="px-3 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                          >
+                            <option value="Day">{t("workflows.days")}</option>
+                            <option value="Week">{t("workflows.weeks")}</option>
+                            <option value="Month">
+                              {t("workflows.months")}
+                            </option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setStateFormData({
+                                ...stateFormData,
+                                duration_options:
+                                  stateFormData.duration_options.filter(
+                                    (_, i) => i !== index,
+                                  ),
+                              })
+                            }
+                            className="px-2.5 py-2.5 rounded-xl border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-red-600 hover:border-red-300 transition-colors"
+                            aria-label={t(
+                              "workflows.removeDurationOption",
+                              "Remove duration option",
+                            )}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStateFormData({
+                            ...stateFormData,
+                            duration_options: [
+                              ...stateFormData.duration_options,
+                              { value: undefined, unit: "Day" },
+                            ],
+                          })
+                        }
+                        className="flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--primary))] hover:opacity-80 transition-opacity"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {t(
+                          "workflows.addDurationOption",
+                          "Add duration option",
+                        )}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
                       {t(
                         "workflows.closingDurationHint",
                         "Leave empty to use the global defaults configured in system settings.",
@@ -3696,7 +3858,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-
                 {/* Creation-time Assignment — only for initial states */}
                 {stateFormData.state_type === "initial" && (
                   <div className="border-t border-[hsl(var(--border))] pt-5">
@@ -3896,7 +4057,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-
                 {editingState && (
                   <div className="pt-2 border-t border-[hsl(var(--border))]">
                     <IntegrationTriggersPanel
@@ -3905,7 +4065,6 @@ export const WorkflowDesignerPage: React.FC = () => {
                     />
                   </div>
                 )}
-
                 <div className="border-t border-[hsl(var(--border))] pt-5">
                   <div className="flex items-center gap-2 mb-1">
                     <Mail className="w-4 h-4 text-blue-500" />
@@ -4091,53 +4250,51 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("departments.code")}
-                    <span className="text-[hsl(var(--destructive))] ml-1">
-                      *
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={transitionFormData.code}
-                    onChange={(e) => {
-                      setTransitionFormData({
-                        ...transitionFormData,
-                        code: e.target.value,
-                      });
+                {!isEPM940 && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("departments.code")}
+                      <span className="text-[hsl(var(--destructive))] ml-1">
+                        *
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={transitionFormData.code}
+                      readOnly={isEPM940}
+                      onChange={(e) => {
+                        setTransitionFormData({
+                          ...transitionFormData,
+                          code: e.target.value,
+                        });
 
-                      if (transitionErrors.code) {
-                        setTransitionErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                      if (transitionDuplicateErrors.code) {
-                        setTransitionDuplicateErrors((prev) => ({
-                          ...prev,
-                          code: "",
-                        }));
-                      }
-                    }}
-                    // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
-                      transitionDuplicateErrors.name || transitionErrors.name
-                        ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
-                    }`}
-                    placeholder={t("workflows.stateKeyExample")}
-                    // required
-                  />
-                  {/* {transitionDuplicateErrors.code && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {transitionDuplicateErrors.code}
-                    </p>
-                  )} */}
-                  {renderFieldError(
-                    transitionDuplicateErrors.code || transitionErrors.code,
-                  )}
-                </div>
+                        if (transitionErrors.code) {
+                          setTransitionErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                        if (transitionDuplicateErrors.code) {
+                          setTransitionDuplicateErrors((prev) => ({
+                            ...prev,
+                            code: "",
+                          }));
+                        }
+                      }}
+                      // className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] rounded-xl text-sm focus:outline-none ${
+                        transitionDuplicateErrors.name || transitionErrors.name
+                          ? "border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                          : "border border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+                      }`}
+                      placeholder={t("workflows.stateKeyExample")}
+                      // required
+                    />
+                    {renderFieldError(
+                      transitionDuplicateErrors.code || transitionErrors.code,
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -4259,38 +4416,104 @@ export const WorkflowDesignerPage: React.FC = () => {
                 </div>
 
                 {/* Allowed Roles */}
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("workflows.allowedRoles")}
-                    <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
-                      {t("workflows.leaveEmptyToAllowAllRoles")}
-                    </span>
-                  </label>
-                  <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
-                    {roles.map((role) => (
-                      <label
-                        key={role.id}
-                        className={cn(
-                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all",
-                          transitionFormData.role_ids.includes(role.id)
-                            ? "bg-[hsl(var(--primary)/0.05)] border border-[hsl(var(--primary)/0.3)]"
-                            : "hover:bg-[hsl(var(--muted)/0.5)]",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={transitionFormData.role_ids.includes(
-                            role.id,
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("workflows.allowedRoles")}
+                  <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] ml-2">
+                    {t("workflows.leaveEmptyToAllowAllRoles")}
+                  </span>
+                </label>
+
+                <div className="border border-[hsl(var(--border))] rounded-xl p-3 max-h-80 overflow-y-auto space-y-4">
+                  {/* Recommended Roles */}
+                  {recommendedRoles.length > 0 && (
+                    <>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-emerald-500">
+                            {t("workflows.recommendedRoles")}
+                          </span>
+
+                          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+                            {t("workflows.hasAccessToFromStatus", {
+                              fromStatus: getStatus(
+                                transitionFormData.from_state_id,
+                              ),
+                            })}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {t("workflows.recommendedRolesDescription", {
+                            fromStatus: getStatus(
+                              transitionFormData.from_state_id,
+                            ),
+                          })}
+                        </p>
+
+                        <div className="space-y-2">
+                          {recommendedRoles.map((role) => (
+                            <label
+                              key={role.id}
+                              className={cn(
+                                "flex items-center gap-3 rounded-lg p-2 cursor-pointer transition-all border",
+                                transitionFormData.role_ids.includes(role.id)
+                                  ? "border-primary bg-primary/10"
+                                  : "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10",
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={transitionFormData.role_ids.includes(
+                                  role.id,
+                                )}
+                                onChange={() => toggleRole(role.id)}
+                                className="w-4 h-4"
+                              />
+
+                              <Shield className="w-4 h-4 text-muted-foreground" />
+
+                              <span className="text-sm">{role.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <hr className="border-border" />
+                    </>
+                  )}
+
+                  {/* Other Roles */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-3">
+                      {t("workflows.otherAvailableRoles")}
+                    </label>
+
+                    <div className="space-y-2">
+                      {otherRoles.map((role) => (
+                        <label
+                          key={role.id}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg p-2 cursor-pointer transition-all",
+                            transitionFormData.role_ids.includes(role.id)
+                              ? "border border-primary bg-primary/10"
+                              : "hover:bg-muted/50",
                           )}
-                          onChange={() => toggleRole(role.id)}
-                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
-                        />
-                        <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                        <span className="text-sm text-[hsl(var(--foreground))]">
-                          {role.name}
-                        </span>
-                      </label>
-                    ))}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={transitionFormData.role_ids.includes(
+                              role.id,
+                            )}
+                            onChange={() => toggleRole(role.id)}
+                            className="w-4 h-4"
+                          />
+
+                          <Shield className="w-4 h-4 text-muted-foreground" />
+
+                          <span className="text-sm">{role.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -4901,23 +5124,46 @@ export const WorkflowDesignerPage: React.FC = () => {
                             </button>
                           </div>
                           <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={req.is_mandatory}
-                                onChange={(e) =>
-                                  updateRequirement(
-                                    index,
-                                    "is_mandatory",
-                                    e.target.checked,
-                                  )
-                                }
-                                className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
-                              />
-                              <span className="text-sm text-[hsl(var(--foreground))]">
-                                {t("workflows.mandatory")}
-                              </span>
-                            </label>
+                            <div className="flex items-center gap-3">
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={req.is_mandatory}
+                                  onChange={(e) =>
+                                    updateRequirement(
+                                      index,
+                                      "is_mandatory",
+                                      e.target.checked,
+                                    )
+                                  }
+                                  className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                />
+                                <span className="text-sm text-[hsl(var(--foreground))]">
+                                  {t("workflows.mandatory")}
+                                </span>
+                              </label>
+                            </div>
+                            {req?.requirement_type === "attachment" ? (
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={req.is_multiple}
+                                    onChange={(e) =>
+                                      updateRequirement(
+                                        index,
+                                        "is_multiple",
+                                        e.target.checked,
+                                      )
+                                    }
+                                    className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))] rounded"
+                                  />
+                                  <span className="text-sm text-[hsl(var(--foreground))]">
+                                    {t("workflows.multiple")}
+                                  </span>
+                                </label>
+                              </div>
+                            ) : null}
                           </div>
                           <input
                             type="text"

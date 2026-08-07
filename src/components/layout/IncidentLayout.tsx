@@ -31,10 +31,11 @@ import {
   Bot,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
+import { useIncidentFilterStore } from "../../stores/incidentFilterStore";
 import { authApi } from "../../api/auth";
 import { setLoggingOut } from "../../api/client";
 import { incidentApi, emailApi } from "../../api/admin";
-import {
+import i18n, {
   setLanguage,
   getCurrentLanguage,
   supportedLanguages,
@@ -60,6 +61,7 @@ export const IncidentLayout: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const currentStatus = queryParams.get("status");
+  const currentStateId = queryParams.get("current_state_id");
   const isSlaBreached = queryParams.get("sla_breached") === "true";
   const queryClient = useQueryClient();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -75,7 +77,9 @@ export const IncidentLayout: React.FC = () => {
   const canViewIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
   const canViewAllIncidents =
-    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL);
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const canViewRequests =
     isSuperAdmin || hasPermission(PERMISSIONS.REQUESTS_VIEW);
   const canCreateRequest =
@@ -168,20 +172,50 @@ export const IncidentLayout: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch incident stats to get statuses
+  // Fetch incident stats to get statuses. Merges in whatever filter is
+  // currently shared across the incident views (All/Assigned to
+  // me/Created by me) so the "By Status" counts stay consistent with
+  // whichever filter the user last applied, not just permission scoping.
+  // The status filter itself is excluded — this sidebar IS the by-status
+  // breakdown, so it needs every status's count, not just the one the list
+  // happens to be filtered down to.
+  // Global cross-view filtering is a VD2-specific requirement — other
+  // clients keep the sidebar counts scoped only by permissions, as before.
+  const isVD2Client =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
+  const sharedIncidentFilter = useIncidentFilterStore((s) => s.filter);
+  const sidebarStatsFilter = isVD2Client
+    ? { ...sharedIncidentFilter, current_state_id: undefined }
+    : {};
   const { data: statsData } = useQuery({
     queryKey: [
       "incidents",
       "stats",
       "incident",
       canViewAllIncidents ? "all" : "assigned",
+      sidebarStatsFilter,
     ],
     queryFn: () =>
-      incidentApi.getStats(
-        "incident",
-        canViewAllIncidents ? undefined : "assigned",
-      ),
+      incidentApi.getIncidentStatsV2({
+        ...sidebarStatsFilter,
+        ...(canViewAllIncidents ? {} : { my_record: user?.id }),
+      }),
   });
+
+  // Builds the "By Status" sidebar link target. On VD2, IncidentsPage merges
+  // any URL field that's absent from the shared filter store, so this only
+  // needs to set the status itself — it always replaces whatever status was
+  // previously selected rather than merging with it, while every other
+  // active filter (search, classification, priority, etc.) is picked up
+  // from the store on arrival. Other clients keep the original bare
+  // `?status=name` link.
+  const buildStatusLinkTo = (stateId: string, stateName: string) => {
+    if (!isVD2Client) {
+      return `/incidents?status=${encodeURIComponent(stateName)}`;
+    }
+    return `/incidents?current_state_id=${encodeURIComponent(stateId)}&page=1`;
+  };
 
   const handleLogout = async () => {
     // Set flag to prevent 401 interceptor from running during logout
@@ -244,40 +278,38 @@ export const IncidentLayout: React.FC = () => {
           </p>
         )}
         <div className="space-y-1">
-          {canViewAllIncidents && (
-            <NavLink
-              to="/incidents"
-              end
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) => {
-                const isAllIncidentsActive =
-                  isActive && !currentStatus && !isSlaBreached;
-                return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                  isAllIncidentsActive
-                    ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`;
-              }}
-            >
-              {({ isActive }) => {
-                const isAllIncidentsActive =
-                  isActive && !currentStatus && !isSlaBreached;
-                return (
-                  <>
-                    {isAllIncidentsActive && (
-                      <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
-                    )}
-                    <List size={20} className="flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="ms-3 font-medium text-sm">
-                        {t("sidebar.allIncidents")}
-                      </span>
-                    )}
-                  </>
-                );
-              }}
-            </NavLink>
-          )}
+          <NavLink
+            to="/incidents"
+            end
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => {
+              const isAllIncidentsActive =
+                isActive && !currentStatus && !isSlaBreached;
+              return `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                isAllIncidentsActive
+                  ? "bg-linear-to-r from-primary to-accent text-white shadow-lg shadow-blue-500/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`;
+            }}
+          >
+            {({ isActive }) => {
+              const isAllIncidentsActive =
+                isActive && !currentStatus && !isSlaBreached;
+              return (
+                <>
+                  {isAllIncidentsActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                  )}
+                  <List size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("sidebar.allIncidents")}
+                    </span>
+                  )}
+                </>
+              );
+            }}
+          </NavLink>
 
           {canCreateIncident && (
             <NavLink
@@ -437,60 +469,60 @@ export const IncidentLayout: React.FC = () => {
                     </div>
                   )}
 
-                  {Object.entries(workflow.by_state || {}).map(
-                    ([stateName, count]) => (
-                      <NavLink
-                        key={stateName}
-                        to={`/incidents?status=${encodeURIComponent(stateName)}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={({ isActive }) => {
-                          const isItemActive =
-                            isActive && currentStatus === stateName;
-                          return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
-                            isItemActive
-                              ? "bg-white/10 text-white shadow-sm"
-                              : ""
-                          }`;
-                        }}
-                      >
-                        {({ isActive }) => {
-                          const isItemActive =
-                            isActive && currentStatus === stateName;
-                          return (
-                            <>
-                              <Circle
-                                size={8}
-                                className={`flex-shrink-0 fill-current ${
-                                  isItemActive
-                                    ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-                                    : "text-slate-500"
-                                }`}
-                              />
+                  {(workflow.by_state_details || []).map((state) => (
+                    <NavLink
+                      key={state.name}
+                      to={buildStatusLinkTo(state.id, state.name)}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) => {
+                        const isItemActive = isVD2Client
+                          ? currentStateId === state.id
+                          : isActive && currentStatus === state.name;
+                        return `group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                          isItemActive ? "bg-white/10 text-white shadow-sm" : ""
+                        }`;
+                      }}
+                    >
+                      {({ isActive }) => {
+                        const isItemActive = isVD2Client
+                          ? currentStateId === state.id
+                          : isActive && currentStatus === state.name;
+                        return (
+                          <>
+                            <Circle
+                              size={8}
+                              className={`flex-shrink-0 fill-current ${
+                                isItemActive
+                                  ? "text-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                  : "text-slate-500"
+                              }`}
+                            />
 
-                              {!collapsed && (
-                                <>
-                                  <span
-                                    className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
-                                  >
-                                    {stateName}
-                                  </span>
-                                  <span
-                                    className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
-                                      isItemActive
-                                        ? "bg-primary text-white"
-                                        : "bg-slate-700 text-slate-300"
-                                    }`}
-                                  >
-                                    {count as number}
-                                  </span>
-                                </>
-                              )}
-                            </>
-                          );
-                        }}
-                      </NavLink>
-                    ),
-                  )}
+                            {!collapsed && (
+                              <>
+                                <span
+                                  className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
+                                >
+                                  {i18n.language === "ar" && state.name_ar
+                                    ? state.name_ar
+                                    : state.name}
+                                </span>
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                                    isItemActive
+                                      ? "bg-primary text-white"
+                                      : "bg-slate-700 text-slate-300"
+                                  }`}
+                                >
+                                  {state.count}
+                                </span>
+                              </>
+                            )}
+                          </>
+                        );
+                      }}
+                    </NavLink>
+                  ))}
                 </div>
               ))}
             </div>
@@ -696,7 +728,9 @@ export const IncidentLayout: React.FC = () => {
       {/* Mobile Sidebar */}
       <aside
         className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          mobileMenuOpen
+            ? "translate-x-0"
+            : "ltr:-translate-x-full rtl:translate-x-full"
         }`}
       >
         <button

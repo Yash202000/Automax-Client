@@ -13,6 +13,7 @@ export const PERMISSIONS = {
   USERS_CREATE: "users:create",
   USERS_UPDATE: "users:update",
   USERS_DELETE: "users:delete",
+  USER_RESET_PASSWORD: "users:reset_password",
 
   // Role permissions
   ROLES_VIEW: "roles:view",
@@ -59,6 +60,7 @@ export const PERMISSIONS = {
   // Incident permissions
   INCIDENTS_VIEW: "incidents:view",
   INCIDENTS_VIEW_ALL: "incidents:view_all",
+  INCIDENTS_VIEW_DEPARTMENT_ONLY: "incidents:view_department_only",
   INCIDENTS_CREATE: "incidents:create",
   INCIDENTS_UPDATE: "incidents:update",
   INCIDENTS_DELETE: "incidents:delete",
@@ -69,6 +71,10 @@ export const PERMISSIONS = {
   INCIDENTS_MERGE: "incidents:merge",
   INCIDENTS_EDIT_CLOSED: "incidents:edit-closed",
   INCIDENTS_REQUEST_INFO: "incidents:request-info",
+  INCIDENTS_FILTER_REPORTER_PHONE: "incidents:filter_reporter_phone",
+
+  // Notification permissions
+  NOTIFICATIONS_READ: "notifications:read",
 
   // Request permissions
   REQUESTS_VIEW: "requests:view",
@@ -135,6 +141,7 @@ export const PERMISSIONS = {
   ESCALATION_GROUPS_DELETE: "escalation-groups:delete",
   ESCALATION_GROUPS_ASSIGN_USERS: "escalation-groups:assign_users",
   ESCALATION_GROUPS_MANAGE_RULES: "escalation-groups:manage_rules",
+  ESCALATION_POLICY_CREATE: "escalation-policies:create",
 
   // Goal permissions
   GOALS_VIEW: "goals:view",
@@ -143,7 +150,34 @@ export const PERMISSIONS = {
   GOALS_DELETE: "goals:delete",
   GOALS_ASSIGN: "goals:assign",
   GOALS_APPROVE: "goals:approve",
+  GOALS_MANAGE: "goals:manage",
   DASHBOARD_GOALS: "dashboard:goals",
+
+  // KPI permissions
+  KPI_VIEW: "kpi:view",
+  KPI_CREATE: "kpi:create",
+  KPI_UPDATE: "kpi:update",
+  KPI_DELETE: "kpi:delete",
+  KPI_APPROVE: "kpi:approve",
+  KPI_ASSIGN: "kpi:assign",
+
+  // KPI performance / targets / benchmark / segmentation permissions
+  PERF_VIEW: "perf:view",
+  PERF_SUBMIT: "perf:submit",
+  PERF_REVIEW: "perf:review",
+  PERF_APPROVE: "perf:approve",
+  PERF_REJECT: "perf:reject",
+  PERF_PUBLISH: "perf:publish",
+  PERF_REQUEST_CHANGES: "perf:request_changes",
+  PERF_OVERRIDE_LOCK: "perf:override_lock",
+  TARGETS_VIEW: "targets:view",
+  TARGETS_SET: "targets:set",
+  TARGETS_DELETE: "targets:delete",
+  TARGETS_APPROVE: "targets:approve",
+  TARGETS_REJECT: "targets:reject",
+  BENCHMARK_MANAGE: "benchmark:manage",
+  SEGMENT_MANAGE: "segment:manage",
+  CORRECTIVE_ACTION_MANAGE: "corrective_action:manage",
 
   CALLER_SENTIMENT_CREATE: "caller-sentiment:create",
   CALLER_SENTIMENT_VIEW: "caller-sentiment:view",
@@ -154,6 +188,15 @@ export const PERMISSIONS = {
   // License permissions
   LICENSE_VIEW: "license:view",
   LICENSE_MANAGE: "license:manage",
+
+  // Extension permissions
+  EXTENSIONS_ASSIGN: "extensions:assign",
+
+  // Communication Tracking - CCM
+  COMMUNICATION_TRACK_VIEW: "communication-tracking:view",
+  COMMUNICATION_TRACK_UPDATE: "communication-tracking:update",
+
+  VIEW_ALL_CALL_LOGS: "call-logs:view_all",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

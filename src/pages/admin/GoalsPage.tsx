@@ -53,7 +53,7 @@ function ExportDropdown({ filters }: { filters: GoalFilter }) {
     setOpen(false);
     try {
       const res = await goalApi.exportJSON(filters);
-      exportGoalsToXlsx(res.data);
+      await exportGoalsToXlsx(res.data);
       toast.success(t("goals.excelExported"));
     } catch {
       toast.error(t("goals.excelExportFailed"));

@@ -8,6 +8,7 @@ import {
   MapPin,
   FolderTree,
   Shield,
+  Crown,
   Users,
   Edit2,
   CheckCircle2,
@@ -48,6 +49,7 @@ interface EditFormData {
   code: string;
   description: string;
   type: "internal" | "external";
+  supervisor_id: string;
   location_ids: string[];
   classification_ids: string[];
   role_ids: string[];
@@ -163,6 +165,7 @@ export const DepartmentDetailPage: React.FC = () => {
     code: "",
     description: "",
     type: "internal",
+    supervisor_id: "",
     location_ids: [],
     classification_ids: [],
     role_ids: [],
@@ -253,6 +256,17 @@ export const DepartmentDetailPage: React.FC = () => {
     enabled: isEditModalOpen || editingRoles,
   });
 
+  const supervisorRoleId = (rolesData?.data as Role[] | undefined)?.find(
+    (r: Role) => r.code === "supervisor",
+  )?.id;
+
+  const { data: supervisorUsers } = useQuery({
+    queryKey: ["admin", "users", "supervisor", supervisorRoleId],
+    queryFn: () =>
+      userApi.list(1, 100, "", supervisorRoleId ? [supervisorRoleId] : []),
+    enabled: !!supervisorRoleId && (isEditModalOpen || editingRoles),
+  });
+
   const updateMutation = useMutation({
     mutationFn: (data: DepartmentUpdateRequest) =>
       departmentApi.update(id!, data),
@@ -340,6 +354,7 @@ export const DepartmentDetailPage: React.FC = () => {
       code: department.code,
       description: department.description || "",
       type: (department.type as "internal" | "external") || "internal",
+      supervisor_id: department.supervisor_id || "",
       location_ids: department.locations?.map((l) => l.id) || [],
       classification_ids: department.classifications?.map((c) => c.id) || [],
       role_ids: department.roles?.map((r) => r.id) || [],
@@ -356,6 +371,7 @@ export const DepartmentDetailPage: React.FC = () => {
       code: editForm.code,
       description: editForm.description,
       type: editForm.type,
+      supervisor_id: editForm.supervisor_id || undefined,
       location_ids: editForm.location_ids,
       classification_ids: editForm.classification_ids,
       role_ids: editForm.role_ids,
@@ -542,6 +558,58 @@ export const DepartmentDetailPage: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Supervisor Card */}
+      <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-[hsl(var(--primary)/0.1)] rounded-lg flex items-center justify-center">
+              <Users className="w-4 h-4 text-[hsl(var(--primary))]" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-[hsl(var(--foreground))]">
+                {t("departments.supervisor")}
+              </h3>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          {department.supervisor ? (
+            <div className="flex items-center gap-4">
+              {department.supervisor.avatar ? (
+                <img
+                  src={department.supervisor.avatar}
+                  alt={department.supervisor.username}
+                  className="w-12 h-12 rounded-xl object-cover ring-2 ring-[hsl(var(--border))]"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center ring-2 ring-[hsl(var(--border))]">
+                  <span className="text-lg font-bold text-white">
+                    {department.supervisor.first_name?.[0] ||
+                      department.supervisor.username[0] ||
+                      "?"}
+                  </span>
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                  {department.supervisor.first_name ||
+                  department.supervisor.last_name
+                    ? `${department.supervisor.first_name ?? ""} ${department.supervisor.last_name ?? ""}`.trim()
+                    : department.supervisor.username}
+                </p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  {department.supervisor.email}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              {t("departments.noSupervisor")}
+            </p>
+          )}
         </div>
       </div>
 
@@ -929,7 +997,10 @@ export const DepartmentDetailPage: React.FC = () => {
                           )}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                          <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate flex items-center gap-1">
+                            {role.is_department_manager && (
+                              <Crown className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                            )}
                             {role.name}
                           </p>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
@@ -980,7 +1051,10 @@ export const DepartmentDetailPage: React.FC = () => {
                         <Shield className="w-4 h-4 text-[hsl(var(--success))]" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        <p className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center gap-1">
+                          {role.is_department_manager && (
+                            <Crown className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                          )}
                           {role.name}
                         </p>
                         <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
@@ -1572,6 +1646,32 @@ export const DepartmentDetailPage: React.FC = () => {
                     />
                   </div>
 
+                  {/* Supervisor */}
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("departments.supervisor")}
+                    </label>
+                    <select
+                      value={editForm.supervisor_id}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          supervisor_id: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    >
+                      <option value="">{t("departments.noSupervisor")}</option>
+                      {supervisorUsers?.data?.map((user: User) => (
+                        <option key={user.id} value={user.id}>
+                          {user.first_name || user.last_name
+                            ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+                            : user.username}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Locations */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -1652,6 +1752,9 @@ export const DepartmentDetailPage: React.FC = () => {
                               : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--success))]"
                           }`}
                         >
+                          {role.is_department_manager && (
+                            <Crown className="w-3 h-3 mr-1 text-indigo-500" />
+                          )}
                           {role.name}
                         </button>
                       ))}

@@ -113,6 +113,8 @@ import type {
   PublicIncidentFeedbackRequest,
   PublicIncidentFeedbackValidationResponse,
   PublicIncidentFeedbackSubmitResponse,
+  WorkflowFilter,
+  NotificationFilter,
 } from "../types";
 import type {
   NotificationTemplateCreatePayload,
@@ -129,6 +131,7 @@ export const userApi = {
     departmentIds: string[] = [],
     locationIds: string[] = [],
     classificationIds: string[] = [],
+    call_status?: string,
   ): Promise<PaginatedResponse<User>> => {
     const params = new URLSearchParams({
       page: String(page),
@@ -142,6 +145,7 @@ export const userApi = {
       params.append("location_ids", locationIds.join(","));
     if (classificationIds.length)
       params.append("classification_ids", classificationIds.join(","));
+    if (call_status) params.append("call_status", call_status);
     const response = await apiClient.get<PaginatedResponse<User>>(
       `/admin/users?${params.toString()}`,
     );
@@ -156,6 +160,7 @@ export const userApi = {
       first_name?: string;
       last_name?: string;
       phone?: string;
+      extension?: string;
       department_id?: string;
       location_id?: string;
       department_ids?: string[];
@@ -174,6 +179,7 @@ export const userApi = {
       if (data.first_name) formData.append("first_name", data.first_name);
       if (data.last_name) formData.append("last_name", data.last_name);
       if (data.phone) formData.append("phone", data.phone);
+      if (data.extension) formData.append("extension", data.extension);
       if (data.department_id)
         formData.append("department_id", data.department_id);
       if (data.location_id) formData.append("location_id", data.location_id);
@@ -291,6 +297,23 @@ export const userApi = {
       `/users/${id}/password`,
       { new_password: newPassword },
     );
+    return response.data;
+  },
+
+  updateUserStatus: async ({
+    extension,
+    status,
+  }: {
+    extension: string;
+    status: string;
+  }): Promise<ApiResponse<unknown>> => {
+    const response = await apiClient.put<ApiResponse<unknown>>(
+      `/users/${extension}/status`,
+      {
+        call_status: status,
+      },
+    );
+
     return response.data;
   },
 };
@@ -608,9 +631,14 @@ export const departmentApi = {
     return response.data;
   },
 
-  list: async (): Promise<ApiResponse<Department[]>> => {
-    const response =
-      await apiClient.get<ApiResponse<Department[]>>("/admin/departments");
+  list: async (filters?: {
+    location?: string;
+    classification?: string;
+  }): Promise<ApiResponse<Department[]>> => {
+    const response = await apiClient.get<ApiResponse<Department[]>>(
+      "/admin/departments",
+      { params: filters },
+    );
     return response.data;
   },
 
@@ -702,8 +730,20 @@ export const roleApi = {
     return response.data;
   },
 
-  list: async (): Promise<ApiResponse<Role[]>> => {
-    const response = await apiClient.get<ApiResponse<Role[]>>("/admin/roles");
+  list: async (departmentId?: string): Promise<ApiResponse<Role[]>> => {
+    const url = departmentId
+      ? `/admin/roles?department_id=${departmentId}`
+      : "/admin/roles";
+    const response = await apiClient.get<ApiResponse<Role[]>>(url);
+    return response.data;
+  },
+
+  getManagerScope: async (): Promise<
+    ApiResponse<import("../types").ManagerScopeResponse>
+  > => {
+    const response = await apiClient.get<
+      ApiResponse<import("../types").ManagerScopeResponse>
+    >("/admin/users/manager-scope");
     return response.data;
   },
 
@@ -934,6 +974,33 @@ export const workflowApi = {
     if (recordType) params.append("record_type", recordType);
     const url = `/admin/workflows${params.toString() ? "?" + params.toString() : ""}`;
     const response = await apiClient.get<ApiResponse<Workflow[]>>(url);
+    return response.data;
+  },
+  //searching workflows with filters
+  listWithFilters: async (
+    filter: WorkflowFilter,
+  ): Promise<ApiResponse<Workflow[]>> => {
+    const params = new URLSearchParams();
+
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.search) params.append("search", filter.search);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.record_type) params.append("record_type", filter.record_type);
+    if (filter.created_by) params.append("created_by", filter.created_by);
+    if (filter.created_from) params.append("created_from", filter.created_from);
+    if (filter.created_to) params.append("created_to", filter.created_to);
+    if (filter.modified_from)
+      params.append("modified_from", filter.modified_from);
+    if (filter.modified_to) params.append("modified_to", filter.modified_to);
+    if (filter.active_only !== undefined) {
+      params.append("active_only", String(filter.active_only));
+    }
+
+    const response = await apiClient.get<ApiResponse<Workflow[]>>(
+      `/admin/workflows${params.toString() ? `?${params.toString()}` : ""}`,
+    );
+
     return response.data;
   },
 
@@ -1255,38 +1322,43 @@ export const incidentApi = {
   list: async (
     filter: IncidentFilter = {},
   ): Promise<PaginatedResponse<Incident>> => {
-    const params = new URLSearchParams();
-    if (filter.page) params.append("page", String(filter.page));
-    if (filter.limit) params.append("limit", String(filter.limit));
-    if (filter.search) params.append("search", filter.search);
-    if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+    // Use POST /incidents/search to send filters in the request body,
+    // avoiding URL length limits when many filter values are selected.
+    // Field names are mapped to match the backend's json tags.
+    const body: Record<string, unknown> = {};
+    if (filter.page) body.page = filter.page;
+    if (filter.limit) body.limit = filter.limit;
+    if (filter.search) body.search = filter.search;
+    if (filter.workflow_id) body.workflow_id = [filter.workflow_id];
+    if (filter.my_record) body.my_record = filter.my_record;
     if (filter.current_state_id)
-      params.append("current_state_id", filter.current_state_id);
-    filter.classification_ids?.forEach((id) =>
-      params.append("classification_id", id),
-    );
-    if (filter.priority) params.append("priority", String(filter.priority));
-    if (filter.reporter_phone)
-      params.append("reporter_phone", filter.reporter_phone);
-    if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
-    filter.department_ids?.forEach((id) => params.append("department_id", id));
-    filter.location_ids?.forEach((id) => params.append("location_id", id));
-    if (filter.source) params.append("source", filter.source);
+      body.current_state_id = [filter.current_state_id];
+    if (filter.classification_ids?.length)
+      body.classification_id = filter.classification_ids;
+    if (filter.priority) body.priority = filter.priority;
+    if (filter.reporter_phone) body.reporter_phone = filter.reporter_phone;
+    if (filter.assignee_id) body.assignee_id = [filter.assignee_id];
+    if (filter.reporter_id) body.reporter_id = [filter.reporter_id];
+    if (filter.department_ids?.length)
+      body.department_id = filter.department_ids;
+    if (filter.location_ids?.length) body.location_id = filter.location_ids;
+    if (filter.source) body.source = filter.source;
     if (filter.sla_breached !== undefined)
-      params.append("sla_breached", String(filter.sla_breached));
+      body.sla_breached = filter.sla_breached;
     if (filter.converted_to_request !== undefined)
-      params.append(
-        "converted_to_request",
-        String(filter.converted_to_request),
-      );
-    if (filter.record_type) params.append("record_type", filter.record_type);
-    if (filter.start_date) params.append("start_date", filter.start_date);
-    if (filter.end_date) params.append("end_date", filter.end_date);
-    if (filter.transition_id)
-      params.append("transition_id", filter.transition_id);
-
-    const response = await apiClient.get<PaginatedResponse<Incident>>(
-      `/incidents?${params.toString()}`,
+      body.converted_to_request = filter.converted_to_request;
+    if (filter.record_type) body.record_type = filter.record_type;
+    if (filter.start_date) body.start_date_str = filter.start_date;
+    if (filter.end_date) body.end_date_str = filter.end_date;
+    if (filter.transition_id) body.transition_id = filter.transition_id;
+    if (filter.reporter_phone_search)
+      body.reporter_phone_search = filter.reporter_phone_search;
+    if (filter.momra_ref) body.momra_ref = filter.momra_ref;
+    if (filter.current_state_code)
+      body.current_state_code = [filter.current_state_code];
+    const response = await apiClient.post<PaginatedResponse<Incident>>(
+      "/incidents/search",
+      body,
     );
     return response.data;
   },
@@ -1592,6 +1664,31 @@ export const incidentApi = {
     return response.data;
   },
 
+  // Full SMS/Email communication history for this incident's audit trail.
+  getCommunications: async (
+    incidentId: string,
+    filter: {
+      page?: number;
+      limit?: number;
+      channel?: "sms" | "email";
+      start_date?: string;
+      end_date?: string;
+    } = {},
+  ): Promise<PaginatedResponse<Email>> => {
+    const params = new URLSearchParams();
+    params.append("incident_id", incidentId);
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.channel) params.append("channel", filter.channel);
+    if (filter.start_date) params.append("start_date", filter.start_date);
+    if (filter.end_date) params.append("end_date", filter.end_date);
+
+    const response = await apiClient.get<PaginatedResponse<Email>>(
+      `/notifications?${params.toString()}`,
+    );
+    return response.data;
+  },
+
   // Download Report
   downloadReport: async (
     incidentId: string,
@@ -1605,6 +1702,67 @@ export const incidentApi = {
       },
     );
     return response.data;
+  },
+
+  getIncidentStatsV2: async (
+    filter: IncidentFilter = {},
+    recordType: "incident" | "request" | "complaint" | "query" = "incident",
+  ): Promise<ApiResponse<IncidentStats>> => {
+    try {
+      // Mirrors list()'s param mapping — the backend expects singular,
+      // repeatable keys (classification_id, department_id, location_id) for
+      // what the frontend filter tracks as plural _ids arrays. Passing the
+      // filter object straight through (as this used to) silently drops
+      // those three filters since the key names never match.
+      const params = new URLSearchParams();
+      if (filter.search) params.append("search", filter.search);
+      if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+      if (filter.my_record) params.append("my_record", filter.my_record);
+      if (filter.current_state_id)
+        params.append("current_state_id", filter.current_state_id);
+      filter.classification_ids?.forEach((id) =>
+        params.append("classification_id", id),
+      );
+      if (filter.priority) params.append("priority", String(filter.priority));
+      if (filter.reporter_phone)
+        params.append("reporter_phone", filter.reporter_phone);
+      if (filter.assignee_id) params.append("assignee_id", filter.assignee_id);
+      if (filter.reporter_id) params.append("reporter_id", filter.reporter_id);
+      filter.department_ids?.forEach((id) =>
+        params.append("department_id", id),
+      );
+      filter.location_ids?.forEach((id) => params.append("location_id", id));
+      if (filter.source) params.append("source", filter.source);
+      if (filter.sla_breached !== undefined)
+        params.append("sla_breached", String(filter.sla_breached));
+      if (filter.converted_to_request !== undefined)
+        params.append(
+          "converted_to_request",
+          String(filter.converted_to_request),
+        );
+      if (filter.start_date) params.append("start_date", filter.start_date);
+      if (filter.end_date) params.append("end_date", filter.end_date);
+      if (filter.transition_id)
+        params.append("transition_id", filter.transition_id);
+      if (filter.reporter_phone_search) {
+        params.append("reporter_phone_search", filter.reporter_phone_search);
+      }
+      if (filter.momra_ref) params.append("momra_ref", filter.momra_ref);
+      params.append("record_type", recordType);
+
+      const response = await apiClient.get(
+        `/incidents/stats/v2?${params.toString()}`,
+      );
+      if (response.data && response.data.success) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: "Invalid response from server" };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
   },
 
   // Ready-to-Close duration options (global defaults)
@@ -1692,6 +1850,7 @@ export const complaintApi = {
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.search) params.append("search", filter.search);
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+    if (filter.my_record) params.append("my_record", filter.my_record);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
     filter.classification_ids?.forEach((id) =>
@@ -1893,6 +2052,7 @@ export const queryApi = {
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.search) params.append("search", filter.search);
     if (filter.workflow_id) params.append("workflow_id", filter.workflow_id);
+    if (filter.my_record) params.append("my_record", filter.my_record);
     if (filter.current_state_id)
       params.append("current_state_id", filter.current_state_id);
     filter.classification_ids?.forEach((id) =>
@@ -2127,6 +2287,12 @@ export const requestApi = {
     return response.data;
   },
 
+  delete: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/incidents/${id}`,
+    );
+    return response.data;
+  },
   // State transitions
   transition: async (
     id: string,
@@ -2515,7 +2681,11 @@ export const callLogApi = {
       page: String(page),
       limit: String(limit),
     });
-    if (userId) params.append("user_id", userId);
+
+    // if (userId) params.append("user_id", userId);
+
+    if (userId) params.append("agent_id", userId);
+
     const response = await apiClient.get(
       `/admin/call-logs?${params.toString()}`,
     );
@@ -2889,6 +3059,46 @@ export const smsApi = {
     params.append("user_id", userId);
     const response = await apiClient.get<ApiResponse<any>>(
       `/notifications/stats?${params.toString()}`,
+    );
+    return response.data;
+  },
+};
+
+export const notificationTrackApi = {
+  list: async (
+    filter: NotificationFilter = {},
+  ): Promise<PaginatedResponse<Email>> => {
+    const params = new URLSearchParams();
+    if (filter.page) params.append("page", String(filter.page));
+    if (filter.limit) params.append("limit", String(filter.limit));
+    if (filter.search) params.append("search", filter.search);
+    if (filter.start_date) params.append("start_date", filter.start_date);
+    if (filter.end_date) params.append("end_date", filter.end_date);
+    if (filter.status) params.append("status", filter.status);
+    if (filter.channel) params.append("channel", filter.channel);
+    if (filter.sent_by) params.append("sent_by", filter.sent_by);
+    if (filter.is_starred !== undefined)
+      params.append("is_starred", String(filter.is_starred));
+    if (filter.category) params.append("category", filter.category);
+    if (filter.direction) params.append("direction", filter.direction);
+    if (filter.is_read !== undefined)
+      params.append("is_read", String(filter.is_read));
+    if (filter.received_by)
+      params.append("received_by", String(filter.received_by));
+    if (filter.is_draft !== undefined)
+      params.append("is_draft", String(filter.is_draft));
+    if (filter.recipient) {
+      params.append("recipient", String(filter.recipient));
+    }
+
+    const response = await apiClient.get<PaginatedResponse<Email>>(
+      `/admin/notification-monitoring?${params.toString()}`,
+    );
+    return response.data;
+  },
+  getById: async (id: string): Promise<ApiResponse<Email>> => {
+    const response = await apiClient.get<ApiResponse<Email>>(
+      `/admin/notification-monitoring/${id}`,
     );
     return response.data;
   },
@@ -3323,6 +3533,28 @@ export const gisLocationApi = {
       payload,
     );
 
+    return response.data;
+  },
+};
+
+export const extensionApi = {
+  list: async (): Promise<
+    ApiResponse<{ extension: string; status: string }[]>
+  > => {
+    const response =
+      await apiClient.get<ApiResponse<{ extension: string; status: string }[]>>(
+        "/extensions",
+      );
+    return response.data;
+  },
+  assign: async (payload: {
+    user_id?: string;
+    extension: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(
+      "/extensions/assign",
+      payload,
+    );
     return response.data;
   },
 };

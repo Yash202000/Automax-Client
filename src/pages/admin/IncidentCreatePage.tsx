@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -52,17 +52,48 @@ import type {
   Location,
   Workflow,
   Classification,
-  IncidentSource,
   LookupValue,
   iLocationOption,
 } from "../../types";
-import { INCIDENT_SOURCES } from "../../types";
 import { DynamicLookupField } from "../../components/common/DynamicLookupField";
 import { useAuthStore } from "../../stores/authStore";
 import { Modal } from "../../components/ui";
 import { AttachmentPreview } from "@/components/common/AttachmentPreview";
 import { toast } from "sonner";
 import i18n from "@/i18n";
+import { useSoftphoneStore } from "@/stores/softphoneStore";
+import {
+  Select as AppSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select";
+import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
+import { getAvatarName } from "@/lib/utils";
+import { VirtualizedList } from "@/components/ui/virtualized-list";
+
+const statusBadgeColor: any = {
+  online: "bg-green-500",
+  connected: "bg-blue-500",
+  offline: "bg-gray-400",
+  disconnected: "bg-red-500",
+};
+
+const getUserLabel = (user: any) =>
+  [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+  user?.username ||
+  user?.email ||
+  "";
+
+const normalizeStatus = (status?: string) => status?.toLowerCase() ?? "";
+
+const statusOrder: Record<string, number> = {
+  online: 0,
+  connected: 1,
+  offline: 2,
+  disconnected: 3,
+};
 
 export function IncidentCreatePage() {
   const { t } = useTranslation();
@@ -70,6 +101,9 @@ export function IncidentCreatePage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const { id } = useParams<{ id: string }>();
+  // Named `routerLocation` (not `location`) to avoid shadowing the geolocation
+  // `location` param used by handleLocationChange/LocationPicker further below.
+  const routerLocation = useLocation();
 
   const [formData, setFormData] = useState<
     Omit<IncidentCreateRequest, "lookup_value_ids" | "custom_lookup_fields">
@@ -116,6 +150,17 @@ export function IncidentCreatePage() {
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
+  const { incomingCallNumber, incomingCallName } = useSoftphoneStore();
+
+  useEffect(() => {
+    if (incomingCallNumber) {
+      setFormData((prev) => ({
+        ...prev,
+        reporter_name: incomingCallName || "",
+        reporter_phone: incomingCallNumber,
+      }));
+    }
+  }, [incomingCallNumber, incomingCallName]);
 
   // Fetch data
   const { data: workflowsData } = useQuery({
@@ -146,9 +191,40 @@ export function IncidentCreatePage() {
     queryFn: () => userApi.list(1, 100),
   });
 
+  const isEpmclClient =
+    (
+      window.APP_CONFIG?.CLIENT ??
+      import.meta.env.VITE_CLIENT ??
+      ""
+    ).toUpperCase() === "EPMCL";
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
+  const shouldFilterDepartments =
+    isEpmclClient &&
+    Boolean(formData.location_id && formData.classification_id);
+
   const { data: departmentsData } = useQuery({
-    queryKey: ["admin", "departments"],
-    queryFn: () => departmentApi.list(),
+    queryKey: [
+      "admin",
+      "departments",
+      shouldFilterDepartments ? "filtered" : "all",
+      formData.location_id || "",
+      formData.classification_id || "",
+    ],
+    enabled: !isEpmclClient || shouldFilterDepartments,
+    queryFn: () => {
+      if (isEpmclClient) {
+        return departmentApi.list({
+          location: formData.location_id!,
+          classification: formData.classification_id!,
+        });
+      }
+
+      return departmentApi.list();
+    },
   });
 
   const { data: locationsData } = useQuery({
@@ -160,6 +236,21 @@ export function IncidentCreatePage() {
     queryKey: ["admin", "lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
   });
+
+  const sourceOptions = useMemo(() => {
+    if (!lookupCategoriesData?.data?.length) return [];
+    return (lookupCategoriesData?.data || [])
+      .filter((cat) => cat.code === "SOURCE")
+      .flatMap((cat) =>
+        (cat.values || []).map((value) => ({
+          value: value.code.toLowerCase(),
+          label:
+            i18n.language === "ar" && value.name_ar
+              ? value.name_ar
+              : value.name,
+        })),
+      );
+  }, [lookupCategoriesData, i18n.language]);
 
   // Fetch initial state of the selected workflow to detect creation-time assignment config
   const { data: initialStateData } = useQuery({
@@ -300,6 +391,12 @@ export function IncidentCreatePage() {
       ),
     [lookupCategoriesData?.data],
   );
+
+  useEffect(() => {
+    if (!formData.department_id && departments.length === 1) {
+      setFormData((prev) => ({ ...prev, department_id: departments[0].id }));
+    }
+  }, [departments, formData.department_id]);
 
   const fetchIncidentById = useCallback(
     async (id: string) => {
@@ -568,6 +665,22 @@ export function IncidentCreatePage() {
     }
   }, [id]);
 
+  // CTI prefill: navigated here from the Cintrix call widget ("Create incident").
+  // Must stay declared after the `!id` reset effect above — both flush on mount
+  // in declaration order, and the reset uses a non-functional setFormData that
+  // would clobber this prefill if it ran later.
+  useEffect(() => {
+    const p = (routerLocation.state as any)?.ctiPrefill;
+    if (!p) return;
+    setFormData((prev) => ({
+      ...prev,
+      reporter_phone: p.reporter_phone || prev.reporter_phone,
+      reporter_name: p.reporter_name || prev.reporter_name,
+      source: p.source || prev.source,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Auto-generate title from classification, location, and geolocation
   useEffect(() => {
     const parts: string[] = [];
@@ -734,7 +847,7 @@ export function IncidentCreatePage() {
 
   const handleChange = (
     field: keyof typeof formData,
-    value: string | IncidentSource | undefined,
+    value: string | undefined,
   ) => {
     if (field === "workflow_id" && value) {
       setIsAutoMatched(false);
@@ -974,6 +1087,16 @@ export function IncidentCreatePage() {
   const selectedWorkflow = workflows.find((w) => w.id === formData.workflow_id);
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
   const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
+  // Call-originated incident (agent hit "Create incident" on the Cintrix widget,
+  // or there's a live/last call in the softphone store): the reporter IS the
+  // caller, so always show the prefilled Caller Name/Phone fields even when the
+  // selected workflow doesn't list them — otherwise the prefilled values sit
+  // invisibly in state and the agent can't see/edit them.
+  const callOriginated =
+    Boolean((routerLocation.state as any)?.ctiPrefill) ||
+    Boolean(incomingCallNumber) ||
+    Boolean(formData.reporter_phone) ||
+    Boolean(formData.reporter_name);
 
   // List of valid form data fields for validation
   const validFormFields = [
@@ -1131,7 +1254,9 @@ export function IncidentCreatePage() {
     };
 
     // Ensure empty strings are not sent for optional UUID fields
-    if (submitData.assignee_id === "") submitData.assignee_id = undefined;
+    if (submitData.assignee_id === "") {
+      submitData.assignee_id = undefined;
+    }
     if (submitData.department_id === "") submitData.department_id = undefined;
     if (submitData.location_id === "") submitData.location_id = undefined;
     if (submitData.classification_id === "")
@@ -1183,11 +1308,6 @@ export function IncidentCreatePage() {
     createMutation.mutate({ data: submitData, files: attachments });
   };
 
-  const sourceOptions = [
-    { value: "", label: t("incidents.selectSource") },
-    ...INCIDENT_SOURCES.map((s) => ({ value: s.value, label: s.label })),
-  ];
-
   const workflowOptions = [
     { value: "", label: t("incidents.selectWorkflow") },
     ...filteredWorkflows.map((wf) => ({
@@ -1201,13 +1321,38 @@ export function IncidentCreatePage() {
   // Convert classifications to TreeSelectNode format
   const classificationTree = classifications as unknown as TreeSelectNode[];
 
-  const userOptions = [
-    { value: "", label: t("incidents.unassigned") },
-    ...users.map((u) => ({
-      value: u.id,
-      label: withCallStatusDot(`${u.first_name} ${u.last_name}`, u.call_status),
-    })),
-  ];
+  const userOptions = useMemo(() => {
+    const options = users.map((user: any) => ({
+      value: user.id,
+      label: getUserLabel(user),
+      status: normalizeStatus(user.call_status),
+      statusOrder: statusOrder[normalizeStatus(user.call_status)] ?? 99,
+      avatar: getAvatarName(getUserLabel(user)),
+    }));
+
+    options.sort((a, b) => {
+      if (a.statusOrder !== b.statusOrder) {
+        return a.statusOrder - b.statusOrder;
+      }
+
+      return a.label.localeCompare(b.label);
+    });
+
+    return [
+      {
+        value: "",
+        label: t("incidents.unassigned"),
+        status: "offline",
+        avatar: getAvatarName(t("incidents.unassigned")),
+      },
+      ...options,
+    ];
+  }, [users, t]);
+
+  const selectedAssignee = useMemo(
+    () => userOptions.find((user) => user.value === formData.assignee_id),
+    [userOptions, formData.assignee_id],
+  );
 
   const departmentOptions = [
     { value: "", label: t("incidents.noDepartment") },
@@ -1345,7 +1490,8 @@ export function IncidentCreatePage() {
                   />
                 )}
                 {(workflowRequiredFields.includes("reporter_name") ||
-                  workflowOptionalFields.includes("reporter_name")) && (
+                  workflowOptionalFields.includes("reporter_name") ||
+                  callOriginated) && (
                   <Input
                     label={t("incidents.reporterName", "Caller Name")}
                     value={formData.reporter_name || ""}
@@ -1381,7 +1527,8 @@ export function IncidentCreatePage() {
                   />
                 )}
                 {(workflowRequiredFields.includes("reporter_phone") ||
-                  workflowOptionalFields.includes("reporter_phone")) && (
+                  workflowOptionalFields.includes("reporter_phone") ||
+                  callOriginated) && (
                   <Input
                     label={t("incidents.reporterPhone", "Caller Phone Number")}
                     type="tel"
@@ -1457,12 +1604,16 @@ export function IncidentCreatePage() {
                   onChange={(e) =>
                     handleChange(
                       "source",
-                      (e.target.value as IncidentSource) || undefined,
+                      (e.target.value as string) || undefined,
                     )
                   }
-                  options={sourceOptions}
+                  options={[
+                    { value: "", label: t("incidents.selectSource") },
+                    ...sourceOptions,
+                  ]}
                   required={true}
                   error={errors.source}
+                  disabled={isEPM940}
                 />
                 {incidentLookupCategories
                   .filter((category) => category.code === "PRIORITY")
@@ -1688,6 +1839,7 @@ export function IncidentCreatePage() {
                 error={errors.workflow_id}
                 options={workflowOptions}
                 required
+                disabled={isEPM940}
               />
               {isAutoMatched && autoMatchedWorkflow && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-green-600">
@@ -1751,18 +1903,49 @@ export function IncidentCreatePage() {
                   {initialStateAssignmentMode === "none" &&
                     (workflowRequiredFields.includes("assignee_id") ||
                       workflowOptionalFields.includes("assignee_id")) && (
-                      <Select
-                        label={t("incidents.assignee")}
-                        value={formData.assignee_id || ""}
-                        onChange={(e) =>
-                          handleChange("assignee_id", e.target.value)
+                      <AppSelect
+                        value={formData.assignee_id}
+                        onValueChange={(value) =>
+                          handleChange("assignee_id", value)
                         }
-                        options={userOptions}
-                        required={workflowRequiredFields.includes(
-                          "assignee_id",
-                        )}
-                        error={errors.assignee_id}
-                      />
+                      >
+                        <SelectTrigger className="w-full" size="md">
+                          <SelectValue placeholder={t("incidents.unassigned")}>
+                            {selectedAssignee?.label ||
+                              t("incidents.selectAssignee")}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <VirtualizedList
+                            items={userOptions}
+                            height="h-72"
+                            estimateSize={48}
+                            getKey={(user) => user.value}
+                            renderItem={(user: any) => (
+                              <SelectItem value={user.value}>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-7 w-7">
+                                    <AvatarFallback className="text-xs">
+                                      {user?.avatar}
+                                    </AvatarFallback>
+
+                                    {user?.value ? (
+                                      <AvatarBadge
+                                        className={
+                                          statusBadgeColor[user?.status] ??
+                                          "bg-gray-400"
+                                        }
+                                      />
+                                    ) : null}
+                                  </Avatar>
+
+                                  <span className="truncate">{user.label}</span>
+                                </div>
+                              </SelectItem>
+                            )}
+                          />
+                        </SelectContent>
+                      </AppSelect>
                     )}
                   {(workflowRequiredFields.includes("department_id") ||
                     workflowOptionalFields.includes("department_id")) && (

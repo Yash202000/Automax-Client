@@ -39,12 +39,17 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "@/stores/authStore";
+import {
+  useIncidentFilterStore,
+  pickSharedIncidentFilter,
+} from "@/stores/incidentFilterStore";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import {
   MergeIncidentsModal,
   BulkTransitionModal,
   SMSLegends,
   IncidentFilters,
+  IncidentStatusStatsRow,
 } from "../../components/incidents";
 import LocationMap from "@/components/maps/LocationMap";
 
@@ -59,9 +64,19 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [filter, setFilter] = useState<IncidentFilter>({
+  // Global cross-view filtering is a VD2-specific requirement — other
+  // clients keep each incident view's filter fully independent.
+  const isVD2Client =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
+  // Seed from whatever filter is currently shared across incident views (set
+  // from "All Incidents" or a previous visit to this tab), so filtering
+  // feels global rather than resetting every time this tab remounts.
+  const [filter, setFilter] = useState<IncidentFilter>(() => ({
     record_type: "incident",
-  });
+    ...(isVD2Client ? useIncidentFilterStore.getState().filter : {}),
+  }));
+  const setSharedIncidentFilter = useIncidentFilterStore((s) => s.setFilter);
   const [selectedIncidents, setSelectedIncidents] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
   const [showBulkTransitionModal, setShowBulkTransitionModal] = useState(false);
@@ -122,8 +137,17 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     filter.sla_breached !== undefined ||
     filter.priority !== undefined ||
     !!filter.start_date ||
-    !!filter.end_date
+    !!filter.end_date ||
+    !!filter.reporter_phone ||
+    !!filter.reporter_phone_search
   );
+
+  // Keep the shared filter store in sync so "All Incidents" and the sidebar's
+  // "By Status" counts reflect whatever is applied on this tab too.
+  useEffect(() => {
+    if (!isVD2Client) return;
+    setSharedIncidentFilter(pickSharedIncidentFilter(filter));
+  }, [filter, setSharedIncidentFilter, isVD2Client]);
 
   // Check if all selected incidents belong to the same workflow
   const selectedWorkflowId =
@@ -219,9 +243,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     placeholderData: keepPreviousData,
   });
 
+  // Same filter the list query uses, so the stats — and the by-status
+  // breakdown derived from them — reflect exactly what the list table shows.
   const { data: statsData } = useQuery({
-    queryKey: ["incidents", "stats", type],
-    queryFn: () => incidentApi.getStats("incident", type),
+    queryKey: ["incidents", "stats", type, finalFilter],
+    queryFn: () => incidentApi.getIncidentStatsV2(finalFilter),
+    enabled: !isShortSearch && !!user?.id,
   });
 
   // Real-time viewer count updates via WebSocket (no polling!)
@@ -511,6 +538,20 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
         </div>
       </div>
 
+      {/* Stats by Status — hidden once a status filter is active, since the
+          list is already narrowed to one status at that point (the filter
+          badges row above already shows/clears it). */}
+      {!filter.current_state_id && (
+        <IncidentStatusStatsRow
+          workflowStats={stats?.workflow_stats}
+          total={stats?.total || 0}
+          activeStateId={filter.current_state_id}
+          onStatusClick={(stateId) =>
+            handleFilterChange("current_state_id", stateId)
+          }
+        />
+      )}
+
       {showMap && (
         <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
           <LocationMap locations={getLocation()} height="450px" />
@@ -525,7 +566,6 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
         hasActiveFilters={hasActiveFilters}
         recordType="incident"
         showAssigneeFilter={false}
-        canViewAllIncidents={true}
       />
 
       {/* Incidents Table */}

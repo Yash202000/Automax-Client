@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
-import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
@@ -20,6 +26,13 @@ import {
   GitBranch,
   ClipboardCheck,
   Languages,
+  Database,
+  BookOpen,
+  Crosshair,
+  TrendingUp,
+  Layers,
+  Gauge,
+  ListTree,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -44,6 +57,12 @@ export const GoalLayout: React.FC = () => {
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "";
+  const isActiveMasterData = (tab: string) => {
+    const onMasterData = location.pathname === "/goals/kpi/master-data";
+    return onMasterData && currentTab === tab;
+  };
   const langRef = useRef<HTMLDivElement>(null);
   const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canApprove = isSuperAdmin || hasPermission(PERMISSIONS.GOALS_APPROVE);
@@ -116,7 +135,7 @@ export const GoalLayout: React.FC = () => {
       </button>
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 overflow-y-auto">
+      <nav className="flex-1 py-6 px-3">
         {!collapsed && (
           <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
             {t("goals.goalManagement")}
@@ -322,7 +341,251 @@ export const GoalLayout: React.FC = () => {
               </>
             )}
           </NavLink>
+
+          {/* KPI Management */}
+          <div className="mt-6 mb-2 px-3">
+            {!collapsed && (
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500/80">
+                {t("kpi.sidebarTitle")}
+              </p>
+            )}
+          </div>
+
+          <NavLink
+            to="/goals/kpi"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <BarChart3 size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("kpi.dashboard.title")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/dictionary"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <BookOpen size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("kpi.dictionary.title")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/targets"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <Crosshair size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("kpi.targets.title")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/performance"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <TrendingUp size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("kpi.performance.title")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/approvals"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <ClipboardCheck size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    {t("kpi.approvals.title")}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/benchmarks"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <BarChart3 size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">Benchmarks</span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/segmentation"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <Layers size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">Segmentation</span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/report"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <FileText size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">KPI Report</span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/performance-bands"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <Gauge size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">
+                    Performance Bands
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/goals/kpi/entries"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) => navLinkClass(isActive)}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                )}
+                <FileSpreadsheet size={20} className="flex-shrink-0" />
+                {!collapsed && (
+                  <span className="ms-3 font-medium text-sm">All Entries</span>
+                )}
+              </>
+            )}
+          </NavLink>
         </div>
+
+        {/* Master Data Management */}
+        {canAdminGoals && (
+          <>
+            <div className="mt-6 mb-2 px-3">
+              {!collapsed && (
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500/80">
+                  {t("kpi.masterData.title")}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              {(
+                [
+                  ["pillar", "Pillars", Database],
+                  ["enabler", "Enablers", BookOpen],
+                  ["objectives-tree", "Objectives Hierarchy", ListTree],
+                  ["initiative", "Initiatives", Sparkles],
+                  ["domain", "Domains", FolderOpen],
+                  ["award-criterion", "Award Criteria", ClipboardCheck],
+                  ["award-sub-criterion", "Award Sub-Criteria", CheckCheck],
+                  ["data-source", "Data Sources", FileSpreadsheet],
+                  ["segmentation-dimension", "Segmentation Dimensions", Layers],
+                ] as const
+              ).map(([tabKey, label, Icon]) => (
+                <NavLink
+                  key={tabKey}
+                  to={`/goals/kpi/master-data?tab=${tabKey}&standalone=1`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={navLinkClass(isActiveMasterData(tabKey))}
+                >
+                  {isActiveMasterData(tabKey) && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-e-full" />
+                  )}
+                  <Icon size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">{label}</span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Divider + Quick Links */}
         {!collapsed && <div className="my-6 border-t border-white/5" />}
@@ -390,7 +653,7 @@ export const GoalLayout: React.FC = () => {
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside
-        className={`${collapsed ? "w-[72px]" : "w-[264px]"} bg-sidebar transition-all duration-300 flex-col hidden lg:flex relative`}
+        className={`${collapsed ? "w-[72px]" : "w-[264px]"} bg-sidebar transition-all duration-300 flex-col hidden lg:flex relative overflow-y-auto`}
       >
         <SidebarContent />
       </aside>
@@ -405,11 +668,11 @@ export const GoalLayout: React.FC = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden overflow-y-auto ${mobileMenuOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"}`}
       >
         <button
           onClick={() => setMobileMenuOpen(false)}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white"
+          className="absolute top-4 end-4 p-2 text-slate-400 hover:text-white"
         >
           <X size={20} />
         </button>

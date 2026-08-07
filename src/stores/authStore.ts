@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { User } from "../types";
 import { useSoftphoneStore } from "./softphoneStore";
 import sipService from "../lib/services/sipService";
+import { apiClient, setLoggingOut } from "@/api/client";
 
 interface AuthState {
   user: User | null;
@@ -44,13 +45,14 @@ export const useAuthStore = create<AuthState>()(
       },
       setUser: (user) => set({ user }),
       logout: () => {
-        // Clear all auth-related localStorage items
+        setLoggingOut(true);
+        apiClient.post("/auth/logout").catch(() => {});
+
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("rememberMe");
-        localStorage.removeItem("auth-storage"); // Clear zustand persisted state
+        localStorage.removeItem("auth-storage");
 
-        // Reset softphone state and stop SIP service
         useSoftphoneStore.getState().reset();
         sipService.stop();
 

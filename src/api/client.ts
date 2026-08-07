@@ -14,6 +14,10 @@ declare global {
       LOGIN_SSO?: string;
       DISABLE_AUTO_LOCATION_RETRIEVAL?: string;
       CLIENT?: string;
+      CTI_PROVIDER?: string;
+      SESSION_TIMEOUT_MINUTES?: string;
+      APP_VERSION?: string;
+      ENABLE_SIGNUP?: string;
     };
   }
 }
@@ -33,8 +37,8 @@ export const apiClient = axios.create({
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
+  resolve: (_value?: unknown) => void;
+  reject: (_reason?: unknown) => void;
 }> = [];
 
 const processQueue = (error: unknown, token: string | null = null) => {

@@ -159,7 +159,7 @@ const sidebarSectionsConfig: SidebarSection[] = [
         icon: BellRing,
         labelKey: "notificationTemplates.title",
         path: "/admin/templates",
-        permission: "templates:view",
+        permission: "templates:read",
       },
       {
         icon: KeyRound,
@@ -446,13 +446,15 @@ export const AdminLayout: React.FC = () => {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
+          mobileMenuOpen
+            ? "translate-x-0"
+            : "ltr:-translate-x-full rtl:translate-x-full"
         }`}
       >
         <button
           onClick={() => setMobileMenuOpen(false)}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white"
+          className="absolute top-4 end-4 p-2 text-slate-400 hover:text-white"
         >
           <X size={20} />
         </button>

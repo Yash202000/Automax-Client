@@ -47,6 +47,7 @@ import {
   ShieldCheck,
   Phone,
   Maximize2,
+  Mail,
 } from "lucide-react";
 import {
   Button,
@@ -60,6 +61,7 @@ import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { MiniWorkflowView } from "../../components/workflow";
 import {
   RevisionHistory,
+  CommunicationHistory,
   ConvertToRequestModal,
   UnmergeIncidentsModal,
   BulkUnmergeModal,
@@ -158,6 +160,7 @@ export const IncidentDetailPage: React.FC = () => {
     | "comments"
     | "attachments"
     | "revisions"
+    | "communications"
     | "rejections"
     | "ai-quality"
     | "linked-systems"
@@ -168,9 +171,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [selectedTransition, setSelectedTransition] =
     useState<AvailableTransition | null>(null);
   const [transitionComment, setTransitionComment] = useState("");
-  const [transitionAttachment, setTransitionAttachment] = useState<File | null>(
-    null,
-  );
+  const [transitionAttachment, setTransitionAttachment] = useState<File[]>([]);
   const [transitionUploading, setTransitionUploading] = useState(false);
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
@@ -243,6 +244,8 @@ export const IncidentDetailPage: React.FC = () => {
 
   const [disableApproveTransition, setDisableApproveTransition] =
     useState(false);
+
+  const [showAllAssignees, setShowAllAssignees] = useState<boolean>();
 
   // Queries
   const {
@@ -526,7 +529,7 @@ export const IncidentDetailPage: React.FC = () => {
         setTransitionModalOpen(false);
         setSelectedTransition(null);
         setTransitionComment("");
-        setTransitionAttachment(null);
+        setTransitionAttachment([]);
         setTransitionFeedbackComment("");
         setReadyToCloseDuration("");
         setDepartmentMatchResult(null);
@@ -661,7 +664,7 @@ export const IncidentDetailPage: React.FC = () => {
       setTransitionModalOpen(false);
       setSelectedTransition(null);
       setTransitionComment("");
-      setTransitionAttachment(null);
+      setTransitionAttachment([]);
       setTransitionFeedbackComment("");
       setTransitionFieldValues({});
       setReadyToCloseDuration("");
@@ -937,11 +940,19 @@ export const IncidentDetailPage: React.FC = () => {
     return steps;
   }, [selectedTransition]);
 
+  const transitionAttachmentAllowsMultiple = useMemo(
+    () =>
+      selectedTransition?.requirements?.some(
+        (r) => r.requirement_type === "attachment" && r.is_multiple,
+      ) ?? false,
+    [selectedTransition],
+  );
+
   const closeTransitionModal = () => {
     setTransitionModalOpen(false);
     setSelectedTransition(null);
     setTransitionComment("");
-    setTransitionAttachment(null);
+    setTransitionAttachment([]);
     setTransitionFeedbackComment("");
     setTransitionFieldValues({});
     setReadyToCloseDuration("");
@@ -998,7 +1009,7 @@ export const IncidentDetailPage: React.FC = () => {
         selectedTransition.requirements?.some(
           (r) => r.requirement_type === "attachment" && r.is_mandatory,
         ) &&
-        !transitionAttachment
+        transitionAttachment.length === 0
       )
         newErrors.attachment = t(
           "incidents.attachmentRequired",
@@ -1135,7 +1146,7 @@ export const IncidentDetailPage: React.FC = () => {
       (t) => t.transition.is_reopen && t.can_execute,
     );
     if (reopenTransition) {
-      handleTransitionClick(reopenTransition);
+      handleTransitionClick(reopenTransition as any);
     }
     // Clear the param so it doesn't re-trigger
     setSearchParams({}, { replace: true });
@@ -1250,7 +1261,7 @@ export const IncidentDetailPage: React.FC = () => {
         "Comment is required",
       );
 
-    if (requiresAttachment && !transitionAttachment)
+    if (requiresAttachment && transitionAttachment.length === 0)
       newTransitionErrors.attachment = t(
         "incidents.attachmentRequired",
         "Attachment is required",
@@ -1323,16 +1334,18 @@ export const IncidentDetailPage: React.FC = () => {
       let attachmentIds: string[] | undefined;
 
       // Upload attachment first if provided
-      if (transitionAttachment) {
+      if (transitionAttachment.length > 0) {
         setTransitionUploading(true);
-        const uploadResult = await incidentApi.uploadAttachment(
-          id!,
-          transitionAttachment,
+        const uploadResults = await Promise.all(
+          transitionAttachment.map((file) =>
+            incidentApi.uploadAttachment(id!, file),
+          ),
         );
-        if (uploadResult.data?.id) {
-          attachmentIds = [uploadResult.data.id];
-        }
         setTransitionUploading(false);
+
+        attachmentIds = uploadResults
+          .map((uploadResult) => uploadResult.data?.id)
+          .filter((id): id is string => Boolean(id));
       }
 
       // Determine assignment IDs
@@ -1455,6 +1468,12 @@ export const IncidentDetailPage: React.FC = () => {
       </div>
     );
   }
+
+  const customFields = incident?.custom_fields
+    ? JSON.parse(incident.custom_fields)
+    : null;
+
+  const momra_ref = customFields?.momra_incident_no;
 
   return (
     <div className="space-y-6">
@@ -1638,7 +1657,7 @@ export const IncidentDetailPage: React.FC = () => {
                   incident?.master_incident_id === incident?.id)) &&
                 availableTransitions
                   .filter((t) => t.can_execute)
-                  .map((transition) => (
+                  .map((transition: any) => (
                     <Button
                       key={transition.transition.id}
                       variant="outline"
@@ -1995,7 +2014,7 @@ export const IncidentDetailPage: React.FC = () => {
 
           {/* Tabs */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm overflow-hidden">
-            <div className="flex border-b border-[hsl(var(--border))] overflow-x-auto scrollbar-hide">
+            <div className="flex border-b border-[hsl(var(--border))] overflow-x-auto">
               <button
                 onClick={() => setActiveTab("activity")}
                 className={cn(
@@ -2052,6 +2071,22 @@ export const IncidentDetailPage: React.FC = () => {
                   {t("incidents.revisions")}
                 </span>
               </button>
+              {hasPermission(PERMISSIONS.NOTIFICATIONS_READ) && (
+                <button
+                  onClick={() => setActiveTab("communications")}
+                  className={cn(
+                    "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
+                    activeTab === "communications"
+                      ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                      : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    {t("incidents.communications", "Communication")}
+                  </span>
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab("rejections")}
                 className={cn(
@@ -2932,6 +2967,12 @@ export const IncidentDetailPage: React.FC = () => {
                 <RevisionHistory incidentId={id!} />
               )}
 
+              {/* Communication Tab */}
+              {activeTab === "communications" &&
+                hasPermission(PERMISSIONS.NOTIFICATIONS_READ) && (
+                  <CommunicationHistory incidentId={id!} />
+                )}
+
               {/* AI Quality Tab */}
               {activeTab === "ai-quality" && (
                 <div className="space-y-4">
@@ -3303,6 +3344,19 @@ export const IncidentDetailPage: React.FC = () => {
                   </div>
                 )}
 
+                {momra_ref && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t("incidents.momraIncidentNumber")}
+                    </label>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <span className="capitalize font-semibold">
+                        {momra_ref}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Due Date - only show if set */}
                 {incident.due_date && (
                   <div>
@@ -3487,34 +3541,60 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
                 <div className="mt-1">
                   {incident.assignees && incident.assignees.length > 0 ? (
-                    <div className="flex flex-col gap-1">
-                      {incident.assignees.map((assignee) => (
-                        <div
-                          key={assignee.id}
-                          className="inline-flex items-center gap-1.5"
+                    <>
+                      <div
+                        className={`flex flex-col gap-1 ${
+                          showAllAssignees
+                            ? "max-h-48 overflow-y-auto pr-1"
+                            : ""
+                        }`}
+                      >
+                        {(showAllAssignees
+                          ? incident.assignees
+                          : incident.assignees.slice(0, 5)
+                        ).map((assignee) => (
+                          <div
+                            key={assignee.id}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            {assignee.avatar ? (
+                              <img
+                                src={assignee.avatar}
+                                alt={assignee.username}
+                                className="w-5 h-5 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-linear-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center shrink-0">
+                                <span className="text-white text-[10px] font-semibold">
+                                  {assignee.first_name?.[0] ||
+                                    assignee.username[0]}
+                                </span>
+                              </div>
+                            )}
+
+                            <span className="text-xs text-[hsl(var(--foreground))]">
+                              {assignee.first_name
+                                ? `${assignee.first_name} ${assignee.last_name || ""}`.trim()
+                                : assignee.username}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {incident.assignees.length > 5 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllAssignees((prev) => !prev)}
+                          className="mt-2 text-xs font-medium text-[hsl(var(--primary))] hover:underline"
                         >
-                          {assignee.avatar ? (
-                            <img
-                              src={assignee.avatar}
-                              alt={assignee.username}
-                              className="w-5 h-5 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center flex-shrink-0">
-                              <span className="text-white text-[10px] font-semibold">
-                                {assignee.first_name?.[0] ||
-                                  assignee.username[0]}
-                              </span>
-                            </div>
-                          )}
-                          <span className="text-xs text-[hsl(var(--foreground))]">
-                            {assignee.first_name
-                              ? `${assignee.first_name} ${assignee.last_name || ""}`.trim()
-                              : assignee.username}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                          {showAllAssignees
+                            ? t("common.viewLess")
+                            : t("common.viewMoreWithCount", {
+                                count: incident.assignees.length - 5,
+                              })}
+                        </button>
+                      )}
+                    </>
                   ) : incident.assignee ? (
                     <div className="inline-flex items-center gap-1.5 bg-[hsl(var(--muted)/0.5)] px-2 py-1 rounded-md">
                       {incident.assignee.avatar ? (
@@ -3926,7 +4006,10 @@ export const IncidentDetailPage: React.FC = () => {
                 </div>
 
                 {/* Step content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div
+                  key={currentStepKey}
+                  className="flex-1 overflow-y-auto p-6 space-y-4"
+                >
                   {/* Step label */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -4591,25 +4674,77 @@ export const IncidentDetailPage: React.FC = () => {
                   {/* Attachment */}
                   {currentStepKey === "attachment" && (
                     <div>
-                      {transitionAttachment ? (
-                        <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                            <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
-                              {transitionAttachment.name}
-                            </span>
-                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                              ({(transitionAttachment.size / 1024).toFixed(1)}{" "}
-                              {t("common.kb")})
-                            </span>
+                      {transitionAttachment.length > 0 ? (
+                        <div className="space-y-3">
+                          {transitionAttachment.map((file, index) => (
+                            <div
+                              key={`${file.name}-${file.size}-${index}`}
+                              className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                                <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
+                                  {file.name}
+                                </span>
+                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  ({(file.size / 1024).toFixed(1)}{" "}
+                                  {t("common.kb")})
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setTransitionAttachment((prev) =>
+                                    prev.filter((_, i) => i !== index),
+                                  )
+                                }
+                                className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+
+                          <div className="flex flex-wrap items-center gap-3">
+                            {transitionAttachmentAllowsMultiple ? (
+                              <label className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">
+                                <Upload className="w-4 h-4" />
+                                {t(
+                                  "incidents.addMoreAttachments",
+                                  "Add more attachments",
+                                )}
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  multiple
+                                  onChange={(e) => {
+                                    const files = e.target.files;
+                                    if (!files) return;
+                                    setTransitionAttachment((prev) => [
+                                      ...prev,
+                                      ...Array.from(files),
+                                    ]);
+                                    if (transitionErrors.attachment)
+                                      setTransitionErrors((prev) => ({
+                                        ...prev,
+                                        attachment: "",
+                                      }));
+                                  }}
+                                />
+                              </label>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              onClick={() => setTransitionAttachment([])}
+                              className="text-sm text-[hsl(var(--foreground))] underline"
+                            >
+                              {t(
+                                "incidents.removeAllAttachments",
+                                "Remove all attachments",
+                              )}
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setTransitionAttachment(null)}
-                            className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         </div>
                       ) : (
                         <label
@@ -4622,16 +4757,24 @@ export const IncidentDetailPage: React.FC = () => {
                           <input
                             type="file"
                             className="hidden"
+                            multiple={transitionAttachmentAllowsMultiple}
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                setTransitionAttachment(file);
-                                if (transitionErrors.attachment)
-                                  setTransitionErrors((prev) => ({
-                                    ...prev,
-                                    attachment: "",
-                                  }));
+                              const files = e.target.files;
+                              if (!files) return;
+                              const selectedFiles = Array.from(files);
+                              if (transitionAttachmentAllowsMultiple) {
+                                setTransitionAttachment((prev) => [
+                                  ...prev,
+                                  ...selectedFiles,
+                                ]);
+                              } else if (selectedFiles.length > 0) {
+                                setTransitionAttachment([selectedFiles[0]]);
                               }
+                              if (transitionErrors.attachment)
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  attachment: "",
+                                }));
                             }}
                           />
                         </label>
@@ -5327,67 +5470,6 @@ export const IncidentDetailPage: React.FC = () => {
               className="max-w-[90vw] max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2">
-              <p className="truncate">{lightboxImage?.attachment?.file_name}</p>
-              <p className="text-xs text-white/70 mt-0.5">
-                {formatFileSize(lightboxImage?.attachment?.file_size)} •{" "}
-                {formatDateTime(lightboxImage?.attachment?.created_at)}
-              </p>
-              {lightboxImage?.attachment?.uploaded_by && (
-                <p className="truncate text-white/70 mt-0.5">
-                  {lightboxImage?.attachment?.uploaded_by.first_name}{" "}
-                  {lightboxImage?.attachment?.uploaded_by.last_name}
-                  <span className="ml-1 opacity-60">
-                    ·{" "}
-                    {lightboxImage?.attachment?.uploaded_by.roles?.[0]?.name ||
-                      "No Role"}
-                  </span>
-                  <span className="ml-1">
-                    ·{" "}
-                    {(lightboxImage?.attachment?.uploaded_by?.departments || [])
-                      .map((department: any) => department.name)
-                      .join(", ") || "No Department"}
-                  </span>
-                </p>
-              )}
-
-              {/* transition */}
-              {getHistoryById(
-                lightboxImage?.attachment?.transition_history_id || "",
-              ) && (
-                <div className="flex justify-start items-center gap-2">
-                  <span
-                    className={
-                      "text-xs  mt-0.5" +
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.from_state?.color
-                    }
-                  >
-                    {
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.from_state?.name
-                    }
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                  <span
-                    className={
-                      "text-xs  mt-0.5" +
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.to_state?.color
-                    }
-                  >
-                    {
-                      getHistoryById(
-                        lightboxImage?.attachment?.transition_history_id || "",
-                      )?.to_state?.name
-                    }
-                  </span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
