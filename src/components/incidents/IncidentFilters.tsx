@@ -859,7 +859,9 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
                   // const telValidation = /^\+?\d+$/;
                   const telValidation = /^\+?\d*$/;
                   if (value && !telValidation.test(value)) {
-                    setReporterPhoneError("invalid phone number");
+                    setReporterPhoneError(
+                      t("common.invalidPhoneNumber", "invalid phone number"),
+                    );
                   } else {
                     setReporterPhoneError("");
                   }
