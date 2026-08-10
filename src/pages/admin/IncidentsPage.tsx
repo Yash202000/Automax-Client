@@ -36,7 +36,7 @@ import type {
   IncidentMergeOption,
 } from "../../types";
 import { useIncidentListWebSocket } from "../../lib/services/incidentListWebSocket";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import {
@@ -646,6 +646,10 @@ export const IncidentsPage: React.FC = () => {
     !validationResult?.canMerge ||
     (validationResult?.errors?.length ?? 0) > 0;
 
+  const statusFilterLabel = getLocalizedName(
+    uniqueStates.find((s) => s.id === filter.current_state_id),
+  );
+
   if (error) {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
@@ -688,16 +692,16 @@ export const IncidentsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
               {!hasStatusFilter && filter.sla_breached
                 ? t("incidents.slaBreached")
-                : statusFilter
-                  ? `${statusFilter} ${t("incidents.title")}`
+                : statusFilterLabel
+                  ? `${statusFilterLabel} ${t("incidents.title")}`
                   : t("incidents.title")}
             </h1>
           </div>
           <p className="text-[hsl(var(--muted-foreground))] mt-1 ml-12">
             {!hasStatusFilter && filter.sla_breached
               ? t("incidents.showingSlaBreach")
-              : statusFilter
-                ? `${t("incidents.showingStatus")}: ${statusFilter}`
+              : statusFilterLabel
+                ? `${t("incidents.showingStatus")}: ${statusFilterLabel}`
                 : t("incidents.subtitle")}
           </p>
         </div>

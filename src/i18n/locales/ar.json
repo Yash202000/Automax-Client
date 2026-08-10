@@ -760,7 +760,11 @@
     "department_id": "القسم",
     "momraRefNumLabel": "رقم مرجع وزارة الشؤون البلدية والقروية والإسكان",
     "momraRefNumPlaceholder": "أدخل رقم مرجع وزارة الشؤون البلدية والقروية والإسكان",
-    "momraIncidentNumber": "رقم حادثة مُمرا"
+    "momraIncidentNumber": "رقم حادثة مُمرا",
+    "requestInfo": "معلومات الطلب",
+    "alsoViewing": "يشاهد أيضًا:",
+    "usersViewing": "{{count}} مستخدمين يشاهدون:",
+    "unknownUser": "مستخدم غير معروف"
   },
   "priorities": {
     "critical": "حرج",
