@@ -763,7 +763,11 @@
     "momraRefNumLabel": "MOMRA Reference Number",
     "momraRefNumPlaceholder": "Enter MOMRA reference number",
     "momraIncidentNumber": "Momra Incident No.",
-    "enterValidPhoneNumber": "Enter a valid phone number, with optional prefix +"
+    "enterValidPhoneNumber": "Enter a valid phone number, with optional prefix +",
+    "requestInfo": "Request Information",
+    "alsoViewing": "Also viewing:",
+    "usersViewing": "{{count}} users viewing:",
+    "unknownUser": "Unknown User"
   },
   "priorities": {
     "critical": "Critical",

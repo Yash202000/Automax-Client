@@ -1496,8 +1496,8 @@ export const IncidentDetailPage: React.FC = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-semibold text-yellow-900">
                   {otherUsers.length === 1
-                    ? "Also viewing:"
-                    : `${otherUsers.length} users viewing:`}
+                    ? t("alsoViewing")
+                    : t("usersViewing", { count: otherUsers.length })}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {otherUsers.map((u, idx) => (
@@ -1507,7 +1507,7 @@ export const IncidentDetailPage: React.FC = () => {
                     >
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-xs font-medium text-yellow-900">
-                        {u.user_name || u.user_email || "Unknown User"}
+                        {u.user_name || u.user_email || t("unknownUser")}
                       </span>
                     </div>
                   ))}
@@ -1669,7 +1669,7 @@ export const IncidentDetailPage: React.FC = () => {
                           "approve" && disableApproveTransition
                       }
                     >
-                      {transition.transition.name}
+                      {getLocalizedName(transition.transition)}
                     </Button>
                   ))}
               {(!incident.record_type || incident.record_type === "incident") &&
