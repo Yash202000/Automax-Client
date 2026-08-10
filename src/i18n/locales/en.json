@@ -2123,7 +2123,12 @@
     "workflowMatchingRules": "Workflow Matching Rules",
     "hasAccessToFromStatus": "has access to {{fromStatus}} status",
     "recommendedRolesDescription": "These roles have View or Edit Access to {{fromStatus}} status.",
-    "otherAvailableRoles": "Other Available Roles"
+    "otherAvailableRoles": "Other Available Roles",
+    "slaLimitExceeded": " SLA Limit Exceeded",
+    "slaViolationSummary": "The configured SLA ({{slaLabel}}) exceeds the incident closure SLA for {{count}} classification(s).",
+    "viewAffectedClassifications": "View Affected Classifications",
+    "affectedClassifications": "Affected Classifications",
+    "maxAllowedSLA": "Max Allowed SLA"
   },
   "lookups": {
     "title": "Master Data",
