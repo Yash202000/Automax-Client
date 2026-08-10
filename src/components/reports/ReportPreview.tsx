@@ -166,11 +166,8 @@ export const renderStyledCell = (
     );
   }
 
-  if (field.isUrl && typeof value === "string") {
-    const urls = value
-      .split("|")
-      .map((u) => u.trim())
-      .filter(Boolean);
+  if (field.isUrl && Array.isArray(value)) {
+    const urls = value;
 
     const displayNameCounts = new Map<string, number>();
 

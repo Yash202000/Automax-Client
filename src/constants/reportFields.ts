@@ -1052,6 +1052,26 @@ export const incidentFields: ReportFieldDefinition[] = [
     filterable: false,
   },
   {
+    field: "before_attachments",
+    label: "Before Attachments",
+    label_ar: "المرفقات قبل التنفيذ",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+    isUrl: true,
+  },
+  {
+    field: "after_attachments",
+    label: "After Attachments",
+    label_ar: "المرفقات بعد التنفيذ",
+    type: "string",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+    isUrl: true,
+  },
+  {
     field: "attachments",
     label: "Attachments",
     label_ar: "المرفقات",
@@ -1210,9 +1230,18 @@ export const incidentFields: ReportFieldDefinition[] = [
 
   {
     field: "first_response_minutes",
-    label: "First Response Time", //label need to be time
+    label: "First Response Minute",
     label_ar: "دقائق أول استجابة",
     type: "number",
+    category: "Core",
+    sortable: false,
+    filterable: false,
+  },
+  {
+    field: "first_response_time",
+    label: "First Response Time",
+    label_ar: "دقائق أول استجابة",
+    type: "string",
     category: "Core",
     sortable: false,
     filterable: false,
