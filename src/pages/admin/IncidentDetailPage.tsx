@@ -4795,7 +4795,7 @@ export const IncidentDetailPage: React.FC = () => {
                         {selectedTransition.requirements?.find(
                           (x) => x.requirement_type === "rating",
                         ) && (
-                          <div className="flex flex-col gap-2 w-full p-2 bg-gray-200 rounded-lg">
+                          <div className="flex flex-col gap-2 w-full p-2 bg-background/35 rounded-lg">
                             <span className="text-sm text-[hsl(var(--muted-foreground))] mb-2 flex flex-row gap-1">
                               {t(
                                 "incidents.rateYourExperience",
