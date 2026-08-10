@@ -236,7 +236,9 @@
     "nameAllowedCharacters": "يمكن أن يحتوي الاسم فقط على أحرف وأرقام ومسافات والرموز التالية: - ' . , & ( ) /.",
     "preview": "معاينة",
     "source": "المصدر",
-    "allSources": "جميع المصادر"
+    "allSources": "جميع المصادر",
+    "sent": "تم الإرسال",
+    "invalidPhoneNumber": "رقم الهاتف غير صالح"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",

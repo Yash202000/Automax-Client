@@ -237,7 +237,8 @@
     "preview": "Preview",
     "source": "Source",
     "allSources": "All Sources",
-    "sent": "Sent"
+    "sent": "Sent",
+    "invalidPhoneNumber": "Invalid phone number"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -761,7 +762,8 @@
     "toDate": "To Date",
     "momraRefNumLabel": "MOMRA Reference Number",
     "momraRefNumPlaceholder": "Enter MOMRA reference number",
-    "momraIncidentNumber": "Momra Incident No."
+    "momraIncidentNumber": "Momra Incident No.",
+    "enterValidPhoneNumber": "Enter a valid phone number, with optional prefix +"
   },
   "priorities": {
     "critical": "Critical",
