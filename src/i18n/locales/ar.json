@@ -2122,7 +2122,11 @@
     "workflowMatchingRules": "قواعد مطابقة سير العمل",
     "hasAccessToFromStatus": "لديه صلاحية الوصول إلى حالة {{fromStatus}}",
     "recommendedRolesDescription": "تتمتع هذه الأدوار بصلاحية العرض أو التعديل على حالة {{fromStatus}}.",
-    "otherAvailableRoles": "الأدوار الأخرى المتاحة"
+    "otherAvailableRoles": "الأدوار الأخرى المتاحة",
+    "slaViolationSummary": "تتجاوز اتفاقية مستوى الخدمة المُكوّنة ({{slaLabel}}) مدة اتفاقية مستوى الخدمة المسموح بها لإغلاق الحادث لـ {{count}} من التصنيفات.",
+    "viewAffectedClassifications": "عرض التصنيفات المتأثرة",
+    "affectedClassifications": "التصنيفات المتأثرة",
+    "maxAllowedSLA": "الحد الأقصى المسموح به لاتفاقية مستوى الخدمة"
   },
   "lookups": {
     "title": "البيانات الرئيسية",
