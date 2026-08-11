@@ -269,6 +269,100 @@ export const UsersPage: React.FC = () => {
     [],
   );
 
+  const pruneTreeToIds = useCallback(
+    (nodes: TreeNode[], allowedIds: Set<string> | null): TreeNode[] => {
+      if (!allowedIds) return nodes;
+
+      return nodes.reduce<TreeNode[]>((acc, node) => {
+        const children = node.children
+          ? pruneTreeToIds(node.children, allowedIds)
+          : undefined;
+        const isAllowed = allowedIds.has(node.id);
+
+        if (isAllowed || children?.length) {
+          acc.push({
+            ...node,
+            children: isAllowed
+              ? children
+              : children?.length
+                ? children
+                : undefined,
+          });
+        }
+
+        return acc;
+      }, []);
+    },
+    [],
+  );
+
+  const collectUserAccessIds = useCallback(
+    (
+      items: Array<{ id: string }> | undefined,
+      fallbackIds: Array<string | null | undefined> = [],
+    ): Set<string> => {
+      const ids = new Set<string>();
+      items?.forEach((item) => ids.add(item.id));
+      fallbackIds.forEach((id) => {
+        if (id) ids.add(id);
+      });
+      return ids;
+    },
+    [],
+  );
+
+  const currentUserDepartmentIds = useMemo(
+    () =>
+      collectUserAccessIds(currentUser?.departments, [
+        currentUser?.department_id,
+        currentUser?.dept_manager_department_id,
+      ]),
+    [
+      collectUserAccessIds,
+      currentUser?.department_id,
+      currentUser?.departments,
+      currentUser?.dept_manager_department_id,
+    ],
+  );
+
+  const currentUserLocationIds = useMemo(
+    () =>
+      collectUserAccessIds(currentUser?.locations, [
+        currentUser?.location_id,
+        currentUser?.dept_manager_location_id,
+      ]),
+    [
+      collectUserAccessIds,
+      currentUser?.dept_manager_location_id,
+      currentUser?.location_id,
+      currentUser?.locations,
+    ],
+  );
+
+  const currentUserClassificationIds = useMemo(
+    () =>
+      collectUserAccessIds(currentUser?.classifications, [
+        currentUser?.dept_manager_classification_id,
+      ]),
+    [
+      collectUserAccessIds,
+      currentUser?.classifications,
+      currentUser?.dept_manager_classification_id,
+    ],
+  );
+
+  const scopedDepartmentIds = isSuperAdmin ? null : currentUserDepartmentIds;
+  const scopedLocationIds = isSuperAdmin ? null : currentUserLocationIds;
+  const scopedClassificationIds = isSuperAdmin
+    ? null
+    : currentUserClassificationIds;
+
+  const limitIdsToScope = useCallback(
+    (ids: string[], allowedIds: Set<string> | null) =>
+      allowedIds ? ids.filter((id) => allowedIds.has(id)) : ids,
+    [],
+  );
+
   const activeFilterCount =
     filterRoleIds.length +
     filterDepartmentIds.length +
@@ -435,17 +529,30 @@ export const UsersPage: React.FC = () => {
     [classificationsTreeData?.data, transformToTreeNodes],
   );
 
+  const scopedDepartmentsTree = useMemo(
+    () => pruneTreeToIds(departmentsTree, scopedDepartmentIds),
+    [departmentsTree, pruneTreeToIds, scopedDepartmentIds],
+  );
+  const scopedLocationsTree = useMemo(
+    () => pruneTreeToIds(locationsTree, scopedLocationIds),
+    [locationsTree, pruneTreeToIds, scopedLocationIds],
+  );
+  const scopedClassificationsTree = useMemo(
+    () => pruneTreeToIds(classificationsTree, scopedClassificationIds),
+    [classificationsTree, pruneTreeToIds, scopedClassificationIds],
+  );
+
   const filteredDepartmentsTree = useMemo(
-    () => filterTreeNodes(departmentsTree, deptSearch),
-    [departmentsTree, deptSearch, filterTreeNodes],
+    () => filterTreeNodes(scopedDepartmentsTree, deptSearch),
+    [scopedDepartmentsTree, deptSearch, filterTreeNodes],
   );
   const filteredLocationsTree = useMemo(
-    () => filterTreeNodes(locationsTree, locSearch),
-    [locationsTree, locSearch, filterTreeNodes],
+    () => filterTreeNodes(scopedLocationsTree, locSearch),
+    [scopedLocationsTree, locSearch, filterTreeNodes],
   );
   const filteredClassificationsTree = useMemo(
-    () => filterTreeNodes(classificationsTree, classSearch),
-    [classificationsTree, classSearch, filterTreeNodes],
+    () => filterTreeNodes(scopedClassificationsTree, classSearch),
+    [scopedClassificationsTree, classSearch, filterTreeNodes],
   );
 
   const departmentNameMap = useMemo(
@@ -2465,7 +2572,7 @@ export const UsersPage: React.FC = () => {
 
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
-                  data={departmentsTree}
+                  data={scopedDepartmentsTree}
                   selectedIds={formData.department_ids}
                   onSelectionChange={async (ids) => {
                     const seq = ++editDeptLookupSeqRef.current;
@@ -2500,8 +2607,14 @@ export const UsersPage: React.FC = () => {
                       setFormData((prev) => ({
                         ...prev,
                         department_ids: ids,
-                        classification_ids: Array.from(allClassifications),
-                        location_ids: Array.from(allLocations),
+                        classification_ids: limitIdsToScope(
+                          Array.from(allClassifications),
+                          scopedClassificationIds,
+                        ),
+                        location_ids: limitIdsToScope(
+                          Array.from(allLocations),
+                          scopedLocationIds,
+                        ),
                       }));
                     } catch (error) {
                       console.error(
@@ -2523,7 +2636,7 @@ export const UsersPage: React.FC = () => {
 
                 {/* Locations (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
-                  data={locationsTree}
+                  data={scopedLocationsTree}
                   selectedIds={formData.location_ids}
                   onSelectionChange={(ids) =>
                     setFormData({ ...formData, location_ids: ids })
@@ -2539,7 +2652,7 @@ export const UsersPage: React.FC = () => {
 
                 {/* Classifications (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
-                  data={classificationsTree}
+                  data={scopedClassificationsTree}
                   selectedIds={formData.classification_ids}
                   onSelectionChange={(ids) =>
                     setFormData({ ...formData, classification_ids: ids })
@@ -2935,7 +3048,7 @@ export const UsersPage: React.FC = () => {
 
                 {/* Departments (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
-                  data={departmentsTree}
+                  data={scopedDepartmentsTree}
                   selectedIds={createFormData.department_ids}
                   onSelectionChange={async (ids) => {
                     // Auto-populate classifications and locations from departments
@@ -2968,8 +3081,14 @@ export const UsersPage: React.FC = () => {
                       setCreateFormData((prev) => ({
                         ...prev,
                         department_ids: ids,
-                        classification_ids: Array.from(allClassifications),
-                        location_ids: Array.from(allLocations),
+                        classification_ids: limitIdsToScope(
+                          Array.from(allClassifications),
+                          scopedClassificationIds,
+                        ),
+                        location_ids: limitIdsToScope(
+                          Array.from(allLocations),
+                          scopedLocationIds,
+                        ),
                       }));
                     } catch (error) {
                       console.error(
@@ -2994,7 +3113,7 @@ export const UsersPage: React.FC = () => {
 
                 {/* Locations (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
-                  data={locationsTree}
+                  data={scopedLocationsTree}
                   selectedIds={createFormData.location_ids}
                   onSelectionChange={(ids) =>
                     setCreateFormData({ ...createFormData, location_ids: ids })
@@ -3010,7 +3129,7 @@ export const UsersPage: React.FC = () => {
 
                 {/* Classifications (Hierarchical Multi-select) */}
                 <HierarchicalTreeSelect
-                  data={classificationsTree}
+                  data={scopedClassificationsTree}
                   selectedIds={createFormData.classification_ids}
                   onSelectionChange={(ids) =>
                     setCreateFormData({
