@@ -49,9 +49,12 @@ export interface User {
 export interface Permission {
   id: string;
   name: string;
+  name_ar: string | null;
   code: string;
   description: string;
+  description_ar: string | null;
   module: string;
+  module_ar: string | null;
   action: string;
   is_active: boolean;
   created_at: string;
