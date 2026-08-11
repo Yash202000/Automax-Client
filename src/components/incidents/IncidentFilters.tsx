@@ -18,6 +18,8 @@ import {
   type Workflow,
   type User as UserType,
   type WorkflowState,
+  type Classification,
+  type Location,
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
 import i18n from "@/i18n";
@@ -242,15 +244,59 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
     if (isVDCOP) {
       return { success: true, data: buildTree(user?.classifications) };
     }
-    return rawClassificationsData;
-  }, [isVDCOP, user?.classifications, rawClassificationsData]);
+    if (!rawClassificationsData?.data) return rawClassificationsData;
+
+    const data = rawClassificationsData.data as Classification[];
+    if (!user || user.is_super_admin || !user.classifications?.length) {
+      return rawClassificationsData;
+    }
+
+    const userIds = new Set(user.classifications.map((c) => c.id));
+
+    const hasAccess = (node: Classification): boolean => {
+      if (userIds.has(node.id)) return true;
+      return (node.children ?? []).some((child) => hasAccess(child));
+    };
+
+    const filter = (list: Classification[]): Classification[] =>
+      list
+        .filter((node) => hasAccess(node))
+        .map((node) => ({
+          ...node,
+          children: node.children?.length ? filter(node.children) : undefined,
+        }));
+
+    return { ...rawClassificationsData, data: filter(data) };
+  }, [isVDCOP, user, rawClassificationsData]);
 
   const locationsData = useMemo(() => {
     if (isVDCOP) {
       return { success: true, data: buildTree(user?.locations) };
     }
-    return rawLocationsData;
-  }, [isVDCOP, user?.locations, rawLocationsData]);
+    if (!rawLocationsData?.data) return rawLocationsData;
+
+    const data = rawLocationsData.data as Location[];
+    if (!user || user.is_super_admin || !user.locations?.length) {
+      return rawLocationsData;
+    }
+
+    const userIds = new Set(user.locations.map((l) => l.id));
+
+    const hasAccess = (node: Location): boolean => {
+      if (userIds.has(node.id)) return true;
+      return (node.children ?? []).some((child) => hasAccess(child));
+    };
+
+    const filter = (list: Location[]): Location[] =>
+      list
+        .filter((node) => hasAccess(node))
+        .map((node) => ({
+          ...node,
+          children: node.children?.length ? filter(node.children) : undefined,
+        }));
+
+    return { ...rawLocationsData, data: filter(data) };
+  }, [isVDCOP, user, rawLocationsData]);
 
   const { data: sourceData } = useQuery({
     queryKey: ["lookups", "categories"],
