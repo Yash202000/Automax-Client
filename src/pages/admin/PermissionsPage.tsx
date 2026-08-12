@@ -181,91 +181,93 @@ export const PermissionsPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-5">
-          {Object.entries(filteredGroupedPermissions).map(([module, perms]) => (
-            <div
-              key={module}
-              className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden"
-            >
-              {/* Module Header */}
-              <div className="px-6 py-4 bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-xl flex items-center justify-center shadow-lg shadow-[hsl(var(--primary)/0.2)]">
-                    <Key className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] capitalize">
-                      {module.replace(/-/g, " ")}
-                    </h3>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {perms.length} {t("permissions.permissionsCount")}
-                    </p>
+          {Object.entries(filteredGroupedPermissions).map(([module, perms]) => {
+            return (
+              <div
+                key={module}
+                className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden"
+              >
+                {/* Module Header */}
+                <div className="px-6 py-4 bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] rounded-xl flex items-center justify-center shadow-lg shadow-[hsl(var(--primary)/0.2)]">
+                      <Key className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] capitalize">
+                        {getLocalizedModule(perms[0]).replace(/-/g, " ")}
+                      </h3>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {perms.length} {t("permissions.permissionsCount")}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Permissions List */}
-              <div className="divide-y divide-[hsl(var(--border))]">
-                {perms.map((permission: Permission) => {
-                  const localizedPermission =
-                    getLocalizedPermission(permission);
-                  return (
-                    <div
-                      key={permission.id}
-                      className="px-6 py-4 flex items-center justify-between hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={cn(
-                            "w-10 h-10 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-md",
-                            actionColors[permission.action] ||
-                              "from-[hsl(var(--muted-foreground))] to-[hsl(var(--foreground))]",
-                          )}
-                        >
-                          <Key className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                            {localizedPermission.name}
-                          </h4>
-                          <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
-                            {permission.code}
-                          </p>
-                          {localizedPermission.description && (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                              {localizedPermission.description}
+                {/* Permissions List */}
+                <div className="divide-y divide-[hsl(var(--border))]">
+                  {perms.map((permission: Permission) => {
+                    const localizedPermission =
+                      getLocalizedPermission(permission);
+                    return (
+                      <div
+                        key={permission.id}
+                        className="px-6 py-4 flex items-center justify-between hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={cn(
+                              "w-10 h-10 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-md",
+                              actionColors[permission.action] ||
+                                "from-[hsl(var(--muted-foreground))] to-[hsl(var(--foreground))]",
+                            )}
+                          >
+                            <Key className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                              {localizedPermission.name}
+                            </h4>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
+                              {permission.code}
                             </p>
-                          )}
+                            {localizedPermission.description && (
+                              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                                {localizedPermission.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={cn(
+                              "px-2.5 py-1 text-xs font-medium rounded-lg capitalize",
+                              actionBadgeColors[permission.action] ||
+                                "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]",
+                            )}
+                          >
+                            {permission.action}
+                          </span>
+                          <span
+                            className={cn(
+                              "px-2.5 py-1 text-xs font-medium rounded-lg",
+                              permission.is_active
+                                ? "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]"
+                                : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
+                            )}
+                          >
+                            {permission.is_active
+                              ? t("common.active")
+                              : t("common.inactive")}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={cn(
-                            "px-2.5 py-1 text-xs font-medium rounded-lg capitalize",
-                            actionBadgeColors[permission.action] ||
-                              "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]",
-                          )}
-                        >
-                          {permission.action}
-                        </span>
-                        <span
-                          className={cn(
-                            "px-2.5 py-1 text-xs font-medium rounded-lg",
-                            permission.is_active
-                              ? "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]"
-                              : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
-                          )}
-                        >
-                          {permission.is_active
-                            ? t("common.active")
-                            : t("common.inactive")}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
