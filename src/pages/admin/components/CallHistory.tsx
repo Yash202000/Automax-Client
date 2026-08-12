@@ -22,6 +22,45 @@ interface CallHistoryProps {
   userId?: any;
 }
 
+/**
+ * Human label for a call's disposition.
+ *
+ * The raw status was previously rendered capitalized, which showed an agent's
+ * own unanswered outgoing call as "Failed" (and, before the backend kept the two
+ * apart, as "Missed" — reading as though someone had called the agent). "Missed"
+ * is reserved for a call that came IN and was not taken; an outgoing dial nobody
+ * picked up is "Not Answered". Unknown statuses fall back to the raw value so a
+ * new backend disposition degrades to something readable rather than blank.
+ */
+const getStatusLabel = (call: any, t: any): string => {
+  const status = String(call?.status || "").toLowerCase();
+  const isOutgoing = call?.direction === "outgoing";
+
+  switch (status) {
+    case "failed":
+      return t("callCentre.status.notAnswered");
+    case "missed":
+      // Defensive: an outgoing leg should arrive as "failed", but if a missed
+      // status ever rides an outgoing call, label it by what actually happened.
+      return isOutgoing
+        ? t("callCentre.status.notAnswered")
+        : t("callCentre.status.missed");
+    case "answered":
+    case "completed":
+      return t("callCentre.status.completed");
+    case "rejected":
+      return t("callCentre.status.rejected");
+    case "declined":
+      return t("callCentre.status.declined");
+    case "cancelled":
+      return t("callCentre.status.cancelled");
+    case "busy":
+      return t("callCentre.status.busy");
+    default:
+      return call?.status || "";
+  }
+};
+
 export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
@@ -288,7 +327,7 @@ const CallHistoryItem: React.FC<{
               )}
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-              <span className="capitalize">{call.status}</span>
+              <span className="capitalize">{getStatusLabel(call, t)}</span>
             </div>
           </div>
         </div>
