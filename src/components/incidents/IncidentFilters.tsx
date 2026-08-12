@@ -181,7 +181,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   });
 
   // Tree data for multi-selects
-  const { data: departmentsData } = useQuery({
+  const { data: rawDepartmentsData } = useQuery({
     queryKey: ["admin", "departments", "tree"],
     queryFn: () => departmentApi.getTree(),
   });
@@ -239,6 +239,19 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
 
     return roots;
   };
+
+  const departmentsData = useMemo(() => {
+    if (!rawDepartmentsData?.data) return rawDepartmentsData;
+    const data = rawDepartmentsData.data as any[];
+    if (!user || user.is_super_admin || !user.departments?.length) {
+      return rawDepartmentsData;
+    }
+    const userIds = new Set(user.departments.map((d) => d.id));
+    return {
+      ...rawDepartmentsData,
+      data: buildTree(data.filter((d) => userIds.has(d.id))),
+    };
+  }, [user, rawDepartmentsData]);
 
   const classificationsData = useMemo(() => {
     if (isVDCOP) {
