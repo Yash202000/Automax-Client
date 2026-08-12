@@ -20,6 +20,7 @@ import {
   type WorkflowState,
   type Classification,
   type Location,
+  type Department,
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
 import i18n from "@/i18n";
@@ -181,7 +182,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
   });
 
   // Tree data for multi-selects
-  const { data: departmentsData } = useQuery({
+  const { data: rawDepartmentsData } = useQuery({
     queryKey: ["admin", "departments", "tree"],
     queryFn: () => departmentApi.getTree(),
   });
@@ -297,6 +298,35 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
 
     return { ...rawLocationsData, data: filter(data) };
   }, [isVDCOP, user, rawLocationsData]);
+
+  const departmentsData = useMemo(() => {
+    if (isVDCOP) {
+      return { success: true, data: buildTree(user?.departments) };
+    }
+    if (!rawDepartmentsData?.data) return rawDepartmentsData;
+
+    const data = rawDepartmentsData.data as Department[];
+    if (!user || user.is_super_admin || !user.departments?.length) {
+      return rawDepartmentsData;
+    }
+
+    const userIds = new Set(user.departments.map((d) => d.id));
+
+    const hasAccess = (node: Department): boolean => {
+      if (userIds.has(node.id)) return true;
+      return (node.children ?? []).some((child) => hasAccess(child));
+    };
+
+    const filter = (list: Department[]): Department[] =>
+      list
+        .filter((node) => hasAccess(node))
+        .map((node) => ({
+          ...node,
+          children: node.children?.length ? filter(node.children) : undefined,
+        }));
+
+    return { ...rawDepartmentsData, data: filter(data) };
+  }, [isVDCOP, user, rawDepartmentsData]);
 
   const { data: sourceData } = useQuery({
     queryKey: ["lookups", "categories"],
