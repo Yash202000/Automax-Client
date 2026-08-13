@@ -1379,6 +1379,9 @@ export interface IncidentUpdateRequest {
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
   version: number;
+  reporter_email?: string;
+  reporter_name?: string;
+  reporter_phone?: string;
 }
 
 export interface IncidentTransitionRequest {
