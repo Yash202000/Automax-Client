@@ -1436,8 +1436,16 @@ export const useCreateKpiMetric = (type: string, id: string) => {
 
 export const useUploadKpiAttachment = (type: string, id: string) => {
   return useMutation({
-    mutationFn: (file: File) =>
-      kpiEngagementApi.uploadAttachment(type, id, file),
+    mutationFn: ({
+      file,
+      metricId,
+      evidenceType,
+    }: {
+      file: File;
+      metricId?: string;
+      evidenceType?: string;
+    }) =>
+      kpiEngagementApi.uploadAttachment(type, id, file, metricId, evidenceType),
     onError: (err) => toast.error(getApiError(err)),
   });
 };

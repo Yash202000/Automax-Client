@@ -102,7 +102,11 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
       return;
     }
 
-    const uploaded = await uploadAttachment.mutateAsync(file);
+    const uploaded = await uploadAttachment.mutateAsync({
+      file,
+      metricId: metricId || undefined,
+      evidenceType,
+    });
     if (!uploaded.data) return;
 
     await createEvidence.mutateAsync({
@@ -110,7 +114,7 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
       evidence_type: evidenceType,
       description: comment.trim(),
       metric_id: metricId || undefined,
-      file_url: uploaded.data.file_url,
+      documenta_file_id: uploaded.data.documenta_file_id,
       file_name: uploaded.data.file_name,
       file_size: uploaded.data.file_size,
       mime_type: uploaded.data.mime_type,
