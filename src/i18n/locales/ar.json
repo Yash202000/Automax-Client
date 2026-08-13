@@ -4109,7 +4109,16 @@
     "title": "مركز الاتصال",
     "showRecording": "عرض التسجيل",
     "hideRecording": "إخفاء التسجيل",
-    "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني أو اسم المستخدم..."
+    "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني أو اسم المستخدم...",
+    "status": {
+      "notAnswered": "لم يتم الرد",
+      "missed": "مكالمة فائتة",
+      "completed": "مكتملة",
+      "rejected": "مرفوضة",
+      "declined": "مرفوضة",
+      "cancelled": "ملغاة",
+      "busy": "مشغول"
+    }
   },
   "citizen": {
     "closePage": "يمكنك إغلاق هذه الصفحة بأمان.",
