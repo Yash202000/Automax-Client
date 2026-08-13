@@ -4040,7 +4040,16 @@
     "title": "Call Centre",
     "showRecording": "Show Recording",
     "hideRecording": "Hide Recording",
-    "searchPlaceholder": "Search by name, email..."
+    "searchPlaceholder": "Search by name, email...",
+    "status": {
+      "notAnswered": "Not Answered",
+      "missed": "Missed",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "busy": "Busy"
+    }
   },
   "citizen": {
     "closePage": "You may safely close this page.",
