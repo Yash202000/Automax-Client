@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,7 +50,7 @@ import {
 } from "../../api/admin";
 import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
-import type { User, Role, UpdateProfileRequest } from "../../types";
+import type { User, Role, UpdateProfileRequest, Department } from "../../types";
 import type { LDAPUserListItem } from "../../api/ldap";
 import ExcelJs from "exceljs";
 import { saveAs } from "file-saver";
@@ -129,13 +123,6 @@ export const UsersPage: React.FC = () => {
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
   const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
   const canPasswordReset = hasPermission(PERMISSIONS.USER_RESET_PASSWORD);
-
-  const isDepartmentManager = useMemo(
-    () =>
-      !isSuperAdmin &&
-      (currentUser?.roles || []).some((r) => r.is_department_manager),
-    [currentUser?.roles, isSuperAdmin],
-  );
 
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -371,11 +358,9 @@ export const UsersPage: React.FC = () => {
 
   const clearAllFilters = () => {
     setFilterRoleIds([]);
-    if (!isDepartmentManager) {
-      setFilterDepartmentIds([]);
-      setFilterLocationIds([]);
-      setFilterClassificationIds([]);
-    }
+    setFilterDepartmentIds([]);
+    setFilterLocationIds([]);
+    setFilterClassificationIds([]);
     setPage(1);
   };
 
@@ -456,39 +441,9 @@ export const UsersPage: React.FC = () => {
     queryFn: () => locationApi.getTree(),
   });
 
-  const { data: managerScope } = useQuery({
-    queryKey: ["admin", "users", "manager-scope"],
-    queryFn: () => roleApi.getManagerScope(),
-    enabled: isDepartmentManager,
-  });
-
-  // Auto-set filters from department manager scope
-  useEffect(() => {
-    if (isDepartmentManager && managerScope?.data) {
-      const scope = managerScope.data;
-      if (scope.department_id) {
-        setFilterDepartmentIds([scope.department_id]);
-      }
-      if (scope.classification_id) {
-        setFilterClassificationIds([scope.classification_id]);
-      }
-      if (scope.location_id) {
-        setFilterLocationIds([scope.location_id]);
-      }
-    }
-  }, [isDepartmentManager, managerScope?.data]);
-
-  const deptManagerDepartmentId = useMemo(
-    () =>
-      isDepartmentManager && managerScope?.data?.department_id
-        ? managerScope.data.department_id
-        : undefined,
-    [isDepartmentManager, managerScope?.data],
-  );
-
   const { data: rolesData } = useQuery({
-    queryKey: ["admin", "roles", deptManagerDepartmentId],
-    queryFn: () => roleApi.list(deptManagerDepartmentId),
+    queryKey: ["admin", "roles"],
+    queryFn: () => roleApi.list(),
   });
 
   const { data: classificationsTreeData } = useQuery({
@@ -1458,7 +1413,26 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const filteredUsers = data?.data;
+  const getSortedDepartments = (departments?: Department[]) => {
+    if (!departments?.length) return [];
+
+    return [...departments].sort((a, b) => {
+      const aMatch = currentUser?.departments?.some((dept) => dept.id === a.id);
+
+      const bMatch = currentUser?.departments?.some((dept) => dept.id === b.id);
+
+      return Number(bMatch) - Number(aMatch);
+    });
+  };
+
+  const filteredUsers = useMemo(() => {
+    return (
+      data?.data?.map((user) => ({
+        ...user,
+        departments: getSortedDepartments(user.departments),
+      })) ?? []
+    );
+  }, [data?.data, currentUser?.departments]);
 
   const totalPages = data?.total_pages ?? 1;
 
@@ -1743,7 +1717,7 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterDepartmentIds.length > 0 && !isDepartmentManager && (
+                  {filterDepartmentIds.length > 0 && (
                     <button
                       onClick={() => {
                         setFilterDepartmentIds([]);
@@ -1754,37 +1728,25 @@ export const UsersPage: React.FC = () => {
                       {t("common.clear")}
                     </button>
                   )}
-                  {isDepartmentManager && filterDepartmentIds.length > 0 && (
-                    <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
-                      {t("users.scopeLocked")}
-                    </span>
-                  )}
                 </div>
-                {!isDepartmentManager && (
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                    <input
-                      type="text"
-                      placeholder={t("incidents.searchDepartments")}
-                      value={deptSearch}
-                      onChange={(e) => setDeptSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
-                    />
-                  </div>
-                )}
-                <div
-                  className={
-                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
-                  }
-                >
+
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    placeholder={t("incidents.searchDepartments")}
+                    value={deptSearch}
+                    onChange={(e) => setDeptSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+                <div>
                   <HierarchicalTreeSelect
                     data={filteredDepartmentsTree}
                     selectedIds={filterDepartmentIds}
                     onSelectionChange={(ids) => {
-                      if (!isDepartmentManager) {
-                        setFilterDepartmentIds(ids);
-                        setPage(1);
-                      }
+                      setFilterDepartmentIds(ids);
+                      setPage(1);
                     }}
                     emptyMessage="No departments found"
                     colorScheme="accent"
@@ -1804,7 +1766,7 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterLocationIds.length > 0 && !isDepartmentManager && (
+                  {filterLocationIds.length > 0 && (
                     <button
                       onClick={() => {
                         setFilterLocationIds([]);
@@ -1815,37 +1777,24 @@ export const UsersPage: React.FC = () => {
                       {t("common.clear")}
                     </button>
                   )}
-                  {isDepartmentManager && filterLocationIds.length > 0 && (
-                    <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
-                      {t("users.scopeLocked")}
-                    </span>
-                  )}
                 </div>
-                {!isDepartmentManager && (
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                    <input
-                      type="text"
-                      placeholder={t("users.searchLocations")}
-                      value={locSearch}
-                      onChange={(e) => setLocSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
-                    />
-                  </div>
-                )}
-                <div
-                  className={
-                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
-                  }
-                >
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    placeholder={t("users.searchLocations")}
+                    value={locSearch}
+                    onChange={(e) => setLocSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+                <div>
                   <HierarchicalTreeSelect
                     data={filteredLocationsTree}
                     selectedIds={filterLocationIds}
                     onSelectionChange={(ids) => {
-                      if (!isDepartmentManager) {
-                        setFilterLocationIds(ids);
-                        setPage(1);
-                      }
+                      setFilterLocationIds(ids);
+                      setPage(1);
                     }}
                     emptyMessage="No locations found"
                     colorScheme="success"
@@ -1866,50 +1815,35 @@ export const UsersPage: React.FC = () => {
                       </span>
                     )}
                   </p>
-                  {filterClassificationIds.length > 0 &&
-                    !isDepartmentManager && (
-                      <button
-                        onClick={() => {
-                          setFilterClassificationIds([]);
-                          setPage(1);
-                        }}
-                        className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                      >
-                        {t("common.clear")}
-                      </button>
-                    )}
-                  {isDepartmentManager &&
-                    filterClassificationIds.length > 0 && (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))] italic">
-                        {t("users.scopeLocked")}
-                      </span>
-                    )}
+                  {filterClassificationIds.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setFilterClassificationIds([]);
+                        setPage(1);
+                      }}
+                      className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                    >
+                      {t("common.clear")}
+                    </button>
+                  )}
                 </div>
-                {!isDepartmentManager && (
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
-                    <input
-                      type="text"
-                      placeholder={t("users.searchClassifications")}
-                      value={classSearch}
-                      onChange={(e) => setClassSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
-                    />
-                  </div>
-                )}
-                <div
-                  className={
-                    isDepartmentManager ? "pointer-events-none opacity-60" : ""
-                  }
-                >
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    placeholder={t("users.searchClassifications")}
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary)/0.3)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                </div>
+                <div>
                   <HierarchicalTreeSelect
                     data={filteredClassificationsTree}
                     selectedIds={filterClassificationIds}
                     onSelectionChange={(ids) => {
-                      if (!isDepartmentManager) {
-                        setFilterClassificationIds(ids);
-                        setPage(1);
-                      }
+                      setFilterClassificationIds(ids);
+                      setPage(1);
                     }}
                     emptyMessage="No classifications found"
                     colorScheme="warning"
