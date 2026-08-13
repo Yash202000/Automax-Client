@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Permission, User } from "../../types";
 import { userApi } from "../../api/admin";
+import i18n from "@/i18n";
 
 export type PermissionFilterMode = "all" | "selected" | "unselected";
 
@@ -77,9 +78,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
   const matchesSearch = (p: Permission) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)
-    );
+    return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q);
   };
 
   const matchesFilter = (p: Permission) => {
@@ -144,6 +143,8 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
     const allSelected = ids.every((id) => selectedSet.has(id));
     onToggleMany(ids, !allSelected);
   };
+
+  const isArabic = i18n.language === "ar";
 
   return (
     <div className="space-y-4">
@@ -304,7 +305,11 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
                       <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
                     )}
                     <span className="text-sm font-semibold text-slate-900 dark:text-white capitalize truncate">
-                      {mod}
+                      {isArabic
+                        ? grouped[mod][0]?.module_ar ||
+                          grouped[mod][0]?.module ||
+                          mod
+                        : mod}
                     </span>
                     <span
                       className={cn(
@@ -357,7 +362,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
                           />
                           <div className="flex-1 min-w-0">
                             <span className="block text-sm font-medium text-slate-900 dark:text-white truncate">
-                              {p.name}
+                              {isArabic ? p.name_ar || p.name : p.name}
                             </span>
                             <span className="block text-xs font-mono text-[hsl(var(--muted-foreground))] truncate">
                               {p.code}
@@ -607,9 +612,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({ roleId }) => {
                     : "bg-slate-100 dark:bg-slate-700 text-[hsl(var(--muted-foreground))]",
                 )}
               >
-                {user.is_active
-                  ? t("common.active")
-                  : t("common.inactive")}
+                {user.is_active ? t("common.active") : t("common.inactive")}
               </span>
               <button
                 type="button"
