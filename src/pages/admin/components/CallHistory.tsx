@@ -13,10 +13,13 @@ import {
   PhoneIncoming,
   Headphones,
 } from "lucide-react";
-import { callLogApi } from "../../../api/admin";
+import { callLogApi, userApi } from "../../../api/admin";
 import { AudioPlayer } from "../../../components/common/AudioPlayer";
 import { cn } from "@/lib/utils";
 import CallablePhone from "../../../components/common/CallablePhone";
+import Select from "@/components/ui/SelectInput";
+import usePermissions from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/constants/permissions";
 
 interface CallHistoryProps {
   userId?: any;
@@ -64,11 +67,22 @@ const getStatusLabel = (call: any, t: any): string => {
 export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<string>("all");
+  const { hasPermission } = usePermissions();
+
   const limit = 20;
 
+  const viewAllCallLogs = hasPermission(PERMISSIONS.VIEW_ALL_CALL_LOGS);
+
   const { data, isLoading, refetch, isFetching, error } = useQuery({
-    queryKey: ["call-logs", page, limit, userId],
-    queryFn: () => callLogApi.list(page, limit, userId),
+    queryKey: ["call-logs", page, limit, userId, selectedUser],
+    queryFn: () =>
+      callLogApi.list(
+        page,
+        limit,
+        userId ? userId : selectedUser !== "all" ? selectedUser : undefined,
+        viewAllCallLogs && !userId ? selectedUser === "all" : undefined,
+      ),
     retry: 1,
     // New calls (CTI webhooks) land without any user action on this page —
     // poll so they show up without a manual refresh, same as the notification
@@ -76,6 +90,25 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
     refetchInterval: 10_000,
     refetchOnWindowFocus: true,
   });
+
+  const { data: userData } = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: () => userApi.list(1, 1000),
+    enabled: !!viewAllCallLogs && !userId,
+  });
+
+  const users = [
+    {
+      label: t("callCentre.allUsers"),
+      value: "all",
+    },
+    ...(userData?.data.map((user) => ({
+      label:
+        [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+        user.username,
+      value: user.id,
+    })) ?? []),
+  ];
 
   const calls = data?.data || [];
   const isPermissionError = error && (error as any)?.response?.status === 403;
@@ -186,10 +219,22 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
       ) : null}
 
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold ">
             {t("callCentre.recentCalls")}
           </h2>
+          {viewAllCallLogs && !userId ? (
+            <Select
+              searchable
+              clearable
+              className="w-56"
+              options={users}
+              value={selectedUser}
+              onChange={setSelectedUser}
+              placeholder="Select user"
+              size="sm"
+            />
+          ) : null}
         </div>
         {isLoading ? (
           <div className="p-12 text-center">

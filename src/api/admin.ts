@@ -2676,7 +2676,12 @@ export const lookupApi = {
 
 // Call Log API
 export const callLogApi = {
-  list: async (page = 1, limit = 20, userId?: string): Promise<any> => {
+  list: async (
+    page = 1,
+    limit = 20,
+    userId?: string,
+    all?: boolean,
+  ): Promise<any> => {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -2685,6 +2690,7 @@ export const callLogApi = {
     // if (userId) params.append("user_id", userId);
 
     if (userId) params.append("agent_id", userId);
+    if (all) params.append("all", "true");
 
     const response = await apiClient.get(
       `/admin/call-logs?${params.toString()}`,

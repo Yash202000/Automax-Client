@@ -4049,7 +4049,8 @@
       "declined": "Declined",
       "cancelled": "Cancelled",
       "busy": "Busy"
-    }
+    },
+    "allUsers": "All Users"
   },
   "citizen": {
     "closePage": "You may safely close this page.",
