@@ -767,7 +767,10 @@
     "requestInfo": "Request Information",
     "alsoViewing": "Also viewing:",
     "usersViewing": "{{count}} users viewing:",
-    "unknownUser": "Unknown User"
+    "unknownUser": "Unknown User",
+    "communications": "Communication",
+    "linkedSystems": "Linked Systems",
+    "requestInfoSmsSent": "SMS sent successfully to citizen"
   },
   "priorities": {
     "critical": "Critical",

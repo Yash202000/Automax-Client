@@ -764,7 +764,10 @@
     "requestInfo": "معلومات الطلب",
     "alsoViewing": "يشاهد أيضًا:",
     "usersViewing": "{{count}} مستخدمين يشاهدون:",
-    "unknownUser": "مستخدم غير معروف"
+    "unknownUser": "مستخدم غير معروف",
+    "communications": "الاتصالات",
+    "linkedSystems": "الأنظمة المرتبطة",
+    "requestInfoSmsSent": "تم إرسال رسالة نصية قصيرة إلى المواطن بنجاح"
   },
   "priorities": {
     "critical": "حرج",
