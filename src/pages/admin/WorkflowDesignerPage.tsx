@@ -124,6 +124,7 @@ interface StateFormData {
   assignment_role_ids: string[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+  view_assigne_user_list: boolean;
   // New incident notification templates (initial states only)
   new_incident_email_template_code: string;
   new_incident_sms_template_code: string;
@@ -147,6 +148,7 @@ interface TransitionFormData {
   assignment_role_ids: string[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+  view_assigne_user_list: boolean;
   is_rejection: boolean;
   is_not_belong: boolean;
   is_missing_info: boolean;
@@ -193,6 +195,7 @@ const initialStateFormData: StateFormData = {
   assignment_role_ids: [],
   auto_match_user: false,
   manual_select_user: false,
+  view_assigne_user_list: true,
   new_incident_email_template_code: "",
   new_incident_sms_template_code: "",
 };
@@ -210,6 +213,7 @@ const initialTransitionFormData: TransitionFormData = {
   assign_department_id: "",
   auto_detect_department: false,
   department_type_filter: "",
+  view_assigne_user_list: false,
   // User Assignment
   assign_user_id: "",
   assignment_role_ids: [],
@@ -1263,6 +1267,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: state.assignment_roles?.map((r) => r.id) || [],
       auto_match_user: state.auto_match_user || false,
       manual_select_user: state.manual_select_user || false,
+      view_assigne_user_list: state.view_assigne_user_list || true,
       new_incident_email_template_code:
         state.new_incident_email_template_code || "",
       new_incident_sms_template_code:
@@ -1317,6 +1322,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_reopen: transition.is_reopen || false,
       is_final_close: transition.is_final_close || false,
       require_assignee: transition.require_assignee || false,
+      view_assigne_user_list: transition.view_assigne_user_list || false,
     });
     setIsTransitionModalOpen(true);
   };
@@ -1516,6 +1522,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       assignment_role_ids: stateFormData.assignment_role_ids,
       auto_match_user: stateFormData.auto_match_user,
       manual_select_user: stateFormData.manual_select_user,
+      view_assigne_user_list: stateFormData.view_assigne_user_list,
       // New incident notification templates
       new_incident_email_template_code:
         stateFormData.new_incident_email_template_code || "",
@@ -1645,6 +1652,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       is_reopen: transitionFormData.is_reopen,
       is_final_close: transitionFormData.is_final_close,
       require_assignee: transitionFormData.require_assignee,
+      view_assigne_user_list: transitionFormData.view_assigne_user_list,
     };
 
     if (editingTransition) {
@@ -4705,33 +4713,53 @@ export const WorkflowDesignerPage: React.FC = () => {
                     </label>
 
                     {/* Option 2: Auto-assign all matching users */}
-                    <label className="flex items-center gap-3 p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
-                      <input
-                        type="radio"
-                        name="user_assignment_mode"
-                        checked={
-                          transitionFormData.auto_match_user &&
-                          !transitionFormData.manual_select_user
-                        }
-                        onChange={() => {
-                          setTransitionFormData({
-                            ...transitionFormData,
-                            auto_match_user: true,
-                            manual_select_user: false,
-                            assign_user_id: "",
-                          });
-                        }}
-                        className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                          {t("workflows.autoAssignAllMatchingUsers")}
+                    <label className="flex flex-col p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="user_assignment_mode"
+                          checked={
+                            transitionFormData.auto_match_user &&
+                            !transitionFormData.manual_select_user
+                          }
+                          onChange={() => {
+                            setTransitionFormData({
+                              ...transitionFormData,
+                              auto_match_user: true,
+                              manual_select_user: false,
+                              assign_user_id: "",
+                            });
+                          }}
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                            {t("workflows.autoAssignAllMatchingUsers")}
+                          </span>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            {t(
+                              "workflows.automaticallyAssignsAllUsersMatchingRoleIncident",
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 items-center mt-3">
+                        <input
+                          type="checkbox"
+                          name="user_assignment_mode"
+                          checked={transitionFormData.view_assigne_user_list}
+                          onChange={() => {
+                            setTransitionFormData({
+                              ...transitionFormData,
+                              view_assigne_user_list:
+                                !transitionFormData.view_assigne_user_list,
+                            });
+                          }}
+                          className="w-4 h-4 text-[hsl(var(--primary))] border-[hsl(var(--border))]"
+                        />
+                        <span className="text-sm font-medium text-[hsl(var(--foreground))] mr-5">
+                          Show user assignment list to user
                         </span>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          {t(
-                            "workflows.automaticallyAssignsAllUsersMatchingRoleIncident",
-                          )}
-                        </p>
                       </div>
                     </label>
 
