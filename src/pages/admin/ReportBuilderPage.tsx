@@ -225,7 +225,8 @@ export const ReportBuilderPage: React.FC = () => {
     if (stateOptions?.data && stateOptions.data.length > 0) {
       map.states = stateOptions.data[0].states?.map((state) => ({
         value: state.name,
-        label: state.name,
+        label:
+          i18n.language === "ar" && state.name_ar ? state.name_ar : state.name,
       })) as { value: string; label: string }[];
 
       map.transitions = stateOptions.data[0].transitions?.map((transition) => ({
@@ -237,7 +238,8 @@ export const ReportBuilderPage: React.FC = () => {
     if (reqStateOptions?.data && reqStateOptions.data.length > 0) {
       map.requestStates = reqStateOptions.data[0].states?.map((state) => ({
         value: state.id,
-        label: state.name,
+        label:
+          i18n.language === "ar" && state.name_ar ? state.name_ar : state.name,
       })) as { value: string; label: string }[];
 
       map.requestTransitions = reqStateOptions.data[0].transitions?.map(
@@ -283,11 +285,14 @@ export const ReportBuilderPage: React.FC = () => {
 
     return map;
   }, [
+    stateOptions,
+    reqStateOptions,
     departmentsTree,
     locationsTree,
     classificationsTree,
     userOptions,
     sourceOptions,
+    i18n.language,
   ]);
 
   // Get fields for current data source with dynamic options enhanced
