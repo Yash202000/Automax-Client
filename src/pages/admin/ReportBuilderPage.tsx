@@ -231,7 +231,13 @@ export const ReportBuilderPage: React.FC = () => {
 
       map.transitions = stateOptions.data[0].transitions?.map((transition) => ({
         value: transition.id,
-        label: transition.name + " (" + transition.code + ")",
+        label:
+          (i18n.language === "ar" && transition.name_ar
+            ? transition.name_ar
+            : transition.name) +
+          " (" +
+          transition.code +
+          ")",
       })) as { value: string; label: string }[];
     }
 
@@ -245,7 +251,13 @@ export const ReportBuilderPage: React.FC = () => {
       map.requestTransitions = reqStateOptions.data[0].transitions?.map(
         (transition) => ({
           value: transition.id,
-          label: transition.name + " (" + transition.code + ")",
+          label:
+            (i18n.language === "ar" && transition.name_ar
+              ? transition.name_ar
+              : transition.name) +
+            " (" +
+            transition.code +
+            ")",
         }),
       ) as { value: string; label: string }[];
     }
