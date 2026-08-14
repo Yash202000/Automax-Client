@@ -260,7 +260,7 @@ export const LoginForm: React.FC = () => {
               }`}
             >
               <Building2 className="w-4 h-4 inline mr-1" />
-              AD Login
+              {t("auth.adLogin")}
             </button>
           )}
           {showSso && (

@@ -86,6 +86,9 @@ export const PermissionsPage: React.FC = () => {
     description: isArabic
       ? permission.description_ar || permission.description
       : permission.description,
+    action: isArabic
+      ? permission.action_ar || permission.action
+      : permission.action,
   });
   const getLocalizedModule = (permission: Permission) =>
     isArabic ? permission.module_ar || permission.module : permission.module;
@@ -246,7 +249,7 @@ export const PermissionsPage: React.FC = () => {
                                 "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]",
                             )}
                           >
-                            {permission.action}
+                            {localizedPermission.action}
                           </span>
                           <span
                             className={cn(

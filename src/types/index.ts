@@ -56,6 +56,7 @@ export interface Permission {
   module: string;
   module_ar: string | null;
   action: string;
+  action_ar: string | null;
   is_active: boolean;
   created_at: string;
 }
