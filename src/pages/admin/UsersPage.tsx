@@ -118,6 +118,10 @@ export const UsersPage: React.FC = () => {
   // changes again before a previous department-details lookup finishes.
   const editDeptLookupSeqRef = useRef(0);
   const createDeptLookupSeqRef = useRef(0);
+  // True while department-derived locations/classifications are being fetched.
+  // Used to show loading state on location/classification selectors and disable Save.
+  const [editDeptLoading, setEditDeptLoading] = useState(false);
+  const [createDeptLoading, setCreateDeptLoading] = useState(false);
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
@@ -2511,6 +2515,7 @@ export const UsersPage: React.FC = () => {
                   onSelectionChange={async (ids) => {
                     const seq = ++editDeptLookupSeqRef.current;
                     setFormData((prev) => ({ ...prev, department_ids: ids }));
+                    setEditDeptLoading(true);
 
                     // Auto-populate classifications and locations from departments
                     try {
@@ -2557,6 +2562,10 @@ export const UsersPage: React.FC = () => {
                       );
                       if (seq !== editDeptLookupSeqRef.current) return;
                       setFormData((prev) => ({ ...prev, department_ids: ids }));
+                    } finally {
+                      if (seq === editDeptLookupSeqRef.current) {
+                        setEditDeptLoading(false);
+                      }
                     }
                   }}
                   label={t("users.departments")}
@@ -2569,37 +2578,51 @@ export const UsersPage: React.FC = () => {
                 />
 
                 {/* Locations (Hierarchical Multi-select) */}
-                <HierarchicalTreeSelect
-                  data={scopedLocationsTree}
-                  selectedIds={formData.location_ids}
-                  onSelectionChange={(ids) =>
-                    setFormData({ ...formData, location_ids: ids })
-                  }
-                  label={t("users.locations")}
-                  icon={
-                    <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  }
-                  emptyMessage={t("users.noLocationsAvailable")}
-                  colorScheme="success"
-                  maxHeight="180px"
-                />
+                <div className="relative">
+                  <HierarchicalTreeSelect
+                    data={scopedLocationsTree}
+                    selectedIds={formData.location_ids}
+                    onSelectionChange={(ids) =>
+                      setFormData({ ...formData, location_ids: ids })
+                    }
+                    label={t("users.locations")}
+                    icon={
+                      <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    }
+                    emptyMessage={t("users.noLocationsAvailable")}
+                    colorScheme="success"
+                    maxHeight="180px"
+                  />
+                  {editDeptLoading && (
+                    <div className="absolute inset-0 bg-[hsl(var(--background)/0.6)] rounded-xl flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+                    </div>
+                  )}
+                </div>
 
                 {/* Classifications (Hierarchical Multi-select) */}
-                <HierarchicalTreeSelect
-                  data={scopedClassificationsTree}
-                  selectedIds={formData.classification_ids}
-                  onSelectionChange={(ids) =>
-                    setFormData({ ...formData, classification_ids: ids })
-                  }
-                  label={t("users.classifications")}
-                  icon={
-                    <FolderTree className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  }
-                  emptyMessage={t("users.noClassificationsAvailable")}
-                  colorScheme="warning"
-                  maxHeight="180px"
-                  hierarchyType="classification"
-                />
+                <div className="relative">
+                  <HierarchicalTreeSelect
+                    data={scopedClassificationsTree}
+                    selectedIds={formData.classification_ids}
+                    onSelectionChange={(ids) =>
+                      setFormData({ ...formData, classification_ids: ids })
+                    }
+                    label={t("users.classifications")}
+                    icon={
+                      <FolderTree className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    }
+                    emptyMessage={t("users.noClassificationsAvailable")}
+                    colorScheme="warning"
+                    maxHeight="180px"
+                    hierarchyType="classification"
+                  />
+                  {editDeptLoading && (
+                    <div className="absolute inset-0 bg-[hsl(var(--background)/0.6)] rounded-xl flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+                    </div>
+                  )}
+                </div>
 
                 {/* Roles */}
                 <div>
@@ -2736,6 +2759,7 @@ export const UsersPage: React.FC = () => {
                 </Button>
                 <Button
                   type="submit"
+                  disabled={editDeptLoading || updateMutation.isPending}
                   isLoading={updateMutation.isPending}
                   leftIcon={
                     !updateMutation.isPending ? (
@@ -2743,9 +2767,11 @@ export const UsersPage: React.FC = () => {
                     ) : undefined
                   }
                 >
-                  {updateMutation.isPending
-                    ? t("users.saving")
-                    : t("users.updateUser")}
+                  {editDeptLoading
+                    ? t("users.loadingDepartments", "Loading departments...")
+                    : updateMutation.isPending
+                      ? t("users.saving")
+                      : t("users.updateUser")}
                 </Button>
               </div>
             </form>
@@ -2987,6 +3013,7 @@ export const UsersPage: React.FC = () => {
                   onSelectionChange={async (ids) => {
                     // Auto-populate classifications and locations from departments
                     const seq = ++createDeptLookupSeqRef.current;
+                    setCreateDeptLoading(true);
                     try {
                       const allClassifications = new Set<string>();
                       const allLocations = new Set<string>();
@@ -3034,6 +3061,10 @@ export const UsersPage: React.FC = () => {
                         ...prev,
                         department_ids: ids,
                       }));
+                    } finally {
+                      if (seq === createDeptLookupSeqRef.current) {
+                        setCreateDeptLoading(false);
+                      }
                     }
                   }}
                   label={t("users.departments")}
@@ -3046,40 +3077,57 @@ export const UsersPage: React.FC = () => {
                 />
 
                 {/* Locations (Hierarchical Multi-select) */}
-                <HierarchicalTreeSelect
-                  data={scopedLocationsTree}
-                  selectedIds={createFormData.location_ids}
-                  onSelectionChange={(ids) =>
-                    setCreateFormData({ ...createFormData, location_ids: ids })
-                  }
-                  label={t("users.locations")}
-                  icon={
-                    <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  }
-                  emptyMessage={t("users.noLocationsAvailable")}
-                  colorScheme="success"
-                  maxHeight="180px"
-                />
+                <div className="relative">
+                  <HierarchicalTreeSelect
+                    data={scopedLocationsTree}
+                    selectedIds={createFormData.location_ids}
+                    onSelectionChange={(ids) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        location_ids: ids,
+                      })
+                    }
+                    label={t("users.locations")}
+                    icon={
+                      <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    }
+                    emptyMessage={t("users.noLocationsAvailable")}
+                    colorScheme="success"
+                    maxHeight="180px"
+                  />
+                  {createDeptLoading && (
+                    <div className="absolute inset-0 bg-[hsl(var(--background)/0.6)] rounded-xl flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+                    </div>
+                  )}
+                </div>
 
                 {/* Classifications (Hierarchical Multi-select) */}
-                <HierarchicalTreeSelect
-                  data={scopedClassificationsTree}
-                  selectedIds={createFormData.classification_ids}
-                  onSelectionChange={(ids) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      classification_ids: ids,
-                    })
-                  }
-                  label={t("users.classifications")}
-                  icon={
-                    <FolderTree className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  }
-                  emptyMessage={t("users.noClassificationsAvailable")}
-                  colorScheme="warning"
-                  maxHeight="180px"
-                  hierarchyType="classification"
-                />
+                <div className="relative">
+                  <HierarchicalTreeSelect
+                    data={scopedClassificationsTree}
+                    selectedIds={createFormData.classification_ids}
+                    onSelectionChange={(ids) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        classification_ids: ids,
+                      })
+                    }
+                    label={t("users.classifications")}
+                    icon={
+                      <FolderTree className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    }
+                    emptyMessage={t("users.noClassificationsAvailable")}
+                    colorScheme="warning"
+                    maxHeight="180px"
+                    hierarchyType="classification"
+                  />
+                  {createDeptLoading && (
+                    <div className="absolute inset-0 bg-[hsl(var(--background)/0.6)] rounded-xl flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+                    </div>
+                  )}
+                </div>
 
                 {/* Roles */}
                 <div>
@@ -3170,7 +3218,11 @@ export const UsersPage: React.FC = () => {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!isCreatePasswordValid || createMutation.isPending}
+                  disabled={
+                    !isCreatePasswordValid ||
+                    createDeptLoading ||
+                    createMutation.isPending
+                  }
                   isLoading={createMutation.isPending}
                   leftIcon={
                     !createMutation.isPending ? (
@@ -3178,9 +3230,11 @@ export const UsersPage: React.FC = () => {
                     ) : undefined
                   }
                 >
-                  {createMutation.isPending
-                    ? t("users.creating")
-                    : t("users.createUser")}
+                  {createDeptLoading
+                    ? t("users.loadingDepartments", "Loading departments...")
+                    : createMutation.isPending
+                      ? t("users.creating")
+                      : t("users.createUser")}
                 </Button>
               </div>
             </form>
