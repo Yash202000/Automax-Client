@@ -109,6 +109,9 @@ export function IncidentEditPage() {
     country: undefined,
     postal_code: undefined,
     due_date: "",
+    reporter_name: "",
+    reporter_email: "",
+    reporter_phone: "",
   });
 
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
@@ -307,6 +310,9 @@ export function IncidentEditPage() {
       due_date: incident.due_date
         ? new Date(incident.due_date).toISOString().slice(0, 16)
         : "",
+      reporter_name: incident.reporter_name || "",
+      reporter_email: incident.reporter_email || "",
+      reporter_phone: incident.reporter_phone || "",
     });
 
     setExistingAttachments(incident.attachments || []);
@@ -342,6 +348,7 @@ export function IncidentEditPage() {
     (w) => w.id === incident?.workflow?.id,
   );
   const workflowRequiredFields = selectedWorkflow?.required_fields || [];
+  const workflowOptionalFields = selectedWorkflow?.optional_fields || [];
 
   // Convert classifications to TreeSelectNode format
   const classificationTree = classifications as unknown as TreeSelectNode[];
@@ -853,6 +860,62 @@ export function IncidentEditPage() {
                   required={workflowRequiredFields.includes("description")}
                   error={errors.description}
                 />
+                {(workflowRequiredFields.includes("reporter_name") ||
+                  workflowOptionalFields.includes("reporter_name")) && (
+                  <Input
+                    label={t("incidents.reporterName", "Caller Name")}
+                    value={formData.reporter_name || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "reporter_name",
+                        e.target.value.replace(/[^a-zA-ZÀ-ɏ؀-ۿ\s\-'.]/g, ""),
+                      )
+                    }
+                    placeholder={t(
+                      "incidents.reporterNamePlaceholder",
+                      "Name of caller",
+                    )}
+                    required={workflowRequiredFields.includes("reporter_name")}
+                    error={errors.reporter_name}
+                  />
+                )}
+                {(workflowRequiredFields.includes("reporter_email") ||
+                  workflowOptionalFields.includes("reporter_email")) && (
+                  <Input
+                    label={t("incidents.reporterEmail", "Caller Email")}
+                    type="email"
+                    value={formData.reporter_email || ""}
+                    onChange={(e) =>
+                      handleChange("reporter_email", e.target.value)
+                    }
+                    placeholder={t(
+                      "incidents.reporterEmailPlaceholder",
+                      "caller@example.com",
+                    )}
+                    required={workflowRequiredFields.includes("reporter_email")}
+                    error={errors.reporter_email}
+                  />
+                )}
+                {(workflowRequiredFields.includes("reporter_phone") ||
+                  workflowOptionalFields.includes("reporter_phone")) && (
+                  <Input
+                    label={t("incidents.reporterPhone", "Caller Phone Number")}
+                    type="tel"
+                    value={formData.reporter_phone || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "reporter_phone",
+                        e.target.value.replace(/[^0-9+\-\s()]/g, ""),
+                      )
+                    }
+                    placeholder={t(
+                      "incidents.reporterPhonePlaceholder",
+                      "+971 50 000 0000",
+                    )}
+                    required={workflowRequiredFields.includes("reporter_phone")}
+                    error={errors.reporter_phone}
+                  />
+                )}
               </div>
             </Card>
 
