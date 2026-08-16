@@ -918,7 +918,8 @@ export const IncidentDetailPage: React.FC = () => {
       trans.assign_user_id ||
       ((trans.auto_match_user || trans.manual_select_user) &&
         trans.assignment_roles &&
-        trans.assignment_roles.length > 0)
+        trans.assignment_roles.length > 0 &&
+        trans.view_assigne_user_list)
     )
       steps.push("user");
     if (trans.field_changes && trans.field_changes.length > 0)

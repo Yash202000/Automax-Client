@@ -82,7 +82,7 @@ const getShadowColor = (color: string) => {
 };
 
 export const DashboardPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { hasAnyPermission, hasPermission, isSuperAdmin } = usePermissions();
   const { isFeatureLicensed, hasLicense } = useLicense();
@@ -232,9 +232,9 @@ export const DashboardPage: React.FC = () => {
       licenseFeature: "call_centre",
     },
     {
-      title: "Goal Management",
-      subtitle: "Track & Achieve",
-      description: "Set goals, track metrics, manage approvals",
+      title: t("dashboard.goalManagement"),
+      subtitle: t("dashboard.trackAchieve"),
+      description: t("setGoalsTrackMetrics"),
       href: "/goals",
       icon: Target,
       gradient: "from-[#0EA5E9] to-[#0369A1]",
@@ -292,6 +292,15 @@ export const DashboardPage: React.FC = () => {
       window.open(appLink.url, "_blank", "noopener,noreferrer");
     }
   };
+
+  const isArabic = i18n.language.startsWith("ar");
+
+  const getLocalizedApplicationsLinks = (appLink: ApplicationLink) => ({
+    name: isArabic ? appLink.name_ar || appLink.name : appLink.name,
+    description: isArabic
+      ? appLink.description_ar || appLink.description
+      : appLink.description,
+  });
 
   return (
     <div className="min-h-[calc(100vh-120px)] flex flex-col">
@@ -371,7 +380,7 @@ export const DashboardPage: React.FC = () => {
             const shadowColor = getShadowColor(appLink.color);
             const hasImage =
               Boolean(appLink.image_url) && !brokenImages.has(appLink.id);
-
+            const localizedAppLink = getLocalizedApplicationsLinks(appLink);
             return (
               <button
                 key={appLink.id}
@@ -424,11 +433,11 @@ export const DashboardPage: React.FC = () => {
                     )}
                   </div>
                   <h2 className="text-lg font-bold text-white leading-tight">
-                    {appLink.name}
+                    {localizedAppLink.name}
                   </h2>
-                  {appLink.description && (
+                  {localizedAppLink.description && (
                     <p className="text-white/90 text-xs font-medium mt-0.5 line-clamp-1">
-                      {appLink.description}
+                      {localizedAppLink.description}
                     </p>
                   )}
                 </div>

@@ -675,14 +675,18 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     });
 
     if (metricAttachmentFile && created.data) {
-      const uploaded = await uploadAttachment.mutateAsync(metricAttachmentFile);
+      const uploaded = await uploadAttachment.mutateAsync({
+        file: metricAttachmentFile,
+        metricId: created.data.id,
+        evidenceType: metricEvidenceType,
+      });
       if (uploaded.data) {
         await createEvidence.mutateAsync({
           title: metricEvidenceTitle.trim(),
           evidence_type: metricEvidenceType,
           description: metricEvidenceComment.trim(),
           metric_id: created.data.id,
-          file_url: uploaded.data.file_url,
+          documenta_file_id: uploaded.data.documenta_file_id,
           file_name: uploaded.data.file_name,
           file_size: uploaded.data.file_size,
           mime_type: uploaded.data.mime_type,

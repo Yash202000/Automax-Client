@@ -354,7 +354,8 @@
     "switchToSso": "Sign in with SSO",
     "switchToRegular": "Sign in with email",
     "switchToSsoRegister": "Register with SSO",
-    "switchToRegularRegister": "Register with email"
+    "switchToRegularRegister": "Register with email",
+    "adLogin": "AD Login"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -412,7 +413,10 @@
     "manageQueries": "Handle and respond to queries",
     "noAccessDescription": "Contact your administrator to get access to modules.",
     "noAccessTitle": "No modules available",
-    "loadingModules": "Loading available modules..."
+    "loadingModules": "Loading available modules...",
+    "goalManagement": "Goal Management",
+    "trackAchieve": "Track & Achieve",
+    "setGoalsTrackMetrics": "Set goals, track metrics, manage approvals"
   },
   "incidents": {
     "title": "Incidents",
@@ -4052,7 +4056,8 @@
       "declined": "Declined",
       "cancelled": "Cancelled",
       "busy": "Busy"
-    }
+    },
+    "allUsers": "All Users"
   },
   "citizen": {
     "closePage": "You may safely close this page.",

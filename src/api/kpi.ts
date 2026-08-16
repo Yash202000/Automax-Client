@@ -864,9 +864,17 @@ export const kpiEngagementApi = {
     type: string,
     id: string,
     file: File,
+    metricId?: string,
+    evidenceType?: string,
   ): Promise<ApiResponse<KpiAttachmentUploadResult>> => {
     const formData = new FormData();
     formData.append("file", file);
+    // metric_id is recorded as metadata only (no per-metric folder level in
+    // the approved hierarchy). evidence_type IS load-bearing — it determines
+    // the "Supporting Folder" level (Pillar / KPI / Evidence Type / file),
+    // so it must be known at upload time, not just at CreateEvidence time.
+    if (metricId) formData.append("metric_id", metricId);
+    if (evidenceType) formData.append("evidence_type", evidenceType);
     const res = await apiClient.post(
       `/kpi/${type}/${id}/attachment`,
       formData,

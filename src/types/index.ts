@@ -56,6 +56,7 @@ export interface Permission {
   module: string;
   module_ar: string | null;
   action: string;
+  action_ar: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -795,6 +796,7 @@ export interface WorkflowState {
   assignment_roles?: Role[];
   auto_match_user: boolean;
   manual_select_user: boolean;
+  view_assigne_user_list: boolean;
   // New incident notification templates (initial states only)
   new_incident_email_template_code?: string;
   new_incident_sms_template_code?: string;
@@ -827,7 +829,7 @@ export interface WorkflowTransition {
   assignment_roles?: Role[];
   auto_match_user: boolean;
   manual_select_user: boolean;
-
+  view_assigne_user_list: boolean;
   is_rejection: boolean;
   is_not_belong: boolean;
   is_missing_info: boolean;
@@ -1379,6 +1381,9 @@ export interface IncidentUpdateRequest {
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
   version: number;
+  reporter_email?: string;
+  reporter_name?: string;
+  reporter_phone?: string;
 }
 
 export interface IncidentTransitionRequest {

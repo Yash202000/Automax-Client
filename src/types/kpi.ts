@@ -957,7 +957,11 @@ export interface KpiMetricRequest {
 }
 
 export interface KpiAttachmentUploadResult {
-  file_url: string;
+  // New uploads go through Documenta and return documenta_file_id; file_url
+  // is only ever populated for legacy (pre-Documenta) responses, kept here
+  // so old cached responses still type-check.
+  file_url?: string;
+  documenta_file_id?: string;
   file_name: string;
   file_size: number;
   mime_type: string;
@@ -991,6 +995,7 @@ export interface KpiEngagementEvidence {
   metric_id?: string;
   metric?: { id: string; name: string };
   file_url: string;
+  documenta_file_id?: string;
   file_name?: string;
   file_size?: number;
   mime_type?: string;
@@ -1005,6 +1010,7 @@ export interface KpiEngagementEvidenceRequest {
   description?: string;
   metric_id?: string;
   file_url?: string;
+  documenta_file_id?: string;
   file_name?: string;
   file_size?: number;
   mime_type?: string;
