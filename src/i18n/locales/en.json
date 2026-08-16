@@ -238,7 +238,8 @@
     "source": "Source",
     "allSources": "All Sources",
     "sent": "Sent",
-    "invalidPhoneNumber": "Invalid phone number"
+    "invalidPhoneNumber": "Invalid phone number",
+    "reporterPhone":"Reporter Phone"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
