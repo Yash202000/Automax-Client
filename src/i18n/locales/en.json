@@ -774,7 +774,8 @@
     "unknownUser": "Unknown User",
     "communications": "Communication",
     "linkedSystems": "Linked Systems",
-    "requestInfoSmsSent": "SMS sent successfully to citizen"
+    "requestInfoSmsSent": "SMS sent successfully to citizen",
+    "locationUpdateRequired": "Location must be updated before performing transitions"
   },
   "priorities": {
     "critical": "Critical",

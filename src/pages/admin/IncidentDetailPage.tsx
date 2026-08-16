@@ -3321,7 +3321,7 @@ export const IncidentDetailPage: React.FC = () => {
                     </div>
                     {incident.location?.name === "Default" && (
                       <span className="text-xs text-orange-500">
-                        Location must be updated before performing transitions
+                        {t("incidents.locationUpdateRequired")}
                       </span>
                     )}
                   </div>

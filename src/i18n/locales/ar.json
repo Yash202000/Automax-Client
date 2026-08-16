@@ -771,7 +771,8 @@
     "unknownUser": "مستخدم غير معروف",
     "communications": "الاتصالات",
     "linkedSystems": "الأنظمة المرتبطة",
-    "requestInfoSmsSent": "تم إرسال رسالة نصية قصيرة إلى المواطن بنجاح"
+    "requestInfoSmsSent": "تم إرسال رسالة نصية قصيرة إلى المواطن بنجاح",
+    "locationUpdateRequired": "يجب تحديث الموقع قبل تنفيذ عمليات الانتقال"
   },
   "priorities": {
     "critical": "حرج",
