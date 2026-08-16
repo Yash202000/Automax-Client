@@ -1310,12 +1310,16 @@ export function IncidentCreatePage() {
 
   const workflowOptions = [
     { value: "", label: t("incidents.selectWorkflow") },
-    ...filteredWorkflows.map((wf) => ({
-      value: wf.id,
-      label: wf.is_default
-        ? `${wf.name} (${t("common.default", "Default")})`
-        : wf.name,
-    })),
+    ...filteredWorkflows.map((wf) => {
+      const workflowName =
+        i18n.language === "ar" && wf.name_ar ? wf.name_ar : wf.name;
+      return {
+        value: wf.id,
+        label: wf.is_default
+          ? `${workflowName} (${t("common.default", "Default")})`
+          : wf.name,
+      };
+    }),
   ];
 
   // Convert classifications to TreeSelectNode format
