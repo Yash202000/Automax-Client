@@ -4517,5 +4517,10 @@
       "header": "Header",
       "footer": "Footer"
     }
+  },
+   "websocket": {
+    "connectionLost": "Connection Lost",
+    "attemptingToReconnect": "Attempting to reconnect...",
+    "failedToReconnect": "Failed to reconnect. Please refresh the page."
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface WSMessage {
   type: string;
@@ -34,7 +35,7 @@ export function useIncidentWebSocket(
   userId: string | undefined,
 ) {
   const queryClient = useQueryClient();
-
+  const { t } = useTranslation();
   useEffect(() => {
     if (!incidentId || !userId) return;
 
@@ -287,8 +288,11 @@ export function useIncidentWebSocket(
 
           // Only show error toast on first reconnect attempt
           if (state.reconnectAttempts === 1) {
-            toast.error("Connection Lost", {
-              description: "Attempting to reconnect...",
+            toast.error(t("websocket.connectionLost", "Connection Lost"), {
+              description: t(
+                "websocket.attemptingToReconnect",
+                "Attempting to reconnect...",
+              ),
               duration: 3000,
             });
           }
@@ -297,8 +301,11 @@ export function useIncidentWebSocket(
             connectWebSocket();
           }, delay);
         } else if (state.reconnectAttempts >= maxReconnectAttempts) {
-          toast.error("Connection Lost", {
-            description: "Failed to reconnect. Please refresh the page.",
+          toast.error(t("websocket.connectionLost", "Connection Lost"), {
+            description: t(
+              "websocket.failedToReconnect",
+              "Failed to reconnect. Please refresh the page.",
+            ),
             duration: 10000,
           });
         }
@@ -342,5 +349,5 @@ export function useIncidentWebSocket(
         }
       }
     };
-  }, [incidentId, userId, queryClient]);
+  }, [incidentId, userId, queryClient, t]);
 }

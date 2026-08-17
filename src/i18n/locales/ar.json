@@ -4519,5 +4519,10 @@
       "header": "الرأس",
       "footer": "التذييل"
     }
+  },
+   "websocket": {
+    "connectionLost": "انقطع الاتصال",
+    "attemptingToReconnect": "جارٍ محاولة إعادة الاتصال...",
+    "failedToReconnect": "فشلت إعادة الاتصال. يرجى تحديث الصفحة."
   }
 }
