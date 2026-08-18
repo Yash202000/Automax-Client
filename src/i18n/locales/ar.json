@@ -239,7 +239,9 @@
     "allSources": "جميع المصادر",
     "sent": "تم الإرسال",
     "invalidPhoneNumber": "رقم الهاتف غير صالح",
-    "selectDateRange": "اختر نطاق التاريخ"
+    "selectDateRange": "اختر نطاق التاريخ",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يومًا"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",

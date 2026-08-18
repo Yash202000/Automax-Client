@@ -104,7 +104,9 @@ export function DatePickerWithRange({
                   setOpen(false);
                 }}
               >
-                {label}
+                {t(
+                  `common.${label === "Last 7 Days" ? "last7Days" : "last30Days"}`,
+                )}
               </Button>
             ))}
           </div>
@@ -118,7 +120,7 @@ export function DatePickerWithRange({
               setOpen(false);
             }}
           >
-            Clear
+            {t("common.clear", "Clear")}
           </Button>
         </div>
       </PopoverContent>
