@@ -39,6 +39,10 @@ export const RoleCreatePage: React.FC = () => {
     useState<PermissionFilterMode>("all");
   const [error, setError] = useState<string | null>(null);
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const { data: permissionsData } = useQuery({
     queryKey: ["admin", "permissions"],
     queryFn: () => permissionApi.list(),
@@ -101,11 +105,12 @@ export const RoleCreatePage: React.FC = () => {
     } else if (!validateName(name)) {
       newErrors.name = t("roles.invalidName");
     }
-
-    if (!validateRequired(code)) {
-      newErrors.code = t("roles.codeRequired");
-    } else if (!validateCode(code)) {
-      newErrors.code = t("roles.invalidCode");
+    if (!isEPM940) {
+      if (!validateRequired(code)) {
+        newErrors.code = t("roles.codeRequired");
+      } else if (!validateCode(code)) {
+        newErrors.code = t("roles.invalidCode");
+      }
     }
 
     setErrors(newErrors);
@@ -157,8 +162,12 @@ export const RoleCreatePage: React.FC = () => {
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
             {t("roles.basicInfo")}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+          <div
+            className={`grid grid-cols-1 ${
+              !isEPM940 ? "md:grid-cols-2" : ""
+            } gap-6`}
+          >
+            <div className={!isEPM940 ? "" : "md:col-span-2"}>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
@@ -182,32 +191,34 @@ export const RoleCreatePage: React.FC = () => {
                 </p>
               )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleCode")} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder={t("roles.roleKeyExample")}
-                value={formData.code}
-                onChange={(e) => {
-                  setFormData({ ...formData, code: e.target.value });
+            {!isEPM940 ? (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t("roles.roleCode")} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={t("roles.roleKeyExample")}
+                  value={formData.code}
+                  onChange={(e) => {
+                    setFormData({ ...formData, code: e.target.value });
 
-                  setErrors((prev) => ({ ...prev, code: "" }));
-                }}
-                required
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
-              />
-              <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
-                {t("roles.roleCodeHint")}
-              </p>
-
-              {errors.code && (
-                <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
-                  {errors.code}
+                    setErrors((prev) => ({ ...prev, code: "" }));
+                  }}
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
+                />
+                <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+                  {t("roles.roleCodeHint")}
                 </p>
-              )}
-            </div>
+
+                {errors.code && (
+                  <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                    {errors.code}
+                  </p>
+                )}
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("common.description")}

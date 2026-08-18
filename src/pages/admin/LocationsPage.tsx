@@ -297,6 +297,10 @@ export const LocationsPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const canCreateLocation =
     isSuperAdmin || hasPermission(PERMISSIONS.LOCATIONS_CREATE);
   const canEditLocation =
@@ -1130,20 +1134,23 @@ export const LocationsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("locations.code")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("locations.codePlaceholder")}
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
-                  />
-                </div>
+                {!isEPM940 ? (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("locations.code")}{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t("locations.codePlaceholder")}
+                      value={formData.code}
+                      onChange={(e) =>
+                        setFormData({ ...formData, code: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                    />
+                  </div>
+                ) : null}
 
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">

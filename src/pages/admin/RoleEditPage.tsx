@@ -51,6 +51,10 @@ export const RoleEditPage: React.FC = () => {
   const [permissionFilter, setPermissionFilter] =
     useState<PermissionFilterMode>("all");
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const {
     data: roleData,
     isLoading: roleLoading,
@@ -233,8 +237,12 @@ export const RoleEditPage: React.FC = () => {
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
             {t("roles.basicInfo")}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+          <div
+            className={`grid grid-cols-1 ${
+              !isEPM940 ? "md:grid-cols-2" : ""
+            } gap-6`}
+          >
+            <div className={!isEPM940 ? "" : "md:col-span-2"}>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
@@ -248,17 +256,19 @@ export const RoleEditPage: React.FC = () => {
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleCode")}
-              </label>
-              <input
-                type="text"
-                value={role.code}
-                disabled
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-sm font-mono cursor-not-allowed"
-              />
-            </div>
+            {!isEPM940 ? (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t("roles.roleCode")}
+                </label>
+                <input
+                  type="text"
+                  value={role.code}
+                  disabled
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-sm font-mono cursor-not-allowed"
+                />
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("common.description")}
