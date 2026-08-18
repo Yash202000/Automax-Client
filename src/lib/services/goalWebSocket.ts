@@ -161,16 +161,22 @@ export function useGoalWebSocket(
         state.queryClients.forEach((qc) => {
           switch (message.type) {
             case "goal_updated":
-              toast.info("Goal Updated", {
-                description: "This goal was just updated by another user.",
+              toast.info(t("websocket.goals.goalUpdated", "Goal Updated"), {
+                description: t(
+                  "websocket.goals.goalUpdatedByAnotherUser",
+                  "This goal was just updated by another user.",
+                ),
                 duration: 4000,
               });
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               break;
 
             case "evidence_created":
-              toast.info("New Evidence", {
-                description: `New evidence "${message.data?.title || ""}" has been uploaded.`,
+              toast.info(t("websocket.goals.newEvidence", "New Evidence"), {
+                description: t("websocket.goals.newEvidenceUploaded", {
+                  title: message.data?.title || "",
+                  defaultValue: 'New evidence "{{title}}" has been uploaded.',
+                }),
                 duration: 4000,
               });
               qc.invalidateQueries({
@@ -181,10 +187,19 @@ export function useGoalWebSocket(
 
             case "evidence_transitioned": {
               const data = message.data;
-              toast.success("Evidence Status Changed", {
-                description: `Evidence status changed to ${data?.status || "unknown"}`,
-                duration: 5000,
-              });
+              toast.success(
+                t(
+                  "websocket.goals.evidenceStatusChanged",
+                  "Evidence Status Changed",
+                ),
+                {
+                  description: t("websocket.goals.evidenceStatusChangedTo", {
+                    status: data?.status || "unknown",
+                    defaultValue: "Evidence status changed to {{status}}",
+                  }),
+                  duration: 5000,
+                },
+              );
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               qc.invalidateQueries({
                 queryKey: goalKeys.evidences(goalId),
@@ -203,8 +218,11 @@ export function useGoalWebSocket(
             }
 
             case "check_in_created":
-              toast.info("New Check-in", {
-                description: "A new check-in has been recorded for this goal.",
+              toast.info(t("websocket.goals.newCheckIn", "New Check-in"), {
+                description: t(
+                  "websocket.goals.newCheckInRecorded",
+                  "A new check-in has been recorded for this goal.",
+                ),
                 duration: 4000,
               });
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
@@ -216,10 +234,19 @@ export function useGoalWebSocket(
 
             case "metric_batch_transitioned": {
               const batchData = message.data;
-              toast.success("Metric Import Status Changed", {
-                description: `Batch status changed to ${batchData?.status || "unknown"}`,
-                duration: 5000,
-              });
+              toast.success(
+                t(
+                  "websocket.goals.metricImportStatusChanged",
+                  "Metric Import Status Changed",
+                ),
+                {
+                  description: t("websocket.goals.batchStatusChangedTo", {
+                    status: batchData?.status || "unknown",
+                    defaultValue: "Batch status changed to {{status}}",
+                  }),
+                  duration: 5000,
+                },
+              );
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               qc.invalidateQueries({ queryKey: goalKeys.metricBatches() });
               if (batchData?.batch_id) {
@@ -237,10 +264,19 @@ export function useGoalWebSocket(
             }
 
             case "collaborator_changed":
-              toast.info("Collaborators Updated", {
-                description: "Goal collaborators have been changed.",
-                duration: 4000,
-              });
+              toast.info(
+                t(
+                  "websocket.goals.collaboratorsUpdated",
+                  "Collaborators Updated",
+                ),
+                {
+                  description: t(
+                    "websocket.goals.goalCollaboratorsChanged",
+                    "Goal collaborators have been changed.",
+                  ),
+                  duration: 4000,
+                },
+              );
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               break;
 

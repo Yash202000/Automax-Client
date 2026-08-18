@@ -163,10 +163,16 @@ export function useIncidentWebSocket(
           // Handle different message types
           switch (message.type) {
             case "incident_updated":
-              toast.info("Incident Updated", {
-                description: "This incident was just updated by another user.",
-                duration: 4000,
-              });
+              toast.info(
+                t("websocket.incidents.incidentUpdated", "Incident Updated"),
+                {
+                  description: t(
+                    "websocket.incidents.incidentUpdatedByAnotherUser",
+                    "This incident was just updated by another user.",
+                  ),
+                  duration: 4000,
+                },
+              );
               qc.invalidateQueries({ queryKey: ["incident", incidentId] });
               break;
 
@@ -174,10 +180,20 @@ export function useIncidentWebSocket(
               const data = message.data as any;
               // Only show toast if we have valid state data
               if (data?.from_state && data?.to_state) {
-                toast.success("State Changed", {
-                  description: `Status changed from ${data.from_state} to ${data.to_state}`,
-                  duration: 5000,
-                });
+                toast.success(
+                  t("websocket.incidents.stateChanged", "State Changed"),
+                  {
+                    description: t(
+                      "websocket.incidents.statusChangedFromTo",
+                      "Status changed from {{from}} to {{to}}",
+                      {
+                        from: data.from_state,
+                        to: data.to_state,
+                      },
+                    ),
+                    duration: 5000,
+                  },
+                );
               }
               qc.invalidateQueries({ queryKey: ["incident", incidentId] });
               qc.invalidateQueries({
@@ -190,8 +206,11 @@ export function useIncidentWebSocket(
             }
 
             case "comment_added": {
-              toast.info("New Comment", {
-                description: "A new comment was added to this incident.",
+              toast.info(t("websocket.incidents.newComment", "New Comment"), {
+                description: t(
+                  "websocket.incidents.newCommentAdded",
+                  "A new comment was added to this incident.",
+                ),
                 duration: 4000,
               });
               qc.invalidateQueries({
@@ -201,10 +220,16 @@ export function useIncidentWebSocket(
               break;
             }
             case "attachment_added": {
-              toast.info("New Attachment", {
-                description: "A new file was attached to this incident.",
-                duration: 4000,
-              });
+              toast.info(
+                t("websocket.incidents.newAttachment", "New Attachment"),
+                {
+                  description: t(
+                    "websocket.incidents.newAttachmentAdded",
+                    "A new file was attached to this incident.",
+                  ),
+                  duration: 4000,
+                },
+              );
               qc.invalidateQueries({
                 queryKey: ["incident", incidentId, "attachments"],
               });
@@ -220,8 +245,14 @@ export function useIncidentWebSocket(
                 joinData.user_name !== "Unknown User" &&
                 joinData.user_id !== userId
               ) {
-                toast.info("User Joined", {
-                  description: `${joinData.user_name} is now viewing this incident`,
+                toast.info(t("websocket.incidents.userJoined", "User Joined"), {
+                  description: t(
+                    "websocket.incidents.userNowViewing",
+                    "{{user}} is now viewing this incident",
+                    {
+                      user: joinData.user_name,
+                    },
+                  ),
                   duration: 3000,
                 });
               }
@@ -239,8 +270,14 @@ export function useIncidentWebSocket(
                 leftData.user_name !== "Unknown User" &&
                 leftData.user_id !== userId
               ) {
-                toast.info("User Left", {
-                  description: `${leftData.user_name} stopped viewing this incident`,
+                toast.info(t("websocket.incidents.userLeft", "User Left"), {
+                  description: t(
+                    "websocket.incidents.userStoppedViewing",
+                    "{{user}} stopped viewing this incident.",
+                    {
+                      user: leftData.user_name,
+                    },
+                  ),
                   duration: 3000,
                 });
               }

@@ -4520,9 +4520,37 @@
       "footer": "التذييل"
     }
   },
-   "websocket": {
+  "websocket": {
     "connectionLost": "انقطع الاتصال",
     "attemptingToReconnect": "جارٍ محاولة إعادة الاتصال...",
-    "failedToReconnect": "فشلت إعادة الاتصال. يرجى تحديث الصفحة."
+    "failedToReconnect": "فشلت إعادة الاتصال. يرجى تحديث الصفحة.",
+    "goals": {
+      "goalUpdated": "تم تحديث الهدف",
+      "goalUpdatedByAnotherUser": "تم تحديث هذا الهدف للتو بواسطة مستخدم آخر.",
+      "newEvidence": "دليل جديد",
+      "newEvidenceUploaded": "تم تحميل دليل جديد \"{{title}}\".",
+      "evidenceStatusChanged": "تم تغيير حالة الدليل",
+      "evidenceStatusChangedTo": "تم تغيير حالة الدليل إلى {{status}}",
+      "newCheckIn": "تسجيل متابعة جديد",
+      "newCheckInRecorded": "تم تسجيل متابعة جديدة لهذا الهدف.",
+      "metricImportStatusChanged": "تم تغيير حالة استيراد المقاييس",
+      "batchStatusChangedTo": "تم تغيير حالة الدفعة إلى {{status}}",
+      "collaboratorsUpdated": "تم تحديث المتعاونين",
+      "goalCollaboratorsChanged": "تم تغيير المتعاونين في الهدف."
+    },
+    "incidents": {
+      "incidentUpdated": "تم تحديث الحادثة",
+      "incidentUpdatedByAnotherUser": "تم تحديث هذه الحادثة للتو بواسطة مستخدم آخر.",
+      "stateChanged": "تم تغيير الحالة",
+      "statusChangedFromTo": "تم تغيير الحالة من {{from}} إلى {{to}}",
+      "newComment": "تعليق جديد",
+      "newCommentAdded": "تمت إضافة تعليق جديد إلى هذه الحادثة.",
+      "newAttachment": "مرفق جديد",
+      "newAttachmentAdded": "تم إرفاق ملف جديد بهذه الحادثة.",
+      "userJoined": "انضم مستخدم",
+      "userNowViewing": "يقوم {{user}} الآن بعرض هذه الحادثة",
+      "userLeft": "غادر مستخدم",
+      "userStoppedViewing": "توقف {{user}} عن عرض هذه الحادثة"
+    }
   }
 }
