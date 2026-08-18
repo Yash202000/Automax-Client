@@ -453,7 +453,7 @@ export interface ChangePasswordRequest {
 // OTP types
 export interface OtpSendRequest {
   phone: string;
-  channel: "sms" | "email";
+  channel: "sms" | "email" | "whatsapp";
 }
 
 export interface OtpSendResponse {
@@ -1836,6 +1836,9 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
+  auth_setting: {
+    totp_enabled: boolean;
+  };
   sms_max_length: number;
   updated_at: string;
 }
@@ -1866,6 +1869,7 @@ export interface SettingsUpdateRequest {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button?: boolean;
+  enable_totp_verification?: boolean;
 }
 
 // Re-export report template builder types

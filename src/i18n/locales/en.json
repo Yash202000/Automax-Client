@@ -355,7 +355,17 @@
     "switchToRegular": "Sign in with email",
     "switchToSsoRegister": "Register with SSO",
     "switchToRegularRegister": "Register with email",
-    "adLogin": "AD Login"
+    "adLogin": "AD Login",
+    "getVerificationCode": "Get Verification Code",
+    "sms": "SMS",
+    "whatsapp": "WhatsApp",
+    "verifyYourAccount": "Verify your account",
+    "verificationCodeSentTo": "We've sent a verification code to",
+    "mobileNumberNotAvailable": "Mobile number is not available.",
+    "failedToVerifyOtp": "Failed to verify verification code.",
+    "failedToResendOtp": "Failed to resend verification code.",
+    "verifying": "Verifying...",
+    "resendCode": "Resend code"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -891,7 +901,11 @@
     "faviconIco": "/favicon.ico",
     "hhMmSs": "HH:mm:ss",
     "logoPngOrHttpsCdnExampleCom": "/logo.png or https://cdn.example.com/logo.png",
-    "yyyyMmDd": "YYYY-MM-DD"
+    "yyyyMmDd": "YYYY-MM-DD",
+    "authConfiguration": "Auth Configuration",
+    "authConfigurationDesc": "Manage authentication verification requirements.",
+    "enableTotpVerification": "Enable TOTP Verification",
+    "enableTotpVerificationDesc": "Require time-based one-time passcode verification during authentication."
   },
   "profile": {
     "title": "Profile",
