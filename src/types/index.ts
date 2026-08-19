@@ -361,10 +361,11 @@ export interface UserLoginResponse {
   created_at: string;
 }
 
-/** Response for POST /auth/login — user is slim (no departments/locations/classifications). */
+/** Response for POST /auth/login — user is slim (no departments/locations/classifications).
+ *  `token` is omitted when the user must complete TOTP verification first. */
 export interface AuthLoginResponse {
   user: UserLoginResponse;
-  token: string;
+  token?: string;
   refresh_token?: string;
   expires_in?: number;
   validation_url?: string;

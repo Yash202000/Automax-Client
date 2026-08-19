@@ -6,8 +6,16 @@ import { otpApi } from "@/api/otp";
 import type { User } from "@/types";
 import { Clock, RotateCcw } from "lucide-react";
 
+interface AuthPayload {
+  user: User;
+  token: string;
+  refreshToken?: string;
+  rememberMe?: boolean;
+}
+
 interface OTPInputProps {
-  onVerified?: () => void | Promise<void>;
+  onVerified?: (authData: AuthPayload) => void | Promise<void>;
+
   onResendSuccess?: (sessionId: string) => void;
   sessionId: string;
   user?: User;
@@ -38,8 +46,17 @@ export const OTPInput = ({
         otp,
       }),
 
-    onSuccess: async () => {
-      await onVerified?.();
+    onSuccess: async (response) => {
+      if (!response.success || !response.data) {
+        setFieldError(response.message || t("auth.failedToVerifyOtp"));
+        return;
+      }
+
+      await onVerified?.({
+        user: response.data.user,
+        token: response.data.token,
+        refreshToken: response.data.refresh_token,
+      });
     },
 
     onError: (error) => {

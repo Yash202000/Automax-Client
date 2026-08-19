@@ -42,12 +42,14 @@ const maskPhoneNumber = (phone?: string): string => {
   return [callingCode, masked, last4].filter(Boolean).join(" ");
 };
 
-interface PendingAuthPayload {
+interface AuthPayload {
   user: User;
-  token: string;
+  token?: string;
   refreshToken?: string;
   rememberMe?: boolean;
 }
+
+type CompletedAuthPayload = AuthPayload & { token: string };
 
 export const LoginForm: React.FC = () => {
   const { t } = useTranslation();
@@ -57,9 +59,7 @@ export const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginStep, setLoginStep] = useState<"login" | "otp">("login");
   const [otpMethod, setOtpMethod] = useState<"whatsapp" | "sms">("sms");
-  const [pendingAuth, setPendingAuth] = useState<PendingAuthPayload | null>(
-    null,
-  );
+  const [pendingAuth, setPendingAuth] = useState<AuthPayload | null>(null);
   const [loginData, setLoginData] = useState<{
     user: User;
     sessionId: string;
@@ -109,7 +109,7 @@ export const LoginForm: React.FC = () => {
   const isLoginPending =
     isLoading || isSettingsLoading || sendOtpMutation.isPending;
 
-  const completeLogin = async (auth: PendingAuthPayload) => {
+  const completeLogin = async (auth: CompletedAuthPayload) => {
     setAuth(auth.user, auth.token, auth.refreshToken, auth.rememberMe);
     try {
       const profileResp = await authApi.getProfile();
@@ -127,15 +127,17 @@ export const LoginForm: React.FC = () => {
   const sendLoginOtp = async (user: User, method: "whatsapp" | "sms") => {
     const response = await sendOtpMutation.mutateAsync({ user, method });
 
-    if (!response.success || !response.session_id) {
+    if (!response.session_id) {
       throw new Error(response.error || t("auth.failedToSendOtp"));
     }
 
     setLoginData({ user, sessionId: response.session_id });
   };
 
-  const goToPostLoginStep = async (auth: PendingAuthPayload) => {
-    if (shouldVerifyTotp && !auth.user.is_super_admin) {
+  const goToPostLoginStep = async (auth: AuthPayload) => {
+    const { token } = auth;
+
+    if (!token) {
       await sendLoginOtp(auth.user, otpMethod);
       setPendingAuth(auth);
       setLoginStep("otp");
@@ -143,7 +145,7 @@ export const LoginForm: React.FC = () => {
       return;
     }
 
-    await completeLogin(auth);
+    await completeLogin({ ...auth, token });
   };
 
   const loginSchema = z.object({
@@ -183,14 +185,14 @@ export const LoginForm: React.FC = () => {
       if (response.success && response.data) {
         const data = response.data as unknown as {
           token: string;
-          refresh_token: string;
+          refresh_token?: string;
           user: User;
           validation_url?: string;
         };
         if (data.validation_url) {
           window.location.href = data.validation_url;
         } else {
-          await goToPostLoginStep({
+          await completeLogin({
             user: data.user,
             token: data.token,
             refreshToken: data.refresh_token,
@@ -226,7 +228,7 @@ export const LoginForm: React.FC = () => {
         password: adPassword,
       });
       if (response.success && response.data) {
-        await goToPostLoginStep({
+        await completeLogin({
           user: response.data.user as unknown as User,
           token: response.data.token,
           refreshToken: response.data.refresh_token,
@@ -562,7 +564,12 @@ export const LoginForm: React.FC = () => {
           {/* OTP */}
           <div className="space-y-3">
             <OTPInput
-              onVerified={() => completeLogin(pendingAuth)}
+              onVerified={(authData) =>
+                completeLogin({
+                  ...authData,
+                  rememberMe: pendingAuth.rememberMe,
+                })
+              }
               onResendSuccess={(sessionId) =>
                 setLoginData((prev) => (prev ? { ...prev, sessionId } : prev))
               }
