@@ -265,7 +265,10 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
                     )}
                   >
                     {status.icon}
-                    {t(`incidents.status.${comm.status}`, comm.status)}
+                    {t(
+                      `incidents.communicationStatus.${comm.status}`,
+                      comm.status,
+                    )}
                   </span>
 
                   {isExpanded ? (
@@ -296,7 +299,7 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
                         <Clock className="w-3 h-3" /> {date} {time}
                       </span>
                       <span>
-                        {t("incidents.channel", "Channel")}:{" "}
+                        {t("common.channel", "Channel")}:{" "}
                         {comm.channel.toUpperCase()}
                       </span>
                       {comm.template_code && (
@@ -316,9 +319,15 @@ export const CommunicationHistory: React.FC<CommunicationHistoryProps> = ({
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4 border-t border-[hsl(var(--border))]">
           <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, totalItems)} of{" "}
-            <span className="font-medium text-foreground">{totalItems}</span>{" "}
-            communications
+            {t(
+              "incidents.showingCommunications",
+              "Showing {{from}}–{{to}} of {{total}} communications",
+              {
+                from: (page - 1) * 20 + 1,
+                to: Math.min(page * 20, totalItems),
+                total: totalItems,
+              },
+            )}
           </p>
 
           <AppPagination

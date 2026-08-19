@@ -242,7 +242,9 @@
     "reporterPhone": "هاتف المُبلّغ",
     "selectDateRange": "اختر نطاق التاريخ",
     "last7Days": "آخر 7 أيام",
-    "last30Days": "آخر 30 يومًا"
+    "last30Days": "آخر 30 يومًا",
+    "system": "النظام",
+    "subject": "الموضوع"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -778,7 +780,16 @@
     "sms": "رسالة نصية",
     "email": "البريد الإلكتروني",
     "noCommunications": "لم يتم العثور على أي اتصالات",
-    "noCommunicationsDesc": "ستظهر هنا رسائل SMS والبريد الإلكتروني المتعلقة بهذا الحادث."
+    "noCommunicationsDesc": "ستظهر هنا رسائل SMS والبريد الإلكتروني المتعلقة بهذا الحادث.",
+    "communicationStatus": {
+      "sent": "تم الإرسال",
+      "failed": "فشل",
+      "pending": "قيد الانتظار",
+      "partial": "جزئي"
+    },
+    "channel": "القناة",
+    "triggeredBy": "تم التشغيل بواسطة",
+    "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال"
   },
   "priorities": {
     "critical": "حرج",
