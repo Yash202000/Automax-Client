@@ -66,6 +66,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [emailTemplateCode, setEmailTemplateCode] = useState("");
   const [smsTemplateCode, setSmsTemplateCode] = useState("");
+  const [isActive, setIsActive] = useState(true);
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -95,10 +96,22 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       enabled: isOpen,
     });
 
-  // Query for users (potential assignees)
+  // Query for users (potential assignees).
+  // MultiSelect below filters client-side over whatever is fetched here, so every
+  // page must be pulled in — a fixed limit silently hides users past the cutoff
+  // as the user base grows.
   const { data: usersData } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => userApi.list(1, 100),
+    queryKey: ["users", "escalation-group-picker"],
+    queryFn: async () => {
+      const pageSize = 200;
+      const first = await userApi.list(1, pageSize);
+      let all = first.data;
+      for (let page = 2; page <= first.total_pages; page++) {
+        const next = await userApi.list(page, pageSize);
+        all = all.concat(next.data);
+      }
+      return { ...first, data: all };
+    },
     enabled: isOpen,
   });
 
@@ -135,7 +148,9 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   // });
 
   const rawClassifications = classificationsData?.data || [];
-  const users = usersData?.data || [];
+  // Only offer active users as new escalation recipients; an already-selected
+  // user who was later deactivated is still preserved via the "invisible" merge below.
+  const users = (usersData?.data || []).filter((u) => u.is_active);
   // const rawLocations = locationsData?.data || [];
 
   // Filter classifications based on user's assignments (unless super admin)
@@ -326,6 +341,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       setTargets((editData.targets || []).map(fromBackendTarget));
       setEmailTemplateCode(editData.email_template_code ?? "");
       setSmsTemplateCode(editData.sms_template_code ?? "");
+      setIsActive(editData.is_active ?? true);
     } else {
       setTitle("");
       setChannel("");
@@ -337,6 +353,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       setTargets([]);
       setEmailTemplateCode("");
       setSmsTemplateCode("");
+      setIsActive(true);
     }
     setErrors({});
   }, [isOpen, editData]);
@@ -383,7 +400,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       location_id: locationId,
       frequency: frequency,
       scheduled_time: scheduledTime,
-      is_active: true,
+      is_active: isActive,
       user_ids: selectedUsers.map((u) => u.id),
       targets: targets.length > 0 ? toTargetRequests(targets) : undefined,
       email_template_code: emailTemplateCode || undefined,
@@ -601,6 +618,26 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
                   onChange={(e) => setScheduledTime(e.target.value)}
                   className="w-full h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-muted-foreground">
+                  <CheckCircle2 className="w-3 h-3 inline me-1" />
+                  {t("escalation.status", "Status")}
+                </label>
+                <label className="flex items-center gap-2 h-9 px-1 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="w-4 h-4 rounded border-[hsl(var(--border))] accent-primary"
+                  />
+                  <span className="text-sm text-[hsl(var(--foreground))]">
+                    {isActive
+                      ? t("escalation.active", "Active")
+                      : t("escalation.inactive", "Inactive")}
+                  </span>
+                </label>
               </div>
 
               {/* Email template — shown when channel is email or both */}

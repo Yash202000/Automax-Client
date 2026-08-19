@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { Calendar } from "@/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/ui/popover";
+import { useTranslation } from "react-i18next";
 
 interface DatePickerWithRangeProps {
   value?: DateRange;
@@ -37,6 +38,7 @@ export function DatePickerWithRange({
 }: DatePickerWithRangeProps) {
   const [open, setOpen] = React.useState(false);
   const [range, setRange] = React.useState<DateRange | undefined>(value);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     setRange(value);
@@ -73,7 +75,7 @@ export function DatePickerWithRange({
               format(range.from, "dd MMM yyyy")
             )
           ) : (
-            "Select date range"
+            t("common.selectDateRange")
           )}
         </Button>
       </PopoverTrigger>
@@ -102,7 +104,9 @@ export function DatePickerWithRange({
                   setOpen(false);
                 }}
               >
-                {label}
+                {t(
+                  `common.${label === "Last 7 Days" ? "last7Days" : "last30Days"}`,
+                )}
               </Button>
             ))}
           </div>
@@ -116,7 +120,7 @@ export function DatePickerWithRange({
               setOpen(false);
             }}
           >
-            Clear
+            {t("common.clear", "Clear")}
           </Button>
         </div>
       </PopoverContent>

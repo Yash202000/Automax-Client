@@ -239,7 +239,10 @@
     "allSources": "جميع المصادر",
     "sent": "تم الإرسال",
     "invalidPhoneNumber": "رقم الهاتف غير صالح",
-    "reporterPhone": "هاتف المُبلّغ"
+    "reporterPhone": "هاتف المُبلّغ",
+    "selectDateRange": "اختر نطاق التاريخ",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يومًا"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -771,7 +774,11 @@
     "requestInfo": "معلومات الطلب",
     "alsoViewing": "يشاهد أيضًا:",
     "usersViewing": "{{count}} مستخدمين يشاهدون:",
-    "unknownUser": "مستخدم غير معروف"
+    "unknownUser": "مستخدم غير معروف",
+    "sms": "رسالة نصية",
+    "email": "البريد الإلكتروني",
+    "noCommunications": "لم يتم العثور على أي اتصالات",
+    "noCommunicationsDesc": "ستظهر هنا رسائل SMS والبريد الإلكتروني المتعلقة بهذا الحادث."
   },
   "priorities": {
     "critical": "حرج",
@@ -1777,12 +1784,12 @@
     "callCentre": "مركز الاتصال",
     "contacts": "جهات الاتصال",
     "communications": "Communications",
-    "email": "Email",
+    "email": "البريد الإلكتروني",
     "callHistory": "سجل المكالمات",
     "newComplaint": "شكوى جديدة",
     "newQuery": "استفسار جديد",
     "newRequest": "طلب جديد",
-    "sms": "SMS"
+    "sms": "رسالة نصية"
   },
   "workflows": {
     "title": "سير العمل",
