@@ -4525,5 +4525,38 @@
       "header": "Header",
       "footer": "Footer"
     }
+  },
+  "websocket": {
+    "connectionLost": "Connection Lost",
+    "attemptingToReconnect": "Attempting to reconnect...",
+    "failedToReconnect": "Failed to reconnect. Please refresh the page.",
+    "goals": {
+      "goalUpdated": "Goal Updated",
+      "goalUpdatedByAnotherUser": "This goal was just updated by another user.",
+      "newEvidence": "New Evidence",
+      "newEvidenceUploaded": "New evidence \"{{title}}\" has been uploaded.",
+      "evidenceStatusChanged": "Evidence Status Changed",
+      "evidenceStatusChangedTo": "Evidence status changed to {{status}}",
+      "newCheckIn": "New Check-in",
+      "newCheckInRecorded": "A new check-in has been recorded for this goal.",
+      "metricImportStatusChanged": "Metric Import Status Changed",
+      "batchStatusChangedTo": "Batch status changed to {{status}}",
+      "collaboratorsUpdated": "Collaborators Updated",
+      "goalCollaboratorsChanged": "Goal collaborators have been changed."
+    },
+    "incidents": {
+      "incidentUpdated": "Incident Updated",
+      "incidentUpdatedByAnotherUser": "This incident was just updated by another user.",
+      "stateChanged": "State Changed",
+      "statusChangedFromTo": "Status changed from {{from}} to {{to}}",
+      "newComment": "New Comment",
+      "newCommentAdded": "A new comment was added to this incident.",
+      "newAttachment": "New Attachment",
+      "newAttachmentAdded": "A new file was attached to this incident.",
+      "userJoined": "User Joined",
+      "userNowViewing": "{{user}} is now viewing this incident",
+      "userLeft": "User Left",
+      "userStoppedViewing": "{{user}} stopped viewing this incident."
+    }
   }
 }
