@@ -239,10 +239,12 @@
     "allSources": "All Sources",
     "sent": "Sent",
     "invalidPhoneNumber": "Invalid phone number",
-    "reporterPhone":"Reporter Phone",
+    "reporterPhone": "Reporter Phone",
     "selectDateRange": "Select date range",
     "last7Days": "Last 7 Days",
-    "last30Days": "Last 30 Days"
+    "last30Days": "Last 30 Days",
+    "system": "System",
+    "subject": "Subject"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -779,7 +781,16 @@
     "sms": "SMS",
     "email": "Email",
     "noCommunications": "No communications found",
-    "noCommunicationsDesc": "SMS and email communications for this incident will appear here."
+    "noCommunicationsDesc": "SMS and email communications for this incident will appear here.",
+    "communicationStatus": {
+      "sent": "Sent",
+      "failed": "Failed",
+      "pending": "Pending",
+      "partial": "Partial"
+    },
+    "channel": "Channel",
+    "triggeredBy": "Triggered by",
+    "showingCommunications": "Showing {{from}}–{{to}} of {{total}} communications"
   },
   "priorities": {
     "critical": "Critical",
