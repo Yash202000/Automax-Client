@@ -7,7 +7,12 @@ import {
   Link,
   useLocation,
 } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
@@ -176,9 +181,14 @@ export const IncidentLayout: React.FC = () => {
   // currently shared across the incident views (All/Assigned to
   // me/Created by me) so the "By Status" counts stay consistent with
   // whichever filter the user last applied, not just permission scoping.
-  // The status filter itself is excluded — this sidebar IS the by-status
-  // breakdown, so it needs every status's count, not just the one the list
-  // happens to be filtered down to.
+  // The status filter itself is excluded from what's SENT to the API — this
+  // sidebar IS the by-status breakdown, so it needs every status's count,
+  // not just the one the list happens to be filtered down to. It's still
+  // included in the queryKey below (via sharedIncidentFilter) so switching
+  // status still forces a fresh fetch instead of silently serving a
+  // possibly-stale cached count — a status-only filter change previously
+  // left the queryKey unchanged, so React Query never refetched and the
+  // sidebar could drift out of sync with the listing page.
   // Global cross-view filtering is a VD2-specific requirement — other
   // clients keep the sidebar counts scoped only by permissions, as before.
   const isVD2Client =
@@ -194,13 +204,18 @@ export const IncidentLayout: React.FC = () => {
       "stats",
       "incident",
       canViewAllIncidents ? "all" : "assigned",
-      sidebarStatsFilter,
+      isVD2Client ? sharedIncidentFilter : sidebarStatsFilter,
     ],
     queryFn: () =>
       incidentApi.getIncidentStatsV2({
         ...sidebarStatsFilter,
         ...(canViewAllIncidents ? {} : { my_record: user?.id }),
       }),
+    // Keep the previous counts on screen while a filter-driven refetch is in
+    // flight — without this, `statsData` briefly goes undefined on every
+    // queryKey change, and the "By Status" section (gated on
+    // workflowStats.length > 0) flashes empty until the new data arrives.
+    placeholderData: keepPreviousData,
   });
 
   // Builds the "By Status" sidebar link target. On VD2, IncidentsPage merges
