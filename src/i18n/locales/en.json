@@ -238,7 +238,10 @@
     "source": "Source",
     "allSources": "All Sources",
     "sent": "Sent",
-    "invalidPhoneNumber": "Invalid phone number"
+    "invalidPhoneNumber": "Invalid phone number",
+    "selectDateRange": "Select date range",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -771,7 +774,11 @@
     "requestInfo": "Request Information",
     "alsoViewing": "Also viewing:",
     "usersViewing": "{{count}} users viewing:",
-    "unknownUser": "Unknown User"
+    "unknownUser": "Unknown User",
+    "sms": "SMS",
+    "email": "Email",
+    "noCommunications": "No communications found",
+    "noCommunicationsDesc": "SMS and email communications for this incident will appear here."
   },
   "priorities": {
     "critical": "Critical",
