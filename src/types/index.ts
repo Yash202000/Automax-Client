@@ -1870,7 +1870,9 @@ export interface SettingsUpdateRequest {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button?: boolean;
-  enable_totp_verification?: boolean;
+  auth_setting?: {
+    totp_enabled?: boolean;
+  };
 }
 
 // Re-export report template builder types

@@ -365,7 +365,8 @@
     "failedToVerifyOtp": "فشل التحقق من رمز التحقق.",
     "failedToResendOtp": "فشل إعادة إرسال رمز التحقق.",
     "verifying": "جارٍ التحقق...",
-    "resendCode": "إعادة إرسال الرمز"
+    "resendCode": "إعادة إرسال الرمز",
+    "mobileNumberRequiredForOtp": "رقم جوال مطلوب للتحقق من حسابك. يرجى التواصل مع مسؤول النظام لتحديث رقم جوالك."
   },
   "nav": {
     "dashboard": "لوحة المعلومات",

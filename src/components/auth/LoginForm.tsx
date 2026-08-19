@@ -138,6 +138,11 @@ export const LoginForm: React.FC = () => {
     const { token } = auth;
 
     if (!token) {
+      if (!auth.user.phone) {
+        setError(t("auth.mobileNumberRequiredForOtp"));
+        return;
+      }
+
       await sendLoginOtp(auth.user, otpMethod);
       setPendingAuth(auth);
       setLoginStep("otp");

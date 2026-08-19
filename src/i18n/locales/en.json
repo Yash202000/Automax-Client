@@ -365,7 +365,8 @@
     "failedToVerifyOtp": "Failed to verify verification code.",
     "failedToResendOtp": "Failed to resend verification code.",
     "verifying": "Verifying...",
-    "resendCode": "Resend code"
+    "resendCode": "Resend code",
+    "mobileNumberRequiredForOtp": "A mobile number is required to verify your account. Please contact your administrator to update your mobile number."
   },
   "nav": {
     "dashboard": "Dashboard",

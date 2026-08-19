@@ -74,7 +74,7 @@ export const OTPInput = ({
       }),
 
     onSuccess: (response) => {
-      if (!response.success || !response.session_id) {
+      if (!response.session_id) {
         setFieldError(response.error || t("auth.failedToResendOtp"));
         return;
       }
