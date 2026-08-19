@@ -361,7 +361,18 @@
     "switchToRegular": "تسجيل الدخول بالبريد الإلكتروني",
     "switchToSsoRegister": "التسجيل بـ SSO",
     "switchToRegularRegister": "التسجيل بالبريد الإلكتروني",
-    "adLogin": "مصادقة الامانة​"
+    "adLogin": "مصادقة الامانة​",
+    "getVerificationCode": "الحصول على رمز التحقق",
+    "sms": "رسالة نصية",
+    "whatsapp": "واتساب",
+    "verifyYourAccount": "تحقق من حسابك",
+    "verificationCodeSentTo": "لقد أرسلنا رمز التحقق إلى",
+    "mobileNumberNotAvailable": "رقم الجوال غير متوفر.",
+    "failedToVerifyOtp": "فشل التحقق من رمز التحقق.",
+    "failedToResendOtp": "فشل إعادة إرسال رمز التحقق.",
+    "verifying": "جارٍ التحقق...",
+    "resendCode": "إعادة إرسال الرمز",
+    "mobileNumberRequiredForOtp": "رقم جوال مطلوب للتحقق من حسابك. يرجى التواصل مع مسؤول النظام لتحديث رقم جوالك."
   },
   "nav": {
     "dashboard": "لوحة المعلومات",
@@ -909,7 +920,11 @@
     "faviconIco": "/favicon.ico",
     "hhMmSs": "HH:mm:ss",
     "logoPngOrHttpsCdnExampleCom": "/logo.png أو https://cdn.example.com/logo.png",
-    "yyyyMmDd": "YYYY-MM-DD"
+    "yyyyMmDd": "YYYY-MM-DD",
+    "authConfiguration": "إعدادات المصادقة",
+    "authConfigurationDesc": "إدارة متطلبات التحقق من المصادقة.",
+    "enableTotpVerification": "تفعيل التحقق عبر OTP",
+    "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول."
   },
   "profile": {
     "title": "الملف الشخصي",
