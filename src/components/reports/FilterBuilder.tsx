@@ -297,7 +297,10 @@ const FilterRow: React.FC<FilterRowProps> = ({
         </select>
       ) : (
         <span className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider w-1/3 shrink-0 truncate">
-          {fields.find((f) => f.field === filter.field)?.label}:
+          {i18n.language === "ar" && selectedField?.label_ar
+            ? selectedField.label_ar
+            : selectedField?.label}
+          :
         </span>
       )}
 
