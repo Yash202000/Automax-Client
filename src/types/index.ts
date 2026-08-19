@@ -361,10 +361,11 @@ export interface UserLoginResponse {
   created_at: string;
 }
 
-/** Response for POST /auth/login — user is slim (no departments/locations/classifications). */
+/** Response for POST /auth/login — user is slim (no departments/locations/classifications).
+ *  `token` is omitted when the user must complete TOTP verification first. */
 export interface AuthLoginResponse {
   user: UserLoginResponse;
-  token: string;
+  token?: string;
   refresh_token?: string;
   expires_in?: number;
   validation_url?: string;
@@ -453,7 +454,7 @@ export interface ChangePasswordRequest {
 // OTP types
 export interface OtpSendRequest {
   phone: string;
-  channel: "sms" | "email";
+  channel: "sms" | "email" | "whatsapp";
 }
 
 export interface OtpSendResponse {
@@ -1836,6 +1837,9 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
+  auth_setting: {
+    totp_enabled: boolean;
+  };
   sms_max_length: number;
   updated_at: string;
 }
@@ -1866,6 +1870,9 @@ export interface SettingsUpdateRequest {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button?: boolean;
+  auth_setting?: {
+    totp_enabled?: boolean;
+  };
 }
 
 // Re-export report template builder types

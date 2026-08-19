@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface WSMessage {
   type: string;
@@ -11,14 +12,17 @@ interface WSMessage {
 }
 
 // Singleton connections per incident to prevent duplicates
-const incidentConnections = new Map<string, {
-  ws: WebSocket;
-  subscriberCount: number;
-  queryClients: Set<any>;
-  reconnectTimeout: number | null;
-  reconnectAttempts: number;
-  isConnecting: boolean;
-}>();
+const incidentConnections = new Map<
+  string,
+  {
+    ws: WebSocket;
+    subscriberCount: number;
+    queryClients: Set<any>;
+    reconnectTimeout: number | null;
+    reconnectAttempts: number;
+    isConnecting: boolean;
+  }
+>();
 
 const maxReconnectAttempts = 5;
 
@@ -28,16 +32,16 @@ const maxReconnectAttempts = 5;
  */
 export function useIncidentWebSocket(
   incidentId: string | undefined,
-  userId: string | undefined
+  userId: string | undefined,
 ) {
   const queryClient = useQueryClient();
-
+  const { t } = useTranslation();
   useEffect(() => {
     if (!incidentId || !userId) return;
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      console.warn('[WebSocket] No auth token found');
+      console.warn("[WebSocket] No auth token found");
       return;
     }
 
@@ -70,9 +74,9 @@ export function useIncidentWebSocket(
               ws.onclose = null;
 
               if (ws.readyState === WebSocket.OPEN) {
-                ws.close(1000, 'No more subscribers');
+                ws.close(1000, "No more subscribers");
               } else if (ws.readyState === WebSocket.CONNECTING) {
-                ws.onopen = () => ws.close(1000, 'No more subscribers');
+                ws.onopen = () => ws.close(1000, "No more subscribers");
               }
             }
 
@@ -99,28 +103,33 @@ export function useIncidentWebSocket(
 
       state.isConnecting = true;
 
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       // Use runtime config (Docker) if available, otherwise use build-time config
-      const wsHost = (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
+      const wsHost =
+        (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
 
       if (!wsHost) {
-        console.error('[WebSocket] No WebSocket URL configured. Please set VITE_WS_URL in .env file');
+        console.error(
+          "[WebSocket] No WebSocket URL configured. Please set VITE_WS_URL in .env file",
+        );
         state.isConnecting = false;
         return;
       }
 
-      const wsUrl = wsHost.replace(/^https?:/, wsProtocol.replace(':', '')).replace(/\/$/, '');
+      const wsUrl = wsHost
+        .replace(/^https?:/, wsProtocol.replace(":", ""))
+        .replace(/\/$/, "");
 
       // Get user info from localStorage or auth store
-      const userStr = localStorage.getItem('user');
-      let userName = 'Unknown User';
+      const userStr = localStorage.getItem("user");
+      let userName = "Unknown User";
       try {
         if (userStr) {
           const user = JSON.parse(userStr);
-          userName = user.username || user.email || 'Unknown User';
+          userName = user.username || user.email || "Unknown User";
         }
       } catch (e) {
-        console.warn('[WebSocket] Failed to parse user info');
+        console.warn("[WebSocket] Failed to parse user info");
       }
 
       const params = new URLSearchParams({
@@ -145,78 +154,138 @@ export function useIncidentWebSocket(
         try {
           message = JSON.parse(event.data);
         } catch (error) {
-          console.error('[WebSocket] Failed to parse message:', error);
+          console.error("[WebSocket] Failed to parse message:", error);
           return;
         }
-
 
         // Update all query clients subscribed to this incident
         state.queryClients.forEach((qc) => {
           // Handle different message types
           switch (message.type) {
-            case 'incident_updated':
-              toast.info('Incident Updated', {
-                description: 'This incident was just updated by another user.',
-                duration: 4000,
-              });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId] });
+            case "incident_updated":
+              toast.info(
+                t("websocket.incidents.incidentUpdated", "Incident Updated"),
+                {
+                  description: t(
+                    "websocket.incidents.incidentUpdatedByAnotherUser",
+                    "This incident was just updated by another user.",
+                  ),
+                  duration: 4000,
+                },
+              );
+              qc.invalidateQueries({ queryKey: ["incident", incidentId] });
               break;
 
-            case 'state_changed':
+            case "state_changed": {
               const data = message.data as any;
               // Only show toast if we have valid state data
               if (data?.from_state && data?.to_state) {
-                toast.success('State Changed', {
-                  description: `Status changed from ${data.from_state} to ${data.to_state}`,
-                  duration: 5000,
-                });
+                toast.success(
+                  t("websocket.incidents.stateChanged", "State Changed"),
+                  {
+                    description: t(
+                      "websocket.incidents.statusChangedFromTo",
+                      "Status changed from {{from}} to {{to}}",
+                      {
+                        from: data.from_state,
+                        to: data.to_state,
+                      },
+                    ),
+                    duration: 5000,
+                  },
+                );
               }
-              qc.invalidateQueries({ queryKey: ['incident', incidentId] });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId, 'transitions'] });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId, 'available-transitions'] });
+              qc.invalidateQueries({ queryKey: ["incident", incidentId] });
+              qc.invalidateQueries({
+                queryKey: ["incident", incidentId, "transitions"],
+              });
+              qc.invalidateQueries({
+                queryKey: ["incident", incidentId, "available-transitions"],
+              });
               break;
+            }
 
-            case 'comment_added':
-              toast.info('New Comment', {
-                description: 'A new comment was added to this incident.',
+            case "comment_added": {
+              toast.info(t("websocket.incidents.newComment", "New Comment"), {
+                description: t(
+                  "websocket.incidents.newCommentAdded",
+                  "A new comment was added to this incident.",
+                ),
                 duration: 4000,
               });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId, 'comments'] });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId] });
-              break;
-
-            case 'attachment_added':
-              toast.info('New Attachment', {
-                description: 'A new file was attached to this incident.',
-                duration: 4000,
+              qc.invalidateQueries({
+                queryKey: ["incident", incidentId, "comments"],
               });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId, 'attachments'] });
-              qc.invalidateQueries({ queryKey: ['incident', incidentId] });
+              qc.invalidateQueries({ queryKey: ["incident", incidentId] });
               break;
+            }
+            case "attachment_added": {
+              toast.info(
+                t("websocket.incidents.newAttachment", "New Attachment"),
+                {
+                  description: t(
+                    "websocket.incidents.newAttachmentAdded",
+                    "A new file was attached to this incident.",
+                  ),
+                  duration: 4000,
+                },
+              );
+              qc.invalidateQueries({
+                queryKey: ["incident", incidentId, "attachments"],
+              });
+              qc.invalidateQueries({ queryKey: ["incident", incidentId] });
+              break;
+            }
 
-            case 'user_joined':
+            case "user_joined": {
               const joinData = message.data as any;
               // Only show toast if we have valid user data and it's not the current user
-              if (joinData?.user_name && joinData.user_name !== 'Unknown User' && joinData.user_id !== userId) {
-                toast.info('User Joined', {
-                  description: `${joinData.user_name} is now viewing this incident`,
+              if (
+                joinData?.user_name &&
+                joinData.user_name !== "Unknown User" &&
+                joinData.user_id !== userId
+              ) {
+                toast.info(t("websocket.incidents.userJoined", "User Joined"), {
+                  description: t(
+                    "websocket.incidents.userNowViewing",
+                    "{{user}} is now viewing this incident",
+                    {
+                      user: joinData.user_name,
+                    },
+                  ),
                   duration: 3000,
                 });
               }
-              qc.invalidateQueries({ queryKey: ['incident-presence', incidentId] });
+              qc.invalidateQueries({
+                queryKey: ["incident-presence", incidentId],
+              });
               break;
+            }
 
-            case 'user_left':
+            case "user_left": {
               const leftData = message.data as any;
               // Only show toast if we have valid user data and it's not the current user
-              if (leftData?.user_name && leftData.user_name !== 'Unknown User' && leftData.user_id !== userId) {
-                toast.info('User Left', {
-                  description: `${leftData.user_name} stopped viewing this incident`,
+              if (
+                leftData?.user_name &&
+                leftData.user_name !== "Unknown User" &&
+                leftData.user_id !== userId
+              ) {
+                toast.info(t("websocket.incidents.userLeft", "User Left"), {
+                  description: t(
+                    "websocket.incidents.userStoppedViewing",
+                    "{{user}} stopped viewing this incident.",
+                    {
+                      user: leftData.user_name,
+                    },
+                  ),
                   duration: 3000,
                 });
               }
-              qc.invalidateQueries({ queryKey: ['incident-presence', incidentId] });
+              qc.invalidateQueries({
+                queryKey: ["incident-presence", incidentId],
+              });
               break;
+            }
 
             default:
           }
@@ -224,7 +293,7 @@ export function useIncidentWebSocket(
       };
 
       ws.onerror = (error) => {
-        console.error('[WebSocket] Error:', error);
+        console.error("[WebSocket] Error:", error);
         state.isConnecting = false;
         // Don't show error toast here - wait for onclose to determine if it's a real error
       };
@@ -233,7 +302,10 @@ export function useIncidentWebSocket(
         state.isConnecting = false;
 
         // Normal closures (1000 = normal, 1001 = going away, 1006 can happen during navigation)
-        const isExpectedClosure = event.code === 1000 || event.code === 1001 || state.subscriberCount === 0;
+        const isExpectedClosure =
+          event.code === 1000 ||
+          event.code === 1001 ||
+          state.subscriberCount === 0;
 
         if (isExpectedClosure) {
           // Clean disconnect during navigation or manual close - no action needed
@@ -241,15 +313,23 @@ export function useIncidentWebSocket(
         }
 
         // Unexpected disconnection - show error and try to reconnect
-        if (state.subscriberCount > 0 && state.reconnectAttempts < maxReconnectAttempts) {
+        if (
+          state.subscriberCount > 0 &&
+          state.reconnectAttempts < maxReconnectAttempts
+        ) {
           state.reconnectAttempts += 1;
-          const delay = Math.min(1000 * Math.pow(2, state.reconnectAttempts), 30000);
-
+          const delay = Math.min(
+            1000 * Math.pow(2, state.reconnectAttempts),
+            30000,
+          );
 
           // Only show error toast on first reconnect attempt
           if (state.reconnectAttempts === 1) {
-            toast.error('Connection Lost', {
-              description: 'Attempting to reconnect...',
+            toast.error(t("websocket.connectionLost", "Connection Lost"), {
+              description: t(
+                "websocket.attemptingToReconnect",
+                "Attempting to reconnect...",
+              ),
               duration: 3000,
             });
           }
@@ -258,8 +338,11 @@ export function useIncidentWebSocket(
             connectWebSocket();
           }, delay);
         } else if (state.reconnectAttempts >= maxReconnectAttempts) {
-          toast.error('Connection Lost', {
-            description: 'Failed to reconnect. Please refresh the page.',
+          toast.error(t("websocket.connectionLost", "Connection Lost"), {
+            description: t(
+              "websocket.failedToReconnect",
+              "Failed to reconnect. Please refresh the page.",
+            ),
             duration: 10000,
           });
         }
@@ -292,10 +375,10 @@ export function useIncidentWebSocket(
 
             // Only close if connection is active
             if (ws.readyState === WebSocket.OPEN) {
-              ws.close(1000, 'No more subscribers');
+              ws.close(1000, "No more subscribers");
             } else if (ws.readyState === WebSocket.CONNECTING) {
               // Wait for open then close immediately
-              ws.onopen = () => ws.close(1000, 'No more subscribers');
+              ws.onopen = () => ws.close(1000, "No more subscribers");
             }
           }
 
@@ -303,5 +386,5 @@ export function useIncidentWebSocket(
         }
       }
     };
-  }, [incidentId, userId, queryClient]);
+  }, [incidentId, userId, queryClient, t]);
 }

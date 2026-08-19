@@ -239,10 +239,12 @@
     "allSources": "All Sources",
     "sent": "Sent",
     "invalidPhoneNumber": "Invalid phone number",
-    "reporterPhone":"Reporter Phone",
+    "reporterPhone": "Reporter Phone",
     "selectDateRange": "Select date range",
     "last7Days": "Last 7 Days",
-    "last30Days": "Last 30 Days"
+    "last30Days": "Last 30 Days",
+    "system": "System",
+    "subject": "Subject"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -359,7 +361,18 @@
     "switchToRegular": "Sign in with email",
     "switchToSsoRegister": "Register with SSO",
     "switchToRegularRegister": "Register with email",
-    "adLogin": "AD Login"
+    "adLogin": "AD Login",
+    "getVerificationCode": "Get Verification Code",
+    "sms": "SMS",
+    "whatsapp": "WhatsApp",
+    "verifyYourAccount": "Verify your account",
+    "verificationCodeSentTo": "We've sent a verification code to",
+    "mobileNumberNotAvailable": "Mobile number is not available.",
+    "failedToVerifyOtp": "Failed to verify verification code.",
+    "failedToResendOtp": "Failed to resend verification code.",
+    "verifying": "Verifying...",
+    "resendCode": "Resend code",
+    "mobileNumberRequiredForOtp": "A mobile number is required to verify your account. Please contact your administrator to update your mobile number."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -783,7 +796,16 @@
     "communications": "Communication",
     "linkedSystems": "Linked Systems",
     "requestInfoSmsSent": "SMS sent successfully to citizen",
-    "locationUpdateRequired": "Location must be updated before performing transitions"
+    "locationUpdateRequired": "Location must be updated before performing transitions",
+    "communicationStatus": {
+      "sent": "Sent",
+      "failed": "Failed",
+      "pending": "Pending",
+      "partial": "Partial"
+    },
+    "channel": "Channel",
+    "triggeredBy": "Triggered by",
+    "showingCommunications": "Showing {{from}}–{{to}} of {{total}} communications"
   },
   "priorities": {
     "critical": "Critical",
@@ -903,7 +925,11 @@
     "faviconIco": "/favicon.ico",
     "hhMmSs": "HH:mm:ss",
     "logoPngOrHttpsCdnExampleCom": "/logo.png or https://cdn.example.com/logo.png",
-    "yyyyMmDd": "YYYY-MM-DD"
+    "yyyyMmDd": "YYYY-MM-DD",
+    "authConfiguration": "Auth Configuration",
+    "authConfigurationDesc": "Manage authentication verification requirements.",
+    "enableTotpVerification": "Enable TOTP Verification",
+    "enableTotpVerificationDesc": "Require time-based one-time passcode verification during authentication."
   },
   "profile": {
     "title": "Profile",
@@ -4528,6 +4554,39 @@
       "page": "Page",
       "header": "Header",
       "footer": "Footer"
+    }
+  },
+  "websocket": {
+    "connectionLost": "Connection Lost",
+    "attemptingToReconnect": "Attempting to reconnect...",
+    "failedToReconnect": "Failed to reconnect. Please refresh the page.",
+    "goals": {
+      "goalUpdated": "Goal Updated",
+      "goalUpdatedByAnotherUser": "This goal was just updated by another user.",
+      "newEvidence": "New Evidence",
+      "newEvidenceUploaded": "New evidence \"{{title}}\" has been uploaded.",
+      "evidenceStatusChanged": "Evidence Status Changed",
+      "evidenceStatusChangedTo": "Evidence status changed to {{status}}",
+      "newCheckIn": "New Check-in",
+      "newCheckInRecorded": "A new check-in has been recorded for this goal.",
+      "metricImportStatusChanged": "Metric Import Status Changed",
+      "batchStatusChangedTo": "Batch status changed to {{status}}",
+      "collaboratorsUpdated": "Collaborators Updated",
+      "goalCollaboratorsChanged": "Goal collaborators have been changed."
+    },
+    "incidents": {
+      "incidentUpdated": "Incident Updated",
+      "incidentUpdatedByAnotherUser": "This incident was just updated by another user.",
+      "stateChanged": "State Changed",
+      "statusChangedFromTo": "Status changed from {{from}} to {{to}}",
+      "newComment": "New Comment",
+      "newCommentAdded": "A new comment was added to this incident.",
+      "newAttachment": "New Attachment",
+      "newAttachmentAdded": "A new file was attached to this incident.",
+      "userJoined": "User Joined",
+      "userNowViewing": "{{user}} is now viewing this incident",
+      "userLeft": "User Left",
+      "userStoppedViewing": "{{user}} stopped viewing this incident."
     }
   }
 }

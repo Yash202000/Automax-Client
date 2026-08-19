@@ -5,6 +5,8 @@ import type { OtpSendRequest, OtpVerifyRequest, User } from "../types";
 export interface OtpSendResult {
   message: string;
   session_id: string;
+  success: boolean;
+  error?: string;
 }
 
 // Verify OTP: returns standard ApiResponse with tokens + user

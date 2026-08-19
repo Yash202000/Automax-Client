@@ -60,7 +60,6 @@ import { useAuthStore } from "../../stores/authStore";
 import { Modal } from "../../components/ui";
 import { AttachmentPreview } from "@/components/common/AttachmentPreview";
 import { toast } from "sonner";
-import i18n from "@/i18n";
 import { useSoftphoneStore } from "@/stores/softphoneStore";
 import {
   Select as AppSelect,
@@ -96,7 +95,7 @@ const statusOrder: Record<string, number> = {
 };
 
 export function IncidentCreatePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -1310,12 +1309,16 @@ export function IncidentCreatePage() {
 
   const workflowOptions = [
     { value: "", label: t("incidents.selectWorkflow") },
-    ...filteredWorkflows.map((wf) => ({
-      value: wf.id,
-      label: wf.is_default
-        ? `${wf.name} (${t("common.default", "Default")})`
-        : wf.name,
-    })),
+    ...filteredWorkflows.map((wf) => {
+      const workflowName =
+        i18n.language === "ar" && wf.name_ar ? wf.name_ar : wf.name;
+      return {
+        value: wf.id,
+        label: wf.is_default
+          ? `${workflowName} (${t("common.default", "Default")})`
+          : workflowName,
+      };
+    }),
   ];
 
   // Convert classifications to TreeSelectNode format
