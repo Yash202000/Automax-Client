@@ -793,6 +793,10 @@
     "email": "Email",
     "noCommunications": "No communications found",
     "noCommunicationsDesc": "SMS and email communications for this incident will appear here.",
+    "communications": "Communication",
+    "linkedSystems": "Linked Systems",
+    "requestInfoSmsSent": "SMS sent successfully to citizen",
+    "locationUpdateRequired": "Location must be updated before performing transitions",
     "communicationStatus": {
       "sent": "Sent",
       "failed": "Failed",
