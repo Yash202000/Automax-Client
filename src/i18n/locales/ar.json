@@ -239,6 +239,7 @@
     "allSources": "جميع المصادر",
     "sent": "تم الإرسال",
     "invalidPhoneNumber": "رقم الهاتف غير صالح",
+    "reporterPhone": "هاتف المُبلّغ",
     "selectDateRange": "اختر نطاق التاريخ",
     "last7Days": "آخر 7 أيام",
     "last30Days": "آخر 30 يومًا"
@@ -762,6 +763,8 @@
     "child": "فرعي",
     "rolesToMatchSelectOneOrMore": "الأدوار المطابقة (اختر واحدًا أو أكثر):",
     "appliedWhenIncidentIsCreated": "يُطبَّق عند وضع البلاغ في هذه الحالة عند الإنشاء",
+    "fromDate": "من تاريخ",
+    "toDate": "إلى تاريخ",
     "transitionInfo": "معلومات الانتقال",
     "transitionSuccess": "تم تنفيذ الانتقال بنجاح",
     "department_id": "القسم",

@@ -239,6 +239,7 @@
     "allSources": "All Sources",
     "sent": "Sent",
     "invalidPhoneNumber": "Invalid phone number",
+    "reporterPhone":"Reporter Phone",
     "selectDateRange": "Select date range",
     "last7Days": "Last 7 Days",
     "last30Days": "Last 30 Days"
