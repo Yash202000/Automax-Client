@@ -563,12 +563,6 @@ export const UsersPage: React.FC = () => {
     setDropdownPosition(null);
   }, []);
 
-  const getApiErrorMessage = useCallback(
-    (error: any, fallback: string) =>
-      error.response?.data?.error || error.message || fallback,
-    [],
-  );
-
   const getApiFieldErrors = useCallback((error: any): UserFieldErrors => {
     const apiErrors = error.response?.data?.errors;
     if (apiErrors) {
@@ -763,8 +757,11 @@ export const UsersPage: React.FC = () => {
       closeCreateModal();
     },
     onError: (error: any) => {
-      const errorMessage = getApiErrorMessage(error, t("users.createFailed"));
-      setCreateFormErrors(getApiFieldErrors(errorMessage));
+      const errorMessage = getApiFieldErrors(error);
+      setCreateFormErrors(errorMessage);
+      if (Object.keys(errorMessage).length > 0) {
+        toast.error(t("errors.validationError"));
+      }
     },
   });
 
@@ -2989,7 +2986,8 @@ export const UsersPage: React.FC = () => {
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("users.phone")}
+                    {t("users.phone")}{" "}
+                    <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
