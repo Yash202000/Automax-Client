@@ -82,6 +82,7 @@ export const OTPInput = ({
       otpApi.send({
         phone: user!.phone,
         channel: method,
+        type: "employee",
       }),
 
     onSuccess: (response) => {
