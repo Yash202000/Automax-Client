@@ -465,6 +465,12 @@ export const LocationsPage: React.FC = () => {
       });
     }
 
+    if (!isEPM940 && !formData.code.trim()) {
+      newErrors.code = t("locations.codeRequired", {
+        defaultValue: "Location code is required",
+      });
+    }
+
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
@@ -1144,11 +1150,19 @@ export const LocationsPage: React.FC = () => {
                       type="text"
                       placeholder={t("locations.codePlaceholder")}
                       value={formData.code}
-                      onChange={(e) =>
-                        setFormData({ ...formData, code: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                      onChange={(e) => {
+                        setFormData({ ...formData, code: e.target.value });
+                        if (errors.code) {
+                          setErrors({ ...errors, code: "" });
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${errors.code ? "border-[hsl(var(--destructive))]" : ""}`}
                     />
+                    {errors.code && (
+                      <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
+                        {errors.code}
+                      </p>
+                    )}
                   </div>
                 ) : null}
 
