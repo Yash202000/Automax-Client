@@ -685,6 +685,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       source_incident_id: sourceIncident?.id,
       lookup_value_ids: lookupIds.length > 0 ? lookupIds : undefined,
       reporter_id: user?.id,
+      reporter_phone: sourceIncident?.reporter_phone || "",
     };
 
     createMutation.mutate({ data, files: attachments });

@@ -1531,6 +1531,7 @@ export interface CreateComplaintRequest {
   source?: string;
   channel?: string;
   reporter_id?: string; // Link to user who reported/created the complaint
+  reporter_phone: string;
   department_id?: string;
   assignee_id?: string;
   location_id?: string;
