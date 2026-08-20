@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   Play,
-  MessageSquareWarning,
   Download,
   X,
   History,
@@ -28,7 +27,6 @@ import {
   MapPin,
 } from "lucide-react";
 import { Button } from "../../components/ui";
-import { MiniWorkflowView } from "../../components/workflow";
 import { RevisionHistory } from "../../components/incidents";
 import {
   complaintApi,
@@ -44,7 +42,7 @@ import { settingsApi } from "../../api/settings";
 import { AudioPlayer } from "../../components/common/AudioPlayer";
 import type { AvailableTransition } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 
 export const ComplaintDetailPage: React.FC = () => {
   const { t } = useTranslation();
@@ -492,22 +490,53 @@ export const ComplaintDetailPage: React.FC = () => {
             {t("common.backToComplaints", "Back to Complaints")}
           </button>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <MessageSquareWarning className="w-5 h-5 text-primary" />
-            </div>
             <div>
-              <p className="text-xs font-medium text-primary mb-0.5">
+              <p className="text-sm font-medium text-primary mb-0.5 flex items-center gap-2">
                 {complaint.incident_number}
+                {complaint.current_state && (
+                  <span
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: complaint.current_state.color
+                        ? `${complaint.current_state.color}20`
+                        : "hsl(var(--muted))",
+                      color:
+                        complaint.current_state.color ||
+                        "hsl(var(--foreground))",
+                    }}
+                  >
+                    {complaint.current_state.name}
+                  </span>
+                )}
               </p>
-              <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">
+              <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
                 {complaint.title}
               </h1>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          {availableTransitions.length > 0 && (
+            <div>
+              <div className="flex flex-wrap gap-2">
+                {availableTransitions
+                  .filter((t) => t.can_execute)
+                  .map((transition: any) => (
+                    <Button
+                      key={transition.transition.id}
+                      size="sm"
+                      variant={"outline"}
+                      onClick={() => handleTransitionClick(transition)}
+                      leftIcon={<Play className="w-4 h-4" />}
+                    >
+                      {getLocalizedName(transition.transition)}
+                    </Button>
+                  ))}
+              </div>
+            </div>
+          )}
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => refetch()}
             isLoading={isRefetching}
@@ -535,65 +564,6 @@ export const ComplaintDetailPage: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Status & Workflow */}
-          <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                {t("common.status", "Status")}
-              </h2>
-              {complaint.current_state && (
-                <span
-                  className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium"
-                  style={{
-                    backgroundColor: complaint.current_state.color
-                      ? `${complaint.current_state.color}20`
-                      : "hsl(var(--muted))",
-                    color:
-                      complaint.current_state.color || "hsl(var(--foreground))",
-                  }}
-                >
-                  {complaint.current_state.name}
-                </span>
-              )}
-            </div>
-
-            {/* Available Transitions */}
-            {availableTransitions.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
-                <p className="text-sm font-medium text-[hsl(var(--muted-foreground))] mb-3">
-                  {t("common.availableActions", "Available Actions")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {availableTransitions.map((transition) => (
-                    <Button
-                      key={transition.transition.id}
-                      size="sm"
-                      variant={transition.can_execute ? "default" : "outline"}
-                      disabled={!transition.can_execute}
-                      onClick={() => handleTransitionClick(transition)}
-                      leftIcon={<Play className="w-4 h-4" />}
-                      className={
-                        transition.can_execute
-                          ? "bg-linear-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent"
-                          : ""
-                      }
-                    >
-                      {transition.transition.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Mini Workflow View */}
-            {complaint.workflow && (
-              <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
-                <MiniWorkflowView
-                  workflow={complaint.workflow}
-                  currentStateId={complaint.current_state?.id}
-                />
-              </div>
-            )}
-          </div>
 
           {/* Description */}
           <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
