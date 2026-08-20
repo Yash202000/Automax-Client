@@ -521,6 +521,7 @@
     "titleRequired": "العنوان مطلوب",
     "titleMinLength": "يجب أن يكون العنوان 5 أحرف على الأقل",
     "descriptionRequired": "الوصف مطلوب",
+    "descriptionTooLong": "يجب ألا يتجاوز الوصف {{max}} حرفًا",
     "classificationRequired": "التصنيف مطلوب",
     "workflowRequired": "سير العمل مطلوب. يرجى اختيار التصنيف أو الموقع أو المصدر للمطابقة التلقائية.",
     "fieldRequired": "{{field}} مطلوب",

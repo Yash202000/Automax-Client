@@ -58,7 +58,7 @@ import {
 } from "@/ui/select";
 import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
-import { getAvatarName } from "@/lib/utils";
+import { getAvatarName, cn } from "@/lib/utils";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -88,6 +88,10 @@ export function IncidentEditPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
 
   const [formData, setFormData] = useState<
     Omit<
@@ -574,6 +578,9 @@ export function IncidentEditPage() {
     const newErrors: Record<string, string> = {};
     if (!formData.title?.trim()) newErrors.title = t("incidents.titleRequired");
 
+    if (isEPM940 && (formData.description?.length || 0) > 300)
+      newErrors.description = t("incidents.descriptionTooLong", { max: 300 });
+
     if (!formData.classification_id || !formData.classification_id.trim()) {
       newErrors.classification_id = t("incidents.fieldRequired", {
         field: t("incidents.classification"),
@@ -859,7 +866,22 @@ export function IncidentEditPage() {
                   rows={5}
                   required={workflowRequiredFields.includes("description")}
                   error={errors.description}
+                  maxLength={isEPM940 ? 300 : undefined}
                 />
+                {isEPM940 && (
+                  <div className="flex justify-end -mt-3">
+                    <span
+                      className={cn(
+                        "text-xs font-mono",
+                        (formData.description || "").length >= 300
+                          ? "text-[hsl(var(--destructive))] font-semibold"
+                          : "text-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {(formData.description || "").length}/300
+                    </span>
+                  </div>
+                )}
                 {(workflowRequiredFields.includes("reporter_name") ||
                   workflowOptionalFields.includes("reporter_name")) && (
                   <Input
