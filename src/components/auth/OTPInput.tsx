@@ -49,6 +49,13 @@ export const OTPInput = ({
     onSuccess: async (response) => {
       if (!response.success || !response.data) {
         setFieldError(response.message || t("auth.failedToVerifyOtp"));
+
+        setDigits(Array(6).fill(""));
+
+        requestAnimationFrame(() => {
+          refs.current[0]?.focus();
+        });
+
         return;
       }
 
@@ -59,10 +66,14 @@ export const OTPInput = ({
       });
     },
 
-    onError: (error) => {
-      setFieldError(
-        error instanceof Error ? error.message : t("auth.failedToVerifyOtp"),
-      );
+    onError: (error: any) => {
+      setFieldError(error.response?.data?.error || t("auth.failedToVerifyOtp"));
+
+      setDigits(Array(6).fill(""));
+
+      requestAnimationFrame(() => {
+        refs.current[0]?.focus();
+      });
     },
   });
 
@@ -89,10 +100,8 @@ export const OTPInput = ({
       });
     },
 
-    onError: (error) => {
-      setFieldError(
-        error instanceof Error ? error.message : t("auth.failedToResendOtp"),
-      );
+    onError: (error: any) => {
+      setFieldError(error.response?.data?.error || t("auth.failedToResendOtp"));
     },
   });
 
@@ -129,9 +138,7 @@ export const OTPInput = ({
     };
   }, []);
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const verifyOtp = () => {
     const otp = digits.join("");
 
     if (otp.length !== 6) {
@@ -147,6 +154,20 @@ export const OTPInput = ({
     setFieldError("");
     verifyOtpMutation.mutate(otp);
   };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    verifyOtp();
+  };
+
+  useEffect(() => {
+    const otp = digits.join("");
+
+    if (otp.length === 6 && user?.phone && !verifyOtpMutation.isPending) {
+      setFieldError("");
+      verifyOtpMutation.mutate(otp);
+    }
+  }, [digits]);
 
   const handleResendOtp = () => {
     if (timer > 0 || resendOtpMutation.isPending) {
