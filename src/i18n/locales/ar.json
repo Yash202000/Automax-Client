@@ -238,7 +238,13 @@
     "source": "المصدر",
     "allSources": "جميع المصادر",
     "sent": "تم الإرسال",
-    "invalidPhoneNumber": "رقم الهاتف غير صالح"
+    "invalidPhoneNumber": "رقم الهاتف غير صالح",
+    "reporterPhone": "هاتف المُبلّغ",
+    "selectDateRange": "اختر نطاق التاريخ",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يومًا",
+    "system": "النظام",
+    "subject": "الموضوع"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -355,7 +361,18 @@
     "switchToRegular": "تسجيل الدخول بالبريد الإلكتروني",
     "switchToSsoRegister": "التسجيل بـ SSO",
     "switchToRegularRegister": "التسجيل بالبريد الإلكتروني",
-    "adLogin": "مصادقة الامانة​"
+    "adLogin": "مصادقة الامانة​",
+    "getVerificationCode": "الحصول على رمز التحقق",
+    "sms": "رسالة نصية",
+    "whatsapp": "واتساب",
+    "verifyYourAccount": "تحقق من حسابك",
+    "verificationCodeSentTo": "لقد أرسلنا رمز التحقق إلى",
+    "mobileNumberNotAvailable": "رقم الجوال غير متوفر.",
+    "failedToVerifyOtp": "فشل التحقق من رمز التحقق.",
+    "failedToResendOtp": "فشل إعادة إرسال رمز التحقق.",
+    "verifying": "جارٍ التحقق...",
+    "resendCode": "إعادة إرسال الرمز",
+    "mobileNumberRequiredForOtp": "رقم جوال مطلوب للتحقق من حسابك. يرجى التواصل مع مسؤول النظام لتحديث رقم جوالك."
   },
   "nav": {
     "dashboard": "لوحة المعلومات",
@@ -759,6 +776,8 @@
     "child": "فرعي",
     "rolesToMatchSelectOneOrMore": "الأدوار المطابقة (اختر واحدًا أو أكثر):",
     "appliedWhenIncidentIsCreated": "يُطبَّق عند وضع البلاغ في هذه الحالة عند الإنشاء",
+    "fromDate": "من تاريخ",
+    "toDate": "إلى تاريخ",
     "transitionInfo": "معلومات الانتقال",
     "transitionSuccess": "تم تنفيذ الانتقال بنجاح",
     "department_id": "القسم",
@@ -768,7 +787,24 @@
     "requestInfo": "معلومات الطلب",
     "alsoViewing": "يشاهد أيضًا:",
     "usersViewing": "{{count}} مستخدمين يشاهدون:",
-    "unknownUser": "مستخدم غير معروف"
+    "unknownUser": "مستخدم غير معروف",
+    "communications": "الاتصالات",
+    "linkedSystems": "الأنظمة المرتبطة",
+    "requestInfoSmsSent": "تم إرسال رسالة نصية قصيرة إلى المواطن بنجاح",
+    "locationUpdateRequired": "يجب تحديث الموقع قبل تنفيذ عمليات الانتقال",
+    "sms": "رسالة نصية",
+    "email": "البريد الإلكتروني",
+    "noCommunications": "لم يتم العثور على أي اتصالات",
+    "noCommunicationsDesc": "ستظهر هنا رسائل SMS والبريد الإلكتروني المتعلقة بهذا الحادث.",
+    "communicationStatus": {
+      "sent": "تم الإرسال",
+      "failed": "فشل",
+      "pending": "قيد الانتظار",
+      "partial": "جزئي"
+    },
+    "channel": "القناة",
+    "triggeredBy": "تم التشغيل بواسطة",
+    "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال"
   },
   "priorities": {
     "critical": "حرج",
@@ -888,7 +924,11 @@
     "faviconIco": "/favicon.ico",
     "hhMmSs": "HH:mm:ss",
     "logoPngOrHttpsCdnExampleCom": "/logo.png أو https://cdn.example.com/logo.png",
-    "yyyyMmDd": "YYYY-MM-DD"
+    "yyyyMmDd": "YYYY-MM-DD",
+    "authConfiguration": "إعدادات المصادقة",
+    "authConfigurationDesc": "إدارة متطلبات التحقق من المصادقة.",
+    "enableTotpVerification": "تفعيل التحقق عبر OTP",
+    "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول."
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -1774,12 +1814,12 @@
     "callCentre": "مركز الاتصال",
     "contacts": "جهات الاتصال",
     "communications": "Communications",
-    "email": "Email",
+    "email": "البريد الإلكتروني",
     "callHistory": "سجل المكالمات",
     "newComplaint": "شكوى جديدة",
     "newQuery": "استفسار جديد",
     "newRequest": "طلب جديد",
-    "sms": "SMS"
+    "sms": "رسالة نصية"
   },
   "workflows": {
     "title": "سير العمل",
@@ -4518,6 +4558,39 @@
       "page": "الصفحة",
       "header": "الرأس",
       "footer": "التذييل"
+    }
+  },
+  "websocket": {
+    "connectionLost": "انقطع الاتصال",
+    "attemptingToReconnect": "جارٍ محاولة إعادة الاتصال...",
+    "failedToReconnect": "فشلت إعادة الاتصال. يرجى تحديث الصفحة.",
+    "goals": {
+      "goalUpdated": "تم تحديث الهدف",
+      "goalUpdatedByAnotherUser": "تم تحديث هذا الهدف للتو بواسطة مستخدم آخر.",
+      "newEvidence": "دليل جديد",
+      "newEvidenceUploaded": "تم تحميل دليل جديد \"{{title}}\".",
+      "evidenceStatusChanged": "تم تغيير حالة الدليل",
+      "evidenceStatusChangedTo": "تم تغيير حالة الدليل إلى {{status}}",
+      "newCheckIn": "تسجيل متابعة جديد",
+      "newCheckInRecorded": "تم تسجيل متابعة جديدة لهذا الهدف.",
+      "metricImportStatusChanged": "تم تغيير حالة استيراد المقاييس",
+      "batchStatusChangedTo": "تم تغيير حالة الدفعة إلى {{status}}",
+      "collaboratorsUpdated": "تم تحديث المتعاونين",
+      "goalCollaboratorsChanged": "تم تغيير المتعاونين في الهدف."
+    },
+    "incidents": {
+      "incidentUpdated": "تم تحديث الحادثة",
+      "incidentUpdatedByAnotherUser": "تم تحديث هذه الحادثة للتو بواسطة مستخدم آخر.",
+      "stateChanged": "تم تغيير الحالة",
+      "statusChangedFromTo": "تم تغيير الحالة من {{from}} إلى {{to}}",
+      "newComment": "تعليق جديد",
+      "newCommentAdded": "تمت إضافة تعليق جديد إلى هذه الحادثة.",
+      "newAttachment": "مرفق جديد",
+      "newAttachmentAdded": "تم إرفاق ملف جديد بهذه الحادثة.",
+      "userJoined": "انضم مستخدم",
+      "userNowViewing": "يقوم {{user}} الآن بعرض هذه الحادثة",
+      "userLeft": "غادر مستخدم",
+      "userStoppedViewing": "توقف {{user}} عن عرض هذه الحادثة"
     }
   }
 }

@@ -15,6 +15,7 @@ import {
   Phone,
   Upload,
   ToggleLeft,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 
@@ -46,6 +47,9 @@ export const SettingsManagementPage: React.FC = () => {
     time_format: "",
     default_language: "",
     show_evaluate_button: false,
+    auth_setting: {
+      totp_enabled: false,
+    },
   });
 
   // Fetch settings
@@ -82,6 +86,7 @@ export const SettingsManagementPage: React.FC = () => {
         time_format: data.time_format || "",
         default_language: data.default_language || "",
         show_evaluate_button: data.show_evaluate_button ?? false,
+        auth_setting: data.auth_setting,
       });
     }
   }, [settingsResponse]);
@@ -546,6 +551,52 @@ export const SettingsManagementPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Auth Configuration Section */}
+        <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
+          <div className="flex items-center gap-3 mb-6">
+            <ShieldCheck className="w-5 h-5 text-cyan-600" />
+            <div>
+              <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+                {t("settings.authConfiguration", "Auth Configuration")}
+              </h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                {t(
+                  "settings.authConfigurationDesc",
+                  "Manage authentication verification requirements.",
+                )}
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
+            <input
+              type="checkbox"
+              name="enable_totp_verification"
+              checked={formData.auth_setting.totp_enabled}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  auth_setting: { totp_enabled: e.target.checked },
+                }))
+              }
+              className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+            />
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                {t(
+                  "settings.enableTotpVerification",
+                  "Enable TOTP Verification",
+                )}
+              </span>
+              <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                {t(
+                  "settings.enableTotpVerificationDesc",
+                  "Require time-based one-time passcode verification during authentication.",
+                )}
+              </span>
+            </span>
+          </label>
+        </div>
         {/* Feature Toggles Section */}
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">

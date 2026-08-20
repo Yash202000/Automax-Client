@@ -2137,7 +2137,7 @@ export const IncidentDetailPage: React.FC = () => {
               >
                 <span className="flex items-center justify-center gap-2">
                   <ArrowRightLeft className="w-4 h-4" />
-                  Linked Systems
+                  {t("incidents.linkedSystems")}
                   {bridges.length > 0 && (
                     <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]">
                       {bridges.length}
@@ -3321,7 +3321,7 @@ export const IncidentDetailPage: React.FC = () => {
                     </div>
                     {incident.location?.name === "Default" && (
                       <span className="text-xs text-orange-500">
-                        Location must be updated before performing transitions
+                        {t("incidents.locationUpdateRequired")}
                       </span>
                     )}
                   </div>
@@ -3880,7 +3880,6 @@ export const IncidentDetailPage: React.FC = () => {
               </p>
               {incident.workflow.description && (
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 mb-4">
-                  {/* {incident.workflow.description}*/}
                   {/* workflow model has description_ar but when checked api response not available */}
                   {i18n.language === "ar" && incident.workflow.description_ar
                     ? incident.workflow.description_ar

@@ -14,7 +14,7 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
   currentStateId,
   onStateClick,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const states = workflow.states || [];
   const transitions = workflow.transitions || [];
 
@@ -61,6 +61,8 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
         return <Circle className="w-3 h-3" />;
     }
   };
+  const isArabic = i18n.language === "ar";
+  const currentState = states.find((s) => s.id === currentStateId);
 
   const renderState = (state: WorkflowState) => {
     const isCurrent = state.id === currentStateId;
@@ -96,7 +98,7 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
           <p
             className={`text-xs font-medium truncate ${isCurrent ? "text-gray-900 dark:text-gray-300" : "text-gray-700"}`}
           >
-            {state.name}
+            {isArabic && state.name_ar ? state.name_ar : state.name}
           </p>
         </div>
         {isCurrent && (
@@ -168,7 +170,9 @@ export const MiniWorkflowView: React.FC<MiniWorkflowViewProps> = ({
           <span className="text-xs text-gray-500 dark:text-gray-400">
             {t("goals.components.metric.updateModal.currentLabel")}{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
-              {states.find((s) => s.id === currentStateId)?.name}
+              {isArabic && currentState?.name_ar
+                ? currentState.name_ar
+                : currentState?.name}
             </span>
           </span>
           {reachableFromCurrent.size > 0 && (

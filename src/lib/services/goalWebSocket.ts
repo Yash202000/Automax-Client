@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { goalKeys } from "../../hooks/useGoals";
+import { useTranslation } from "react-i18next";
 
 interface GoalWSMessage {
   type: string;
@@ -35,6 +36,7 @@ export function useGoalWebSocket(
   userId: string | undefined,
 ) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!goalId || !userId) return;
@@ -102,8 +104,7 @@ export function useGoalWebSocket(
 
       state.isConnecting = true;
 
-      const wsProtocol =
-        window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsHost =
         (window as any).APP_CONFIG?.WS_URL || import.meta.env.VITE_WS_URL;
 
@@ -160,17 +161,22 @@ export function useGoalWebSocket(
         state.queryClients.forEach((qc) => {
           switch (message.type) {
             case "goal_updated":
-              toast.info("Goal Updated", {
-                description:
+              toast.info(t("websocket.goals.goalUpdated", "Goal Updated"), {
+                description: t(
+                  "websocket.goals.goalUpdatedByAnotherUser",
                   "This goal was just updated by another user.",
+                ),
                 duration: 4000,
               });
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               break;
 
             case "evidence_created":
-              toast.info("New Evidence", {
-                description: `New evidence "${message.data?.title || ""}" has been uploaded.`,
+              toast.info(t("websocket.goals.newEvidence", "New Evidence"), {
+                description: t("websocket.goals.newEvidenceUploaded", {
+                  title: message.data?.title || "",
+                  defaultValue: 'New evidence "{{title}}" has been uploaded.',
+                }),
                 duration: 4000,
               });
               qc.invalidateQueries({
@@ -181,10 +187,19 @@ export function useGoalWebSocket(
 
             case "evidence_transitioned": {
               const data = message.data;
-              toast.success("Evidence Status Changed", {
-                description: `Evidence status changed to ${data?.status || "unknown"}`,
-                duration: 5000,
-              });
+              toast.success(
+                t(
+                  "websocket.goals.evidenceStatusChanged",
+                  "Evidence Status Changed",
+                ),
+                {
+                  description: t("websocket.goals.evidenceStatusChangedTo", {
+                    status: data?.status || "unknown",
+                    defaultValue: "Evidence status changed to {{status}}",
+                  }),
+                  duration: 5000,
+                },
+              );
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               qc.invalidateQueries({
                 queryKey: goalKeys.evidences(goalId),
@@ -203,9 +218,11 @@ export function useGoalWebSocket(
             }
 
             case "check_in_created":
-              toast.info("New Check-in", {
-                description:
+              toast.info(t("websocket.goals.newCheckIn", "New Check-in"), {
+                description: t(
+                  "websocket.goals.newCheckInRecorded",
                   "A new check-in has been recorded for this goal.",
+                ),
                 duration: 4000,
               });
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
@@ -217,10 +234,19 @@ export function useGoalWebSocket(
 
             case "metric_batch_transitioned": {
               const batchData = message.data;
-              toast.success("Metric Import Status Changed", {
-                description: `Batch status changed to ${batchData?.status || "unknown"}`,
-                duration: 5000,
-              });
+              toast.success(
+                t(
+                  "websocket.goals.metricImportStatusChanged",
+                  "Metric Import Status Changed",
+                ),
+                {
+                  description: t("websocket.goals.batchStatusChangedTo", {
+                    status: batchData?.status || "unknown",
+                    defaultValue: "Batch status changed to {{status}}",
+                  }),
+                  duration: 5000,
+                },
+              );
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               qc.invalidateQueries({ queryKey: goalKeys.metricBatches() });
               if (batchData?.batch_id) {
@@ -228,24 +254,29 @@ export function useGoalWebSocket(
                   queryKey: goalKeys.metricBatch(batchData.batch_id),
                 });
                 qc.invalidateQueries({
-                  queryKey: goalKeys.metricBatchTransitions(
-                    batchData.batch_id,
-                  ),
+                  queryKey: goalKeys.metricBatchTransitions(batchData.batch_id),
                 });
                 qc.invalidateQueries({
-                  queryKey: goalKeys.metricBatchHistory(
-                    batchData.batch_id,
-                  ),
+                  queryKey: goalKeys.metricBatchHistory(batchData.batch_id),
                 });
               }
               break;
             }
 
             case "collaborator_changed":
-              toast.info("Collaborators Updated", {
-                description: "Goal collaborators have been changed.",
-                duration: 4000,
-              });
+              toast.info(
+                t(
+                  "websocket.goals.collaboratorsUpdated",
+                  "Collaborators Updated",
+                ),
+                {
+                  description: t(
+                    "websocket.goals.goalCollaboratorsChanged",
+                    "Goal collaborators have been changed.",
+                  ),
+                  duration: 4000,
+                },
+              );
               qc.invalidateQueries({ queryKey: goalKeys.detail(goalId) });
               break;
 
@@ -282,8 +313,11 @@ export function useGoalWebSocket(
           );
 
           if (state.reconnectAttempts === 1) {
-            toast.error("Connection Lost", {
-              description: "Attempting to reconnect...",
+            toast.error(t("websocket.connectionLost", "Connection Lost"), {
+              description: t(
+                "websocket.attemptingToReconnect",
+                "Attempting to reconnect...",
+              ),
               duration: 3000,
             });
           }
@@ -292,8 +326,11 @@ export function useGoalWebSocket(
             connectWebSocket();
           }, delay);
         } else if (state.reconnectAttempts >= maxReconnectAttempts) {
-          toast.error("Connection Lost", {
-            description: "Failed to reconnect. Please refresh the page.",
+          toast.error(t("websocket.connectionLost", "Connection Lost"), {
+            description: t(
+              "websocket.failedToReconnect",
+              "Failed to reconnect. Please refresh the page.",
+            ),
             duration: 10000,
           });
         }
@@ -334,5 +371,5 @@ export function useGoalWebSocket(
         }
       }
     };
-  }, [goalId, userId, queryClient]);
+  }, [goalId, userId, queryClient, t]);
 }
