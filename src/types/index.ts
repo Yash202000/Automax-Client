@@ -455,7 +455,7 @@ export interface ChangePasswordRequest {
 export interface OtpSendRequest {
   phone: string;
   channel: "sms" | "email" | "whatsapp";
-  type: string;
+  type?: string;
 }
 
 export interface OtpSendResponse {
