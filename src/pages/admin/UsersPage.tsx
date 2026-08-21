@@ -880,13 +880,12 @@ export const UsersPage: React.FC = () => {
     } else if (!USER_PASSWORD_POLICY_REGEX.test(createFormData.password)) {
       errors.password = t("users.passwordPolicy");
     }
-
-    if (
-      createFormData.phone.trim() &&
-      !PHONE_REGEX.test(createFormData.phone.trim())
-    ) {
+    if (!createFormData.phone.trim()) {
+      errors.phone = t("validation.fieldRequired", {
+        field: t("users.phone"),
+      });
+    } else if (!PHONE_REGEX.test(createFormData.phone.trim())) {
       errors.phone = t("users.invalidPhone");
-      // toast.error(t("auth.invalidPhone"));
     }
 
     setCreateFormErrors(errors);
@@ -986,9 +985,12 @@ export const UsersPage: React.FC = () => {
         field: t("users.username"),
       });
     }
-    if (formData.phone.trim() && !PHONE_REGEX.test(formData.phone.trim())) {
+    if (!formData.phone.trim()) {
+      errors.phone = t("validation.fieldRequired", {
+        field: t("users.phone"),
+      });
+    } else if (!PHONE_REGEX.test(formData.phone.trim())) {
       errors.phone = t("users.invalidPhone");
-      // toast.error(t("auth.invalidPhone"));
     }
 
     setFormErrors(errors);
