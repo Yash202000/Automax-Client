@@ -3132,10 +3132,14 @@ export const IncidentDetailPage: React.FC = () => {
                   {bridges.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-[hsl(var(--muted-foreground))]">
                       <ArrowRightLeft className="w-10 h-10 mb-3 opacity-30" />
-                      <p className="text-sm font-medium">No linked systems</p>
+                      <p className="text-sm font-medium">
+                        {t("incidents.noLinkedSystems", "No linked systems")}
+                      </p>
                       <p className="text-xs mt-1 text-center max-w-xs">
-                        When this incident is sent to or received from another
-                        Automax system, the link will appear here.
+                        {t(
+                          "incidents.noLinkedSystemsDescription",
+                          "When this incident is sent to or received from another Automax system, the link will appear here",
+                        )}
                       </p>
                     </div>
                   ) : (
