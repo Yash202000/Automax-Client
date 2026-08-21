@@ -715,7 +715,6 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
   const [optionalFields, setOptionalFields] = useState<IncidentFormField[]>([]);
-  console.log({ requiredFields });
   // Convert to request role IDs
   const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<
     string[]
