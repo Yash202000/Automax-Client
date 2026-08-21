@@ -921,7 +921,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       label: cat.name,
       label_ar: cat.name_ar || cat.name,
       description: cat.description || `${cat.name} lookup value`,
-      description_ar: cat.description || `${cat.name} lookup value`, //description_ar missing -api
+      description_ar: cat.description || `${cat.name} lookup value`,
     }));
     return [...baseFormFields, ...lookupFields];
   }, [lookupCategories]);
