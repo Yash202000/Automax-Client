@@ -37,6 +37,7 @@ import {
 } from "../../components/ui";
 import type { TreeSelectNode, LocationData } from "../../components/ui";
 import { withCallStatusDot } from "../../utils/callStatus";
+import { cn } from "@/lib/utils";
 import {
   workflowApi,
   classificationApi,
@@ -1128,6 +1129,8 @@ export function IncidentCreatePage() {
       !formData.description?.trim()
     )
       newErrors.description = t("incidents.descriptionRequired");
+    if (isEPM940 && (formData.description?.length || 0) > 300)
+      newErrors.description = t("incidents.descriptionTooLong", { max: 300 });
     if (workflowRequiredFields.includes("comment") && !comment.trim())
       newErrors.comment = t("incidents.fieldRequired", {
         field: t("incidents.comment", "Comment"),
@@ -1490,8 +1493,25 @@ export function IncidentCreatePage() {
                     rows={5}
                     required={workflowRequiredFields.includes("description")}
                     error={errors.description}
+                    maxLength={isEPM940 ? 300 : undefined}
                   />
                 )}
+                {(workflowRequiredFields.includes("description") ||
+                  workflowOptionalFields.includes("description")) &&
+                  isEPM940 && (
+                    <div className="flex justify-end -mt-3">
+                      <span
+                        className={cn(
+                          "text-xs font-mono",
+                          (formData.description || "").length >= 300
+                            ? "text-[hsl(var(--destructive))] font-semibold"
+                            : "text-[hsl(var(--muted-foreground))]",
+                        )}
+                      >
+                        {(formData.description || "").length}/300
+                      </span>
+                    </div>
+                  )}
                 {(workflowRequiredFields.includes("reporter_name") ||
                   workflowOptionalFields.includes("reporter_name") ||
                   callOriginated) && (
