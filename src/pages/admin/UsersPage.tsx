@@ -2315,7 +2315,8 @@ export const UsersPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t("users.username")}
+                      {t("users.username")}{" "}
+                      <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
@@ -2340,7 +2341,8 @@ export const UsersPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t("users.phone")}
+                      {t("users.phone")}{" "}
+                      <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
