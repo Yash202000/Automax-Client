@@ -87,6 +87,14 @@ type MatchingRecordType =
   | "both"
   | "all";
 
+type BaseFormFieldType = {
+  field: IncidentFormField;
+  label: string;
+  description: string;
+  label_ar: string;
+  description_ar: string;
+};
+
 const parseCommaSeparatedPhones = (value: string) =>
   value
     .split(",")
@@ -243,72 +251,104 @@ const isEPM940 =
   import.meta.env.VITE_CLIENT === "EPM940";
 
 // Static constant moved outside component to avoid unstable reference in useMemo deps
-const baseFormFields: {
-  field: IncidentFormField;
-  label: string;
-  description: string;
-}[] = [
+const baseFormFields: BaseFormFieldType[] = [
   {
     field: "description",
     label: "Description",
     description: "Detailed incident description",
+    label_ar: "الوصف",
+    description_ar: "وصف تفصيلي للحادثة",
   },
   {
     field: "classification_id",
     label: "Classification",
     description: "Incident category/type",
+    label_ar: "التصنيف",
+    description_ar: "فئة/نوع الحادثة",
   },
   {
     field: "source",
     label: "Source",
     description: "Where the incident originated",
+    label_ar: "المصدر",
+    description_ar: "مكان نشأة الحادثة",
   },
   {
     field: "source_incident_id",
     label: "Source Incident Reference",
     description: "Link to related incident/complaint/query",
+    label_ar: "مرجع الحادثة المصدر",
+    description_ar: "رابط للحادثة/الشكوى/الاستفسار المرتبط",
   },
   {
     field: "assignee_id",
     label: "Assignee",
     description: "User assigned to handle",
+    label_ar: "المسند إليه",
+    description_ar: "المستخدم المسند إليه للمعالجة",
   },
   {
     field: "department_id",
     label: "Department",
     description: "Responsible department",
+    label_ar: "القسم",
+    description_ar: "القسم المسؤول",
   },
-  { field: "location_id", label: "Location", description: "Physical location" },
+  {
+    field: "location_id",
+    label: "Location",
+    description: "Physical location",
+    label_ar: "الموقع",
+    description_ar: "الموقع الفعلي",
+  },
   {
     field: "geolocation",
     label: "Geolocation",
     description: "GPS coordinates (latitude & longitude)",
+    label_ar: "الموقع الجغرافي",
+    description_ar: "إحداثيات GPS (خط العرض وخط الطول)",
   },
-  { field: "due_date", label: "Due Date", description: "Resolution deadline" },
+  {
+    field: "due_date",
+    label: "Due Date",
+    description: "Resolution deadline",
+    label_ar: "تاريخ الاستحقاق",
+    description_ar: "الموعد النهائي للحل",
+  },
   {
     field: "reporter_name",
     label: "Caller Name",
     description: "Name of caller",
+    label_ar: "اسم المتصل",
+    description_ar: "اسم المتصل",
   },
   {
     field: "reporter_email",
     label: "Caller Email",
     description: "Email of caller",
+    label_ar: "بريد المتصل الإلكتروني",
+    description_ar: "البريد الإلكتروني للمتصل",
   },
   {
     field: "reporter_phone",
     label: "Caller Phone Number",
     description: "Phone number of caller",
+    label_ar: "رقم هاتف المتصل",
+    description_ar: "رقم هاتف المتصل",
   },
   {
     field: "attachments",
     label: "Attachments",
     description: "File attachments for the incident",
+    label_ar: "المرفقات",
+    description_ar: "المرفقات الخاصة بالحادثة",
   },
   {
     field: "comment",
     label: "Comment",
     description: "Comment required when creating the incident",
+    label_ar: "تعليق",
+    description_ar: "تعليق مطلوب عند إنشاء الحادثة",
   },
 ];
 
@@ -675,7 +715,7 @@ export const WorkflowDesignerPage: React.FC = () => {
   // Required fields configuration
   const [requiredFields, setRequiredFields] = useState<IncidentFormField[]>([]);
   const [optionalFields, setOptionalFields] = useState<IncidentFormField[]>([]);
-
+  console.log({ requiredFields });
   // Convert to request role IDs
   const [convertToRequestRoleIds, setConvertToRequestRoleIds] = useState<
     string[]
@@ -877,10 +917,12 @@ export const WorkflowDesignerPage: React.FC = () => {
 
   // Available form fields including dynamic lookup categories
   const availableFormFields = React.useMemo(() => {
-    const lookupFields = lookupCategories.map((cat) => ({
+    const lookupFields: BaseFormFieldType[] = lookupCategories.map((cat) => ({
       field: `lookup:${cat.code}` as IncidentFormField,
       label: cat.name,
+      label_ar: cat.name_ar || cat.name,
       description: cat.description || `${cat.name} lookup value`,
+      description_ar: cat.description || `${cat.name} lookup value`, //description_ar missing -api
     }));
     return [...baseFormFields, ...lookupFields];
   }, [lookupCategories]);
@@ -3067,7 +3109,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                              {item.label}
+                              {i18n.language === "ar"
+                                ? item.label_ar
+                                : item.label}
                             </span>
                             {isRequired && (
                               <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
@@ -3081,7 +3125,9 @@ export const WorkflowDesignerPage: React.FC = () => {
                             )}
                           </div>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                            {item.description}
+                            {i18n.language === "ar"
+                              ? item.description_ar
+                              : item.description}
                           </p>
                         </div>
                       </button>
