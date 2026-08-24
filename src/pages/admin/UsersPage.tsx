@@ -1236,6 +1236,10 @@ export const UsersPage: React.FC = () => {
         errors.push(
           `${rowLabel}: ${t("users.importPhoneRequired", { defaultValue: "Phone is required" })}`,
         );
+      } else if (!PHONE_REGEX.test(row.phone.trim())) {
+        errors.push(
+          `${rowLabel}: "${row.phone}" - ${t("users.invalidPhone", { defaultValue: "Invalid phone format" })}`,
+        );
       }
 
       if (row.username?.trim()) {
