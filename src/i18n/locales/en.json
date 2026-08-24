@@ -1133,7 +1133,11 @@
     "51234Default": "51234 (default)",
     "unknownUser": "Unknown User",
     "AddAdUser": "Add AD User",
-    "invalidPhone": "Enter a valid phone number. Use only digits and an optional country code prefixed with '+'."
+    "invalidPhone": "Enter a valid phone number. Use only digits and an optional country code prefixed with '+'.",
+    "importUsernameRequired": "Username is required",
+    "importEmailRequired": "Email is required",
+    "importPhoneRequired": "Phone is required",
+    "totalRecords": "Total"
   },
   "roles": {
     "title": "Roles",

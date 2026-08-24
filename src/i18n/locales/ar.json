@@ -1132,7 +1132,11 @@
     "phonePlaceholder": "مثال: +1234567890",
     "extensionPlaceholder": "مثال: 1001",
     "AddAdUser": "إضافة مستخدم إعلان",
-    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'."
+    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'.",
+    "importUsernameRequired": "اسم المستخدم مطلوب",
+    "importEmailRequired": "البريد الإلكتروني مطلوب",
+    "importPhoneRequired": "رقم الهاتف مطلوب",
+    "totalRecords": "الإجمالي"
   },
   "roles": {
     "title": "الأدوار",

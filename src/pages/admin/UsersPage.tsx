@@ -1154,7 +1154,7 @@ export const UsersPage: React.FC = () => {
       { header: "email (Required)", key: "email", width: 20 },
       { header: "first_name (Optional)", key: "first_name", width: 20 },
       { header: "last_name (Optional)", key: "last_name", width: 20 },
-      { header: "phone (Optional)", key: "phone", width: 20 },
+      { header: "phone (Required)", key: "phone", width: 20 },
       { header: "extension (Optional)", key: "extension", width: 20 },
     ];
 
@@ -1200,7 +1200,7 @@ export const UsersPage: React.FC = () => {
   };
 
   const validateImportRows = (
-    rows: Array<{ username?: string; email?: string }>,
+    rows: Array<{ username?: string; email?: string; phone?: string }>,
   ): string[] => {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1229,6 +1229,12 @@ export const UsersPage: React.FC = () => {
       } else if (!emailRegex.test(row.email.trim())) {
         errors.push(
           `${rowLabel}: "${row.email}" - ${t("auth.invalidEmail", { defaultValue: "Invalid email format" })}`,
+        );
+      }
+
+      if (!row.phone?.trim()) {
+        errors.push(
+          `${rowLabel}: ${t("users.importPhoneRequired", { defaultValue: "Phone is required" })}`,
         );
       }
 
@@ -1370,6 +1376,11 @@ export const UsersPage: React.FC = () => {
         if (!row.username?.trim() || !usernameRegex.test(row.username.trim())) {
           rowErrors.push(
             `Row ${rowNum}: "${row.username || ""}" - Invalid username`,
+          );
+        }
+        if (!row.phone?.trim() || !PHONE_REGEX.test(row.phone.trim())) {
+          rowErrors.push(
+            `Row ${rowNum}: "${row.phone || ""}" - Invalid phone number`,
           );
         }
 
