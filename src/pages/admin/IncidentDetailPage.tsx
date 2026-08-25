@@ -110,6 +110,7 @@ import {
 } from "../../utils/customFields";
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
+import { ZoomableImage } from "@/components/common/ZoomableImage";
 import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
@@ -5476,12 +5477,7 @@ export const IncidentDetailPage: React.FC = () => {
           </a>
           <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
             {/* Image */}
-            <img
-              src={lightboxImage.url}
-              alt={lightboxImage.name}
-              className="max-w-[90vw] max-h-[90vh] object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <ZoomableImage src={lightboxImage.url} alt={lightboxImage.name} />
           </div>
         </div>
       )}
