@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { ZoomableImage } from "../../components/common/ZoomableImage";
 import { toast } from "sonner";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -2908,13 +2909,11 @@ export const QueryDetailPage: React.FC = () => {
           )}
 
           {/* Image */}
-          <img
+          <ZoomableImage
             src={getAuthenticatedAttachmentUrl(
               imageAttachments[lightboxIndex]?.id,
             )}
             alt={imageAttachments[lightboxIndex]?.file_name}
-            className="max-w-[90vw] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}
