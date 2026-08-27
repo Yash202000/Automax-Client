@@ -167,6 +167,8 @@ export const userApi = {
       location_ids?: string[];
       classification_ids?: string[];
       role_ids?: string[];
+      bypass_login_totp?: boolean;
+      enable_login_totp?: boolean;
     },
     avatarFile?: File,
   ): Promise<ApiResponse<User>> => {
@@ -194,6 +196,10 @@ export const userApi = {
         );
       if (data.role_ids?.length)
         formData.append("role_ids", JSON.stringify(data.role_ids));
+      if (data.bypass_login_totp !== undefined)
+        formData.append("bypass_login_totp", String(data.bypass_login_totp));
+      if (data.enable_login_totp !== undefined)
+        formData.append("enable_login_totp", String(data.enable_login_totp));
       formData.append("avatar", avatarFile);
 
       const response = await apiClient.post<ApiResponse<User>>(

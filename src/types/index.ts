@@ -44,6 +44,8 @@ export interface User {
   dept_manager_classification?: Classification;
   dept_manager_location_id?: string | null;
   dept_manager_location?: Location;
+  bypass_login_totp?: boolean;
+  enable_login_totp?: boolean;
 }
 
 export interface Permission {
@@ -71,6 +73,7 @@ export interface Role {
   is_department_manager: boolean;
   permissions: Permission[];
   created_at: string;
+  bypass_login_totp?: boolean;
 }
 
 export interface Classification {
@@ -434,6 +437,8 @@ export interface UpdateProfileRequest {
   role_ids?: string[];
   is_active?: boolean;
   mobile_verified?: boolean;
+  bypass_login_totp?: boolean;
+  enable_login_totp?: boolean;
 }
 
 export interface ManagerScopeResponse {
@@ -553,6 +558,7 @@ export interface RoleCreateRequest {
   code: string;
   description?: string;
   permission_ids?: string[];
+  bypass_login_totp?: boolean;
 }
 
 export interface RoleUpdateRequest {
@@ -560,6 +566,7 @@ export interface RoleUpdateRequest {
   description?: string;
   permission_ids?: string[];
   is_active?: boolean;
+  bypass_login_totp?: boolean;
 }
 
 // Permission request types
