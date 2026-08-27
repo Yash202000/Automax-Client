@@ -12,12 +12,14 @@ import {
   validateName,
   validateRequired,
 } from "@/utils/validations";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface RoleFormData {
   name: string;
   code: string;
   description: string;
   permission_ids: string[];
+  bypass_login_totp?: boolean;
 }
 
 const initialFormData: RoleFormData = {
@@ -31,6 +33,7 @@ export const RoleCreatePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { settings } = useSettings();
 
   const [formData, setFormData] = useState<RoleFormData>(initialFormData);
   const [permissionSearch, setPermissionSearch] = useState("");
@@ -42,6 +45,8 @@ export const RoleCreatePage: React.FC = () => {
   const isEPM940 =
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
+
+  const shouldVerifyTotp = settings?.auth_setting.totp_enabled === true;
 
   const { data: permissionsData } = useQuery({
     queryKey: ["admin", "permissions"],
@@ -132,6 +137,7 @@ export const RoleCreatePage: React.FC = () => {
       code,
       description: formData.description,
       permission_ids: formData.permission_ids,
+      bypass_login_totp: formData.bypass_login_totp,
     });
   };
 
@@ -234,6 +240,36 @@ export const RoleCreatePage: React.FC = () => {
               />
             </div>
           </div>
+          {shouldVerifyTotp && (
+            <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                name="enable_totp_verification"
+                checked={formData.bypass_login_totp}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    bypass_login_totp: e.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600  "
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                  {t(
+                    "settings.bypassTotpVerification",
+                    "Bypass Login TOTP Verification",
+                  )}
+                </span>
+                <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(
+                    "settings.bypassTotpVerificationDesc",
+                    "Bypass time-based one-time passcode verification during authentication.",
+                  )}
+                </span>
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Permissions */}
