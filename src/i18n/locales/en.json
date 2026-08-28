@@ -2672,7 +2672,8 @@
     "checkBrowserConsoleForDetails": "Check browser console for details",
     "makeSureWorkflowsAreCreatedWithRecord": "Make sure workflows are created with record type: 'query', 'both', or 'all'",
     "yourBrowserDoesNotSupportTheAudio": "Your browser does not support the audio element.",
-    "channelPlaceholder": "e.g., Phone, Email, Walk-in"
+    "channelPlaceholder": "e.g., Phone, Email, Walk-in",
+    "mobile": "Mobile"
   },
   "escalation": {
     "pageTitle": "Escalation Group",

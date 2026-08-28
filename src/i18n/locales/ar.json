@@ -2670,7 +2670,8 @@
     "checkBrowserConsoleForDetails": "تحقق من وحدة تحكم المتصفح لمزيد من التفاصيل",
     "makeSureWorkflowsAreCreatedWithRecord": "تأكد من إنشاء سير العمل بنوع سجل: 'query' أو 'both' أو 'all'",
     "yourBrowserDoesNotSupportTheAudio": "متصفحك لا يدعم تشغيل الصوت",
-    "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة"
+    "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة",
+    "mobile": "الجوال"
   },
   "escalation": {
     "pageTitle": "مجموعة التصعيد",
