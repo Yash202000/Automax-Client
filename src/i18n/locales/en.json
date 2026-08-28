@@ -244,7 +244,10 @@
     "last7Days": "Last 7 Days",
     "last30Days": "Last 30 Days",
     "system": "System",
-    "subject": "Subject"
+    "subject": "Subject",
+    "downloadExcelTemplate": "Download Excel Template",
+    "exportExcel": "Export Excel",
+    "exportJson": "Export JSON"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
