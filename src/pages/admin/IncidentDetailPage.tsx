@@ -110,6 +110,7 @@ import {
 } from "../../utils/customFields";
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
+import { ZoomableImage } from "@/components/common/ZoomableImage";
 import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
@@ -927,6 +928,12 @@ export const IncidentDetailPage: React.FC = () => {
     if (trans.to_state?.is_partial_close) steps.push("duration");
     if (
       selectedTransition.requirements?.some(
+        (r) => r.requirement_type === "comment",
+      )
+    )
+      steps.push("comment");
+    if (
+      selectedTransition.requirements?.some(
         (r) => r.requirement_type === "attachment",
       )
     )
@@ -937,7 +944,6 @@ export const IncidentDetailPage: React.FC = () => {
       )
     )
       steps.push("feedback");
-    steps.push("comment");
     return steps;
   }, [selectedTransition]);
 
@@ -4020,13 +4026,16 @@ export const IncidentDetailPage: React.FC = () => {
                       <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
                         {stepTitles[currentStepKey]}
                       </span>
-
-                      {isMandatory ? (
-                        <span className="text-red-500 font-bold">*</span>
-                      ) : (
-                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                          ({t("incidents.optional")})
-                        </span>
+                      {transitionSteps.length >= 1 && (
+                        <>
+                          {isMandatory ? (
+                            <span className="text-red-500 font-bold">*</span>
+                          ) : (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              ({t("incidents.optional")})
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -5468,12 +5477,7 @@ export const IncidentDetailPage: React.FC = () => {
           </a>
           <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
             {/* Image */}
-            <img
-              src={lightboxImage.url}
-              alt={lightboxImage.name}
-              className="max-w-[90vw] max-h-[90vh] object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <ZoomableImage src={lightboxImage.url} alt={lightboxImage.name} />
           </div>
         </div>
       )}

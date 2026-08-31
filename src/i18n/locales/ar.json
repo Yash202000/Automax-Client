@@ -931,7 +931,9 @@
     "authConfiguration": "إعدادات المصادقة",
     "authConfigurationDesc": "إدارة متطلبات التحقق من المصادقة.",
     "enableTotpVerification": "تفعيل التحقق عبر OTP",
-    "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول."
+    "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول.",
+    "bypassTotpVerification": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
+    "bypassTotpVerificationDesc": "المستخدمون المعينون لهذا الدور يتخطون التحقق برمز مؤقت لمرة واحدة عند تسجيل الدخول."
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -1065,6 +1067,10 @@
     "noClassificationsAvailable": "لا توجد تصنيفات متاحة",
     "scopeLocked": "مقيد بنطاقك",
     "noRolesAvailable": "لا توجد أدوار متاحة",
+    "bypassTotp": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
+    "bypassTotpDesc": "لا يوجد دور معين يتطلب التحقق عبر OTP. اسمح لهذا المستخدم بتخطي التحقق عند تسجيل الدخول.",
+    "enableTotp": "تفعيل التحقق عبر OTP عند تسجيل الدخول",
+    "enableTotpDesc": "أحد الأدوار المعينة يتجاوز التحقق عبر OTP. فعّل هذا الخيار لطلبه لهذا المستخدم على أي حال.",
     "updateUser": "تحديث المستخدم",
     "createUser": "إنشاء مستخدم",
     "saving": "جاري الحفظ...",
@@ -1132,7 +1138,11 @@
     "phonePlaceholder": "مثال: +1234567890",
     "extensionPlaceholder": "مثال: 1001",
     "AddAdUser": "إضافة مستخدم إعلان",
-    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'."
+    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'.",
+    "importUsernameRequired": "اسم المستخدم مطلوب",
+    "importEmailRequired": "البريد الإلكتروني مطلوب",
+    "importPhoneRequired": "رقم الهاتف مطلوب",
+    "totalRecords": "الإجمالي"
   },
   "roles": {
     "title": "الأدوار",

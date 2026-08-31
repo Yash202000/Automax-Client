@@ -932,7 +932,9 @@
     "authConfiguration": "Auth Configuration",
     "authConfigurationDesc": "Manage authentication verification requirements.",
     "enableTotpVerification": "Enable TOTP Verification",
-    "enableTotpVerificationDesc": "Require time-based one-time passcode verification during authentication."
+    "enableTotpVerificationDesc": "Require time-based one-time passcode verification during authentication.",
+    "bypassTotpVerification": "Bypass Login TOTP Verification",
+    "bypassTotpVerificationDesc": "Users assigned this role skip time-based one-time passcode verification during login."
   },
   "profile": {
     "title": "Profile",
@@ -1066,6 +1068,10 @@
     "noClassificationsAvailable": "No classifications available",
     "scopeLocked": "Locked by your scope",
     "noRolesAvailable": "No roles available",
+    "bypassTotp": "Bypass Login TOTP",
+    "bypassTotpDesc": "No assigned role requires TOTP. Let this user skip TOTP verification during login.",
+    "enableTotp": "Enable Login TOTP",
+    "enableTotpDesc": "An assigned role bypasses TOTP verification. Turn this on to still require it for this user.",
     "updateUser": "Update User",
     "createUser": "Create User",
     "saving": "Saving...",
@@ -1133,7 +1139,11 @@
     "51234Default": "51234 (default)",
     "unknownUser": "Unknown User",
     "AddAdUser": "Add AD User",
-    "invalidPhone": "Enter a valid phone number. Use only digits and an optional country code prefixed with '+'."
+    "invalidPhone": "Enter a valid phone number. Use only digits and an optional country code prefixed with '+'.",
+    "importUsernameRequired": "Username is required",
+    "importEmailRequired": "Email is required",
+    "importPhoneRequired": "Phone is required",
+    "totalRecords": "Total"
   },
   "roles": {
     "title": "Roles",
