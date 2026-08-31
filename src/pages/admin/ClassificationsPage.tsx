@@ -716,21 +716,6 @@ export const ClassificationsPage: React.FC = () => {
     return { types: Array.from(new Set(tokens)) };
   };
 
-  const parseImportSortOrder = (
-    raw: string,
-  ): { value: number; error?: string } => {
-    const trimmed = raw.trim();
-    if (!trimmed) return { value: 0 };
-    const num = Number(trimmed);
-    if (!Number.isFinite(num) || num < 0 || !Number.isInteger(num)) {
-      return {
-        value: 0,
-        error: `"${raw}" - Sort order must be a non-negative whole number`,
-      };
-    }
-    return { value: num };
-  };
-
   const resolveImportParentClassification = (
     parentNameRaw: string,
   ): { id?: string; error?: string } => {
