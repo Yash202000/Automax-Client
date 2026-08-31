@@ -918,7 +918,7 @@ export const RequestsPage: React.FC = () => {
                                     "hsl(var(--foreground))",
                                 }}
                               >
-                                {request.current_state.name}
+                                {getLookupLabel(request.current_state)}
                               </span>
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))]">
