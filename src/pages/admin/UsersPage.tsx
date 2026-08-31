@@ -1531,9 +1531,7 @@ export const UsersPage: React.FC = () => {
                     <FileSpreadsheet className="w-4 h-4" />
                     {isExporting
                       ? t("common.exporting")
-                      : t("users.exportExcel", {
-                          defaultValue: "Export Excel",
-                        })}
+                      : t("users.exportExcel")}
                   </button>
                   <button
                     onClick={() => {
@@ -1546,9 +1544,7 @@ export const UsersPage: React.FC = () => {
                     <Download className="w-4 h-4" />
                     {isExporting
                       ? t("common.exporting")
-                      : t("users.exportJson", {
-                          defaultValue: "Export JSON",
-                        })}
+                      : t("users.exportJson")}
                   </button>
                   <div className="my-1 border-t border-[hsl(var(--border))]" />
                   <button

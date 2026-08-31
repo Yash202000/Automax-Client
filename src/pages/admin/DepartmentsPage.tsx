@@ -1083,7 +1083,9 @@ export const DepartmentsPage: React.FC = () => {
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
                     >
                       <Download className="w-4 h-4" />
-                      {isExporting ? t("common.exporting") : "Export Excel"}
+                      {isExporting
+                        ? t("common.exporting")
+                        : t("common.exportExcel")}
                     </button>
                     <button
                       onClick={() => {
@@ -1094,7 +1096,9 @@ export const DepartmentsPage: React.FC = () => {
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
                     >
                       <Download className="w-4 h-4" />
-                      {isExporting ? t("common.exporting") : "Export JSON"}
+                      {isExporting
+                        ? t("common.exporting")
+                        : t("common.exportJson")}
                     </button>
                     <div className="my-1 border-t border-[hsl(var(--border))]" />
                     <button
@@ -1105,7 +1109,7 @@ export const DepartmentsPage: React.FC = () => {
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
                     >
                       <Download className="w-4 h-4" />
-                      Download Excel Template
+                      {t("common.downloadExcelTemplate")}
                     </button>
                   </div>
                 </>
