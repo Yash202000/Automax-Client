@@ -820,7 +820,6 @@ export const ClassificationsPage: React.FC = () => {
         { header: "level", key: "level", width: 8 },
         { header: "path", key: "path", width: 26 },
         { header: "types", key: "types", width: 24 },
-        { header: "sort_order", key: "sort_order", width: 12 },
         { header: "is_active", key: "is_active", width: 10 },
         { header: "criticalities", key: "criticalities", width: 40 },
       ];
@@ -838,7 +837,6 @@ export const ClassificationsPage: React.FC = () => {
           level: c.level,
           path: c.path || "",
           types: (c.types ?? []).join(", "),
-          sort_order: c.sort_order,
           is_active: c.is_active ? "Yes" : "No",
           criticalities: formatCriticalities(c.criticalities),
         });
@@ -878,7 +876,6 @@ export const ClassificationsPage: React.FC = () => {
         width: 30,
       },
       { header: "types (Optional)", key: "types", width: 34 },
-      { header: "sort_order (Optional)", key: "sort_order", width: 14 },
     ];
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -1036,10 +1033,6 @@ export const ClassificationsPage: React.FC = () => {
           resolveImportParentClassification(row.parent_classification || "");
         if (parentError) rowErrors.push(`${rowLabel}: ${parentError}`);
 
-        const { value: sortOrder, error: sortOrderError } =
-          parseImportSortOrder(row.sort_order || "");
-        if (sortOrderError) rowErrors.push(`${rowLabel}: ${sortOrderError}`);
-
         if (rowErrors.length > 0) {
           errors.push(...rowErrors);
           return;
@@ -1052,7 +1045,6 @@ export const ClassificationsPage: React.FC = () => {
           description_ar: row.description_ar?.trim() || undefined,
           parent_id: parentId,
           types,
-          sort_order: sortOrder,
         });
       });
 
