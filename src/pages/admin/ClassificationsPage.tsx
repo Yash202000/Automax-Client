@@ -1292,6 +1292,7 @@ export const ClassificationsPage: React.FC = () => {
                   </label>
                   <select
                     value={formData.parent_id}
+                    disabled={true}
                     onChange={(e) =>
                       setFormData({ ...formData, parent_id: e.target.value })
                     }

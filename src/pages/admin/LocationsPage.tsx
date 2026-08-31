@@ -1194,6 +1194,7 @@ export const LocationsPage: React.FC = () => {
                       {t("locations.parentLocation")}
                     </label>
                     <select
+                      disabled={true}
                       value={formData.parent_id}
                       onChange={(e) =>
                         setFormData({ ...formData, parent_id: e.target.value })
