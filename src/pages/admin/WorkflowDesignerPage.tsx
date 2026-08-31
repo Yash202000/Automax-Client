@@ -89,10 +89,13 @@ type MatchingRecordType =
 
 type BaseFormFieldType = {
   field: IncidentFormField;
-  label: string;
-  description: string;
-  label_ar: string;
-  description_ar: string;
+  labelKey?: string;
+  descriptionKey?: string;
+
+  // Used only for dynamic API fields
+  label?: string;
+  label_ar?: string;
+  description?: string;
 };
 
 const parseCommaSeparatedPhones = (value: string) =>
@@ -254,101 +257,73 @@ const isEPM940 =
 const baseFormFields: BaseFormFieldType[] = [
   {
     field: "description",
-    label: "Description",
-    description: "Detailed incident description",
-    label_ar: "الوصف",
-    description_ar: "وصف تفصيلي للحادثة",
+    labelKey: "workflows.formFields.description",
+    descriptionKey: "workflows.formFields.descriptionDesc",
   },
   {
     field: "classification_id",
-    label: "Classification",
-    description: "Incident category/type",
-    label_ar: "التصنيف",
-    description_ar: "فئة/نوع الحادثة",
+    labelKey: "workflows.formFields.classification",
+    descriptionKey: "workflows.formFields.classificationDesc",
   },
   {
     field: "source",
-    label: "Source",
-    description: "Where the incident originated",
-    label_ar: "المصدر",
-    description_ar: "مكان نشأة الحادثة",
+    labelKey: "workflows.formFields.source",
+    descriptionKey: "workflows.formFields.sourceDesc",
   },
   {
     field: "source_incident_id",
-    label: "Source Incident Reference",
-    description: "Link to related incident/complaint/query",
-    label_ar: "مرجع الحادثة المصدر",
-    description_ar: "رابط للحادثة/الشكوى/الاستفسار المرتبط",
+    labelKey: "workflows.formFields.sourceIncidentReference",
+    descriptionKey: "workflows.formFields.sourceIncidentReferenceDesc",
   },
   {
     field: "assignee_id",
-    label: "Assignee",
-    description: "User assigned to handle",
-    label_ar: "المسند إليه",
-    description_ar: "المستخدم المسند إليه للمعالجة",
+    labelKey: "workflows.formFields.assignee",
+    descriptionKey: "workflows.formFields.assigneeDesc",
   },
   {
     field: "department_id",
-    label: "Department",
-    description: "Responsible department",
-    label_ar: "القسم",
-    description_ar: "القسم المسؤول",
+    labelKey: "workflows.formFields.department",
+    descriptionKey: "workflows.formFields.departmentDesc",
   },
   {
     field: "location_id",
-    label: "Location",
-    description: "Physical location",
-    label_ar: "الموقع",
-    description_ar: "الموقع الفعلي",
+    labelKey: "workflows.formFields.location",
+    descriptionKey: "workflows.formFields.locationDesc",
   },
   {
     field: "geolocation",
-    label: "Geolocation",
-    description: "GPS coordinates (latitude & longitude)",
-    label_ar: "الموقع الجغرافي",
-    description_ar: "إحداثيات GPS (خط العرض وخط الطول)",
+    labelKey: "workflows.formFields.geolocation",
+    descriptionKey: "workflows.formFields.geolocationDesc",
   },
   {
     field: "due_date",
-    label: "Due Date",
-    description: "Resolution deadline",
-    label_ar: "تاريخ الاستحقاق",
-    description_ar: "الموعد النهائي للحل",
+    labelKey: "workflows.formFields.dueDate",
+    descriptionKey: "workflows.formFields.dueDateDesc",
   },
   {
     field: "reporter_name",
-    label: "Caller Name",
-    description: "Name of caller",
-    label_ar: "اسم المتصل",
-    description_ar: "اسم المتصل",
+    labelKey: "workflows.formFields.callerName",
+    descriptionKey: "workflows.formFields.callerNameDesc",
   },
   {
     field: "reporter_email",
-    label: "Caller Email",
-    description: "Email of caller",
-    label_ar: "بريد المتصل الإلكتروني",
-    description_ar: "البريد الإلكتروني للمتصل",
+    labelKey: "workflows.formFields.callerEmail",
+    descriptionKey: "workflows.formFields.callerEmailDesc",
   },
   {
     field: "reporter_phone",
-    label: "Caller Phone Number",
-    description: "Phone number of caller",
-    label_ar: "رقم هاتف المتصل",
-    description_ar: "رقم هاتف المتصل",
+    labelKey: "workflows.formFields.callerPhoneNumber",
+    descriptionKey: "workflows.formFields.callerPhoneNumberDesc",
   },
   {
     field: "attachments",
-    label: "Attachments",
-    description: "File attachments for the incident",
-    label_ar: "المرفقات",
-    description_ar: "المرفقات الخاصة بالحادثة",
+    labelKey: "workflows.formFields.attachments",
+    descriptionKey: "workflows.formFields.attachmentsDesc",
   },
   {
     field: "comment",
-    label: "Comment",
-    description: "Comment required when creating the incident",
-    label_ar: "تعليق",
-    description_ar: "تعليق مطلوب عند إنشاء الحادثة",
+    labelKey: "workflows.formFields.comment",
+    descriptionKey: "workflows.formFields.commentDesc",
   },
 ];
 
@@ -921,7 +896,6 @@ export const WorkflowDesignerPage: React.FC = () => {
       label: cat.name,
       label_ar: cat.name_ar || cat.name,
       description: cat.description || `${cat.name} lookup value`,
-      description_ar: cat.description || `${cat.name} lookup value`,
     }));
     return [...baseFormFields, ...lookupFields];
   }, [lookupCategories]);
@@ -3107,10 +3081,21 @@ export const WorkflowDesignerPage: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                              {i18n.language === "ar"
-                                ? item.label_ar
-                                : item.label}
+                            <span
+                              className={cn(
+                                "text-sm font-medium",
+                                isRequired
+                                  ? "text-amber-900"
+                                  : isOptional
+                                    ? "text-blue-900"
+                                    : "text-[hsl(var(--foreground))]",
+                              )}
+                            >
+                              {item.labelKey
+                                ? t(item.labelKey)
+                                : i18n.language === "ar"
+                                  ? item.label_ar
+                                  : item.label}
                             </span>
                             {isRequired && (
                               <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
@@ -3123,9 +3108,18 @@ export const WorkflowDesignerPage: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                            {i18n.language === "ar"
-                              ? item.description_ar
+                          <p
+                            className={cn(
+                              "text-xs mt-0.5",
+                              isRequired
+                                ? "text-amber-800/80"
+                                : isOptional
+                                  ? "text-blue-800/80"
+                                  : "text-[hsl(var(--muted-foreground))]",
+                            )}
+                          >
+                            {item.descriptionKey
+                              ? t(item.descriptionKey)
                               : item.description}
                           </p>
                         </div>
@@ -3157,7 +3151,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                           key={field}
                           className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded"
                         >
-                          {fieldConfig?.label || field}
+                          {fieldConfig?.labelKey
+                            ? t(fieldConfig.labelKey)
+                            : i18n.language === "ar"
+                              ? fieldConfig?.label_ar || field
+                              : fieldConfig?.label || field}
                         </span>
                       );
                     })}
@@ -3182,7 +3180,11 @@ export const WorkflowDesignerPage: React.FC = () => {
                           key={field}
                           className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded"
                         >
-                          {fieldConfig?.label || field}
+                          {fieldConfig?.labelKey
+                            ? t(fieldConfig.labelKey)
+                            : i18n.language === "ar"
+                              ? fieldConfig?.label_ar || field
+                              : fieldConfig?.label || field}
                         </span>
                       );
                     })}
