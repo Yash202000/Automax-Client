@@ -1349,6 +1349,7 @@ export const incidentApi = {
       body.department_id = filter.department_ids;
     if (filter.location_ids?.length) body.location_id = filter.location_ids;
     if (filter.source) body.source = filter.source;
+    if (filter.channel) body.channel = filter.channel; //for complaints page
     if (filter.sla_breached !== undefined)
       body.sla_breached = filter.sla_breached;
     if (filter.converted_to_request !== undefined)

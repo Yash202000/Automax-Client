@@ -260,9 +260,12 @@
     "phone": "Phone",
     "email": "Email",
     "web": "Web",
+    "ivr": "IVR",
+    "whatsappChatbot": "WhatsApp Chatbot",
     "mobile": "Mobile App",
     "inPerson": "In Person",
-    "chatbot": "Chatbot"
+    "chatbot": "Chatbot",
+    "sms": "SMS"
   },
   "auth": {
     "login": "Login",

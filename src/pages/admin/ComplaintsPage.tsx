@@ -587,12 +587,14 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({ listType }) => {
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               >
                 <option value="">{t("common.allChannels")}</option>
-                <option value="phone">{t("channels.phone")}</option>
-                <option value="email">{t("channels.email")}</option>
-                <option value="web">{t("channels.web")}</option>
+                <option value="Web">{t("channels.web")}</option>
+                <option value="IVR">{t("channels.ivr")}</option>
+                <option value="WhatsApp Chatbot">
+                  {t("channels.whatsappChatbot")}
+                </option>
                 <option value="mobile">{t("channels.mobile")}</option>
-                <option value="in_person">{t("channels.inPerson")}</option>
                 <option value="Chatbot">{t("channels.chatbot")}</option>
+                <option value="sms">{t("channels.sms")}</option>
               </select>
             </div>
             <div>
