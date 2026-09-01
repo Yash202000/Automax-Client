@@ -1077,11 +1077,14 @@ export const UsersPage: React.FC = () => {
         field: t("users.username"),
       });
     }
-    if (!formData.phone.trim()) {
+    if (isEPM940 && !formData.phone.trim()) {
       errors.phone = t("validation.fieldRequired", {
         field: t("users.phone"),
       });
-    } else if (!PHONE_REGEX.test(formData.phone.trim())) {
+    } else if (
+      formData.phone.trim() &&
+      !PHONE_REGEX.test(formData.phone.trim())
+    ) {
       errors.phone = t("users.invalidPhone");
     }
 
@@ -1252,7 +1255,11 @@ export const UsersPage: React.FC = () => {
       { header: "email (Required)", key: "email", width: 20 },
       { header: "first_name (Optional)", key: "first_name", width: 20 },
       { header: "last_name (Optional)", key: "last_name", width: 20 },
-      { header: "phone (Required)", key: "phone", width: 20 },
+      {
+        header: isEPM940 ? "phone (Required)" : "phone (Optional)",
+        key: "phone",
+        width: 20,
+      },
       { header: "extension (Optional)", key: "extension", width: 20 },
     ];
 
@@ -1330,11 +1337,11 @@ export const UsersPage: React.FC = () => {
         );
       }
 
-      if (!row.phone?.trim()) {
+      if (isEPM940 && !row.phone?.trim()) {
         errors.push(
           `${rowLabel}: ${t("users.importPhoneRequired", { defaultValue: "Phone is required" })}`,
         );
-      } else if (!PHONE_REGEX.test(row.phone.trim())) {
+      } else if (row.phone?.trim() && !PHONE_REGEX.test(row.phone.trim())) {
         errors.push(
           `${rowLabel}: "${row.phone}" - ${t("users.invalidPhone", { defaultValue: "Invalid phone format" })}`,
         );
@@ -1480,9 +1487,11 @@ export const UsersPage: React.FC = () => {
             `Row ${rowNum}: "${row.username || ""}" - Invalid username`,
           );
         }
-        if (!row.phone?.trim() || !PHONE_REGEX.test(row.phone.trim())) {
+        if (isEPM940 && !row.phone?.trim()) {
+          rowErrors.push(`Row ${rowNum}: Phone number is required`);
+        } else if (row.phone?.trim() && !PHONE_REGEX.test(row.phone.trim())) {
           rowErrors.push(
-            `Row ${rowNum}: "${row.phone || ""}" - Invalid phone number`,
+            `Row ${rowNum}: "${row.phone}" - Invalid phone number`,
           );
         }
 
@@ -1629,7 +1638,7 @@ export const UsersPage: React.FC = () => {
                     <FileSpreadsheet className="w-4 h-4" />
                     {isExporting
                       ? t("common.exporting")
-                      : t("users.exportExcel")}
+                      : t("common.exportExcel")}
                   </button>
                   <button
                     onClick={() => {
@@ -1642,7 +1651,7 @@ export const UsersPage: React.FC = () => {
                     <Download className="w-4 h-4" />
                     {isExporting
                       ? t("common.exporting")
-                      : t("users.exportJson")}
+                      : t("common.exportJson")}
                   </button>
                   <div className="my-1 border-t border-[hsl(var(--border))]" />
                   <button
