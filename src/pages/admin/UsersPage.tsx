@@ -960,14 +960,16 @@ export const UsersPage: React.FC = () => {
     } else if (!USER_PASSWORD_POLICY_REGEX.test(createFormData.password)) {
       errors.password = t("users.passwordPolicy");
     }
-    if (isEPM940) {
-      if (!createFormData.phone.trim()) {
-        errors.phone = t("validation.fieldRequired", {
-          field: t("users.phone"),
-        });
-      } else if (!PHONE_REGEX.test(createFormData.phone.trim())) {
-        errors.phone = t("users.invalidPhone");
-      }
+
+    if (isEPM940 && !createFormData.phone.trim()) {
+      errors.phone = t("validation.fieldRequired", {
+        field: t("users.phone"),
+      });
+    } else if (
+      createFormData.phone.trim() &&
+      !PHONE_REGEX.test(createFormData.phone.trim())
+    ) {
+      errors.phone = t("users.invalidPhone");
     }
 
     setCreateFormErrors(errors);
