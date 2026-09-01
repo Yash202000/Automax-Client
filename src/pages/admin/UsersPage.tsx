@@ -247,6 +247,10 @@ export const UsersPage: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const passwordRequirementLabels = useMemo(
     () => ({
       minLength: t("users.passwordRequirementMinLength"),
@@ -956,12 +960,14 @@ export const UsersPage: React.FC = () => {
     } else if (!USER_PASSWORD_POLICY_REGEX.test(createFormData.password)) {
       errors.password = t("users.passwordPolicy");
     }
-    if (!createFormData.phone.trim()) {
-      errors.phone = t("validation.fieldRequired", {
-        field: t("users.phone"),
-      });
-    } else if (!PHONE_REGEX.test(createFormData.phone.trim())) {
-      errors.phone = t("users.invalidPhone");
+    if (isEPM940) {
+      if (!createFormData.phone.trim()) {
+        errors.phone = t("validation.fieldRequired", {
+          field: t("users.phone"),
+        });
+      } else if (!PHONE_REGEX.test(createFormData.phone.trim())) {
+        errors.phone = t("users.invalidPhone");
+      }
     }
 
     setCreateFormErrors(errors);
@@ -3124,7 +3130,9 @@ export const UsersPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t("users.phone")}{" "}
-                    <span className="text-destructive">*</span>
+                    {isEPM940 ? (
+                      <span className="text-destructive">*</span>
+                    ) : null}
                   </label>
                   <input
                     type="text"
