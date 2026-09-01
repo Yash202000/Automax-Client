@@ -453,17 +453,24 @@ export const LocationsPage: React.FC = () => {
       setViewLoading(false);
     }
   };
+  const validateLocationName = (name: string): string | undefined => {
+    const trimmed = name.trim();
+    if (!trimmed) return t("locations.nameRequired");
+    if (!/[A-Za-z]/.test(trimmed)) return t("common.nameInvalid");
+    if (!/^[A-Za-z0-9\s]+$/.test(trimmed)) {
+      return t("locations.invalidName");
+    }
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     const name = formData.name.trim();
     const name_ar = formData.name_ar.trim();
 
-    if (!name) {
-      newErrors.name = t("locations.nameRequired");
-    } else if (!/[A-Za-z]/.test(name)) {
-      newErrors.name = t("common.nameInvalid");
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
-      newErrors.name = t("locations.invalidName");
+    const nameError = validateLocationName(name);
+    if (nameError) {
+      newErrors.name = nameError;
     }
 
     if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
@@ -765,13 +772,16 @@ export const LocationsPage: React.FC = () => {
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
         const rowLabel = `Row ${rowNum}`;
+        const name = String(row.name || "").trim();
+        const code = String(row.code || "").trim();
 
-        if (!String(row.name || "").trim()) {
-          errors.push(`${rowLabel}: Name is required`);
+        const nameError = validateLocationName(name);
+        if (nameError) {
+          errors.push(`${rowLabel}: ${nameError}`);
           return;
         }
 
-        if (!isEPM940 && !String(row.code || "").trim()) {
+        if (!isEPM940 && !code) {
           errors.push(`${rowLabel}: Code is required`);
           return;
         }

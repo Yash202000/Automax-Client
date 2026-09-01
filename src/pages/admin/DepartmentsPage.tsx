@@ -547,18 +547,29 @@ export const DepartmentsPage: React.FC = () => {
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
 
+  const validateDepartmentName = (name: string): string | undefined => {
+    const trimmed = name.trim();
+
+    if (!trimmed) return t("common.nameRequired");
+
+    if (!/[A-Za-z]/.test(trimmed)) return t("common.nameInvalid");
+
+    if (!/^[A-Za-z0-9\s'",.&()/-]+$/.test(trimmed)) {
+      return t("common.nameAllowedCharacters");
+    }
+
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     const name = formData.name.trim();
     const name_ar = formData.name_ar.trim();
     const code = formData.code.trim();
 
-    if (!name) {
-      newErrors.name = t("common.nameRequired");
-    } else if (!/[A-Za-z]/.test(name)) {
-      newErrors.name = t("common.nameInvalid");
-    } else if (!/^[A-Za-z0-9\s'",.&()/-]+$/.test(name)) {
-      newErrors.name = t("common.nameAllowedCharacters");
+    const nameError = validateDepartmentName(name);
+    if (nameError) {
+      newErrors.name = nameError;
     }
 
     if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
@@ -915,18 +926,9 @@ export const DepartmentsPage: React.FC = () => {
         const name = String(row.name || "").trim();
         const code = String(row.code || "").trim();
 
-        if (!name) {
-          errors.push(`${rowLabel}: Name is required`);
-          return;
-        }
-
-        if (!/[A-Za-z]/.test(name)) {
-          errors.push(`${rowLabel}: Name must contain at least one letter`);
-          return;
-        }
-
-        if (!/^[A-Za-z0-9\s'".,&()/-]+$/.test(name)) {
-          errors.push(`${rowLabel}: Name contains invalid characters`);
+        const nameError = validateDepartmentName(name);
+        if (nameError) {
+          errors.push(`${rowLabel}: ${nameError}`);
           return;
         }
 
