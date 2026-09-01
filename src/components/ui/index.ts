@@ -34,4 +34,5 @@ export {
   ModalFooter,
 } from "./Modal";
 export { MultiSelect } from "./MultiSelect";
+export { MultiTreeSelect } from "./MultiTreeSelect";
 export type { Option as MultiSelectOption } from "./MultiSelect";

@@ -689,21 +689,37 @@ export const DepartmentsPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = async () => {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportSelectedIds, setExportSelectedIds] = useState<string[]>([]);
+
+  const flattenDepartments = (nodes: Department[]): Department[] => {
+    const result: Department[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenDepartments(node.children));
+      }
+    });
+    return result;
+  };
+
+  const openDepartmentExportModal = () => {
+    setExportSelectedIds(
+      flattenDepartments(treeData?.data ?? []).map((dept) => dept.id),
+    );
+    setIsExportModalOpen(true);
+  };
+
+  const handleExportExcel = async (selectedIds?: string[]) => {
     try {
       setIsExporting(true);
-      const list = departmentsList?.data ?? [];
 
-      const flattenDepartments = (nodes: Department[]): Department[] => {
-        const result: Department[] = [];
-        nodes.forEach((node) => {
-          result.push(node);
-          if (node.children?.length) {
-            result.push(...flattenDepartments(node.children));
-          }
-        });
-        return result;
-      };
+      const list =
+        typeof selectedIds === "undefined"
+          ? (treeData?.data ?? [])
+          : flattenDepartments(treeData?.data ?? []).filter((dept) =>
+              selectedIds.includes(dept.id),
+            );
 
       const workbook = new ExcelJs.Workbook();
       const worksheet = workbook.addWorksheet("Departments");
@@ -755,6 +771,9 @@ export const DepartmentsPage: React.FC = () => {
         blob,
         `departments_export_${new Date().toISOString().split("T")[0]}.xlsx`,
       );
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
@@ -877,20 +896,64 @@ export const DepartmentsPage: React.FC = () => {
 
       const errors: string[] = [];
       const validPayloads: Array<Record<string, unknown>> = [];
+      const seenDepartmentNames = new Set<string>();
+      const seenDepartmentCodes = new Set<string>();
+      const existingDepartmentNames = new Set(
+        (departmentsList?.data ?? []).map((dept: Department) =>
+          dept.name.trim().toLowerCase(),
+        ),
+      );
+      const existingDepartmentCodes = new Set(
+        (departmentsList?.data ?? []).map((dept: Department) =>
+          dept.code.trim().toLowerCase(),
+        ),
+      );
 
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
         const rowLabel = `Row ${rowNum}`;
+        const name = String(row.name || "").trim();
+        const code = String(row.code || "").trim();
 
-        if (!String(row.name || "").trim()) {
+        if (!name) {
           errors.push(`${rowLabel}: Name is required`);
           return;
         }
 
-        if (!isEPM940 && !String(row.code || "").trim()) {
+        if (!/[A-Za-z]/.test(name)) {
+          errors.push(`${rowLabel}: Name must contain at least one letter`);
+          return;
+        }
+
+        if (!/^[A-Za-z0-9\s'".,&()/-]+$/.test(name)) {
+          errors.push(`${rowLabel}: Name contains invalid characters`);
+          return;
+        }
+
+        if (!isEPM940 && !code) {
           errors.push(`${rowLabel}: Code is required`);
           return;
         }
+
+        if (
+          existingDepartmentNames.has(name.toLowerCase()) ||
+          seenDepartmentNames.has(name.toLowerCase())
+        ) {
+          errors.push(`${rowLabel}: Duplicate department name "${name}"`);
+          return;
+        }
+
+        if (
+          code &&
+          (existingDepartmentCodes.has(code.toLowerCase()) ||
+            seenDepartmentCodes.has(code.toLowerCase()))
+        ) {
+          errors.push(`${rowLabel}: Duplicate department code "${code}"`);
+          return;
+        }
+
+        seenDepartmentNames.add(name.toLowerCase());
+        if (code) seenDepartmentCodes.add(code.toLowerCase());
 
         const parentName = String(row.parent_department || "").trim();
         const parentMatch = !parentName
@@ -1077,7 +1140,7 @@ export const DepartmentsPage: React.FC = () => {
                     <button
                       onClick={() => {
                         setIsActionsMenuOpen(false);
-                        handleExportExcel();
+                        openDepartmentExportModal();
                       }}
                       disabled={isExporting}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
@@ -1219,6 +1282,59 @@ export const DepartmentsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  Select departments to export
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  By default, all departments are selected.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={treeData?.data ?? []}
+                selectedIds={exportSelectedIds}
+                onSelectionChange={setExportSelectedIds}
+                colorScheme="primary"
+                maxHeight="280px"
+                leafOnly={false}
+                hierarchyType="department"
+                label="Departments"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(exportSelectedIds)}
+                disabled={exportSelectedIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                Export Excel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isImportModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
