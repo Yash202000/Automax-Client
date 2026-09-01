@@ -244,7 +244,10 @@
     "last7Days": "آخر 7 أيام",
     "last30Days": "آخر 30 يومًا",
     "system": "النظام",
-    "subject": "الموضوع"
+    "subject": "الموضوع",
+    "downloadExcelTemplate": "تحميل قالب Excel",
+    "exportExcel": "تصدير Excel",
+    "exportJson": "تصدير JSON"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
