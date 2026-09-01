@@ -537,9 +537,11 @@ export const IncidentDetailPage: React.FC = () => {
         setUserMatchResult(null);
         setSelectedDepartmentId("");
         setSelectedUserIds([]);
-        toast.info("Incident Updated", {
-          description:
+        toast.info(t("incidents.incidentUpdated", "Incident Updated"), {
+          description: t(
+            "incidents.incidentUpdatedDescription",
             "This incident was updated by another user. Please review the changes.",
+          ),
           duration: 5000,
         });
       }
@@ -687,9 +689,11 @@ export const IncidentDetailPage: React.FC = () => {
         errorMessage.includes("conflict") ||
         errorMessage.includes("modified by another user")
       ) {
-        toast.error("Conflict Detected", {
-          description:
+        toast.error(t("incidents.conflictDetected", "Conflict Detected"), {
+          description: t(
+            "incidents.incidentModifiedByAnotherUser",
             "This incident was modified by another user. Refreshing...",
+          ),
           duration: 5000,
         });
 
@@ -699,7 +703,7 @@ export const IncidentDetailPage: React.FC = () => {
           refetchTransitions();
         }, 1000);
       } else {
-        toast.error("Transition Failed", {
+        toast.error(t("incidents.transitionFailed", "Transition Failed"), {
           description: errorMessage,
         });
       }
@@ -750,7 +754,12 @@ export const IncidentDetailPage: React.FC = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
-      toast.success("Incident summary updated successfully");
+      toast.success(
+        t(
+          "incidents.summaryUpdatedSuccessfully",
+          "Incident summary updated successfully",
+        ),
+      );
       setIsEditingDescription(false);
       setIsSavingDescription(false);
     },
@@ -759,7 +768,7 @@ export const IncidentDetailPage: React.FC = () => {
         error.response?.data?.error ||
         error.message ||
         "Failed to update summary";
-      toast.error("Error", {
+      toast.error(t("incidents.error", "Error"), {
         description: errorMessage,
       });
       setIsSavingDescription(false);

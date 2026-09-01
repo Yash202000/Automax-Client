@@ -807,7 +807,16 @@
     "triggeredBy": "تم التشغيل بواسطة",
     "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال",
     "noLinkedSystems": "لا توجد أنظمة مرتبطة",
-    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا."
+    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا.",
+    "incidentUpdated": "تم تحديث الحادثة",
+    "incidentUpdatedDescription": "تم تحديث هذه الحادثة بواسطة مستخدم آخر. يرجى مراجعة التغييرات.",
+    "conflictDetected": "تم اكتشاف تعارض",
+    "incidentModifiedByAnotherUser": "تم تعديل هذه الحادثة بواسطة مستخدم آخر. جارٍ التحديث...",
+    "transitionFailed": "فشل تنفيذ الانتقال",
+    "summaryUpdatedSuccessfully": "تم تحديث ملخص الحادثة بنجاح",
+    "error": "خطأ",
+    "failedToSaveEditedImage": "تعذر حفظ الصورة المعدلة",
+    "requestInfoFailed": "فشل إرسال طلب الحصول على المعلومات"
   },
   "priorities": {
     "critical": "حرج",

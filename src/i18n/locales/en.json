@@ -808,7 +808,16 @@
     "triggeredBy": "Triggered by",
     "showingCommunications": "Showing {{from}}–{{to}} of {{total}} communications",
     "noLinkedSystems": "No linked systems",
-    "noLinkedSystemsDescription": "When this incident is sent to or received from another Automax system, the link will appear here."
+    "noLinkedSystemsDescription": "When this incident is sent to or received from another Automax system, the link will appear here.",
+    "incidentUpdated": "Incident Updated",
+    "incidentUpdatedDescription": "This incident was updated by another user. Please review the changes.",
+    "conflictDetected": "Conflict Detected",
+    "incidentModifiedByAnotherUser": "This incident was modified by another user. Refreshing...",
+    "transitionFailed": "Transition Failed",
+    "summaryUpdatedSuccessfully": "Incident summary updated successfully",
+    "error": "Error",
+    "failedToSaveEditedImage": "Failed to save edited image",
+    "requestInfoFailed": "Failed to send request for information"
   },
   "priorities": {
     "critical": "Critical",
