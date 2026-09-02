@@ -2192,7 +2192,50 @@
     "slaViolationSummary": "The configured SLA ({{slaLabel}}) exceeds the incident closure SLA for {{count}} classification(s).",
     "viewAffectedClassifications": "View Affected Classifications",
     "affectedClassifications": "Affected Classifications",
-    "maxAllowedSLA": "Max Allowed SLA"
+    "maxAllowedSLA": "Max Allowed SLA",
+    "formFields": {
+      "description": "Description",
+      "descriptionDesc": "Detailed incident description",
+
+      "classification": "Classification",
+      "classificationDesc": "Incident category/type",
+
+      "source": "Source",
+      "sourceDesc": "Where the incident originated",
+
+      "sourceIncidentReference": "Source Incident Reference",
+      "sourceIncidentReferenceDesc": "Link to related incident/complaint/query",
+
+      "assignee": "Assignee",
+      "assigneeDesc": "User assigned to handle",
+
+      "department": "Department",
+      "departmentDesc": "Responsible department",
+
+      "location": "Location",
+      "locationDesc": "Physical location",
+
+      "geolocation": "Geolocation",
+      "geolocationDesc": "GPS coordinates (latitude & longitude)",
+
+      "dueDate": "Due Date",
+      "dueDateDesc": "Resolution deadline",
+
+      "callerName": "Caller Name",
+      "callerNameDesc": "Name of caller",
+
+      "callerEmail": "Caller Email",
+      "callerEmailDesc": "Email of caller",
+
+      "callerPhoneNumber": "Caller Phone Number",
+      "callerPhoneNumberDesc": "Phone number of caller",
+
+      "attachments": "Attachments",
+      "attachmentsDesc": "File attachments for the incident",
+
+      "comment": "Comment",
+      "commentDesc": "Comment required when creating the incident"
+    }
   },
   "lookups": {
     "title": "Master Data",
