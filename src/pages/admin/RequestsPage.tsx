@@ -85,7 +85,7 @@ const loadColumnsFromStorage = (): ColumnConfig[] => {
 };
 
 export const RequestsPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { user } = useAuthStore();
