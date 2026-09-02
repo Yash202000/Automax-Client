@@ -55,7 +55,6 @@ export function CitizenIncidentUpdatePage() {
     queryKey: ["lookups", "categories", "env_config"],
     queryFn: async () => {
       const categories = await lookupApi.listCategories();
-      console.log(categories);
       return (
         (categories.data || []).find((cat) => cat.code === "CONFG") || null
       );
