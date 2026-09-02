@@ -614,7 +614,8 @@ export const LocationsPage: React.FC = () => {
         { header: "is_active", key: "is_active", width: 12 },
       ];
 
-      const allLocations = flattenLocations(list);
+      const allLocations =
+        typeof selectedIds === "undefined" ? flattenLocations(list) : list;
       const nameById = new Map<string, string>();
       allLocations.forEach((loc) => nameById.set(loc.id, loc.name));
 

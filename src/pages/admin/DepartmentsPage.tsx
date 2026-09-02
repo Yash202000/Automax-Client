@@ -750,7 +750,8 @@ export const DepartmentsPage: React.FC = () => {
         { header: "is_active", key: "is_active", width: 12 },
       ];
 
-      const allDepartments = flattenDepartments(list);
+      const allDepartments =
+        typeof selectedIds === "undefined" ? flattenDepartments(list) : list;
       const nameById = new Map<string, string>();
       allDepartments.forEach((dept) => nameById.set(dept.id, dept.name));
 
