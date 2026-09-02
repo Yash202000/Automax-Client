@@ -48,6 +48,7 @@ import {
   Phone,
   Maximize2,
   Mail,
+  Globe2,
 } from "lucide-react";
 import {
   Button,
@@ -3293,6 +3294,33 @@ export const IncidentDetailPage: React.FC = () => {
                         </div>
                       ) : (
                         incident.department.name
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* MOMRA External Entity assignment (docs/MOMRA_Outbound_Integration_Spec_v1.0.md §7) */}
+                {incident.external_entity && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t("incidents.externalEntity")}
+                    </label>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Globe2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      <span className="font-semibold">
+                        {incident.external_entity.name}
+                      </span>
+                      {incident.external_assignment_status && (
+                        <span className="text-xs px-2 py-0.5 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-full capitalize">
+                          {incident.external_assignment_status}
+                        </span>
+                      )}
+                      {incident.external_assigned_at && (
+                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                          {new Date(
+                            incident.external_assigned_at,
+                          ).toLocaleString()}
+                        </span>
                       )}
                     </div>
                   </div>

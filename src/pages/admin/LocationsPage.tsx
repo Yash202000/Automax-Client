@@ -50,6 +50,7 @@ interface LocationFormData {
   parent_id: string;
   parent_name: string;
   address: string;
+  external_id: string;
 }
 
 const initialFormData: LocationFormData = {
@@ -62,6 +63,7 @@ const initialFormData: LocationFormData = {
   parent_id: "",
   parent_name: "",
   address: "",
+  external_id: "",
 };
 
 const locationTypes = [
@@ -422,6 +424,7 @@ export const LocationsPage: React.FC = () => {
       parent_id: location.parent_id || "",
       parent_name: parentLoc?.name || "",
       address: location.address,
+      external_id: location.external_id || "",
     });
     setIsModalOpen(true);
   };
@@ -501,6 +504,7 @@ export const LocationsPage: React.FC = () => {
       type: formData.type,
       parent_id: formData.parent_id || undefined,
       address: formData.address,
+      external_id: formData.external_id.trim() || undefined,
     };
 
     if (editingLocation) {
@@ -1612,6 +1616,24 @@ export const LocationsPage: React.FC = () => {
                     )}
                   </div>
                 ) : null}
+
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                    {t("locations.externalId")}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t("locations.externalIdPlaceholder")}
+                    value={formData.external_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, external_id: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
+                  />
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    {t("locations.externalIdHint")}
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
