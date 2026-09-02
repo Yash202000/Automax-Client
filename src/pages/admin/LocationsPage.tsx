@@ -36,7 +36,7 @@ import type {
   Department,
 } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button } from "../../components/ui";
+import { Button, HierarchicalTreeSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 
@@ -300,6 +300,8 @@ export const LocationsPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportSelectedIds, setExportSelectedIds] = useState<string[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
 
@@ -451,17 +453,24 @@ export const LocationsPage: React.FC = () => {
       setViewLoading(false);
     }
   };
+  const validateLocationName = (name: string): string | undefined => {
+    const trimmed = name.trim();
+    if (!trimmed) return t("locations.nameRequired");
+    if (!/[A-Za-z]/.test(trimmed)) return t("common.nameInvalid");
+    if (!/^[A-Za-z0-9\s]+$/.test(trimmed)) {
+      return t("locations.invalidName");
+    }
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     const name = formData.name.trim();
     const name_ar = formData.name_ar.trim();
 
-    if (!name) {
-      newErrors.name = t("locations.nameRequired");
-    } else if (!/[A-Za-z]/.test(name)) {
-      newErrors.name = t("common.nameInvalid");
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
-      newErrors.name = t("locations.invalidName");
+    const nameError = validateLocationName(name);
+    if (nameError) {
+      newErrors.name = nameError;
     }
 
     if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
@@ -560,21 +569,35 @@ export const LocationsPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = async () => {
+  const flattenLocations = (nodes: Location[]): Location[] => {
+    const result: Location[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenLocations(node.children));
+      }
+    });
+    return result;
+  };
+
+  const openLocationExportModal = () => {
+    setExportSelectedIds(
+      flattenLocations(locationsList?.data ?? []).map(
+        (location) => location.id,
+      ),
+    );
+    setIsExportModalOpen(true);
+  };
+
+  const handleExportExcel = async (selectedIds?: string[]) => {
     try {
       setIsExporting(true);
-      const list = locationsList?.data ?? [];
-
-      const flattenLocations = (nodes: Location[]): Location[] => {
-        const result: Location[] = [];
-        nodes.forEach((node) => {
-          result.push(node);
-          if (node.children?.length) {
-            result.push(...flattenLocations(node.children));
-          }
-        });
-        return result;
-      };
+      const list =
+        typeof selectedIds === "undefined"
+          ? (locationsList?.data ?? [])
+          : flattenLocations(locationsList?.data ?? []).filter((location) =>
+              selectedIds.includes(location.id),
+            );
 
       const workbook = new ExcelJs.Workbook();
       const worksheet = workbook.addWorksheet("Locations");
@@ -591,7 +614,8 @@ export const LocationsPage: React.FC = () => {
         { header: "is_active", key: "is_active", width: 12 },
       ];
 
-      const allLocations = flattenLocations(list);
+      const allLocations =
+        typeof selectedIds === "undefined" ? flattenLocations(list) : list;
       const nameById = new Map<string, string>();
       allLocations.forEach((loc) => nameById.set(loc.id, loc.name));
 
@@ -619,6 +643,9 @@ export const LocationsPage: React.FC = () => {
         blob,
         `locations_export_${new Date().toISOString().split("T")[0]}.xlsx`,
       );
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
@@ -746,13 +773,16 @@ export const LocationsPage: React.FC = () => {
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
         const rowLabel = `Row ${rowNum}`;
+        const name = String(row.name || "").trim();
+        const code = String(row.code || "").trim();
 
-        if (!String(row.name || "").trim()) {
-          errors.push(`${rowLabel}: Name is required`);
+        const nameError = validateLocationName(name);
+        if (nameError) {
+          errors.push(`${rowLabel}: ${nameError}`);
           return;
         }
 
-        if (!isEPM940 && !String(row.code || "").trim()) {
+        if (!isEPM940 && !code) {
           errors.push(`${rowLabel}: Code is required`);
           return;
         }
@@ -918,7 +948,7 @@ export const LocationsPage: React.FC = () => {
                     <button
                       onClick={() => {
                         setIsActionsMenuOpen(false);
-                        handleExportExcel();
+                        openLocationExportModal();
                       }}
                       disabled={isExporting}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
@@ -1060,6 +1090,59 @@ export const LocationsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  Select locations to export
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  By default, all locations are selected.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={treeData?.data ?? []}
+                selectedIds={exportSelectedIds}
+                onSelectionChange={setExportSelectedIds}
+                colorScheme="primary"
+                maxHeight="300px"
+                leafOnly={false}
+                hierarchyType="location"
+                label="Locations"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(exportSelectedIds)}
+                disabled={exportSelectedIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                Export Excel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isImportModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

@@ -23,7 +23,7 @@ import {
 import { permissionApi, roleApi } from "../../api/admin";
 import type { Role } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button } from "../../components/ui";
+import { Button, HierarchicalTreeSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ExcelJs from "exceljs";
@@ -71,6 +71,8 @@ export const RolesPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedExportIds, setSelectedExportIds] = useState<string[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
 
@@ -115,6 +117,11 @@ export const RolesPage: React.FC = () => {
     },
   });
 
+  const openRoleExportModal = () => {
+    setSelectedExportIds((rolesData?.data ?? []).map((role) => role.id));
+    setIsExportModalOpen(true);
+  };
+
   const handleExportJson = async () => {
     try {
       setIsExporting(true);
@@ -140,11 +147,16 @@ export const RolesPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = async (selectedIds?: string[]) => {
     try {
       setIsExporting(true);
 
-      const roles = rolesData?.data ?? [];
+      const roles =
+        typeof selectedIds === "undefined"
+          ? (rolesData?.data ?? [])
+          : (rolesData?.data ?? []).filter((role) =>
+              selectedIds.includes(role.id),
+            );
 
       const workbook = new ExcelJs.Workbook();
       const worksheet = workbook.addWorksheet("Roles");
@@ -185,11 +197,26 @@ export const RolesPage: React.FC = () => {
         blob,
         `roles_export_${new Date().toISOString().split("T")[0]}.xlsx`,
       );
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const validateRoleName = (name: string): string | undefined => {
+    const trimmed = name.trim();
+    if (!trimmed) return "Name is required.";
+    if (!/[A-Za-z]/.test(trimmed)) {
+      return "Name must contain at least one letter.";
+    }
+    if (!/^[A-Za-z0-9\s\-'",.&()/]+$/.test(trimmed)) {
+      return "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /.";
+    }
+    return undefined;
   };
 
   const handleDownloadTemplate = async () => {
@@ -342,14 +369,22 @@ export const RolesPage: React.FC = () => {
 
       const seenCodes = new Set<string>();
 
+      const existingRoleNames = new Set(
+        (rolesData?.data ?? []).map((role) => role.name.trim().toLowerCase()),
+      );
+      const existingRoleCodes = new Set(
+        (rolesData?.data ?? []).map((role) => role.code.trim().toLowerCase()),
+      );
+
       rows.forEach((row, index) => {
         const excelRowNumber = index + 2;
 
         const name = row.name?.trim();
         const code = row.code?.trim();
 
-        if (!name) {
-          errors.push(`Row ${excelRowNumber}: Name is required.`);
+        const nameError = validateRoleName(name ?? "");
+        if (nameError) {
+          errors.push(`Row ${excelRowNumber}: ${nameError}`);
           return;
         }
 
@@ -358,14 +393,28 @@ export const RolesPage: React.FC = () => {
           return;
         }
 
+        const normalizedName = name.toLowerCase();
         const normalizedCode = code?.toLowerCase();
 
-        if (seenCodes.has(normalizedCode)) {
+        if (
+          existingRoleNames.has(normalizedName) ||
+          seenCodes.has(`name:${normalizedName}`)
+        ) {
+          errors.push(`Row ${excelRowNumber}: Duplicate role name "${name}".`);
+          return;
+        }
+
+        if (
+          normalizedCode &&
+          (existingRoleCodes.has(normalizedCode) ||
+            seenCodes.has(normalizedCode))
+        ) {
           errors.push(`Row ${excelRowNumber}: Duplicate role code "${code}".`);
           return;
         }
 
-        seenCodes.add(normalizedCode);
+        seenCodes.add(`name:${normalizedName}`);
+        if (normalizedCode) seenCodes.add(normalizedCode);
 
         const permissionCodes = row.permissions
           ? row.permissions
@@ -530,7 +579,7 @@ export const RolesPage: React.FC = () => {
                   <button
                     onClick={() => {
                       setIsActionsMenuOpen(false);
-                      handleExportExcel();
+                      openRoleExportModal();
                     }}
                     disabled={isExporting}
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-[hsl(var(--muted))]"
@@ -793,6 +842,62 @@ export const RolesPage: React.FC = () => {
                     : t("roles.deleteRole")}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  Select roles to export
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  By default, all roles are selected.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={(rolesData?.data ?? []).map((role) => ({
+                  id: role.id,
+                  name: role.name,
+                }))}
+                selectedIds={selectedExportIds}
+                onSelectionChange={setSelectedExportIds}
+                leafOnly={true}
+                colorScheme="primary"
+                maxHeight="300px"
+                label="Roles"
+                showExpandCollapse={false}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(selectedExportIds)}
+                disabled={selectedExportIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                Export Excel
+              </Button>
             </div>
           </div>
         </div>
