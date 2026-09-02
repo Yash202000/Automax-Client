@@ -823,7 +823,13 @@
     "summaryUpdatedSuccessfully": "Incident summary updated successfully",
     "error": "Error",
     "failedToSaveEditedImage": "Failed to save edited image",
-    "requestInfoFailed": "Failed to send request for information"
+    "requestInfoFailed": "Failed to send request for information",
+    "matchingLocation": "Matching location...",
+    "matchingLocationHint": "Matching geolocation to location master...",
+    "locationAutoMatched": "Location \"{{name}}\" auto-selected from master",
+    "locationDefaultMapped": "No matching location found. Mapped to \"Default\" location.",
+    "locationDefaultCreated": "No matching location found. Created and mapped to \"Default\" location.",
+    "locationMatchError": "Failed to match or create location. Please select manually."
   },
   "priorities": {
     "critical": "Critical",
