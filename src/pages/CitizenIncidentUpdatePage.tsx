@@ -104,9 +104,10 @@ export function CitizenIncidentUpdatePage() {
     },
   });
 
-  const MAX_ATTACHMENTS = (env_config?.values || []).find(
-    (v) => v.code === "CITIZEN_ATTACHMENT_LIMIT",
-  )?.name;
+  const MAX_ATTACHMENTS =
+    (env_config?.values || []).find(
+      (v) => v.code === "CITIZEN_ATTACHMENT_LIMIT",
+    )?.name || "5";
 
   const [attachmentLimitError, setAttachmentLimitError] = useState("");
 
