@@ -244,7 +244,10 @@
     "last7Days": "آخر 7 أيام",
     "last30Days": "آخر 30 يومًا",
     "system": "النظام",
-    "subject": "الموضوع"
+    "subject": "الموضوع",
+    "downloadExcelTemplate": "تحميل قالب Excel",
+    "exportExcel": "تصدير Excel",
+    "exportJson": "تصدير JSON"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -2196,7 +2199,50 @@
     "slaViolationSummary": "تتجاوز اتفاقية مستوى الخدمة المُكوّنة ({{slaLabel}}) مدة اتفاقية مستوى الخدمة المسموح بها لإغلاق الحادث لـ {{count}} من التصنيفات.",
     "viewAffectedClassifications": "عرض التصنيفات المتأثرة",
     "affectedClassifications": "التصنيفات المتأثرة",
-    "maxAllowedSLA": "الحد الأقصى المسموح به لاتفاقية مستوى الخدمة"
+    "maxAllowedSLA": "الحد الأقصى المسموح به لاتفاقية مستوى الخدمة",
+    "formFields": {
+      "description": "الوصف",
+      "descriptionDesc": "وصف تفصيلي للحادثة",
+
+      "classification": "التصنيف",
+      "classificationDesc": "فئة/نوع الحادثة",
+
+      "source": "المصدر",
+      "sourceDesc": "مكان نشأة الحادثة",
+
+      "sourceIncidentReference": "مرجع الحادثة المصدر",
+      "sourceIncidentReferenceDesc": "رابط للحادثة/الشكوى/الاستفسار المرتبط",
+
+      "assignee": "المسند إليه",
+      "assigneeDesc": "المستخدم المسند إليه للمعالجة",
+
+      "department": "القسم",
+      "departmentDesc": "القسم المسؤول",
+
+      "location": "الموقع",
+      "locationDesc": "الموقع الفعلي",
+
+      "geolocation": "الموقع الجغرافي",
+      "geolocationDesc": "إحداثيات GPS (خط العرض وخط الطول)",
+
+      "dueDate": "تاريخ الاستحقاق",
+      "dueDateDesc": "الموعد النهائي للحل",
+
+      "callerName": "اسم المتصل",
+      "callerNameDesc": "اسم المتصل",
+
+      "callerEmail": "بريد المتصل الإلكتروني",
+      "callerEmailDesc": "البريد الإلكتروني للمتصل",
+
+      "callerPhoneNumber": "رقم هاتف المتصل",
+      "callerPhoneNumberDesc": "رقم هاتف المتصل",
+
+      "attachments": "المرفقات",
+      "attachmentsDesc": "الملفات المرفقة بالحادثة",
+
+      "comment": "تعليق",
+      "commentDesc": "تعليق مطلوب عند إنشاء الحادثة"
+    }
   },
   "lookups": {
     "title": "البيانات الرئيسية",
