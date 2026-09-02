@@ -45,8 +45,20 @@ import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "@/stores/authStore";
 
 // Column configuration
+
+type ColumnId =
+  | "query"
+  | "source"
+  | "created_by"
+  | "source_incident"
+  | "state"
+  | "assignee"
+  | "department"
+  | "created_at"
+  | "evaluation"
+  | "actions";
 interface ColumnConfig {
-  id: string;
+  id: ColumnId;
   label: string;
   visible: boolean;
   required?: boolean;
@@ -74,9 +86,13 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
   const defaultColumns = useMemo<ColumnConfig[]>(
     () => [
       { id: "query", label: t("queries.query"), visible: true, required: true },
-      { id: "channel", label: t("common.channel"), visible: true },
+      { id: "source", label: t("queries.source"), visible: true },
       { id: "created_by", label: t("queries.createdBy"), visible: true },
-      { id: "source", label: t("queries.sourceIncident"), visible: true },
+      {
+        id: "source_incident",
+        label: t("queries.sourceIncident"),
+        visible: true,
+      },
       { id: "state", label: t("common.state"), visible: true },
       { id: "assignee", label: t("common.assignee"), visible: true },
       { id: "department", label: t("common.department"), visible: false },
@@ -92,7 +108,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
     [t],
   );
 
-  const channelTranslationKeys: Record<string, string> = {
+  const sourceTranslationKeys: Record<string, string> = {
     phone: "channels.phone",
     email: "channels.email",
     web: "channels.web",
@@ -218,7 +234,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
     );
   };
 
-  const isColumnVisible = (columnId: string) => {
+  const isColumnVisible = (columnId: ColumnId) => {
     return columns.find((c) => c.id === columnId)?.visible ?? true;
   };
 
@@ -360,7 +376,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
     filter.workflow_id ||
     filter.current_state_id ||
     (filter.classification_ids && filter.classification_ids.length > 0) ||
-    filter.channel ||
+    filter.source ||
     filter.assignee_id ||
     (filter.department_ids && filter.department_ids.length > 0)
   );
@@ -609,12 +625,12 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
             </div>
             <div>
               <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
-                {t("common.channel")}
+                {t("common.source")}
               </label>
               <select
-                value={filter.channel || ""}
+                value={filter.source || ""}
                 onChange={(e) =>
-                  handleFilterChange("channel", e.target.value || undefined)
+                  handleFilterChange("source", e.target.value || undefined)
                 }
                 className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
@@ -772,10 +788,10 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                         </span>
                       </th>
                     )}
-                    {isColumnVisible("channel") && (
+                    {isColumnVisible("source") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                          {t("common.channel")}
+                          {t("common.source")}
                         </span>
                       </th>
                     )}
@@ -786,7 +802,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                         </span>
                       </th>
                     )}
-                    {isColumnVisible("source") && (
+                    {isColumnVisible("source_incident") && (
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("queries.sourceIncident")}
@@ -856,12 +872,12 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                           </div>
                         </td>
                       )}
-                      {isColumnVisible("channel") && (
+                      {isColumnVisible("source") && (
                         <td className="px-6 py-4">
                           {query.source ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
                               {t(
-                                channelTranslationKeys[query.source] ||
+                                sourceTranslationKeys[query.source] ||
                                   query.source,
                               )}
                             </span>
@@ -896,7 +912,7 @@ export const QueriesPage: React.FC<QueriesPageProps> = ({ listType }) => {
                           )}
                         </td>
                       )}
-                      {isColumnVisible("source") && (
+                      {isColumnVisible("source_incident") && (
                         <td className="px-6 py-4">
                           {query.source_incident ? (
                             <Link
