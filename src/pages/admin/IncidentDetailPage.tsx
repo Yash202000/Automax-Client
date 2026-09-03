@@ -117,6 +117,7 @@ import type { IncidentBridge } from "../../api/integration";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import { IncidentMentionTextarea } from "@/components/common/IncidentMentionTextarea";
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -1476,6 +1477,13 @@ export const IncidentDetailPage: React.FC = () => {
     );
   }
 
+  const generatedTitle = generateRecordTitle({
+    classification: incident.classification,
+    location: incident.location,
+    city: incident.city,
+    address: incident.address,
+  });
+
   const customFields = incident?.custom_fields
     ? JSON.parse(incident.custom_fields)
     : null;
@@ -1503,7 +1511,7 @@ export const IncidentDetailPage: React.FC = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-semibold text-yellow-900">
                   {otherUsers.length === 1
-                    ? t("alsoViewing")
+                    ? t("incidents.alsoViewing")
                     : t("usersViewing", { count: otherUsers.length })}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1584,7 +1592,7 @@ export const IncidentDetailPage: React.FC = () => {
                     incident.current_state.color || "hsl(var(--foreground))",
                 }}
               >
-                {incident.current_state.name}
+                {getLocalizedName(incident.current_state)}
               </span>
             )}
             {incident.sla_breached && (
@@ -1633,7 +1641,7 @@ export const IncidentDetailPage: React.FC = () => {
               })()}
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-            {incident.title}
+            {generatedTitle}
           </h1>
 
           {/* Converted Request Link */}

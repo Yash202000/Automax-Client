@@ -814,7 +814,8 @@
     "triggeredBy": "Triggered by",
     "showingCommunications": "Showing {{from}}–{{to}} of {{total}} communications",
     "noLinkedSystems": "No linked systems",
-    "noLinkedSystemsDescription": "When this incident is sent to or received from another Automax system, the link will appear here."
+    "noLinkedSystemsDescription": "When this incident is sent to or received from another Automax system, the link will appear here.",
+    "defaultLocation": "Default location"
   },
   "priorities": {
     "critical": "Critical",

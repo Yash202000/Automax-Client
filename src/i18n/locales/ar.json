@@ -813,7 +813,8 @@
     "triggeredBy": "تم التشغيل بواسطة",
     "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال",
     "noLinkedSystems": "لا توجد أنظمة مرتبطة",
-    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا."
+    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا.",
+    "defaultLocation": "الموقع الافتراضي"
   },
   "priorities": {
     "critical": "حرج",
