@@ -774,6 +774,19 @@ export const LocationsPage: React.FC = () => {
       const errors: string[] = [];
       const validPayloads: Array<Record<string, unknown>> = [];
 
+      const seenLocationNames = new Set<string>();
+      const seenLocationCodes = new Set<string>();
+      const existingLocationNames = new Set(
+        flattenLocations(locationsList?.data ?? []).map((loc) =>
+          loc.name.trim().toLowerCase(),
+        ),
+      );
+      const existingLocationCodes = new Set(
+        flattenLocations(locationsList?.data ?? []).map((loc) =>
+          loc.code.trim().toLowerCase(),
+        ),
+      );
+
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
         const rowLabel = `Row ${rowNum}`;
@@ -790,6 +803,29 @@ export const LocationsPage: React.FC = () => {
           errors.push(`${rowLabel}: Code is required`);
           return;
         }
+
+        const normalizedName = name.toLowerCase();
+        const normalizedCode = code.toLowerCase();
+
+        if (
+          existingLocationNames.has(normalizedName) ||
+          seenLocationNames.has(normalizedName)
+        ) {
+          errors.push(`${rowLabel}: Duplicate location name "${name}"`);
+          return;
+        }
+
+        if (
+          normalizedCode &&
+          (existingLocationCodes.has(normalizedCode) ||
+            seenLocationCodes.has(normalizedCode))
+        ) {
+          errors.push(`${rowLabel}: Duplicate location code "${code}"`);
+          return;
+        }
+
+        seenLocationNames.add(normalizedName);
+        if (normalizedCode) seenLocationCodes.add(normalizedCode);
 
         const parentName = String(row.parent_location || "").trim();
         const parentMatch = !parentName

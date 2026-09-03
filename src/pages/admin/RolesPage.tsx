@@ -28,6 +28,11 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ExcelJs from "exceljs";
 import { saveAs } from "file-saver";
+import {
+  validateCode,
+  validateRoleName,
+  validateRequired,
+} from "@/utils/validations";
 
 const normalizeImportHeader = (header: string | undefined) => {
   if (!header) return "";
@@ -166,13 +171,6 @@ export const RolesPage: React.FC = () => {
         { header: "code", key: "code", width: 26 },
         { header: "description", key: "description", width: 40 },
         { header: "permissions", key: "permissions", width: 50 },
-        { header: "is_system", key: "is_system", width: 12 },
-        {
-          header: "is_department_manager",
-          key: "is_department_manager",
-          width: 22,
-        },
-        { header: "is_active", key: "is_active", width: 12 },
       ];
 
       roles.forEach((role: Role) => {
@@ -181,9 +179,6 @@ export const RolesPage: React.FC = () => {
           code: role.code,
           description: role.description || "",
           permissions: role.permissions?.map((p) => p.code).join(", ") || "",
-          is_system: role.is_system ? "Yes" : "No",
-          is_department_manager: role.is_department_manager ? "Yes" : "No",
-          is_active: role.is_active ? "Yes" : "No",
         });
       });
 
@@ -207,18 +202,6 @@ export const RolesPage: React.FC = () => {
     }
   };
 
-  const validateRoleName = (name: string): string | undefined => {
-    const trimmed = name.trim();
-    if (!trimmed) return "Name is required.";
-    if (!/[A-Za-z]/.test(trimmed)) {
-      return "Name must contain at least one letter.";
-    }
-    if (!/^[A-Za-z0-9\s\-'",.&()/]+$/.test(trimmed)) {
-      return "Name can only contain letters, numbers, spaces, and - ' . , & ( ) /.";
-    }
-    return undefined;
-  };
-
   const handleDownloadTemplate = async () => {
     const workbook = new ExcelJs.Workbook();
     const worksheet = workbook.addWorksheet("Roles");
@@ -230,12 +213,6 @@ export const RolesPage: React.FC = () => {
         : [{ header: "code (Required)", key: "code", width: 26 }]),
       { header: "description (Optional)", key: "description", width: 40 },
       { header: "permissions (Optional)", key: "permissions", width: 50 },
-      {
-        header: "is_department_manager (Optional)",
-        key: "is_department_manager",
-        width: 28,
-      },
-      { header: "is_active (Optional)", key: "is_active", width: 12 },
     ];
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -379,18 +356,27 @@ export const RolesPage: React.FC = () => {
       rows.forEach((row, index) => {
         const excelRowNumber = index + 2;
 
-        const name = row.name?.trim();
-        const code = row.code?.trim();
+        const name = row.name?.trim() ?? "";
+        const code = row.code?.trim() ?? "";
 
-        const nameError = validateRoleName(name ?? "");
-        if (nameError) {
-          errors.push(`Row ${excelRowNumber}: ${nameError}`);
+        if (!validateRequired(name)) {
+          errors.push(`Row ${excelRowNumber}: ${t("roles.nameRequired")}`);
+          return;
+        }
+        if (!validateRoleName(name)) {
+          errors.push(`Row ${excelRowNumber}: ${t("roles.invalidName")}`);
           return;
         }
 
-        if (!isEPM940 && !code) {
-          errors.push(`Row ${excelRowNumber}: Code is required.`);
-          return;
+        if (!isEPM940) {
+          if (!validateRequired(code)) {
+            errors.push(`Row ${excelRowNumber}: ${t("roles.codeRequired")}`);
+            return;
+          }
+          if (!validateCode(code)) {
+            errors.push(`Row ${excelRowNumber}: ${t("roles.invalidCode")}`);
+            return;
+          }
         }
 
         const normalizedName = name.toLowerCase();
@@ -441,19 +427,11 @@ export const RolesPage: React.FC = () => {
           permissionIds.push(permission.id);
         }
 
-        const parseBoolean = (value?: string) => {
-          if (!value) return false;
-
-          return ["true", "yes", "1"].includes(value.trim().toLowerCase());
-        };
-
         validPayloads.push({
           name,
           code,
           description: row.description?.trim() || "",
           permission_ids: permissionIds,
-          is_department_manager: parseBoolean(row.is_department_manager),
-          is_active: parseBoolean(row.is_active),
         });
       });
 

@@ -90,6 +90,8 @@ export interface Classification {
   sort_order: number;
   criticalities?: ClassificationCriticality[];
   children?: Classification[];
+  locations?: Location[];
+  roles?: Role[];
   created_at: string;
 }
 
@@ -484,6 +486,8 @@ export interface ClassificationCreateRequest {
   parent_id?: string;
   sort_order?: number;
   criticalities?: ClassificationCriticalityCreateRequest[];
+  location_ids?: string[];
+  role_ids?: string[];
 }
 
 export interface ClassificationCriticalityCreateRequest {
@@ -498,6 +502,8 @@ export interface ClassificationUpdateRequest {
   types?: string[];
   is_active?: boolean;
   sort_order?: number;
+  location_ids?: string[];
+  role_ids?: string[];
 }
 
 // Location request types

@@ -650,6 +650,46 @@ export const DepartmentsPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [field]: [] }));
   };
 
+  const flattenTree = <T extends { children?: T[] }>(nodes: T[]): T[] => {
+    const result: T[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenTree(node.children));
+      }
+    });
+    return result;
+  };
+
+  const resolveImportRelationIds = (
+    raw: string | undefined,
+    items: Array<{ id: string; name: string; code?: string }>,
+    label: string,
+  ): { ids: string[]; errors: string[] } => {
+    const errors: string[] = [];
+    const ids: string[] = [];
+
+    String(raw || "")
+      .split(/[;,]/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((name) => {
+        const match = items.find(
+          (item) =>
+            item.name.trim().toLowerCase() === name.toLowerCase() ||
+            (item.code &&
+              item.code.trim().toLowerCase() === name.toLowerCase()),
+        );
+        if (!match) {
+          errors.push(`${label} "${name}" was not found`);
+          return;
+        }
+        ids.push(match.id);
+      });
+
+    return { ids, errors };
+  };
+
   const normalizeImportHeader = (header: string | undefined) => {
     if (!header) return "";
 
@@ -811,6 +851,13 @@ export const DepartmentsPage: React.FC = () => {
         key: "parent_department",
         width: 26,
       },
+      { header: "locations (Optional)", key: "locations", width: 28 },
+      {
+        header: "classifications (Optional)",
+        key: "classifications",
+        width: 28,
+      },
+      { header: "roles (Optional)", key: "roles", width: 28 },
     ];
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -974,53 +1021,34 @@ export const DepartmentsPage: React.FC = () => {
           return;
         }
 
-        const locationIds = String(row.locations || "")
-          .split(/[;,]/)
-          .map((value) => value.trim())
-          .filter(Boolean)
-          .map((name) => {
-            const match = (locationsData?.data ?? []).find(
-              (loc: any) =>
-                loc.name.trim().toLowerCase() === name.toLowerCase() ||
-                loc.code.trim().toLowerCase() === name.toLowerCase(),
-            );
-            if (!match) {
-              throw new Error(`Location "${name}" was not found`);
-            }
-            return match.id;
-          });
+        const locationResult = resolveImportRelationIds(
+          row.locations,
+          flattenTree(locationsData?.data ?? []),
+          "Location",
+        );
+        const classificationResult = resolveImportRelationIds(
+          row.classifications,
+          flattenTree(classificationsData?.data ?? []),
+          "Classification",
+        );
+        const roleResult = resolveImportRelationIds(
+          row.roles,
+          rolesData?.data ?? [],
+          "Role",
+        );
 
-        const classificationIds = String(row.classifications || "")
-          .split(/[;,]/)
-          .map((value) => value.trim())
-          .filter(Boolean)
-          .map((name) => {
-            const match = (classificationsData?.data ?? []).find(
-              (cls: any) =>
-                cls.name.trim().toLowerCase() === name.toLowerCase() ||
-                cls.code?.trim().toLowerCase() === name.toLowerCase(),
-            );
-            if (!match) {
-              throw new Error(`Classification "${name}" was not found`);
-            }
-            return match.id;
-          });
+        const relationErrors = [
+          ...locationResult.errors,
+          ...classificationResult.errors,
+          ...roleResult.errors,
+        ];
 
-        const roleIds = String(row.roles || "")
-          .split(/[;,]/)
-          .map((value) => value.trim())
-          .filter(Boolean)
-          .map((name) => {
-            const match = (rolesData?.data ?? []).find(
-              (role: any) =>
-                role.name.trim().toLowerCase() === name.toLowerCase() ||
-                role.code.trim().toLowerCase() === name.toLowerCase(),
-            );
-            if (!match) {
-              throw new Error(`Role "${name}" was not found`);
-            }
-            return match.id;
-          });
+        if (relationErrors.length > 0) {
+          relationErrors.forEach((relationError) =>
+            errors.push(`${rowLabel}: ${relationError}`),
+          );
+          return;
+        }
 
         validPayloads.push({
           name: String(row.name || "").trim(),
@@ -1032,9 +1060,9 @@ export const DepartmentsPage: React.FC = () => {
             | "internal"
             | "external",
           parent_id: parentMatch?.id || undefined,
-          location_ids: locationIds,
-          classification_ids: classificationIds,
-          role_ids: roleIds,
+          location_ids: locationResult.ids,
+          classification_ids: classificationResult.ids,
+          role_ids: roleResult.ids,
         });
       });
 

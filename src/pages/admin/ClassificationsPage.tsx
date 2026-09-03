@@ -23,6 +23,9 @@ import {
   Search,
   MoreHorizontal,
   FileSpreadsheet,
+  MapPin,
+  Shield,
+  Crown,
 } from "lucide-react";
 import {
   classificationApi,
@@ -30,6 +33,8 @@ import {
   userApi,
   departmentApi,
   escalationPolicyApi,
+  locationApi,
+  roleApi,
 } from "../../api/admin";
 import type {
   Classification,
@@ -41,6 +46,8 @@ import type {
   User,
   Department,
   EscalationPolicy,
+  Role,
+  Location,
 } from "../../types";
 import { cn } from "@/lib/utils";
 import {
@@ -74,6 +81,8 @@ interface ClassificationFormData {
   sort_order: number;
   types: string[];
   criticalities: CriticalityDraft[];
+  location_ids: string[];
+  role_ids: string[];
 }
 
 const initialFormData: ClassificationFormData = {
@@ -86,6 +95,8 @@ const initialFormData: ClassificationFormData = {
   sort_order: 0,
   types: ["incident", "request"],
   criticalities: [],
+  location_ids: [],
+  role_ids: [],
 };
 
 // Per-type chip styling
@@ -429,6 +440,16 @@ export const ClassificationsPage: React.FC = () => {
     queryFn: () => classificationApi.list(),
   });
 
+  const { data: locationsData } = useQuery({
+    queryKey: ["admin", "locations", "tree"],
+    queryFn: () => locationApi.getTree(),
+  });
+
+  const { data: rolesData } = useQuery({
+    queryKey: ["admin", "roles"],
+    queryFn: () => roleApi.list(),
+  });
+
   // Fetch PRIORITY lookup values for criticality configuration
   const { data: priorityLookupData } = useQuery({
     queryKey: ["admin", "lookups", "priority"],
@@ -529,6 +550,23 @@ export const ClassificationsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const toggleItem = (field: "location_ids" | "role_ids", id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].includes(id)
+        ? prev[field].filter((i) => i !== id)
+        : [...prev[field], id],
+    }));
+  };
+
+  const selectAll = (field: "location_ids" | "role_ids", ids: string[]) => {
+    setFormData((prev) => ({ ...prev, [field]: ids }));
+  };
+
+  const clearAll = (field: "location_ids" | "role_ids") => {
+    setFormData((prev) => ({ ...prev, [field]: [] }));
+  };
+
   const openEditModal = (classification: Classification) => {
     const parentCls = classificationsList?.data?.find(
       (c: Classification) => c.id === classification.parent_id,
@@ -571,6 +609,8 @@ export const ClassificationsPage: React.FC = () => {
         ? classification.types
         : ["incident", "request"],
       criticalities,
+      location_ids: classification.locations?.map((l) => l.id) || [],
+      role_ids: classification.roles?.map((r) => r.id) || [],
     });
     setIsModalOpen(true);
   };
@@ -654,6 +694,8 @@ export const ClassificationsPage: React.FC = () => {
         ...c,
         max_closing_minutes: c.max_closing_minutes ?? 0,
       })),
+      location_ids: formData.location_ids,
+      role_ids: formData.role_ids,
     };
 
     if (editingClassification) {
@@ -735,6 +777,84 @@ export const ClassificationsPage: React.FC = () => {
     return { types: Array.from(new Set(tokens)) };
   };
 
+  type ImportCriticality = {
+    criticality_id: string;
+    max_closing_hours: number;
+    max_closing_minutes: number;
+    escalation_policy_id?: string;
+  };
+
+  const parseImportCriticalitiesField = (
+    raw: string,
+  ): { criticalities: ImportCriticality[]; error?: string } => {
+    const trimmed = raw.trim();
+    if (!trimmed) return { criticalities: [] };
+
+    const entries = trimmed
+      .split(";")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+    const criticalities: ImportCriticality[] = [];
+
+    for (const entry of entries) {
+      const match = entry.match(
+        /^(.+?):\s*(\d+)\s*h\s*(\d+)\s*m(?:\s*\((.+)\))?$/i,
+      );
+      if (!match) {
+        return {
+          criticalities: [],
+          error: `Invalid criticality format "${entry}". Expected e.g. "Critical: 0h 1m".`,
+        };
+      }
+      const [, priorityNameRaw, hoursRaw, minutesRaw, policyNameRaw] = match;
+      const priorityName = priorityNameRaw.trim();
+      const hours = parseInt(hoursRaw, 10);
+      const minutes = parseInt(minutesRaw, 10);
+
+      const priority = priorityValues.find(
+        (p) => p.name.trim().toLowerCase() === priorityName.toLowerCase(),
+      );
+      if (!priority) {
+        return {
+          criticalities: [],
+          error: `Unknown criticality "${priorityName}". Allowed: ${priorityValues.map((p) => p.name).join(", ")}.`,
+        };
+      }
+
+      if (hours < 0 || hours > 840 || minutes < 0 || minutes > 59) {
+        return {
+          criticalities: [],
+          error: `Invalid closing time for "${priorityName}". Hours must be 0-840 and minutes 0-59.`,
+        };
+      }
+
+      let escalationPolicyId: string | undefined;
+      if (policyNameRaw) {
+        const policyName = policyNameRaw.trim();
+        const policy = escalationPolicies.find(
+          (p) => p.name.trim().toLowerCase() === policyName.toLowerCase(),
+        );
+        if (!policy) {
+          return {
+            criticalities: [],
+            error: `Escalation policy "${policyName}" was not found.`,
+          };
+        }
+        escalationPolicyId = policy.id;
+      }
+
+      criticalities.push({
+        criticality_id: priority.id,
+        max_closing_hours: hours,
+        max_closing_minutes: minutes,
+        escalation_policy_id: escalationPolicyId,
+      });
+    }
+
+    return { criticalities };
+  };
+
   const resolveImportParentClassification = (
     parentNameRaw: string,
   ): { id?: string; error?: string } => {
@@ -765,6 +885,46 @@ export const ClassificationsPage: React.FC = () => {
       }
     });
     return result;
+  };
+
+  const flattenLocationTree = (nodes: Location[]): Location[] => {
+    const result: Location[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenLocationTree(node.children));
+      }
+    });
+    return result;
+  };
+
+  const resolveImportRelationIds = (
+    raw: string | undefined,
+    items: Array<{ id: string; name: string; code?: string }>,
+    label: string,
+  ): { ids: string[]; errors: string[] } => {
+    const errors: string[] = [];
+    const ids: string[] = [];
+
+    String(raw || "")
+      .split(/[;,]/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((name) => {
+        const match = items.find(
+          (item) =>
+            item.name.trim().toLowerCase() === name.toLowerCase() ||
+            (item.code &&
+              item.code.trim().toLowerCase() === name.toLowerCase()),
+        );
+        if (!match) {
+          errors.push(`${label} "${name}" was not found`);
+          return;
+        }
+        ids.push(match.id);
+      });
+
+    return { ids, errors };
   };
 
   const getAllClassificationIds = (nodes: Classification[] = []): string[] => {
@@ -850,6 +1010,9 @@ export const ClassificationsPage: React.FC = () => {
         { header: "level", key: "level", width: 8 },
         { header: "path", key: "path", width: 26 },
         { header: "types", key: "types", width: 24 },
+        { header: "locations", key: "locations", width: 28 },
+        { header: "roles", key: "roles", width: 28 },
+        { header: "sort_order", key: "sort_order", width: 12 },
         { header: "is_active", key: "is_active", width: 10 },
         { header: "criticalities", key: "criticalities", width: 40 },
       ];
@@ -867,6 +1030,9 @@ export const ClassificationsPage: React.FC = () => {
           level: c.level,
           path: c.path || "",
           types: (c.types ?? []).join(", "),
+          locations: c.locations?.map((loc) => loc.name).join(", ") || "",
+          roles: c.roles?.map((role) => role.name).join(", ") || "",
+          sort_order: c.sort_order,
           is_active: c.is_active ? "Yes" : "No",
           criticalities: formatCriticalities(c.criticalities),
         });
@@ -910,6 +1076,10 @@ export const ClassificationsPage: React.FC = () => {
         width: 30,
       },
       { header: "types (Required)", key: "types", width: 34 },
+      { header: "locations (Optional)", key: "locations", width: 28 },
+      { header: "roles (Optional)", key: "roles", width: 28 },
+      { header: "sort_order (Optional)", key: "sort_order", width: 12 },
+      { header: "criticalities (Optional)", key: "criticalities", width: 50 },
     ];
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -1081,6 +1251,38 @@ export const ClassificationsPage: React.FC = () => {
           resolveImportParentClassification(row.parent_classification || "");
         if (parentError) rowErrors.push(`${rowLabel}: ${parentError}`);
 
+        const locationResult = resolveImportRelationIds(
+          row.locations,
+          flattenLocationTree(locationsData?.data ?? []),
+          "Location",
+        );
+        const roleResult = resolveImportRelationIds(
+          row.roles,
+          rolesData?.data ?? [],
+          "Role",
+        );
+        [...locationResult.errors, ...roleResult.errors].forEach((err) =>
+          rowErrors.push(`${rowLabel}: ${err}`),
+        );
+
+        const { criticalities, error: criticalitiesError } =
+          parseImportCriticalitiesField(row.criticalities || "");
+        if (criticalitiesError)
+          rowErrors.push(`${rowLabel}: ${criticalitiesError}`);
+
+        const sortOrderRaw = String(row.sort_order || "").trim();
+        let sortOrder = 0;
+        if (sortOrderRaw) {
+          const parsedSortOrder = Number(sortOrderRaw);
+          if (!Number.isInteger(parsedSortOrder) || parsedSortOrder < 0) {
+            rowErrors.push(
+              `${rowLabel}: Sort order must be a non-negative whole number.`,
+            );
+          } else {
+            sortOrder = parsedSortOrder;
+          }
+        }
+
         if (rowErrors.length > 0) {
           errors.push(...rowErrors);
           return;
@@ -1093,6 +1295,10 @@ export const ClassificationsPage: React.FC = () => {
           description_ar: row.description_ar?.trim() || undefined,
           parent_id: parentId,
           types,
+          location_ids: locationResult.ids,
+          role_ids: roleResult.ids,
+          criticalities: criticalities.length ? criticalities : undefined,
+          sort_order: sortOrder,
         });
       });
 
@@ -2088,6 +2294,100 @@ export const ClassificationsPage: React.FC = () => {
                 <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                   {t("classifications.sortOrderHelp")}
                 </p>
+              </div>
+
+              {/* Locations */}
+              <div>
+                <HierarchicalTreeSelect
+                  data={locationsData?.data || []}
+                  selectedIds={formData.location_ids}
+                  onSelectionChange={(ids) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      location_ids: ids,
+                    }))
+                  }
+                  label={t("classifications.locations", "Locations")}
+                  icon={
+                    <MapPin className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                  }
+                  emptyMessage={t(
+                    "departments.noLocationsAvailable",
+                    "No locations available",
+                  )}
+                  colorScheme="primary"
+                  maxHeight="192px"
+                />
+              </div>
+
+              {/* Default Roles */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                  <label className="text-sm font-medium text-[hsl(var(--foreground))]">
+                    {t("classifications.defaultRoles", "Default Roles")}
+                  </label>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] rounded-md">
+                    {formData.role_ids.length}{" "}
+                    {t("common.selected").toLowerCase()}
+                  </span>
+                  <div className="ml-auto flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selectAll(
+                          "role_ids",
+                          (rolesData?.data || []).map((r: Role) => r.id),
+                        )
+                      }
+                      className="text-xs text-[hsl(var(--primary))] hover:underline"
+                    >
+                      {t("common.selectAll")}
+                    </button>
+                    <span className="text-[hsl(var(--muted-foreground))]">
+                      ·
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => clearAll("role_ids")}
+                      className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
+                    >
+                      {t("common.clear")}
+                    </button>
+                  </div>
+                </div>
+                <div className="border border-[hsl(var(--border))] rounded-xl max-h-48 overflow-y-auto p-3">
+                  <div className="flex flex-col gap-1">
+                    {rolesData?.data?.length === 0 ? (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {t(
+                          "departments.noRolesAvailable",
+                          "No roles available",
+                        )}
+                      </p>
+                    ) : (
+                      rolesData?.data?.map((role: Role) => (
+                        <label
+                          key={role.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--muted)/0.5)] cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.role_ids.includes(role.id)}
+                            onChange={() => toggleItem("role_ids", role.id)}
+                            className="w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] accent-[hsl(var(--primary))]"
+                          />
+                          <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1">
+                            {role.is_department_manager && (
+                              <Crown className="w-3.5 h-3.5 text-indigo-500" />
+                            )}
+                            {role.name}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Criticality Configuration Section */}

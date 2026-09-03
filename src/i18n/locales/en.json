@@ -1226,8 +1226,8 @@
     "errors": "Errors:",
     "eGContentManager": "e.g., Content Manager",
     "roleKeyExample": "e.g., content_manager",
-    "invalidName": "Role name must contain at least one letter or number",
-    "invalidCode": "Role code must contain at least one letter or number"
+    "invalidName": "Role name can only contain letters, numbers, spaces, and - & ( )",
+    "invalidCode": "Role code can only contain lowercase letters, numbers, underscores, and hyphens"
   },
   "departments": {
     "title": "Departments",
@@ -1435,6 +1435,8 @@
     "typeMobile": "Mobile Only",
     "sortOrder": "Sort Order",
     "sortOrderHelp": "Lower numbers appear first",
+    "locations": "Locations",
+    "defaultRoles": "Default Roles",
     "saving": "Saving...",
     "active": "Active",
     "inactive": "Inactive",
