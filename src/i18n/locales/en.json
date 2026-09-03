@@ -472,6 +472,7 @@
     "description": "Description",
     "location": "Location",
     "department": "Department",
+    "externalEntity": "Responsible External Entity",
     "assignee": "Assignee",
     "reporter": "Reporter",
     "callerInformation": "Caller Information",
@@ -1030,7 +1031,8 @@
     "integrations": "Integrations",
     "integrationScripts": "Scripts",
     "integrationVariables": "Secret Variables",
-    "webhookConfigs": "Webhook Callbacks"
+    "webhookConfigs": "Webhook Callbacks",
+    "momraIntegration": "MOMRA CRM Integration"
   },
   "users": {
     "title": "Users",
@@ -1368,6 +1370,9 @@
     "legend": "Legend:",
     "codePlaceholder": "e.g., NY-OFF",
     "namePlaceholder": "e.g., New York Office",
+    "externalId": "External Reference",
+    "externalIdPlaceholder": "e.g. MOMRA MunicipalityID",
+    "externalIdHint": "Optional reference ID from an external system, e.g. MOMRA's Municipality/Sub-Municipality code",
     "nameAr": "Name (Arabic)",
     "descriptionAr": "Description (Arabic)",
     "nameRequired": "Location name is required",

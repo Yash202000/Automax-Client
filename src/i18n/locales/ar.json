@@ -473,6 +473,7 @@
     "gisError": "الموقع خارج المنطقة المسموح بها.",
     "location": "الموقع",
     "department": "القسم",
+    "externalEntity": "الجهة الخارجية المسؤولة",
     "assignee": "المُسند إليه",
     "reporter": "المبلغ",
     "callerInformation": "معلومات المتصل",
@@ -1029,7 +1030,8 @@
     "integrations": "التكاملات",
     "integrationScripts": "السكريبتات",
     "integrationVariables": "المتغيرات السرية",
-    "webhookConfigs": "ردود الويب هوك"
+    "webhookConfigs": "ردود الويب هوك",
+    "momraIntegration": "تكامل نظام مورا"
   },
   "users": {
     "title": "المستخدمون",
@@ -1367,6 +1369,9 @@
     "legend": "مفتاح الخريطة:",
     "codePlaceholder": "مثال: NY-OFF",
     "namePlaceholder": "مثال: مكتب نيويورك",
+    "externalId": "مرجع خارجي",
+    "externalIdPlaceholder": "مثال: رمز البلدية في مورا",
+    "externalIdHint": "معرّف مرجعي اختياري من نظام خارجي، مثل رمز البلدية/البلدية الفرعية في مورا",
     "nameAr": "الاسم (بالعربية)",
     "descriptionAr": "الوصف (بالعربية)",
     "nameRequired": "اسم الموقع مطلوب",
