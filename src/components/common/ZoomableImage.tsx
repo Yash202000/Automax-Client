@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ZoomIn, ZoomOut, RotateCw, Maximize2 } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCw, RefreshCw, Minimize } from "lucide-react";
 
 interface ZoomableImageProps {
   src: string;
@@ -34,6 +34,11 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
 
   const clampScale = (value: number) =>
     Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+
+  const fitToScreen = () => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  };
 
   const resetTransform = () => {
     setScale(1);
@@ -84,7 +89,7 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
   return (
     <>
       <div
-        // No overflow-hidden here deliberately: `transform: scale()` doesn't
+        // No overflow-hidden deliberately: `transform: scale()` doesn't
         // change this box's layout size, so clipping to it would crop the
         // zoomed-in image right back down to its original frame.
         className={`flex items-center justify-center ${className || ""}`}
@@ -96,6 +101,8 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
         onMouseLeave={stopDragging}
         onDoubleClick={handleDoubleClick}
         style={{
+          width: "90vw",
+          height: "90vh",
           cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
         }}
       >
@@ -103,7 +110,7 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
           src={src}
           alt={alt}
           draggable={false}
-          className="max-w-[90vw] max-h-[90vh] object-contain select-none"
+          className="w-full h-full object-contain select-none"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
             transition: isDragging ? "none" : "transform 0.15s ease-out",
@@ -122,6 +129,7 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
           disabled={scale <= MIN_SCALE}
           className="p-2 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
           aria-label="Zoom out"
+          title="Zoom out"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
@@ -133,6 +141,7 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
           disabled={scale >= MAX_SCALE}
           className="p-2 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
           aria-label="Zoom in"
+          title="Zoom in"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
@@ -141,15 +150,25 @@ export const ZoomableImage: React.FC<ZoomableImageProps> = ({
           onClick={() => setRotation((r) => r + 90)}
           className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
           aria-label="Rotate"
+          title="Rotate"
         >
           <RotateCw className="w-4 h-4" />
+        </button>
+        <button
+          onClick={fitToScreen}
+          className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
+          aria-label="Fit screen"
+          title="Fit screen"
+        >
+          <Minimize className="w-4 h-4" />
         </button>
         <button
           onClick={resetTransform}
           className="p-2 rounded-full text-white hover:bg-white/20 transition-colors"
           aria-label="Reset"
+          title="Reset"
         >
-          <Maximize2 className="w-4 h-4" />
+          <RefreshCw className="w-4 h-4" />
         </button>
       </div>
     </>

@@ -67,6 +67,8 @@
     "emptyFile": "الملف فارغ",
     "download": "تحميل",
     "upload": "رفع",
+    "fullScreen": "ملء الشاشة",
+    "exitFullScreen": "الخروج من ملء الشاشة",
     "tryAgain": "حاول مرة أخرى",
     "optional": "اختياري",
     "creating": "جاري الإنشاء...",

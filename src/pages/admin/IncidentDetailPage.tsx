@@ -47,6 +47,8 @@ import {
   ShieldCheck,
   Phone,
   Maximize2,
+  Minimize2,
+  ChevronLeft,
   Mail,
 } from "lucide-react";
 import {
@@ -111,6 +113,7 @@ import {
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
 import { ZoomableImage } from "@/components/common/ZoomableImage";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
@@ -226,6 +229,8 @@ export const IncidentDetailPage: React.FC = () => {
     name: string;
     attachment: IncidentAttachment;
   } | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const lightboxFullscreen = useFullscreen<HTMLDivElement>();
 
   // Image comparison state
   const [compareMode, setCompareMode] = useState(false);
@@ -234,6 +239,7 @@ export const IncidentDetailPage: React.FC = () => {
   >([]);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [compareSliderPosition, setCompareSliderPosition] = useState(50);
+  const compareFullscreen = useFullscreen<HTMLDivElement>();
   const [locationMapModalOpen, setLocationMapModalOpen] = useState(false);
 
   //Image Editor state
@@ -834,14 +840,41 @@ export const IncidentDetailPage: React.FC = () => {
     return `${API_URL}/attachments/${attachmentId}/preview?token=${token}`;
   };
 
+  const imageAttachments = attachments.filter((a: IncidentAttachment) =>
+    isImageAttachment(a.mime_type),
+  );
+
   // Open image in lightbox
   const openLightbox = (attachment: IncidentAttachment) => {
+    const index = imageAttachments.findIndex((a) => a.id === attachment.id);
+    setLightboxIndex(index >= 0 ? index : 0);
     setLightboxImage({
       url: getAttachmentPreviewUrl(attachment.id),
       name: attachment.file_name,
       attachment: attachment,
     });
     setLightboxOpen(true);
+  };
+
+  const showLightboxAttachmentAt = (index: number) => {
+    const attachment = imageAttachments[index];
+    if (!attachment) return;
+    setLightboxIndex(index);
+    setLightboxImage({
+      url: getAttachmentPreviewUrl(attachment.id),
+      name: attachment.file_name,
+      attachment,
+    });
+  };
+
+  const goToPreviousAttachment = () => {
+    if (lightboxIndex > 0) showLightboxAttachmentAt(lightboxIndex - 1);
+  };
+
+  const goToNextAttachment = () => {
+    if (lightboxIndex < imageAttachments.length - 1) {
+      showLightboxAttachmentAt(lightboxIndex + 1);
+    }
   };
 
   // Toggle image selection for comparison
@@ -876,6 +909,48 @@ export const IncidentDetailPage: React.FC = () => {
     setSelectedForCompare([]);
     setCompareModalOpen(false);
   };
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    lightboxFullscreen.enterFullscreen();
+    return () => {
+      lightboxFullscreen.exitFullscreen();
+    };
+  }, [lightboxOpen]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (document.fullscreenElement) {
+          lightboxFullscreen.exitFullscreen();
+        } else {
+          setLightboxOpen(false);
+        }
+      } else if (e.key === "ArrowLeft") {
+        goToPreviousAttachment();
+      } else if (e.key === "ArrowRight") {
+        goToNextAttachment();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen, lightboxIndex, imageAttachments]);
+
+  useEffect(() => {
+    if (!compareModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (document.fullscreenElement) {
+          compareFullscreen.exitFullscreen();
+        } else {
+          setCompareModalOpen(false);
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [compareModalOpen]);
 
   const [generatingReport, setGeneratingReport] = useState(false);
 
@@ -1412,12 +1487,6 @@ export const IncidentDetailPage: React.FC = () => {
     if (file) {
       uploadAttachmentMutation.mutate(file);
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const { data: commentTemplatesData } = useQuery({
@@ -2624,7 +2693,6 @@ export const IncidentDetailPage: React.FC = () => {
                                         {attachment.file_name}
                                       </p>
                                       <p className="text-xs text-white/70 mt-0.5">
-                                        {formatFileSize(attachment.file_size)} •{" "}
                                         {formatDateTime(attachment.created_at)}
                                       </p>
                                       {attachment.uploaded_by && (
@@ -2734,8 +2802,6 @@ export const IncidentDetailPage: React.FC = () => {
                                           {attachment.file_name}
                                         </p>
                                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                          {formatFileSize(attachment.file_size)}{" "}
-                                          •{" "}
                                           {formatDateTime(
                                             attachment.created_at,
                                           )}
@@ -2870,7 +2936,6 @@ export const IncidentDetailPage: React.FC = () => {
                                         {attachment.file_name}
                                       </p>
                                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                        {formatFileSize(attachment.file_size)} •{" "}
                                         {formatDateTime(attachment.created_at)}
                                       </p>
                                       {attachment.uploaded_by && (
@@ -5450,28 +5515,96 @@ export const IncidentDetailPage: React.FC = () => {
       {/* Image Lightbox */}
       {lightboxOpen && lightboxImage && (
         <div
+          ref={lightboxFullscreen.containerRef}
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
           onClick={() => setLightboxOpen(false)}
         >
           {/* Close Button */}
           <button
             onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+            aria-label={t("common.close", "Close")}
+            title={t("common.close", "Close")}
           >
             <X className="w-6 h-6" />
           </button>
 
-          {/* Image Name */}
-          <div className="absolute top-4 left-4 text-white text-sm bg-black/50 px-3 py-1.5 rounded-lg">
-            {lightboxImage.name}
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              lightboxFullscreen.toggleFullscreen();
+            }}
+            className="absolute top-4 right-16 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+            aria-label={
+              lightboxFullscreen.isFullscreen
+                ? t("common.exitFullScreen", "Exit Full Screen")
+                : t("common.fullScreen", "Full Screen")
+            }
+            title={
+              lightboxFullscreen.isFullscreen
+                ? t("common.exitFullScreen", "Exit Full Screen")
+                : t("common.fullScreen", "Full Screen")
+            }
+          >
+            {lightboxFullscreen.isFullscreen ? (
+              <Minimize2 className="w-5 h-5" />
+            ) : (
+              <Maximize2 className="w-5 h-5" />
+            )}
+          </button>
+
+          {/* Image Name + Position */}
+          <div className="absolute top-4 left-4 z-[110] flex items-center gap-2 text-white text-sm bg-black/50 px-3 py-1.5 rounded-lg max-w-[60vw]">
+            <span className="truncate">{lightboxImage.name}</span>
+            {imageAttachments.length > 1 && (
+              <span className="shrink-0 text-white/70">
+                ({lightboxIndex + 1} {t("common.of", "of")}{" "}
+                {imageAttachments.length})
+              </span>
+            )}
           </div>
+
+          {/* Previous / Next Navigation */}
+          {imageAttachments.length > 1 && (
+            <>
+              {lightboxIndex > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToPreviousAttachment();
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+                  aria-label={t("common.previous", "Previous")}
+                  title={t("common.previous", "Previous")}
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+              {lightboxIndex < imageAttachments.length - 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToNextAttachment();
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+                  aria-label={t("common.next", "Next")}
+                  title={t("common.next", "Next")}
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+            </>
+          )}
 
           {/* Download Button */}
           <a
             href={lightboxImage.url}
             download={lightboxImage.name}
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            className="absolute bottom-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+            aria-label={t("common.download", "Download")}
+            title={t("common.download", "Download")}
           >
             <Download className="w-6 h-6" />
           </a>
@@ -5485,6 +5618,7 @@ export const IncidentDetailPage: React.FC = () => {
       {/* Image Comparison Modal */}
       {compareModalOpen && selectedForCompare.length === 2 && (
         <div
+          ref={compareFullscreen.containerRef}
           className="fixed inset-0 z-[100] bg-black/95 flex flex-col"
           onClick={() => setCompareModalOpen(false)}
         >
@@ -5501,12 +5635,39 @@ export const IncidentDetailPage: React.FC = () => {
                 {t("incidents.dragSliderToCompare")}
               </span>
             </div>
-            <button
-              onClick={() => setCompareModalOpen(false)}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  compareFullscreen.toggleFullscreen();
+                }}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                aria-label={
+                  compareFullscreen.isFullscreen
+                    ? t("common.exitFullScreen", "Exit Full Screen")
+                    : t("common.fullScreen", "Full Screen")
+                }
+                title={
+                  compareFullscreen.isFullscreen
+                    ? t("common.exitFullScreen", "Exit Full Screen")
+                    : t("common.fullScreen", "Full Screen")
+                }
+              >
+                {compareFullscreen.isFullscreen ? (
+                  <Minimize2 className="w-6 h-6" />
+                ) : (
+                  <Maximize2 className="w-6 h-6" />
+                )}
+              </button>
+              <button
+                onClick={() => setCompareModalOpen(false)}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                aria-label={t("common.close", "Close")}
+                title={t("common.close", "Close")}
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Comparison Container */}
@@ -5514,7 +5675,14 @@ export const IncidentDetailPage: React.FC = () => {
             className="flex-1 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-full max-w-5xl h-[70vh] overflow-hidden rounded-lg">
+            <div
+              className={cn(
+                "relative w-full overflow-hidden rounded-lg",
+                compareFullscreen.isFullscreen
+                  ? "h-full max-w-none"
+                  : "max-w-5xl h-[70vh]",
+              )}
+            >
               {/* Image 2 (Right/Bottom layer) */}
               <img
                 src={getAttachmentPreviewUrl(selectedForCompare[1].id)}

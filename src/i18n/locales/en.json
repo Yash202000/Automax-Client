@@ -67,6 +67,8 @@
     "emptyFile": "File is empty",
     "download": "Download",
     "upload": "Upload",
+    "fullScreen": "Full Screen",
+    "exitFullScreen": "Exit Full Screen",
     "tryAgain": "Try Again",
     "optional": "Optional",
     "creating": "Creating...",
