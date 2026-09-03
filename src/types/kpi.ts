@@ -284,6 +284,7 @@ export interface StrategicKPI {
   segmentation_axes: string;
   related_units: string;
   notes: string;
+  documenta_folder_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -319,6 +320,7 @@ export interface OperationalKPI {
   lifecycle: string;
   data_source: string;
   notes: string;
+  documenta_folder_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -350,6 +352,7 @@ export interface AwardKPI {
   lifecycle: string;
   data_source: string;
   notes: string;
+  documenta_folder_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -623,6 +626,7 @@ export interface StrategicKPIRequest {
   segmentation_axes?: string;
   related_units?: string;
   notes?: string;
+  documenta_folder_id?: string;
 }
 
 export interface OperationalKPIRequest {
@@ -648,6 +652,7 @@ export interface OperationalKPIRequest {
   lifecycle?: string;
   data_source?: string;
   notes?: string;
+  documenta_folder_id?: string;
 }
 
 export interface AwardKPIRequest {
@@ -671,6 +676,7 @@ export interface AwardKPIRequest {
   lifecycle?: string;
   data_source?: string;
   notes?: string;
+  documenta_folder_id?: string;
 }
 
 export interface KpiAnnualTargetRequest {
@@ -965,6 +971,50 @@ export interface KpiAttachmentUploadResult {
   file_name: string;
   file_size: number;
   mime_type: string;
+}
+
+// ─── KPI Evidence Folder Configuration ─────────────────────────────────────
+// Each KPI links to one Documenta folder (KPI.documenta_folder_id). The root
+// folder IS one of the seven fixed KPI Master Data categories below — not
+// tied to whichever taxonomy the KPI itself belongs to.
+
+export type KpiMasterDataEntityType =
+  | "pillar"
+  | "enabler"
+  | "objective"
+  | "initiative"
+  | "domain"
+  | "award_criterion"
+  | "award_sub_criterion";
+
+export const KPI_ROOT_FOLDER_OPTIONS: {
+  value: KpiMasterDataEntityType;
+  label: string;
+}[] = [
+  { value: "pillar", label: "Pillars" },
+  { value: "enabler", label: "Enablers" },
+  { value: "objective", label: "Objectives Hierarchy" },
+  { value: "initiative", label: "Initiatives" },
+  { value: "domain", label: "Domains" },
+  { value: "award_criterion", label: "Award Criteria" },
+  { value: "award_sub_criterion", label: "Award Sub-Criteria" },
+];
+
+export interface KpiDocumentaAnchor {
+  resolvable: boolean;
+  anchor_folder_id?: string;
+  anchor_path: string[];
+  reason?: string;
+}
+
+export interface KpiDocumentaFolder {
+  uuid: string;
+  name: string;
+  path: string;
+}
+
+export interface KpiDocumentaAnchorParams {
+  entity_type: KpiMasterDataEntityType;
 }
 
 export type KpiEvidenceType =
