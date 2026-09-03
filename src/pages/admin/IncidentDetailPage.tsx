@@ -939,6 +939,14 @@ export const IncidentDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!compareModalOpen) return;
+    compareFullscreen.enterFullscreen();
+    return () => {
+      compareFullscreen.exitFullscreen();
+    };
+  }, [compareModalOpen]);
+
+  useEffect(() => {
+    if (!compareModalOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (document.fullscreenElement) {
