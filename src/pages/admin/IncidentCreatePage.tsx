@@ -202,6 +202,9 @@ export function IncidentCreatePage() {
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
 
+  const ENABLE_GIS =
+    window.APP_CONFIG?.ENABLE_GIS ?? import.meta.env.VITE_ENABLE_GIS;
+
   const shouldFilterDepartments =
     isEpmclClient &&
     Boolean(formData.location_id && formData.classification_id);
@@ -536,7 +539,10 @@ export function IncidentCreatePage() {
         locationMatch = w.locations.some((l) => l.id === formData.location_id);
       }
 
-      if (import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL === "false") {
+      if (
+        (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
+          import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) === "false"
+      ) {
         return classificationMatch;
       }
       return classificationMatch && locationMatch;
@@ -942,10 +948,7 @@ export function IncidentCreatePage() {
 
         let matched = undefined;
 
-        if (
-          import.meta.env.VITE_ENABLE_GIS === "false" ||
-          import.meta.env.VITE_ENABLE_GIS === undefined
-        ) {
+        if (ENABLE_GIS === "false" || ENABLE_GIS === undefined) {
           const searchName = (location.city || location.address || "")
             .toLowerCase()
             .trim();
@@ -1081,7 +1084,7 @@ export function IncidentCreatePage() {
         setIsMatchingLocation(false);
       }
     },
-    [rawLocations, flattenLocations, errors, t, queryClient],
+    [rawLocations, flattenLocations, errors, t, queryClient, ENABLE_GIS],
   );
 
   const selectedWorkflow = workflows.find((w) => w.id === formData.workflow_id);
@@ -1115,10 +1118,7 @@ export function IncidentCreatePage() {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (
-      import.meta.env.VITE_ENABLE_GIS === "true" &&
-      !gisData?.isInsideBoundary
-    ) {
+    if (ENABLE_GIS === "true" && !gisData?.isInsideBoundary) {
       newErrors.geolocation = t("incidents.gisError");
     }
     if (!formData.title.trim()) newErrors.title = t("incidents.titleRequired");
