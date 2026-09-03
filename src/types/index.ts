@@ -2111,6 +2111,9 @@ export interface CreateEscalationRequest {
   targets?: EscalationGroupTargetRequest[];
   email_template_code?: string;
   sms_template_code?: string;
+  /** "en" | "ar" — selects EN/AR when a template code is set; also selects
+   * the language of the attached Incident Report CSV. Defaults to "en". */
+  language?: string;
 }
 
 export interface UpdateEscalationRequest {
@@ -2125,6 +2128,7 @@ export interface UpdateEscalationRequest {
   targets?: EscalationGroupTargetRequest[];
   email_template_code?: string;
   sms_template_code?: string;
+  language?: string;
 }
 
 // ─── Escalation Group Target ──────────────────────────────────────────────────
