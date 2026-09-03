@@ -43,7 +43,11 @@ import type {
   EscalationPolicy,
 } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button, MultiSelect } from "../../components/ui";
+import {
+  Button,
+  HierarchicalTreeSelect,
+  MultiSelect,
+} from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "sonner";
@@ -366,6 +370,8 @@ export const ClassificationsPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportSelectedIds, setExportSelectedIds] = useState<string[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{
@@ -701,11 +707,24 @@ export const ClassificationsPage: React.FC = () => {
     raw: string,
   ): { types: string[]; error?: string } => {
     const trimmed = raw.trim();
-    if (!trimmed) return { types: ["incident", "request"] };
+    if (!trimmed) {
+      return {
+        types: [],
+        error:
+          "Types are required. Use one or more values like incident, request, complaint.",
+      };
+    }
     const tokens = trimmed
       .split(/[,;]/)
       .map((tok) => tok.trim().toLowerCase())
       .filter(Boolean);
+    if (tokens.length === 0) {
+      return {
+        types: [],
+        error:
+          "Types are required. Use one or more values like incident, request, complaint.",
+      };
+    }
     const invalid = tokens.filter((tok) => !ALL_TYPES.includes(tok));
     if (invalid.length > 0) {
       return {
@@ -735,6 +754,28 @@ export const ClassificationsPage: React.FC = () => {
     return { id: match.id };
   };
 
+  const flattenClassificationTree = (
+    nodes: Classification[],
+  ): Classification[] => {
+    const result: Classification[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenClassificationTree(node.children));
+      }
+    });
+    return result;
+  };
+
+  const getAllClassificationIds = (nodes: Classification[] = []): string[] => {
+    return flattenClassificationTree(nodes).map((node) => node.id);
+  };
+
+  const openClassificationExportModal = () => {
+    setExportSelectedIds(getAllClassificationIds(treeData?.data ?? []));
+    setIsExportModalOpen(true);
+  };
+
   const handleExportJson = async () => {
     try {
       setIsExporting(true);
@@ -754,10 +795,14 @@ export const ClassificationsPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = async (selectedIds?: string[]) => {
     try {
       setIsExporting(true);
-      const list = classificationsList?.data ?? [];
+      const list = selectedIds?.length
+        ? flattenClassificationTree(classificationsList?.data ?? []).filter(
+            (c) => selectedIds.includes(c.id),
+          )
+        : (classificationsList?.data ?? []);
 
       const nameById = new Map<string, string>();
       list.forEach((c: Classification) => nameById.set(c.id, c.name));
@@ -827,6 +872,10 @@ export const ClassificationsPage: React.FC = () => {
         });
       });
 
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
+
       const excelBuffer = await workbook.xlsx.writeBuffer();
       const excelBlob = new Blob([excelBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -860,7 +909,7 @@ export const ClassificationsPage: React.FC = () => {
         key: "parent_classification",
         width: 30,
       },
-      { header: "types (Optional)", key: "types", width: 34 },
+      { header: "types (Required)", key: "types", width: 34 },
     ];
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -971,7 +1020,13 @@ export const ClassificationsPage: React.FC = () => {
 
       const errors: string[] = [];
 
-      // Detect duplicate name+parent combinations before running full validation
+      const existingNames = new Set(
+        (classificationsList?.data ?? []).map(
+          (item: Classification) =>
+            `${(item.parent_id || "").trim().toLowerCase()}|${(item.name || "").trim().toLowerCase()}`,
+        ),
+      );
+
       const keyCounts = new Map<string, number[]>();
       normalizedRows.forEach((row, index) => {
         const key = `${(row.parent_classification || "").trim().toLowerCase()}|${(row.name || "").trim().toLowerCase()}`;
@@ -989,6 +1044,14 @@ export const ClassificationsPage: React.FC = () => {
             t("classifications.importDuplicateName", {
               defaultValue: `Duplicate classification name "${name}" found in rows: ${rows.join(", ")}`,
             }),
+          );
+        }
+
+        if (existingNames.has(key) && name) {
+          const firstRow = rows[0];
+          duplicateRowNumbers.add(firstRow ?? rows[0]);
+          errors.push(
+            `Duplicate classification name "${name}" already exists in the current list.`,
           );
         }
       }
@@ -1159,7 +1222,7 @@ export const ClassificationsPage: React.FC = () => {
                     <button
                       onClick={() => {
                         setIsActionsMenuOpen(false);
-                        handleExportExcel();
+                        openClassificationExportModal();
                       }}
                       disabled={isExporting}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
@@ -1309,6 +1372,58 @@ export const ClassificationsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  Select classifications to export
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  By default, all classifications are selected.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={treeData?.data ?? []}
+                selectedIds={exportSelectedIds}
+                onSelectionChange={setExportSelectedIds}
+                colorScheme="primary"
+                maxHeight="280px"
+                leafOnly={false}
+                label="Classifications"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(exportSelectedIds)}
+                disabled={exportSelectedIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                Export Excel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Assigned Users & Departments Modal */}
       {viewingClassification && (

@@ -79,7 +79,51 @@ import type {
   KpiMetricPeriodRollup,
   KpiCompositeScoreResult,
   KpiMetricPeriodSeries,
+  KpiDocumentaAnchor,
+  KpiDocumentaAnchorParams,
+  KpiDocumentaFolder,
 } from "../types/kpi";
+
+// KPI Evidence Folder Configuration — resolve/browse/create Documenta
+// folders scoped to a KPI's own taxonomy (Strategic/Operational: Pillar;
+// Award: Criterion -> Sub-Criterion). Taxonomy-parameterized, not
+// KPI-id-parameterized, so it works from the create form before a KPI is
+// ever saved.
+export const kpiDocumentaApi = {
+  resolveAnchor: async (
+    params: KpiDocumentaAnchorParams,
+  ): Promise<ApiResponse<KpiDocumentaAnchor>> => {
+    const res = await apiClient.get(`/kpi/documenta/anchor`, { params });
+    return res.data;
+  },
+  listFolders: async (
+    anchorId: string,
+    parentId?: string,
+  ): Promise<ApiResponse<{ folders: KpiDocumentaFolder[] }>> => {
+    const res = await apiClient.get(`/kpi/documenta/folders`, {
+      params: { anchor_id: anchorId, parent_id: parentId },
+    });
+    return res.data;
+  },
+  createFolder: async (
+    anchorId: string,
+    parentId: string | undefined,
+    name: string,
+  ): Promise<ApiResponse<KpiDocumentaFolder>> => {
+    const res = await apiClient.post(`/kpi/documenta/folders`, {
+      anchor_id: anchorId,
+      parent_id: parentId,
+      name,
+    });
+    return res.data;
+  },
+  getFolderInfo: async (
+    folderId: string,
+  ): Promise<ApiResponse<KpiDocumentaFolder>> => {
+    const res = await apiClient.get(`/kpi/documenta/folders/${folderId}`);
+    return res.data;
+  },
+};
 
 export const kpiMasterDataApi = {
   listPillars: async (): Promise<ApiResponse<Pillar[]>> => {
@@ -870,9 +914,10 @@ export const kpiEngagementApi = {
     const formData = new FormData();
     formData.append("file", file);
     // metric_id is recorded as metadata only (no per-metric folder level in
-    // the approved hierarchy). evidence_type IS load-bearing — it determines
-    // the "Supporting Folder" level (Pillar / KPI / Evidence Type / file),
-    // so it must be known at upload time, not just at CreateEvidence time.
+    // the approved hierarchy). evidence_type IS still load-bearing — it
+    // nests one level inside the KPI's configured Evidence Folder
+    // (Configured Folder / Evidence Type / file), so it must be known at
+    // upload time, not just at CreateEvidence time.
     if (metricId) formData.append("metric_id", metricId);
     if (evidenceType) formData.append("evidence_type", evidenceType);
     const res = await apiClient.post(

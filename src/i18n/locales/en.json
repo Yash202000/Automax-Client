@@ -67,6 +67,8 @@
     "emptyFile": "File is empty",
     "download": "Download",
     "upload": "Upload",
+    "fullScreen": "Full Screen",
+    "exitFullScreen": "Exit Full Screen",
     "tryAgain": "Try Again",
     "optional": "Optional",
     "creating": "Creating...",
@@ -263,9 +265,12 @@
     "phone": "Phone",
     "email": "Email",
     "web": "Web",
+    "ivr": "IVR",
+    "whatsappChatbot": "WhatsApp Chatbot",
     "mobile": "Mobile App",
     "inPerson": "In Person",
-    "chatbot": "Chatbot"
+    "chatbot": "Chatbot",
+    "sms": "SMS"
   },
   "auth": {
     "login": "Login",
@@ -511,9 +516,19 @@
     "reporterName": "Caller Name",
     "reporterEmail": "Caller Email",
     "reporterPhone": "Caller Phone Number",
+    "reporterNameRequired": "Caller name is required",
     "reporterNamePlaceholder": "Name of caller",
     "reporterEmailPlaceholder": "caller@example.com",
     "reporterPhonePlaceholder": "+971 50 000 0000",
+    "firstName": "First Name",
+    "middleName": "Middle Name",
+    "lastName": "Last Name",
+    "firstNamePlaceholder": "First name",
+    "middleNamePlaceholder": "Middle name",
+    "lastNamePlaceholder": "Last name",
+    "firstNameRequired": "First name is required",
+    "middleNameRequired": "Middle name is required",
+    "lastNameRequired": "Last name is required",
     "assignment": "Assignment",
     "unassigned": "Unassigned",
     "noDepartment": "No department",
@@ -2197,7 +2212,50 @@
     "slaViolationSummary": "The configured SLA ({{slaLabel}}) exceeds the incident closure SLA for {{count}} classification(s).",
     "viewAffectedClassifications": "View Affected Classifications",
     "affectedClassifications": "Affected Classifications",
-    "maxAllowedSLA": "Max Allowed SLA"
+    "maxAllowedSLA": "Max Allowed SLA",
+    "formFields": {
+      "description": "Description",
+      "descriptionDesc": "Detailed incident description",
+
+      "classification": "Classification",
+      "classificationDesc": "Incident category/type",
+
+      "source": "Source",
+      "sourceDesc": "Where the incident originated",
+
+      "sourceIncidentReference": "Source Incident Reference",
+      "sourceIncidentReferenceDesc": "Link to related incident/complaint/query",
+
+      "assignee": "Assignee",
+      "assigneeDesc": "User assigned to handle",
+
+      "department": "Department",
+      "departmentDesc": "Responsible department",
+
+      "location": "Location",
+      "locationDesc": "Physical location",
+
+      "geolocation": "Geolocation",
+      "geolocationDesc": "GPS coordinates (latitude & longitude)",
+
+      "dueDate": "Due Date",
+      "dueDateDesc": "Resolution deadline",
+
+      "callerName": "Caller Name",
+      "callerNameDesc": "Name of caller",
+
+      "callerEmail": "Caller Email",
+      "callerEmailDesc": "Email of caller",
+
+      "callerPhoneNumber": "Caller Phone Number",
+      "callerPhoneNumberDesc": "Phone number of caller",
+
+      "attachments": "Attachments",
+      "attachmentsDesc": "File attachments for the incident",
+
+      "comment": "Comment",
+      "commentDesc": "Comment required when creating the incident"
+    }
   },
   "lookups": {
     "title": "Master Data",
@@ -2780,7 +2838,12 @@
     },
     "emailTemplate": "Email Notification Template",
     "smsTemplate": "SMS Notification Template",
-    "defaultTemplate": "Use default build in message"
+    "defaultTemplate": "Use default build in message",
+    "language": "Report & Template Language",
+    "languageEn": "English",
+    "languageAr": "Arabic",
+    "languagePlaceholder": "Select language...",
+    "languageHelp": "Controls the language of the attached Incident Report, and of the notification template above when a custom template is selected (the default built-in message is always English)."
   },
   "goals": {
     "title": "Goals",
