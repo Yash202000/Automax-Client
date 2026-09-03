@@ -2836,7 +2836,12 @@
     },
     "emailTemplate": "Email Notification Template",
     "smsTemplate": "SMS Notification Template",
-    "defaultTemplate": "Use default build in message"
+    "defaultTemplate": "Use default build in message",
+    "language": "Report & Template Language",
+    "languageEn": "English",
+    "languageAr": "Arabic",
+    "languagePlaceholder": "Select language...",
+    "languageHelp": "Controls the language of the attached Incident Report, and of the notification template above when a custom template is selected (the default built-in message is always English)."
   },
   "goals": {
     "title": "Goals",
