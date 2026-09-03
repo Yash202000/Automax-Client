@@ -530,24 +530,31 @@ export const IncidentDetailPage: React.FC = () => {
     return getNodePath(
       fcClassificationsData.data as unknown as TreeSelectNode[],
       incident.classification.id,
+      i18n.language,
     );
-  }, [incident?.classification?.id, fcClassificationsData?.data]);
+  }, [
+    incident?.classification?.id,
+    fcClassificationsData?.data,
+    i18n.language,
+  ]);
 
   const locationPath = useMemo(() => {
     if (!incident?.location?.id || !fcLocationsData?.data) return [];
     return getNodePath(
       fcLocationsData.data as unknown as TreeSelectNode[],
       incident.location.id,
+      i18n.language,
     );
-  }, [incident?.location?.id, fcLocationsData?.data]);
+  }, [incident?.location?.id, fcLocationsData?.data, i18n.language]);
 
   const departmentPath = useMemo(() => {
     if (!incident?.department?.id || !fcDepartmentsData?.data) return [];
     return getNodePath(
       fcDepartmentsData.data as unknown as TreeSelectNode[],
       incident.department.id,
+      i18n.language,
     );
-  }, [incident?.department?.id, fcDepartmentsData?.data]);
+  }, [incident?.department?.id, fcDepartmentsData?.data, i18n.language]);
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
@@ -3425,7 +3432,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.classification.name
+                        getLocalizedName(incident.classification)
                       )}
                     </div>
                   </div>
@@ -3459,7 +3466,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.department.name
+                        getLocalizedName(incident.department)
                       )}
                     </div>
                   </div>
@@ -3520,7 +3527,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.location.name
+                        getLocalizedName(incident.location)
                       )}
                     </div>
                     {incident.location?.name === "Default" && (

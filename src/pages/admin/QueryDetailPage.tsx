@@ -56,7 +56,7 @@ import type {
   User as UserType,
 } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -73,7 +73,7 @@ const defaultIcon = new Icon({
 });
 
 export const QueryDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -220,24 +220,27 @@ export const QueryDetailPage: React.FC = () => {
     return getNodePath(
       fcClassificationsData.data as unknown as TreeSelectNode[],
       query.classification.id,
+      i18n.language,
     );
-  }, [query?.classification?.id, fcClassificationsData?.data]);
+  }, [query?.classification?.id, fcClassificationsData?.data, i18n.language]);
 
   const locationPath = React.useMemo(() => {
     if (!query?.location?.id || !fcLocationsData?.data) return [];
     return getNodePath(
       fcLocationsData.data as unknown as TreeSelectNode[],
       query.location.id,
+      i18n.language,
     );
-  }, [query?.location?.id, fcLocationsData?.data]);
+  }, [query?.location?.id, fcLocationsData?.data, i18n.language]);
 
   const departmentPath = React.useMemo(() => {
     if (!query?.department?.id || !fcDepartmentsData?.data) return [];
     return getNodePath(
       fcDepartmentsData.data as unknown as TreeSelectNode[],
       query.department.id,
+      i18n.language,
     );
-  }, [query?.department?.id, fcDepartmentsData?.data]);
+  }, [query?.department?.id, fcDepartmentsData?.data, i18n.language]);
 
   // Check if query is closed (terminal state)
   const isClosed = query?.current_state?.state_type === "terminal";
@@ -1338,7 +1341,7 @@ export const QueryDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        query.classification.name
+                        getLocalizedName(query.classification)
                       )}
                     </div>
                   </div>
@@ -1413,7 +1416,7 @@ export const QueryDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        query.department.name
+                        getLocalizedName(query.department)
                       )}
                     </div>
                   </div>
@@ -1451,7 +1454,7 @@ export const QueryDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        query.location.name
+                        getLocalizedName(query.location)
                       )}
                     </div>
                   </div>
