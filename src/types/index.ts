@@ -1182,6 +1182,15 @@ export interface Incident {
   created_by_mobile?: string;
   evaluation_count?: number;
   custom_fields?: string;
+  // The exact External Entities MOMRA declared eligible for this incident at
+  // submission time (InsertIncidents' EEList), stored server-side on the dedicated
+  // Incident.AvailableEEList jsonb column — not folded into custom_fields, so it
+  // arrives here as a real array already, no JSON.parse needed.
+  available_ee_list?: Array<{
+    EntityID?: string;
+    EECode?: string;
+    EEName?: string;
+  }>;
   comments_count: number;
   attachments_count: number;
   created_at: string;
@@ -1442,6 +1451,10 @@ export interface DepartmentMatchRequest {
   classification_id?: string;
   location_id?: string;
   department_type?: "internal" | "external";
+  // When set and the incident is MOMRA-sourced, the backend resolves external-type
+  // matches from that incident's own AvailableEEList instead of pure classification/
+  // location linkage — see department_handler.go's MatchDepartment doc comment.
+  incident_id?: string;
 }
 
 export interface DepartmentMatchResponse {
