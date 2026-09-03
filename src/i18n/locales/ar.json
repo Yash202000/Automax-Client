@@ -826,7 +826,22 @@
     "triggeredBy": "تم التشغيل بواسطة",
     "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال",
     "noLinkedSystems": "لا توجد أنظمة مرتبطة",
-    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا."
+    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا.",
+    "incidentUpdated": "تم تحديث الحادثة",
+    "incidentUpdatedDescription": "تم تحديث هذه الحادثة بواسطة مستخدم آخر. يرجى مراجعة التغييرات.",
+    "conflictDetected": "تم اكتشاف تعارض",
+    "incidentModifiedByAnotherUser": "تم تعديل هذه الحادثة بواسطة مستخدم آخر. جارٍ التحديث...",
+    "transitionFailed": "فشل تنفيذ الانتقال",
+    "summaryUpdatedSuccessfully": "تم تحديث ملخص الحادثة بنجاح",
+    "error": "خطأ",
+    "failedToSaveEditedImage": "تعذر حفظ الصورة المعدلة",
+    "requestInfoFailed": "فشل إرسال طلب الحصول على المعلومات",
+    "matchingLocation": "جارٍ مطابقة الموقع...",
+    "matchingLocationHint": "جارٍ مطابقة الموقع الجغرافي مع المواقع الرئيسية...",
+    "locationAutoMatched": "تم تحديد الموقع \"{{name}}\" تلقائيًا من المواقع الرئيسية",
+    "locationDefaultMapped": "لم يتم العثور على موقع مطابق. تم الربط بالموقع \"الافتراضي\".",
+    "locationDefaultCreated": "لم يتم العثور على موقع مطابق. تم إنشاء الموقع \"الافتراضي\" والربط به.",
+    "locationMatchError": "فشلت مطابقة الموقع أو إنشائه. يرجى تحديد الموقع يدويًا."
   },
   "priorities": {
     "critical": "حرج",
