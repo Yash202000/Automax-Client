@@ -55,6 +55,7 @@ import {
   type SharedIncidentFilter,
 } from "@/stores/incidentFilterStore";
 import { LocationMap } from "@/components/maps";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 // Column configuration
 interface ColumnConfig {
@@ -1040,6 +1041,12 @@ export const IncidentsPage: React.FC = () => {
                     const rtcHours = getRtcHoursRemaining(incident);
                     const isExpiringSoon = rtcHours !== null && rtcHours <= 24;
 
+                    const generatedTitle = generateRecordTitle({
+                      classification: incident.classification,
+                      location: incident.location,
+                      city: incident.city,
+                      address: incident.address,
+                    });
                     // Detect master and child incidents
                     const isMasterIncident =
                       (incident.merged_incidents_count ?? 0) > 0;
@@ -1132,7 +1139,7 @@ export const IncidentsPage: React.FC = () => {
                                   )}
                               </div>
                               <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
-                                {incident.title}
+                                {generatedTitle}
                               </p>
                             </div>
                           </td>

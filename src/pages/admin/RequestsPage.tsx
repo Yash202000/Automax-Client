@@ -44,6 +44,7 @@ import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "@/stores/authStore";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 // Column configuration
 interface ColumnConfig {
@@ -812,6 +813,13 @@ export const RequestsPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-[hsl(var(--border))]">
                   {requests.map((request: Incident) => {
+                    const generatedTitle = generateRecordTitle({
+                      classification: request.classification,
+                      location: request.location,
+                      city: request.city,
+                      address: request.address,
+                    });
+
                     const priority = getLookupValue(request, "PRIORITY");
                     return (
                       <tr
@@ -826,7 +834,7 @@ export const RequestsPage: React.FC = () => {
                                 {request.incident_number}
                               </p>
                               <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
-                                {request.title}
+                                {generatedTitle}
                               </p>
                             </div>
                           </td>

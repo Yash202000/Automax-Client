@@ -831,6 +831,7 @@
     "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال",
     "noLinkedSystems": "لا توجد أنظمة مرتبطة",
     "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا.",
+    "defaultLocation": "الموقع الافتراضي",
     "incidentUpdated": "تم تحديث الحادثة",
     "incidentUpdatedDescription": "تم تحديث هذه الحادثة بواسطة مستخدم آخر. يرجى مراجعة التغييرات.",
     "conflictDetected": "تم اكتشاف تعارض",
