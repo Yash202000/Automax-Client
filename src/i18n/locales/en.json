@@ -1435,8 +1435,6 @@
     "typeMobile": "Mobile Only",
     "sortOrder": "Sort Order",
     "sortOrderHelp": "Lower numbers appear first",
-    "locations": "Locations",
-    "defaultRoles": "Default Roles",
     "saving": "Saving...",
     "active": "Active",
     "inactive": "Inactive",
