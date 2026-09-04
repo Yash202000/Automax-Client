@@ -228,7 +228,7 @@ export function MultiSelect({
 
   // ── Size classes ──────────────────────────────────────────────────────────
   const triggerPadding = {
-    sm: "px-3 py-1.5 min-h-[34px]",
+    sm: "px-3 py-1.5 min-h-[38px]",
     md: "px-3.5 py-2 min-h-[42px]",
     lg: "px-4 py-2.5 min-h-[50px]",
   }[size];

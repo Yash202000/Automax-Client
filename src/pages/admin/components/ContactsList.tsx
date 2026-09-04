@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Mail,
@@ -16,6 +17,7 @@ import {
   Filter,
   Shield,
   Check,
+  Calendar,
 } from "lucide-react";
 import {
   Button,
@@ -24,14 +26,11 @@ import {
   ModalHeader,
   ModalTitle,
 } from "../../../components/ui";
-import { roleApi, userApi } from "../../../api/admin";
-import type { User } from "../../../types";
+import { incidentApi, roleApi, userApi } from "../../../api/admin";
+import type { Incident, User } from "../../../types";
 import { cn } from "@/lib/utils";
 import CallablePhone from "@/components/common/CallablePhone";
-import { CallHistory } from "./CallHistory";
-import usePermissions from "@/hooks/usePermissions";
 import { useDebounce } from "@/hooks/useDebounce";
-import { PERMISSIONS } from "@/constants/permissions";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -41,23 +40,61 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   variant = "default",
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const limit = 10;
-  const [openCallLogs, setOpenCallLogs] = useState<boolean>(false);
-  const [selectedUser, setSelectedUser] = useState<any>();
-  const { hasPermission } = usePermissions();
+  const [openContactDetails, setOpenContactDetails] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [contactIncidentPage, setContactIncidentPage] = useState(1);
+  const contactIncidentLimit = 20;
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
-
-  const viewAllCallLogs = hasPermission(PERMISSIONS.VIEW_ALL_CALL_LOGS);
+  const [withIncident, setWithIncident] = useState(false);
 
   const debouncedSearch = useDebounce(search, 600);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "users", page, limit, debouncedSearch, filterRoleIds],
-    queryFn: () => userApi.list(page, limit, debouncedSearch, filterRoleIds),
+    queryKey: [
+      "admin",
+      "users",
+      page,
+      limit,
+      debouncedSearch,
+      filterRoleIds,
+      withIncident,
+    ],
+    queryFn: () =>
+      userApi.list(
+        page,
+        limit,
+        debouncedSearch,
+        filterRoleIds,
+        [],
+        [],
+        [],
+        undefined,
+        withIncident,
+      ),
   });
+
+  const { data: contactIncidentsData, isLoading: contactIncidentsLoading } =
+    useQuery({
+      queryKey: [
+        "admin",
+        "contacts",
+        selectedUser?.id,
+        contactIncidentPage,
+        contactIncidentLimit,
+      ],
+      queryFn: () =>
+        incidentApi.list({
+          reporter_id: selectedUser?.id,
+          page: contactIncidentPage,
+          limit: contactIncidentLimit,
+        }),
+      enabled: openContactDetails && Boolean(selectedUser?.id),
+    });
 
   const { data: rolesData } = useQuery({
     queryKey: ["admin", "roles"],
@@ -77,10 +114,11 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     setPage(1);
   };
 
-  const activeFilterCount = filterRoleIds.length;
+  const activeFilterCount = filterRoleIds.length + (withIncident ? 1 : 0);
 
   const clearAllFilters = () => {
     setFilterRoleIds([]);
+    setWithIncident(false);
 
     setPage(1);
   };
@@ -237,6 +275,21 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                 )}
               </div>
             </div>
+            <label className="flex items-center gap-2 text-sm text-[hsl(var(--foreground))] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={withIncident}
+                onChange={(e) => {
+                  setWithIncident(e.target.checked);
+                  setPage(1);
+                }}
+                className="h-4 w-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+              />
+              {t(
+                "callCentre.contactsWithIncidents",
+                "Contacts with Incident(s)",
+              )}
+            </label>
           </div>
         )}
       </div>
@@ -329,27 +382,18 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                           </div>
                           <div
                             onClick={() => {
-                              if (!viewAllCallLogs) return;
-
-                              setOpenCallLogs(true);
+                              setOpenContactDetails(true);
                               setSelectedUser(user);
+                              setContactIncidentPage(1);
                             }}
                           >
                             <p
-                              className={`text-sm font-semibold ${
-                                viewAllCallLogs
-                                  ? "cursor-pointer hover:underline hover:text-primary"
-                                  : ""
-                              }`}
+                              className={`text-sm font-semibold ${"cursor-pointer hover:underline hover:text-primary"}`}
                             >
                               {user.first_name} {user.last_name}
                             </p>
                             <p
-                              className={`text-sm text-slate-500 ${
-                                viewAllCallLogs
-                                  ? "cursor-pointer hover:underline hover:text-primary"
-                                  : ""
-                              }`}
+                              className={`text-sm text-slate-500 ${"cursor-pointer hover:underline hover:text-primary"}`}
                             >
                               @{user.username}
                             </p>
@@ -573,20 +617,152 @@ export const ContactsList: React.FC<ContactsListProps> = ({
       </div>
       <Modal
         size="4xl"
-        isOpen={openCallLogs}
-        onOpenChange={setOpenCallLogs}
-        onClose={() => setOpenCallLogs(false)}
+        isOpen={openContactDetails}
+        onOpenChange={setOpenContactDetails}
+        onClose={() => setOpenContactDetails(false)}
       >
         <ModalHeader>
           <ModalTitle>
-            Call History of{" "}
             {[selectedUser?.first_name, selectedUser?.last_name]
               .filter(Boolean)
               .join(" ") || selectedUser?.username}
           </ModalTitle>
+          <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+            {t("users.contactDetails", "Contact Details")}
+          </p>
         </ModalHeader>
-        <ModalBody className="max-h-[70vh]">
-          <CallHistory userId={selectedUser?.id} />
+        <ModalBody className="max-h-[70vh] space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg border border-[hsl(var(--border))] p-4">
+            <div>
+              <span className="text-xs text-muted-foreground">
+                {t("users.user")}
+              </span>
+              <p className="font-medium">{selectedUser?.username || "-"}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">
+                {t("users.email")}
+              </span>
+              <p className="font-medium break-words">
+                {selectedUser?.email || "-"}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">
+                {t("users.phone")}
+              </span>
+              <p className="font-medium">
+                {selectedUser?.phone || t("users.noPhone")}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">
+                {t("users.department")}
+              </span>
+              <p className="font-medium">
+                {selectedUser?.department?.name ||
+                  selectedUser?.departments?.map((d) => d.name).join(", ") ||
+                  "-"}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">
+                {t("users.location")}
+              </span>
+              <p className="font-medium">
+                {selectedUser?.location?.name ||
+                  selectedUser?.locations?.map((l) => l.name).join(", ") ||
+                  "-"}
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-base font-semibold mb-3">
+              {t("common.incidents", "Associated Incidents")}
+            </h4>
+            {contactIncidentsLoading ? (
+              <p className="text-sm text-muted-foreground">
+                {t("common.loading", "Loading...")}
+              </p>
+            ) : contactIncidentsData?.data?.length ? (
+              <div className="space-y-2">
+                {contactIncidentsData.data.map((incident: Incident) => (
+                  <button
+                    type="button"
+                    key={incident.id}
+                    onClick={() => navigate(`/incidents/${incident.id}`)}
+                    className="w-full text-start rounded-lg border border-[hsl(var(--border))] p-3 hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium">
+                        {incident.incident_number}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-[hsl(var(--primary)/0.1)] px-2 py-0.5 text-xs font-medium text-[hsl(var(--primary))]">
+                          {incident.current_state?.name ||
+                            t("common.unknown", "Unknown")}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(incident.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm mt-1 truncate">{incident.title}</p>
+                  </button>
+                ))}
+                {contactIncidentsData.total_pages > 1 && (
+                  <div className="flex items-center justify-between pt-3">
+                    <span className="text-xs text-muted-foreground">
+                      {t("common.page", "Page")} {contactIncidentPage}{" "}
+                      {t("common.of", "of")} {contactIncidentsData.total_pages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setContactIncidentPage((page) =>
+                            Math.max(1, page - 1),
+                          )
+                        }
+                        disabled={
+                          contactIncidentPage === 1 || contactIncidentsLoading
+                        }
+                        className="p-1.5 rounded-md border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label={t("common.previous", "Previous")}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setContactIncidentPage((page) =>
+                            Math.min(
+                              contactIncidentsData.total_pages,
+                              page + 1,
+                            ),
+                          )
+                        }
+                        disabled={
+                          contactIncidentPage ===
+                            contactIncidentsData.total_pages ||
+                          contactIncidentsLoading
+                        }
+                        className="p-1.5 rounded-md border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label={t("common.next", "Next")}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("common.noActiveIncidents", "No associated incidents found")}
+              </p>
+            )}
+          </div>
         </ModalBody>
       </Modal>
     </div>
