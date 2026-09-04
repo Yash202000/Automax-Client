@@ -71,12 +71,12 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi, type, canEdit }) => {
         {/* Header: Title + Badges */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mb-0.5">
-              {kpi.code}
-            </p>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
               {kpi.name_en}
             </h3>
+            <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+              {kpi.code}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <span
