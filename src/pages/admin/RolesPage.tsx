@@ -237,7 +237,7 @@ export const RolesPage: React.FC = () => {
       setImportResult({
         imported: 0,
         skipped: 0,
-        errors: ["Please select a valid JSON (.json) or Excel (.xlsx) file."],
+        errors: [t("common.invalidImportFileType")],
       });
 
       event.target.value = "";
@@ -284,7 +284,7 @@ export const RolesPage: React.FC = () => {
       const worksheet = workbook.worksheets[0];
 
       if (!worksheet) {
-        throw new Error("No worksheet found in the Excel file.");
+        throw new Error(t("roles.noWorksheetFound"));
       }
 
       const headerRow = worksheet.getRow(1);
@@ -299,7 +299,7 @@ export const RolesPage: React.FC = () => {
         ),
       );
       if (!headers.length || !headers.some(Boolean)) {
-        throw new Error("Excel file does not contain valid headers.");
+        throw new Error(t("roles.invalidExcelHeaders"));
       }
 
       const requiredHeaders = isEPM940 ? ["name"] : ["name", "code"];
@@ -310,7 +310,9 @@ export const RolesPage: React.FC = () => {
 
       if (missingHeaders.length > 0) {
         throw new Error(
-          `Missing required column(s): ${missingHeaders.join(", ")}`,
+          t("roles.missingRequiredColumns", {
+            columns: missingHeaders.join(", "),
+          }),
         );
       }
 
@@ -338,7 +340,7 @@ export const RolesPage: React.FC = () => {
       });
 
       if (rows.length === 0) {
-        throw new Error("No data rows found in the Excel file.");
+        throw new Error(t("roles.noDataRowsFound"));
       }
 
       const errors: string[] = [];
@@ -355,26 +357,27 @@ export const RolesPage: React.FC = () => {
 
       rows.forEach((row, index) => {
         const excelRowNumber = index + 2;
+        const rowLabel = t("roles.rowLabel", { number: excelRowNumber });
 
         const name = row.name?.trim() ?? "";
         const code = row.code?.trim() ?? "";
 
         if (!validateRequired(name)) {
-          errors.push(`Row ${excelRowNumber}: ${t("roles.nameRequired")}`);
+          errors.push(`${rowLabel}: ${t("roles.nameRequired")}`);
           return;
         }
         if (!validateRoleName(name)) {
-          errors.push(`Row ${excelRowNumber}: ${t("roles.invalidName")}`);
+          errors.push(`${rowLabel}: ${t("roles.invalidName")}`);
           return;
         }
 
         if (!isEPM940) {
           if (!validateRequired(code)) {
-            errors.push(`Row ${excelRowNumber}: ${t("roles.codeRequired")}`);
+            errors.push(`${rowLabel}: ${t("roles.codeRequired")}`);
             return;
           }
           if (!validateCode(code)) {
-            errors.push(`Row ${excelRowNumber}: ${t("roles.invalidCode")}`);
+            errors.push(`${rowLabel}: ${t("roles.invalidCode")}`);
             return;
           }
         }
@@ -386,7 +389,7 @@ export const RolesPage: React.FC = () => {
           existingRoleNames.has(normalizedName) ||
           seenCodes.has(`name:${normalizedName}`)
         ) {
-          errors.push(`Row ${excelRowNumber}: Duplicate role name "${name}".`);
+          errors.push(t("roles.importDuplicateName", { row: rowLabel, name }));
           return;
         }
 
@@ -395,7 +398,7 @@ export const RolesPage: React.FC = () => {
           (existingRoleCodes.has(normalizedCode) ||
             seenCodes.has(normalizedCode))
         ) {
-          errors.push(`Row ${excelRowNumber}: Duplicate role code "${code}".`);
+          errors.push(t("roles.importDuplicateCode", { row: rowLabel, code }));
           return;
         }
 
@@ -419,7 +422,10 @@ export const RolesPage: React.FC = () => {
 
           if (!permission) {
             errors.push(
-              `Row ${excelRowNumber}: Permission "${permissionCode}" not found.`,
+              t("roles.importPermissionNotFound", {
+                row: rowLabel,
+                code: permissionCode,
+              }),
             );
             continue;
           }
@@ -484,7 +490,7 @@ export const RolesPage: React.FC = () => {
         errors: [
           error instanceof Error
             ? error.message
-            : "Import failed. Please check the file format.",
+            : t("roles.importFailedCheckFormat"),
         ],
       });
 
@@ -831,10 +837,10 @@ export const RolesPage: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                  Select roles to export
+                  {t("roles.selectRolesToExport")}
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                  By default, all roles are selected.
+                  {t("roles.allRolesSelectedByDefault")}
                 </p>
               </div>
               <button
@@ -857,7 +863,7 @@ export const RolesPage: React.FC = () => {
                 leafOnly={true}
                 colorScheme="primary"
                 maxHeight="300px"
-                label="Roles"
+                label={t("roles.title")}
                 showExpandCollapse={false}
               />
             </div>
@@ -874,7 +880,7 @@ export const RolesPage: React.FC = () => {
                 disabled={selectedExportIds.length === 0}
                 leftIcon={<Download className="w-4 h-4" />}
               >
-                Export Excel
+                {t("common.exportExcel")}
               </Button>
             </div>
           </div>
@@ -888,11 +894,11 @@ export const RolesPage: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                  Import Roles
+                  {t("roles.importRolesTitle")}
                 </h3>
 
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                  Import roles from a JSON or Excel file.
+                  {t("roles.importRolesSubtitle")}
                 </p>
               </div>
 
@@ -919,17 +925,19 @@ export const RolesPage: React.FC = () => {
                   </div>
 
                   <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                    {importFile ? importFile.name : "Select a role import file"}
+                    {importFile
+                      ? importFile.name
+                      : t("roles.selectRoleImportFile")}
                   </p>
 
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                    Supported formats: .json, .xlsx
+                    {t("roles.supportedFormatsJsonXlsx")}
                   </p>
 
                   <label className="mt-4">
                     <span className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-lg text-sm font-medium cursor-pointer hover:opacity-90">
                       <Upload className="w-4 h-4" />
-                      Choose File
+                      {t("common.chooseFile")}
                     </span>
 
                     <input
@@ -954,7 +962,7 @@ export const RolesPage: React.FC = () => {
                     </p>
 
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {(importFile.size / 1024).toFixed(1)} KB
+                      {(importFile.size / 1024).toFixed(1)} {t("common.kb")}
                     </p>
                   </div>
                 </div>

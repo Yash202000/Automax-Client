@@ -398,7 +398,7 @@ export const DepartmentsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.error || "Failed to update department",
+        error?.response?.data?.error || t("departments.failedToUpdate"),
       );
     },
   });
@@ -469,9 +469,9 @@ export const DepartmentsPage: React.FC = () => {
         queryKey: ["admin", "user-search-dept", userSearchTerm],
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success("User added to department");
+      toast.success(t("departments.userAddedToDepartment"));
     },
-    onError: () => toast.error("Failed to add user to department"),
+    onError: () => toast.error(t("departments.failedToAddUserToDepartment")),
   });
 
   const removeUserFromDeptMutation = useMutation({
@@ -492,9 +492,10 @@ export const DepartmentsPage: React.FC = () => {
         queryKey: ["admin", "dept-users", editingDepartment?.id],
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success("User removed from department");
+      toast.success(t("departments.userRemovedFromDepartment"));
     },
-    onError: () => toast.error("Failed to remove user from department"),
+    onError: () =>
+      toast.error(t("departments.failedToRemoveUserFromDepartment")),
   });
 
   const openCreateModal = (parentId: string = "", parentName: string = "") => {
@@ -669,23 +670,41 @@ export const DepartmentsPage: React.FC = () => {
     const errors: string[] = [];
     const ids: string[] = [];
 
-    String(raw || "")
-      .split(/[;,]/)
+    const matchItem = (name: string) =>
+      items.find(
+        (item) =>
+          item.name.trim().toLowerCase() === name.toLowerCase() ||
+          (item.code && item.code.trim().toLowerCase() === name.toLowerCase()),
+      );
+
+    const tokens = String(raw || "")
+      .split(",")
       .map((value) => value.trim())
-      .filter(Boolean)
-      .forEach((name) => {
-        const match = items.find(
-          (item) =>
-            item.name.trim().toLowerCase() === name.toLowerCase() ||
-            (item.code &&
-              item.code.trim().toLowerCase() === name.toLowerCase()),
-        );
-        if (!match) {
-          errors.push(`${label} "${name}" was not found`);
-          return;
+      .filter(Boolean);
+
+    let i = 0;
+    while (i < tokens.length) {
+      let matched = false;
+      for (let j = tokens.length; j > i; j--) {
+        const candidate = tokens.slice(i, j).join(", ");
+        const match = matchItem(candidate);
+        if (match) {
+          ids.push(match.id);
+          i = j;
+          matched = true;
+          break;
         }
-        ids.push(match.id);
-      });
+      }
+      if (!matched) {
+        errors.push(
+          t("departments.relationNotFound", {
+            label,
+            value: tokens[i],
+          }),
+        );
+        i++;
+      }
+    }
 
     return { ids, errors };
   };
@@ -875,7 +894,7 @@ export const DepartmentsPage: React.FC = () => {
 
     const name = file.name.toLowerCase();
     if (!name.endsWith(".json") && !name.endsWith(".xlsx")) {
-      toast.error("Please select a valid JSON (.json) or Excel (.xlsx) file.");
+      toast.error(t("common.invalidImportFileType"));
       event.target.value = "";
       setImportFile(null);
       return;
@@ -946,9 +965,7 @@ export const DepartmentsPage: React.FC = () => {
         setImportResult({
           imported: 0,
           skipped: 0,
-          errors: [
-            "No data found in file. Please ensure the file contains department records.",
-          ],
+          errors: [t("departments.noDataInFile")],
         });
         return;
       }
@@ -970,7 +987,7 @@ export const DepartmentsPage: React.FC = () => {
 
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
-        const rowLabel = `Row ${rowNum}`;
+        const rowLabel = t("departments.rowLabel", { number: rowNum });
         const name = String(row.name || "").trim();
         const code = String(row.code || "").trim();
 
@@ -981,7 +998,9 @@ export const DepartmentsPage: React.FC = () => {
         }
 
         if (!isEPM940 && !code) {
-          errors.push(`${rowLabel}: Code is required`);
+          errors.push(
+            t("departments.importRowCodeRequired", { row: rowLabel }),
+          );
           return;
         }
 
@@ -989,7 +1008,9 @@ export const DepartmentsPage: React.FC = () => {
           existingDepartmentNames.has(name.toLowerCase()) ||
           seenDepartmentNames.has(name.toLowerCase())
         ) {
-          errors.push(`${rowLabel}: Duplicate department name "${name}"`);
+          errors.push(
+            t("departments.importDuplicateName", { row: rowLabel, name }),
+          );
           return;
         }
 
@@ -998,7 +1019,9 @@ export const DepartmentsPage: React.FC = () => {
           (existingDepartmentCodes.has(code.toLowerCase()) ||
             seenDepartmentCodes.has(code.toLowerCase()))
         ) {
-          errors.push(`${rowLabel}: Duplicate department code "${code}"`);
+          errors.push(
+            t("departments.importDuplicateCode", { row: rowLabel, code }),
+          );
           return;
         }
 
@@ -1016,7 +1039,10 @@ export const DepartmentsPage: React.FC = () => {
 
         if (parentName && !parentMatch) {
           errors.push(
-            `${rowLabel}: Parent department "${parentName}" was not found`,
+            t("departments.importParentNotFound", {
+              row: rowLabel,
+              parent: parentName,
+            }),
           );
           return;
         }
@@ -1024,17 +1050,17 @@ export const DepartmentsPage: React.FC = () => {
         const locationResult = resolveImportRelationIds(
           row.locations,
           flattenTree(locationsData?.data ?? []),
-          "Location",
+          t("common.location"),
         );
         const classificationResult = resolveImportRelationIds(
           row.classifications,
           flattenTree(classificationsData?.data ?? []),
-          "Classification",
+          t("common.classification"),
         );
         const roleResult = resolveImportRelationIds(
           row.roles,
           rolesData?.data ?? [],
-          "Role",
+          t("common.role"),
         );
 
         const relationErrors = [
@@ -1101,7 +1127,7 @@ export const DepartmentsPage: React.FC = () => {
       setImportFile(null);
     } catch (error) {
       console.error("Import failed:", error);
-      toast.error("Failed to import departments");
+      toast.error(t("departments.failedToImport"));
     } finally {
       setIsImporting(false);
     }
@@ -1320,10 +1346,10 @@ export const DepartmentsPage: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                  Select departments to export
+                  {t("departments.selectDepartmentsToExport")}
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                  By default, all departments are selected.
+                  {t("departments.allDepartmentsSelectedByDefault")}
                 </p>
               </div>
               <button
@@ -1344,7 +1370,7 @@ export const DepartmentsPage: React.FC = () => {
                 maxHeight="280px"
                 leafOnly={false}
                 hierarchyType="department"
-                label="Departments"
+                label={t("departments.title")}
               />
             </div>
 
@@ -1360,7 +1386,7 @@ export const DepartmentsPage: React.FC = () => {
                 disabled={exportSelectedIds.length === 0}
                 leftIcon={<Download className="w-4 h-4" />}
               >
-                Export Excel
+                {t("common.exportExcel")}
               </Button>
             </div>
           </div>
@@ -1377,12 +1403,11 @@ export const DepartmentsPage: React.FC = () => {
                     <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
                   </div>
                   <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                    Import Departments
+                    {t("departments.importDepartmentsTitle")}
                   </h3>
                 </div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
-                  Upload a JSON (.json) or Excel (.xlsx) file to import
-                  departments
+                  {t("departments.importDepartmentsSubtitle")}
                 </p>
               </div>
               <button
@@ -1399,7 +1424,7 @@ export const DepartmentsPage: React.FC = () => {
             <div className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  Select JSON (.json) or Excel (.xlsx) file
+                  {t("common.selectJsonOrExcelFile")}
                 </label>
                 <label
                   className={cn(
@@ -1440,11 +1465,8 @@ export const DepartmentsPage: React.FC = () => {
                       {t("common.importNotes")}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Valid JSON (.json) or Excel (.xlsx) file required</li>
-                      <li>
-                        Rows that fail validation are skipped and listed after
-                        import
-                      </li>
+                      <li>{t("common.validJsonOrExcelRequired")}</li>
+                      <li>{t("common.rowsSkippedListedAfterImport")}</li>
                     </ul>
                   </div>
                 </div>
@@ -1467,7 +1489,9 @@ export const DepartmentsPage: React.FC = () => {
                   !isImporting ? <Upload className="w-4 h-4" /> : undefined
                 }
               >
-                {isImporting ? t("common.importing") : "Import Departments"}
+                {isImporting
+                  ? t("common.importing")
+                  : t("departments.importDepartmentsTitle")}
               </Button>
             </div>
           </div>
