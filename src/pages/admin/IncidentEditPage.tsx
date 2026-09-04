@@ -75,6 +75,22 @@ const getUserLabel = (user: any) =>
 
 const normalizeStatus = (status?: string) => status?.toLowerCase() ?? "";
 
+const splitCallerName = (value: string) => {
+  const normalized = value.trim().replace(/\s+/g, " ");
+  const parts = normalized.split(" ").filter(Boolean);
+
+  if (parts.length === 0) return { first: "", middle: "", last: "" };
+  if (parts.length === 1) return { first: parts[0], middle: "", last: "" };
+  if (parts.length === 2)
+    return { first: parts[0], middle: "", last: parts[1] };
+
+  return {
+    first: parts[0],
+    middle: parts.slice(1, -1).join(" "),
+    last: parts[parts.length - 1],
+  };
+};
+
 const statusOrder: Record<string, number> = {
   online: 0,
   connected: 1,
@@ -121,6 +137,11 @@ export function IncidentEditPage() {
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [callerNameParts, setCallerNameParts] = useState({
+    first: "",
+    middle: "",
+    last: "",
+  });
   const [locationOptions, setLocationOptions] = useState<iLocationOption[]>([]);
   const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
@@ -347,6 +368,10 @@ export function IncidentEditPage() {
 
     setInitialized(true);
   }, [incident, incidentLookupCategories, initialized]);
+
+  useEffect(() => {
+    setCallerNameParts(splitCallerName(formData.reporter_name || ""));
+  }, [formData.reporter_name]);
 
   const selectedWorkflow = workflows.find(
     (w) => w.id === incident?.workflow?.id,
@@ -882,64 +907,61 @@ export function IncidentEditPage() {
                     </span>
                   </div>
                 )}
-                {(workflowRequiredFields.includes("reporter_name") ||
-                  workflowOptionalFields.includes("reporter_name")) && (
-                  <Input
-                    label={t("incidents.reporterName", "Caller Name")}
-                    value={formData.reporter_name || ""}
-                    onChange={(e) =>
-                      handleChange(
-                        "reporter_name",
-                        e.target.value.replace(/[^a-zA-ZÀ-ɏ؀-ۿ\s\-'.]/g, ""),
-                      )
-                    }
-                    placeholder={t(
-                      "incidents.reporterNamePlaceholder",
-                      "Name of caller",
-                    )}
-                    required={workflowRequiredFields.includes("reporter_name")}
-                    error={errors.reporter_name}
-                  />
-                )}
-                {(workflowRequiredFields.includes("reporter_email") ||
-                  workflowOptionalFields.includes("reporter_email")) && (
-                  <Input
-                    label={t("incidents.reporterEmail", "Caller Email")}
-                    type="email"
-                    value={formData.reporter_email || ""}
-                    onChange={(e) =>
-                      handleChange("reporter_email", e.target.value)
-                    }
-                    placeholder={t(
-                      "incidents.reporterEmailPlaceholder",
-                      "caller@example.com",
-                    )}
-                    required={workflowRequiredFields.includes("reporter_email")}
-                    error={errors.reporter_email}
-                  />
-                )}
-                {(workflowRequiredFields.includes("reporter_phone") ||
-                  workflowOptionalFields.includes("reporter_phone")) && (
-                  <Input
-                    label={t("incidents.reporterPhone", "Caller Phone Number")}
-                    type="tel"
-                    value={formData.reporter_phone || ""}
-                    onChange={(e) =>
-                      handleChange(
-                        "reporter_phone",
-                        e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                      )
-                    }
-                    placeholder={t(
-                      "incidents.reporterPhonePlaceholder",
-                      "+971 50 000 0000",
-                    )}
-                    required={workflowRequiredFields.includes("reporter_phone")}
-                    error={errors.reporter_phone}
-                  />
-                )}
               </div>
             </Card>
+
+            {isEPM940 &&
+              (workflowRequiredFields.includes("reporter_name") ||
+                workflowOptionalFields.includes("reporter_name") ||
+                workflowRequiredFields.includes("reporter_phone") ||
+                workflowOptionalFields.includes("reporter_phone") ||
+                workflowRequiredFields.includes("reporter_email") ||
+                workflowOptionalFields.includes("reporter_email")) && (
+                <Card className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    {t("incidents.callerInformation", "Caller Information")}
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Input
+                        label={t("incidents.firstName", "First name")}
+                        value={callerNameParts.first}
+                        disabled
+                      />
+                      <Input
+                        label={t("incidents.middleName", "Middle name")}
+                        value={callerNameParts.middle}
+                        disabled
+                      />
+                      <Input
+                        label={t("incidents.lastName", "Last name")}
+                        value={callerNameParts.last}
+                        disabled
+                      />
+                    </div>
+
+                    <Input
+                      className="w-full"
+                      label={t(
+                        "incidents.reporterPhone",
+                        "Caller Phone Number",
+                      )}
+                      type="tel"
+                      value={formData.reporter_phone || ""}
+                      disabled
+                    />
+                    {(workflowRequiredFields.includes("reporter_email") ||
+                      workflowOptionalFields.includes("reporter_email")) && (
+                      <Input
+                        label={t("incidents.reporterEmail", "Caller Email")}
+                        type="email"
+                        value={formData.reporter_email || ""}
+                        disabled
+                      />
+                    )}
+                  </div>
+                </Card>
+              )}
 
             {/* Matching Criteria */}
             <Card className="p-6">

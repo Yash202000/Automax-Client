@@ -47,7 +47,10 @@ import {
   ShieldCheck,
   Phone,
   Maximize2,
+  Minimize2,
+  ChevronLeft,
   Mail,
+  Globe2,
 } from "lucide-react";
 import {
   Button,
@@ -111,6 +114,7 @@ import {
 import { useIncidentWebSocket } from "../../lib/services/incidentWebSocket";
 import ImageEditor from "@/components/common/ImageEditor";
 import { ZoomableImage } from "@/components/common/ZoomableImage";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { useAppSelector } from "../../hooks/redux";
 import { integrationApi } from "../../api/integration";
 import type { IncidentBridge } from "../../api/integration";
@@ -226,6 +230,8 @@ export const IncidentDetailPage: React.FC = () => {
     name: string;
     attachment: IncidentAttachment;
   } | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const lightboxFullscreen = useFullscreen<HTMLDivElement>();
 
   // Image comparison state
   const [compareMode, setCompareMode] = useState(false);
@@ -234,6 +240,7 @@ export const IncidentDetailPage: React.FC = () => {
   >([]);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [compareSliderPosition, setCompareSliderPosition] = useState(50);
+  const compareFullscreen = useFullscreen<HTMLDivElement>();
   const [locationMapModalOpen, setLocationMapModalOpen] = useState(false);
 
   //Image Editor state
@@ -425,6 +432,93 @@ export const IncidentDetailPage: React.FC = () => {
 
   const incident = incidentData?.data as IncidentDetail | undefined;
   const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
+
+  // For a MOMRA-sourced incident, external-entity department options must be
+  // restricted to this specific incident's own EEList (custom_fields.eeList — the set
+  // MOMRA declared eligible at submission time), matching the server-side enforcement
+  // in incident_service.go's validateExternalDepartmentAssignment. Internal
+  // departments and non-MOMRA incidents are never restricted. Returns null when no
+  // restriction applies, so callers can treat "no filtering" and "empty allow-list" as
+  // distinct states.
+  const momraAllowedEEList = useMemo((): {
+    codes: Set<string>;
+    names: Set<string>;
+  } | null => {
+    if (incident?.source !== "MOMRA" || !incident?.available_ee_list)
+      return null;
+    const codes = new Set<string>();
+    const names = new Set<string>();
+    for (const entry of incident.available_ee_list) {
+      const code = String(entry?.EntityID || entry?.EECode || "")
+        .trim()
+        .toLowerCase();
+      if (code) codes.add(code);
+      const name = String(entry?.EEName || "")
+        .trim()
+        .toLowerCase();
+      if (name) names.add(name);
+    }
+    return { codes, names };
+  }, [incident?.source, incident?.available_ee_list]);
+
+  // Drops external-type departments not in momraAllowedEEList; internal departments
+  // and non-restricted (allowed === null) cases pass through unchanged.
+  const isDepartmentMomraAllowed = (
+    dept: Pick<Department, "type" | "code" | "name" | "name_ar">,
+    allowed: { codes: Set<string>; names: Set<string> } | null,
+  ): boolean => {
+    if (dept.type !== "external" || !allowed) return true;
+    const code = dept.code?.trim().toLowerCase();
+    const name = dept.name?.trim().toLowerCase();
+    const nameAr = dept.name_ar?.trim().toLowerCase();
+    return (
+      (!!code && allowed.codes.has(code)) ||
+      (!!name && allowed.names.has(name)) ||
+      (!!nameAr && allowed.names.has(nameAr))
+    );
+  };
+
+  // Tree-shaped version of isDepartmentMomraAllowed: keeps a node if it's allowed, or
+  // if it has at least one allowed descendant (so an internal ancestor isn't pruned
+  // just because a sibling external leaf was filtered out).
+  const filterDeptTreeForMomraEE = (
+    nodes: Department[],
+    allowed: { codes: Set<string>; names: Set<string> } | null,
+  ): Department[] =>
+    nodes
+      .map((node) => ({
+        ...node,
+        children: node.children
+          ? filterDeptTreeForMomraEE(node.children, allowed)
+          : [],
+      }))
+      .filter(
+        (node) =>
+          (node.children && node.children.length > 0) ||
+          isDepartmentMomraAllowed(node, allowed),
+      );
+
+  // Server-resolved auto-detect matches (departmentMatchResult) don't know about
+  // custom_fields.eeList — they're computed purely from classification/location links
+  // (see department_repository.go's FindMatching). Re-derive single_match/departments
+  // here so the UI doesn't confidently offer or auto-select an external entity that
+  // validateExternalDepartmentAssignment would reject at submit time for a MOMRA
+  // incident.
+  const momraFilteredDepartmentMatch =
+    useMemo((): DepartmentMatchResponse | null => {
+      if (!departmentMatchResult) return null;
+      if (!momraAllowedEEList) return departmentMatchResult;
+      const filtered = departmentMatchResult.departments.filter((d) =>
+        isDepartmentMomraAllowed(d, momraAllowedEEList),
+      );
+      return {
+        departments: filtered,
+        single_match: filtered.length === 1,
+        matched_department_id:
+          filtered.length === 1 ? filtered[0].id : undefined,
+      };
+    }, [departmentMatchResult, momraAllowedEEList]);
+
   const lookupCategories = useMemo(
     () => lookupCategoriesData?.data || [],
     [lookupCategoriesData?.data],
@@ -436,24 +530,31 @@ export const IncidentDetailPage: React.FC = () => {
     return getNodePath(
       fcClassificationsData.data as unknown as TreeSelectNode[],
       incident.classification.id,
+      i18n.language,
     );
-  }, [incident?.classification?.id, fcClassificationsData?.data]);
+  }, [
+    incident?.classification?.id,
+    fcClassificationsData?.data,
+    i18n.language,
+  ]);
 
   const locationPath = useMemo(() => {
     if (!incident?.location?.id || !fcLocationsData?.data) return [];
     return getNodePath(
       fcLocationsData.data as unknown as TreeSelectNode[],
       incident.location.id,
+      i18n.language,
     );
-  }, [incident?.location?.id, fcLocationsData?.data]);
+  }, [incident?.location?.id, fcLocationsData?.data, i18n.language]);
 
   const departmentPath = useMemo(() => {
     if (!incident?.department?.id || !fcDepartmentsData?.data) return [];
     return getNodePath(
       fcDepartmentsData.data as unknown as TreeSelectNode[],
       incident.department.id,
+      i18n.language,
     );
-  }, [incident?.department?.id, fcDepartmentsData?.data]);
+  }, [incident?.department?.id, fcDepartmentsData?.data, i18n.language]);
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
@@ -537,9 +638,11 @@ export const IncidentDetailPage: React.FC = () => {
         setUserMatchResult(null);
         setSelectedDepartmentId("");
         setSelectedUserIds([]);
-        toast.info("Incident Updated", {
-          description:
+        toast.info(t("incidents.incidentUpdated", "Incident Updated"), {
+          description: t(
+            "incidents.incidentUpdatedDescription",
             "This incident was updated by another user. Please review the changes.",
+          ),
           duration: 5000,
         });
       }
@@ -687,9 +790,11 @@ export const IncidentDetailPage: React.FC = () => {
         errorMessage.includes("conflict") ||
         errorMessage.includes("modified by another user")
       ) {
-        toast.error("Conflict Detected", {
-          description:
+        toast.error(t("incidents.conflictDetected", "Conflict Detected"), {
+          description: t(
+            "incidents.incidentModifiedByAnotherUser",
             "This incident was modified by another user. Refreshing...",
+          ),
           duration: 5000,
         });
 
@@ -699,7 +804,7 @@ export const IncidentDetailPage: React.FC = () => {
           refetchTransitions();
         }, 1000);
       } else {
-        toast.error("Transition Failed", {
+        toast.error(t("incidents.transitionFailed", "Transition Failed"), {
           description: errorMessage,
         });
       }
@@ -750,7 +855,12 @@ export const IncidentDetailPage: React.FC = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
-      toast.success("Incident summary updated successfully");
+      toast.success(
+        t(
+          "incidents.summaryUpdatedSuccessfully",
+          "Incident summary updated successfully",
+        ),
+      );
       setIsEditingDescription(false);
       setIsSavingDescription(false);
     },
@@ -759,7 +869,7 @@ export const IncidentDetailPage: React.FC = () => {
         error.response?.data?.error ||
         error.message ||
         "Failed to update summary";
-      toast.error("Error", {
+      toast.error(t("incidents.error", "Error"), {
         description: errorMessage,
       });
       setIsSavingDescription(false);
@@ -834,14 +944,41 @@ export const IncidentDetailPage: React.FC = () => {
     return `${API_URL}/attachments/${attachmentId}/preview?token=${token}`;
   };
 
+  const imageAttachments = attachments.filter((a: IncidentAttachment) =>
+    isImageAttachment(a.mime_type),
+  );
+
   // Open image in lightbox
   const openLightbox = (attachment: IncidentAttachment) => {
+    const index = imageAttachments.findIndex((a) => a.id === attachment.id);
+    setLightboxIndex(index >= 0 ? index : 0);
     setLightboxImage({
       url: getAttachmentPreviewUrl(attachment.id),
       name: attachment.file_name,
       attachment: attachment,
     });
     setLightboxOpen(true);
+  };
+
+  const showLightboxAttachmentAt = (index: number) => {
+    const attachment = imageAttachments[index];
+    if (!attachment) return;
+    setLightboxIndex(index);
+    setLightboxImage({
+      url: getAttachmentPreviewUrl(attachment.id),
+      name: attachment.file_name,
+      attachment,
+    });
+  };
+
+  const goToPreviousAttachment = () => {
+    if (lightboxIndex > 0) showLightboxAttachmentAt(lightboxIndex - 1);
+  };
+
+  const goToNextAttachment = () => {
+    if (lightboxIndex < imageAttachments.length - 1) {
+      showLightboxAttachmentAt(lightboxIndex + 1);
+    }
   };
 
   // Toggle image selection for comparison
@@ -876,6 +1013,56 @@ export const IncidentDetailPage: React.FC = () => {
     setSelectedForCompare([]);
     setCompareModalOpen(false);
   };
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    lightboxFullscreen.enterFullscreen();
+    return () => {
+      lightboxFullscreen.exitFullscreen();
+    };
+  }, [lightboxOpen]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (document.fullscreenElement) {
+          lightboxFullscreen.exitFullscreen();
+        } else {
+          setLightboxOpen(false);
+        }
+      } else if (e.key === "ArrowLeft") {
+        goToPreviousAttachment();
+      } else if (e.key === "ArrowRight") {
+        goToNextAttachment();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen, lightboxIndex, imageAttachments]);
+
+  useEffect(() => {
+    if (!compareModalOpen) return;
+    compareFullscreen.enterFullscreen();
+    return () => {
+      compareFullscreen.exitFullscreen();
+    };
+  }, [compareModalOpen]);
+
+  useEffect(() => {
+    if (!compareModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (document.fullscreenElement) {
+          compareFullscreen.exitFullscreen();
+        } else {
+          setCompareModalOpen(false);
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [compareModalOpen]);
 
   const [generatingReport, setGeneratingReport] = useState(false);
 
@@ -1097,6 +1284,7 @@ export const IncidentDetailPage: React.FC = () => {
           const deptResult = await departmentApi.match({
             classification_id: incident.classification?.id,
             location_id: incident.location?.id,
+            incident_id: incident.id,
             ...(trans.department_type_filter
               ? {
                   department_type: trans.department_type_filter as
@@ -1107,12 +1295,17 @@ export const IncidentDetailPage: React.FC = () => {
           });
           if (deptResult.success && deptResult.data) {
             setDepartmentMatchResult(deptResult.data);
-            // Auto-select if single match
-            if (
-              deptResult.data.single_match &&
-              deptResult.data.matched_department_id
-            ) {
-              setSelectedDepartmentId(deptResult.data.matched_department_id);
+            // Auto-select if single match — filtered against this incident's
+            // MOMRA EEList first (see momraAllowedEEList/isDepartmentMomraAllowed),
+            // since the match API itself has no knowledge of custom_fields.eeList
+            // and auto-selecting a since-disallowed external entity here would
+            // desync selectedDepartmentId from what momraFilteredDepartmentMatch
+            // renders as selectable.
+            const eligible = deptResult.data.departments.filter((d) =>
+              isDepartmentMomraAllowed(d, momraAllowedEEList),
+            );
+            if (eligible.length === 1) {
+              setSelectedDepartmentId(eligible[0].id);
             }
           }
         }
@@ -1412,12 +1605,6 @@ export const IncidentDetailPage: React.FC = () => {
     if (file) {
       uploadAttachmentMutation.mutate(file);
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const { data: commentTemplatesData } = useQuery({
@@ -2624,7 +2811,6 @@ export const IncidentDetailPage: React.FC = () => {
                                         {attachment.file_name}
                                       </p>
                                       <p className="text-xs text-white/70 mt-0.5">
-                                        {formatFileSize(attachment.file_size)} •{" "}
                                         {formatDateTime(attachment.created_at)}
                                       </p>
                                       {attachment.uploaded_by && (
@@ -2734,8 +2920,6 @@ export const IncidentDetailPage: React.FC = () => {
                                           {attachment.file_name}
                                         </p>
                                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                          {formatFileSize(attachment.file_size)}{" "}
-                                          •{" "}
                                           {formatDateTime(
                                             attachment.created_at,
                                           )}
@@ -2870,7 +3054,6 @@ export const IncidentDetailPage: React.FC = () => {
                                         {attachment.file_name}
                                       </p>
                                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                        {formatFileSize(attachment.file_size)} •{" "}
                                         {formatDateTime(attachment.created_at)}
                                       </p>
                                       {attachment.uploaded_by && (
@@ -3258,7 +3441,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.classification.name
+                        getLocalizedName(incident.classification)
                       )}
                     </div>
                   </div>
@@ -3292,7 +3475,34 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.department.name
+                        getLocalizedName(incident.department)
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* MOMRA External Entity assignment (docs/MOMRA_Outbound_Integration_Spec_v1.0.md §7) */}
+                {incident.external_entity && (
+                  <div>
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {t("incidents.externalEntity")}
+                    </label>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
+                      <Globe2 className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                      <span className="font-semibold">
+                        {incident.external_entity.name}
+                      </span>
+                      {incident.external_assignment_status && (
+                        <span className="text-xs px-2 py-0.5 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded-full capitalize">
+                          {incident.external_assignment_status}
+                        </span>
+                      )}
+                      {incident.external_assigned_at && (
+                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                          {new Date(
+                            incident.external_assigned_at,
+                          ).toLocaleString()}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -3326,7 +3536,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.location.name
+                        getLocalizedName(incident.location)
                       )}
                     </div>
                     {incident.location?.name === "Default" && (
@@ -4055,26 +4265,27 @@ export const IncidentDetailPage: React.FC = () => {
                             t("incidents.department")}
                         </span>
                       </p>
-                    ) : departmentMatchResult ? (
-                      departmentMatchResult.departments.length === 0 ? (
+                    ) : momraFilteredDepartmentMatch ? (
+                      momraFilteredDepartmentMatch.departments.length === 0 ? (
                         <p className="text-sm text-red-600 font-medium">
                           {t(
                             "incidents.noDepartmentAssigned",
                             "No department assigned - Contact administrator for this",
                           )}
                         </p>
-                      ) : departmentMatchResult.single_match ? (
+                      ) : momraFilteredDepartmentMatch.single_match ? (
                         <p className="text-sm text-[hsl(var(--foreground))]">
                           {t("incidents.willAssignTo")}{" "}
                           <span className="font-medium">
                             {getLocalizedName(
-                              departmentMatchResult.departments[0],
+                              momraFilteredDepartmentMatch.departments[0],
                             )}
                           </span>
                         </p>
                       ) : (
                         (() => {
-                          const allDepts = departmentMatchResult.departments;
+                          const allDepts =
+                            momraFilteredDepartmentMatch.departments;
                           const deptIdSet = new Set(allDepts.map((d) => d.id));
                           const parentIds = new Set(
                             allDepts
@@ -4998,12 +5209,16 @@ export const IncidentDetailPage: React.FC = () => {
                                   const allDepts =
                                     (fcDepartmentsData?.data as unknown as Department[]) ||
                                     [];
-                                  const filtered = fc.department_type_filter
+                                  let filtered = fc.department_type_filter
                                     ? filterDeptTree(
                                         allDepts,
                                         fc.department_type_filter,
                                       )
                                     : allDepts;
+                                  filtered = filterDeptTreeForMomraEE(
+                                    filtered,
+                                    momraAllowedEEList,
+                                  );
                                   return filtered as unknown as TreeSelectNode[];
                                 })()}
                                 value={
@@ -5450,28 +5665,96 @@ export const IncidentDetailPage: React.FC = () => {
       {/* Image Lightbox */}
       {lightboxOpen && lightboxImage && (
         <div
+          ref={lightboxFullscreen.containerRef}
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
           onClick={() => setLightboxOpen(false)}
         >
           {/* Close Button */}
           <button
             onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+            aria-label={t("common.close", "Close")}
+            title={t("common.close", "Close")}
           >
             <X className="w-6 h-6" />
           </button>
 
-          {/* Image Name */}
-          <div className="absolute top-4 left-4 text-white text-sm bg-black/50 px-3 py-1.5 rounded-lg">
-            {lightboxImage.name}
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              lightboxFullscreen.toggleFullscreen();
+            }}
+            className="absolute top-4 right-16 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+            aria-label={
+              lightboxFullscreen.isFullscreen
+                ? t("common.exitFullScreen", "Exit Full Screen")
+                : t("common.fullScreen", "Full Screen")
+            }
+            title={
+              lightboxFullscreen.isFullscreen
+                ? t("common.exitFullScreen", "Exit Full Screen")
+                : t("common.fullScreen", "Full Screen")
+            }
+          >
+            {lightboxFullscreen.isFullscreen ? (
+              <Minimize2 className="w-5 h-5" />
+            ) : (
+              <Maximize2 className="w-5 h-5" />
+            )}
+          </button>
+
+          {/* Image Name + Position */}
+          <div className="absolute top-4 left-4 z-[110] flex items-center gap-2 text-white text-sm bg-black/50 px-3 py-1.5 rounded-lg max-w-[60vw]">
+            <span className="truncate">{lightboxImage.name}</span>
+            {imageAttachments.length > 1 && (
+              <span className="shrink-0 text-white/70">
+                ({lightboxIndex + 1} {t("common.of", "of")}{" "}
+                {imageAttachments.length})
+              </span>
+            )}
           </div>
+
+          {/* Previous / Next Navigation */}
+          {imageAttachments.length > 1 && (
+            <>
+              {lightboxIndex > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToPreviousAttachment();
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+                  aria-label={t("common.previous", "Previous")}
+                  title={t("common.previous", "Previous")}
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+              {lightboxIndex < imageAttachments.length - 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToNextAttachment();
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+                  aria-label={t("common.next", "Next")}
+                  title={t("common.next", "Next")}
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+            </>
+          )}
 
           {/* Download Button */}
           <a
             href={lightboxImage.url}
             download={lightboxImage.name}
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            className="absolute bottom-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+            aria-label={t("common.download", "Download")}
+            title={t("common.download", "Download")}
           >
             <Download className="w-6 h-6" />
           </a>
@@ -5485,6 +5768,7 @@ export const IncidentDetailPage: React.FC = () => {
       {/* Image Comparison Modal */}
       {compareModalOpen && selectedForCompare.length === 2 && (
         <div
+          ref={compareFullscreen.containerRef}
           className="fixed inset-0 z-[100] bg-black/95 flex flex-col"
           onClick={() => setCompareModalOpen(false)}
         >
@@ -5501,12 +5785,39 @@ export const IncidentDetailPage: React.FC = () => {
                 {t("incidents.dragSliderToCompare")}
               </span>
             </div>
-            <button
-              onClick={() => setCompareModalOpen(false)}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  compareFullscreen.toggleFullscreen();
+                }}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                aria-label={
+                  compareFullscreen.isFullscreen
+                    ? t("common.exitFullScreen", "Exit Full Screen")
+                    : t("common.fullScreen", "Full Screen")
+                }
+                title={
+                  compareFullscreen.isFullscreen
+                    ? t("common.exitFullScreen", "Exit Full Screen")
+                    : t("common.fullScreen", "Full Screen")
+                }
+              >
+                {compareFullscreen.isFullscreen ? (
+                  <Minimize2 className="w-6 h-6" />
+                ) : (
+                  <Maximize2 className="w-6 h-6" />
+                )}
+              </button>
+              <button
+                onClick={() => setCompareModalOpen(false)}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                aria-label={t("common.close", "Close")}
+                title={t("common.close", "Close")}
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Comparison Container */}
@@ -5514,7 +5825,14 @@ export const IncidentDetailPage: React.FC = () => {
             className="flex-1 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-full max-w-5xl h-[70vh] overflow-hidden rounded-lg">
+            <div
+              className={cn(
+                "relative w-full overflow-hidden rounded-lg",
+                compareFullscreen.isFullscreen
+                  ? "h-full max-w-none"
+                  : "max-w-5xl h-[70vh]",
+              )}
+            >
               {/* Image 2 (Right/Bottom layer) */}
               <img
                 src={getAttachmentPreviewUrl(selectedForCompare[1].id)}

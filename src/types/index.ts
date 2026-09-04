@@ -123,6 +123,9 @@ export interface Location {
   longitude?: number;
   is_active: boolean;
   sort_order: number;
+  /** Reference to an external system's ID for this location (e.g. MOMRA's
+   * MunicipalityID/SubMunicipalityID) — same pattern as Classification/Department. */
+  external_id?: string;
   children?: Location[];
   created_at: string;
 }
@@ -509,6 +512,7 @@ export interface LocationCreateRequest {
   longitude?: number;
   sort_order?: number;
   source?: string;
+  external_id?: string;
 }
 
 export interface LocationUpdateRequest {
@@ -521,6 +525,7 @@ export interface LocationUpdateRequest {
   longitude?: number;
   is_active?: boolean;
   sort_order?: number;
+  external_id?: string;
 }
 
 // Department request types
@@ -1138,6 +1143,13 @@ export interface Incident {
   assignee?: User;
   assignees?: User[];
   department?: Department;
+  /** MOMRA external entity currently responsible for this incident, if assigned.
+   * Distinct from `department` — see docs/MOMRA_Outbound_Integration_Spec_v1.0.md §7.
+   * The receiving mechanism for MOMRA's assignment notification is not yet confirmed;
+   * these fields exist so the UI is ready once it is. */
+  external_entity?: Department;
+  external_assignment_status?: string;
+  external_assigned_at?: string;
   location?: Location;
   latitude?: number;
   longitude?: number;
@@ -1170,6 +1182,15 @@ export interface Incident {
   created_by_mobile?: string;
   evaluation_count?: number;
   custom_fields?: string;
+  // The exact External Entities MOMRA declared eligible for this incident at
+  // submission time (InsertIncidents' EEList), stored server-side on the dedicated
+  // Incident.AvailableEEList jsonb column — not folded into custom_fields, so it
+  // arrives here as a real array already, no JSON.parse needed.
+  available_ee_list?: Array<{
+    EntityID?: string;
+    EECode?: string;
+    EEName?: string;
+  }>;
   comments_count: number;
   attachments_count: number;
   created_at: string;
@@ -1430,6 +1451,10 @@ export interface DepartmentMatchRequest {
   classification_id?: string;
   location_id?: string;
   department_type?: "internal" | "external";
+  // When set and the incident is MOMRA-sourced, the backend resolves external-type
+  // matches from that incident's own AvailableEEList instead of pure classification/
+  // location linkage — see department_handler.go's MatchDepartment doc comment.
+  incident_id?: string;
 }
 
 export interface DepartmentMatchResponse {
@@ -2111,6 +2136,9 @@ export interface CreateEscalationRequest {
   targets?: EscalationGroupTargetRequest[];
   email_template_code?: string;
   sms_template_code?: string;
+  /** "en" | "ar" — selects EN/AR when a template code is set; also selects
+   * the language of the attached Incident Report CSV. Defaults to "en". */
+  language?: string;
 }
 
 export interface UpdateEscalationRequest {
@@ -2125,6 +2153,7 @@ export interface UpdateEscalationRequest {
   targets?: EscalationGroupTargetRequest[];
   email_template_code?: string;
   sms_template_code?: string;
+  language?: string;
 }
 
 // ─── Escalation Group Target ──────────────────────────────────────────────────
