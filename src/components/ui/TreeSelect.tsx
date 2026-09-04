@@ -153,7 +153,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   maxHeight = "300px",
   leafOnly = true,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t("common.select");
   const resolvedEmptyMessage = emptyMessage ?? t("common.noItemsAvailable");
   const [isOpen, setIsOpen] = useState(false);
@@ -242,7 +242,7 @@ export const TreeSelect: React.FC<TreeSelectProps> = ({
   };
 
   const selectedNode = value ? findNodeById(data, value) : null;
-  const selectedPath = value ? getNodePath(data, value) : [];
+  const selectedPath = value ? getNodePath(data, value, i18n.language) : [];
 
   const expandAll = () => {
     const allParentIds: string[] = [];

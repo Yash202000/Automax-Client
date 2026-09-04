@@ -1158,7 +1158,7 @@ export const IncidentsPage: React.FC = () => {
                                     "hsl(var(--foreground))",
                                 }}
                               >
-                                {incident.current_state.name}
+                                {getLocalizedName(incident.current_state)}
                               </span>
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -1222,7 +1222,7 @@ export const IncidentsPage: React.FC = () => {
                             {incident.department ? (
                               <div className="flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                                 <Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                                {incident.department.name}
+                                {getLocalizedName(incident.department)}
                               </div>
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))]">

@@ -433,6 +433,93 @@ export const IncidentDetailPage: React.FC = () => {
 
   const incident = incidentData?.data as IncidentDetail | undefined;
   const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
+
+  // For a MOMRA-sourced incident, external-entity department options must be
+  // restricted to this specific incident's own EEList (custom_fields.eeList — the set
+  // MOMRA declared eligible at submission time), matching the server-side enforcement
+  // in incident_service.go's validateExternalDepartmentAssignment. Internal
+  // departments and non-MOMRA incidents are never restricted. Returns null when no
+  // restriction applies, so callers can treat "no filtering" and "empty allow-list" as
+  // distinct states.
+  const momraAllowedEEList = useMemo((): {
+    codes: Set<string>;
+    names: Set<string>;
+  } | null => {
+    if (incident?.source !== "MOMRA" || !incident?.available_ee_list)
+      return null;
+    const codes = new Set<string>();
+    const names = new Set<string>();
+    for (const entry of incident.available_ee_list) {
+      const code = String(entry?.EntityID || entry?.EECode || "")
+        .trim()
+        .toLowerCase();
+      if (code) codes.add(code);
+      const name = String(entry?.EEName || "")
+        .trim()
+        .toLowerCase();
+      if (name) names.add(name);
+    }
+    return { codes, names };
+  }, [incident?.source, incident?.available_ee_list]);
+
+  // Drops external-type departments not in momraAllowedEEList; internal departments
+  // and non-restricted (allowed === null) cases pass through unchanged.
+  const isDepartmentMomraAllowed = (
+    dept: Pick<Department, "type" | "code" | "name" | "name_ar">,
+    allowed: { codes: Set<string>; names: Set<string> } | null,
+  ): boolean => {
+    if (dept.type !== "external" || !allowed) return true;
+    const code = dept.code?.trim().toLowerCase();
+    const name = dept.name?.trim().toLowerCase();
+    const nameAr = dept.name_ar?.trim().toLowerCase();
+    return (
+      (!!code && allowed.codes.has(code)) ||
+      (!!name && allowed.names.has(name)) ||
+      (!!nameAr && allowed.names.has(nameAr))
+    );
+  };
+
+  // Tree-shaped version of isDepartmentMomraAllowed: keeps a node if it's allowed, or
+  // if it has at least one allowed descendant (so an internal ancestor isn't pruned
+  // just because a sibling external leaf was filtered out).
+  const filterDeptTreeForMomraEE = (
+    nodes: Department[],
+    allowed: { codes: Set<string>; names: Set<string> } | null,
+  ): Department[] =>
+    nodes
+      .map((node) => ({
+        ...node,
+        children: node.children
+          ? filterDeptTreeForMomraEE(node.children, allowed)
+          : [],
+      }))
+      .filter(
+        (node) =>
+          (node.children && node.children.length > 0) ||
+          isDepartmentMomraAllowed(node, allowed),
+      );
+
+  // Server-resolved auto-detect matches (departmentMatchResult) don't know about
+  // custom_fields.eeList — they're computed purely from classification/location links
+  // (see department_repository.go's FindMatching). Re-derive single_match/departments
+  // here so the UI doesn't confidently offer or auto-select an external entity that
+  // validateExternalDepartmentAssignment would reject at submit time for a MOMRA
+  // incident.
+  const momraFilteredDepartmentMatch =
+    useMemo((): DepartmentMatchResponse | null => {
+      if (!departmentMatchResult) return null;
+      if (!momraAllowedEEList) return departmentMatchResult;
+      const filtered = departmentMatchResult.departments.filter((d) =>
+        isDepartmentMomraAllowed(d, momraAllowedEEList),
+      );
+      return {
+        departments: filtered,
+        single_match: filtered.length === 1,
+        matched_department_id:
+          filtered.length === 1 ? filtered[0].id : undefined,
+      };
+    }, [departmentMatchResult, momraAllowedEEList]);
+
   const lookupCategories = useMemo(
     () => lookupCategoriesData?.data || [],
     [lookupCategoriesData?.data],
@@ -444,24 +531,31 @@ export const IncidentDetailPage: React.FC = () => {
     return getNodePath(
       fcClassificationsData.data as unknown as TreeSelectNode[],
       incident.classification.id,
+      i18n.language,
     );
-  }, [incident?.classification?.id, fcClassificationsData?.data]);
+  }, [
+    incident?.classification?.id,
+    fcClassificationsData?.data,
+    i18n.language,
+  ]);
 
   const locationPath = useMemo(() => {
     if (!incident?.location?.id || !fcLocationsData?.data) return [];
     return getNodePath(
       fcLocationsData.data as unknown as TreeSelectNode[],
       incident.location.id,
+      i18n.language,
     );
-  }, [incident?.location?.id, fcLocationsData?.data]);
+  }, [incident?.location?.id, fcLocationsData?.data, i18n.language]);
 
   const departmentPath = useMemo(() => {
     if (!incident?.department?.id || !fcDepartmentsData?.data) return [];
     return getNodePath(
       fcDepartmentsData.data as unknown as TreeSelectNode[],
       incident.department.id,
+      i18n.language,
     );
-  }, [incident?.department?.id, fcDepartmentsData?.data]);
+  }, [incident?.department?.id, fcDepartmentsData?.data, i18n.language]);
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
@@ -545,9 +639,11 @@ export const IncidentDetailPage: React.FC = () => {
         setUserMatchResult(null);
         setSelectedDepartmentId("");
         setSelectedUserIds([]);
-        toast.info("Incident Updated", {
-          description:
+        toast.info(t("incidents.incidentUpdated", "Incident Updated"), {
+          description: t(
+            "incidents.incidentUpdatedDescription",
             "This incident was updated by another user. Please review the changes.",
+          ),
           duration: 5000,
         });
       }
@@ -695,9 +791,11 @@ export const IncidentDetailPage: React.FC = () => {
         errorMessage.includes("conflict") ||
         errorMessage.includes("modified by another user")
       ) {
-        toast.error("Conflict Detected", {
-          description:
+        toast.error(t("incidents.conflictDetected", "Conflict Detected"), {
+          description: t(
+            "incidents.incidentModifiedByAnotherUser",
             "This incident was modified by another user. Refreshing...",
+          ),
           duration: 5000,
         });
 
@@ -707,7 +805,7 @@ export const IncidentDetailPage: React.FC = () => {
           refetchTransitions();
         }, 1000);
       } else {
-        toast.error("Transition Failed", {
+        toast.error(t("incidents.transitionFailed", "Transition Failed"), {
           description: errorMessage,
         });
       }
@@ -758,7 +856,12 @@ export const IncidentDetailPage: React.FC = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
-      toast.success("Incident summary updated successfully");
+      toast.success(
+        t(
+          "incidents.summaryUpdatedSuccessfully",
+          "Incident summary updated successfully",
+        ),
+      );
       setIsEditingDescription(false);
       setIsSavingDescription(false);
     },
@@ -767,7 +870,7 @@ export const IncidentDetailPage: React.FC = () => {
         error.response?.data?.error ||
         error.message ||
         "Failed to update summary";
-      toast.error("Error", {
+      toast.error(t("incidents.error", "Error"), {
         description: errorMessage,
       });
       setIsSavingDescription(false);
@@ -1182,6 +1285,7 @@ export const IncidentDetailPage: React.FC = () => {
           const deptResult = await departmentApi.match({
             classification_id: incident.classification?.id,
             location_id: incident.location?.id,
+            incident_id: incident.id,
             ...(trans.department_type_filter
               ? {
                   department_type: trans.department_type_filter as
@@ -1192,12 +1296,17 @@ export const IncidentDetailPage: React.FC = () => {
           });
           if (deptResult.success && deptResult.data) {
             setDepartmentMatchResult(deptResult.data);
-            // Auto-select if single match
-            if (
-              deptResult.data.single_match &&
-              deptResult.data.matched_department_id
-            ) {
-              setSelectedDepartmentId(deptResult.data.matched_department_id);
+            // Auto-select if single match — filtered against this incident's
+            // MOMRA EEList first (see momraAllowedEEList/isDepartmentMomraAllowed),
+            // since the match API itself has no knowledge of custom_fields.eeList
+            // and auto-selecting a since-disallowed external entity here would
+            // desync selectedDepartmentId from what momraFilteredDepartmentMatch
+            // renders as selectable.
+            const eligible = deptResult.data.departments.filter((d) =>
+              isDepartmentMomraAllowed(d, momraAllowedEEList),
+            );
+            if (eligible.length === 1) {
+              setSelectedDepartmentId(eligible[0].id);
             }
           }
         }
@@ -3340,7 +3449,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.classification.name
+                        getLocalizedName(incident.classification)
                       )}
                     </div>
                   </div>
@@ -3374,7 +3483,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.department.name
+                        getLocalizedName(incident.department)
                       )}
                     </div>
                   </div>
@@ -3435,7 +3544,7 @@ export const IncidentDetailPage: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        incident.location.name
+                        getLocalizedName(incident.location)
                       )}
                     </div>
                     {incident.location?.name === "Default" && (
@@ -4164,26 +4273,27 @@ export const IncidentDetailPage: React.FC = () => {
                             t("incidents.department")}
                         </span>
                       </p>
-                    ) : departmentMatchResult ? (
-                      departmentMatchResult.departments.length === 0 ? (
+                    ) : momraFilteredDepartmentMatch ? (
+                      momraFilteredDepartmentMatch.departments.length === 0 ? (
                         <p className="text-sm text-red-600 font-medium">
                           {t(
                             "incidents.noDepartmentAssigned",
                             "No department assigned - Contact administrator for this",
                           )}
                         </p>
-                      ) : departmentMatchResult.single_match ? (
+                      ) : momraFilteredDepartmentMatch.single_match ? (
                         <p className="text-sm text-[hsl(var(--foreground))]">
                           {t("incidents.willAssignTo")}{" "}
                           <span className="font-medium">
                             {getLocalizedName(
-                              departmentMatchResult.departments[0],
+                              momraFilteredDepartmentMatch.departments[0],
                             )}
                           </span>
                         </p>
                       ) : (
                         (() => {
-                          const allDepts = departmentMatchResult.departments;
+                          const allDepts =
+                            momraFilteredDepartmentMatch.departments;
                           const deptIdSet = new Set(allDepts.map((d) => d.id));
                           const parentIds = new Set(
                             allDepts
@@ -5107,12 +5217,16 @@ export const IncidentDetailPage: React.FC = () => {
                                   const allDepts =
                                     (fcDepartmentsData?.data as unknown as Department[]) ||
                                     [];
-                                  const filtered = fc.department_type_filter
+                                  let filtered = fc.department_type_filter
                                     ? filterDeptTree(
                                         allDepts,
                                         fc.department_type_filter,
                                       )
                                     : allDepts;
+                                  filtered = filterDeptTreeForMomraEE(
+                                    filtered,
+                                    momraAllowedEEList,
+                                  );
                                   return filtered as unknown as TreeSelectNode[];
                                 })()}
                                 value={

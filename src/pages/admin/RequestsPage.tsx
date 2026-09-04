@@ -40,7 +40,7 @@ import type {
   User as UserType,
   WorkflowState,
 } from "../../types";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "@/stores/authStore";
@@ -86,7 +86,7 @@ const loadColumnsFromStorage = (): ColumnConfig[] => {
 };
 
 export const RequestsPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { user } = useAuthStore();
@@ -322,11 +322,6 @@ export const RequestsPage: React.FC = () => {
     return request.lookup_values?.find(
       (lv) => lv.category?.code === categoryCode,
     );
-  };
-
-  const getLookupLabel = (value: any) => {
-    if (!value) return null;
-    return i18n.language === "ar" && value.name_ar ? value.name_ar : value.name;
   };
 
   const formatDate = (dateStr?: string) => {
@@ -926,7 +921,7 @@ export const RequestsPage: React.FC = () => {
                                     "hsl(var(--foreground))",
                                 }}
                               >
-                                {getLookupLabel(request.current_state)}
+                                {getLocalizedName(request.current_state)}
                               </span>
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -945,7 +940,7 @@ export const RequestsPage: React.FC = () => {
                                     priority.color || "bg-gray-400",
                                 }}
                               >
-                                {getLookupLabel(priority)}
+                                {getLocalizedName(priority)}
                               </span>
                             ) : (
                               <span className="text-sm text-[hsl(var(--muted-foreground))]">
