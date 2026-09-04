@@ -173,6 +173,7 @@ export function IncidentCreatePage() {
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
   const { incomingCallNumber, incomingCallName } = useSoftphoneStore();
+
   const isEPM940 =
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
@@ -231,13 +232,9 @@ export function IncidentCreatePage() {
       ""
     ).toUpperCase() === "EPMCL";
 
-  const isEPM940 =
-    window.APP_CONFIG?.CLIENT === "EPM940" ||
-    import.meta.env.VITE_CLIENT === "EPM940";
-
   const ENABLE_GIS =
     window.APP_CONFIG?.ENABLE_GIS ?? import.meta.env.VITE_ENABLE_GIS;
-        
+
   const shouldFilterDepartments =
     isEpmclClient &&
     Boolean(formData.location_id && formData.classification_id);
