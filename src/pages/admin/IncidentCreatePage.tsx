@@ -1683,10 +1683,7 @@ export function IncidentCreatePage() {
                         onChange={(e) =>
                           updateCallerName(
                             "first",
-                            e.target.value.replace(
-                              /[^a-zA-ZÀ-ɏ؀-ۿ\s\-'.]/g,
-                              "",
-                            ),
+                            e.target.value.replace(/[^a-zA-ZÀ-ɏ؀-ۿ]/g, ""),
                           )
                         }
                         placeholder={t(
@@ -1702,10 +1699,7 @@ export function IncidentCreatePage() {
                         onChange={(e) =>
                           updateCallerName(
                             "middle",
-                            e.target.value.replace(
-                              /[^a-zA-ZÀ-ɏ؀-ۿ\s\-'.]/g,
-                              "",
-                            ),
+                            e.target.value.replace(/[^a-zA-ZÀ-ɏ؀-ۿ]/g, ""),
                           )
                         }
                         placeholder={t(
@@ -1721,10 +1715,7 @@ export function IncidentCreatePage() {
                         onChange={(e) =>
                           updateCallerName(
                             "last",
-                            e.target.value.replace(
-                              /[^a-zA-ZÀ-ɏ؀-ۿ\s\-'.]/g,
-                              "",
-                            ),
+                            e.target.value.replace(/[^a-zA-ZÀ-ɏ؀-ۿ]/g, ""),
                           )
                         }
                         placeholder={t(
