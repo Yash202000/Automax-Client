@@ -72,6 +72,7 @@ import {
 import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
 import { getAvatarName } from "@/lib/utils";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -709,71 +710,63 @@ export function IncidentCreatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-generate title from classification, location, and geolocation
-  useEffect(() => {
-    const parts: string[] = [];
-
-    // Add classification name
-    if (formData.classification_id) {
-      const findClassificationName = (
-        nodes: Classification[],
-        id: string,
-      ): string | null => {
-        for (const node of nodes) {
-          if (node.id === id) return node.name;
-          if (node.children) {
-            const found = findClassificationName(node.children, id);
-            if (found) return found;
-          }
+  const findClassificationById = useCallback(
+    (nodes: Classification[], id: string): Classification | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        if (node.children) {
+          const found = findClassificationById(node.children, id);
+          if (found) return found;
         }
-        return null;
-      };
-      const classificationName = findClassificationName(
-        classifications,
-        formData.classification_id,
-      );
-      if (classificationName) parts.push(classificationName);
-    }
+      }
+      return undefined;
+    },
+    [],
+  );
+  const findLocationById = useCallback(
+    (nodes: Location[], id: string): Location | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
 
-    // Add location name
-    if (formData.location_id) {
-      const findLocationName = (
-        nodes: Location[],
-        id: string,
-      ): string | null => {
-        for (const node of nodes) {
-          if (node.id === id) return node.name;
-          if (node.children) {
-            const found = findLocationName(node.children, id);
-            if (found) return found;
-          }
+        if (node.children) {
+          const found = findLocationById(node.children, id);
+          if (found) return found;
         }
-        return null;
-      };
-      const locationName = findLocationName(locations, formData.location_id);
-      if (locationName) parts.push(locationName);
-    }
+      }
 
-    // Add geolocation area/address if available
-    if (formData.city) {
-      parts.push(formData.city);
-    } else if (formData.address) {
-      parts.push(formData.address);
-    }
+      return undefined;
+    },
+    [],
+  );
 
-    // Generate title from parts
-    if (parts.length > 0) {
-      const generatedTitle = parts.join(" - ");
+  const selectedClassification = useMemo(
+    () =>
+      formData.classification_id
+        ? findClassificationById(classifications, formData.classification_id)
+        : undefined,
+    [classifications, formData.classification_id, findClassificationById],
+  );
+  const selectedLocation = useMemo(
+    () =>
+      formData.location_id
+        ? findLocationById(locations, formData.location_id)
+        : undefined,
+    [locations, formData.location_id, findLocationById],
+  );
 
-      setFormData((prev) => ({ ...prev, title: generatedTitle }));
-    }
+  //auto generate localized tittle based on location and classification selected
+  const generatedTitle = useMemo(() => {
+    return generateRecordTitle({
+      classification: selectedClassification,
+      location: selectedLocation,
+      city: formData.city,
+      address: formData.address,
+    });
   }, [
-    formData.classification_id,
-    formData.location_id,
-    formData.address,
+    selectedClassification,
+    selectedLocation,
     formData.city,
-    classifications,
-    locations,
+    formData.address,
   ]);
 
   const createMutation = useMutation({
@@ -1170,7 +1163,7 @@ export function IncidentCreatePage() {
     ) {
       newErrors.geolocation = t("incidents.gisError");
     }
-    if (!formData.title.trim()) newErrors.title = t("incidents.titleRequired");
+    if (!generatedTitle.trim()) newErrors.title = t("incidents.titleRequired");
     if (!formData.workflow_id)
       newErrors.workflow_id = t("incidents.workflowRequired");
     if (
@@ -1331,6 +1324,7 @@ export function IncidentCreatePage() {
 
     const submitData: IncidentCreateRequest = {
       ...formData,
+      title: generatedTitle,
       location_id: finalLocationId,
       comment: comment.trim() || undefined,
     };
@@ -1527,7 +1521,7 @@ export function IncidentCreatePage() {
                   <div className="relative">
                     <input
                       type="text"
-                      value={formData.title}
+                      value={generatedTitle}
                       readOnly
                       placeholder={t("incidents.autoGeneratedTitle")}
                       className={`w-full px-4 py-3 bg-[hsl(var(--muted)/0.3)] border-2 rounded-xl text-sm text-[hsl(var(--foreground))] cursor-not-allowed pr-12 transition-all duration-200 ${errors.title ? "border-[hsl(var(--destructive)/0.5)]" : "border-[hsl(var(--border))]"}`}
