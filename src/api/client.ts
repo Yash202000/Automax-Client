@@ -15,6 +15,8 @@ declare global {
       DISABLE_AUTO_LOCATION_RETRIEVAL?: string;
       CLIENT?: string;
       CTI_PROVIDER?: string;
+      SIP_PASSWORD?: string;
+      ENABLE_GIS?: string;
       SESSION_TIMEOUT_MINUTES?: string;
       APP_VERSION?: string;
       ENABLE_SIGNUP?: string;
