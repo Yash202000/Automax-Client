@@ -34,6 +34,11 @@ import {
   ExternalLink,
   HelpCircle,
   ListTree,
+  ListChecks,
+  Activity,
+  Scale,
+  Database,
+  CheckCircle2,
 } from "lucide-react";
 import {
   useStrategicKPIDetail,
@@ -64,6 +69,7 @@ import {
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuthStore } from "../../../stores/authStore";
+import { BAND_BAR_CLASS, type BandColor } from "../../../utils/kpiBand";
 import { Button } from "../../../components/ui/Button";
 import {
   Modal,
@@ -844,27 +850,166 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     });
   }
 
-  const detailFields = [
-    { label: t("kpi.dictionary.fieldBaseline"), value: String(kpi.baseline) },
+  // ── KPI Composition Summary ────────────────────────────────────────────
+  // Replaces the old static "Master Data" field grid with a live rollup of
+  // this KPI's metrics: how many exist, how many are active/weighted, how
+  // much of the composite score currently has real data behind it, how many
+  // are meeting their target, and the most recent period any of them report
+  // for — computed from the same `metrics` and `compositeScore` (latest)
+  // data the Metrics tab and Composite KPI Score card already fetch.
+  const allMetrics = metrics ?? [];
+  const activeMetricsList = allMetrics.filter(
+    (m) => (m.metric_status || "Active") === "Active",
+  );
+  const totalMetricsCount = allMetrics.length;
+  const activeMetricsCount = activeMetricsList.length;
+  const totalWeight = activeMetricsList.reduce(
+    (sum, m) => sum + (m.weight ?? 0),
+    0,
+  );
+
+  const compositeRows = compositeScore?.metrics ?? [];
+  const dataAvailableCount = compositeRows.filter((m) => m.has_data).length;
+  const metricsMeetingTargetCount = compositeRows.filter(
+    (m) => m.achievement_capped != null && m.achievement_capped >= 100,
+  ).length;
+
+  // Each metric can report its own latest period (see is_fallback_period),
+  // so "Latest Reporting Period" for the KPI as a whole is the most recent
+  // one among them — ordered by year then position-in-year, mirroring the
+  // backend's own period ordinal ordering (services.PeriodSortKey).
+  const periodOrdinals: Record<string, number> = {
+    jan: 1,
+    feb: 2,
+    mar: 3,
+    apr: 4,
+    may: 5,
+    jun: 6,
+    jul: 7,
+    aug: 8,
+    sep: 9,
+    oct: 10,
+    nov: 11,
+    dec: 12,
+    q1: 1,
+    q2: 2,
+    q3: 3,
+    q4: 4,
+    h1: 1,
+    h2: 2,
+    annual: 1,
+  };
+  const periodSortKey = (year?: number, code?: string) =>
+    year && code
+      ? year * 100 + (periodOrdinals[code.toLowerCase()] ?? 0)
+      : -Infinity;
+  const latestPeriodRow = [...compositeRows]
+    .filter((m) => m.has_data && m.period_code && m.year)
+    .sort(
+      (a, b) =>
+        periodSortKey(b.year, b.period_code) -
+        periodSortKey(a.year, a.period_code),
+    )[0];
+  const latestReportingPeriod = latestPeriodRow
+    ? `${latestPeriodRow.period_code!.toUpperCase()} ${latestPeriodRow.year}`
+    : "—";
+
+  // Weight-sum correctness reuses the same 100%-tolerance rule the Composite
+  // KPI Score card already warns about (BR-07) — surfaced here too so it's
+  // visible without having to scroll down to that card.
+  const weightIsBalanced =
+    activeMetricsCount === 0 || Math.abs(totalWeight - 100) < 0.5;
+
+  const fractionTone = (
+    count: number,
+    total: number,
+  ): BandColor | "neutral" => {
+    if (total === 0) return "neutral";
+    if (count === total) return "green";
+    if (count === 0) return "red";
+    return "amber";
+  };
+
+  const toneValueClass: Record<BandColor | "neutral", string> = {
+    neutral: "text-slate-900 dark:text-white",
+    green: "text-green-600 dark:text-green-400",
+    amber: "text-amber-600 dark:text-amber-400",
+    red: "text-red-600 dark:text-red-400",
+  };
+
+  const compositionTiles: {
+    icon: React.ReactNode;
+    bg: string;
+    label: string;
+    value: string;
+    tone: BandColor | "neutral";
+    fraction?: { count: number; total: number };
+  }[] = [
     {
-      label: t("kpi.dictionary.fieldUnitOfMeasure"),
-      value: kpi.unit_of_measure,
+      icon: <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-400" />,
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      label: "Total Metrics",
+      value: String(totalMetricsCount),
+      tone: "neutral",
     },
-    { label: t("kpi.dictionary.fieldPolarity"), value: kpi.polarity },
-    { label: t("kpi.dictionary.fieldDataSource"), value: kpi.data_source },
-    ...(type === "strategic"
-      ? [
-          { label: t("kpi.dictionary.fieldLifecycle"), value: kpi.lifecycle },
-          {
-            label: t("kpi.dictionary.fieldSegmentation"),
-            value: kpi.segmentation_axes,
-          },
-          {
-            label: t("kpi.dictionary.fieldRelatedUnits"),
-            value: kpi.related_units,
-          },
-        ]
-      : []),
+    {
+      icon: <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />,
+      bg: "bg-green-50 dark:bg-green-900/20",
+      label: "Active Metrics",
+      value: String(activeMetricsCount),
+      tone: "neutral",
+    },
+    {
+      icon: <Scale className="w-5 h-5 text-amber-600 dark:text-amber-400" />,
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      label: "Total Weight",
+      value: `${totalWeight.toFixed(0)}%`,
+      tone:
+        activeMetricsCount === 0
+          ? "neutral"
+          : weightIsBalanced
+            ? "green"
+            : "amber",
+    },
+    {
+      icon: <Database className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
+      bg: "bg-teal-50 dark:bg-teal-900/20",
+      label: "Data Available",
+      value:
+        activeMetricsCount > 0
+          ? `${dataAvailableCount} of ${activeMetricsCount}`
+          : "—",
+      tone: fractionTone(dataAvailableCount, activeMetricsCount),
+      fraction:
+        activeMetricsCount > 0
+          ? { count: dataAvailableCount, total: activeMetricsCount }
+          : undefined,
+    },
+    {
+      icon: (
+        <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+      ),
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+      label: "Metrics Meeting Target",
+      value:
+        activeMetricsCount > 0
+          ? `${metricsMeetingTargetCount} of ${activeMetricsCount}`
+          : "—",
+      tone: fractionTone(metricsMeetingTargetCount, activeMetricsCount),
+      fraction:
+        activeMetricsCount > 0
+          ? { count: metricsMeetingTargetCount, total: activeMetricsCount }
+          : undefined,
+    },
+    {
+      icon: (
+        <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+      ),
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      label: "Latest Reporting Period",
+      value: latestReportingPeriod,
+      tone: "neutral",
+    },
   ];
 
   const tabs: {
@@ -937,7 +1082,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             <div className="min-w-0">
               <div className="flex items-center flex-wrap gap-2 mb-1">
                 <h1 className="text-xl font-bold text-slate-900 dark:text-white truncate">
-                  {kpi.code} - {kpi.name_en}
+                  {kpi.name_en}
                 </h1>
                 <span
                   className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${typeColorMap[type ?? ""] ?? ""}`}
@@ -957,6 +1102,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   {status}
                 </span>
               </div>
+              <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mb-1">
+                {kpi.code}
+              </p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t("kpi.dictionary.detailSubtitle")}
               </p>
@@ -1260,20 +1408,48 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             </div>
           )}
 
-          {/* Details Grid */}
+          {/* KPI Composition Summary */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              {t("kpi.masterData.title")}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8">
-              {detailFields.map((field, i) => (
-                <div key={i}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                KPI Composition Summary
+              </h2>
+              {!weightIsBalanced && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Weights don't sum to 100%
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {compositionTiles.map((tile, i) => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-slate-100 dark:border-slate-700/50 bg-slate-50/60 dark:bg-slate-900/30 p-4"
+                >
+                  <div
+                    className={`flex items-center justify-center w-9 h-9 rounded-lg mb-3 ${tile.bg}`}
+                  >
+                    {tile.icon}
+                  </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                    {field.label}
+                    {tile.label}
                   </p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    {field.value || "-"}
+                  <p
+                    className={`text-2xl font-semibold leading-tight truncate ${toneValueClass[tile.tone]}`}
+                  >
+                    {tile.value}
                   </p>
+                  {tile.fraction && tile.fraction.total > 0 && (
+                    <div className="mt-2 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div
+                        className={`h-1.5 rounded-full ${tile.tone !== "neutral" ? BAND_BAR_CLASS[tile.tone] : "bg-slate-400"}`}
+                        style={{
+                          width: `${Math.round((tile.fraction.count / tile.fraction.total) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

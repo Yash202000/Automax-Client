@@ -188,12 +188,12 @@ export const KpiCardPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6 print:border-none print:shadow-none">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
-              <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mb-1">
-                {card.code}
-              </p>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white print:text-black">
                 {card.name_en}
               </h1>
+              <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mt-1">
+                {card.code}
+              </p>
               {card.name_ar && (
                 <p
                   className="text-base text-slate-600 dark:text-slate-300 print:text-black mt-0.5"
