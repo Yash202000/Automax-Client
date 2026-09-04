@@ -4156,6 +4156,8 @@
     "successRate": "معدل النجاح",
     "modules": "الوحدات",
     "searchByDescriptionOrIpAddress": "ابحث حسب الوصف أو عنوان IP...",
+    "role": "الدور",
+    "allRoles": "جميع الأدوار",
     "module": "الوحدة",
     "allModules": "جميع الوحدات",
     "action": "الإجراء",

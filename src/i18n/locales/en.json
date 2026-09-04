@@ -4381,6 +4381,8 @@
     "successRate": "Success Rate",
     "modules": "Modules",
     "searchByDescriptionOrIpAddress": "Search by description or IP address...",
+    "role": "Role",
+    "allRoles": "All Roles",
     "module": "Module",
     "allModules": "All Modules",
     "action": "Action",

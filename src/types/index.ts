@@ -610,6 +610,7 @@ export interface ActionLog {
 
 export interface ActionLogFilter {
   user_id?: string;
+  role_ids?: string[];
   action?: string;
   module?: string;
   status?: string;

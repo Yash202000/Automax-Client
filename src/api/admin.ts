@@ -132,6 +132,7 @@ export const userApi = {
     locationIds: string[] = [],
     classificationIds: string[] = [],
     call_status?: string,
+    with_incident?: boolean,
   ): Promise<PaginatedResponse<User>> => {
     const params = new URLSearchParams({
       page: String(page),
@@ -146,6 +147,7 @@ export const userApi = {
     if (classificationIds.length)
       params.append("classification_ids", classificationIds.join(","));
     if (call_status) params.append("call_status", call_status);
+    if (with_incident) params.append("with_incident", "true");
     const response = await apiClient.get<PaginatedResponse<User>>(
       `/admin/users?${params.toString()}`,
     );
@@ -876,6 +878,9 @@ export const actionLogApi = {
     if (filter.page) params.append("page", String(filter.page));
     if (filter.limit) params.append("limit", String(filter.limit));
     if (filter.user_id) params.append("user_id", filter.user_id);
+    if (filter.role_ids?.length) {
+      params.append("roles", filter.role_ids.join(","));
+    }
     if (filter.action) params.append("action", filter.action);
     if (filter.module) params.append("module", filter.module);
     if (filter.status) params.append("status", filter.status);
