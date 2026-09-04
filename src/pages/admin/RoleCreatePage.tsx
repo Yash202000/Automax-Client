@@ -9,7 +9,7 @@ import type { RoleCreateRequest } from "../../types";
 import { PermissionsEditor, type PermissionFilterMode } from "./RoleFormParts";
 import {
   validateCode,
-  validateName,
+  validateRoleName,
   validateRequired,
 } from "@/utils/validations";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -107,7 +107,7 @@ export const RoleCreatePage: React.FC = () => {
     const code = formData.code.trim();
     if (!validateRequired(name)) {
       newErrors.name = t("roles.nameRequired");
-    } else if (!validateName(name)) {
+    } else if (!validateRoleName(name)) {
       newErrors.name = t("roles.invalidName");
     }
     if (!isEPM940) {

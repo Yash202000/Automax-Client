@@ -462,7 +462,7 @@ export const ClassificationsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.error || "Failed to create classification",
+        error?.response?.data?.error || t("classifications.createFailed"),
       );
     },
   });
@@ -481,7 +481,7 @@ export const ClassificationsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.error || "Failed to update classification",
+        error?.response?.data?.error || t("classifications.updateFailed"),
       );
     },
   });
@@ -710,8 +710,7 @@ export const ClassificationsPage: React.FC = () => {
     if (!trimmed) {
       return {
         types: [],
-        error:
-          "Types are required. Use one or more values like incident, request, complaint.",
+        error: t("classifications.importTypesRequired"),
       };
     }
     const tokens = trimmed
@@ -721,18 +720,107 @@ export const ClassificationsPage: React.FC = () => {
     if (tokens.length === 0) {
       return {
         types: [],
-        error:
-          "Types are required. Use one or more values like incident, request, complaint.",
+        error: t("classifications.importTypesRequired"),
       };
     }
     const invalid = tokens.filter((tok) => !ALL_TYPES.includes(tok));
     if (invalid.length > 0) {
       return {
         types: [],
-        error: `Invalid type(s) "${invalid.join(", ")}" - allowed: ${ALL_TYPES.join(", ")}`,
+        error: t("classifications.importInvalidTypes", {
+          invalid: invalid.join(", "),
+          allowed: ALL_TYPES.join(", "),
+        }),
       };
     }
     return { types: Array.from(new Set(tokens)) };
+  };
+
+  type ImportCriticality = {
+    criticality_id: string;
+    max_closing_hours: number;
+    max_closing_minutes: number;
+    escalation_policy_id?: string;
+  };
+
+  const parseImportCriticalitiesField = (
+    raw: string,
+  ): { criticalities: ImportCriticality[]; error?: string } => {
+    const trimmed = raw.trim();
+    if (!trimmed) return { criticalities: [] };
+
+    const entries = trimmed
+      .split(";")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+    const criticalities: ImportCriticality[] = [];
+
+    for (const entry of entries) {
+      const match = entry.match(
+        /^(.+?):\s*(\d+)\s*h\s*(\d+)\s*m(?:\s*\((.+)\))?$/i,
+      );
+      if (!match) {
+        return {
+          criticalities: [],
+          error: t("classifications.importInvalidCriticalityFormat", {
+            entry,
+          }),
+        };
+      }
+      const [, priorityNameRaw, hoursRaw, minutesRaw, policyNameRaw] = match;
+      const priorityName = priorityNameRaw.trim();
+      const hours = parseInt(hoursRaw, 10);
+      const minutes = parseInt(minutesRaw, 10);
+
+      const priority = priorityValues.find(
+        (p) => p.name.trim().toLowerCase() === priorityName.toLowerCase(),
+      );
+      if (!priority) {
+        return {
+          criticalities: [],
+          error: t("classifications.importUnknownCriticality", {
+            name: priorityName,
+            allowed: priorityValues.map((p) => p.name).join(", "),
+          }),
+        };
+      }
+
+      if (hours < 0 || hours > 840 || minutes < 0 || minutes > 59) {
+        return {
+          criticalities: [],
+          error: t("classifications.importInvalidClosingTime", {
+            name: priorityName,
+          }),
+        };
+      }
+
+      let escalationPolicyId: string | undefined;
+      if (policyNameRaw) {
+        const policyName = policyNameRaw.trim();
+        const policy = escalationPolicies.find(
+          (p) => p.name.trim().toLowerCase() === policyName.toLowerCase(),
+        );
+        if (!policy) {
+          return {
+            criticalities: [],
+            error: t("classifications.importEscalationPolicyNotFound", {
+              name: policyName,
+            }),
+          };
+        }
+        escalationPolicyId = policy.id;
+      }
+
+      criticalities.push({
+        criticality_id: priority.id,
+        max_closing_hours: hours,
+        max_closing_minutes: minutes,
+        escalation_policy_id: escalationPolicyId,
+      });
+    }
+
+    return { criticalities };
   };
 
   const resolveImportParentClassification = (
@@ -748,7 +836,9 @@ export const ClassificationsPage: React.FC = () => {
     );
     if (!match) {
       return {
-        error: `Parent classification "${parentName}" was not found`,
+        error: t("classifications.importParentNotFound", {
+          parent: parentName,
+        }),
       };
     }
     return { id: match.id };
@@ -850,6 +940,7 @@ export const ClassificationsPage: React.FC = () => {
         { header: "level", key: "level", width: 8 },
         { header: "path", key: "path", width: 26 },
         { header: "types", key: "types", width: 24 },
+        { header: "sort_order", key: "sort_order", width: 12 },
         { header: "is_active", key: "is_active", width: 10 },
         { header: "criticalities", key: "criticalities", width: 40 },
       ];
@@ -867,6 +958,7 @@ export const ClassificationsPage: React.FC = () => {
           level: c.level,
           path: c.path || "",
           types: (c.types ?? []).join(", "),
+          sort_order: c.sort_order,
           is_active: c.is_active ? "Yes" : "No",
           criticalities: formatCriticalities(c.criticalities),
         });
@@ -910,6 +1002,8 @@ export const ClassificationsPage: React.FC = () => {
         width: 30,
       },
       { header: "types (Required)", key: "types", width: 34 },
+      { header: "sort_order (Optional)", key: "sort_order", width: 12 },
+      { header: "criticalities (Optional)", key: "criticalities", width: 50 },
     ];
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -1008,12 +1102,7 @@ export const ClassificationsPage: React.FC = () => {
         setImportResult({
           imported: 0,
           skipped: 0,
-          errors: [
-            t("classifications.importEmptyFile", {
-              defaultValue:
-                "No data found in file. Please ensure the file contains classification records.",
-            }),
-          ],
+          errors: [t("classifications.importEmptyFile")],
         });
         return;
       }
@@ -1041,8 +1130,9 @@ export const ClassificationsPage: React.FC = () => {
         if (rows.length > 1 && name) {
           rows.slice(1).forEach((r) => duplicateRowNumbers.add(r));
           errors.push(
-            t("classifications.importDuplicateName", {
-              defaultValue: `Duplicate classification name "${name}" found in rows: ${rows.join(", ")}`,
+            t("classifications.importDuplicateNameInRows", {
+              name,
+              rows: rows.join(", "),
             }),
           );
         }
@@ -1050,9 +1140,7 @@ export const ClassificationsPage: React.FC = () => {
         if (existingNames.has(key) && name) {
           const firstRow = rows[0];
           duplicateRowNumbers.add(firstRow ?? rows[0]);
-          errors.push(
-            `Duplicate classification name "${name}" already exists in the current list.`,
-          );
+          errors.push(t("classifications.importDuplicateNameExists", { name }));
         }
       }
 
@@ -1060,10 +1148,12 @@ export const ClassificationsPage: React.FC = () => {
 
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
-        const rowLabel = `Row ${rowNum}`;
+        const rowLabel = t("classifications.rowLabel", { number: rowNum });
 
         if (duplicateRowNumbers.has(rowNum)) {
-          errors.push(`${rowLabel}: Skipped - duplicate of an earlier row`);
+          errors.push(
+            `${rowLabel}: ${t("classifications.importSkippedDuplicateRow")}`,
+          );
           return;
         }
 
@@ -1081,6 +1171,24 @@ export const ClassificationsPage: React.FC = () => {
           resolveImportParentClassification(row.parent_classification || "");
         if (parentError) rowErrors.push(`${rowLabel}: ${parentError}`);
 
+        const { criticalities, error: criticalitiesError } =
+          parseImportCriticalitiesField(row.criticalities || "");
+        if (criticalitiesError)
+          rowErrors.push(`${rowLabel}: ${criticalitiesError}`);
+
+        const sortOrderRaw = String(row.sort_order || "").trim();
+        let sortOrder = 0;
+        if (sortOrderRaw) {
+          const parsedSortOrder = Number(sortOrderRaw);
+          if (!Number.isInteger(parsedSortOrder) || parsedSortOrder < 0) {
+            rowErrors.push(
+              `${rowLabel}: ${t("classifications.importInvalidSortOrder")}`,
+            );
+          } else {
+            sortOrder = parsedSortOrder;
+          }
+        }
+
         if (rowErrors.length > 0) {
           errors.push(...rowErrors);
           return;
@@ -1093,6 +1201,8 @@ export const ClassificationsPage: React.FC = () => {
           description_ar: row.description_ar?.trim() || undefined,
           parent_id: parentId,
           types,
+          criticalities: criticalities.length ? criticalities : undefined,
+          sort_order: sortOrder,
         });
       });
 
@@ -1130,11 +1240,7 @@ export const ClassificationsPage: React.FC = () => {
       setImportFile(null);
     } catch (error) {
       console.error("Import failed:", error);
-      toast.error(
-        t("classifications.importFailed", {
-          defaultValue: "Failed to import classifications",
-        }),
-      );
+      toast.error(t("classifications.importFailed"));
     } finally {
       setIsImporting(false);
     }
@@ -1379,10 +1485,10 @@ export const ClassificationsPage: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                  Select classifications to export
+                  {t("classifications.selectClassificationsToExport")}
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                  By default, all classifications are selected.
+                  {t("classifications.allClassificationsSelectedByDefault")}
                 </p>
               </div>
               <button
@@ -1402,7 +1508,7 @@ export const ClassificationsPage: React.FC = () => {
                 colorScheme="primary"
                 maxHeight="280px"
                 leafOnly={false}
-                label="Classifications"
+                label={t("classifications.title")}
               />
             </div>
 
@@ -1418,7 +1524,7 @@ export const ClassificationsPage: React.FC = () => {
                 disabled={exportSelectedIds.length === 0}
                 leftIcon={<Download className="w-4 h-4" />}
               >
-                Export Excel
+                {t("common.exportExcel")}
               </Button>
             </div>
           </div>

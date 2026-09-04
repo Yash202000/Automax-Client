@@ -362,7 +362,7 @@ export const LocationsPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.error || "Failed to create location");
+      toast.error(error?.response?.data?.error || t("locations.createFailed"));
     },
   });
 
@@ -374,7 +374,7 @@ export const LocationsPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.error || "Failed to update location");
+      toast.error(error?.response?.data?.error || t("locations.updateFailed"));
     },
   });
 
@@ -693,7 +693,7 @@ export const LocationsPage: React.FC = () => {
 
     const name = file.name.toLowerCase();
     if (!name.endsWith(".json") && !name.endsWith(".xlsx")) {
-      toast.error("Please select a valid JSON (.json) or Excel (.xlsx) file.");
+      toast.error(t("common.invalidImportFileType"));
       event.target.value = "";
       setImportFile(null);
       return;
@@ -764,9 +764,7 @@ export const LocationsPage: React.FC = () => {
         setImportResult({
           imported: 0,
           skipped: 0,
-          errors: [
-            "No data found in file. Please ensure the file contains location records.",
-          ],
+          errors: [t("locations.noDataInFile")],
         });
         return;
       }
@@ -774,9 +772,22 @@ export const LocationsPage: React.FC = () => {
       const errors: string[] = [];
       const validPayloads: Array<Record<string, unknown>> = [];
 
+      const seenLocationNames = new Set<string>();
+      const seenLocationCodes = new Set<string>();
+      const existingLocationNames = new Set(
+        flattenLocations(locationsList?.data ?? []).map((loc) =>
+          loc.name.trim().toLowerCase(),
+        ),
+      );
+      const existingLocationCodes = new Set(
+        flattenLocations(locationsList?.data ?? []).map((loc) =>
+          loc.code.trim().toLowerCase(),
+        ),
+      );
+
       normalizedRows.forEach((row, index) => {
         const rowNum = index + 1;
-        const rowLabel = `Row ${rowNum}`;
+        const rowLabel = t("locations.rowLabel", { number: rowNum });
         const name = String(row.name || "").trim();
         const code = String(row.code || "").trim();
 
@@ -787,9 +798,36 @@ export const LocationsPage: React.FC = () => {
         }
 
         if (!isEPM940 && !code) {
-          errors.push(`${rowLabel}: Code is required`);
+          errors.push(t("locations.importRowCodeRequired", { row: rowLabel }));
           return;
         }
+
+        const normalizedName = name.toLowerCase();
+        const normalizedCode = code.toLowerCase();
+
+        if (
+          existingLocationNames.has(normalizedName) ||
+          seenLocationNames.has(normalizedName)
+        ) {
+          errors.push(
+            t("locations.importDuplicateName", { row: rowLabel, name }),
+          );
+          return;
+        }
+
+        if (
+          normalizedCode &&
+          (existingLocationCodes.has(normalizedCode) ||
+            seenLocationCodes.has(normalizedCode))
+        ) {
+          errors.push(
+            t("locations.importDuplicateCode", { row: rowLabel, code }),
+          );
+          return;
+        }
+
+        seenLocationNames.add(normalizedName);
+        if (normalizedCode) seenLocationCodes.add(normalizedCode);
 
         const parentName = String(row.parent_location || "").trim();
         const parentMatch = !parentName
@@ -802,7 +840,10 @@ export const LocationsPage: React.FC = () => {
 
         if (parentName && !parentMatch) {
           errors.push(
-            `${rowLabel}: Parent location "${parentName}" was not found`,
+            t("locations.importParentNotFound", {
+              row: rowLabel,
+              parent: parentName,
+            }),
           );
           return;
         }
@@ -857,7 +898,7 @@ export const LocationsPage: React.FC = () => {
       setImportFile(null);
     } catch (error) {
       console.error("Import failed:", error);
-      toast.error("Failed to import locations");
+      toast.error(t("locations.failedToImport"));
     } finally {
       setIsImporting(false);
     }
@@ -1101,10 +1142,10 @@ export const LocationsPage: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
-                  Select locations to export
+                  {t("locations.selectLocationsToExport")}
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                  By default, all locations are selected.
+                  {t("locations.allLocationsSelectedByDefault")}
                 </p>
               </div>
               <button
@@ -1125,7 +1166,7 @@ export const LocationsPage: React.FC = () => {
                 maxHeight="300px"
                 leafOnly={false}
                 hierarchyType="location"
-                label="Locations"
+                label={t("locations.title")}
               />
             </div>
 
@@ -1141,7 +1182,7 @@ export const LocationsPage: React.FC = () => {
                 disabled={exportSelectedIds.length === 0}
                 leftIcon={<Download className="w-4 h-4" />}
               >
-                Export Excel
+                {t("common.exportExcel")}
               </Button>
             </div>
           </div>
@@ -1158,12 +1199,11 @@ export const LocationsPage: React.FC = () => {
                     <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
                   </div>
                   <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                    Import Locations
+                    {t("locations.importLocationsTitle")}
                   </h3>
                 </div>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
-                  Upload a JSON (.json) or Excel (.xlsx) file to import
-                  locations
+                  {t("locations.importLocationsSubtitle")}
                 </p>
               </div>
               <button
@@ -1180,7 +1220,7 @@ export const LocationsPage: React.FC = () => {
             <div className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  Select JSON (.json) or Excel (.xlsx) file
+                  {t("common.selectJsonOrExcelFile")}
                 </label>
                 <label
                   className={cn(
@@ -1221,11 +1261,8 @@ export const LocationsPage: React.FC = () => {
                       {t("common.importNotes")}
                     </p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Valid JSON (.json) or Excel (.xlsx) file required</li>
-                      <li>
-                        Rows that fail validation are skipped and listed after
-                        import
-                      </li>
+                      <li>{t("common.validJsonOrExcelRequired")}</li>
+                      <li>{t("common.rowsSkippedListedAfterImport")}</li>
                     </ul>
                   </div>
                 </div>
@@ -1248,7 +1285,9 @@ export const LocationsPage: React.FC = () => {
                   !isImporting ? <Upload className="w-4 h-4" /> : undefined
                 }
               >
-                {isImporting ? t("common.importing") : "Import Locations"}
+                {isImporting
+                  ? t("common.importing")
+                  : t("locations.importLocationsTitle")}
               </Button>
             </div>
           </div>
