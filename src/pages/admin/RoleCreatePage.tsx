@@ -9,15 +9,17 @@ import type { RoleCreateRequest } from "../../types";
 import { PermissionsEditor, type PermissionFilterMode } from "./RoleFormParts";
 import {
   validateCode,
-  validateName,
+  validateRoleName,
   validateRequired,
 } from "@/utils/validations";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface RoleFormData {
   name: string;
   code: string;
   description: string;
   permission_ids: string[];
+  bypass_login_totp?: boolean;
 }
 
 const initialFormData: RoleFormData = {
@@ -31,6 +33,7 @@ export const RoleCreatePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { settings } = useSettings();
 
   const [formData, setFormData] = useState<RoleFormData>(initialFormData);
   const [permissionSearch, setPermissionSearch] = useState("");
@@ -38,6 +41,12 @@ export const RoleCreatePage: React.FC = () => {
   const [permissionFilter, setPermissionFilter] =
     useState<PermissionFilterMode>("all");
   const [error, setError] = useState<string | null>(null);
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
+  const shouldVerifyTotp = settings?.auth_setting.totp_enabled === true;
 
   const { data: permissionsData } = useQuery({
     queryKey: ["admin", "permissions"],
@@ -98,14 +107,15 @@ export const RoleCreatePage: React.FC = () => {
     const code = formData.code.trim();
     if (!validateRequired(name)) {
       newErrors.name = t("roles.nameRequired");
-    } else if (!validateName(name)) {
+    } else if (!validateRoleName(name)) {
       newErrors.name = t("roles.invalidName");
     }
-
-    if (!validateRequired(code)) {
-      newErrors.code = t("roles.codeRequired");
-    } else if (!validateCode(code)) {
-      newErrors.code = t("roles.invalidCode");
+    if (!isEPM940) {
+      if (!validateRequired(code)) {
+        newErrors.code = t("roles.codeRequired");
+      } else if (!validateCode(code)) {
+        newErrors.code = t("roles.invalidCode");
+      }
     }
 
     setErrors(newErrors);
@@ -127,6 +137,7 @@ export const RoleCreatePage: React.FC = () => {
       code,
       description: formData.description,
       permission_ids: formData.permission_ids,
+      bypass_login_totp: formData.bypass_login_totp,
     });
   };
 
@@ -157,8 +168,12 @@ export const RoleCreatePage: React.FC = () => {
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
             {t("roles.basicInfo")}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+          <div
+            className={`grid grid-cols-1 ${
+              !isEPM940 ? "md:grid-cols-2" : ""
+            } gap-6`}
+          >
+            <div className={!isEPM940 ? "" : "md:col-span-2"}>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
@@ -182,32 +197,34 @@ export const RoleCreatePage: React.FC = () => {
                 </p>
               )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleCode")} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder={t("roles.roleKeyExample")}
-                value={formData.code}
-                onChange={(e) => {
-                  setFormData({ ...formData, code: e.target.value });
+            {!isEPM940 ? (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t("roles.roleCode")} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={t("roles.roleKeyExample")}
+                  value={formData.code}
+                  onChange={(e) => {
+                    setFormData({ ...formData, code: e.target.value });
 
-                  setErrors((prev) => ({ ...prev, code: "" }));
-                }}
-                required
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
-              />
-              <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
-                {t("roles.roleCodeHint")}
-              </p>
-
-              {errors.code && (
-                <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
-                  {errors.code}
+                    setErrors((prev) => ({ ...prev, code: "" }));
+                  }}
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
+                />
+                <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+                  {t("roles.roleCodeHint")}
                 </p>
-              )}
-            </div>
+
+                {errors.code && (
+                  <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                    {errors.code}
+                  </p>
+                )}
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("common.description")}
@@ -223,6 +240,36 @@ export const RoleCreatePage: React.FC = () => {
               />
             </div>
           </div>
+          {shouldVerifyTotp && (
+            <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                name="enable_totp_verification"
+                checked={formData.bypass_login_totp}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    bypass_login_totp: e.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600  "
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                  {t(
+                    "settings.bypassTotpVerification",
+                    "Bypass Login TOTP Verification",
+                  )}
+                </span>
+                <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(
+                    "settings.bypassTotpVerificationDesc",
+                    "Bypass time-based one-time passcode verification during authentication.",
+                  )}
+                </span>
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Permissions */}

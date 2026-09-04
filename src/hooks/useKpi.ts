@@ -10,6 +10,7 @@ import {
   kpiDashboardApi,
   kpiEngagementApi,
   kpiComposedApi,
+  kpiDocumentaApi,
 } from "../api/kpi";
 import apiClient from "../api/client";
 import type {
@@ -34,6 +35,7 @@ import type {
   KpiCollaboratorAssignmentRequest,
   KPIType,
   KpiOrganizationRequest,
+  KpiDocumentaAnchorParams,
 } from "../types/kpi";
 
 function getApiError(err: any): string {
@@ -45,6 +47,69 @@ function getApiError(err: any): string {
   }
   return err?.message || "An error occurred";
 }
+
+// ─── KPI Evidence Folder Configuration ─────────────────────────────────────
+
+export const useKpiDocumentaAnchor = (
+  params: Partial<KpiDocumentaAnchorParams>,
+) =>
+  useQuery({
+    queryKey: ["kpi", "documenta-anchor", params],
+    queryFn: async () => {
+      const res = await kpiDocumentaApi.resolveAnchor(
+        params as KpiDocumentaAnchorParams,
+      );
+      return res.data;
+    },
+    enabled: !!params.entity_type,
+  });
+
+export const useKpiDocumentaFolders = (anchorId?: string, parentId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "documenta-folders", anchorId, parentId],
+    queryFn: async () => {
+      const res = await kpiDocumentaApi.listFolders(
+        anchorId as string,
+        parentId,
+      );
+      return res.data?.folders ?? [];
+    },
+    enabled: !!anchorId,
+  });
+
+// Looks up a configured Evidence Folder's display name/path by id — used to
+// show the KPI's actual configured folder path on the edit form instead of
+// a generic "Configured" placeholder.
+export const useKpiDocumentaFolderInfo = (folderId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "documenta-folder-info", folderId],
+    queryFn: async () => {
+      const res = await kpiDocumentaApi.getFolderInfo(folderId as string);
+      return res.data;
+    },
+    enabled: !!folderId,
+  });
+
+export const useCreateKpiDocumentaFolder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      anchorId,
+      parentId,
+      name,
+    }: {
+      anchorId: string;
+      parentId?: string;
+      name: string;
+    }) => kpiDocumentaApi.createFolder(anchorId, parentId, name),
+    onSuccess: (_res, { anchorId, parentId }) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "documenta-folders", anchorId, parentId ?? anchorId],
+      });
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
 
 export const usePillars = () =>
   useQuery({

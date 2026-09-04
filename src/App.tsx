@@ -212,6 +212,11 @@ const IntegrationScriptsPage = lazy(() =>
     default: m.IntegrationScriptsPage,
   })),
 );
+const MOMRAIntegrationPage = lazy(() =>
+  import("./pages/admin/MOMRAIntegrationPage").then((m) => ({
+    default: m.MOMRAIntegrationPage,
+  })),
+);
 const WebhookConfigPage = lazy(() =>
   import("./pages/admin/WebhookConfigPage").then((m) => ({
     default: m.WebhookConfigPage,
@@ -646,6 +651,10 @@ function App() {
                       <Route
                         path="/admin/integration-scripts"
                         element={<IntegrationScriptsPage />}
+                      />
+                      <Route
+                        path="/admin/momra-integration"
+                        element={<MOMRAIntegrationPage />}
                       />
                       <Route
                         path="/admin/webhook-configs"

@@ -45,7 +45,7 @@ import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { cn, getLocalizedName } from "@/lib/utils";
 
 export const ComplaintDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -170,24 +170,31 @@ export const ComplaintDetailPage: React.FC = () => {
     return getNodePath(
       fcClassificationsData.data as unknown as TreeSelectNode[],
       complaint.classification.id,
+      i18n.language,
     );
-  }, [complaint?.classification?.id, fcClassificationsData?.data]);
+  }, [
+    complaint?.classification?.id,
+    fcClassificationsData?.data,
+    i18n.language,
+  ]);
 
   const locationPath = React.useMemo(() => {
     if (!complaint?.location?.id || !fcLocationsData?.data) return [];
     return getNodePath(
       fcLocationsData.data as unknown as TreeSelectNode[],
       complaint.location.id,
+      i18n.language,
     );
-  }, [complaint?.location?.id, fcLocationsData?.data]);
+  }, [complaint?.location?.id, fcLocationsData?.data, i18n.language]);
 
   const departmentPath = React.useMemo(() => {
     if (!complaint?.department?.id || !fcDepartmentsData?.data) return [];
     return getNodePath(
       fcDepartmentsData.data as unknown as TreeSelectNode[],
       complaint.department.id,
+      i18n.language,
     );
-  }, [complaint?.department?.id, fcDepartmentsData?.data]);
+  }, [complaint?.department?.id, fcDepartmentsData?.data, i18n.language]);
 
   // Check if complaint is closed (terminal state)
   const isClosed = complaint?.current_state?.state_type === "terminal";

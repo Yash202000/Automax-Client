@@ -142,12 +142,14 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
       "department-match",
       firstIncident?.classification?.id,
       firstIncident?.location?.id,
+      firstIncident?.id,
       transition?.department_type_filter,
     ],
     queryFn: () =>
       departmentApi.match({
         classification_id: firstIncident?.classification?.id,
         location_id: firstIncident?.location?.id,
+        incident_id: firstIncident?.id,
         department_type:
           (transition?.department_type_filter as "internal" | "external") ||
           undefined,

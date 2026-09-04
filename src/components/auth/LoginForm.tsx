@@ -103,7 +103,7 @@ export const LoginForm: React.FC = () => {
     }: {
       user: User;
       method: "whatsapp" | "sms";
-    }) => otpApi.send({ phone: user.phone, channel: method }),
+    }) => otpApi.send({ phone: user.phone, channel: method, type: "employee" }),
   });
 
   const isLoginPending =

@@ -12,6 +12,7 @@ import {
   Target,
   Mail,
   MessageSquare,
+  Languages,
 } from "lucide-react";
 import { Button } from "../ui";
 import MultiTreeSelect from "../ui/MultiTreeSelect";
@@ -66,6 +67,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [emailTemplateCode, setEmailTemplateCode] = useState("");
   const [smsTemplateCode, setSmsTemplateCode] = useState("");
+  const [language, setLanguage] = useState("en");
   const [isActive, setIsActive] = useState(true);
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -341,6 +343,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       setTargets((editData.targets || []).map(fromBackendTarget));
       setEmailTemplateCode(editData.email_template_code ?? "");
       setSmsTemplateCode(editData.sms_template_code ?? "");
+      setLanguage(editData.language ?? "en");
       setIsActive(editData.is_active ?? true);
     } else {
       setTitle("");
@@ -353,6 +356,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       setTargets([]);
       setEmailTemplateCode("");
       setSmsTemplateCode("");
+      setLanguage("en");
       setIsActive(true);
     }
     setErrors({});
@@ -402,9 +406,20 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
       scheduled_time: scheduledTime,
       is_active: isActive,
       user_ids: selectedUsers.map((u) => u.id),
-      targets: targets.length > 0 ? toTargetRequests(targets) : undefined,
-      email_template_code: emailTemplateCode || undefined,
-      sms_template_code: smsTemplateCode || undefined,
+      // Always send the array (even []), never collapse to undefined: like the
+      // template-code fields below, the backend treats a nil/omitted targets
+      // field as "no change" and a non-nil (even empty) one as "full
+      // replacement" (see EscalationGroupService.Update) — so removing every
+      // target and saving must still reach the backend as an explicit [].
+      targets: toTargetRequests(targets),
+      // Always send the actual value (including ""), never collapse to
+      // undefined: on update the backend treats an omitted field as "no
+      // change" (see UpdateEscalationGroupRequest's *string fields), so
+      // selecting "— Use default built-in message —" (empty string) must be
+      // sent explicitly to actually clear a previously-set template code.
+      email_template_code: emailTemplateCode,
+      sms_template_code: smsTemplateCode,
+      language,
     };
     if (editData?.id) {
       updateMutation.mutate(data);
@@ -708,6 +723,38 @@ export const CreateEscalationModal: React.FC<CreateEscalationProps> = ({
                   )}
                 </div>
               )}
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-muted-foreground">
+                  <Languages className="w-3 h-3 inline me-1" />
+                  {t("escalation.language", "Report & Template Language")}
+                </label>
+                <Select
+                  options={[
+                    {
+                      label: t("escalation.languageEn", "English"),
+                      value: "en",
+                    },
+                    {
+                      label: t("escalation.languageAr", "Arabic"),
+                      value: "ar",
+                    },
+                  ]}
+                  value={language}
+                  onChange={(value) => setLanguage(value)}
+                  placeholder={t(
+                    "escalation.languagePlaceholder",
+                    "Select language...",
+                  )}
+                  error={errors?.language}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    "escalation.languageHelp",
+                    "Controls the language of the attached Incident Report, and of the notification template above when a custom template is selected (the default built-in message is always English).",
+                  )}
+                </p>
+              </div>
             </div>
           </div>
 

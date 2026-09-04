@@ -20,11 +20,13 @@ import {
   UsersTab,
   type PermissionFilterMode,
 } from "./RoleFormParts";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface RoleFormData {
   name: string;
   description: string;
   permission_ids: string[];
+  bypass_login_totp?: boolean;
 }
 
 export const RoleEditPage: React.FC = () => {
@@ -32,6 +34,7 @@ export const RoleEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { settings } = useSettings();
 
   const [activeTab, setActiveTab] = useState<"permissions" | "users">(
     "permissions",
@@ -50,6 +53,12 @@ export const RoleEditPage: React.FC = () => {
   const [permissionSearch, setPermissionSearch] = useState("");
   const [permissionFilter, setPermissionFilter] =
     useState<PermissionFilterMode>("all");
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
+  const shouldVerifyTotp = settings?.auth_setting.totp_enabled === true;
 
   const {
     data: roleData,
@@ -78,6 +87,7 @@ export const RoleEditPage: React.FC = () => {
       name: role.name,
       description: role.description ?? "",
       permission_ids: (role.permissions ?? []).map((p) => p.id),
+      bypass_login_totp: role.bypass_login_totp ?? false,
     };
     setFormData(initial);
     setInitialFormData(initial);
@@ -156,6 +166,7 @@ export const RoleEditPage: React.FC = () => {
       name: trimmedName,
       description: formData.description,
       permission_ids: formData.permission_ids,
+      bypass_login_totp: formData.bypass_login_totp,
     });
   };
 
@@ -233,8 +244,12 @@ export const RoleEditPage: React.FC = () => {
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
             {t("roles.basicInfo")}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+          <div
+            className={`grid grid-cols-1 ${
+              !isEPM940 ? "md:grid-cols-2" : ""
+            } gap-6`}
+          >
+            <div className={!isEPM940 ? "" : "md:col-span-2"}>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
@@ -248,17 +263,19 @@ export const RoleEditPage: React.FC = () => {
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("roles.roleCode")}
-              </label>
-              <input
-                type="text"
-                value={role.code}
-                disabled
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-sm font-mono cursor-not-allowed"
-              />
-            </div>
+            {!isEPM940 ? (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t("roles.roleCode")}
+                </label>
+                <input
+                  type="text"
+                  value={role.code}
+                  disabled
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-sm font-mono cursor-not-allowed"
+                />
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("common.description")}
@@ -273,6 +290,36 @@ export const RoleEditPage: React.FC = () => {
               />
             </div>
           </div>
+          {shouldVerifyTotp && (
+            <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                name="enable_totp_verification"
+                checked={formData.bypass_login_totp}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    bypass_login_totp: e.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600  "
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                  {t(
+                    "settings.bypassTotpVerification",
+                    "Bypass Login TOTP Verification",
+                  )}
+                </span>
+                <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(
+                    "settings.bypassTotpVerificationDesc",
+                    "Bypass time-based one-time passcode verification during authentication.",
+                  )}
+                </span>
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Tabs */}

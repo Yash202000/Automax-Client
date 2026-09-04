@@ -67,6 +67,8 @@
     "emptyFile": "الملف فارغ",
     "download": "تحميل",
     "upload": "رفع",
+    "fullScreen": "ملء الشاشة",
+    "exitFullScreen": "الخروج من ملء الشاشة",
     "tryAgain": "حاول مرة أخرى",
     "optional": "اختياري",
     "creating": "جاري الإنشاء...",
@@ -244,7 +246,14 @@
     "last7Days": "آخر 7 أيام",
     "last30Days": "آخر 30 يومًا",
     "system": "النظام",
-    "subject": "الموضوع"
+    "subject": "الموضوع",
+    "downloadExcelTemplate": "تحميل قالب Excel",
+    "exportExcel": "تصدير Excel",
+    "exportJson": "تصدير JSON",
+    "selectJsonOrExcelFile": "اختر ملف JSON (.json) أو Excel (.xlsx)",
+    "validJsonOrExcelRequired": "يلزم ملف JSON (.json) أو Excel (.xlsx) صالح",
+    "rowsSkippedListedAfterImport": "يتم تخطي الصفوف التي تفشل في التحقق من الصحة وسرد في القائمة بعد الاستيراد",
+    "invalidImportFileType": "يرجى اختيار ملف JSON (.json) أو Excel (.xlsx) صالح."
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -257,12 +266,15 @@
     "revisions": "المراجعات"
   },
   "channels": {
-    "phone": "هاتف",
-    "email": "بريد إلكتروني",
-    "web": "ويب",
-    "mobile": "تطبيق الجوال",
-    "inPerson": "حضور شخصي",
-    "chatbot": "روبوت المحادثة"
+    "phone": "الهاتف",
+    "email": "البريد الإلكتروني",
+    "web": "الويب",
+    "ivr": "الرد الصوتي التفاعلي",
+    "whatsappChatbot": "روبوت محادثة واتساب",
+    "mobile": "تطبيق الهاتف المحمول",
+    "inPerson": "حضوري",
+    "chatbot": "روبوت المحادثة",
+    "sms": "رسائل SMS"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -467,6 +479,7 @@
     "gisError": "الموقع خارج المنطقة المسموح بها.",
     "location": "الموقع",
     "department": "القسم",
+    "externalEntity": "الجهة الخارجية المسؤولة",
     "assignee": "المُسند إليه",
     "reporter": "المبلغ",
     "callerInformation": "معلومات المتصل",
@@ -508,9 +521,19 @@
     "reporterName": "اسم المتصل",
     "reporterEmail": "بريد المتصل الإلكتروني",
     "reporterPhone": "هاتف المتصل",
+    "reporterNameRequired": "اسم المتصل مطلوب",
     "reporterNamePlaceholder": "اسم المتصل",
     "reporterEmailPlaceholder": "reporter@example.com",
     "reporterPhonePlaceholder": "+971 50 000 0000",
+    "firstName": "الاسم الأول",
+    "middleName": "اسم الأب/الاسم الأوسط",
+    "lastName": "اسم العائلة",
+    "firstNamePlaceholder": "الاسم الأول",
+    "middleNamePlaceholder": "اسم الأب/الاسم الأوسط",
+    "lastNamePlaceholder": "اسم العائلة",
+    "firstNameRequired": "الاسم الأول مطلوب",
+    "middleNameRequired": "اسم الأب/الاسم الأوسط مطلوب",
+    "lastNameRequired": "اسم العائلة مطلوب",
     "assignment": "التعيين",
     "unassigned": "غير مُسند",
     "noDepartment": "لا يوجد قسم",
@@ -521,6 +544,7 @@
     "titleRequired": "العنوان مطلوب",
     "titleMinLength": "يجب أن يكون العنوان 5 أحرف على الأقل",
     "descriptionRequired": "الوصف مطلوب",
+    "descriptionTooLong": "يجب ألا يتجاوز الوصف {{max}} حرفًا",
     "classificationRequired": "التصنيف مطلوب",
     "workflowRequired": "سير العمل مطلوب. يرجى اختيار التصنيف أو الموقع أو المصدر للمطابقة التلقائية.",
     "fieldRequired": "{{field}} مطلوب",
@@ -804,7 +828,24 @@
     },
     "channel": "القناة",
     "triggeredBy": "تم التشغيل بواسطة",
-    "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال"
+    "showingCommunications": "عرض {{from}}–{{to}} من أصل {{total}} اتصال",
+    "noLinkedSystems": "لا توجد أنظمة مرتبطة",
+    "noLinkedSystemsDescription": "عند إرسال هذه الحادثة إلى نظام Automax آخر أو استلامها منه، سيظهر الرابط هنا.",
+    "incidentUpdated": "تم تحديث الحادثة",
+    "incidentUpdatedDescription": "تم تحديث هذه الحادثة بواسطة مستخدم آخر. يرجى مراجعة التغييرات.",
+    "conflictDetected": "تم اكتشاف تعارض",
+    "incidentModifiedByAnotherUser": "تم تعديل هذه الحادثة بواسطة مستخدم آخر. جارٍ التحديث...",
+    "transitionFailed": "فشل تنفيذ الانتقال",
+    "summaryUpdatedSuccessfully": "تم تحديث ملخص الحادثة بنجاح",
+    "error": "خطأ",
+    "failedToSaveEditedImage": "تعذر حفظ الصورة المعدلة",
+    "requestInfoFailed": "فشل إرسال طلب الحصول على المعلومات",
+    "matchingLocation": "جارٍ مطابقة الموقع...",
+    "matchingLocationHint": "جارٍ مطابقة الموقع الجغرافي مع المواقع الرئيسية...",
+    "locationAutoMatched": "تم تحديد الموقع \"{{name}}\" تلقائيًا من المواقع الرئيسية",
+    "locationDefaultMapped": "لم يتم العثور على موقع مطابق. تم الربط بالموقع \"الافتراضي\".",
+    "locationDefaultCreated": "لم يتم العثور على موقع مطابق. تم إنشاء الموقع \"الافتراضي\" والربط به.",
+    "locationMatchError": "فشلت مطابقة الموقع أو إنشائه. يرجى تحديد الموقع يدويًا."
   },
   "priorities": {
     "critical": "حرج",
@@ -928,7 +969,9 @@
     "authConfiguration": "إعدادات المصادقة",
     "authConfigurationDesc": "إدارة متطلبات التحقق من المصادقة.",
     "enableTotpVerification": "تفعيل التحقق عبر OTP",
-    "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول."
+    "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول.",
+    "bypassTotpVerification": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
+    "bypassTotpVerificationDesc": "المستخدمون المعينون لهذا الدور يتخطون التحقق برمز مؤقت لمرة واحدة عند تسجيل الدخول."
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -1018,7 +1061,8 @@
     "integrations": "التكاملات",
     "integrationScripts": "السكريبتات",
     "integrationVariables": "المتغيرات السرية",
-    "webhookConfigs": "ردود الويب هوك"
+    "webhookConfigs": "ردود الويب هوك",
+    "momraIntegration": "تكامل نظام مورا"
   },
   "users": {
     "title": "المستخدمون",
@@ -1062,6 +1106,10 @@
     "noClassificationsAvailable": "لا توجد تصنيفات متاحة",
     "scopeLocked": "مقيد بنطاقك",
     "noRolesAvailable": "لا توجد أدوار متاحة",
+    "bypassTotp": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
+    "bypassTotpDesc": "لا يوجد دور معين يتطلب التحقق عبر OTP. اسمح لهذا المستخدم بتخطي التحقق عند تسجيل الدخول.",
+    "enableTotp": "تفعيل التحقق عبر OTP عند تسجيل الدخول",
+    "enableTotpDesc": "أحد الأدوار المعينة يتجاوز التحقق عبر OTP. فعّل هذا الخيار لطلبه لهذا المستخدم على أي حال.",
     "updateUser": "تحديث المستخدم",
     "createUser": "إنشاء مستخدم",
     "saving": "جاري الحفظ...",
@@ -1129,7 +1177,11 @@
     "phonePlaceholder": "مثال: +1234567890",
     "extensionPlaceholder": "مثال: 1001",
     "AddAdUser": "إضافة مستخدم إعلان",
-    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'."
+    "invalidPhone": "أدخل رقم هاتف صالحًا. استخدم الأرقام فقط مع إمكانية إضافة رمز الدولة مسبوقًا بعلامة '+'.",
+    "importUsernameRequired": "اسم المستخدم مطلوب",
+    "importEmailRequired": "البريد الإلكتروني مطلوب",
+    "importPhoneRequired": "رقم الهاتف مطلوب",
+    "totalRecords": "الإجمالي"
   },
   "roles": {
     "title": "الأدوار",
@@ -1192,8 +1244,23 @@
     "errors": "الأخطاء:",
     "eGContentManager": "مثال: مدير المحتوى",
     "roleKeyExample": "مثال: content_manager",
-    "invalidName": "يجب أن يحتوي اسم الدور على حرف أو رقم واحد على الأقل.",
-    "invalidCode": "رمز الدور يجب أن يحتوي على حرف أو رقم واحد على الأقل"
+    "invalidName": "يمكن أن يحتوي اسم الدور فقط على الأحرف والأرقام والمسافات وعلامات الترقيم الأساسية (- & ( ))",
+    "invalidCode": "يمكن أن يحتوي رمز الدور فقط على أحرف إنجليزية صغيرة وأرقام وشرطات وشرطات سفلية (_)",
+    "rowLabel": "الصف {{number}}",
+    "importDuplicateName": "{{row}}: اسم دور مكرر \"{{name}}\".",
+    "importDuplicateCode": "{{row}}: رمز دور مكرر \"{{code}}\".",
+    "importPermissionNotFound": "{{row}}: الصلاحية \"{{code}}\" غير موجودة.",
+    "noWorksheetFound": "لم يتم العثور على ورقة عمل في ملف Excel.",
+    "invalidExcelHeaders": "لا يحتوي ملف Excel على رؤوس أعمدة صالحة.",
+    "missingRequiredColumns": "أعمدة مطلوبة مفقودة: {{columns}}",
+    "noDataRowsFound": "لم يتم العثور على صفوف بيانات في ملف Excel.",
+    "importFailedCheckFormat": "فشل الاستيراد. يرجى التحقق من تنسيق الملف.",
+    "selectRolesToExport": "اختر الأدوار المراد تصديرها",
+    "allRolesSelectedByDefault": "بشكل افتراضي، يتم تحديد جميع الأدوار.",
+    "importRolesTitle": "استيراد الأدوار",
+    "importRolesSubtitle": "استيراد الأدوار من ملف JSON أو Excel.",
+    "selectRoleImportFile": "اختر ملف استيراد الأدوار",
+    "supportedFormatsJsonXlsx": "الصيغ المدعومة: ‎.json، ‎.xlsx"
   },
   "departments": {
     "title": "الأقسام",
@@ -1282,7 +1349,23 @@
     "invalidName": "يمكن أن يحتوي اسم القسم على أحرف وأرقام ومسافات فقط.",
     "invalidArabicName": "يجب ألا يحتوي اسم القسم باللغة العربية إلا على أحرف وأرقام ومسافات.",
     "invalidCode": "لا يمكن أن يحتوي رمز القسم إلا على أحرف وأرقام ومسافات.",
-    "deleteError": "تعذر حذف القسم."
+    "deleteError": "تعذر حذف القسم.",
+    "userAddedToDepartment": "تمت إضافة المستخدم إلى القسم",
+    "failedToAddUserToDepartment": "فشلت إضافة المستخدم إلى القسم",
+    "userRemovedFromDepartment": "تمت إزالة المستخدم من القسم",
+    "failedToRemoveUserFromDepartment": "فشلت إزالة المستخدم من القسم",
+    "failedToImport": "فشل استيراد الأقسام",
+    "noDataInFile": "لم يتم العثور على بيانات في الملف. يرجى التأكد من أن الملف يحتوي على سجلات الأقسام.",
+    "rowLabel": "الصف {{number}}",
+    "importRowCodeRequired": "{{row}}: الرمز مطلوب",
+    "importDuplicateName": "{{row}}: اسم قسم مكرر \"{{name}}\"",
+    "importDuplicateCode": "{{row}}: رمز قسم مكرر \"{{code}}\"",
+    "importParentNotFound": "{{row}}: القسم الأب \"{{parent}}\" غير موجود",
+    "relationNotFound": "{{label}} \"{{value}}\" غير موجود",
+    "importDepartmentsTitle": "استيراد الأقسام",
+    "importDepartmentsSubtitle": "قم برفع ملف JSON (.json) أو Excel (.xlsx) لاستيراد الأقسام",
+    "selectDepartmentsToExport": "اختر الأقسام المراد تصديرها",
+    "allDepartmentsSelectedByDefault": "بشكل افتراضي، يتم تحديد جميع الأقسام."
   },
   "locations": {
     "title": "المواقع",
@@ -1348,12 +1431,28 @@
     "legend": "مفتاح الخريطة:",
     "codePlaceholder": "مثال: NY-OFF",
     "namePlaceholder": "مثال: مكتب نيويورك",
+    "externalId": "مرجع خارجي",
+    "externalIdPlaceholder": "مثال: رمز البلدية في مورا",
+    "externalIdHint": "معرّف مرجعي اختياري من نظام خارجي، مثل رمز البلدية/البلدية الفرعية في مورا",
     "nameAr": "الاسم (بالعربية)",
     "descriptionAr": "الوصف (بالعربية)",
     "nameRequired": "اسم الموقع مطلوب",
     "invalidName": "يمكن أن يحتوي اسم الموقع على أحرف وأرقام ومسافات فقط.",
     "invalidArabicName": "يجب ألا يحتوي اسم الموقع باللغة العربية إلا على أحرف عربية وأرقام ومسافات.",
-    "deleteError": "تعذر حذف الموقع."
+    "deleteError": "تعذر حذف الموقع.",
+    "createFailed": "فشل إنشاء الموقع",
+    "updateFailed": "فشل تحديث الموقع",
+    "failedToImport": "فشل استيراد المواقع",
+    "noDataInFile": "لم يتم العثور على بيانات في الملف. يرجى التأكد من أن الملف يحتوي على سجلات المواقع.",
+    "rowLabel": "الصف {{number}}",
+    "importRowCodeRequired": "{{row}}: الرمز مطلوب",
+    "importDuplicateName": "{{row}}: اسم موقع مكرر \"{{name}}\"",
+    "importDuplicateCode": "{{row}}: رمز موقع مكرر \"{{code}}\"",
+    "importParentNotFound": "{{row}}: الموقع الأب \"{{parent}}\" غير موجود",
+    "importLocationsTitle": "استيراد المواقع",
+    "importLocationsSubtitle": "قم برفع ملف JSON (.json) أو Excel (.xlsx) لاستيراد المواقع",
+    "selectLocationsToExport": "اختر المواقع المراد تصديرها",
+    "allLocationsSelectedByDefault": "بشكل افتراضي، يتم تحديد جميع المواقع."
   },
   "classifications": {
     "title": "التصنيفات",
@@ -1436,7 +1535,35 @@
     "namePlaceholder": "مثال: مشاكل الأجهزة",
     "nameAr": "الاسم (بالعربية)",
     "descriptionAr": "الوصف (بالعربية)",
-    "deleteError": "فشل في حذف التصنيف"
+    "deleteError": "فشل في حذف التصنيف",
+    "createFailed": "فشل إنشاء التصنيف",
+    "updateFailed": "فشل تحديث التصنيف",
+    "exportExcel": "تصدير Excel",
+    "exportJson": "تصدير JSON",
+    "downloadTemplate": "تحميل قالب Excel",
+    "noSearchResults": "لم يتم العثور على تصنيفات",
+    "tryDifferentSearch": "جرّب مصطلح بحث مختلف",
+    "importEmptyFile": "لم يتم العثور على بيانات في الملف. يرجى التأكد من أن الملف يحتوي على سجلات التصنيفات.",
+    "importFailed": "فشل استيراد التصنيفات",
+    "importClassifications": "استيراد التصنيفات",
+    "uploadJsonOrExcelToImport": "قم برفع ملف JSON (.json) أو Excel (.xlsx) لاستيراد التصنيفات",
+    "selectJsonOrExcelFile": "اختر ملف JSON (.json) أو Excel (.xlsx)",
+    "validJsonOrExcelRequired": "يلزم ملف JSON (.json) أو Excel (.xlsx) صالح",
+    "importRowErrorsNote": "يتم تخطي الصفوف التي تفشل في التحقق من الصحة وسرد في القائمة بعد الاستيراد",
+    "rowLabel": "الصف {{number}}",
+    "importTypesRequired": "الأنواع مطلوبة. استخدم قيمة واحدة أو أكثر مثل incident أو request أو complaint.",
+    "importInvalidTypes": "نوع (أنواع) غير صالحة \"{{invalid}}\" - المسموح به: {{allowed}}",
+    "importInvalidCriticalityFormat": "تنسيق أهمية غير صالح \"{{entry}}\". المثال المتوقع: \"Critical: 0h 1m\".",
+    "importUnknownCriticality": "أهمية غير معروفة \"{{name}}\". المسموح به: {{allowed}}.",
+    "importInvalidClosingTime": "وقت إغلاق غير صالح لـ \"{{name}}\". يجب أن تكون الساعات بين 0-840 والدقائق بين 0-59.",
+    "importEscalationPolicyNotFound": "سياسة التصعيد \"{{name}}\" غير موجودة.",
+    "importParentNotFound": "التصنيف الأب \"{{parent}}\" غير موجود",
+    "importDuplicateNameInRows": "اسم تصنيف مكرر \"{{name}}\" موجود في الصفوف: {{rows}}",
+    "importDuplicateNameExists": "اسم تصنيف مكرر \"{{name}}\" موجود بالفعل في القائمة الحالية.",
+    "importSkippedDuplicateRow": "تم التخطي - مكرر لصف سابق",
+    "importInvalidSortOrder": "يجب أن يكون ترتيب الفرز رقمًا صحيحًا غير سالب.",
+    "selectClassificationsToExport": "اختر التصنيفات المراد تصديرها",
+    "allClassificationsSelectedByDefault": "بشكل افتراضي، يتم تحديد جميع التصنيفات."
   },
   "reports": {
     "title": "التقارير",
@@ -2174,7 +2301,50 @@
     "slaViolationSummary": "تتجاوز اتفاقية مستوى الخدمة المُكوّنة ({{slaLabel}}) مدة اتفاقية مستوى الخدمة المسموح بها لإغلاق الحادث لـ {{count}} من التصنيفات.",
     "viewAffectedClassifications": "عرض التصنيفات المتأثرة",
     "affectedClassifications": "التصنيفات المتأثرة",
-    "maxAllowedSLA": "الحد الأقصى المسموح به لاتفاقية مستوى الخدمة"
+    "maxAllowedSLA": "الحد الأقصى المسموح به لاتفاقية مستوى الخدمة",
+    "formFields": {
+      "description": "الوصف",
+      "descriptionDesc": "وصف تفصيلي للحادثة",
+
+      "classification": "التصنيف",
+      "classificationDesc": "فئة/نوع الحادثة",
+
+      "source": "المصدر",
+      "sourceDesc": "مكان نشأة الحادثة",
+
+      "sourceIncidentReference": "مرجع الحادثة المصدر",
+      "sourceIncidentReferenceDesc": "رابط للحادثة/الشكوى/الاستفسار المرتبط",
+
+      "assignee": "المسند إليه",
+      "assigneeDesc": "المستخدم المسند إليه للمعالجة",
+
+      "department": "القسم",
+      "departmentDesc": "القسم المسؤول",
+
+      "location": "الموقع",
+      "locationDesc": "الموقع الفعلي",
+
+      "geolocation": "الموقع الجغرافي",
+      "geolocationDesc": "إحداثيات GPS (خط العرض وخط الطول)",
+
+      "dueDate": "تاريخ الاستحقاق",
+      "dueDateDesc": "الموعد النهائي للحل",
+
+      "callerName": "اسم المتصل",
+      "callerNameDesc": "اسم المتصل",
+
+      "callerEmail": "بريد المتصل الإلكتروني",
+      "callerEmailDesc": "البريد الإلكتروني للمتصل",
+
+      "callerPhoneNumber": "رقم هاتف المتصل",
+      "callerPhoneNumberDesc": "رقم هاتف المتصل",
+
+      "attachments": "المرفقات",
+      "attachmentsDesc": "الملفات المرفقة بالحادثة",
+
+      "comment": "تعليق",
+      "commentDesc": "تعليق مطلوب عند إنشاء الحادثة"
+    }
   },
   "lookups": {
     "title": "البيانات الرئيسية",
@@ -2657,7 +2827,8 @@
     "checkBrowserConsoleForDetails": "تحقق من وحدة تحكم المتصفح لمزيد من التفاصيل",
     "makeSureWorkflowsAreCreatedWithRecord": "تأكد من إنشاء سير العمل بنوع سجل: 'query' أو 'both' أو 'all'",
     "yourBrowserDoesNotSupportTheAudio": "متصفحك لا يدعم تشغيل الصوت",
-    "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة"
+    "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة",
+    "mobile": "الجوال"
   },
   "escalation": {
     "pageTitle": "مجموعة التصعيد",
@@ -2756,7 +2927,12 @@
     },
     "emailTemplate": "نموذج إشعار عبر البريد الإلكتروني",
     "smsTemplate": "نموذج إشعارات الرسائل القصيرة",
-    "defaultTemplate": "استخدم الرسالة المدمجة"
+    "defaultTemplate": "استخدم الرسالة المدمجة",
+    "language": "لغة التقرير والقالب",
+    "languageEn": "الإنجليزية",
+    "languageAr": "العربية",
+    "languagePlaceholder": "اختر اللغة...",
+    "languageHelp": "تتحكم في لغة تقرير البلاغات المرفق، وفي لغة نموذج الإشعار أعلاه عند اختيار نموذج مخصص (الرسالة الافتراضية المدمجة تكون دائماً باللغة الإنجليزية)."
   },
   "goals": {
     "title": "الأهداف",

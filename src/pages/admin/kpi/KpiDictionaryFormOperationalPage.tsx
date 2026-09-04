@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, Save } from "lucide-react";
+import { ArrowLeft, BookOpen, Save, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCreateOperationalKPI,
@@ -13,11 +13,13 @@ import {
   useDataSources,
   useDomains,
   useOrganizations,
+  useKpiDocumentaFolderInfo,
 } from "../../../hooks/useKpi";
 import { useGoals } from "../../../hooks/useGoals";
 import { departmentApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
+import { DocumentaFolderPicker } from "../../../components/kpi/DocumentaFolderPicker";
 import type { OperationalKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormOperationalPage: React.FC = () => {
@@ -71,7 +73,21 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     lifecycle: "",
     data_source: "",
     notes: "",
+    documenta_folder_id: "",
   });
+  const [documentaFolderPath, setDocumentaFolderPath] = useState<string[]>([]);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+
+  const { data: configuredFolderInfo } = useKpiDocumentaFolderInfo(
+    form.documenta_folder_id || undefined,
+  );
+  useEffect(() => {
+    if (configuredFolderInfo?.path) {
+      setDocumentaFolderPath(
+        configuredFolderInfo.path.split("/").filter(Boolean),
+      );
+    }
+  }, [configuredFolderInfo]);
 
   useEffect(() => {
     const kpi = existingData?.data;
@@ -99,6 +115,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
       lifecycle: kpi.lifecycle ?? "",
       data_source: kpi.data_source ?? "",
       notes: kpi.notes ?? "",
+      documenta_folder_id: kpi.documenta_folder_id ?? "",
     });
   }, [existingData]);
 
@@ -136,6 +153,7 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
         form.owner_type === "external"
           ? form.owner_org_id || undefined
           : undefined,
+      documenta_folder_id: form.documenta_folder_id || undefined,
     };
 
     if (isEdit) {
@@ -237,6 +255,27 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
               }))}
               placeholder={t("common.selectAnOption")}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Evidence Folder
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-2 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
+                <FolderOpen size={16} className="text-amber-500 shrink-0" />
+                {form.documenta_folder_id
+                  ? documentaFolderPath.join(" / ") || "Configured"
+                  : "Not configured — evidence will use a default folder on first upload"}
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowFolderPicker(true)}
+              >
+                Choose Folder
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -464,6 +503,18 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
           </Button>
         </div>
       </form>
+
+      <DocumentaFolderPicker
+        isOpen={showFolderPicker}
+        onClose={() => setShowFolderPicker(false)}
+        currentFolderId={form.documenta_folder_id || undefined}
+        currentFolderPath={documentaFolderPath}
+        onSelect={(folderId, folderPath) => {
+          setForm((prev) => ({ ...prev, documenta_folder_id: folderId }));
+          setDocumentaFolderPath(folderPath);
+          setShowFolderPicker(false);
+        }}
+      />
     </div>
   );
 };

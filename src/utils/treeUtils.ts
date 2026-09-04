@@ -1,5 +1,3 @@
-import { getLocalizedName } from "@/lib/utils";
-
 export interface TreeSelectNode {
   id: string;
   name: string;
@@ -27,14 +25,17 @@ export const findNodeById = (
 export const getNodePath = (
   nodes: TreeSelectNode[],
   id: string,
+  language: string,
   path: string[] = [],
 ): string[] => {
   for (const node of nodes) {
-    if (node.id === id) return [...path, getLocalizedName(node)];
+    const nodeName =
+      language === "ar" && node.name_ar ? node.name_ar : node.name;
+    if (node.id === id) return [...path, nodeName];
     if (node.children && node.children.length > 0) {
-      const result = getNodePath(node.children, id, [
+      const result = getNodePath(node.children, id, language, [
         ...path,
-        getLocalizedName(node),
+        nodeName,
       ]);
       if (result.length > 0) return result;
     }

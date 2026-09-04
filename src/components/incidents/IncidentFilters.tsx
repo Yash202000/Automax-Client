@@ -942,10 +942,7 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
                     setReporterPhoneError("");
                   }
                 }}
-                placeholder={t(
-                  "common.reporterPhonePlaceholder",
-                  "Phone number",
-                )}
+                placeholder={t("profile.phoneNumber", "Phone number")}
                 inputMode="tel"
                 className={cn(
                   "w-full px-3 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2",

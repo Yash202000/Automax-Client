@@ -15,13 +15,56 @@ import {
   Upload,
   Info,
   Search,
+  MoreHorizontal,
+  FileSpreadsheet,
+  ChevronDown,
+  X,
 } from "lucide-react";
-import { roleApi } from "../../api/admin";
+import { permissionApi, roleApi } from "../../api/admin";
 import type { Role } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button } from "../../components/ui";
+import { Button, HierarchicalTreeSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import ExcelJs from "exceljs";
+import { saveAs } from "file-saver";
+import {
+  validateCode,
+  validateRoleName,
+  validateRequired,
+} from "@/utils/validations";
+
+const normalizeImportHeader = (header: string | undefined) => {
+  if (!header) return "";
+
+  return header
+    .toString()
+    .trim()
+    .replace(/\s*\((required|optional)\)\s*$/i, "")
+    .replace(/[\s-]+/g, "_")
+    .toLowerCase();
+};
+
+const isImportMetadataRow = (
+  row: Record<string, string | number | boolean | null | undefined>,
+) => {
+  const values = Object.values(row).filter(
+    (value) => value !== undefined && value !== null && value !== "",
+  );
+
+  if (values.length === 0) return true;
+
+  return values.every((value) => {
+    const normalized = String(value).trim().toLowerCase();
+
+    return (
+      normalized === "(required)" ||
+      normalized === "(optional)" ||
+      normalized === "required" ||
+      normalized === "optional"
+    );
+  });
+};
 
 export const RolesPage: React.FC = () => {
   const { t } = useTranslation();
@@ -32,6 +75,12 @@ export const RolesPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedExportIds, setSelectedExportIds] = useState<string[]>([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+
   const [importResult, setImportResult] = useState<{
     imported: number;
     skipped: number;
@@ -41,9 +90,18 @@ export const RolesPage: React.FC = () => {
   const canCreateRole = isSuperAdmin || hasPermission(PERMISSIONS.ROLES_CREATE);
   const canUpdateRole = isSuperAdmin || hasPermission(PERMISSIONS.ROLES_UPDATE);
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const { data: rolesData, isLoading } = useQuery({
     queryKey: ["admin", "roles"],
     queryFn: () => roleApi.list(),
+  });
+
+  const { data: permissionsData } = useQuery({
+    queryKey: ["admin", "permissions"],
+    queryFn: () => permissionApi.list(),
   });
 
   const filteredRoles = (rolesData?.data ?? []).filter((role: Role) => {
@@ -64,17 +122,28 @@ export const RolesPage: React.FC = () => {
     },
   });
 
-  const handleExport = async () => {
+  const openRoleExportModal = () => {
+    setSelectedExportIds((rolesData?.data ?? []).map((role) => role.id));
+    setIsExportModalOpen(true);
+  };
+
+  const handleExportJson = async () => {
     try {
       setIsExporting(true);
+
       const blob = await roleApi.export();
       const url = window.URL.createObjectURL(blob);
+
       const link = document.createElement("a");
       link.href = url;
-      link.download = `roles_export_${new Date().toISOString().split("T")[0]}.json`;
+      link.download = `roles_export_${
+        new Date().toISOString().split("T")[0]
+      }.json`;
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Export failed:", error);
@@ -83,28 +152,352 @@ export const RolesPage: React.FC = () => {
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleExportExcel = async (selectedIds?: string[]) => {
+    try {
+      setIsExporting(true);
+
+      const roles =
+        typeof selectedIds === "undefined"
+          ? (rolesData?.data ?? [])
+          : (rolesData?.data ?? []).filter((role) =>
+              selectedIds.includes(role.id),
+            );
+
+      const workbook = new ExcelJs.Workbook();
+      const worksheet = workbook.addWorksheet("Roles");
+
+      worksheet.columns = [
+        { header: "name", key: "name", width: 26 },
+        { header: "code", key: "code", width: 26 },
+        { header: "description", key: "description", width: 40 },
+        { header: "permissions", key: "permissions", width: 50 },
+      ];
+
+      roles.forEach((role: Role) => {
+        worksheet.addRow({
+          name: role.name,
+          code: role.code,
+          description: role.description || "",
+          permissions: role.permissions?.map((p) => p.code).join(", ") || "",
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      saveAs(
+        blob,
+        `roles_export_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    const workbook = new ExcelJs.Workbook();
+    const worksheet = workbook.addWorksheet("Roles");
+
+    worksheet.columns = [
+      { header: "name (Required)", key: "name", width: 26 },
+      ...(isEPM940
+        ? []
+        : [{ header: "code (Required)", key: "code", width: 26 }]),
+      { header: "description (Optional)", key: "description", width: 40 },
+      { header: "permissions (Optional)", key: "permissions", width: 50 },
+    ];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    saveAs(blob, "roles_import_template.xlsx");
+  };
+
+  const handleImportFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0] || null;
+
     if (!file) return;
 
-    try {
-      setIsImporting(true);
-      const result = await roleApi.import(file);
-      if (result.data) {
-        setImportResult(result.data);
-      }
-      queryClient.invalidateQueries({ queryKey: ["admin", "roles"] });
-    } catch (error) {
-      console.error("Import failed:", error);
+    const name = file.name.toLowerCase();
+
+    if (!name.endsWith(".json") && !name.endsWith(".xlsx")) {
       setImportResult({
         imported: 0,
         skipped: 0,
-        errors: ["Import failed. Please check the file format."],
+        errors: [t("common.invalidImportFileType")],
       });
+
+      event.target.value = "";
+      return;
+    }
+
+    setImportFile(file);
+    setIsImportModalOpen(true);
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+
+    try {
+      setIsImporting(true);
+
+      const file = importFile;
+
+      // JSON import
+      if (file.name.toLowerCase().endsWith(".json")) {
+        const result = await roleApi.import(file);
+
+        setImportResult({
+          imported: result.data?.imported ?? 0,
+          skipped: result.data?.skipped ?? 0,
+          errors: result.data?.errors ?? [],
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "roles"],
+        });
+
+        setIsImportModalOpen(false);
+        setImportFile(null);
+        return;
+      }
+
+      // Excel import
+      const workbook = new ExcelJs.Workbook();
+      const buffer = await file.arrayBuffer();
+
+      await workbook.xlsx.load(buffer);
+
+      const worksheet = workbook.worksheets[0];
+
+      if (!worksheet) {
+        throw new Error(t("roles.noWorksheetFound"));
+      }
+
+      const headerRow = worksheet.getRow(1);
+
+      const headerValues = Array.isArray(headerRow.values)
+        ? headerRow.values.slice(1)
+        : [];
+
+      const headers = headerValues.map((header) =>
+        normalizeImportHeader(
+          header === null || header === undefined ? "" : String(header),
+        ),
+      );
+      if (!headers.length || !headers.some(Boolean)) {
+        throw new Error(t("roles.invalidExcelHeaders"));
+      }
+
+      const requiredHeaders = isEPM940 ? ["name"] : ["name", "code"];
+
+      const missingHeaders = requiredHeaders.filter(
+        (header) => !headers.includes(header),
+      );
+
+      if (missingHeaders.length > 0) {
+        throw new Error(
+          t("roles.missingRequiredColumns", {
+            columns: missingHeaders.join(", "),
+          }),
+        );
+      }
+
+      const rows: Record<string, string>[] = [];
+
+      worksheet.eachRow((row: any, rowNumber) => {
+        if (rowNumber === 1) return;
+
+        const values = Array.isArray(row.values) ? row.values.slice(1) : [];
+
+        const rowData: Record<string, string> = {};
+
+        headers.forEach((header: string, index: number) => {
+          if (!header) return;
+
+          const value = values[index];
+
+          rowData[header] =
+            value === null || value === undefined ? "" : String(value).trim();
+        });
+
+        if (!isImportMetadataRow(rowData)) {
+          rows.push(rowData);
+        }
+      });
+
+      if (rows.length === 0) {
+        throw new Error(t("roles.noDataRowsFound"));
+      }
+
+      const errors: string[] = [];
+      const validPayloads: Array<Record<string, unknown>> = [];
+
+      const seenCodes = new Set<string>();
+
+      const existingRoleNames = new Set(
+        (rolesData?.data ?? []).map((role) => role.name.trim().toLowerCase()),
+      );
+      const existingRoleCodes = new Set(
+        (rolesData?.data ?? []).map((role) => role.code.trim().toLowerCase()),
+      );
+
+      rows.forEach((row, index) => {
+        const excelRowNumber = index + 2;
+        const rowLabel = t("roles.rowLabel", { number: excelRowNumber });
+
+        const name = row.name?.trim() ?? "";
+        const code = row.code?.trim() ?? "";
+
+        if (!validateRequired(name)) {
+          errors.push(`${rowLabel}: ${t("roles.nameRequired")}`);
+          return;
+        }
+        if (!validateRoleName(name)) {
+          errors.push(`${rowLabel}: ${t("roles.invalidName")}`);
+          return;
+        }
+
+        if (!isEPM940) {
+          if (!validateRequired(code)) {
+            errors.push(`${rowLabel}: ${t("roles.codeRequired")}`);
+            return;
+          }
+          if (!validateCode(code)) {
+            errors.push(`${rowLabel}: ${t("roles.invalidCode")}`);
+            return;
+          }
+        }
+
+        const normalizedName = name.toLowerCase();
+        const normalizedCode = code?.toLowerCase();
+
+        if (
+          existingRoleNames.has(normalizedName) ||
+          seenCodes.has(`name:${normalizedName}`)
+        ) {
+          errors.push(t("roles.importDuplicateName", { row: rowLabel, name }));
+          return;
+        }
+
+        if (
+          normalizedCode &&
+          (existingRoleCodes.has(normalizedCode) ||
+            seenCodes.has(normalizedCode))
+        ) {
+          errors.push(t("roles.importDuplicateCode", { row: rowLabel, code }));
+          return;
+        }
+
+        seenCodes.add(`name:${normalizedName}`);
+        if (normalizedCode) seenCodes.add(normalizedCode);
+
+        const permissionCodes = row.permissions
+          ? row.permissions
+              .split(/[,;]/)
+              .map((permission) => permission.trim())
+              .filter(Boolean)
+          : [];
+
+        const permissionIds: string[] = [];
+
+        for (const permissionCode of permissionCodes) {
+          const permission = permissionsData?.data?.find(
+            (permission) =>
+              permission.code.toLowerCase() === permissionCode.toLowerCase(),
+          );
+
+          if (!permission) {
+            errors.push(
+              t("roles.importPermissionNotFound", {
+                row: rowLabel,
+                code: permissionCode,
+              }),
+            );
+            continue;
+          }
+
+          permissionIds.push(permission.id);
+        }
+
+        validPayloads.push({
+          name,
+          code,
+          description: row.description?.trim() || "",
+          permission_ids: permissionIds,
+        });
+      });
+
+      if (validPayloads.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: rows.length,
+          errors,
+        });
+
+        setIsImportModalOpen(false);
+        setImportFile(null);
+        return;
+      }
+
+      const jsonBlob = new Blob([JSON.stringify(validPayloads, null, 2)], {
+        type: "application/json",
+      });
+
+      const jsonFile = new File([jsonBlob], "roles_import.json", {
+        type: "application/json",
+      });
+
+      const result = await roleApi.import(jsonFile);
+
+      const data = result.data as {
+        imported: number;
+        skipped: number;
+        errors?: string[];
+      };
+
+      setImportResult({
+        imported: data.imported ?? 0,
+        skipped: (data.skipped ?? 0) + (rows.length - validPayloads.length),
+        errors: [...errors, ...(data.errors ?? [])],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "roles"],
+      });
+
+      setIsImportModalOpen(false);
+      setImportFile(null);
+    } catch (error) {
+      console.error("Import failed:", error);
+
+      setImportResult({
+        imported: 0,
+        skipped: 0,
+        errors: [
+          error instanceof Error
+            ? error.message
+            : t("roles.importFailedCheckFormat"),
+        ],
+      });
+
+      setIsImportModalOpen(false);
+      setImportFile(null);
     } finally {
       setIsImporting(false);
-      // Reset the file input
-      event.target.value = "";
     }
   };
 
@@ -139,28 +532,86 @@ export const RolesPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<MoreHorizontal className="w-4 h-4" />}
+              rightIcon={
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 transition-transform",
+                    isActionsMenuOpen && "rotate-180",
+                  )}
+                />
+              }
+              onClick={() => setIsActionsMenuOpen((v) => !v)}
+            >
+              {t("common.moreActions", {
+                defaultValue: "More Actions",
+              })}
+            </Button>
+
+            {isActionsMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-60"
+                  onClick={() => setIsActionsMenuOpen(false)}
+                />
+
+                <div className="absolute right-0 mt-2 w-72 bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] py-1.5 z-[70]">
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      openRoleExportModal();
+                    }}
+                    disabled={isExporting}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-[hsl(var(--muted))]"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {isExporting
+                      ? t("common.exporting")
+                      : t("common.exportExcel")}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleExportJson();
+                    }}
+                    disabled={isExporting}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-[hsl(var(--muted))]"
+                  >
+                    <Download className="w-4 h-4" />
+                    {isExporting
+                      ? t("common.exporting")
+                      : t("common.exportJson")}
+                  </button>
+
+                  <div className="my-1 border-t border-[hsl(var(--border))]" />
+
+                  <button
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      handleDownloadTemplate();
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-[hsl(var(--muted))]"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {t("common.downloadExcelTemplate")}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          <Button
+            onClick={() => setIsImportModalOpen(true)}
+            disabled={isImporting}
+            leftIcon={<Upload className="w-4 h-4" />}
           >
-            <Download className="w-4 h-4" />
-            {isExporting ? t("common.exporting") : t("common.export")}
-          </button>
-          <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
-            <Upload className="w-4 h-4" />
-            <span>
-              {" "}
-              {isImporting ? t("common.importing") : t("common.import")}{" "}
-            </span>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              disabled={isImporting}
-              className="hidden"
-            />
-          </label>
+            {isImporting ? t("common.importing") : t("common.import")}
+          </Button>
+
           {canCreateRole && (
             <Button
               onClick={() => navigate("/admin/roles/new")}
@@ -375,6 +826,170 @@ export const RolesPage: React.FC = () => {
                     : t("roles.deleteRole")}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  {t("roles.selectRolesToExport")}
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  {t("roles.allRolesSelectedByDefault")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={(rolesData?.data ?? []).map((role) => ({
+                  id: role.id,
+                  name: role.name,
+                }))}
+                selectedIds={selectedExportIds}
+                onSelectionChange={setSelectedExportIds}
+                leafOnly={true}
+                colorScheme="primary"
+                maxHeight="300px"
+                label={t("roles.title")}
+                showExpandCollapse={false}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(selectedExportIds)}
+                disabled={selectedExportIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                {t("common.exportExcel")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  {t("roles.importRolesTitle")}
+                </h3>
+
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  {t("roles.importRolesSubtitle")}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (isImporting) return;
+
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                }}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5">
+              <div className="bg-[hsl(var(--muted)/0.4)] border border-[hsl(var(--border))] rounded-xl p-5">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-[hsl(var(--primary)/0.1)] rounded-xl flex items-center justify-center mb-3">
+                    <Upload className="w-6 h-6 text-[hsl(var(--primary))]" />
+                  </div>
+
+                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                    {importFile
+                      ? importFile.name
+                      : t("roles.selectRoleImportFile")}
+                  </p>
+
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                    {t("roles.supportedFormatsJsonXlsx")}
+                  </p>
+
+                  <label className="mt-4">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-lg text-sm font-medium cursor-pointer hover:opacity-90">
+                      <Upload className="w-4 h-4" />
+                      {t("common.chooseFile")}
+                    </span>
+
+                    <input
+                      type="file"
+                      accept=".json,.xlsx"
+                      onChange={handleImportFileChange}
+                      disabled={isImporting}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Selected file */}
+              {importFile && (
+                <div className="flex items-center gap-3 p-3 bg-[hsl(var(--success)/0.08)] border border-[hsl(var(--success)/0.2)] rounded-lg">
+                  <FileSpreadsheet className="w-5 h-5 text-[hsl(var(--success))]" />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[hsl(var(--foreground))] truncate">
+                      {importFile.name}
+                    </p>
+
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {(importFile.size / 1024).toFixed(1)} {t("common.kb")}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                }}
+                disabled={isImporting}
+              >
+                {t("common.cancel")}
+              </Button>
+
+              <Button
+                onClick={handleImport}
+                disabled={!importFile || isImporting}
+                isLoading={isImporting}
+                leftIcon={<Upload className="w-4 h-4" />}
+              >
+                {isImporting ? t("common.importing") : t("common.import")}
+              </Button>
             </div>
           </div>
         </div>

@@ -51,7 +51,7 @@ import type {
   User as UserType,
 } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 
@@ -184,24 +184,27 @@ export const RequestDetailPage: React.FC = () => {
     return getNodePath(
       fcClassificationsData.data as unknown as TreeSelectNode[],
       request.classification.id,
+      i18n.language,
     );
-  }, [request?.classification?.id, fcClassificationsData?.data]);
+  }, [request?.classification?.id, fcClassificationsData?.data, i18n.language]);
 
   const locationPath = useMemo(() => {
     if (!request?.location?.id || !fcLocationsData?.data) return [];
     return getNodePath(
       fcLocationsData.data as unknown as TreeSelectNode[],
       request.location.id,
+      i18n.language,
     );
-  }, [request?.location?.id, fcLocationsData?.data]);
+  }, [request?.location?.id, fcLocationsData?.data, i18n.language]);
 
   const departmentPath = useMemo(() => {
     if (!request?.department?.id || !fcDepartmentsData?.data) return [];
     return getNodePath(
       fcDepartmentsData.data as unknown as TreeSelectNode[],
       request.department.id,
+      i18n.language,
     );
-  }, [request?.department?.id, fcDepartmentsData?.data]);
+  }, [request?.department?.id, fcDepartmentsData?.data, i18n.language]);
 
   // Helper function to download attachment with authentication
   const downloadAttachment = async (attachmentId: string, fileName: string) => {
@@ -518,7 +521,7 @@ export const RequestDetailPage: React.FC = () => {
                     request.current_state.color || "hsl(var(--foreground))",
                 }}
               >
-                {request.current_state.name}
+                {getLocalizedName(request.current_state)}
               </span>
             )}
             {request.sla_breached && (
@@ -1049,7 +1052,7 @@ export const RequestDetailPage: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      request.department.name
+                      getLocalizedName(request.department)
                     )}
                   </div>
                 </div>
@@ -1083,7 +1086,7 @@ export const RequestDetailPage: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      request.location.name
+                      getLocalizedName(request.location)
                     )}
                   </div>
                 </div>
@@ -1117,7 +1120,7 @@ export const RequestDetailPage: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      request.classification.name
+                      getLocalizedName(request.classification)
                     )}
                   </div>
                 </div>

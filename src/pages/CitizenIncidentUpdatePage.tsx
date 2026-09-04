@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   Upload,
@@ -19,7 +19,7 @@ import {
   LocationPickerModal,
   type LocationData,
 } from "@/components/ui";
-import { incidentApi } from "@/api/admin";
+import { incidentApi, lookupApi } from "@/api/admin";
 import IncidentDetailsCard from "@/components/incidents/IncidentDetailsCard";
 
 export function CitizenIncidentUpdatePage() {
@@ -51,6 +51,15 @@ export function CitizenIncidentUpdatePage() {
 
   const MAX_MB = 20;
 
+  const { data: env_config } = useQuery({
+    queryKey: ["lookups", "categories", "env_config"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find((cat) => cat.code === "CONFG") || null
+      );
+    },
+  });
   // ── Submit mutation ──
   const submitMutation = useMutation({
     mutationFn: async ({
@@ -95,11 +104,19 @@ export function CitizenIncidentUpdatePage() {
     },
   });
 
-  // ── File handling ──
+  const MAX_ATTACHMENTS =
+    (env_config?.values || []).find(
+      (v) => v.code === "CITIZEN_ATTACHMENT_LIMIT",
+    )?.name || "5";
+
+  const [attachmentLimitError, setAttachmentLimitError] = useState("");
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
+
     const invalid: string[] = [];
     const valid: File[] = [];
+
     Array.from(files).forEach((f) => {
       if (!isAllowedType(f)) {
         invalid.push(`${f.name} — ${t("citizen.unsupportedType")}`);
@@ -111,16 +128,43 @@ export function CitizenIncidentUpdatePage() {
         valid.push(f);
       }
     });
-    if (invalid.length) {
-      setErrors((p) => ({ ...p, attachments: invalid.join(", ") }));
+
+    const totalAttachments = attachments.length + valid.length;
+
+    if (totalAttachments > Number(MAX_ATTACHMENTS)) {
+      setAttachmentLimitError(
+        t(
+          "citizen.attachmentLimit",
+          `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
+        ),
+      );
     } else {
-      setErrors((p) => ({ ...p, attachments: "" }));
+      setAttachmentLimitError("");
+    }
+
+    if (invalid.length) {
+      setErrors((p) => ({
+        ...p,
+        attachments: invalid.join(", "),
+      }));
+    } else {
+      setErrors((p) => ({
+        ...p,
+        attachments: "",
+      }));
     }
     setAttachments((p) => [...p, ...valid]);
   };
 
-  const removeFile = (index: number) =>
-    setAttachments((p) => p.filter((_, i) => i !== index));
+  const removeFile = (index: number) => {
+    setAttachments((p) => {
+      const next = p.filter((_, i) => i !== index);
+      if (next.length <= Number(MAX_ATTACHMENTS)) {
+        setAttachmentLimitError("");
+      }
+      return next;
+    });
+  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -286,6 +330,9 @@ export function CitizenIncidentUpdatePage() {
                   </button>
                 </div>
               ))}
+              {attachmentLimitError && (
+                <p className="text-red-500 text-sm">{attachmentLimitError}</p>
+              )}
             </div>
           )}
 
@@ -357,6 +404,7 @@ export function CitizenIncidentUpdatePage() {
             className="w-full"
             leftIcon={<Send className="w-4 h-4" />}
             isLoading={submitMutation.isPending}
+            disabled={submitMutation.isPending || Boolean(attachmentLimitError)}
           >
             {t("citizen.submitUpdate")}
           </Button>

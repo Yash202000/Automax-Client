@@ -33,6 +33,7 @@ import {
   Lock,
   Webhook,
   BellRing,
+  Globe2,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
@@ -188,6 +189,12 @@ const sidebarSectionsConfig: SidebarSection[] = [
         icon: Webhook,
         labelKey: "admin.webhookConfigs",
         path: "/admin/webhook-configs",
+        permission: "admin:integration",
+      },
+      {
+        icon: Globe2,
+        labelKey: "admin.momraIntegration",
+        path: "/admin/momra-integration",
         permission: "admin:integration",
       },
     ],

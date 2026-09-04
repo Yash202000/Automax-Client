@@ -23,8 +23,11 @@ import {
   Briefcase,
   Power,
   Search,
+  MoreHorizontal,
 } from "lucide-react";
 import { locationApi, userApi, departmentApi } from "../../api/admin";
+import ExcelJs from "exceljs";
+import { saveAs } from "file-saver";
 import type {
   Location,
   LocationCreateRequest,
@@ -33,7 +36,7 @@ import type {
   Department,
 } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button } from "../../components/ui";
+import { Button, HierarchicalTreeSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 
@@ -47,6 +50,7 @@ interface LocationFormData {
   parent_id: string;
   parent_name: string;
   address: string;
+  external_id: string;
 }
 
 const initialFormData: LocationFormData = {
@@ -59,6 +63,7 @@ const initialFormData: LocationFormData = {
   parent_id: "",
   parent_name: "",
   address: "",
+  external_id: "",
 };
 
 const locationTypes = [
@@ -296,6 +301,15 @@ export const LocationsPage: React.FC = () => {
   const [viewTab, setViewTab] = useState<"users" | "departments">("users");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportSelectedIds, setExportSelectedIds] = useState<string[]>([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
 
   const canCreateLocation =
     isSuperAdmin || hasPermission(PERMISSIONS.LOCATIONS_CREATE);
@@ -348,7 +362,7 @@ export const LocationsPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.error || "Failed to create location");
+      toast.error(error?.response?.data?.error || t("locations.createFailed"));
     },
   });
 
@@ -360,7 +374,7 @@ export const LocationsPage: React.FC = () => {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.error || "Failed to update location");
+      toast.error(error?.response?.data?.error || t("locations.updateFailed"));
     },
   });
 
@@ -412,6 +426,7 @@ export const LocationsPage: React.FC = () => {
       parent_id: location.parent_id || "",
       parent_name: parentLoc?.name || "",
       address: location.address,
+      external_id: location.external_id || "",
     });
     setIsModalOpen(true);
   };
@@ -441,23 +456,36 @@ export const LocationsPage: React.FC = () => {
       setViewLoading(false);
     }
   };
+  const validateLocationName = (name: string): string | undefined => {
+    const trimmed = name.trim();
+    if (!trimmed) return t("locations.nameRequired");
+    if (!/[A-Za-z]/.test(trimmed)) return t("common.nameInvalid");
+    if (!/^[A-Za-z0-9\s]+$/.test(trimmed)) {
+      return t("locations.invalidName");
+    }
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     const name = formData.name.trim();
     const name_ar = formData.name_ar.trim();
 
-    if (!name) {
-      newErrors.name = t("locations.nameRequired");
-    } else if (!/[A-Za-z]/.test(name)) {
-      newErrors.name = t("common.nameInvalid");
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
-      newErrors.name = t("locations.invalidName");
+    const nameError = validateLocationName(name);
+    if (nameError) {
+      newErrors.name = nameError;
     }
 
     if (name_ar && !/^[\u0600-\u06FF0-9\s]+$/.test(name_ar)) {
       newErrors.name_ar = t("locations.invalidArabicName", {
         defaultValue:
           "Location name in Arabic can only contain Arabic letters, numbers and spaces",
+      });
+    }
+
+    if (!isEPM940 && !formData.code.trim()) {
+      newErrors.code = t("locations.codeRequired", {
+        defaultValue: "Location code is required",
       });
     }
 
@@ -485,6 +513,7 @@ export const LocationsPage: React.FC = () => {
       type: formData.type,
       parent_id: formData.parent_id || undefined,
       address: formData.address,
+      external_id: formData.external_id.trim() || undefined,
     };
 
     if (editingLocation) {
@@ -494,7 +523,38 @@ export const LocationsPage: React.FC = () => {
     }
   };
 
-  const handleExport = async () => {
+  const normalizeImportHeader = (header: string | undefined) => {
+    if (!header) return "";
+
+    return header
+      .toString()
+      .trim()
+      .replace(/\s*\((required|optional)\)\s*$/i, "")
+      .replace(/[\s-]+/g, "_")
+      .toLowerCase();
+  };
+
+  const isImportMetadataRow = (
+    row: Record<string, string | number | boolean | null | undefined>,
+  ) => {
+    const values = Object.values(row).filter(
+      (value) => value !== undefined && value !== null && value !== "",
+    );
+
+    if (values.length === 0) return true;
+
+    return values.every((value) => {
+      const normalized = String(value).trim().toLowerCase();
+      return (
+        normalized === "(required)" ||
+        normalized === "(optional)" ||
+        normalized === "required" ||
+        normalized === "optional"
+      );
+    });
+  };
+
+  const handleExportJson = async () => {
     try {
       setIsExporting(true);
       const blob = await locationApi.export();
@@ -513,20 +573,334 @@ export const LocationsPage: React.FC = () => {
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const flattenLocations = (nodes: Location[]): Location[] => {
+    const result: Location[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenLocations(node.children));
+      }
+    });
+    return result;
+  };
+
+  const openLocationExportModal = () => {
+    setExportSelectedIds(
+      flattenLocations(locationsList?.data ?? []).map(
+        (location) => location.id,
+      ),
+    );
+    setIsExportModalOpen(true);
+  };
+
+  const handleExportExcel = async (selectedIds?: string[]) => {
+    try {
+      setIsExporting(true);
+      const list =
+        typeof selectedIds === "undefined"
+          ? (locationsList?.data ?? [])
+          : flattenLocations(locationsList?.data ?? []).filter((location) =>
+              selectedIds.includes(location.id),
+            );
+
+      const workbook = new ExcelJs.Workbook();
+      const worksheet = workbook.addWorksheet("Locations");
+
+      worksheet.columns = [
+        { header: "name", key: "name", width: 26 },
+        { header: "name_ar", key: "name_ar", width: 26 },
+        { header: "code", key: "code", width: 18 },
+        { header: "description", key: "description", width: 30 },
+        { header: "description_ar", key: "description_ar", width: 30 },
+        { header: "type", key: "type", width: 18 },
+        { header: "parent_location", key: "parent_location", width: 22 },
+        { header: "address", key: "address", width: 30 },
+        { header: "is_active", key: "is_active", width: 12 },
+      ];
+
+      const allLocations =
+        typeof selectedIds === "undefined" ? flattenLocations(list) : list;
+      const nameById = new Map<string, string>();
+      allLocations.forEach((loc) => nameById.set(loc.id, loc.name));
+
+      allLocations.forEach((loc) => {
+        worksheet.addRow({
+          name: loc.name,
+          name_ar: loc.name_ar || "",
+          code: loc.code,
+          description: loc.description || "",
+          description_ar: loc.description_ar || "",
+          type: loc.type,
+          parent_location: loc.parent_id
+            ? nameById.get(loc.parent_id) || ""
+            : "",
+          address: loc.address || "",
+          is_active: loc.is_active ? "Yes" : "No",
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      saveAs(
+        blob,
+        `locations_export_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    const workbook = new ExcelJs.Workbook();
+    const worksheet = workbook.addWorksheet("Locations");
+
+    worksheet.columns = [
+      { header: "name (Required)", key: "name", width: 26 },
+      { header: "name_ar (Optional)", key: "name_ar", width: 26 },
+      ...(isEPM940
+        ? []
+        : [{ header: "code (Required)", key: "code", width: 18 }]),
+      { header: "description (Optional)", key: "description", width: 30 },
+      { header: "description_ar (Optional)", key: "description_ar", width: 30 },
+      { header: "type (Optional)", key: "type", width: 18 },
+      {
+        header: "parent_location (Optional)",
+        key: "parent_location",
+        width: 22,
+      },
+      { header: "address (Optional)", key: "address", width: 30 },
+    ];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, "locations_import_template.xlsx");
+  };
+
+  const handleImportFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0] || null;
     if (!file) return;
+
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".json") && !name.endsWith(".xlsx")) {
+      toast.error(t("common.invalidImportFileType"));
+      event.target.value = "";
+      setImportFile(null);
+      return;
+    }
+
+    setImportFile(file);
+    setIsImportModalOpen(true);
+    event.target.value = "";
+  };
+
+  const closeImportModal = () => {
+    if (isImporting) return;
+    setIsImportModalOpen(false);
+    setImportFile(null);
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
 
     try {
       setIsImporting(true);
-      const result = await locationApi.import(file);
-      setImportResult(result.data || null);
+
+      if (!importFile.name.toLowerCase().endsWith(".xlsx")) {
+        const result = await locationApi.import(importFile);
+        setImportResult(result.data || null);
+        queryClient.invalidateQueries({ queryKey: ["admin", "locations"] });
+        setIsImportModalOpen(false);
+        setImportFile(null);
+        return;
+      }
+
+      const arrayBuffer = await importFile.arrayBuffer();
+      const workbook = new ExcelJs.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) {
+        throw new Error("Worksheet not found");
+      }
+
+      const headers: string[] = [];
+      worksheet.getRow(1).eachCell((cell) => headers.push(cell.text ?? ""));
+
+      const rawRows: Record<string, string>[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return;
+
+        const obj: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          obj[header] = row.getCell(index + 1).text || "";
+        });
+        rawRows.push(obj);
+      });
+
+      const normalizedRows = rawRows
+        .filter((row) => !isImportMetadataRow(row))
+        .map((row) => {
+          const normalized: Record<string, string> = {};
+          Object.entries(row).forEach(([key, value]) => {
+            const normalizedKey = normalizeImportHeader(key);
+            if (normalizedKey) {
+              normalized[normalizedKey] = String(value ?? "");
+            }
+          });
+          return normalized;
+        });
+
+      if (normalizedRows.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: 0,
+          errors: [t("locations.noDataInFile")],
+        });
+        return;
+      }
+
+      const errors: string[] = [];
+      const validPayloads: Array<Record<string, unknown>> = [];
+
+      const seenLocationNames = new Set<string>();
+      const seenLocationCodes = new Set<string>();
+      const existingLocationNames = new Set(
+        flattenLocations(locationsList?.data ?? []).map((loc) =>
+          loc.name.trim().toLowerCase(),
+        ),
+      );
+      const existingLocationCodes = new Set(
+        flattenLocations(locationsList?.data ?? []).map((loc) =>
+          loc.code.trim().toLowerCase(),
+        ),
+      );
+
+      normalizedRows.forEach((row, index) => {
+        const rowNum = index + 1;
+        const rowLabel = t("locations.rowLabel", { number: rowNum });
+        const name = String(row.name || "").trim();
+        const code = String(row.code || "").trim();
+
+        const nameError = validateLocationName(name);
+        if (nameError) {
+          errors.push(`${rowLabel}: ${nameError}`);
+          return;
+        }
+
+        if (!isEPM940 && !code) {
+          errors.push(t("locations.importRowCodeRequired", { row: rowLabel }));
+          return;
+        }
+
+        const normalizedName = name.toLowerCase();
+        const normalizedCode = code.toLowerCase();
+
+        if (
+          existingLocationNames.has(normalizedName) ||
+          seenLocationNames.has(normalizedName)
+        ) {
+          errors.push(
+            t("locations.importDuplicateName", { row: rowLabel, name }),
+          );
+          return;
+        }
+
+        if (
+          normalizedCode &&
+          (existingLocationCodes.has(normalizedCode) ||
+            seenLocationCodes.has(normalizedCode))
+        ) {
+          errors.push(
+            t("locations.importDuplicateCode", { row: rowLabel, code }),
+          );
+          return;
+        }
+
+        seenLocationNames.add(normalizedName);
+        if (normalizedCode) seenLocationCodes.add(normalizedCode);
+
+        const parentName = String(row.parent_location || "").trim();
+        const parentMatch = !parentName
+          ? undefined
+          : locationsList?.data?.find(
+              (loc: Location) =>
+                loc.name.trim().toLowerCase() === parentName.toLowerCase() ||
+                loc.code.trim().toLowerCase() === parentName.toLowerCase(),
+            );
+
+        if (parentName && !parentMatch) {
+          errors.push(
+            t("locations.importParentNotFound", {
+              row: rowLabel,
+              parent: parentName,
+            }),
+          );
+          return;
+        }
+
+        const type = String(row.type || "office").trim() || "office";
+        const validRow = {
+          name: String(row.name || "").trim(),
+          name_ar: String(row.name_ar || "").trim() || undefined,
+          code: String(row.code || "").trim() || undefined,
+          description: String(row.description || "").trim(),
+          description_ar: String(row.description_ar || "").trim() || undefined,
+          type,
+          parent_id: parentMatch?.id || undefined,
+          address: String(row.address || "").trim(),
+        };
+
+        validPayloads.push(validRow);
+      });
+
+      const skippedCount = normalizedRows.length - validPayloads.length;
+
+      if (validPayloads.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: skippedCount,
+          errors,
+        });
+        return;
+      }
+
+      const jsonBlob = new Blob([JSON.stringify(validPayloads, null, 2)], {
+        type: "application/json",
+      });
+      const jsonFile = new File([jsonBlob], "locations_import.json", {
+        type: "application/json",
+      });
+
+      const result = await locationApi.import(jsonFile);
+      const data = result.data as {
+        imported: number;
+        skipped: number;
+        errors: string[];
+      };
+
+      setImportResult({
+        imported: data.imported,
+        skipped: data.skipped + skippedCount,
+        errors: [...errors, ...(data.errors || [])],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin", "locations"] });
+      setIsImportModalOpen(false);
+      setImportFile(null);
     } catch (error) {
       console.error("Import failed:", error);
+      toast.error(t("locations.failedToImport"));
     } finally {
       setIsImporting(false);
-      event.target.value = "";
     }
   };
 
@@ -592,28 +966,79 @@ export const LocationsPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExport}
-              disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<MoreHorizontal className="w-4 h-4" />}
+                rightIcon={
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 transition-transform",
+                      isActionsMenuOpen && "rotate-180",
+                    )}
+                  />
+                }
+                onClick={() => setIsActionsMenuOpen((v) => !v)}
+              >
+                {t("common.moreActions", { defaultValue: "More Actions" })}
+              </Button>
+              {isActionsMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[60]"
+                    onClick={() => setIsActionsMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-72 bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] py-1.5 z-[70] animate-scale-in origin-top-right">
+                    <button
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        openLocationExportModal();
+                      }}
+                      disabled={isExporting}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                    >
+                      <Download className="w-4 h-4" />
+                      {isExporting
+                        ? t("common.exporting")
+                        : t("common.exportExcel")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        handleExportJson();
+                      }}
+                      disabled={isExporting}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                    >
+                      <Download className="w-4 h-4" />
+                      {isExporting
+                        ? t("common.exporting")
+                        : t("common.exportJson")}
+                    </button>
+                    <div className="my-1 border-t border-[hsl(var(--border))]" />
+                    <button
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        handleDownloadTemplate();
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t("common.downloadExcelTemplate")}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={() => setIsImportModalOpen(true)}
             >
-              <Download className="w-4 h-4" />
-              {isExporting ? t("common.exporting") : t("common.export")}
-            </button>
-            <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
-              <Upload className="w-4 h-4" />
-              <span>
-                {" "}
-                {isImporting ? t("common.importing") : t("common.import")}
-              </span>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                disabled={isImporting}
-                className="hidden"
-              />
-            </label>
+              {isImporting ? t("common.importing") : t("common.import")}
+            </Button>
             {canCreateLocation && (
               <button
                 onClick={() => openCreateModal()}
@@ -710,6 +1135,164 @@ export const LocationsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  {t("locations.selectLocationsToExport")}
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  {t("locations.allLocationsSelectedByDefault")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={treeData?.data ?? []}
+                selectedIds={exportSelectedIds}
+                onSelectionChange={setExportSelectedIds}
+                colorScheme="primary"
+                maxHeight="300px"
+                leafOnly={false}
+                hierarchyType="location"
+                label={t("locations.title")}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(exportSelectedIds)}
+                disabled={exportSelectedIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                {t("common.exportExcel")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl border border-[hsl(var(--border))] max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
+                    <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                    {t("locations.importLocationsTitle")}
+                  </h3>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
+                  {t("locations.importLocationsSubtitle")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors disabled:opacity-50"
+                aria-label={t("common.close")}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("common.selectJsonOrExcelFile")}
+                </label>
+                <label
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all",
+                    "bg-[hsl(var(--background))] border-[hsl(var(--border))]",
+                    isImporting
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:border-[hsl(var(--primary))]",
+                  )}
+                >
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-[hsl(var(--primary))] text-white whitespace-nowrap">
+                    {t("common.chooseFile")}
+                  </span>
+                  <span className="text-sm text-[hsl(var(--muted-foreground))] truncate">
+                    {importFile ? importFile.name : t("common.noFileChosen")}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    onChange={handleImportFileChange}
+                    disabled={isImporting}
+                    className="hidden"
+                  />
+                </label>
+                {importFile && (
+                  <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                    {t("common.selected")}: {importFile.name} (
+                    {(importFile.size / 1024).toFixed(2)} {t("common.kb")})
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="font-medium text-[hsl(var(--foreground))] mb-1">
+                      {t("common.importNotes")}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>{t("common.validJsonOrExcelRequired")}</li>
+                      <li>{t("common.rowsSkippedListedAfterImport")}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+              <Button
+                variant="ghost"
+                onClick={closeImportModal}
+                disabled={isImporting}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={!importFile}
+                isLoading={isImporting}
+                leftIcon={
+                  !isImporting ? <Upload className="w-4 h-4" /> : undefined
+                }
+              >
+                {isImporting
+                  ? t("common.importing")
+                  : t("locations.importLocationsTitle")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Result Modal */}
       {importResult && (
@@ -1130,19 +1713,48 @@ export const LocationsPage: React.FC = () => {
                   </div>
                 </div>
 
+                {!isEPM940 ? (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("locations.code")}{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t("locations.codePlaceholder")}
+                      value={formData.code}
+                      onChange={(e) => {
+                        setFormData({ ...formData, code: e.target.value });
+                        if (errors.code) {
+                          setErrors({ ...errors, code: "" });
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all ${errors.code ? "border-[hsl(var(--destructive))]" : ""}`}
+                    />
+                    {errors.code && (
+                      <p className="mt-1 text-xs text-[hsl(var(--destructive))]">
+                        {errors.code}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("locations.code")}
+                    {t("locations.externalId")}
                   </label>
                   <input
                     type="text"
-                    placeholder={t("locations.codePlaceholder")}
-                    value={formData.code}
+                    placeholder={t("locations.externalIdPlaceholder")}
+                    value={formData.external_id}
                     onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
+                      setFormData({ ...formData, external_id: e.target.value })
                     }
                     className="w-full px-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
                   />
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    {t("locations.externalIdHint")}
+                  </p>
                 </div>
 
                 <div>
@@ -1173,6 +1785,7 @@ export const LocationsPage: React.FC = () => {
                       {t("locations.parentLocation")}
                     </label>
                     <select
+                      disabled={true}
                       value={formData.parent_id}
                       onChange={(e) =>
                         setFormData({ ...formData, parent_id: e.target.value })

@@ -61,6 +61,7 @@ import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "../../stores/authStore";
 import i18n from "@/i18n";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface UserFormData {
   first_name: string;
@@ -75,7 +76,55 @@ interface UserFormData {
   classification_ids: string[];
   role_ids: string[];
   is_active: boolean;
+  bypass_login_totp?: boolean;
+  enable_login_totp?: boolean;
 }
+
+const ToggleSwitch: React.FC<{
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}> = ({ checked, onChange, disabled }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={() => onChange(!checked)}
+    className={cn(
+      "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] disabled:opacity-50 disabled:cursor-not-allowed",
+      checked
+        ? "bg-[hsl(var(--primary))]"
+        : "bg-[hsl(var(--muted-foreground)/0.3)]",
+    )}
+  >
+    <span
+      className={cn(
+        "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out",
+        checked ? "translate-x-6" : "translate-x-1",
+      )}
+    />
+  </button>
+);
+
+const TotpToggleRow: React.FC<{
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}> = ({ title, description, checked, onChange }) => (
+  <div className="flex items-start justify-between gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg">
+    <span className="flex-1">
+      <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+        {title}
+      </span>
+      <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+        {description}
+      </span>
+    </span>
+    <ToggleSwitch checked={checked} onChange={onChange} />
+  </div>
+);
 
 type UserFieldErrors = Partial<
   Record<"email" | "username" | "password" | "phone" | "form", string>
@@ -114,6 +163,8 @@ export const UsersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { user: currentUser } = useAuthStore();
+  const { settings } = useSettings();
+  const shouldVerifyTotp = settings?.auth_setting.totp_enabled === true;
   // Guards against out-of-order resolution when department selection
   // changes again before a previous department-details lookup finishes.
   const editDeptLookupSeqRef = useRef(0);
@@ -168,6 +219,8 @@ export const UsersPage: React.FC = () => {
     location_ids: [] as string[],
     classification_ids: [] as string[],
     role_ids: [] as string[],
+    bypass_login_totp: false,
+    enable_login_totp: false,
   });
   const [createFormErrors, setCreateFormErrors] = useState<UserFieldErrors>({});
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -193,6 +246,10 @@ export const UsersPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
 
   const passwordRequirementLabels = useMemo(
     () => ({
@@ -536,6 +593,25 @@ export const UsersPage: React.FC = () => {
     return map;
   }, [rolesData?.data]);
 
+  const roleIdsBypassTotp = useCallback(
+    (roleIds: string[]) => {
+      const roles = (rolesData?.data || []) as Role[];
+      return roleIds.some(
+        (id) => roles.find((r) => r.id === id)?.bypass_login_totp,
+      );
+    },
+    [rolesData?.data],
+  );
+
+  const editRoleBypassesTotp = roleIdsBypassTotp(formData.role_ids);
+  const showEditBypassTotpToggle = shouldVerifyTotp && !editRoleBypassesTotp;
+  const showEditEnableTotpToggle = shouldVerifyTotp && editRoleBypassesTotp;
+
+  const createRoleBypassesTotp = roleIdsBypassTotp(createFormData.role_ids);
+  const showCreateBypassTotpToggle =
+    shouldVerifyTotp && !createRoleBypassesTotp;
+  const showCreateEnableTotpToggle = shouldVerifyTotp && createRoleBypassesTotp;
+
   // Handle dropdown positioning
   const handleDropdownToggle = useCallback(
     (userId: string) => {
@@ -823,6 +899,8 @@ export const UsersPage: React.FC = () => {
       location_ids: [],
       classification_ids: [],
       role_ids: [],
+      bypass_login_totp: false,
+      enable_login_totp: false,
     });
     setAvatarFile(null);
     setAvatarPreview(null);
@@ -846,6 +924,8 @@ export const UsersPage: React.FC = () => {
       location_ids: [],
       classification_ids: [],
       role_ids: [],
+      bypass_login_totp: false,
+      enable_login_totp: false,
     });
     setAvatarFile(null);
     setAvatarPreview(null);
@@ -881,12 +961,15 @@ export const UsersPage: React.FC = () => {
       errors.password = t("users.passwordPolicy");
     }
 
-    if (
+    if (isEPM940 && !createFormData.phone.trim()) {
+      errors.phone = t("validation.fieldRequired", {
+        field: t("users.phone"),
+      });
+    } else if (
       createFormData.phone.trim() &&
       !PHONE_REGEX.test(createFormData.phone.trim())
     ) {
       errors.phone = t("users.invalidPhone");
-      // toast.error(t("auth.invalidPhone"));
     }
 
     setCreateFormErrors(errors);
@@ -900,6 +983,12 @@ export const UsersPage: React.FC = () => {
         ...createFormData,
         extension: "",
         phone: createFormData.phone.trim(),
+        bypass_login_totp: showCreateBypassTotpToggle
+          ? !!createFormData.bypass_login_totp
+          : false,
+        enable_login_totp: showCreateEnableTotpToggle
+          ? !!createFormData.enable_login_totp
+          : false,
       },
       avatar: avatarFile || undefined,
     });
@@ -950,6 +1039,8 @@ export const UsersPage: React.FC = () => {
       classification_ids: classificationIds,
       role_ids: user.roles?.map((r) => r.id) || [],
       is_active: user.is_active,
+      bypass_login_totp: user.bypass_login_totp ?? false,
+      enable_login_totp: user.enable_login_totp ?? false,
     });
     setIsModalOpen(true);
     setActiveDropdown(null);
@@ -986,9 +1077,15 @@ export const UsersPage: React.FC = () => {
         field: t("users.username"),
       });
     }
-    if (formData.phone.trim() && !PHONE_REGEX.test(formData.phone.trim())) {
+    if (isEPM940 && !formData.phone.trim()) {
+      errors.phone = t("validation.fieldRequired", {
+        field: t("users.phone"),
+      });
+    } else if (
+      formData.phone.trim() &&
+      !PHONE_REGEX.test(formData.phone.trim())
+    ) {
       errors.phone = t("users.invalidPhone");
-      // toast.error(t("auth.invalidPhone"));
     }
 
     setFormErrors(errors);
@@ -1015,6 +1112,12 @@ export const UsersPage: React.FC = () => {
       classification_ids: formData.classification_ids,
       role_ids: formData.role_ids,
       is_active: formData.is_active,
+      bypass_login_totp: showEditBypassTotpToggle
+        ? !!formData.bypass_login_totp
+        : false,
+      enable_login_totp: showEditEnableTotpToggle
+        ? !!formData.enable_login_totp
+        : false,
     } as any;
 
     updateMutation.mutate({ id: editingUser.id, data: payload });
@@ -1152,7 +1255,11 @@ export const UsersPage: React.FC = () => {
       { header: "email (Required)", key: "email", width: 20 },
       { header: "first_name (Optional)", key: "first_name", width: 20 },
       { header: "last_name (Optional)", key: "last_name", width: 20 },
-      { header: "phone (Optional)", key: "phone", width: 20 },
+      {
+        header: isEPM940 ? "phone (Required)" : "phone (Optional)",
+        key: "phone",
+        width: 20,
+      },
       { header: "extension (Optional)", key: "extension", width: 20 },
     ];
 
@@ -1198,7 +1305,7 @@ export const UsersPage: React.FC = () => {
   };
 
   const validateImportRows = (
-    rows: Array<{ username?: string; email?: string }>,
+    rows: Array<{ username?: string; email?: string; phone?: string }>,
   ): string[] => {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1227,6 +1334,16 @@ export const UsersPage: React.FC = () => {
       } else if (!emailRegex.test(row.email.trim())) {
         errors.push(
           `${rowLabel}: "${row.email}" - ${t("auth.invalidEmail", { defaultValue: "Invalid email format" })}`,
+        );
+      }
+
+      if (isEPM940 && !row.phone?.trim()) {
+        errors.push(
+          `${rowLabel}: ${t("users.importPhoneRequired", { defaultValue: "Phone is required" })}`,
+        );
+      } else if (row.phone?.trim() && !PHONE_REGEX.test(row.phone.trim())) {
+        errors.push(
+          `${rowLabel}: "${row.phone}" - ${t("users.invalidPhone", { defaultValue: "Invalid phone format" })}`,
         );
       }
 
@@ -1368,6 +1485,13 @@ export const UsersPage: React.FC = () => {
         if (!row.username?.trim() || !usernameRegex.test(row.username.trim())) {
           rowErrors.push(
             `Row ${rowNum}: "${row.username || ""}" - Invalid username`,
+          );
+        }
+        if (isEPM940 && !row.phone?.trim()) {
+          rowErrors.push(`Row ${rowNum}: Phone number is required`);
+        } else if (row.phone?.trim() && !PHONE_REGEX.test(row.phone.trim())) {
+          rowErrors.push(
+            `Row ${rowNum}: "${row.phone}" - Invalid phone number`,
           );
         }
 
@@ -1514,9 +1638,7 @@ export const UsersPage: React.FC = () => {
                     <FileSpreadsheet className="w-4 h-4" />
                     {isExporting
                       ? t("common.exporting")
-                      : t("users.exportExcel", {
-                          defaultValue: "Export Excel",
-                        })}
+                      : t("common.exportExcel")}
                   </button>
                   <button
                     onClick={() => {
@@ -1529,9 +1651,7 @@ export const UsersPage: React.FC = () => {
                     <Download className="w-4 h-4" />
                     {isExporting
                       ? t("common.exporting")
-                      : t("users.exportJson", {
-                          defaultValue: "Export JSON",
-                        })}
+                      : t("common.exportJson")}
                   </button>
                   <div className="my-1 border-t border-[hsl(var(--border))]" />
                   <button
@@ -2313,7 +2433,8 @@ export const UsersPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t("users.username")}
+                      {t("users.username")}{" "}
+                      <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
@@ -2338,7 +2459,8 @@ export const UsersPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                      {t("users.phone")}
+                      {t("users.phone")}{" "}
+                      <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
@@ -2661,6 +2783,40 @@ export const UsersPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Login TOTP override */}
+                {showEditBypassTotpToggle && (
+                  <TotpToggleRow
+                    title={t("users.bypassTotp", "Bypass Login TOTP")}
+                    description={t(
+                      "users.bypassTotpDesc",
+                      "No assigned role requires TOTP. Let this user skip TOTP verification during login.",
+                    )}
+                    checked={!!formData.bypass_login_totp}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        bypass_login_totp: checked,
+                      }))
+                    }
+                  />
+                )}
+                {showEditEnableTotpToggle && (
+                  <TotpToggleRow
+                    title={t("users.enableTotp", "Enable Login TOTP")}
+                    description={t(
+                      "users.enableTotpDesc",
+                      "An assigned role bypasses TOTP verification. Turn this on to still require it for this user.",
+                    )}
+                    checked={!!formData.enable_login_totp}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        enable_login_totp: checked,
+                      }))
+                    }
+                  />
+                )}
 
                 {/* Extension assignment disabled for user create/edit.
                 {canAssignExtensions && editHasAgentRole && (
@@ -2987,7 +3143,9 @@ export const UsersPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                     {t("users.phone")}{" "}
-                    <span className="text-destructive">*</span>
+                    {isEPM940 ? (
+                      <span className="text-destructive">*</span>
+                    ) : null}
                   </label>
                   <input
                     type="text"
@@ -3167,6 +3325,40 @@ export const UsersPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Login TOTP override */}
+                {showCreateBypassTotpToggle && (
+                  <TotpToggleRow
+                    title={t("users.bypassTotp", "Bypass Login TOTP")}
+                    description={t(
+                      "users.bypassTotpDesc",
+                      "No assigned role requires TOTP. Let this user skip TOTP verification during login.",
+                    )}
+                    checked={!!createFormData.bypass_login_totp}
+                    onChange={(checked) =>
+                      setCreateFormData((prev) => ({
+                        ...prev,
+                        bypass_login_totp: checked,
+                      }))
+                    }
+                  />
+                )}
+                {showCreateEnableTotpToggle && (
+                  <TotpToggleRow
+                    title={t("users.enableTotp", "Enable Login TOTP")}
+                    description={t(
+                      "users.enableTotpDesc",
+                      "An assigned role bypasses TOTP verification. Turn this on to still require it for this user.",
+                    )}
+                    checked={!!createFormData.enable_login_totp}
+                    onChange={(checked) =>
+                      setCreateFormData((prev) => ({
+                        ...prev,
+                        enable_login_totp: checked,
+                      }))
+                    }
+                  />
+                )}
 
                 {/* Extension assignment disabled for user create/edit.
                 {canAssignExtensions && hasAgentRole && (

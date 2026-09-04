@@ -21,6 +21,8 @@ import {
   Briefcase,
   Power,
   Search,
+  MoreHorizontal,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   classificationApi,
@@ -33,6 +35,7 @@ import type {
   Classification,
   ClassificationCreateRequest,
   ClassificationUpdateRequest,
+  ClassificationCriticality,
   ClassificationCriticalityCreateRequest,
   LookupValue,
   User,
@@ -40,10 +43,16 @@ import type {
   EscalationPolicy,
 } from "../../types";
 import { cn } from "@/lib/utils";
-import { Button, MultiSelect } from "../../components/ui";
+import {
+  Button,
+  HierarchicalTreeSelect,
+  MultiSelect,
+} from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { toast } from "sonner";
+import ExcelJs from "exceljs";
+import { saveAs } from "file-saver";
 
 // Draft criticality row: max_closing_minutes stays nullable in the form so the
 // input can render empty until the admin types a value; normalized to a number
@@ -360,6 +369,11 @@ export const ClassificationsPage: React.FC = () => {
   } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportSelectedIds, setExportSelectedIds] = useState<string[]>([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{
     imported: number;
     skipped: number;
@@ -448,7 +462,7 @@ export const ClassificationsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.error || "Failed to create classification",
+        error?.response?.data?.error || t("classifications.createFailed"),
       );
     },
   });
@@ -467,7 +481,7 @@ export const ClassificationsPage: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.error || "Failed to update classification",
+        error?.response?.data?.error || t("classifications.updateFailed"),
       );
     },
   });
@@ -649,7 +663,210 @@ export const ClassificationsPage: React.FC = () => {
     }
   };
 
-  const handleExport = async () => {
+  const normalizeImportHeader = (header: string | undefined) => {
+    if (!header) return "";
+
+    return header
+      .toString()
+      .trim()
+      .replace(/\s*\((required|optional)\)\s*$/i, "")
+      .replace(/\s+/g, "_")
+      .toLowerCase();
+  };
+
+  const isImportMetadataRow = (
+    row: Record<string, string | number | boolean | null | undefined>,
+  ) => {
+    const values = Object.values(row).filter(
+      (value) => value !== undefined && value !== null && value !== "",
+    );
+
+    if (values.length === 0) return true;
+
+    return values.every((value) => {
+      const normalized = String(value).trim().toLowerCase();
+      return (
+        normalized === "(required)" ||
+        normalized === "(optional)" ||
+        normalized === "required" ||
+        normalized === "optional"
+      );
+    });
+  };
+
+  const validateClassificationName = (name: string): string | undefined => {
+    const trimmed = name.trim();
+    if (!trimmed) return t("common.nameRequired");
+    if (!/[A-Za-z]/.test(trimmed)) return t("common.nameInvalid");
+    if (!/^[A-Za-z0-9\s'",.&()/-]+$/.test(trimmed))
+      return t("common.nameAllowedCharacters");
+    return undefined;
+  };
+
+  const parseImportTypesField = (
+    raw: string,
+  ): { types: string[]; error?: string } => {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return {
+        types: [],
+        error: t("classifications.importTypesRequired"),
+      };
+    }
+    const tokens = trimmed
+      .split(/[,;]/)
+      .map((tok) => tok.trim().toLowerCase())
+      .filter(Boolean);
+    if (tokens.length === 0) {
+      return {
+        types: [],
+        error: t("classifications.importTypesRequired"),
+      };
+    }
+    const invalid = tokens.filter((tok) => !ALL_TYPES.includes(tok));
+    if (invalid.length > 0) {
+      return {
+        types: [],
+        error: t("classifications.importInvalidTypes", {
+          invalid: invalid.join(", "),
+          allowed: ALL_TYPES.join(", "),
+        }),
+      };
+    }
+    return { types: Array.from(new Set(tokens)) };
+  };
+
+  type ImportCriticality = {
+    criticality_id: string;
+    max_closing_hours: number;
+    max_closing_minutes: number;
+    escalation_policy_id?: string;
+  };
+
+  const parseImportCriticalitiesField = (
+    raw: string,
+  ): { criticalities: ImportCriticality[]; error?: string } => {
+    const trimmed = raw.trim();
+    if (!trimmed) return { criticalities: [] };
+
+    const entries = trimmed
+      .split(";")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+    const criticalities: ImportCriticality[] = [];
+
+    for (const entry of entries) {
+      const match = entry.match(
+        /^(.+?):\s*(\d+)\s*h\s*(\d+)\s*m(?:\s*\((.+)\))?$/i,
+      );
+      if (!match) {
+        return {
+          criticalities: [],
+          error: t("classifications.importInvalidCriticalityFormat", {
+            entry,
+          }),
+        };
+      }
+      const [, priorityNameRaw, hoursRaw, minutesRaw, policyNameRaw] = match;
+      const priorityName = priorityNameRaw.trim();
+      const hours = parseInt(hoursRaw, 10);
+      const minutes = parseInt(minutesRaw, 10);
+
+      const priority = priorityValues.find(
+        (p) => p.name.trim().toLowerCase() === priorityName.toLowerCase(),
+      );
+      if (!priority) {
+        return {
+          criticalities: [],
+          error: t("classifications.importUnknownCriticality", {
+            name: priorityName,
+            allowed: priorityValues.map((p) => p.name).join(", "),
+          }),
+        };
+      }
+
+      if (hours < 0 || hours > 840 || minutes < 0 || minutes > 59) {
+        return {
+          criticalities: [],
+          error: t("classifications.importInvalidClosingTime", {
+            name: priorityName,
+          }),
+        };
+      }
+
+      let escalationPolicyId: string | undefined;
+      if (policyNameRaw) {
+        const policyName = policyNameRaw.trim();
+        const policy = escalationPolicies.find(
+          (p) => p.name.trim().toLowerCase() === policyName.toLowerCase(),
+        );
+        if (!policy) {
+          return {
+            criticalities: [],
+            error: t("classifications.importEscalationPolicyNotFound", {
+              name: policyName,
+            }),
+          };
+        }
+        escalationPolicyId = policy.id;
+      }
+
+      criticalities.push({
+        criticality_id: priority.id,
+        max_closing_hours: hours,
+        max_closing_minutes: minutes,
+        escalation_policy_id: escalationPolicyId,
+      });
+    }
+
+    return { criticalities };
+  };
+
+  const resolveImportParentClassification = (
+    parentNameRaw: string,
+  ): { id?: string; error?: string } => {
+    const parentName = parentNameRaw.trim();
+    if (!parentName) return {};
+    const match = classificationsList?.data?.find(
+      (c: Classification) =>
+        c.name.trim().toLowerCase() === parentName.toLowerCase() ||
+        (c.name_ar &&
+          c.name_ar.trim().toLowerCase() === parentName.toLowerCase()),
+    );
+    if (!match) {
+      return {
+        error: t("classifications.importParentNotFound", {
+          parent: parentName,
+        }),
+      };
+    }
+    return { id: match.id };
+  };
+
+  const flattenClassificationTree = (
+    nodes: Classification[],
+  ): Classification[] => {
+    const result: Classification[] = [];
+    nodes.forEach((node) => {
+      result.push(node);
+      if (node.children?.length) {
+        result.push(...flattenClassificationTree(node.children));
+      }
+    });
+    return result;
+  };
+
+  const getAllClassificationIds = (nodes: Classification[] = []): string[] => {
+    return flattenClassificationTree(nodes).map((node) => node.id);
+  };
+
+  const openClassificationExportModal = () => {
+    setExportSelectedIds(getAllClassificationIds(treeData?.data ?? []));
+    setIsExportModalOpen(true);
+  };
+
+  const handleExportJson = async () => {
     try {
       setIsExporting(true);
       const blob = await classificationApi.export();
@@ -668,20 +885,364 @@ export const ClassificationsPage: React.FC = () => {
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleExportExcel = async (selectedIds?: string[]) => {
+    try {
+      setIsExporting(true);
+      const list = selectedIds?.length
+        ? flattenClassificationTree(classificationsList?.data ?? []).filter(
+            (c) => selectedIds.includes(c.id),
+          )
+        : (classificationsList?.data ?? []);
+
+      const nameById = new Map<string, string>();
+      list.forEach((c: Classification) => nameById.set(c.id, c.name));
+
+      const priorityNameById = new Map<string, string>();
+      priorityValues.forEach((p) => priorityNameById.set(p.id, p.name));
+      const escalationPolicyNameById = new Map<string, string>();
+      escalationPolicies.forEach((p) =>
+        escalationPolicyNameById.set(p.id, p.name),
+      );
+
+      const formatCriticalities = (
+        criticalities?: ClassificationCriticality[],
+      ) => {
+        if (!criticalities?.length) return "";
+        return criticalities
+          .map((c) => {
+            const priorityName =
+              priorityNameById.get(c.criticality_id) || c.criticality_id;
+            const policyName = c.escalation_policy_id
+              ? escalationPolicyNameById.get(c.escalation_policy_id)
+              : undefined;
+            const time = `${c.max_closing_hours}h ${c.max_closing_minutes}m`;
+            return policyName
+              ? `${priorityName}: ${time} (${policyName})`
+              : `${priorityName}: ${time}`;
+          })
+          .join("; ");
+      };
+
+      const workbook = new ExcelJs.Workbook();
+      const worksheet = workbook.addWorksheet("Classifications");
+
+      worksheet.columns = [
+        { header: "classification_code", key: "code", width: 24 },
+        { header: "name", key: "name", width: 26 },
+        { header: "name_ar", key: "name_ar", width: 26 },
+        { header: "description", key: "description", width: 30 },
+        { header: "description_ar", key: "description_ar", width: 30 },
+        {
+          header: "parent_classification",
+          key: "parent_classification",
+          width: 26,
+        },
+        { header: "level", key: "level", width: 8 },
+        { header: "path", key: "path", width: 26 },
+        { header: "types", key: "types", width: 24 },
+        { header: "sort_order", key: "sort_order", width: 12 },
+        { header: "is_active", key: "is_active", width: 10 },
+        { header: "criticalities", key: "criticalities", width: 40 },
+      ];
+
+      list.forEach((c: Classification) => {
+        worksheet.addRow({
+          code: (c as Classification & { code?: string }).code || "",
+          name: c.name,
+          name_ar: c.name_ar || "",
+          description: c.description || "",
+          description_ar: c.description_ar || "",
+          parent_classification: c.parent_id
+            ? nameById.get(c.parent_id) || ""
+            : "",
+          level: c.level,
+          path: c.path || "",
+          types: (c.types ?? []).join(", "),
+          sort_order: c.sort_order,
+          is_active: c.is_active ? "Yes" : "No",
+          criticalities: formatCriticalities(c.criticalities),
+        });
+      });
+
+      if (selectedIds?.length) {
+        setIsExportModalOpen(false);
+      }
+
+      const excelBuffer = await workbook.xlsx.writeBuffer();
+      const excelBlob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      saveAs(
+        excelBlob,
+        `classifications_export_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    const workbook = new ExcelJs.Workbook();
+    const worksheet = workbook.addWorksheet("Classifications");
+
+    worksheet.columns = [
+      { header: "name (Required)", key: "name", width: 26 },
+      { header: "name_ar (Optional)", key: "name_ar", width: 26 },
+      { header: "description (Optional)", key: "description", width: 30 },
+      {
+        header: "description_ar (Optional)",
+        key: "description_ar",
+        width: 30,
+      },
+      {
+        header: "parent_classification (Optional)",
+        key: "parent_classification",
+        width: 30,
+      },
+      { header: "types (Required)", key: "types", width: 34 },
+      { header: "sort_order (Optional)", key: "sort_order", width: 12 },
+      { header: "criticalities (Optional)", key: "criticalities", width: 50 },
+    ];
+
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, "classifications_import_template.xlsx");
+  };
+
+  const handleImportFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0] || null;
+    if (file) {
+      const name = file.name.toLowerCase();
+      if (!name.endsWith(".json") && !name.endsWith(".xlsx")) {
+        toast.error(
+          t("classifications.validJsonOrExcelRequired", {
+            defaultValue:
+              "Please select a valid JSON (.json) or Excel (.xlsx) file",
+          }),
+        );
+        event.target.value = "";
+        setImportFile(null);
+        return;
+      }
+    }
+    setImportFile(file);
+  };
+
+  const closeImportModal = () => {
+    if (isImporting) return;
+    setIsImportModalOpen(false);
+    setImportFile(null);
+  };
+
+  const handleImport = async () => {
+    const file = importFile;
     if (!file) return;
 
     try {
       setIsImporting(true);
-      const result = await classificationApi.import(file);
-      setImportResult(result.data || null);
+
+      if (!file.name.toLowerCase().endsWith(".xlsx")) {
+        const result = await classificationApi.import(file);
+        setImportResult(result.data || null);
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "classifications"],
+        });
+        setIsImportModalOpen(false);
+        setImportFile(null);
+        return;
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = new ExcelJs.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) {
+        throw new Error("Worksheet not found");
+      }
+
+      const headers: string[] = [];
+      worksheet.getRow(1).eachCell((cell) => {
+        headers.push(cell.text ?? "");
+      });
+
+      const rawRows: Record<string, string>[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return;
+
+        const obj: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          obj[header] = row.getCell(index + 1).text || "";
+        });
+
+        rawRows.push(obj);
+      });
+
+      const normalizedRows = rawRows
+        .filter((row) => !isImportMetadataRow(row))
+        .map((row) => {
+          const normalizedRow: Record<string, string> = {};
+
+          Object.entries(row).forEach(([key, value]) => {
+            const normalizedKey = normalizeImportHeader(key);
+            if (normalizedKey) {
+              normalizedRow[normalizedKey] = String(value ?? "");
+            }
+          });
+
+          return normalizedRow;
+        });
+
+      if (normalizedRows.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: 0,
+          errors: [t("classifications.importEmptyFile")],
+        });
+        return;
+      }
+
+      const errors: string[] = [];
+
+      const existingNames = new Set(
+        (classificationsList?.data ?? []).map(
+          (item: Classification) =>
+            `${(item.parent_id || "").trim().toLowerCase()}|${(item.name || "").trim().toLowerCase()}`,
+        ),
+      );
+
+      const keyCounts = new Map<string, number[]>();
+      normalizedRows.forEach((row, index) => {
+        const key = `${(row.parent_classification || "").trim().toLowerCase()}|${(row.name || "").trim().toLowerCase()}`;
+        const rows = keyCounts.get(key) || [];
+        rows.push(index + 1);
+        keyCounts.set(key, rows);
+      });
+
+      const duplicateRowNumbers = new Set<number>();
+      for (const [key, rows] of keyCounts) {
+        const [, name] = key.split("|");
+        if (rows.length > 1 && name) {
+          rows.slice(1).forEach((r) => duplicateRowNumbers.add(r));
+          errors.push(
+            t("classifications.importDuplicateNameInRows", {
+              name,
+              rows: rows.join(", "),
+            }),
+          );
+        }
+
+        if (existingNames.has(key) && name) {
+          const firstRow = rows[0];
+          duplicateRowNumbers.add(firstRow ?? rows[0]);
+          errors.push(t("classifications.importDuplicateNameExists", { name }));
+        }
+      }
+
+      const validPayloads: Array<Record<string, unknown>> = [];
+
+      normalizedRows.forEach((row, index) => {
+        const rowNum = index + 1;
+        const rowLabel = t("classifications.rowLabel", { number: rowNum });
+
+        if (duplicateRowNumbers.has(rowNum)) {
+          errors.push(
+            `${rowLabel}: ${t("classifications.importSkippedDuplicateRow")}`,
+          );
+          return;
+        }
+
+        const rowErrors: string[] = [];
+
+        const nameError = validateClassificationName(row.name || "");
+        if (nameError) rowErrors.push(`${rowLabel}: ${nameError}`);
+
+        const { types, error: typesError } = parseImportTypesField(
+          row.types || "",
+        );
+        if (typesError) rowErrors.push(`${rowLabel}: ${typesError}`);
+
+        const { id: parentId, error: parentError } =
+          resolveImportParentClassification(row.parent_classification || "");
+        if (parentError) rowErrors.push(`${rowLabel}: ${parentError}`);
+
+        const { criticalities, error: criticalitiesError } =
+          parseImportCriticalitiesField(row.criticalities || "");
+        if (criticalitiesError)
+          rowErrors.push(`${rowLabel}: ${criticalitiesError}`);
+
+        const sortOrderRaw = String(row.sort_order || "").trim();
+        let sortOrder = 0;
+        if (sortOrderRaw) {
+          const parsedSortOrder = Number(sortOrderRaw);
+          if (!Number.isInteger(parsedSortOrder) || parsedSortOrder < 0) {
+            rowErrors.push(
+              `${rowLabel}: ${t("classifications.importInvalidSortOrder")}`,
+            );
+          } else {
+            sortOrder = parsedSortOrder;
+          }
+        }
+
+        if (rowErrors.length > 0) {
+          errors.push(...rowErrors);
+          return;
+        }
+
+        validPayloads.push({
+          name: row.name.trim(),
+          name_ar: row.name_ar?.trim() || undefined,
+          description: row.description?.trim() || "",
+          description_ar: row.description_ar?.trim() || undefined,
+          parent_id: parentId,
+          types,
+          criticalities: criticalities.length ? criticalities : undefined,
+          sort_order: sortOrder,
+        });
+      });
+
+      const skippedCount = normalizedRows.length - validPayloads.length;
+
+      if (validPayloads.length === 0) {
+        setImportResult({
+          imported: 0,
+          skipped: skippedCount,
+          errors,
+        });
+        return;
+      }
+
+      const jsonBlob = new Blob([JSON.stringify(validPayloads, null, 2)], {
+        type: "application/json",
+      });
+      const jsonFile = new File([jsonBlob], "classifications_import.json", {
+        type: "application/json",
+      });
+
+      const result = await classificationApi.import(jsonFile);
+      const data = result.data as {
+        imported: number;
+        skipped: number;
+        errors: string[];
+      };
+      setImportResult({
+        imported: data.imported,
+        skipped: data.skipped + skippedCount,
+        errors: [...errors, ...(data.errors || [])],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin", "classifications"] });
+      setIsImportModalOpen(false);
+      setImportFile(null);
     } catch (error) {
       console.error("Import failed:", error);
+      toast.error(t("classifications.importFailed"));
     } finally {
       setIsImporting(false);
-      event.target.value = "";
     }
   };
 
@@ -740,28 +1301,85 @@ export const ClassificationsPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExport}
-              disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--success))] text-white rounded-lg hover:bg-[hsl(var(--success)/0.9)] transition-colors text-sm font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<MoreHorizontal className="w-4 h-4" />}
+                rightIcon={
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 transition-transform",
+                      isActionsMenuOpen && "rotate-180",
+                    )}
+                  />
+                }
+                onClick={() => setIsActionsMenuOpen((v) => !v)}
+              >
+                {t("common.moreActions", { defaultValue: "More Actions" })}
+              </Button>
+              {isActionsMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[60]"
+                    onClick={() => setIsActionsMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-72 bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] py-1.5 z-[70] animate-scale-in origin-top-right">
+                    <button
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        openClassificationExportModal();
+                      }}
+                      disabled={isExporting}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      {isExporting
+                        ? t("common.exporting")
+                        : t("classifications.exportExcel", {
+                            defaultValue: "Export Excel",
+                          })}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        handleExportJson();
+                      }}
+                      disabled={isExporting}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+                    >
+                      <Download className="w-4 h-4" />
+                      {isExporting
+                        ? t("common.exporting")
+                        : t("classifications.exportJson", {
+                            defaultValue: "Export JSON",
+                          })}
+                    </button>
+                    <div className="my-1 border-t border-[hsl(var(--border))]" />
+                    <button
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        handleDownloadTemplate();
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      {t("classifications.downloadTemplate", {
+                        defaultValue: "Download Excel Template",
+                      })}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={() => setIsImportModalOpen(true)}
             >
-              <Download className="w-4 h-4" />
-              {isExporting ? t("common.exporting") : t("common.export")}
-            </button>
-            <label className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg hover:bg-[hsl(var(--accent)/0.9)] transition-colors text-sm font-medium shadow-md cursor-pointer">
-              <Upload className="w-4 h-4" />
-              <span>
-                {" "}
-                {isImporting ? t("common.importing") : t("common.import")}
-              </span>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                disabled={isImporting}
-                className="hidden"
-              />
-            </label>
+              {t("common.import")}
+            </Button>
             {canCreateClassification && (
               <button
                 onClick={() => openCreateModal()}
@@ -860,6 +1478,58 @@ export const ClassificationsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-lg w-full animate-scale-in">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                  {t("classifications.selectClassificationsToExport")}
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                  {t("classifications.allClassificationsSelectedByDefault")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <HierarchicalTreeSelect
+                data={treeData?.data ?? []}
+                selectedIds={exportSelectedIds}
+                onSelectionChange={setExportSelectedIds}
+                colorScheme="primary"
+                maxHeight="280px"
+                leafOnly={false}
+                label={t("classifications.title")}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))]">
+              <Button
+                variant="ghost"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => handleExportExcel(exportSelectedIds)}
+                disabled={exportSelectedIds.length === 0}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                {t("common.exportExcel")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Assigned Users & Departments Modal */}
       {viewingClassification && (
@@ -1040,6 +1710,131 @@ export const ClassificationsPage: React.FC = () => {
             <div className="flex justify-end px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)] flex-shrink-0">
               <Button onClick={() => setViewingClassification(null)}>
                 {t("common.close")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl border border-[hsl(var(--border))] max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
+                    <Upload className="w-5 h-5 text-[hsl(var(--primary))]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                    {t("classifications.importClassifications", {
+                      defaultValue: "Import Classifications",
+                    })}
+                  </h3>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1 ml-11">
+                  {t("classifications.uploadJsonOrExcelToImport", {
+                    defaultValue:
+                      "Upload a JSON (.json) or Excel (.xlsx) file to import classifications",
+                  })}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors disabled:opacity-50"
+                aria-label={t("common.close")}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("classifications.selectJsonOrExcelFile", {
+                    defaultValue: "Select JSON (.json) or Excel (.xlsx) file",
+                  })}
+                </label>
+                <label
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all",
+                    "bg-[hsl(var(--background))] border-[hsl(var(--border))]",
+                    isImporting
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:border-[hsl(var(--primary))]",
+                  )}
+                >
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-[hsl(var(--primary))] text-white whitespace-nowrap">
+                    {t("common.chooseFile")}
+                  </span>
+                  <span className="text-sm text-[hsl(var(--muted-foreground))] truncate">
+                    {importFile ? importFile.name : t("common.noFileChosen")}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    onChange={handleImportFileChange}
+                    disabled={isImporting}
+                    className="hidden"
+                  />
+                </label>
+                {importFile && (
+                  <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                    {t("common.selected")}: {importFile.name} (
+                    {(importFile.size / 1024).toFixed(2)} {t("common.kb")})
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-[hsl(var(--muted)/0.5)] rounded-xl">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="font-medium text-[hsl(var(--foreground))] mb-1">
+                      {t("common.importNotes")}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>
+                        {t("classifications.validJsonOrExcelRequired", {
+                          defaultValue:
+                            "Valid JSON (.json) or Excel (.xlsx) file required",
+                        })}
+                      </li>
+                      <li>
+                        {t("classifications.importRowErrorsNote", {
+                          defaultValue:
+                            "Rows that fail validation are skipped and listed after import",
+                        })}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.5)]">
+              <Button
+                variant="ghost"
+                onClick={closeImportModal}
+                disabled={isImporting}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={!importFile}
+                isLoading={isImporting}
+                leftIcon={
+                  !isImporting ? <Upload className="w-4 h-4" /> : undefined
+                }
+              >
+                {isImporting
+                  ? t("common.importing")
+                  : t("classifications.importClassifications", {
+                      defaultValue: "Import Classifications",
+                    })}
               </Button>
             </div>
           </div>
@@ -1292,6 +2087,7 @@ export const ClassificationsPage: React.FC = () => {
                   </label>
                   <select
                     value={formData.parent_id}
+                    disabled={true}
                     onChange={(e) =>
                       setFormData({ ...formData, parent_id: e.target.value })
                     }

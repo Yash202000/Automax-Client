@@ -44,6 +44,8 @@ interface HierarchicalTreeSelectProps {
   colorScheme?: "primary" | "success" | "warning" | "accent";
   leafOnly?: boolean; // Only allow selecting leaf nodes (no children)
   hierarchyType?: HierarchicalTreeKind;
+  showActions?: boolean;
+  showExpandCollapse?: boolean;
   // Initial value for the type filter (only relevant when
   // hierarchyType === "classification"); the user can change it afterwards
   // via the type filter dropdown shown in the options row.
@@ -78,6 +80,9 @@ const getLeafDescendantIds = (node: TreeNode): string[] => {
   if (!node.children?.length) return [node.id];
   return node.children.flatMap(getLeafDescendantIds);
 };
+
+const getAllNodeIds = (nodes: TreeNode[]): string[] =>
+  nodes.flatMap((node) => [node.id, ...getAllNodeIds(node.children ?? [])]);
 
 const getAllLeafIds = (nodes: TreeNode[]): string[] =>
   nodes.flatMap(getLeafDescendantIds);
@@ -326,6 +331,8 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
   colorScheme = "primary",
   leafOnly = false,
   hierarchyType,
+  showActions = true,
+  showExpandCollapse = true,
   type,
 }) => {
   const { t, i18n } = useTranslation();
@@ -430,11 +437,15 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
     [selectedIds, onSelectionChange, expandedIds, leafOnly, effectiveData],
   );
 
+  const allVisibleNodeIds = useMemo(
+    () => getAllNodeIds(filteredData),
+    [filteredData],
+  );
   const allLeafIds = useMemo(() => getAllLeafIds(filteredData), [filteredData]);
   const selectableIds = allLeafIds;
-  const selectedCount = selectedIds.filter((id) =>
-    selectableIds.includes(id),
-  ).length;
+  const selectedCount = new Set(
+    selectedIds.filter((id) => allVisibleNodeIds.includes(id)),
+  ).size;
 
   const expandAll = () => {
     const allNodeIds: string[] = [];
@@ -494,37 +505,43 @@ export const HierarchicalTreeSelect: React.FC<HierarchicalTreeSelectProps> = ({
               {selectedCount} {t("common.selected")}
             </span>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={expandAll}
-              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-            >
-              {t("common.expand")}
-            </button>
-            <button
-              type="button"
-              onClick={collapseAll}
-              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-            >
-              {t("common.collapse")}
-            </button>
-            <span className="text-[hsl(var(--border))]">|</span>
-            <button
-              type="button"
-              onClick={selectAll}
-              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-            >
-              {t("common.all")}
-            </button>
-            <button
-              type="button"
-              onClick={deselectAll}
-              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
-            >
-              {t("common.none")}
-            </button>
-          </div>
+          {showActions && (
+            <div className="flex items-center gap-1">
+              {showExpandCollapse && (
+                <>
+                  <button
+                    type="button"
+                    onClick={expandAll}
+                    className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+                  >
+                    {t("common.expand")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={collapseAll}
+                    className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+                  >
+                    {t("common.collapse")}
+                  </button>
+                  <span className="text-[hsl(var(--border))]">|</span>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={selectAll}
+                className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+              >
+                {t("common.all")}
+              </button>
+              <button
+                type="button"
+                onClick={deselectAll}
+                className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1 hover:bg-[hsl(var(--muted))] rounded transition-colors"
+              >
+                {t("common.none")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
