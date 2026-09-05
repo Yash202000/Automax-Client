@@ -182,6 +182,10 @@ interface MetricRollupCardProps {
   onAddEntry: () => void;
   formatValue: (m: KpiMetric, value: number) => string;
   statusBadgeClass: (s?: string) => string;
+  // Metric entries may only be created while the KPI Workflow is Active —
+  // enforced server-side too (see kpi_entry_handler.go CreateEntry), this
+  // just keeps the button from inviting a request that will be rejected.
+  kpiIsActive: boolean;
 }
 
 const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
@@ -194,6 +198,7 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
   onAddEntry,
   formatValue,
   statusBadgeClass,
+  kpiIsActive,
 }) => {
   // The server resolves which period to show: the real current period if it
   // has data, otherwise the most recent period that does — so a metric
@@ -355,7 +360,14 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
         <Button
           size="sm"
           disabled={
-            m.metric_status === "Inactive" || m.metric_status === "Archived"
+            m.metric_status === "Inactive" ||
+            m.metric_status === "Archived" ||
+            !kpiIsActive
+          }
+          title={
+            !kpiIsActive
+              ? "Metric entries can only be added while the KPI is Active"
+              : undefined
           }
           onClick={onAddEntry}
         >
@@ -2046,6 +2058,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }}
                   formatValue={formatMetricValue}
                   statusBadgeClass={metricStatusBadgeClass}
+                  kpiIsActive={kpi.activation_status === "active"}
                 />
               ))}
             </div>
