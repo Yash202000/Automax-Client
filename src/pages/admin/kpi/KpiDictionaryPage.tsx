@@ -42,8 +42,12 @@ type SortDir = "asc" | "desc";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  reviewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  approved: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   active:
     "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  closed:
+    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   inactive: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
@@ -53,6 +57,25 @@ const statusColorMap: Record<string, string> = {
 // the server.
 const FETCH_LIMIT = 200;
 const PAGE_SIZE = 10;
+
+// Defined at module scope (not inside the page component) so it isn't
+// recreated on every render — takes the active sort state as props instead
+// of closing over it.
+const SortIcon: React.FC<{
+  field: SortField;
+  sortField: SortField;
+  sortDir: SortDir;
+}> = ({ field, sortField, sortDir }) => {
+  if (field !== sortField)
+    return (
+      <ChevronsUpDown className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
+    );
+  return sortDir === "asc" ? (
+    <ChevronUp className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+  ) : (
+    <ChevronDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+  );
+};
 
 export const KpiDictionaryPage: React.FC = () => {
   const { t } = useTranslation();
@@ -127,18 +150,6 @@ export const KpiDictionaryPage: React.FC = () => {
       setSortDir("asc");
     }
     setPage(1);
-  };
-
-  const SortIcon: React.FC<{ field: SortField }> = ({ field }) => {
-    if (field !== sortField)
-      return (
-        <ChevronsUpDown className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
-      );
-    return sortDir === "asc" ? (
-      <ChevronUp className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-    ) : (
-      <ChevronDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-    );
   };
 
   const tabs: { key: DictTab; label: string }[] = [
@@ -270,8 +281,10 @@ export const KpiDictionaryPage: React.FC = () => {
           >
             <option value="">All statuses</option>
             <option value="draft">Draft</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="approved">Approved</option>
             <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="closed">Closed</option>
           </select>
           <div className="relative">
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -325,7 +338,11 @@ export const KpiDictionaryPage: React.FC = () => {
                     >
                       <span className="inline-flex items-center gap-1">
                         {t("kpi.dictionary.table.code")}
-                        <SortIcon field="code" />
+                        <SortIcon
+                          field="code"
+                          sortField={sortField}
+                          sortDir={sortDir}
+                        />
                       </span>
                     </th>
                     <th
@@ -334,7 +351,11 @@ export const KpiDictionaryPage: React.FC = () => {
                     >
                       <span className="inline-flex items-center gap-1">
                         {t("kpi.dictionary.table.name")}
-                        <SortIcon field="name_en" />
+                        <SortIcon
+                          field="name_en"
+                          sortField={sortField}
+                          sortDir={sortDir}
+                        />
                       </span>
                     </th>
                     <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -352,7 +373,11 @@ export const KpiDictionaryPage: React.FC = () => {
                     >
                       <span className="inline-flex items-center gap-1">
                         {t("kpi.dictionary.table.status")}
-                        <SortIcon field="activation_status" />
+                        <SortIcon
+                          field="activation_status"
+                          sortField={sortField}
+                          sortDir={sortDir}
+                        />
                       </span>
                     </th>
                     <th
@@ -361,7 +386,11 @@ export const KpiDictionaryPage: React.FC = () => {
                     >
                       <span className="inline-flex items-center gap-1">
                         {t("kpi.dictionary.table.frequency")}
-                        <SortIcon field="reporting_frequency" />
+                        <SortIcon
+                          field="reporting_frequency"
+                          sortField={sortField}
+                          sortDir={sortDir}
+                        />
                       </span>
                     </th>
                     <th
@@ -370,7 +399,11 @@ export const KpiDictionaryPage: React.FC = () => {
                     >
                       <span className="inline-flex items-center gap-1">
                         {t("kpi.dictionary.table.baseline")}
-                        <SortIcon field="baseline" />
+                        <SortIcon
+                          field="baseline"
+                          sortField={sortField}
+                          sortDir={sortDir}
+                        />
                       </span>
                     </th>
                     <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">

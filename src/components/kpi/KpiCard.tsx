@@ -45,8 +45,12 @@ const typeLabelMap: Record<string, string> = {
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  reviewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  approved: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   active:
     "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  closed:
+    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   inactive: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
