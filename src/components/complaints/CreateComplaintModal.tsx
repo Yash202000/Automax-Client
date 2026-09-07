@@ -428,6 +428,19 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       }
       onClose();
     },
+    onError: (error: any) => {
+      const responseData = error?.response?.data;
+
+      const message =
+        responseData?.error ||
+        responseData?.message ||
+        (responseData?.errors
+          ? Object.values(responseData.errors).join(", ")
+          : null) ||
+        t("complaints.createError");
+
+      toast.error(message);
+    },
   });
 
   // Reset state when modal opens
@@ -584,6 +597,11 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       newErrors.source_incident_id = t("complaints.fieldRequired", {
         field: t("complaints.sourceIncident", "Source Incident"),
       });
+    } else if (sourceIncident && !sourceIncident.reporter_phone) {
+      newErrors.source_incident_id = t(
+        "complaints.sourceIncidentPhoneRequired",
+        "Reporter phone is required for the selected incident.",
+      );
     }
 
     // Check lookup field requirements
@@ -633,7 +651,12 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       setIsRecording(true);
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      toast.error("Unable to access microphone. Please check permissions.");
+      toast.error(
+        t(
+          "complaints.microphoneAccessError",
+          "Unable to access microphone. Please check permissions.",
+        ),
+      );
     }
   };
 
@@ -659,7 +682,10 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   }, [isRecording]);
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error(t("errors.validationError"));
+      return;
+    }
 
     const lookupIds = Object.values(lookupValues).filter(Boolean);
 
@@ -685,6 +711,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       source_incident_id: sourceIncident?.id,
       lookup_value_ids: lookupIds.length > 0 ? lookupIds : undefined,
       reporter_id: user?.id,
+      reporter_phone: sourceIncident?.reporter_phone || "",
     };
 
     createMutation.mutate({ data, files: attachments });
@@ -694,6 +721,20 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     setSourceIncident(incident);
     setShowIncidentSearch(false);
     setIncidentSearch("");
+    if (!incident.reporter_phone) {
+      setErrors((prev) => ({
+        ...prev,
+        source_incident_id: t(
+          "complaints.sourceIncidentPhoneRequired",
+          "Reporter phone is required for the selected incident.",
+        ),
+      }));
+    } else {
+      setErrors((prev) => {
+        const { source_incident_id, ...rest } = prev;
+        return rest;
+      });
+    }
   };
 
   const handleLookupChange = (categoryId: string, valueId: string) => {
@@ -1059,7 +1100,14 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               )}
 
               {sourceIncident ? (
-                <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
+                <div
+                  className={cn(
+                    "flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border",
+                    errors.source_incident_id
+                      ? "border-red-500"
+                      : "border-[hsl(var(--border))]",
+                  )}
+                >
                   <div>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                       {sourceIncident?.incident_number}
@@ -1070,7 +1118,13 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSourceIncident(null)}
+                    onClick={() => {
+                      setSourceIncident(null);
+                      setErrors((prev) => {
+                        const { source_incident_id, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
                     className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -1092,7 +1146,12 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                         "complaints.searchSourceIncident",
                         "Search for incident/request number or title...",
                       )}
-                      className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
+                      className={cn(
+                        "w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500",
+                        errors.source_incident_id
+                          ? "border-red-500"
+                          : "border-[hsl(var(--border))]",
+                      )}
                     />
                   </div>
 
