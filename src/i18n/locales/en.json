@@ -253,7 +253,19 @@
     "selectJsonOrExcelFile": "Select JSON (.json) or Excel (.xlsx) file",
     "validJsonOrExcelRequired": "Valid JSON (.json) or Excel (.xlsx) file required",
     "rowsSkippedListedAfterImport": "Rows that fail validation are skipped and listed after import",
-    "invalidImportFileType": "Please select a valid JSON (.json) or Excel (.xlsx) file."
+    "invalidImportFileType": "Please select a valid JSON (.json) or Excel (.xlsx) file.",
+    "allStatuses": "All Statuses",
+    "createdBy": "Created By",
+    "allUsers": "All Users",
+    "createdFrom": "Created From",
+    "createdTo": "Created To",
+    "modifiedFrom": "Last Modified From",
+    "modifiedTo": "Last Modified To",
+    "incident": "Incident",
+    "request": "Request",
+    "complaint": "Complaint",
+    "query": "Query",
+    "goal": "Goal"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -2347,7 +2359,8 @@
 
       "comment": "Comment",
       "commentDesc": "Comment required when creating the incident"
-    }
+    },
+    "searchPlaceholder": "Search workflow name..."
   },
   "lookups": {
     "title": "Master Data",

@@ -253,7 +253,19 @@
     "selectJsonOrExcelFile": "اختر ملف JSON (.json) أو Excel (.xlsx)",
     "validJsonOrExcelRequired": "يلزم ملف JSON (.json) أو Excel (.xlsx) صالح",
     "rowsSkippedListedAfterImport": "يتم تخطي الصفوف التي تفشل في التحقق من الصحة وسرد في القائمة بعد الاستيراد",
-    "invalidImportFileType": "يرجى اختيار ملف JSON (.json) أو Excel (.xlsx) صالح."
+    "invalidImportFileType": "يرجى اختيار ملف JSON (.json) أو Excel (.xlsx) صالح.",
+    "allStatuses": "جميع الحالات",
+    "createdBy": "أنشأه",
+    "allUsers": "جميع المستخدمين",
+    "createdFrom": "تاريخ الإنشاء من",
+    "createdTo": "تاريخ الإنشاء إلى",
+    "modifiedFrom": "آخر تعديل من",
+    "modifiedTo": "آخر تعديل إلى",
+    "incident": "حادث",
+    "request": "طلب",
+    "complaint": "شكوى",
+    "query": "استفسار",
+    "goal": "هدف"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -2345,7 +2357,8 @@
 
       "comment": "تعليق",
       "commentDesc": "تعليق مطلوب عند إنشاء الحادثة"
-    }
+    },
+    "searchPlaceholder": "البحث عن اسم سير العمل..."
   },
   "lookups": {
     "title": "البيانات الرئيسية",
