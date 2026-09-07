@@ -537,11 +537,20 @@ export const kpiDictionaryApi = {
     const res = await apiClient.delete(`/kpi/award/${id}`);
     return res.data;
   },
-  transitionKpiStatus: async (
+  // KPI Workflow (Draft -> Reviewed -> Approved -> Active -> Closed),
+  // auto-assigned to every KPI at creation — see kpi_dictionary_workflow_service.go.
+  getAvailableTransitions: async (
     type: string,
     id: string,
-    data: { action: string; comment?: string },
-  ): Promise<ApiResponse<void>> => {
+  ): Promise<ApiResponse<WorkflowTransitionBrief[]>> => {
+    const res = await apiClient.get(`/kpi/${type}/${id}/transitions`);
+    return res.data;
+  },
+  transitionKpi: async (
+    type: string,
+    id: string,
+    data: { transition_id: string; comment?: string },
+  ): Promise<ApiResponse<{ activation_status: string }>> => {
     const res = await apiClient.post(`/kpi/${type}/${id}/transition`, data);
     return res.data;
   },

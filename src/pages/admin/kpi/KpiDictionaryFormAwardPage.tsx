@@ -55,7 +55,6 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     owner_org_id: "",
     owning_agency_id: "",
     polarity: "ascending",
-    activation_status: "draft",
     description_en: "",
     description_ar: "",
     formula: "",
@@ -95,7 +94,6 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       owner_org_id: kpi.owner_org_id ?? "",
       owning_agency_id: kpi.owning_agency_id ?? "",
       polarity: kpi.polarity,
-      activation_status: kpi.activation_status,
       description_en: kpi.description_en ?? "",
       description_ar: kpi.description_ar ?? "",
       formula: kpi.formula ?? "",
@@ -355,21 +353,6 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
                   value: "custom",
                   label: t("kpi.dictionary.fieldFrequencyCustom"),
                 },
-              ]}
-            />
-            <Select
-              label={t("kpi.dictionary.fieldStatus")}
-              value={form.activation_status}
-              onChange={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  activation_status: v.target.value,
-                }))
-              }
-              options={[
-                { value: "draft", label: "Draft" },
-                { value: "active", label: "Active" },
-                { value: "inactive", label: "Inactive" },
               ]}
             />
           </div>

@@ -9,9 +9,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Play,
-  RotateCcw,
-  Ban,
   Target,
   Building2,
   Layers,
@@ -45,6 +42,7 @@ import {
   useOperationalKPIDetail,
   useAwardKPIDetail,
   useKpiStatusTransition,
+  useKpiDictionaryAvailableTransitions,
   useKpiMetrics,
   useCreateKpiMetric,
   useDeleteKpiMetric,
@@ -93,12 +91,17 @@ import type {
   KpiMetricRequest,
   OperationalObjective,
   Process,
+  WorkflowTransitionBrief,
 } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  reviewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  approved: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   active:
     "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  closed:
+    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   inactive: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
@@ -153,36 +156,6 @@ const moduleLabelMap: Record<string, string> = {
   comment: "Comment",
 };
 
-const transitionConfig: Record<
-  string,
-  { action: string; label: string; icon: React.ReactNode; color: string }[]
-> = {
-  draft: [
-    {
-      action: "activate",
-      label: "Activate",
-      icon: <Play className="w-4 h-4" />,
-      color: "bg-green-600 hover:bg-green-700 text-white",
-    },
-  ],
-  active: [
-    {
-      action: "deactivate",
-      label: "Deactivate",
-      icon: <Ban className="w-4 h-4" />,
-      color: "bg-red-600 hover:bg-red-700 text-white",
-    },
-  ],
-  inactive: [
-    {
-      action: "reactivate",
-      label: "Reactivate",
-      icon: <RotateCcw className="w-4 h-4" />,
-      color: "bg-blue-600 hover:bg-blue-700 text-white",
-    },
-  ],
-};
-
 type TabType =
   | "overview"
   | "metrics"
@@ -209,6 +182,10 @@ interface MetricRollupCardProps {
   onAddEntry: () => void;
   formatValue: (m: KpiMetric, value: number) => string;
   statusBadgeClass: (s?: string) => string;
+  // Metric entries may only be created while the KPI Workflow is Active —
+  // enforced server-side too (see kpi_entry_handler.go CreateEntry), this
+  // just keeps the button from inviting a request that will be rejected.
+  kpiIsActive: boolean;
 }
 
 const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
@@ -221,6 +198,7 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
   onAddEntry,
   formatValue,
   statusBadgeClass,
+  kpiIsActive,
 }) => {
   // The server resolves which period to show: the real current period if it
   // has data, otherwise the most recent period that does — so a metric
@@ -382,7 +360,14 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
         <Button
           size="sm"
           disabled={
-            m.metric_status === "Inactive" || m.metric_status === "Archived"
+            m.metric_status === "Inactive" ||
+            m.metric_status === "Archived" ||
+            !kpiIsActive
+          }
+          title={
+            !kpiIsActive
+              ? "Metric entries can only be added while the KPI is Active"
+              : undefined
           }
           onClick={onAddEntry}
         >
@@ -439,10 +424,16 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { data: activityData } = useKpiActivity(kpiType, kpiId, activityPage);
 
   // ── Mutations ────────────────────────────────────────
+  // KPI Workflow (Draft -> Reviewed -> Approved -> Active -> Closed) —
+  // available transitions are fetched from the server (already role-filtered
+  // for the current user), not hardcoded here.
+  const { data: availableTransitionsResp } =
+    useKpiDictionaryAvailableTransitions(kpiType, kpiId);
+  const availableTransitions = availableTransitionsResp?.data ?? [];
   const [transitionModal, setTransitionModal] = useState<{
     open: boolean;
-    action: string;
-  }>({ open: false, action: "" });
+    transition: WorkflowTransitionBrief | null;
+  }>({ open: false, transition: null });
   const [comment, setComment] = useState("");
   const transition = useKpiStatusTransition();
 
@@ -606,17 +597,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     return unit ? `${num} ${unit}` : num;
   };
 
-  const transitions = transitionConfig[status] ?? [];
-
   const handleTransition = async () => {
-    if (!transitionModal.action) return;
+    if (!transitionModal.transition) return;
     await transition.mutateAsync({
-      type: type!,
-      id: id!,
-      action: transitionModal.action,
+      type: kpiType,
+      id: kpiId,
+      transitionId: transitionModal.transition.id,
       comment: comment || undefined,
     });
-    setTransitionModal({ open: false, action: "" });
+    setTransitionModal({ open: false, transition: null });
     setComment("");
   };
 
@@ -1154,17 +1143,17 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 Edit
               </Link>
             )}
-            {transitions.map((tr) => (
+            {availableTransitions.map((tr) => (
               <button
-                key={tr.action}
+                key={tr.id}
                 onClick={() =>
-                  setTransitionModal({ open: true, action: tr.action })
+                  setTransitionModal({ open: true, transition: tr })
                 }
                 disabled={transition.isPending}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${tr.color}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {tr.icon}
-                {tr.label}
+                <Send className="w-4 h-4" />
+                {tr.name}
               </button>
             ))}
           </div>
@@ -2069,6 +2058,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }}
                   formatValue={formatMetricValue}
                   statusBadgeClass={metricStatusBadgeClass}
+                  kpiIsActive={kpi.activation_status === "active"}
                 />
               ))}
             </div>
@@ -3025,22 +3015,18 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       {/* ── Transition Modal ──────────────────────── */}
       <Modal
         isOpen={transitionModal.open}
-        onClose={() => setTransitionModal({ open: false, action: "" })}
+        onClose={() => setTransitionModal({ open: false, transition: null })}
       >
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {transitionModal.action === "activate"
-              ? "Activate KPI"
-              : transitionModal.action === "deactivate"
-                ? "Deactivate KPI"
-                : "Reactivate KPI"}
+            Confirm: {transitionModal.transition?.name}
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {transitionModal.action === "activate"
-              ? "This will activate the KPI and make it available for use."
-              : transitionModal.action === "deactivate"
-                ? "This will deactivate the KPI."
-                : "This will reactivate the KPI."}
+            This will move the KPI from{" "}
+            <span className="font-medium">
+              {transitionModal.transition?.to_state?.name ?? "the next state"}
+            </span>
+            .
           </p>
           <Input
             label="Comment (optional)"
@@ -3051,21 +3037,13 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           <div className="flex justify-end gap-3 pt-2">
             <Button
               variant="secondary"
-              onClick={() => setTransitionModal({ open: false, action: "" })}
+              onClick={() =>
+                setTransitionModal({ open: false, transition: null })
+              }
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleTransition}
-              disabled={transition.isPending}
-              className={
-                transitionModal.action === "activate"
-                  ? "bg-green-600 hover:bg-green-700"
-                  : transitionModal.action === "deactivate"
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-              }
-            >
+            <Button onClick={handleTransition} disabled={transition.isPending}>
               {transition.isPending ? "Updating..." : "Confirm"}
             </Button>
           </div>
