@@ -428,6 +428,19 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       }
       onClose();
     },
+    onError: (error: any) => {
+      const responseData = error?.response?.data;
+
+      const message =
+        responseData?.error ||
+        responseData?.message ||
+        (responseData?.errors
+          ? Object.values(responseData.errors).join(", ")
+          : null) ||
+        "Failed to create complaint";
+
+      toast.error(message);
+    },
   });
 
   // Reset state when modal opens
@@ -584,6 +597,11 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       newErrors.source_incident_id = t("complaints.fieldRequired", {
         field: t("complaints.sourceIncident", "Source Incident"),
       });
+    } else if (sourceIncident && !sourceIncident.reporter_phone) {
+      newErrors.source_incident_id = t(
+        "complaints.sourceIncidentPhoneRequired",
+        "Reporter phone is required for the selected incident.",
+      );
     }
 
     // Check lookup field requirements
@@ -659,7 +677,10 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   }, [isRecording]);
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error(t("errors.validationError"));
+      return;
+    }
 
     const lookupIds = Object.values(lookupValues).filter(Boolean);
 
@@ -695,6 +716,20 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
     setSourceIncident(incident);
     setShowIncidentSearch(false);
     setIncidentSearch("");
+    if (!incident.reporter_phone) {
+      setErrors((prev) => ({
+        ...prev,
+        source_incident_id: t(
+          "complaints.sourceIncidentPhoneRequired",
+          "Reporter phone is required for the selected incident.",
+        ),
+      }));
+    } else {
+      setErrors((prev) => {
+        const { source_incident_id, ...rest } = prev;
+        return rest;
+      });
+    }
   };
 
   const handleLookupChange = (categoryId: string, valueId: string) => {
@@ -1071,7 +1106,13 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSourceIncident(null)}
+                    onClick={() => {
+                      setSourceIncident(null);
+                      setErrors((prev) => {
+                        const { source_incident_id, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
                     className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                   >
                     <X className="w-4 h-4" />

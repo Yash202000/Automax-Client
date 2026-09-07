@@ -2639,7 +2639,8 @@
     "selectSource": "اختر المصدر...",
     "source": "المصدر",
     "stopRecording": "إيقاف التسجيل",
-    "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة"
+    "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة",
+    "sourceIncidentPhoneRequired": "رقم هاتف المُبلّغ مطلوب للحادث المحدد."
   },
   "treeSelect": {
     "selectLeafItem": "اختر عنصراً نهائياً",
