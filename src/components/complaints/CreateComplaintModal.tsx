@@ -1100,7 +1100,14 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
               )}
 
               {sourceIncident ? (
-                <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
+                <div
+                  className={cn(
+                    "flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border",
+                    errors.source_incident_id
+                      ? "border-red-500"
+                      : "border-[hsl(var(--border))]",
+                  )}
+                >
                   <div>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))]">
                       {sourceIncident?.incident_number}
@@ -1139,7 +1146,12 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                         "complaints.searchSourceIncident",
                         "Search for incident/request number or title...",
                       )}
-                      className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500"
+                      className={cn(
+                        "w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] border rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:primary-500",
+                        errors.source_incident_id
+                          ? "border-red-500"
+                          : "border-[hsl(var(--border))]",
+                      )}
                     />
                   </div>
 
