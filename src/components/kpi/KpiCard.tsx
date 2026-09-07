@@ -45,8 +45,12 @@ const typeLabelMap: Record<string, string> = {
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  reviewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  approved: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   active:
     "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  closed:
+    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   inactive: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
@@ -71,12 +75,12 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi, type, canEdit }) => {
         {/* Header: Title + Badges */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mb-0.5">
-              {kpi.code}
-            </p>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
               {kpi.name_en}
             </h3>
+            <p className="text-xs font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+              {kpi.code}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <span

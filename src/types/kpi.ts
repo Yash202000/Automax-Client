@@ -171,7 +171,16 @@ export interface KpiAdministrativeUnit {
 
 export type KPIType = "strategic" | "operational" | "award";
 export type KPIPolarity = "ascending" | "descending";
-export type KPIActivationStatus = "draft" | "active" | "inactive";
+// KPI Workflow states — Draft -> Reviewed -> Approved -> Active -> Closed.
+// "inactive" is retained only for reading pre-existing rows from before this
+// workflow existed; nothing new writes it.
+export type KPIActivationStatus =
+  | "draft"
+  | "reviewed"
+  | "approved"
+  | "active"
+  | "closed"
+  | "inactive";
 export type KPIFrequency =
   | "monthly"
   | "quarterly"
@@ -614,7 +623,6 @@ export interface StrategicKPIRequest {
   goal_id: string;
   process_id: string;
   polarity?: string;
-  activation_status?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -642,7 +650,6 @@ export interface OperationalKPIRequest {
   owner_org_id?: string;
   owning_agency_id?: string;
   polarity?: string;
-  activation_status?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -666,7 +673,6 @@ export interface AwardKPIRequest {
   owner_org_id?: string;
   owning_agency_id?: string;
   polarity?: string;
-  activation_status?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;

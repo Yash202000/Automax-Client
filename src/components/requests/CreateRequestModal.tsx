@@ -32,14 +32,16 @@ import {
 import type {
   Classification,
   Department,
+  Location,
   User as UserType,
   Incident,
   IncidentDetail,
   IncidentUpdateRequest,
   CreateRequestRequest,
 } from "../../types";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 interface CreateRequestModalProps {
   isOpen: boolean;
@@ -47,6 +49,39 @@ interface CreateRequestModalProps {
   onSuccess: (requestId: string) => void;
   initialRequest?: IncidentDetail;
 }
+const findClassificationById = (
+  nodes: Classification[],
+  id: string,
+): Classification | undefined => {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+
+    if (node.children) {
+      const found = findClassificationById(node.children, id);
+
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+};
+
+const findLocationById = (
+  nodes: Location[],
+  id: string,
+): Location | undefined => {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+
+    if (node.children) {
+      const found = findLocationById(node.children, id);
+
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+};
 
 export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   isOpen,
@@ -61,7 +96,6 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   const isEdit = Boolean(initialRequest);
 
   // Form state
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [comment, setComment] = useState("");
   const [source, setSource] = useState<string | undefined>("web");
@@ -311,7 +345,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
       return items.map((item) => ({
         id: item.id,
-        name: item.name,
+        name: getLocalizedName(item),
         children:
           item.children && item.children.length > 0
             ? convertToTreeNode(item.children)
@@ -319,7 +353,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
       }));
     };
     return convertToTreeNode(classifications);
-  }, [classifications]);
+  }, [classifications, i18n.language]);
 
   // Get priority value from lookup
   const getPriorityValue = useCallback((): number | undefined => {
@@ -423,70 +457,36 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     isEdit,
   ]);
 
-  // Auto-generate title from classification, location, and geolocation
-  useEffect(() => {
-    if (isEdit) return;
+  const selectedClassification = useMemo(
+    () =>
+      classificationId
+        ? findClassificationById(classifications, classificationId)
+        : undefined,
+    [classifications, classificationId, findClassificationById],
+  );
 
-    const parts: string[] = [];
-
-    // Add classification name
-    if (classificationId) {
-      const findClassificationName = (
-        nodes: Classification[],
-        id: string,
-      ): string | null => {
-        for (const node of nodes) {
-          if (node.id === id) return node.name;
-          if (node.children) {
-            const found = findClassificationName(node.children, id);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const classificationName = findClassificationName(
-        classifications,
-        classificationId,
-      );
-      if (classificationName) parts.push(classificationName);
+  const selectedLocation = useMemo(
+    () => (locationId ? findLocationById(locations, locationId) : undefined),
+    [locations, locationId, findLocationById],
+  );
+  // Auto-generate localized title based on classification and location
+  const generatedTitle = useMemo(() => {
+    if (isEdit) {
+      return initialRequest?.title || "";
     }
-
-    // Add location name
-    if (locationId) {
-      const findLocationName = (nodes: any[], id: string): string | null => {
-        for (const node of nodes) {
-          if (node.id === id) return node.name;
-          if (node.children) {
-            const found = findLocationName(node.children, id);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const locationName = findLocationName(locations, locationId);
-      if (locationName) parts.push(locationName);
-    }
-
-    // Add geolocation area/address if available
-    if (city) {
-      parts.push(city);
-    } else if (address) {
-      parts.push(address);
-    }
-
-    // Generate title from parts
-    if (parts.length > 0) {
-      const generatedTitle = parts.join(" - ");
-      setTitle(generatedTitle);
-    }
+    return generateRecordTitle({
+      classification: selectedClassification,
+      location: selectedLocation,
+      city,
+      address,
+    });
   }, [
-    classificationId,
-    locationId,
-    address,
-    city,
-    classifications,
-    locations,
     isEdit,
+    initialRequest?.title,
+    selectedClassification,
+    selectedLocation,
+    city,
+    address,
   ]);
 
   const saveMutation = useMutation({
@@ -529,7 +529,6 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(initialRequest?.title || "");
       setDescription(initialRequest?.description || "");
       setComment("");
       setSource(initialRequest?.source || "web");
@@ -585,7 +584,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!title.trim()) {
+    if (!generatedTitle.trim()) {
       newErrors.title = t("requests.titleRequired");
     }
     if (!classificationId) {
@@ -716,7 +715,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
     const lookupIds = Object.values(lookupValues).filter(Boolean);
 
     const createData: CreateRequestRequest = {
-      title: title.trim(),
+      title: generatedTitle.trim(),
       description: description.trim() || undefined,
       comment: comment.trim() || undefined,
       classification_id: classificationId,
@@ -914,7 +913,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 >
                   <option value="">{t("requests.selectSource")}</option>
                   {sourceOptions.map((s) => (
-                    <option key={s.value} value={s.value}>
+                    <option key={s.label} value={s.value}>
                       {s.label}
                     </option>
                   ))}
@@ -984,7 +983,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                   id="request-title"
                   name="title"
                   type="text"
-                  value={title}
+                  value={generatedTitle}
                   readOnly
                   placeholder={t("incidents.autoGeneratedTitle")}
                   className="w-full px-4 py-2 pe-10 bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] cursor-not-allowed"

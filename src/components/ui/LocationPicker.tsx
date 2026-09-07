@@ -26,6 +26,11 @@ import {
 import { Button } from "./Button";
 import "leaflet/dist/leaflet.css";
 
+// window.APP_CONFIG is set by docker-entrypoint.sh at container start;
+// import.meta.env.VITE_ENABLE_GIS only applies to local dev / build-time.
+const ENABLE_GIS =
+  window.APP_CONFIG?.ENABLE_GIS ?? import.meta.env.VITE_ENABLE_GIS;
+
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
   iconUrl: publicUrl("images/leaflet/marker-icon.png"),
@@ -135,7 +140,7 @@ async function reverseGeocode(
 
     const data: NominatimResponse = await response.json();
     let gisData = undefined;
-    if (import.meta.env.VITE_ENABLE_GIS === "true") {
+    if (ENABLE_GIS === "true") {
       gisData = await integrationApi.gisLocation({ lat, lng });
       if (!gisData?.data?.isInsideBoundary) {
         toast.error("Location is outside the boundary");
@@ -152,8 +157,7 @@ async function reverseGeocode(
 
     return {
       address:
-        import.meta.env.VITE_ENABLE_GIS === "true" &&
-        gisData?.data?.isInsideBoundary
+        ENABLE_GIS === "true" && gisData?.data?.isInsideBoundary
           ? gisAddress
           : data.display_name,
       city: data.address.city || data.address.town || data.address.village,
@@ -448,7 +452,7 @@ export function LocationPicker({
           border:
             !GISData?.isInsideBoundary &&
             GISData !== null &&
-            import.meta.env.VITE_ENABLE_GIS === "true"
+            ENABLE_GIS === "true"
               ? "2px solid red"
               : "",
         }}
@@ -572,7 +576,7 @@ export function LocationPicker({
           </div>
 
           {(value.city || value.state || value.country) &&
-            import.meta.env.VITE_ENABLE_GIS === "false" && (
+            ENABLE_GIS === "false" && (
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
                 {value.city && (
                   <div>
@@ -608,7 +612,7 @@ export function LocationPicker({
                 )}
               </div>
             )}
-          {import.meta.env.VITE_ENABLE_GIS === "true" && (
+          {ENABLE_GIS === "true" && (
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
               {GISData?.district_name && (
                 <div>

@@ -1094,22 +1094,40 @@ export const useTransitionPerformance = () => {
   });
 };
 
+// KPI Workflow (Draft -> Reviewed -> Approved -> Active -> Closed) —
+// available-transitions list is already role-filtered server-side, so no
+// client-side permission filter is needed before rendering buttons from it.
+export const useKpiDictionaryAvailableTransitions = (
+  type: string,
+  id: string,
+) =>
+  useQuery({
+    queryKey: ["kpi", type, id, "transitions"],
+    queryFn: () => kpiDictionaryApi.getAvailableTransitions(type, id),
+    enabled: !!type && !!id,
+  });
+
 export const useKpiStatusTransition = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
       type,
       id,
-      action,
+      transitionId,
       comment,
     }: {
       type: string;
       id: string;
-      action: string;
+      transitionId: string;
       comment?: string;
-    }) => kpiDictionaryApi.transitionKpiStatus(type, id, { action, comment }),
-    onSuccess: () => {
+    }) =>
+      kpiDictionaryApi.transitionKpi(type, id, {
+        transition_id: transitionId,
+        comment,
+      }),
+    onSuccess: (_res, { type, id }) => {
       qc.invalidateQueries({ queryKey: ["kpi"] });
+      qc.invalidateQueries({ queryKey: ["kpi", type, id, "transitions"] });
       toast.success("KPI status updated");
     },
     onError: () => toast.error("Failed to update KPI status"),

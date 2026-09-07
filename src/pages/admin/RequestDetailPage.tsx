@@ -54,6 +54,7 @@ import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 export const RequestDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -490,6 +491,12 @@ export const RequestDetailPage: React.FC = () => {
     );
   }
 
+  const generatedTitle = generateRecordTitle({
+    classification: request.classification,
+    location: request.location,
+    city: request.city,
+    address: request.address,
+  });
   const priority = request.lookup_values?.find(
     (lv) => lv.category?.code === "PRIORITY",
   );
@@ -535,7 +542,7 @@ export const RequestDetailPage: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-            {request.title}
+            {generatedTitle}
           </h1>
 
           {/* Source Incident Link */}

@@ -1,7 +1,7 @@
 import React from "react";
 import type { LookupCategory, ValidationRules } from "../../types";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
+import { getLocalizedName } from "@/lib/utils";
 
 interface DynamicLookupFieldProps {
   category: LookupCategory;
@@ -20,8 +20,7 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
 }) => {
   const { t } = useTranslation();
   const fieldType = category.field_type || "select";
-  const fieldLabel =
-    i18n.language === "ar" ? category.name_ar || category.name : category.name;
+  const fieldLabel = getLocalizedName(category);
 
   // Parse validation rules
   let validationRules: ValidationRules = {};
@@ -165,7 +164,7 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
               ?.filter((v) => v.is_active)
               .map((lookupValue) => (
                 <option key={lookupValue.id} value={lookupValue.id}>
-                  {lookupValue.name}
+                  {getLocalizedName(lookupValue)}
                 </option>
               ))}
           </select>
@@ -197,7 +196,7 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
               ?.filter((v) => v.is_active)
               .map((lookupValue) => (
                 <option key={lookupValue.id} value={lookupValue.id}>
-                  {lookupValue.name}
+                  {getLocalizedName(lookupValue)}
                 </option>
               ))}
           </select>

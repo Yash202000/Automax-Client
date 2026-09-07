@@ -586,7 +586,13 @@ export const KpiDashboardPage: React.FC = () => {
                                 ? "bg-green-100 text-green-700"
                                 : card.activation_status === "draft"
                                   ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-600"
+                                  : card.activation_status === "reviewed"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : card.activation_status === "approved"
+                                      ? "bg-teal-100 text-teal-700"
+                                      : card.activation_status === "closed"
+                                        ? "bg-purple-100 text-purple-700"
+                                        : "bg-slate-100 text-slate-600"
                             }`}
                           >
                             {card.activation_status === "active" ? (

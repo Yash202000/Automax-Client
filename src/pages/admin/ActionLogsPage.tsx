@@ -21,11 +21,11 @@ import {
   ChevronDown,
   BarChart3,
 } from "lucide-react";
-import { Button } from "../../components/ui";
-import { actionLogApi } from "../../api/admin";
+import { Button, MultiSelect } from "../../components/ui";
+import { actionLogApi, roleApi } from "../../api/admin";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
-import type { ActionLog, ActionLogFilter } from "../../types";
+import type { ActionLog, ActionLogFilter, Role } from "../../types";
 import { cn } from "@/lib/utils";
 import ExcelJS from "exceljs";
 
@@ -228,6 +228,13 @@ export const ActionLogsPage: React.FC = () => {
     queryFn: () => actionLogApi.getFilterOptions(),
   });
 
+  const { data: rolesData } = useQuery({
+    queryKey: ["admin", "roles"],
+    queryFn: () => roleApi.list(),
+  });
+
+  const roles: Role[] = rolesData?.data || [];
+
   const totalPages = data?.total_pages ?? 1;
 
   const clearFilters = () => {
@@ -236,6 +243,7 @@ export const ActionLogsPage: React.FC = () => {
 
   const hasActiveFilters = Boolean(
     filter.action ||
+    filter.role_ids?.length ||
     filter.module ||
     filter.status ||
     filter.search ||
@@ -468,7 +476,7 @@ export const ActionLogsPage: React.FC = () => {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4 border-t border-[hsl(var(--border))]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[hsl(var(--border))]">
               {/* Module Filter */}
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
@@ -515,6 +523,29 @@ export const ActionLogsPage: React.FC = () => {
                   </select>
                   <ChevronDown className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))] pointer-events-none" />
                 </div>
+              </div>
+
+              {/* Role Filter */}
+              <div>
+                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                  {t("actionLogs.role")}
+                </label>
+                <MultiSelect
+                  options={roles.map((role) => ({
+                    value: role.id,
+                    label: role.name,
+                  }))}
+                  value={filter.role_ids || []}
+                  onChange={(roleIds) =>
+                    setFilter({ ...filter, role_ids: roleIds, page: 1 })
+                  }
+                  placeholder={t("actionLogs.allRoles")}
+                  searchable
+                  showSelectAll
+                  showFooter
+                  maxTagCount={1}
+                  size="sm"
+                />
               </div>
 
               {/* Status Filter */}
