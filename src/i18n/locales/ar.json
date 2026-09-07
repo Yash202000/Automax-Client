@@ -2641,7 +2641,8 @@
     "source": "المصدر",
     "stopRecording": "إيقاف التسجيل",
     "channelPlaceholder": "مثال: الهاتف، البريد الإلكتروني، زيارة مباشرة",
-    "sourceIncidentPhoneRequired": "رقم هاتف المُبلّغ مطلوب للحادث المحدد."
+    "sourceIncidentPhoneRequired": "رقم هاتف المُبلّغ مطلوب للحادث المحدد.",
+    "microphoneAccessError": "تعذر الوصول إلى الميكروفون. يرجى التحقق من الأذونات."
   },
   "treeSelect": {
     "selectLeafItem": "اختر عنصراً نهائياً",

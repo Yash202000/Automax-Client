@@ -437,7 +437,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
         (responseData?.errors
           ? Object.values(responseData.errors).join(", ")
           : null) ||
-        "Failed to create complaint";
+        t("complaints.createError");
 
       toast.error(message);
     },
@@ -651,7 +651,12 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       setIsRecording(true);
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      toast.error("Unable to access microphone. Please check permissions.");
+      toast.error(
+        t(
+          "complaints.microphoneAccessError",
+          "Unable to access microphone. Please check permissions.",
+        ),
+      );
     }
   };
 

@@ -2643,7 +2643,8 @@
     "source": "Source",
     "stopRecording": "Stop Recording",
     "channelPlaceholder": "e.g., Phone, Email, Walk-in",
-    "sourceIncidentPhoneRequired": "Reporter phone is required for the selected incident."
+    "sourceIncidentPhoneRequired": "Reporter phone is required for the selected incident.",
+    "microphoneAccessError": "Unable to access microphone. Please check permissions."
   },
   "treeSelect": {
     "selectLeafItem": "Select a leaf item",
