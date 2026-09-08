@@ -482,6 +482,78 @@ export const useDeleteAwardCriterion = () => {
   });
 };
 
+export const useAwardCriterionKpis = (criterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-criteria", criterionId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForAwardCriterion(
+        criterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!criterionId,
+  });
+
+export const useAwardCriterionCollaborators = (criterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-criteria", criterionId, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listCollaboratorsForAwardCriterion(
+        criterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!criterionId,
+  });
+
+export const useAwardCriterionEvidence = (criterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-criteria", criterionId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForAwardCriterion(
+        criterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!criterionId,
+  });
+
+export const useAwardSubCriterionKpis = (subCriterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-sub-criteria", subCriterionId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForAwardSubCriterion(
+        subCriterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!subCriterionId,
+  });
+
+export const useAwardSubCriterionCollaborators = (subCriterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-sub-criteria", subCriterionId, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listCollaboratorsForAwardSubCriterion(
+        subCriterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!subCriterionId,
+  });
+
+export const useAwardSubCriterionEvidence = (subCriterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-sub-criteria", subCriterionId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForAwardSubCriterion(
+        subCriterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!subCriterionId,
+  });
+
 // ─── Award Sub Criteria ───────────────────────────────────────────────────────
 
 export const useAwardSubCriteria = (criterionId?: string) =>
@@ -1648,6 +1720,14 @@ export const useDownloadKpiEvidence = () => {
       evidenceId: string;
       fileName: string;
     }) => kpiEngagementApi.downloadEvidence(evidenceId, fileName),
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useViewKpiEvidence = () => {
+  return useMutation({
+    mutationFn: (evidenceId: string) =>
+      kpiEngagementApi.viewEvidence(evidenceId),
     onError: (err) => toast.error(getApiError(err)),
   });
 };
