@@ -90,8 +90,8 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     let ignore = false;
     (async () => {
       try {
-        const res = await userApi.list(1, 1, contactSearch);
-        const match = res.data?.[0];
+        const res = await userApi.list(1, 10, contactSearch);
+        const match = res.data?.find((user) => user.phone === contactSearch);
         if (!ignore && match) {
           setSelectedUser(match);
           setOpenContactDetails(true);
