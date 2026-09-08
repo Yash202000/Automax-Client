@@ -37,27 +37,27 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
     {
       permission: PERMISSIONS.DASHBOARD_INCIDENTS,
       value: "incident",
-      label: "Incident",
+      label: t("common.incident", "Incident"),
     },
     {
       permission: PERMISSIONS.DASHBOARD_REQUESTS,
       value: "request",
-      label: "Request",
+      label: t("common.request", "Request"),
     },
     {
       permission: PERMISSIONS.DASHBOARD_COMPLAINTS,
       value: "complaint",
-      label: "Complaint",
+      label: t("common.complaint", "Complaint"),
     },
     {
       permission: PERMISSIONS.DASHBOARD_QUERIES,
       value: "query",
-      label: "Query",
+      label: t("common.query", "Query"),
     },
     {
       permission: PERMISSIONS.DASHBOARD_GOALS,
       value: "goal",
-      label: "Goal",
+      label: t("common.goal", "Goal"),
     },
   ] as const;
 
@@ -76,7 +76,7 @@ const WorkflowFilters: React.FC<WorkflowFilterProps> = ({
             value={filter.search ?? ""}
             onChange={(e) => onFilterChange("search", e.target.value)}
             placeholder={t(
-              "workflow.searchPlaceholder", //add it
+              "workflows.searchPlaceholder",
               "Search workflow name...",
             )}
             className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
