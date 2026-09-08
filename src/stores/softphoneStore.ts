@@ -20,6 +20,8 @@ interface SoftphoneState {
   setShouldConnect: (shouldConnect: boolean) => void;
   toggle: () => void;
   reset: () => void;
+  redirectToContactDetails: boolean;
+  setRedirectToContactDetails: (redirect: boolean) => void;
 }
 
 export const useSoftphoneStore = create<SoftphoneState>()(
@@ -33,6 +35,7 @@ export const useSoftphoneStore = create<SoftphoneState>()(
       isCallerIncidentsMinimized: false,
       incomingCallNumber: "",
       incomingCallName: "",
+      redirectToContactDetails: false,
       setIncomingCallNumber: (incomingCallNumber) =>
         set({ incomingCallNumber }),
       setIncomingCallName: (incomingCallName) => set({ incomingCallName }),
@@ -45,6 +48,8 @@ export const useSoftphoneStore = create<SoftphoneState>()(
       setConnecting: (isConnecting) => set({ isConnecting }),
       setShouldConnect: (shouldConnect) => set({ shouldConnect }),
       toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+      setRedirectToContactDetails: (redirectToContactDetails) =>
+        set({ redirectToContactDetails }),
       reset: () =>
         set({
           isOpen: false,

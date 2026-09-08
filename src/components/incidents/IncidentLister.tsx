@@ -8,6 +8,7 @@ import {
   Loader2,
   History,
   Minus,
+  SquareArrowOutUpRight,
 } from "lucide-react";
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -42,6 +43,8 @@ export default function IncidentLister() {
     incomingCallName,
     isCallerIncidentsMinimized,
     setIsCallerIncidentsMinimized,
+    redirectToContactDetails,
+    setRedirectToContactDetails,
   } = useSoftphoneStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -50,6 +53,7 @@ export default function IncidentLister() {
     setOpenCallerIncidents(false);
     setSearchTerm("");
     setIncomingCallNumber("");
+    setRedirectToContactDetails(false);
   };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -129,7 +133,7 @@ export default function IncidentLister() {
       <div
         className={cn(
           "fixed top-1/2 -translate-y-1/2",
-          isCintrixCti ? "left-0 z-40" : "right-0 z-[1000]",
+          isCintrixCti ? "left-0 z-51" : "right-0 z-[1000]",
         )}
       >
         <button
@@ -192,7 +196,7 @@ export default function IncidentLister() {
         // widget, which stays fixed bottom-right. Kept below the widget's
         // z-50 so the widget's Answer button is never covered.
         isCintrixCti
-          ? "top-16 bottom-2 left-0 z-40"
+          ? "top-16 bottom-2 left-0 z-51"
           : "inset-y-2 right-2 z-[1000]",
       )}
     >
@@ -212,7 +216,7 @@ export default function IncidentLister() {
       >
         {/* Header */}
         <div className="p-5 border-b border-gray-100 bg-white/50 sticky top-0 z-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
                 <History className="w-5 h-5 text-primary" />
@@ -228,6 +232,21 @@ export default function IncidentLister() {
                   <Phone className="w-3 h-3" />
                   {incomingCallNumber}
                   {incomingCallName && ` (${incomingCallName})`}
+                  {redirectToContactDetails ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate("/call-centre/contacts", {
+                          state: { openContactSearch: incomingCallNumber },
+                        });
+                        setOpenCallerIncidents(false);
+                      }}
+                      className="p-1 rounded-full text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] transition-colors"
+                      title={t("softphone.viewContact", "View Contact")}
+                    >
+                      <SquareArrowOutUpRight className="w-3.5 h-3.5 text-primary" />
+                    </button>
+                  ) : null}
                 </p>
               )}
             </div>
