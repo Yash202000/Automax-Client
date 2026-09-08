@@ -306,6 +306,16 @@ const KpiMasterDataPage = lazy(() =>
     default: m.KpiMasterDataPage,
   })),
 );
+const AwardCriterionDetailPage = lazy(() =>
+  import("./pages/admin/kpi/AwardCriterionDetailPage").then((m) => ({
+    default: m.AwardCriterionDetailPage,
+  })),
+);
+const AwardSubCriterionDetailPage = lazy(() =>
+  import("./pages/admin/kpi/AwardSubCriterionDetailPage").then((m) => ({
+    default: m.AwardSubCriterionDetailPage,
+  })),
+);
 const KpiDictionaryPage = lazy(() =>
   import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
     default: m.KpiDictionaryPage,
@@ -1159,6 +1169,14 @@ function App() {
                         <Route
                           path="/goals/kpi/master-data"
                           element={<KpiMasterDataPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/master-data/award-criteria/:id"
+                          element={<AwardCriterionDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/master-data/award-sub-criteria/:id"
+                          element={<AwardSubCriterionDetailPage />}
                         />
                       </Route>
 

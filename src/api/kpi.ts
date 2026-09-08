@@ -279,6 +279,24 @@ export const kpiMasterDataApi = {
     const res = await apiClient.delete(`/kpi/award-criteria/${id}`);
     return res.data;
   },
+  listKpisForAwardCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<AwardKPI[]>> => {
+    const res = await apiClient.get(`/kpi/award-criteria/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForAwardCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(`/kpi/award-criteria/${id}/collaborators`);
+    return res.data;
+  },
+  listEvidenceForAwardCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/award-criteria/${id}/evidence`);
+    return res.data;
+  },
 
   listAwardSubCriteria: async (
     criterionId?: string,
@@ -307,6 +325,26 @@ export const kpiMasterDataApi = {
   },
   deleteAwardSubCriterion: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/award-sub-criteria/${id}`);
+    return res.data;
+  },
+  listKpisForAwardSubCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<AwardKPI[]>> => {
+    const res = await apiClient.get(`/kpi/award-sub-criteria/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForAwardSubCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(
+      `/kpi/award-sub-criteria/${id}/collaborators`,
+    );
+    return res.data;
+  },
+  listEvidenceForAwardSubCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/award-sub-criteria/${id}/evidence`);
     return res.data;
   },
 
@@ -974,6 +1012,13 @@ export const kpiEngagementApi = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+  viewEvidence: async (evidenceId: string): Promise<void> => {
+    const res = await apiClient.get(`/kpi/evidence/${evidenceId}/download`, {
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    window.open(url, "_blank", "noopener,noreferrer");
   },
 
   // Collaborators

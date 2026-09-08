@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -381,6 +381,7 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
 export const KpiDictionaryDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
+  const navigate = useNavigate();
   const { canUpdateKpi, canAssignKpi } = usePermissions();
   const currentUser = useAuthStore((state) => state.user);
 
@@ -821,6 +822,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     });
   }
   if (type === "award" && kpi.award_sub_criterion) {
+    const subCriterionId = kpi.award_sub_criterion.id;
     infoTiles.push({
       icon: (
         <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -828,6 +830,8 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       bg: "bg-purple-50 dark:bg-purple-900/20",
       label: t("kpi.masterData.awardSubCriteria"),
       value: kpi.award_sub_criterion.name_en,
+      onClick: () =>
+        navigate(`/goals/kpi/master-data/award-sub-criteria/${subCriterionId}`),
     });
   }
   if (kpi.reporting_frequency) {
