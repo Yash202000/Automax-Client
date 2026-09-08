@@ -72,7 +72,6 @@ export async function exportGoalsToXlsx(goals: Goal[]) {
   for (let i = 1; i <= worksheet.columnCount; i++) {
     const column = worksheet.getColumn(i);
     let maxLength = 0;
-
     column.eachCell({ includeEmpty: true }, (cell) => {
       const value = cell.value?.toString() ?? "";
       maxLength = Math.max(maxLength, value.length);
