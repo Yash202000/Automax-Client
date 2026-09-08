@@ -248,7 +248,7 @@
     "system": "النظام",
     "subject": "الموضوع",
     "downloadExcelTemplate": "تحميل قالب Excel",
-    "exportExcel": "تصدير Excel",
+    "exportExcel": "تصدير اكسل",
     "exportJson": "تصدير JSON",
     "selectJsonOrExcelFile": "اختر ملف JSON (.json) أو Excel (.xlsx)",
     "validJsonOrExcelRequired": "يلزم ملف JSON (.json) أو Excel (.xlsx) صالح",
@@ -1194,7 +1194,9 @@
     "importUsernameRequired": "اسم المستخدم مطلوب",
     "importEmailRequired": "البريد الإلكتروني مطلوب",
     "importPhoneRequired": "رقم الهاتف مطلوب",
-    "totalRecords": "الإجمالي"
+    "totalRecords": "الإجمالي",
+    "downloadTemplate": "تحميل قالب استيراد المستخدمين"
+    
   },
   "roles": {
     "title": "الأدوار",

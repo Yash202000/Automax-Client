@@ -1195,7 +1195,8 @@
     "importUsernameRequired": "Username is required",
     "importEmailRequired": "Email is required",
     "importPhoneRequired": "Phone is required",
-    "totalRecords": "Total"
+    "totalRecords": "Total",
+    "downloadTemplate": "Download User Import Template"
   },
   "roles": {
     "title": "Roles",
