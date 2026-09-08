@@ -192,7 +192,9 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                     <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                   )}
                   <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-                    {category}
+                    {t(`reports.fieldCategories.${category}`, {
+                      defaultValue: category,
+                    })}
                   </span>
                 </div>
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">

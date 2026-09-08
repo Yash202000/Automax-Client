@@ -1865,7 +1865,22 @@
     "statusOptional": "الحالة (اختياري)",
     "20060102OrDdMmYyyy": "2006-01-02 أو DD/MM/YYYY",
     "httpsExampleComImagePng": "https://example.com/image.png",
-    "templates_count": "{{count}} قالب"
+    "templates_count": "{{count}} قالب",
+    "fieldCategories": {
+      "Core": "الأساسي",
+      "Status": "الحالة",
+      "Identity": "الهوية",
+      "Relations": "العلاقات",
+      "Timestamps": "الطوابع الزمنية",
+      "Hierarchy": "التسلسل الهرمي",
+      "Counts": "الأعداد",
+      "Matching": "المطابقة",
+      "Creator": "المنشئ",
+      "User": "المستخدم",
+      "Basic Info": "المعلومات الأساسية",
+      "Other": "أخرى",
+      "States": "الحالات"
+    }
   },
   "permissions": {
     "title": "الصلاحيات",
