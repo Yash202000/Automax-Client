@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { X, Upload, FileUp, Paperclip } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { X, Upload, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import type { KpiEvidenceType, KpiMetric } from "../../types/kpi";
 import { KPI_EVIDENCE_TYPE_OPTIONS } from "../../types/kpi";
@@ -7,6 +7,8 @@ import {
   useUploadKpiAttachment,
   useCreateKpiEvidence,
 } from "../../hooks/useKpi";
+import { AttachmentPreview, FileIcon } from "../common/AttachmentPreview";
+import { getFileCategory } from "../../utils/fileCategory";
 
 interface KpiEvidenceUploadModalProps {
   kpiType: string;
@@ -35,11 +37,25 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
   const [comment, setComment] = useState("");
   const [metricId, setMetricId] = useState("");
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadAttachment = useUploadKpiAttachment(kpiType, kpiId);
   const createEvidence = useCreateKpiEvidence(kpiType, kpiId);
   const isPending = uploadAttachment.isPending || createEvidence.isPending;
+
+  // Image thumbnail for the selected file — revoked whenever the file
+  // changes or the modal unmounts, so we don't leak blob URLs.
+  useEffect(() => {
+    if (!file || getFileCategory(file) !== "image") {
+      setThumbnailUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setThumbnailUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   if (!isOpen) return null;
 
@@ -49,6 +65,7 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
     setEvidenceType("Report");
     setComment("");
     setMetricId("");
+    setShowPreview(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -158,15 +175,30 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
             </label>
             {file ? (
               <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-700/30">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Paperclip className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  <span className="text-sm text-slate-700 dark:text-slate-200 truncate">
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(true)}
+                  className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+                >
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
+                      alt={file.name}
+                      className="w-8 h-8 rounded object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <FileIcon
+                      file={file}
+                      className="w-4 h-4 text-slate-400 flex-shrink-0"
+                    />
+                  )}
+                  <span className="text-sm text-slate-700 dark:text-slate-200 truncate hover:underline">
                     {file.name}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
                     ({formatFileSize(file.size)})
                   </span>
-                </div>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -321,6 +353,14 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
           </div>
         </form>
       </div>
+
+      {showPreview && file && (
+        <AttachmentPreview
+          attachments={[file]}
+          initialIndex={0}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 };

@@ -10,17 +10,9 @@ import {
   Music,
   Archive,
 } from "lucide-react";
+import { getFileCategory } from "../../utils/fileCategory";
 
-const getFileCategory = (file: File) => {
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.startsWith("video/")) return "video";
-  if (file.type.startsWith("audio/")) return "audio";
-  if (file.type.includes("pdf") || file.type.includes("text"))
-    return "document";
-  return "other";
-};
-
-const FileIcon = ({
+export const FileIcon = ({
   file,
   className = "w-5 h-5",
 }: {
