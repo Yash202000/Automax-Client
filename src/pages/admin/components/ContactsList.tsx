@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   Mail,
@@ -18,16 +18,19 @@ import {
   Shield,
   Check,
   Calendar,
+  Edit2,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Button,
   Modal,
   ModalBody,
+  ModalFooter,
   ModalHeader,
   ModalTitle,
 } from "../../../components/ui";
 import { incidentApi, roleApi, userApi } from "../../../api/admin";
-import type { Incident, User } from "../../../types";
+import type { Incident, UpdateProfileRequest, User } from "../../../types";
 import { cn } from "@/lib/utils";
 import CallablePhone from "@/components/common/CallablePhone";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -36,11 +39,27 @@ interface ContactsListProps {
   variant?: "default" | "call-centre";
 }
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const apiError = error as {
+    response?: { data?: { error?: string; message?: string } };
+    message?: string;
+  };
+
+  return (
+    apiError?.response?.data?.error ||
+    apiError?.response?.data?.message ||
+    apiError?.message ||
+    fallback
+  );
+};
+
 export const ContactsList: React.FC<ContactsListProps> = ({
   variant = "default",
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const limit = 10;
@@ -51,8 +70,47 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterRoleIds, setFilterRoleIds] = useState<string[]>([]);
   const [withIncident, setWithIncident] = useState(false);
+  const [editingContact, setEditingContact] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+  });
+  const [editError, setEditError] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 600);
+
+  useEffect(() => {
+    const state = location.state as {
+      openContactSearch?: string;
+    } | null;
+    const contactSearch = state?.openContactSearch;
+    if (!contactSearch) return;
+
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await userApi.list(1, 10, contactSearch);
+        const match = res.data?.find((user) => user.phone === contactSearch);
+        if (!ignore && match) {
+          setSelectedUser(match);
+          setOpenContactDetails(true);
+          setContactIncidentPage(1);
+        } else if (!ignore) {
+          // No matching contact — fall back to prefilling the search box.
+          setSearch(contactSearch);
+        }
+      } finally {
+        if (!ignore) {
+          navigate(location.pathname, { replace: true, state: null });
+        }
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: [
@@ -92,6 +150,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           reporter_id: selectedUser?.id,
           page: contactIncidentPage,
           limit: contactIncidentLimit,
+          record_type: "incident",
         }),
       enabled: openContactDetails && Boolean(selectedUser?.id),
     });
@@ -100,6 +159,52 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     queryKey: ["admin", "roles"],
     queryFn: () => roleApi.list(),
   });
+
+  const updateContactMutation = useMutation({
+    mutationFn: (data: UpdateProfileRequest) =>
+      userApi.update(editingContact!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success(t("users.userUpdatedSuccessfully"));
+      setEditingContact(null);
+      setEditError(null);
+    },
+    onError: (error) => {
+      setEditError(getErrorMessage(error, t("users.updateFailed")));
+    },
+  });
+
+  const openEditContact = (user: User, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingContact(user);
+    setEditForm({
+      first_name: user.first_name || "",
+      last_name: user.last_name || "",
+      phone: user.phone || "",
+    });
+    setEditError(null);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError(null);
+    updateContactMutation.mutate({
+      first_name: editForm.first_name,
+      last_name: editForm.last_name,
+      phone: editForm.phone,
+    });
+  };
+
+  // Most recently created incident for the selected contact, used to surface
+  // where they were last reporting from in the details modal.
+  const latestContactIncident = useMemo(() => {
+    const list = contactIncidentsData?.data;
+    if (!list?.length) return null;
+    return [...list].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )[0];
+  }, [contactIncidentsData]);
 
   const filteredUsers = data?.data;
 
@@ -343,13 +448,11 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                         </span>
                       </th>
                     )}
-                    {variant === "call-centre" && (
-                      <th className="px-6 py-4 text-center">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          {t("users.actions")}
-                        </span>
-                      </th>
-                    )}
+                    <th className="px-6 py-4 text-center">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        {t("users.actions")}
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -496,45 +599,54 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                           </div>
                         </td>
                       )}
-                      {variant === "call-centre" && (
-                        <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => {
-                              const extension =
-                                (user as any).extension || user.phone;
-                              if (extension) {
-                                window.dispatchEvent(
-                                  new CustomEvent("initiate-call", {
-                                    detail: { number: extension },
-                                  }),
-                                );
-                              }
-                            }}
-                            disabled={!(user as any).extension && !user.phone}
-                            className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
-                            title={
-                              (user as any).extension
-                                ? `Call ext. ${(user as any).extension}`
-                                : user.phone
-                                  ? `Call ${user.phone}`
-                                  : "No extension"
-                            }
+                            onClick={(e) => openEditContact(user, e)}
+                            className="p-2 text-slate-500 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                            title={t("common.edit", "Edit")}
                           >
-                            <Phone className="w-4 h-4" />
-                            {(user as any).extension && (
-                              <span className="text-xs font-medium">
-                                Ext. {(user as any).extension}
-                              </span>
-                            )}
+                            <Edit2 className="w-4 h-4" />
                           </button>
-                        </td>
-                      )}
+                          {variant === "call-centre" && (
+                            <button
+                              onClick={() => {
+                                const extension =
+                                  (user as any).extension || user.phone;
+                                if (extension) {
+                                  window.dispatchEvent(
+                                    new CustomEvent("initiate-call", {
+                                      detail: { number: extension },
+                                    }),
+                                  );
+                                }
+                              }}
+                              disabled={!(user as any).extension && !user.phone}
+                              className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                              title={
+                                (user as any).extension
+                                  ? `Call ext. ${(user as any).extension}`
+                                  : user.phone
+                                    ? `Call ${user.phone}`
+                                    : "No extension"
+                              }
+                            >
+                              <Phone className="w-4 h-4" />
+                              {(user as any).extension && (
+                                <span className="text-xs font-medium">
+                                  Ext. {(user as any).extension}
+                                </span>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {filteredUsers?.length === 0 && (
                     <tr>
                       <td
-                        colSpan={variant === "call-centre" ? 6 : 5}
+                        colSpan={6}
                         className="py-12 text-center text-slate-500"
                       >
                         {t("users.noUsersFound")}
@@ -635,9 +747,15 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg border border-[hsl(var(--border))] p-4">
             <div>
               <span className="text-xs text-muted-foreground">
-                {t("users.user")}
+                {t("users.firstName")}
               </span>
-              <p className="font-medium">{selectedUser?.username || "-"}</p>
+              <p className="font-medium">{selectedUser?.first_name || "-"}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">
+                {t("users.lastName")}
+              </span>
+              <p className="font-medium">{selectedUser?.last_name || "-"}</p>
             </div>
             <div>
               <span className="text-xs text-muted-foreground">
@@ -657,22 +775,14 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             </div>
             <div>
               <span className="text-xs text-muted-foreground">
-                {t("users.department")}
+                {t("users.location", "Latest Incident Location")}
               </span>
               <p className="font-medium">
-                {selectedUser?.department?.name ||
-                  selectedUser?.departments?.map((d) => d.name).join(", ") ||
-                  "-"}
-              </p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">
-                {t("users.location")}
-              </span>
-              <p className="font-medium">
-                {selectedUser?.location?.name ||
-                  selectedUser?.locations?.map((l) => l.name).join(", ") ||
-                  "-"}
+                {contactIncidentsLoading
+                  ? t("common.loading", "Loading...")
+                  : latestContactIncident?.location?.name ||
+                    latestContactIncident?.address ||
+                    "-"}
               </p>
             </div>
           </div>
@@ -764,6 +874,88 @@ export const ContactsList: React.FC<ContactsListProps> = ({
             )}
           </div>
         </ModalBody>
+      </Modal>
+
+      <Modal
+        size="md"
+        isOpen={Boolean(editingContact)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingContact(null);
+            setEditError(null);
+          }
+        }}
+        onClose={() => {
+          setEditingContact(null);
+          setEditError(null);
+        }}
+      >
+        <ModalHeader>
+          <ModalTitle>{t("users.editContact", "Edit Contact")}</ModalTitle>
+        </ModalHeader>
+        <form onSubmit={handleEditSubmit}>
+          <ModalBody className="space-y-4">
+            {editError && (
+              <div className="flex items-start gap-2 rounded-lg border border-[hsl(var(--destructive)/0.3)] bg-[hsl(var(--destructive)/0.1)] p-3 text-sm text-[hsl(var(--destructive))]">
+                <X className="mt-0.5 w-4 h-4 shrink-0" />
+                <span>{editError}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("users.firstName")}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.first_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, first_name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("users.lastName")}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.last_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, last_name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                {t("users.phone")}
+              </label>
+              <input
+                type="text"
+                value={editForm.phone}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, phone: e.target.value })
+                }
+                className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingContact(null)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button type="submit" isLoading={updateContactMutation.isPending}>
+              {t("common.save")}
+            </Button>
+          </ModalFooter>
+        </form>
       </Modal>
     </div>
   );
