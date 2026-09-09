@@ -999,7 +999,7 @@ export const useSetKpiTarget = () => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
       toast.success(t("kpi.targetSet"));
     },
-    onError: () => toast.error(t("kpi.targetSetFailed")),
+    onError: (err) => toast.error(getApiError(err)),
   });
 };
 
@@ -1016,7 +1016,7 @@ export const useUpdateKpiTarget = () => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
       toast.success(t("kpi.targetSet"));
     },
-    onError: () => toast.error(t("kpi.targetSetFailed")),
+    onError: (err) => toast.error(getApiError(err)),
   });
 };
 
