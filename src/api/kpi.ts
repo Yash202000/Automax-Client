@@ -193,6 +193,28 @@ export const kpiMasterDataApi = {
     const res = await apiClient.delete(`/kpi/operational-objectives/${id}`);
     return res.data;
   },
+  listKpisForOperationalObjective: async (
+    id: string,
+  ): Promise<ApiResponse<OperationalKPI[]>> => {
+    const res = await apiClient.get(`/kpi/operational-objectives/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForOperationalObjective: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(
+      `/kpi/operational-objectives/${id}/collaborators`,
+    );
+    return res.data;
+  },
+  listEvidenceForOperationalObjective: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(
+      `/kpi/operational-objectives/${id}/evidence`,
+    );
+    return res.data;
+  },
 
   listProcesses: async (): Promise<ApiResponse<Process[]>> => {
     const res = await apiClient.get("/kpi/processes");

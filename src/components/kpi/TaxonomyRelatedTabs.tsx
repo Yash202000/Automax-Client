@@ -13,7 +13,6 @@ import {
   Clock,
 } from "lucide-react";
 import type {
-  AwardKPI,
   KpiCollaboratorAssignment,
   KpiEngagementEvidence,
 } from "../../types/kpi";
@@ -23,16 +22,31 @@ import {
   isActiveAssignment,
   statusColorMap,
   usePagedSearch,
-} from "../../utils/awardEntityRelated";
+} from "../../utils/taxonomyRelated";
 
-// Shared building blocks for the Award Criteria / Award Sub-Criteria "Related
-// Details" pages (AwardCriterionDetailPage.tsx / AwardSubCriterionDetailPage.tsx)
-// — both pages show the same 3 relationship tables (Related KPIs,
+// Shared building blocks for every taxonomy entity's "Related Details" page
+// (Award Criteria / Award Sub-Criteria / Operational Objective detail pages)
+// — they all show the same 3 relationship tables (Related KPIs,
 // Collaborators, Evidence) and the same Overview stat tiles, so that
 // rendering lives here once instead of being duplicated per entity type.
 // Non-component helpers (formatters, statusColorMap, usePagedSearch) live in
-// utils/awardEntityRelated.ts — react-refresh/only-export-components requires
+// utils/taxonomyRelated.ts — react-refresh/only-export-components requires
 // this file to export components only.
+
+// Minimal structural shape RelatedKpisTable needs — satisfied by both the
+// AwardKPI and OperationalKPI frontend types without any casting.
+export interface RelatedKpiSummary {
+  id: string;
+  code: string;
+  name_en: string;
+  description_en: string;
+  activation_status: string;
+  reporting_frequency: string;
+  owner_dept?: { name: string };
+  owner_org?: { name_en: string };
+  owning_agency?: { name: string };
+  created_by?: { first_name: string; last_name: string };
+}
 
 export const TablePagination: React.FC<{
   page: number;
@@ -173,12 +187,17 @@ export const StatTiles: React.FC<{
   );
 };
 
-export const RelatedKpisTable: React.FC<{
-  kpis: AwardKPI[];
+export const RelatedKpisTable = <T extends RelatedKpiSummary>({
+  kpis,
+  loading,
+  kpiType,
+}: {
+  kpis: T[];
   loading: boolean;
-}> = ({ kpis, loading }) => {
+  kpiType: "award" | "operational";
+}) => {
   const { t } = useTranslation();
-  const paged = usePagedSearch<AwardKPI>(kpis, (kpi, q) =>
+  const paged = usePagedSearch<T>(kpis, (kpi, q) =>
     [kpi.code, kpi.name_en, kpi.description_en]
       .filter(Boolean)
       .some((f) => f!.toLowerCase().includes(q)),
@@ -247,7 +266,7 @@ export const RelatedKpisTable: React.FC<{
                     >
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <Link
-                          to={`/goals/kpi/dictionary/award/${kpi.id}`}
+                          to={`/goals/kpi/dictionary/${kpiType}/${kpi.id}`}
                           className="font-mono font-medium text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           {kpi.code}

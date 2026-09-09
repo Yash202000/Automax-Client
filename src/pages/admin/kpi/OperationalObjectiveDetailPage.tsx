@@ -3,20 +3,19 @@ import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
-  ClipboardCheck,
+  Target,
   BarChart3,
   Users,
   Paperclip,
   FileText,
-  Hash,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
 import {
-  useAwardSubCriteria,
-  useAwardSubCriterionKpis,
-  useAwardSubCriterionCollaborators,
-  useAwardSubCriterionEvidence,
+  useOperationalObjectives,
+  useOperationalObjectiveKpis,
+  useOperationalObjectiveCollaborators,
+  useOperationalObjectiveEvidence,
   useViewKpiEvidence,
   useDownloadKpiEvidence,
 } from "../../../hooks/useKpi";
@@ -30,21 +29,21 @@ import { statusColorMap } from "../../../utils/taxonomyRelated";
 
 type TabType = "overview" | "kpis" | "collaborators" | "evidence";
 
-export const AwardSubCriterionDetailPage: React.FC = () => {
+export const OperationalObjectiveDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
 
-  const { data: subCriteriaData, isLoading: subCriteriaLoading } =
-    useAwardSubCriteria();
-  const subCriterion = (subCriteriaData ?? []).find((s) => s.id === id);
+  const { data: objectivesData, isLoading: objectivesLoading } =
+    useOperationalObjectives();
+  const objective = (objectivesData ?? []).find((o) => o.id === id);
 
   const { data: kpisData, isLoading: kpisLoading } =
-    useAwardSubCriterionKpis(id);
+    useOperationalObjectiveKpis(id);
   const { data: collaboratorsData, isLoading: collaboratorsLoading } =
-    useAwardSubCriterionCollaborators(id);
+    useOperationalObjectiveCollaborators(id);
   const { data: evidenceData, isLoading: evidenceLoading } =
-    useAwardSubCriterionEvidence(id);
+    useOperationalObjectiveEvidence(id);
   const viewEvidence = useViewKpiEvidence();
   const downloadEvidence = useDownloadKpiEvidence();
 
@@ -52,10 +51,7 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
   const collaborators = collaboratorsData ?? [];
   const evidence = evidenceData ?? [];
 
-  const lastUpdated = [
-    subCriterion?.updated_at,
-    ...kpis.map((k) => k.updated_at),
-  ]
+  const lastUpdated = [objective?.updated_at, ...kpis.map((k) => k.updated_at)]
     .filter((d): d is string => !!d)
     .sort()
     .pop();
@@ -101,7 +97,7 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
     </Link>
   );
 
-  if (subCriteriaLoading) {
+  if (objectivesLoading) {
     return (
       <div className="space-y-4">
         {backLink}
@@ -112,12 +108,12 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
     );
   }
 
-  if (!subCriterion) {
+  if (!objective) {
     return (
       <div className="space-y-4">
         {backLink}
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {t("kpi.masterData.noAwardSubCriteria")}
+          {t("kpi.masterData.noOperationalObjectives")}
         </p>
       </div>
     );
@@ -131,53 +127,53 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="p-2.5 rounded-lg bg-purple-500/10 shrink-0">
-              <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="p-2.5 rounded-lg bg-teal-500/10 shrink-0">
+              <Target className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center flex-wrap gap-2 mb-1">
                 <h1 className="text-xl font-bold text-slate-900 dark:text-white truncate">
-                  {subCriterion.name_en}
+                  {objective.name_en}
                 </h1>
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                    subCriterion.is_active
+                    objective.is_active
                       ? statusColorMap.active
                       : statusColorMap.inactive
                   }`}
                 >
-                  {subCriterion.is_active ? (
+                  {objective.is_active ? (
                     <CheckCircle2 className="w-3.5 h-3.5" />
                   ) : (
                     <XCircle className="w-3.5 h-3.5" />
                   )}
-                  {subCriterion.is_active
+                  {objective.is_active
                     ? t("common.active")
                     : t("common.inactive")}
                 </span>
               </div>
-              {subCriterion.name_ar && (
+              {objective.name_ar && (
                 <p
                   className="text-sm text-slate-500 dark:text-slate-400"
                   dir="rtl"
                 >
-                  {subCriterion.name_ar}
+                  {objective.name_ar}
                 </p>
               )}
               <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400 dark:text-slate-500 mt-1">
-                <span className="flex items-center gap-1 font-mono">
-                  <Hash className="w-3 h-3" />
-                  {t("kpi.masterData.subNo")} {subCriterion.sub_no}
-                </span>
-                {subCriterion.award_criterion && (
+                {objective.pillar && (
                   <span>
-                    {t("kpi.masterData.awardCriterion")}:{" "}
-                    <Link
-                      to={`/goals/kpi/master-data/award-criteria/${subCriterion.award_criterion.id}`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      {subCriterion.award_criterion.name_en}
-                    </Link>
+                    {t("kpi.masterData.pillar")}: {objective.pillar.name_en}
+                  </span>
+                )}
+                {objective.enabler && (
+                  <span>
+                    {t("kpi.masterData.enabler")}: {objective.enabler.name_en}
+                  </span>
+                )}
+                {objective.goal && (
+                  <span>
+                    {t("kpi.masterData.strategicGoal")}: {objective.goal.title}
                   </span>
                 )}
               </div>
@@ -190,7 +186,7 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
       <div className="border-b border-slate-200 dark:border-slate-700/60">
         <nav
           className="flex gap-1 -mb-px overflow-x-auto"
-          aria-label="Award Sub-Criteria tabs"
+          aria-label="Operational Objective tabs"
         >
           {tabs.map((tab) => (
             <button
@@ -237,18 +233,10 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {t("kpi.masterData.subNo")}
-                </p>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  {subCriterion.sub_no}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {t("kpi.masterData.nameEn")}
                 </p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  {subCriterion.name_en}
+                  {objective.name_en}
                 </p>
               </div>
               <div>
@@ -259,25 +247,24 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
                   className="text-sm font-medium text-slate-900 dark:text-white"
                   dir="rtl"
                 >
-                  {subCriterion.name_ar || "-"}
+                  {objective.name_ar || "-"}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {t("kpi.masterData.awardCriterion")}
+                  {t("kpi.masterData.pillar")}
                 </p>
-                {subCriterion.award_criterion ? (
-                  <Link
-                    to={`/goals/kpi/master-data/award-criteria/${subCriterion.award_criterion.id}`}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {subCriterion.award_criterion.name_en}
-                  </Link>
-                ) : (
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    -
-                  </p>
-                )}
+                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                  {objective.pillar?.name_en ?? "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {t("kpi.masterData.enabler")}
+                </p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                  {objective.enabler?.name_en ?? "-"}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -285,12 +272,12 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
                 </p>
                 <span
                   className={`inline-flex items-center mt-0.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                    subCriterion.is_active
+                    objective.is_active
                       ? statusColorMap.active
                       : statusColorMap.inactive
                   }`}
                 >
-                  {subCriterion.is_active
+                  {objective.is_active
                     ? t("common.active")
                     : t("common.inactive")}
                 </span>
@@ -301,7 +288,11 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
       )}
 
       {activeTab === "kpis" && (
-        <RelatedKpisTable kpis={kpis} loading={kpisLoading} kpiType="award" />
+        <RelatedKpisTable
+          kpis={kpis}
+          loading={kpisLoading}
+          kpiType="operational"
+        />
       )}
 
       {activeTab === "collaborators" && (

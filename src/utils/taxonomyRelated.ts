@@ -1,10 +1,11 @@
 import { useState } from "react";
 import type { KpiCollaboratorAssignment } from "../types/kpi";
 
-// Shared, non-component helpers for the Award Criteria / Award Sub-Criteria
-// "Related Details" pages — split out of AwardEntityRelatedTabs.tsx because
-// mixing component and non-component exports in one file breaks React Fast
-// Refresh (react-refresh/only-export-components).
+// Shared, non-component helpers for the taxonomy "Related Details" pages
+// (Award Criteria / Award Sub-Criteria / Operational Objective detail pages)
+// — split out of TaxonomyRelatedTabs.tsx because mixing component and
+// non-component exports in one file breaks React Fast Refresh
+// (react-refresh/only-export-components).
 
 export const PAGE_SIZE = 10;
 
