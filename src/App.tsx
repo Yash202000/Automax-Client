@@ -316,6 +316,11 @@ const AwardSubCriterionDetailPage = lazy(() =>
     default: m.AwardSubCriterionDetailPage,
   })),
 );
+const OperationalObjectiveDetailPage = lazy(() =>
+  import("./pages/admin/kpi/OperationalObjectiveDetailPage").then((m) => ({
+    default: m.OperationalObjectiveDetailPage,
+  })),
+);
 const KpiDictionaryPage = lazy(() =>
   import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
     default: m.KpiDictionaryPage,
@@ -1177,6 +1182,10 @@ function App() {
                         <Route
                           path="/goals/kpi/master-data/award-sub-criteria/:id"
                           element={<AwardSubCriterionDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/master-data/operational-objectives/:id"
+                          element={<OperationalObjectiveDetailPage />}
                         />
                       </Route>
 

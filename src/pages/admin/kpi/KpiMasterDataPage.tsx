@@ -767,6 +767,17 @@ export const KpiMasterDataPage: React.FC = () => {
               {
                 header: "Parent Objective",
                 accessor: (r) => r.objective?.name_en ?? r.objective_id ?? "-",
+                render: (r) =>
+                  r.objective ? (
+                    <Link
+                      to={`/goals/kpi/master-data/operational-objectives/${r.objective.id}`}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {r.objective.name_en}
+                    </Link>
+                  ) : (
+                    (r.objective_id ?? "-")
+                  ),
               },
               {
                 header: t("kpi.masterData.owner"),

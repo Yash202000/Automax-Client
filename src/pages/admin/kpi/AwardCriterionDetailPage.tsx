@@ -25,8 +25,8 @@ import {
   RelatedKpisTable,
   RelatedCollaboratorsTable,
   RelatedEvidenceTable,
-} from "../../../components/kpi/AwardEntityRelatedTabs";
-import { statusColorMap } from "../../../utils/awardEntityRelated";
+} from "../../../components/kpi/TaxonomyRelatedTabs";
+import { statusColorMap } from "../../../utils/taxonomyRelated";
 
 type TabType = "overview" | "kpis" | "collaborators" | "evidence";
 
@@ -269,7 +269,7 @@ export const AwardCriterionDetailPage: React.FC = () => {
       )}
 
       {activeTab === "kpis" && (
-        <RelatedKpisTable kpis={kpis} loading={kpisLoading} />
+        <RelatedKpisTable kpis={kpis} loading={kpisLoading} kpiType="award" />
       )}
 
       {activeTab === "collaborators" && (

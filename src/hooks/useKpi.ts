@@ -554,6 +554,43 @@ export const useAwardSubCriterionEvidence = (subCriterionId?: string) =>
     enabled: !!subCriterionId,
   });
 
+export const useOperationalObjectiveKpis = (objectiveId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "operational-objectives", objectiveId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForOperationalObjective(
+        objectiveId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!objectiveId,
+  });
+
+export const useOperationalObjectiveCollaborators = (objectiveId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "operational-objectives", objectiveId, "collaborators"],
+    queryFn: async () => {
+      const res =
+        await kpiMasterDataApi.listCollaboratorsForOperationalObjective(
+          objectiveId as string,
+        );
+      return res.data ?? [];
+    },
+    enabled: !!objectiveId,
+  });
+
+export const useOperationalObjectiveEvidence = (objectiveId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "operational-objectives", objectiveId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForOperationalObjective(
+        objectiveId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!objectiveId,
+  });
+
 // ─── Award Sub Criteria ───────────────────────────────────────────────────────
 
 export const useAwardSubCriteria = (criterionId?: string) =>

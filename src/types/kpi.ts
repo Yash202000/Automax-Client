@@ -48,6 +48,7 @@ export interface OperationalObjective {
   enabler?: Enabler;
   is_active: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 // "Child Objective" / "Operational Objective" in product terminology —
@@ -334,6 +335,13 @@ export interface OperationalKPI {
   data_source: string;
   notes: string;
   documenta_folder_id?: string;
+  created_by?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
   created_at: string;
   updated_at: string;
 }
