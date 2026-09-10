@@ -73,6 +73,7 @@ import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
 import { getAvatarName } from "@/lib/utils";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
+import { capFilesByCount } from "@/utils/attachmentLimits";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -269,6 +270,69 @@ export function IncidentCreatePage() {
     queryKey: ["admin", "lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
   });
+
+  const envConfigCategory = useMemo(
+    () =>
+      (lookupCategoriesData?.data || []).find(
+        (cat) => cat.code === "ENV_CONFIGURATION",
+      ),
+    [lookupCategoriesData],
+  );
+
+  const MAX_ATTACHMENTS = Number(
+    envConfigCategory?.values?.find(
+      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
+    )?.name ?? "5",
+  );
+
+  const MAX_ATTACHMENT_SIZE_MB = Number(
+    envConfigCategory?.values?.find(
+      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
+    )?.name ?? "5",
+  );
+
+  const isAttachmentOversized = (file: File) =>
+    file.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
+
+  const attachmentLimitReached = attachments.length >= MAX_ATTACHMENTS;
+
+  const validateAttachments = (files: File[]): string => {
+    if (files.length > MAX_ATTACHMENTS) {
+      return t("incidents.attachmentLimitExceeded", {
+        max: MAX_ATTACHMENTS,
+        defaultValue: `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
+      });
+    }
+    const oversized = files.find(isAttachmentOversized);
+    if (oversized) {
+      return t("incidents.attachmentTooLarge", {
+        name: oversized.name,
+        max: MAX_ATTACHMENT_SIZE_MB,
+        defaultValue: `${oversized.name} exceeds the maximum size of ${MAX_ATTACHMENT_SIZE_MB}MB`,
+      });
+    }
+    return "";
+  };
+
+  const addAttachmentFiles = (newFiles: File[]) => {
+    const { accepted, skippedForLimit } = capFilesByCount(
+      newFiles,
+      attachments.length,
+      MAX_ATTACHMENTS,
+    );
+    const next = [...attachments, ...accepted];
+    setAttachments(next);
+    setErrors((prev) => ({
+      ...prev,
+      attachments:
+        skippedForLimit > 0
+          ? t("incidents.attachmentLimitExceeded", {
+              max: MAX_ATTACHMENTS,
+              defaultValue: `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
+            })
+          : validateAttachments(next),
+    }));
+  };
 
   const sourceOptions = useMemo(() => {
     if (!lookupCategoriesData?.data?.length) return [];
@@ -1306,6 +1370,12 @@ export function IncidentCreatePage() {
         }
       }
     }
+
+    if (attachments.length > 0) {
+      const attachmentError = validateAttachments(attachments);
+      if (attachmentError) newErrors.attachments = attachmentError;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1315,6 +1385,12 @@ export function IncidentCreatePage() {
     console.log("Form submitted, validating...");
     if (!validate()) {
       console.log("Validation failed");
+      toast.error(
+        t(
+          "incidents.fixErrorsBeforeSubmit",
+          "Please fix the errors before submitting",
+        ),
+      );
       return;
     }
     console.log("Validation passed, creating incident...");
@@ -1976,64 +2052,108 @@ export function IncidentCreatePage() {
                 <div className="space-y-4">
                   {attachments.length > 0 && (
                     <div className="space-y-2">
-                      {attachments.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Paperclip className="w-4 h-4 text-gray-500" />
-                            <span
-                              className="text-sm text-muted-foreground truncate max-w-[250px] hover:underline cursor-pointer"
-                              onClick={() => setPreviewIndex(index)}
-                            >
-                              {file.name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              ({(file.size / 1024).toFixed(1)} {t("common.kb")})
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAttachments((prev) =>
-                                prev.filter((_, i) => i !== index),
-                              )
-                            }
-                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      {attachments.map((file, index) => {
+                        const invalid = isAttachmentOversized(file);
+                        return (
+                          <div
+                            key={index}
+                            className={cn(
+                              "flex items-center justify-between p-3 rounded-lg border",
+                              invalid
+                                ? "bg-red-50 border-red-400"
+                                : "bg-primary/10 border-primary",
+                            )}
                           >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-2">
+                              <Paperclip
+                                className={cn(
+                                  "w-4 h-4",
+                                  invalid ? "text-red-500" : "text-gray-500",
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  "text-sm truncate max-w-[250px] hover:underline cursor-pointer",
+                                  invalid
+                                    ? "text-red-600"
+                                    : "text-muted-foreground",
+                                )}
+                                onClick={() => setPreviewIndex(index)}
+                              >
+                                {file.name}
+                              </span>
+                              <span
+                                className={cn(
+                                  "text-xs",
+                                  invalid ? "text-red-500" : "text-gray-500",
+                                )}
+                              >
+                                ({(file.size / 1024).toFixed(1)}{" "}
+                                {t("common.kb")})
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAttachments((prev) => {
+                                  const next = prev.filter(
+                                    (_, i) => i !== index,
+                                  );
+                                  setErrors((errPrev) => ({
+                                    ...errPrev,
+                                    attachments: validateAttachments(next),
+                                  }));
+                                  return next;
+                                });
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   <label
-                    className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-xl cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors ${errors.attachments ? "border-[hsl(var(--destructive)/0.5)]" : "border-[hsl(var(--border))]"}`}
+                    className={cn(
+                      "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-xl transition-colors",
+                      errors.attachments
+                        ? "border-[hsl(var(--destructive)/0.5)]"
+                        : "border-[hsl(var(--border))]",
+                      attachmentLimitReached
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)]",
+                    )}
                   >
                     <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                     <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {t("incidents.clickToUpload")}
+                      {attachmentLimitReached
+                        ? t("incidents.attachmentLimit", {
+                            max: MAX_ATTACHMENTS,
+                            defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
+                          })
+                        : t("incidents.clickToUpload")}
                     </span>
                     <input
                       type="file"
                       className="hidden"
                       multiple
+                      disabled={attachmentLimitReached}
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
-                        if (files.length > 0) {
-                          setAttachments((prev) => [...prev, ...files]);
-                          if (errors.attachments) {
-                            setErrors((prev) => ({
-                              ...prev,
-                              attachments: "",
-                            }));
-                          }
-                        }
+                        if (files.length > 0) addAttachmentFiles(files);
                         e.target.value = "";
                       }}
                     />
                   </label>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {t("citizen.maxSize", "Max")} {MAX_ATTACHMENT_SIZE_MB} MB ·{" "}
+                    {t("incidents.attachmentLimit", {
+                      max: MAX_ATTACHMENTS,
+                      defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
+                    })}
+                  </p>
                   {errors.attachments && (
                     <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
                       {errors.attachments}
@@ -2210,6 +2330,7 @@ export function IncidentCreatePage() {
                   className="w-full"
                   leftIcon={<Save className="w-4 h-4" />}
                   isLoading={createMutation.isPending}
+                  disabled={attachments.some(isAttachmentOversized)}
                 >
                   {t("incidents.createIncident")}
                 </Button>
