@@ -4604,7 +4604,9 @@
     "selectANotificationToRead": "Select a notification to read",
     "composeAndSendEmail": "Compose and send an email",
     "saveAsDraft": "Save as Draft",
-    "updateDraft": "Update Draft"
+    "updateDraft": "Update Draft",
+    "confirmPermanentDelete": "Are you sure you want to delete this email permanently? This action cannot be undone.",
+    "confirmDelete": "Are you sure you want to delete this email? It will be moved to the trash."
   },
   "sms": {
     "newSms": "New SMS",
