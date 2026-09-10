@@ -133,6 +133,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
         [],
         undefined,
         withIncident,
+        true,
       ),
   });
 
