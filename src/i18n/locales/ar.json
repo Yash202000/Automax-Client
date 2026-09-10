@@ -4605,7 +4605,10 @@
     "bccExampleCom": "bcc@example.com",
     "ccExampleCom": "cc@example.com",
     "recipientExampleComPressEnterOrComma": "recipient@example.com؟ اضغط على مفتاح Enter أو مفتاح الفاصلة للإضافة.",
-    "selectANotificationToRead": "حدد إشعارًا لقراءته"
+    "selectANotificationToRead": "حدد إشعارًا لقراءته",
+    "composeAndSendEmail": "إنشاء وإرسال بريد إلكتروني",
+    "saveAsDraft": "حفظ كمسودة",
+    "updateDraft": "تحديث المسودة"
   },
   "sms": {
     "newSms": "رسالة نصية جديدة",

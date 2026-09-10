@@ -4601,7 +4601,10 @@
     "bccExampleCom": "bcc@example.com",
     "ccExampleCom": "cc@example.com",
     "recipientExampleComPressEnterOrComma": "recipient@example.com ? press Enter or comma to add",
-    "selectANotificationToRead": "Select a notification to read"
+    "selectANotificationToRead": "Select a notification to read",
+    "composeAndSendEmail": "Compose and send an email",
+    "saveAsDraft": "Save as Draft",
+    "updateDraft": "Update Draft"
   },
   "sms": {
     "newSms": "New SMS",

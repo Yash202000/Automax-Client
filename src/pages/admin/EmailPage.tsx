@@ -832,17 +832,26 @@ export const EmailPage: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-[15px] leading-tight">
                     {editingDraftId
-                      ? "Edit Draft"
+                      ? t("communications.editDraft", "Edit Draft")
                       : isNewEmail
-                        ? "New Message"
+                        ? t("communications.newMessage", "New Message")
                         : isCloningAttachments
-                          ? "Cloning attachments..."
+                          ? t(
+                              "communications.cloningAttachments",
+                              "Cloning attachments...",
+                            )
                           : composeSubject}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {editingDraftId
-                      ? "Update and save your draft"
-                      : "Compose and send an email"}
+                      ? t(
+                          "communications.updateAndSaveDraft",
+                          "Update and save your draft",
+                        )
+                      : t(
+                          "email.composeAndSendEmail",
+                          "Compose and send an email",
+                        )}
                   </p>
                 </div>
               </div>
@@ -860,7 +869,9 @@ export const EmailPage: React.FC = () => {
             >
               <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                 <div>
-                  <label className="block text-sm font-medium  mb-1">To</label>
+                  <label className="block text-sm font-medium  mb-1">
+                    {t("goals.analytics.filters.to", "To")}
+                  </label>
                   <EmailChipInput
                     value={composeTo}
                     onChange={setComposeTo}
@@ -992,7 +1003,9 @@ export const EmailPage: React.FC = () => {
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  {editingDraftId ? "Update Draft" : "Save as Draft"}
+                  {editingDraftId
+                    ? t("email.saveAsDraft", "Update Draft")
+                    : t("email.saveAsDraft", "Save as Draft")}
                 </button>
 
                 <div className="flex gap-3">
