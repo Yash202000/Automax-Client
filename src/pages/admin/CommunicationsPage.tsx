@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Email, EmailAttachment } from "../../types";
 import { emailApi, notificationTrackApi, smsApi } from "../../api/admin";
@@ -165,16 +165,19 @@ export const CommunicationsPage: React.FC = () => {
   const totalItems = notificationData?.total_items || 0;
 
   // Helpers
-  const getSender = (email: Email) => {
-    if (email.direction === "outbound") return "Me";
-    // Use sent_by_user from API response (inbound emails)
-    if (email.sent_by_user) {
-      const { first_name, last_name, email: userEmail } = email.sent_by_user;
-      const fullName = [first_name, last_name].filter(Boolean).join(" ");
-      return fullName || userEmail || "Unknown";
-    }
-    return email.sender || "Unknown";
-  };
+  const getSender = useCallback(
+    (email: Email) => {
+      if (email.direction === "outbound") return t("communications.me", "Me");
+      // Use sent_by_user from API response (inbound emails)
+      if (email.sent_by_user) {
+        const { first_name, last_name, email: userEmail } = email.sent_by_user;
+        const fullName = [first_name, last_name].filter(Boolean).join(" ");
+        return fullName || userEmail || t("common.unknown", "Unknown");
+      }
+      return email.sender || t("common.unknown", "Unknown");
+    },
+    [t],
+  );
 
   const getRecipients = (email: Email, type: "to" | "cc" | "bcc") => {
     return (
@@ -247,7 +250,7 @@ export const CommunicationsPage: React.FC = () => {
     },
     onError: (error: any) => {
       setApiError({
-        title: "Failed to send Email",
+        title: t("communications.sendEmailFailed", "Failed to send Email"),
         message: error.response?.data?.message || error?.response?.data?.error,
       });
     },
@@ -261,7 +264,7 @@ export const CommunicationsPage: React.FC = () => {
     },
     onError: (error: any) => {
       setApiError({
-        title: "Failed to send SMS",
+        title: t("communications.sendSmsFailed", "Failed to send SMS"),
         message: error.response?.data?.message || error?.response?.data?.error,
       });
     },
@@ -342,13 +345,22 @@ export const CommunicationsPage: React.FC = () => {
     const newErrors: { to?: string; body?: string } = {};
 
     if (!cleanedPhone) {
-      newErrors.to = "Phone number is required";
+      newErrors.to = t(
+        "communications.phoneRequired",
+        "Phone number is required",
+      );
     } else if (!/^\d{4,15}$/.test(cleanedPhone.replace(/^0+/, ""))) {
-      newErrors.to = "Enter a valid phone number without country code";
+      newErrors.to = t(
+        "communications.phoneInvalid",
+        "Enter a valid phone number without country code",
+      );
     }
 
     if (!composeBody.trim()) {
-      newErrors.body = "Message cannot be empty";
+      newErrors.body = t(
+        "communications.messageEmpty",
+        "Message cannot be empty",
+      );
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -599,7 +611,9 @@ export const CommunicationsPage: React.FC = () => {
 
     return notifications.filter((item) => {
       const subject = (
-        isSmsNotification(item) ? "SMS" : item.subject || "(No subject)"
+        isSmsNotification(item)
+          ? t("communications.sms", "SMS")
+          : item.subject || t("email.noSubject", "(No subject)")
       ).toLowerCase();
       return (
         getSender(item).toLowerCase().includes(search) ||
@@ -610,7 +624,7 @@ export const CommunicationsPage: React.FC = () => {
         getRecipients(item, "to").toLowerCase().includes(search)
       );
     });
-  }, [notifications, searchTerm]);
+  }, [getSender, notifications, searchTerm, t]);
 
   // const isSavingDraft =
   //   saveDraftMutation.isPending || updateDraftMutation.isPending;
@@ -634,7 +648,7 @@ export const CommunicationsPage: React.FC = () => {
               className="w-full"
               leftIcon={<Plus className="w-5 h-5" />}
             >
-              <span>Compose</span>
+              <span>{t("email.compose", "Compose")}</span>
             </Button>
           </div>
         ) : null}
@@ -647,10 +661,10 @@ export const CommunicationsPage: React.FC = () => {
           }}
           className="w-full p-2"
         >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="email,sms">All</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="sms">SMS</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 gap-8">
+            <TabsTrigger value="email,sms">{t("common.all")}</TabsTrigger>
+            <TabsTrigger value="email">{t("sidebar.email")}</TabsTrigger>
+            <TabsTrigger value="sms">{t("sidebar.sms")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -659,14 +673,16 @@ export const CommunicationsPage: React.FC = () => {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Funnel size={12} />
-                <span className="text-sm font-semibold">Filter</span>
+                <span className="text-sm font-semibold">
+                  {t("common.filter", "Filter")}
+                </span>
               </div>
               <button
                 type="button"
                 onClick={resetFilters}
                 className="text-sm text-muted-foreground hover:text-black cursor-pointer"
               >
-                Reset
+                {t("common.reset", "Reset")}
               </button>
             </div>
 
@@ -691,9 +707,12 @@ export const CommunicationsPage: React.FC = () => {
                   size="sm"
                 />
               </FieldWrapper> */}
-              <FieldWrapper label="Status">
+              <FieldWrapper label={t("incidents.status")}>
                 <Select
-                  placeholder="Select Status"
+                  placeholder={t(
+                    "communications.selectStatus",
+                    "Select Status",
+                  )}
                   value={filters.status}
                   onChange={(value: any) => {
                     setFilters((prev) => ({
@@ -702,16 +721,19 @@ export const CommunicationsPage: React.FC = () => {
                     }));
                   }}
                   options={[
-                    { label: "All", value: "" },
-                    { label: "Sent", value: "sent" },
-                    { label: "Failed", value: "failed" },
+                    { label: t("common.all"), value: "" },
+                    { label: t("common.sent"), value: "sent" },
+                    { label: t("common.failed"), value: "failed" },
                   ]}
                   size="sm"
                 />
               </FieldWrapper>
-              <FieldWrapper label="Start Date">
+              <FieldWrapper label={t("goals.create.fields.startDate")}>
                 <DatePicker
-                  placeholder="Select Start Date"
+                  placeholder={t(
+                    "communications.selectStartDate",
+                    "Select Start Date",
+                  )}
                   onChange={(val) => {
                     setFilters((prev) => ({
                       ...prev,
@@ -727,9 +749,12 @@ export const CommunicationsPage: React.FC = () => {
                   disabledDate={(date: any) => date > new Date()}
                 />
               </FieldWrapper>
-              <FieldWrapper label="End Date">
+              <FieldWrapper label={t("actionLogs.endDate", "End Date")}>
                 <DatePicker
-                  placeholder="Select End Date"
+                  placeholder={t(
+                    "communications.selectEndDate",
+                    "Select End Date",
+                  )}
                   onChange={(val) => {
                     setFilters((prev) => ({
                       ...prev,
@@ -750,7 +775,9 @@ export const CommunicationsPage: React.FC = () => {
                   }}
                 />
               </FieldWrapper>
-              <FieldWrapper label="Recipients">
+              <FieldWrapper
+                label={t("communications.recipients", "Recipients")}
+              >
                 <Input
                   value={filters.recipient}
                   onChange={(e) =>
@@ -759,7 +786,10 @@ export const CommunicationsPage: React.FC = () => {
                       recipient: e.target.value,
                     }))
                   }
-                  placeholder="Enter recipient"
+                  placeholder={t(
+                    "communications.enterRecipient",
+                    "Enter recipient",
+                  )}
                   className="bg-background"
                 />
               </FieldWrapper>
@@ -772,7 +802,7 @@ export const CommunicationsPage: React.FC = () => {
                 }}
                 size={"xs"}
               >
-                Apply Filters
+                {t("communications.applyFilters", "Apply Filters")}
               </Button>
               <Button
                 variant={"ghost"}
@@ -781,7 +811,7 @@ export const CommunicationsPage: React.FC = () => {
                 }}
                 size={"xs"}
               >
-                Clear
+                {t("common.clear", "Clear")}
               </Button>
             </div>
           </Card>
@@ -801,7 +831,7 @@ export const CommunicationsPage: React.FC = () => {
               }}
               className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium"
             >
-              Compose
+              {t("email.compose", "Compose")}
             </button>
             {/* <select
               value={currentCategory}
@@ -822,7 +852,7 @@ export const CommunicationsPage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder={"Search..."}
+              placeholder={t("nav.searchPlaceholder", "Search...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -836,7 +866,12 @@ export const CommunicationsPage: React.FC = () => {
             </div>
           ) : filteredNotifications.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
-              <p>No notifications found</p>
+              <p>
+                {t(
+                  "communications.noNotificationsFound",
+                  "No notifications found",
+                )}
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100 ">
@@ -863,8 +898,14 @@ export const CommunicationsPage: React.FC = () => {
                         )}
                         title={
                           isSmsNotification(email)
-                            ? "SMS notification"
-                            : "Email notification"
+                            ? t(
+                                "communications.smsNotification",
+                                "SMS notification",
+                              )
+                            : t(
+                                "communications.emailNotification",
+                                "Email notification",
+                              )
                         }
                       >
                         {getNotificationIcon(email)}
@@ -873,7 +914,8 @@ export const CommunicationsPage: React.FC = () => {
                         className={`text-sm truncate ${!email.is_read ? "font-bold " : "font-medium "}`}
                       >
                         {currentCategory === "draft"
-                          ? getRecipients(email, "to") || "No recipient"
+                          ? getRecipients(email, "to") ||
+                            t("communications.noRecipient", "No recipient")
                           : getSender(email)}
                       </h3>
                     </div>
@@ -903,8 +945,9 @@ export const CommunicationsPage: React.FC = () => {
                         className={`text-sm mb-1 truncate ${!email.is_read ? " font-medium" : "font-normal"}`}
                       >
                         {isSmsNotification(email)
-                          ? "SMS"
-                          : email.subject || "(No subject)"}
+                          ? t("communications.sms", "SMS")
+                          : email.subject ||
+                            t("email.noSubject", "(No subject)")}
                       </p>
                       <p className="text-xs text-slate-500 truncate">
                         {stripHtml(email.body)}
@@ -962,7 +1005,11 @@ export const CommunicationsPage: React.FC = () => {
                           : "bg-green-50 text-green-600 border border-green-600",
                       )}
                     >
-                      {selectedEmail.status}
+                      {selectedEmail.status === "failed"
+                        ? t("common.failed")
+                        : selectedEmail.status === "sent"
+                          ? t("common.sent")
+                          : selectedEmail.status}
                     </span>
                     <span className="text-xs">
                       {new Date(selectedEmail.created_at).toLocaleString()}
@@ -1007,7 +1054,7 @@ export const CommunicationsPage: React.FC = () => {
                   </button>
                   <h2 className="text-xl font-bold break-words">
                     {isSmsNotification(selectedEmail)
-                      ? "SMS Notification"
+                      ? t("communications.smsNotification", "SMS Notification")
                       : selectedEmail.subject}
                   </h2>
                 </div>
@@ -1034,7 +1081,8 @@ export const CommunicationsPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-xs text-slate-400 wrap-break-word">
-                        To {getRecipients(selectedEmail, "to")}
+                        {t("common.to", "To")}{" "}
+                        {getRecipients(selectedEmail, "to")}
                       </div>
                       {getRecipients(selectedEmail, "cc") && (
                         <div className="text-xs text-slate-400 wrap-break-word">
@@ -1055,7 +1103,7 @@ export const CommunicationsPage: React.FC = () => {
                   ) : null}
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-primary py-0.5 px-1 rounded-md bg-primary/5">
-                      ID
+                      {t("communications.idLabel", "ID")}
                     </span>
                     <span className="text-sm">{selectedEmail?.id}</span>
                   </div>
@@ -1071,10 +1119,11 @@ export const CommunicationsPage: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2 font-semibold">
                         <AlertCircle className="w-4 h-4" />
-                        Delivery error
+                        {t("communications.deliveryError", "Delivery error")}
                       </div>
                       <p className="mt-1">
-                        {getFailureMessage(selectedEmail) || "Delivery failed"}
+                        {getFailureMessage(selectedEmail) ||
+                          t("communications.deliveryFailed", "Delivery failed")}
                       </p>
                     </div>
                     {canUpdate ? (
@@ -1084,7 +1133,7 @@ export const CommunicationsPage: React.FC = () => {
                         className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        Retry
+                        {t("communications.retry", "Retry")}
                       </button>
                     ) : null}
                   </div>
@@ -1146,7 +1195,10 @@ export const CommunicationsPage: React.FC = () => {
               <Mail className="w-8 h-8" />
             </div>
             <p className="text-lg font-medium text-slate-600">
-              Select a notification to read
+              {t(
+                "email.selectANotificationToRead",
+                "Select a notification to read",
+              )}
             </p>
           </div>
         )}
@@ -1168,21 +1220,31 @@ export const CommunicationsPage: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-[15px] leading-tight">
                     {editingDraftId
-                      ? "Edit Draft"
+                      ? t("communications.editDraft", "Edit Draft")
                       : isNewEmail
                         ? composeChannel === "sms"
-                          ? "New SMS"
-                          : "New Message"
+                          ? t("communications.newSms", "New SMS")
+                          : t("communications.newMessage", "New Message")
                         : isCloningAttachments
-                          ? "Cloning attachments..."
+                          ? t(
+                              "communications.cloningAttachments",
+                              "Cloning attachments...",
+                            )
                           : composeChannel === "sms"
-                            ? "New SMS"
+                            ? t("communications.newSms", "New SMS")
                             : composeSubject}
                   </h3>
+
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {editingDraftId
-                      ? "Update and save your draft"
-                      : "Compose and send a notification"}
+                      ? t(
+                          "communications.updateAndSaveDraft",
+                          "Update and save your draft",
+                        )
+                      : t(
+                          "communications.composeAndSendNotification",
+                          "Compose and send a notification",
+                        )}
                   </p>
                 </div>
               </div>
@@ -1216,10 +1278,14 @@ export const CommunicationsPage: React.FC = () => {
                       </span>
                       <span>
                         <span className="block text-sm font-semibold">
-                          Email
+                          {t("communications.email", "Email")}
                         </span>
+
                         <span className="block text-xs text-muted-foreground">
-                          Subject, CC/BCC and attachments
+                          {t(
+                            "communications.emailDescription",
+                            "Subject, CC/BCC and attachments",
+                          )}
                         </span>
                       </span>
                     </button>
@@ -1237,9 +1303,15 @@ export const CommunicationsPage: React.FC = () => {
                         <MessageSquare className="w-5 h-5" />
                       </span>
                       <span>
-                        <span className="block text-sm font-semibold">SMS</span>
+                        <span className="block text-sm font-semibold">
+                          {t("communications.sms", "SMS")}
+                        </span>
+
                         <span className="block text-xs text-muted-foreground">
-                          Short text notification
+                          {t(
+                            "communications.smsDescription",
+                            "Short text notification",
+                          )}
                         </span>
                       </span>
                     </button>
@@ -1250,7 +1322,7 @@ export const CommunicationsPage: React.FC = () => {
                   <>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        To
+                        {t("common.to", "To")}
                       </label>
                       <EmailChipInput
                         value={composeTo}
@@ -1262,7 +1334,7 @@ export const CommunicationsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        {t("email.ccOptional")}
+                        {t("email.ccOptional", "CC (Optional)")}
                       </label>
                       <EmailChipInput
                         value={composeCc}
@@ -1272,7 +1344,7 @@ export const CommunicationsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        {t("email.bccOptional")}
+                        {t("email.bccOptional", "BCC (Optional)")}
                       </label>
                       <EmailChipInput
                         value={composeBcc}
@@ -1282,24 +1354,27 @@ export const CommunicationsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        {t("email.subject")}
+                        {t("email.subject", "Subject")}
                       </label>
                       <input
                         type="text"
                         value={composeSubject}
                         onChange={(e) => setComposeSubject(e.target.value)}
                         className="w-full px-3 py-2 border bg-background border-b border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                        placeholder={t("email.subject")}
+                        placeholder={t("email.subject", "Subject")}
                       />
                     </div>
                     <div className="flex-1 flex flex-col">
                       <label className="block text-sm font-medium mb-1">
-                        {t("email.message")}
+                        {t("email.message", "Message")}
                       </label>
                       <RichTextEditor
                         value={composeBody}
                         onChange={setComposeBody}
-                        placeholder={t("email.writeYourMessageHere")}
+                        placeholder={t(
+                          "email.writeYourMessageHere",
+                          "Write your message here...",
+                        )}
                         className="flex-1 min-h-[250px]"
                       />
                     </div>
@@ -1317,7 +1392,7 @@ export const CommunicationsPage: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
                       >
                         <Paperclip className="w-4 h-4" />
-                        {t("email.attachFiles")}
+                        {t("email.attachFiles", "Attach Files")}
                       </button>
                       {attachments.length > 0 && (
                         <div className="mt-2 space-y-2">
@@ -1338,7 +1413,7 @@ export const CommunicationsPage: React.FC = () => {
                                   type="button"
                                   onClick={() => handlePreviewAttachment(file)}
                                   className="text-slate-400 hover:text-primary p-1"
-                                  title={t("reports.preview")}
+                                  title={t("reports.preview", "Preview")}
                                 >
                                   <Download className="w-4 h-4" />
                                 </button>
@@ -1352,7 +1427,7 @@ export const CommunicationsPage: React.FC = () => {
                                       fileInputRef.current.value = "";
                                   }}
                                   className="text-slate-400 hover:text-red-500 p-1"
-                                  title={t("common.remove")}
+                                  title={t("common.remove", "Remove")}
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -1367,7 +1442,7 @@ export const CommunicationsPage: React.FC = () => {
                   <>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        To phone number
+                        {t("communications.toPhoneNumber", "To phone number")}
                       </label>
                       <div
                         className={cn(
@@ -1406,7 +1481,10 @@ export const CommunicationsPage: React.FC = () => {
                             }
                           }}
                           className="flex-1 px-3 py-2 text-sm focus:outline-none bg-background"
-                          placeholder="9876543210"
+                          placeholder={t(
+                            "communications.phoneNumberPlaceholder",
+                            "9876543210",
+                          )}
                         />
                       </div>
                       {smsErrors.to && (
@@ -1417,7 +1495,7 @@ export const CommunicationsPage: React.FC = () => {
                     </div>
                     <div className="flex-1">
                       <label className="block text-sm font-medium mb-1">
-                        Message
+                        {t("email.message", "Message")}
                       </label>
                       <textarea
                         value={composeBody}
@@ -1431,8 +1509,12 @@ export const CommunicationsPage: React.FC = () => {
                           "w-full h-40 px-3 py-2 border rounded-lg focus:ring-1 bg-background focus:ring-primary focus:border-transparent resize-none",
                           smsErrors.body ? "border-red-500" : "border-border",
                         )}
-                        placeholder="Write your message here..."
+                        placeholder={t(
+                          "communications.writeYourMessageHere",
+                          "Write your message here...",
+                        )}
                       />
+
                       {smsErrors.body && (
                         <p className="mt-1 text-xs text-red-500 font-medium">
                           {smsErrors.body}
@@ -1457,27 +1539,9 @@ export const CommunicationsPage: React.FC = () => {
                 ) : null}
               </div>
               <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-                {/* {composeChannel === "email" ? (
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    disabled={isSavingDraft}
-                    className="px-4 py-2 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isSavingDraft ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    {editingDraftId ? "Update Draft" : "Save as Draft"}
-                  </button>
-                ) : (
-                  <span />
-                )} */}
-
                 <div className="flex gap-3">
                   <Button variant={"ghost"} onClick={closeCompose}>
-                    {t("common.cancel")}
+                    {t("common.cancel", "Cancel")}
                   </Button>
                   <button
                     type="submit"
@@ -1495,8 +1559,8 @@ export const CommunicationsPage: React.FC = () => {
                       <Send className="w-4 h-4" />
                     )}
                     {composeChannel === "sms"
-                      ? "Send SMS"
-                      : t("email.sendMessage")}
+                      ? t("communications.sendSms", "Send SMS")
+                      : t("email.sendMessage", "Send Message")}
                   </button>
                 </div>
               </div>
@@ -1513,16 +1577,24 @@ export const CommunicationsPage: React.FC = () => {
         onConfirm={handleConfirmDelete}
         title={
           deleteConfirmation.isPermanent
-            ? "Permanent Deletion"
-            : "Delete Notification"
+            ? t("communications.permanentDeletion", "Permanent Deletion")
+            : t("communications.deleteNotification", "Delete Notification")
         }
         message={
           deleteConfirmation.isPermanent
-            ? "Are you sure you want to delete this notification permanently? This action cannot be undone."
-            : "Are you sure you want to delete this notification? It will be moved to the trash."
+            ? t(
+                "communications.permanentDeletionConfirmation",
+                "Are you sure you want to delete this notification permanently? This action cannot be undone.",
+              )
+            : t(
+                "communications.deleteNotificationConfirmation",
+                "Are you sure you want to delete this notification? It will be moved to the trash.",
+              )
         }
         confirmText={
-          deleteConfirmation.isPermanent ? "Delete Permanently" : "Delete"
+          deleteConfirmation.isPermanent
+            ? t("communications.deletePermanently", "Delete Permanently")
+            : t("common.delete", "Delete")
         }
         isLoading={deleteMutation.isPending || hardDeleteMutation.isPending}
       />

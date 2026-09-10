@@ -475,25 +475,25 @@ export const EmailPage: React.FC = () => {
   }[] = [
     {
       key: "inbox",
-      label: "Inbox",
+      label: t("sms.inbox"),
       icon: <Inbox className="w-4 h-4" />,
       count: emailCount?.inbox,
     },
     {
       key: "sent",
-      label: "Sent",
+      label: t("sms.sent"),
       icon: <Send className="w-4 h-4" />,
       count: emailCount?.sent,
     },
     {
       key: "drafts",
-      label: "Drafts",
+      label: t("email.drafts"),
       icon: <FileText className="w-4 h-4" />,
       count: emailCount?.drafts,
     },
     {
       key: "trash",
-      label: "Trash",
+      label: t("sms.trash"),
       icon: <Trash className="w-4 h-4" />,
       count: emailCount?.trash,
     },
