@@ -225,32 +225,32 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <Select
-              label={`Parent Objective *`}
-              value={form.operational_objective_id}
-              onChange={(v) =>
+              label={`Objective (Parent › Child) *`}
+              value={form.process_id}
+              onChange={(v) => {
+                const selectedProcess = processes.find(
+                  (p: any) => p.id === v.target.value,
+                );
                 setForm((prev) => ({
                   ...prev,
-                  operational_objective_id: v.target.value,
-                }))
-              }
-              options={objectives.map((o: any) => ({
-                value: o.id,
-                label: o.name_en,
-              }))}
-              placeholder={t("common.selectAnOption")}
-            />
-            <Select
-              label={`Operational Objective *`}
-              value={form.process_id}
-              onChange={(v) =>
-                setForm((prev) => ({ ...prev, process_id: v.target.value }))
-              }
-              options={processes.map((p: any) => ({
-                value: p.id,
-                label: p.name_en,
-              }))}
+                  process_id: v.target.value,
+                  operational_objective_id:
+                    selectedProcess?.operational_objective_id ??
+                    prev.operational_objective_id,
+                }));
+              }}
+              options={processes.map((p: any) => {
+                const parent = objectives.find(
+                  (o: any) => o.id === p.operational_objective_id,
+                );
+                return {
+                  value: p.id,
+                  label: p.name_en,
+                  group: parent?.name_en ?? "Other",
+                };
+              })}
               placeholder={t("common.selectAnOption")}
             />
           </div>

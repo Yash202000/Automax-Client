@@ -805,13 +805,16 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     });
   }
   if (type === "operational" && kpi.process) {
+    const childObjectiveId = kpi.process.id;
     infoTiles.push({
       icon: (
         <GitBranch className="w-5 h-5 text-green-600 dark:text-green-400" />
       ),
       bg: "bg-green-50 dark:bg-green-900/20",
-      label: t("kpi.masterData.processes"),
+      label: "Child Objective",
       value: kpi.process.name_en,
+      onClick: () =>
+        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
     });
   }
   if (type === "award" && kpi.award_sub_criterion) {
