@@ -178,7 +178,10 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   hint?: string;
-  options: { value: string; label: string }[];
+  // `group` renders this option under an <optgroup>, e.g. a two-level
+  // Parent/Child tree — options sharing the same group label are nested
+  // together, in first-seen order; ungrouped options render at the top level.
+  options: { value: string; label: string; group?: string }[];
   placeholder?: string;
 }
 
@@ -186,6 +189,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, options, placeholder, className, ...props }, ref) => {
     const generatedId = useId();
     const selectId = props.id || props.name || generatedId;
+
+    const ungrouped = options.filter((o) => !o.group);
+    const groups: { name: string; options: typeof options }[] = [];
+    for (const option of options) {
+      if (!option.group) continue;
+      let group = groups.find((g) => g.name === option.group);
+      if (!group) {
+        group = { name: option.group, options: [] };
+        groups.push(group);
+      }
+      group.options.push(option);
+    }
 
     return (
       <div className="w-full">
@@ -219,7 +234,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               {placeholder}
             </option>
           )}
-          {options.map((option) => (
+          {ungrouped.map((option) => (
             <option
               className="bg-background text-foreground"
               key={option.value}
@@ -227,6 +242,23 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             >
               {option.label}
             </option>
+          ))}
+          {groups.map((group) => (
+            <optgroup
+              key={group.name}
+              label={group.name}
+              className="bg-background text-foreground"
+            >
+              {group.options.map((option) => (
+                <option
+                  className="bg-background text-foreground"
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         {(error || hint) && (
