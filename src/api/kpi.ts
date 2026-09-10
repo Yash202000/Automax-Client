@@ -1057,7 +1057,10 @@ export const kpiEngagementApi = {
     const res = await apiClient.get(`/kpi/evidence/${evidenceId}/download`, {
       responseType: "blob",
     });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const contentType = res.headers["content-type"] || res.data.type;
+    const url = window.URL.createObjectURL(
+      new Blob([res.data], { type: contentType }),
+    );
     window.open(url, "_blank", "noopener,noreferrer");
   },
 
