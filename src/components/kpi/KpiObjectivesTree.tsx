@@ -178,9 +178,12 @@ export const KpiObjectivesTree: React.FC<KpiObjectivesTreeProps> = ({
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <GitBranch className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                          <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                          <Link
+                            to={`/goals/kpi/master-data/processes/${c.id}`}
+                            className="text-sm text-slate-700 dark:text-slate-300 truncate hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+                          >
                             {c.name_en}
-                          </span>
+                          </Link>
                           {c.unit && (
                             <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
                               · {c.unit}

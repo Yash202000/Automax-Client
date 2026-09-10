@@ -326,6 +326,11 @@ const OperationalObjectiveDetailPage = lazy(() =>
     default: m.OperationalObjectiveDetailPage,
   })),
 );
+const ProcessDetailPage = lazy(() =>
+  import("./pages/admin/kpi/ProcessDetailPage").then((m) => ({
+    default: m.ProcessDetailPage,
+  })),
+);
 const KpiDictionaryPage = lazy(() =>
   import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
     default: m.KpiDictionaryPage,
@@ -1195,6 +1200,10 @@ function App() {
                         <Route
                           path="/goals/kpi/master-data/operational-objectives/:id"
                           element={<OperationalObjectiveDetailPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/master-data/processes/:id"
+                          element={<ProcessDetailPage />}
                         />
                       </Route>
 

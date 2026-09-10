@@ -237,6 +237,24 @@ export const kpiMasterDataApi = {
     const res = await apiClient.delete(`/kpi/processes/${id}`);
     return res.data;
   },
+  listKpisForProcess: async (
+    id: string,
+  ): Promise<ApiResponse<OperationalKPI[]>> => {
+    const res = await apiClient.get(`/kpi/processes/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForProcess: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(`/kpi/processes/${id}/collaborators`);
+    return res.data;
+  },
+  listEvidenceForProcess: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/processes/${id}/evidence`);
+    return res.data;
+  },
 
   listInitiatives: async (): Promise<ApiResponse<Initiative[]>> => {
     const res = await apiClient.get("/kpi/initiatives");

@@ -591,6 +591,42 @@ export const useOperationalObjectiveEvidence = (objectiveId?: string) =>
     enabled: !!objectiveId,
   });
 
+export const useProcessKpis = (processId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "processes", processId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForProcess(
+        processId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!processId,
+  });
+
+export const useProcessCollaborators = (processId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "processes", processId, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listCollaboratorsForProcess(
+        processId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!processId,
+  });
+
+export const useProcessEvidence = (processId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "processes", processId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForProcess(
+        processId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!processId,
+  });
+
 // ─── Award Sub Criteria ───────────────────────────────────────────────────────
 
 export const useAwardSubCriteria = (criterionId?: string) =>
