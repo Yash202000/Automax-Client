@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Upload, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import type { KpiEvidenceType, KpiMetric } from "../../types/kpi";
@@ -139,7 +140,13 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
     handleClose();
   };
 
-  return (
+  // Portaled to document.body: this modal is sometimes opened from inside
+  // another full-screen modal (e.g. Add KPI Entry). That parent's
+  // backdrop-blur establishes a CSS containing block for fixed-position
+  // descendants, which broke this modal's own stacking (including the
+  // click-to-preview overlay) when rendered in place. Rendering at the
+  // document root sidesteps that regardless of where it's opened from.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg mx-4">
         {/* Header */}
@@ -361,7 +368,8 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
           onClose={() => setShowPreview(false)}
         />
       )}
-    </div>
+    </div>,
+    document.body,
   );
 };
 
