@@ -39,7 +39,7 @@ import type {
   Incident,
   CreateQueryRequest,
 } from "../../types";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
 
 interface CreateQueryModalProps {
@@ -1223,7 +1223,9 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="truncate block">{workflow.name}</span>
+                        <span className="truncate block">
+                          {getLocalizedName(workflow)}
+                        </span>
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
                           {workflow.code}
                         </span>

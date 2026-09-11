@@ -39,7 +39,7 @@ import type {
   Incident,
   CreateComplaintRequest,
 } from "../../types";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -1267,7 +1267,9 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="truncate block">{workflow.name}</span>
+                        <span className="truncate block">
+                          {getLocalizedName(workflow)}
+                        </span>
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
                           {workflow.code}
                         </span>
