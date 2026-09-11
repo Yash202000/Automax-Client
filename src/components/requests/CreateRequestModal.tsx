@@ -1259,7 +1259,9 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="truncate block">{workflow.name}</span>
+                        <span className="truncate block">
+                          {getLocalizedName(workflow)}
+                        </span>
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
                           {workflow.code}
                         </span>

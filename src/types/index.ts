@@ -1693,7 +1693,19 @@ export interface ReportFieldDefinition {
     | "boolean"
     | "enum"
     | "relation";
-  category: string;
+  category:
+    | "Core"
+    | "Status"
+    | "Identity"
+    | "Relations"
+    | "Timestamps"
+    | "Hierarchy"
+    | "Counts"
+    | "Matching"
+    | "Creator"
+    | "User"
+    | "Basic Info"
+    | "Other";
   sortable: boolean;
   filterable: boolean;
   defaultSelected?: boolean;
