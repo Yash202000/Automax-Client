@@ -73,6 +73,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   const [editingContact, setEditingContact] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({
     first_name: "",
+    middle_name: "",
     last_name: "",
     phone: "",
   });
@@ -180,6 +181,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     setEditingContact(user);
     setEditForm({
       first_name: user.first_name || "",
+      middle_name: user.middle_name || "",
       last_name: user.last_name || "",
       phone: user.phone || "",
     });
@@ -191,6 +193,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     setEditError(null);
     updateContactMutation.mutate({
       first_name: editForm.first_name,
+      middle_name: editForm.middle_name,
       last_name: editForm.last_name,
       phone: editForm.phone,
     });
@@ -728,6 +731,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           </>
         )}
       </div>
+      {/* contact details */}
       <Modal
         size="4xl"
         isOpen={openContactDetails}
@@ -736,7 +740,11 @@ export const ContactsList: React.FC<ContactsListProps> = ({
       >
         <ModalHeader>
           <ModalTitle>
-            {[selectedUser?.first_name, selectedUser?.last_name]
+            {[
+              selectedUser?.first_name,
+              selectedUser?.middle_name,
+              selectedUser?.last_name,
+            ]
               .filter(Boolean)
               .join(" ") || selectedUser?.username}
           </ModalTitle>
@@ -752,6 +760,16 @@ export const ContactsList: React.FC<ContactsListProps> = ({
               </span>
               <p className="font-medium">{selectedUser?.first_name || "-"}</p>
             </div>
+            {selectedUser?.middle_name && (
+              <div>
+                <span className="text-xs text-muted-foreground">
+                  {t("users.middleName", "Middle Name")}
+                </span>
+                <p className="font-medium">
+                  {selectedUser?.middle_name || "-"}
+                </p>
+              </div>
+            )}
             <div>
               <span className="text-xs text-muted-foreground">
                 {t("users.lastName")}
@@ -877,8 +895,9 @@ export const ContactsList: React.FC<ContactsListProps> = ({
         </ModalBody>
       </Modal>
 
+      {/* Edit users */}
       <Modal
-        size="md"
+        size="lg"
         isOpen={Boolean(editingContact)}
         onOpenChange={(open) => {
           if (!open) {
@@ -902,7 +921,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                 <span>{editError}</span>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                   {t("users.firstName")}
@@ -912,6 +931,19 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                   value={editForm.first_name}
                   onChange={(e) =>
                     setEditForm({ ...editForm, first_name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("users.middleName", "Middle Name")}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.middle_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, middle_name: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
                 />
