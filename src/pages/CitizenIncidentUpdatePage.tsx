@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { incidentApi, lookupApi } from "@/api/admin";
 import IncidentDetailsCard from "@/components/incidents/IncidentDetailsCard";
+import { capAttachmentSelection } from "@/utils/attachmentLimits";
 
 export function CitizenIncidentUpdatePage() {
   const { t } = useTranslation();
@@ -49,17 +50,23 @@ export function CitizenIncidentUpdatePage() {
     );
   };
 
-  const MAX_MB = 20;
-
   const { data: env_config } = useQuery({
     queryKey: ["lookups", "categories", "env_config"],
     queryFn: async () => {
       const categories = await lookupApi.listCategories();
       return (
-        (categories.data || []).find((cat) => cat.code === "CONFG") || null
+        (categories.data || []).find(
+          (cat) => cat.code === "ENV_CONFIGURATION",
+        ) || null
       );
     },
   });
+
+  const MAX_MB = Number(
+    (env_config?.values || []).find(
+      (v) => v.code === "CITIZEN_ATTACHMENT_SIZE_LIMIT",
+    )?.name || "20",
+  );
   // ── Submit mutation ──
   const submitMutation = useMutation({
     mutationFn: async ({
@@ -114,56 +121,37 @@ export function CitizenIncidentUpdatePage() {
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
 
-    const invalid: string[] = [];
-    const valid: File[] = [];
-
-    Array.from(files).forEach((f) => {
-      if (!isAllowedType(f)) {
-        invalid.push(`${f.name} — ${t("citizen.unsupportedType")}`);
-      } else if (f.size > MAX_MB * 1024 * 1024) {
-        invalid.push(
-          `${f.name} — ${t("citizen.tooLarge", `exceeds ${MAX_MB}MB`)}`,
-        );
-      } else {
-        valid.push(f);
-      }
-    });
-
-    const totalAttachments = attachments.length + valid.length;
-
-    if (totalAttachments > Number(MAX_ATTACHMENTS)) {
-      setAttachmentLimitError(
-        t(
-          "citizen.attachmentLimit",
-          `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
-        ),
+    const { accepted, oversized, unsupported, skippedForLimit } =
+      capAttachmentSelection(
+        Array.from(files),
+        attachments.length,
+        Number(MAX_ATTACHMENTS),
+        MAX_MB,
+        isAllowedType,
       );
-    } else {
-      setAttachmentLimitError("");
-    }
 
-    if (invalid.length) {
-      setErrors((p) => ({
-        ...p,
-        attachments: invalid.join(", "),
-      }));
-    } else {
-      setErrors((p) => ({
-        ...p,
-        attachments: "",
-      }));
-    }
-    setAttachments((p) => [...p, ...valid]);
+    const invalid = [
+      ...unsupported.map((f) => `${f.name} — ${t("citizen.unsupportedType")}`),
+      ...oversized.map(
+        (f) => `${f.name} — ${t("citizen.tooLarge", `exceeds ${MAX_MB}MB`)}`,
+      ),
+    ];
+
+    setAttachmentLimitError(
+      skippedForLimit > 0
+        ? t(
+            "citizen.attachmentLimit",
+            `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
+          )
+        : "",
+    );
+    setErrors((p) => ({ ...p, attachments: invalid.join(", ") }));
+    setAttachments((p) => [...p, ...accepted]);
   };
 
   const removeFile = (index: number) => {
-    setAttachments((p) => {
-      const next = p.filter((_, i) => i !== index);
-      if (next.length <= Number(MAX_ATTACHMENTS)) {
-        setAttachmentLimitError("");
-      }
-      return next;
-    });
+    setAttachments((p) => p.filter((_, i) => i !== index));
+    setAttachmentLimitError("");
   };
 
   const validate = () => {

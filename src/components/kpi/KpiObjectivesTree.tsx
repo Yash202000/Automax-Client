@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ChevronRight,
   ChevronDown,
@@ -105,32 +106,40 @@ export const KpiObjectivesTree: React.FC<KpiObjectivesTreeProps> = ({
             return (
               <div key={po.id}>
                 <div className="flex items-center justify-between gap-3 px-6 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <button
-                    onClick={() => toggle(po.id)}
-                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
-                  >
-                    {children.length > 0 ? (
-                      isOpen ? (
-                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <button
+                      onClick={() => toggle(po.id)}
+                      className="flex items-center gap-2 min-w-0 text-left"
+                    >
+                      {children.length > 0 ? (
+                        isOpen ? (
+                          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                        )
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                      )
-                    ) : (
-                      <span className="w-4 h-4 shrink-0" />
-                    )}
-                    <Layers className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                        <span className="w-4 h-4 shrink-0" />
+                      )}
+                      <Layers className="w-4 h-4 text-blue-500 shrink-0" />
+                    </button>
+                    <Link
+                      to={`/goals/kpi/master-data/operational-objectives/${po.id}`}
+                      className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate"
+                    >
                       {po.name_en}
-                    </span>
+                    </Link>
                     {po.goal && (
                       <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
                         — {po.goal.title}
                       </span>
                     )}
-                    <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums shrink-0">
+                    <button
+                      onClick={() => toggle(po.id)}
+                      className="text-xs text-slate-400 dark:text-slate-500 tabular-nums shrink-0"
+                    >
                       ({children.length})
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {po.pillar && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
@@ -169,9 +178,12 @@ export const KpiObjectivesTree: React.FC<KpiObjectivesTreeProps> = ({
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <GitBranch className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                          <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                          <Link
+                            to={`/goals/kpi/master-data/processes/${c.id}`}
+                            className="text-sm text-slate-700 dark:text-slate-300 truncate hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+                          >
                             {c.name_en}
-                          </span>
+                          </Link>
                           {c.unit && (
                             <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
                               · {c.unit}

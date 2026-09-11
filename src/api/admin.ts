@@ -133,6 +133,7 @@ export const userApi = {
     classificationIds: string[] = [],
     call_status?: string,
     with_incident?: boolean,
+    with_ivr?: boolean,
   ): Promise<PaginatedResponse<User>> => {
     const params = new URLSearchParams({
       page: String(page),
@@ -148,6 +149,7 @@ export const userApi = {
       params.append("classification_ids", classificationIds.join(","));
     if (call_status) params.append("call_status", call_status);
     if (with_incident) params.append("with_incident", "true");
+    if (with_ivr) params.append("with_ivr", "true");
     const response = await apiClient.get<PaginatedResponse<User>>(
       `/admin/users?${params.toString()}`,
     );

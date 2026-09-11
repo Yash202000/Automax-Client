@@ -48,6 +48,7 @@ export interface OperationalObjective {
   enabler?: Enabler;
   is_active: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 // "Child Objective" / "Operational Objective" in product terminology —
@@ -103,6 +104,8 @@ export interface AwardCriterion {
   name_en: string;
   name_ar: string;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AwardSubCriterion {
@@ -113,6 +116,8 @@ export interface AwardSubCriterion {
   name_en: string;
   name_ar: string;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface KpiDataSource {
@@ -330,6 +335,13 @@ export interface OperationalKPI {
   data_source: string;
   notes: string;
   documenta_folder_id?: string;
+  created_by?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -362,6 +374,13 @@ export interface AwardKPI {
   data_source: string;
   notes: string;
   documenta_folder_id?: string;
+  created_by?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -1442,6 +1461,7 @@ export interface KpiCollaboratorAssignment {
     last_name: string;
     email: string;
     is_active: boolean;
+    department?: { id: string; name: string; code: string };
   };
   user_category: string;
   collaborator_type: string;

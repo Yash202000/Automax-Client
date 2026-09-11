@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
 import { withCallStatusDot } from "../../utils/callStatus";
+import { capFilesByCount } from "../../utils/attachmentLimits";
 import {
   useParams,
   useNavigate,
@@ -159,6 +160,7 @@ export const IncidentDetailPage: React.FC = () => {
     setIncomingCallNumber,
     setIncomingCallName,
     setIsCallerIncidentsMinimized,
+    setRedirectToContactDetails,
   } = useSoftphoneStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -375,6 +377,70 @@ export const IncidentDetailPage: React.FC = () => {
     queryKey: ["admin", "lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
   });
+
+  const envConfigCategory = useMemo(
+    () =>
+      (lookupCategoriesData?.data || []).find(
+        (cat) => cat.code === "ENV_CONFIGURATION",
+      ),
+    [lookupCategoriesData],
+  );
+
+  const MAX_TRANSITION_ATTACHMENTS = Number(
+    envConfigCategory?.values?.find(
+      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
+    )?.name ?? "5",
+  );
+
+  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = Number(
+    envConfigCategory?.values?.find(
+      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
+    )?.name ?? "5",
+  );
+
+  const isTransitionAttachmentOversized = (file: File) =>
+    file.size > MAX_TRANSITION_ATTACHMENT_SIZE_MB * 1024 * 1024;
+
+  const transitionAttachmentLimitReached =
+    transitionAttachment.length >= MAX_TRANSITION_ATTACHMENTS;
+
+  const validateTransitionAttachments = (files: File[]): string => {
+    if (files.length > MAX_TRANSITION_ATTACHMENTS) {
+      return t("incidents.attachmentLimitExceeded", {
+        max: MAX_TRANSITION_ATTACHMENTS,
+        defaultValue: `Maximum ${MAX_TRANSITION_ATTACHMENTS} attachments allowed`,
+      });
+    }
+    const oversized = files.find(isTransitionAttachmentOversized);
+    if (oversized) {
+      return t("incidents.attachmentTooLarge", {
+        name: oversized.name,
+        max: MAX_TRANSITION_ATTACHMENT_SIZE_MB,
+        defaultValue: `${oversized.name} exceeds the maximum size of ${MAX_TRANSITION_ATTACHMENT_SIZE_MB}MB`,
+      });
+    }
+    return "";
+  };
+
+  const addTransitionAttachmentFiles = (newFiles: File[]) => {
+    const { accepted, skippedForLimit } = capFilesByCount(
+      newFiles,
+      transitionAttachment.length,
+      MAX_TRANSITION_ATTACHMENTS,
+    );
+    const next = [...transitionAttachment, ...accepted];
+    setTransitionAttachment(next);
+    setTransitionErrors((prev) => ({
+      ...prev,
+      attachment:
+        skippedForLimit > 0
+          ? t("incidents.attachmentLimitExceeded", {
+              max: MAX_TRANSITION_ATTACHMENTS,
+              defaultValue: `Maximum ${MAX_TRANSITION_ATTACHMENTS} attachments allowed`,
+            })
+          : validateTransitionAttachments(next),
+    }));
+  };
 
   // Fetch duration options for partial-close transitions only
   //const isReadyToCloseTransition =
@@ -1205,11 +1271,16 @@ export const IncidentDetailPage: React.FC = () => {
           (r) => r.requirement_type === "attachment" && r.is_mandatory,
         ) &&
         transitionAttachment.length === 0
-      )
+      ) {
         newErrors.attachment = t(
           "incidents.attachmentRequired",
           "Attachment is required",
         );
+      } else if (transitionAttachment.length > 0) {
+        const attachmentError =
+          validateTransitionAttachments(transitionAttachment);
+        if (attachmentError) newErrors.attachment = attachmentError;
+      }
     } else if (stepKey === "feedback") {
       if (
         selectedTransition.requirements?.some(
@@ -1239,7 +1310,15 @@ export const IncidentDetailPage: React.FC = () => {
   };
 
   const handleStepNext = () => {
-    if (!validateCurrentStep()) return;
+    if (!validateCurrentStep()) {
+      toast.error(
+        t(
+          "incidents.fixErrorsBeforeSubmit",
+          "Please fix the errors before continuing",
+        ),
+      );
+      return;
+    }
     setTransitionErrors({});
     if (transitionStep < transitionSteps.length - 1) {
       setTransitionStep((prev) => prev + 1);
@@ -3875,6 +3954,7 @@ export const IncidentDetailPage: React.FC = () => {
                             setIncomingCallName(incident.reporter_name);
                             setOpenCallerIncidents(true);
                             setIsCallerIncidentsMinimized(false);
+                            setRedirectToContactDetails(false);
                           }
                         }}
                         className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
@@ -3947,6 +4027,7 @@ export const IncidentDetailPage: React.FC = () => {
                           setIncomingCallName(reporterName);
                           setOpenCallerIncidents(true);
                           setIsCallerIncidentsMinimized(false);
+                          setRedirectToContactDetails(true);
                         }
                       }}
                       className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
@@ -4908,59 +4989,104 @@ export const IncidentDetailPage: React.FC = () => {
                     <div>
                       {transitionAttachment.length > 0 ? (
                         <div className="space-y-3">
-                          {transitionAttachment.map((file, index) => (
-                            <div
-                              key={`${file.name}-${file.size}-${index}`}
-                              className="flex items-center justify-between p-3 bg-primary/10 border border-primary rounded-lg"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Paperclip className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                                <span className="text-sm text-[hsl(var(--foreground))] truncate max-w-[200px]">
-                                  {file.name}
-                                </span>
-                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                  ({(file.size / 1024).toFixed(1)}{" "}
-                                  {t("common.kb")})
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setTransitionAttachment((prev) =>
-                                    prev.filter((_, i) => i !== index),
-                                  )
-                                }
-                                className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                          {transitionAttachment.map((file, index) => {
+                            const invalid =
+                              isTransitionAttachmentOversized(file);
+                            return (
+                              <div
+                                key={`${file.name}-${file.size}-${index}`}
+                                className={cn(
+                                  "flex items-center justify-between p-3 border rounded-lg",
+                                  invalid
+                                    ? "bg-red-50 border-red-400"
+                                    : "bg-primary/10 border-primary",
+                                )}
                               >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Paperclip
+                                    className={cn(
+                                      "w-4 h-4",
+                                      invalid
+                                        ? "text-red-500"
+                                        : "text-[hsl(var(--muted-foreground))]",
+                                    )}
+                                  />
+                                  <span
+                                    className={cn(
+                                      "text-sm truncate max-w-[200px]",
+                                      invalid
+                                        ? "text-red-600"
+                                        : "text-[hsl(var(--foreground))]",
+                                    )}
+                                  >
+                                    {file.name}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "text-xs",
+                                      invalid
+                                        ? "text-red-500"
+                                        : "text-[hsl(var(--muted-foreground))]",
+                                    )}
+                                  >
+                                    ({(file.size / 1024).toFixed(1)}{" "}
+                                    {t("common.kb")})
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTransitionAttachment((prev) => {
+                                      const next = prev.filter(
+                                        (_, i) => i !== index,
+                                      );
+                                      setTransitionErrors((errPrev) => ({
+                                        ...errPrev,
+                                        attachment:
+                                          validateTransitionAttachments(next),
+                                      }));
+                                      return next;
+                                    });
+                                  }}
+                                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
 
                           <div className="flex flex-wrap items-center gap-3">
                             {transitionAttachmentAllowsMultiple ? (
-                              <label className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">
-                                <Upload className="w-4 h-4" />
-                                {t(
-                                  "incidents.addMoreAttachments",
-                                  "Add more attachments",
+                              <label
+                                className={cn(
+                                  "inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg transition-opacity",
+                                  transitionAttachmentLimitReached
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "cursor-pointer hover:opacity-90",
                                 )}
+                              >
+                                <Upload className="w-4 h-4" />
+                                {transitionAttachmentLimitReached
+                                  ? t("incidents.attachmentLimit", {
+                                      max: MAX_TRANSITION_ATTACHMENTS,
+                                      defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
+                                    })
+                                  : t(
+                                      "incidents.addMoreAttachments",
+                                      "Add more attachments",
+                                    )}
                                 <input
                                   type="file"
                                   className="hidden"
                                   multiple
+                                  disabled={transitionAttachmentLimitReached}
                                   onChange={(e) => {
                                     const files = e.target.files;
                                     if (!files) return;
-                                    setTransitionAttachment((prev) => [
-                                      ...prev,
-                                      ...Array.from(files),
-                                    ]);
-                                    if (transitionErrors.attachment)
-                                      setTransitionErrors((prev) => ({
-                                        ...prev,
-                                        attachment: "",
-                                      }));
+                                    addTransitionAttachmentFiles(
+                                      Array.from(files),
+                                    );
                                   }}
                                 />
                               </label>
@@ -4968,7 +5094,13 @@ export const IncidentDetailPage: React.FC = () => {
 
                             <button
                               type="button"
-                              onClick={() => setTransitionAttachment([])}
+                              onClick={() => {
+                                setTransitionAttachment([]);
+                                setTransitionErrors((prev) => ({
+                                  ...prev,
+                                  attachment: "",
+                                }));
+                              }}
                               className="text-sm text-[hsl(var(--foreground))] underline"
                             >
                               {t(
@@ -4995,22 +5127,28 @@ export const IncidentDetailPage: React.FC = () => {
                               if (!files) return;
                               const selectedFiles = Array.from(files);
                               if (transitionAttachmentAllowsMultiple) {
-                                setTransitionAttachment((prev) => [
-                                  ...prev,
-                                  ...selectedFiles,
-                                ]);
+                                addTransitionAttachmentFiles(selectedFiles);
                               } else if (selectedFiles.length > 0) {
                                 setTransitionAttachment([selectedFiles[0]]);
-                              }
-                              if (transitionErrors.attachment)
                                 setTransitionErrors((prev) => ({
                                   ...prev,
-                                  attachment: "",
+                                  attachment: validateTransitionAttachments([
+                                    selectedFiles[0],
+                                  ]),
                                 }));
+                              }
                             }}
                           />
                         </label>
                       )}
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                        {t("citizen.maxSize", "Max")}{" "}
+                        {MAX_TRANSITION_ATTACHMENT_SIZE_MB} MB ·{" "}
+                        {t("incidents.attachmentLimit", {
+                          max: MAX_TRANSITION_ATTACHMENTS,
+                          defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
+                        })}
+                      </p>
                       {transitionErrors.attachment && (
                         <p className="text-xs text-red-500 mt-1">
                           {transitionErrors.attachment}
@@ -5575,6 +5713,12 @@ export const IncidentDetailPage: React.FC = () => {
                     )}
                     <Button
                       onClick={handleStepNext}
+                      disabled={
+                        currentStepKey === "attachment" &&
+                        transitionAttachment.some(
+                          isTransitionAttachmentOversized,
+                        )
+                      }
                       isLoading={
                         isLastStep &&
                         (transitionMutation.isPending || transitionUploading)

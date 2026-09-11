@@ -8,6 +8,7 @@ import {
   useCreateAwardKPI,
   useUpdateAwardKPI,
   useAwardKPIDetail,
+  useAwardCriteria,
   useAwardSubCriteria,
   useDataSources,
   useDomains,
@@ -29,6 +30,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
   const updateKpi = useUpdateAwardKPI();
   const { data: existingData } = useAwardKPIDetail(id ?? "");
 
+  const { data: criteriaData } = useAwardCriteria();
   const { data: subCriteriaData } = useAwardSubCriteria();
   const { data: dataSourcesData } = useDataSources();
   const { data: domainsData } = useDomains();
@@ -38,11 +40,18 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     queryFn: () => departmentApi.list(),
   });
 
+  const criteria = criteriaData ?? [];
   const subCriteria = subCriteriaData ?? [];
   const dataSources = dataSourcesData ?? [];
   const domains = domainsData ?? [];
   const organizations = organizationsData ?? [];
   const departments = departmentsData?.data ?? [];
+
+  const [selectedCriterionId, setSelectedCriterionId] = useState("");
+  const visibleSubCriteria = subCriteria.filter(
+    (s: any) =>
+      !selectedCriterionId || s.award_criterion_id === selectedCriterionId,
+  );
 
   const [form, setForm] = useState({
     code: "",
@@ -83,6 +92,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
   useEffect(() => {
     const kpi = existingData?.data;
     if (!kpi) return;
+    setSelectedCriterionId(kpi.award_sub_criterion?.award_criterion_id ?? "");
     setForm({
       code: kpi.code,
       name_en: kpi.name_en,
@@ -182,6 +192,19 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               required
             />
             <Select
+              label={`Award Criteria *`}
+              value={selectedCriterionId}
+              onChange={(v) => {
+                setSelectedCriterionId(v.target.value);
+                setForm((prev) => ({ ...prev, award_sub_criterion_id: "" }));
+              }}
+              options={criteria.map((c: any) => ({
+                value: c.id,
+                label: `${c.criterion_no} - ${c.name_en}`,
+              }))}
+              placeholder={t("common.selectAnOption")}
+            />
+            <Select
               label={`Award Sub Criterion *`}
               value={form.award_sub_criterion_id}
               onChange={(v) =>
@@ -190,9 +213,9 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
                   award_sub_criterion_id: v.target.value,
                 }))
               }
-              options={subCriteria.map((s: any) => ({
+              options={visibleSubCriteria.map((s: any) => ({
                 value: s.id,
-                label: `${s.criterion_no}-${s.sub_no} ${s.name_en}`,
+                label: `${s.award_criterion?.criterion_no ?? ""}-${s.sub_no} ${s.name_en}`,
               }))}
               placeholder={t("common.selectAnOption")}
             />

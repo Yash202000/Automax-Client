@@ -482,6 +482,151 @@ export const useDeleteAwardCriterion = () => {
   });
 };
 
+export const useAwardCriterionKpis = (criterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-criteria", criterionId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForAwardCriterion(
+        criterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!criterionId,
+  });
+
+export const useAwardCriterionCollaborators = (criterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-criteria", criterionId, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listCollaboratorsForAwardCriterion(
+        criterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!criterionId,
+  });
+
+export const useAwardCriterionEvidence = (criterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-criteria", criterionId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForAwardCriterion(
+        criterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!criterionId,
+  });
+
+export const useAwardSubCriterionKpis = (subCriterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-sub-criteria", subCriterionId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForAwardSubCriterion(
+        subCriterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!subCriterionId,
+  });
+
+export const useAwardSubCriterionCollaborators = (subCriterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-sub-criteria", subCriterionId, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listCollaboratorsForAwardSubCriterion(
+        subCriterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!subCriterionId,
+  });
+
+export const useAwardSubCriterionEvidence = (subCriterionId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "award-sub-criteria", subCriterionId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForAwardSubCriterion(
+        subCriterionId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!subCriterionId,
+  });
+
+export const useOperationalObjectiveKpis = (objectiveId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "operational-objectives", objectiveId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForOperationalObjective(
+        objectiveId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!objectiveId,
+  });
+
+export const useOperationalObjectiveCollaborators = (objectiveId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "operational-objectives", objectiveId, "collaborators"],
+    queryFn: async () => {
+      const res =
+        await kpiMasterDataApi.listCollaboratorsForOperationalObjective(
+          objectiveId as string,
+        );
+      return res.data ?? [];
+    },
+    enabled: !!objectiveId,
+  });
+
+export const useOperationalObjectiveEvidence = (objectiveId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "operational-objectives", objectiveId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForOperationalObjective(
+        objectiveId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!objectiveId,
+  });
+
+export const useProcessKpis = (processId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "processes", processId, "kpis"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listKpisForProcess(
+        processId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!processId,
+  });
+
+export const useProcessCollaborators = (processId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "processes", processId, "collaborators"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listCollaboratorsForProcess(
+        processId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!processId,
+  });
+
+export const useProcessEvidence = (processId?: string) =>
+  useQuery({
+    queryKey: ["kpi", "processes", processId, "evidence"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listEvidenceForProcess(
+        processId as string,
+      );
+      return res.data ?? [];
+    },
+    enabled: !!processId,
+  });
+
 // ─── Award Sub Criteria ───────────────────────────────────────────────────────
 
 export const useAwardSubCriteria = (criterionId?: string) =>
@@ -890,7 +1035,7 @@ export const useSetKpiTarget = () => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
       toast.success(t("kpi.targetSet"));
     },
-    onError: () => toast.error(t("kpi.targetSetFailed")),
+    onError: (err) => toast.error(getApiError(err)),
   });
 };
 
@@ -907,7 +1052,7 @@ export const useUpdateKpiTarget = () => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
       toast.success(t("kpi.targetSet"));
     },
-    onError: () => toast.error(t("kpi.targetSetFailed")),
+    onError: (err) => toast.error(getApiError(err)),
   });
 };
 
@@ -1648,6 +1793,14 @@ export const useDownloadKpiEvidence = () => {
       evidenceId: string;
       fileName: string;
     }) => kpiEngagementApi.downloadEvidence(evidenceId, fileName),
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useViewKpiEvidence = () => {
+  return useMutation({
+    mutationFn: (evidenceId: string) =>
+      kpiEngagementApi.viewEvidence(evidenceId),
     onError: (err) => toast.error(getApiError(err)),
   });
 };
