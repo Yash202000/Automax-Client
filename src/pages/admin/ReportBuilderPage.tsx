@@ -48,9 +48,9 @@ import type {
   Department,
   Location,
   Classification,
+  WorkflowState,
 } from "../../types";
 import { saveAs } from "file-saver";
-import i18n from "@/i18n";
 import { useAuthStore } from "@/stores/authStore";
 
 interface DynamicReportOption {
@@ -136,7 +136,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 };
 
 export const ReportBuilderPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -390,12 +390,13 @@ export const ReportBuilderPage: React.FC = () => {
   React.useEffect(() => {
     const fetchStates = async () => {
       try {
-        const workflows: any = await workflowApi.list(true, "incident");
+        const workflows = await workflowApi.list(true, "incident");
         if (workflows.success && workflows.data?.[0]?.states) {
           const states = workflows.data[0].states;
-          const newFields = states.map((x: any) => ({
+          const newFields = states.map((x: WorkflowState) => ({
             field: x.code,
             label: x.name,
+            label_ar: x.name_ar || x.name,
             type: "string",
             category: "States",
             sortable: false,
@@ -410,7 +411,11 @@ export const ReportBuilderPage: React.FC = () => {
           if (!loadedTemplate) {
             const defaultDynamicCols = newFields
               .filter((f: any) => f.defaultSelected)
-              .map((f: any) => ({ field: f.field, label: f.label }));
+              .map((f: any) => ({
+                field: f.field,
+                label: f.label,
+                label_ar: f.label_ar,
+              }));
 
             setSelectedColumns((prev) => {
               const existingFields = new Set(prev.map((c) => c.field));

@@ -1874,7 +1874,22 @@
     "statusOptional": "Status (optional)",
     "20060102OrDdMmYyyy": "2006-01-02 or DD/MM/YYYY",
     "httpsExampleComImagePng": "https://example.com/image.png",
-    "templates_count": "{{count}} templates"
+    "templates_count": "{{count}} templates",
+    "fieldCategories": {
+      "Core": "Core",
+      "Status": "Status",
+      "Identity": "Identity",
+      "Relations": "Relations",
+      "Timestamps": "Timestamps",
+      "Hierarchy": "Hierarchy",
+      "Counts": "Counts",
+      "Matching": "Matching",
+      "Creator": "Creator",
+      "User": "User",
+      "Basic Info": "Basic Info",
+      "Other": "Other",
+      "States": "States"
+    }
   },
   "permissions": {
     "title": "Permissions",
