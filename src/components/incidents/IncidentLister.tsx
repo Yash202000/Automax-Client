@@ -43,8 +43,6 @@ export default function IncidentLister() {
     incomingCallName,
     isCallerIncidentsMinimized,
     setIsCallerIncidentsMinimized,
-    redirectToContactDetails,
-    setRedirectToContactDetails,
   } = useSoftphoneStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -53,7 +51,6 @@ export default function IncidentLister() {
     setOpenCallerIncidents(false);
     setSearchTerm("");
     setIncomingCallNumber("");
-    setRedirectToContactDetails(false);
   };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -232,21 +229,19 @@ export default function IncidentLister() {
                   <Phone className="w-3 h-3" />
                   {incomingCallNumber}
                   {incomingCallName && ` (${incomingCallName})`}
-                  {redirectToContactDetails ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigate("/call-centre/contacts", {
-                          state: { openContactSearch: incomingCallNumber },
-                        });
-                        setOpenCallerIncidents(false);
-                      }}
-                      className="p-1 rounded-full text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] transition-colors"
-                      title={t("softphone.viewContact", "View Contact")}
-                    >
-                      <SquareArrowOutUpRight className="w-3.5 h-3.5 text-primary" />
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/call-centre/contacts", {
+                        state: { openContactSearch: incomingCallNumber },
+                      });
+                      setOpenCallerIncidents(false);
+                    }}
+                    className="p-1 rounded-full text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.1)] transition-colors"
+                    title={t("softphone.viewContact", "View Contact")}
+                  >
+                    <SquareArrowOutUpRight className="w-3.5 h-3.5 text-primary" />
+                  </button>
                 </p>
               )}
             </div>
