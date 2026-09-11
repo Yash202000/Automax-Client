@@ -518,12 +518,14 @@ export const UsersPage: React.FC = () => {
       const node = item as {
         id: string;
         name: string;
+        name_ar?: string;
         children?: unknown[];
         types?: string[];
       };
       return {
         id: node.id,
         name: node.name,
+        name_ar: node.name_ar,
         types: node.types,
         children: node.children
           ? transformToTreeNodes(node.children)
