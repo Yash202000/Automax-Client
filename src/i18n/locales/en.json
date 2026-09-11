@@ -267,7 +267,8 @@
     "query": "Query",
     "goal": "Goal",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "unknown": "Unknown"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -4611,7 +4612,8 @@
     "saveAsDraft": "Save as Draft",
     "updateDraft": "Update Draft",
     "confirmPermanentDelete": "Are you sure you want to delete this email permanently? This action cannot be undone.",
-    "confirmDelete": "Are you sure you want to delete this email? It will be moved to the trash."
+    "confirmDelete": "Are you sure you want to delete this email? It will be moved to the trash.",
+    "noSubject": "(No subject)"
   },
   "sms": {
     "newSms": "New SMS",
