@@ -1025,7 +1025,7 @@ export const EmailPage: React.FC = () => {
                     <Save className="w-4 h-4" />
                   )}
                   {editingDraftId
-                    ? t("email.saveAsDraft", "Update Draft")
+                    ? t("email.updateDraft", "Update Draft")
                     : t("email.saveAsDraft", "Save as Draft")}
                 </button>
 
