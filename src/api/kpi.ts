@@ -193,6 +193,28 @@ export const kpiMasterDataApi = {
     const res = await apiClient.delete(`/kpi/operational-objectives/${id}`);
     return res.data;
   },
+  listKpisForOperationalObjective: async (
+    id: string,
+  ): Promise<ApiResponse<OperationalKPI[]>> => {
+    const res = await apiClient.get(`/kpi/operational-objectives/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForOperationalObjective: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(
+      `/kpi/operational-objectives/${id}/collaborators`,
+    );
+    return res.data;
+  },
+  listEvidenceForOperationalObjective: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(
+      `/kpi/operational-objectives/${id}/evidence`,
+    );
+    return res.data;
+  },
 
   listProcesses: async (): Promise<ApiResponse<Process[]>> => {
     const res = await apiClient.get("/kpi/processes");
@@ -213,6 +235,24 @@ export const kpiMasterDataApi = {
   },
   deleteProcess: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/processes/${id}`);
+    return res.data;
+  },
+  listKpisForProcess: async (
+    id: string,
+  ): Promise<ApiResponse<OperationalKPI[]>> => {
+    const res = await apiClient.get(`/kpi/processes/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForProcess: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(`/kpi/processes/${id}/collaborators`);
+    return res.data;
+  },
+  listEvidenceForProcess: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/processes/${id}/evidence`);
     return res.data;
   },
 
@@ -279,6 +319,24 @@ export const kpiMasterDataApi = {
     const res = await apiClient.delete(`/kpi/award-criteria/${id}`);
     return res.data;
   },
+  listKpisForAwardCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<AwardKPI[]>> => {
+    const res = await apiClient.get(`/kpi/award-criteria/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForAwardCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(`/kpi/award-criteria/${id}/collaborators`);
+    return res.data;
+  },
+  listEvidenceForAwardCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/award-criteria/${id}/evidence`);
+    return res.data;
+  },
 
   listAwardSubCriteria: async (
     criterionId?: string,
@@ -307,6 +365,26 @@ export const kpiMasterDataApi = {
   },
   deleteAwardSubCriterion: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/award-sub-criteria/${id}`);
+    return res.data;
+  },
+  listKpisForAwardSubCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<AwardKPI[]>> => {
+    const res = await apiClient.get(`/kpi/award-sub-criteria/${id}/kpis`);
+    return res.data;
+  },
+  listCollaboratorsForAwardSubCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiCollaboratorAssignment[]>> => {
+    const res = await apiClient.get(
+      `/kpi/award-sub-criteria/${id}/collaborators`,
+    );
+    return res.data;
+  },
+  listEvidenceForAwardSubCriterion: async (
+    id: string,
+  ): Promise<ApiResponse<KpiEngagementEvidence[]>> => {
+    const res = await apiClient.get(`/kpi/award-sub-criteria/${id}/evidence`);
     return res.data;
   },
 
@@ -974,6 +1052,16 @@ export const kpiEngagementApi = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+  viewEvidence: async (evidenceId: string): Promise<void> => {
+    const res = await apiClient.get(`/kpi/evidence/${evidenceId}/download`, {
+      responseType: "blob",
+    });
+    const contentType = res.headers["content-type"] || res.data.type;
+    const url = window.URL.createObjectURL(
+      new Blob([res.data], { type: contentType }),
+    );
+    window.open(url, "_blank", "noopener,noreferrer");
   },
 
   // Collaborators

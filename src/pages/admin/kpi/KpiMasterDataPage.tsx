@@ -1,12 +1,13 @@
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Database,
   Plus,
   Pencil,
   Trash2,
+  Eye,
   AlertCircle,
   Download,
   Upload,
@@ -766,6 +767,17 @@ export const KpiMasterDataPage: React.FC = () => {
               {
                 header: "Parent Objective",
                 accessor: (r) => r.objective?.name_en ?? r.objective_id ?? "-",
+                render: (r) =>
+                  r.objective ? (
+                    <Link
+                      to={`/goals/kpi/master-data/operational-objectives/${r.objective.id}`}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {r.objective.name_en}
+                    </Link>
+                  ) : (
+                    (r.objective_id ?? "-")
+                  ),
               },
               {
                 header: t("kpi.masterData.owner"),
@@ -826,7 +838,18 @@ export const KpiMasterDataPage: React.FC = () => {
                 header: t("kpi.masterData.criterionNo"),
                 accessor: "criterion_no",
               },
-              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              {
+                header: t("kpi.masterData.nameEn"),
+                accessor: "name_en",
+                render: (r) => (
+                  <Link
+                    to={`/goals/kpi/master-data/award-criteria/${r.id}`}
+                    className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {r.name_en}
+                  </Link>
+                ),
+              },
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
             ]}
             emptyMessage={t("kpi.masterData.noAwardCriteria")}
@@ -846,9 +869,31 @@ export const KpiMasterDataPage: React.FC = () => {
                 header: t("kpi.masterData.awardCriterion"),
                 accessor: (r) =>
                   r.award_criterion?.name_en ?? r.award_criterion_id ?? "-",
+                render: (r) =>
+                  r.award_criterion ? (
+                    <Link
+                      to={`/goals/kpi/master-data/award-criteria/${r.award_criterion.id}`}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {r.award_criterion.name_en}
+                    </Link>
+                  ) : (
+                    (r.award_criterion_id ?? "-")
+                  ),
               },
               { header: t("kpi.masterData.subNo"), accessor: "sub_no" },
-              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              {
+                header: t("kpi.masterData.nameEn"),
+                accessor: "name_en",
+                render: (r) => (
+                  <Link
+                    to={`/goals/kpi/master-data/award-sub-criteria/${r.id}`}
+                    className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {r.name_en}
+                  </Link>
+                ),
+              },
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
             ]}
             emptyMessage={t("kpi.masterData.noAwardSubCriteria")}
@@ -1218,6 +1263,7 @@ export const KpiMasterDataPage: React.FC = () => {
 interface Column<T> {
   header: string;
   accessor: keyof T | ((item: T) => string | number | boolean);
+  render?: (item: T) => React.ReactNode;
 }
 
 function MasterTable<T extends { id: string }>({
@@ -1227,6 +1273,7 @@ function MasterTable<T extends { id: string }>({
   canManage,
   onEdit,
   onDelete,
+  onView,
   onAdd,
   onExport,
   onImport,
@@ -1239,6 +1286,7 @@ function MasterTable<T extends { id: string }>({
   canManage?: boolean;
   onEdit?: (item: T) => void;
   onDelete?: (id: string) => void;
+  onView?: (item: T) => void;
   onAdd?: () => void;
   onExport?: () => void;
   onImport?: () => void;
@@ -1348,7 +1396,7 @@ function MasterTable<T extends { id: string }>({
                   {col.header}
                 </th>
               ))}
-              {canManage && (
+              {(canManage || onView) && (
                 <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   {t("common.actions")}
                 </th>
@@ -1366,13 +1414,22 @@ function MasterTable<T extends { id: string }>({
                     key={i}
                     className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300"
                   >
-                    {getValue(item, col)}
+                    {col.render ? col.render(item) : getValue(item, col)}
                   </td>
                 ))}
-                {canManage && (
+                {(canManage || onView) && (
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {onEdit && (
+                      {onView && (
+                        <button
+                          onClick={() => onView(item)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:text-teal-400 dark:hover:bg-teal-900/20 transition-colors"
+                          title={t("common.view")}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canManage && onEdit && (
                         <button
                           onClick={() => onEdit(item)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
@@ -1380,7 +1437,7 @@ function MasterTable<T extends { id: string }>({
                           <Pencil className="w-4 h-4" />
                         </button>
                       )}
-                      {onDelete && (
+                      {canManage && onDelete && (
                         <button
                           onClick={() => {
                             if (window.confirm(t("common.confirmDelete")))
