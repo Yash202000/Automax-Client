@@ -265,7 +265,10 @@
     "request": "طلب",
     "complaint": "شكوى",
     "query": "استفسار",
-    "goal": "هدف"
+    "goal": "هدف",
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "unknown": "غير معروف"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -1200,7 +1203,6 @@
     "importPhoneRequired": "رقم الهاتف مطلوب",
     "totalRecords": "الإجمالي",
     "downloadTemplate": "تحميل قالب استيراد المستخدمين"
-    
   },
   "roles": {
     "title": "الأدوار",
@@ -1959,7 +1961,7 @@
     "viewIncidents": "عرض البلاغات",
     "callCentre": "مركز الاتصال",
     "contacts": "جهات الاتصال",
-    "communications": "Communications",
+    "communications": "الاتصالات",
     "email": "البريد الإلكتروني",
     "callHistory": "سجل المكالمات",
     "newComplaint": "شكوى جديدة",
@@ -4608,7 +4610,14 @@
     "sendMessage": "إرسال الرسالة",
     "bccExampleCom": "bcc@example.com",
     "ccExampleCom": "cc@example.com",
-    "recipientExampleComPressEnterOrComma": "recipient@example.com؟ اضغط على مفتاح Enter أو مفتاح الفاصلة للإضافة."
+    "recipientExampleComPressEnterOrComma": "recipient@example.com؟ اضغط على مفتاح Enter أو مفتاح الفاصلة للإضافة.",
+    "selectANotificationToRead": "حدد إشعارًا لقراءته",
+    "composeAndSendEmail": "إنشاء وإرسال بريد إلكتروني",
+    "saveAsDraft": "حفظ كمسودة",
+    "updateDraft": "تحديث المسودة",
+    "confirmPermanentDelete": "هل أنت متأكد من رغبتك في حذف هذا البريد الإلكتروني نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.",
+    "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذا البريد الإلكتروني؟ سيتم نقله إلى سلة المهملات.",
+    "noSubject": "(بدون موضوع)"
   },
   "sms": {
     "newSms": "رسالة نصية جديدة",
@@ -4624,6 +4633,48 @@
     "message": "الرسالة",
     "writeYourMessageHere": "اكتب رسالتك هنا...",
     "sending": "جارٍ الإرسال..."
+  },
+  "communications": {
+    "selectStartDate": "اختر تاريخ البدء",
+    "selectEndDate": "اختر تاريخ الانتهاء",
+    "recipients": "المستلمون",
+    "enterRecipient": "أدخل المستلم",
+    "applyFilters": "تطبيق عوامل التصفية",
+    "editDraft": "تعديل المسودة",
+    "newSms": "رسالة نصية جديدة",
+    "newMessage": "رسالة جديدة",
+    "cloningAttachments": "جارٍ نسخ المرفقات...",
+    "updateAndSaveDraft": "تحديث وحفظ المسودة",
+    "composeAndSendNotification": "إنشاء وإرسال إشعار",
+    "email": "البريد الإلكتروني",
+    "emailDescription": "الموضوع ونسخة ونسخة مخفية والمرفقات",
+    "sms": "رسالة نصية",
+    "smsDescription": "إشعار نصي قصير",
+    "toPhoneNumber": "إلى رقم الهاتف",
+    "phoneNumberPlaceholder": "9876543210",
+    "writeYourMessageHere": "اكتب رسالتك هنا...",
+    "sendSms": "إرسال رسالة نصية",
+    "permanentDeletion": "الحذف النهائي",
+    "deleteNotification": "حذف الإشعار",
+    "permanentDeletionConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الإشعار نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteNotificationConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الإشعار؟ سيتم نقله إلى سلة المهملات.",
+    "deletePermanently": "حذف نهائيًا",
+    "noNotificationsFound": "لم يتم العثور على إشعارات",
+    "smsNotification": "إشعار رسالة نصية",
+    "emailNotification": "إشعار بريد إلكتروني",
+    "noSubject": "(بدون موضوع)",
+    "deliveryError": "خطأ في التسليم",
+    "deliveryFailed": "فشل التسليم",
+    "retry": "إعادة المحاولة",
+    "phoneRequired": "رقم الهاتف مطلوب",
+    "phoneInvalid": "أدخل رقم هاتف صالحًا بدون رمز الدولة",
+    "messageEmpty": "لا يمكن أن تكون الرسالة فارغة",
+    "sendEmailFailed": "فشل إرسال البريد الإلكتروني",
+    "sendSmsFailed": "فشل إرسال الرسالة النصية",
+    "me": "أنا",
+    "noRecipient": "لا يوجد مستلم",
+    "idLabel": "المعرف",
+    "selectStatus": "اختر الحالة"
   },
   "escalations": {
     "fieldRequired": "{{field}} مطلوب",

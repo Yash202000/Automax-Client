@@ -65,7 +65,7 @@ const getStatusLabel = (call: any, t: any): string => {
 };
 
 export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const { hasPermission } = usePermissions();
@@ -178,18 +178,25 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
       (nowMidnight.getTime() - dateMidnight.getTime()) / (1000 * 60 * 60 * 24),
     );
 
+    const time = date.toLocaleTimeString(i18n.language, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     if (diffDays === 0) {
-      return `Today, ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
-    } else if (diffDays === 1) {
-      return `Yesterday, ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
-    } else {
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      return `${t("common.today", "Today")}, ${time}`;
     }
+
+    if (diffDays === 1) {
+      return `${t("common.yesterday", "Yesterday")}, ${time}`;
+    }
+
+    return date.toLocaleDateString(i18n.language, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -358,7 +365,8 @@ const CallHistoryItem: React.FC<{
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className={`font-medium ${getStatusColor(call.status)}`}>
-                {call.other_party_name || "Unknown"}
+                {call.other_party_name ||
+                  t("goals.metricImport.unknown", "Unknown")}
               </h3>
               {call.other_party_extension && (
                 <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">

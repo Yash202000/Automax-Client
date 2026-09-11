@@ -127,14 +127,14 @@ export const EmailPage: React.FC = () => {
 
   // Helpers
   const getSender = (email: Email) => {
-    if (email.direction === "outbound") return "Me";
+    if (email.direction === "outbound") return t("communications.me", "Me");
     // Use sent_by_user from API response (inbound emails)
     if (email.sent_by_user) {
       const { first_name, last_name, email: userEmail } = email.sent_by_user;
       const fullName = [first_name, last_name].filter(Boolean).join(" ");
-      return fullName || userEmail || "Unknown";
+      return fullName || userEmail || t("common.unknown", "Unknown");
     }
-    return email.sender || "Unknown";
+    return email.sender || t("common.unknown", "Unknown");
   };
 
   const getRecipients = (email: Email, type: "to" | "cc" | "bcc") => {
@@ -475,29 +475,44 @@ export const EmailPage: React.FC = () => {
   }[] = [
     {
       key: "inbox",
-      label: "Inbox",
+      label: t("sms.inbox"),
       icon: <Inbox className="w-4 h-4" />,
       count: emailCount?.inbox,
     },
     {
       key: "sent",
-      label: "Sent",
+      label: t("sms.sent"),
       icon: <Send className="w-4 h-4" />,
       count: emailCount?.sent,
     },
     {
       key: "drafts",
-      label: "Drafts",
+      label: t("email.drafts"),
       icon: <FileText className="w-4 h-4" />,
       count: emailCount?.drafts,
     },
     {
       key: "trash",
-      label: "Trash",
+      label: t("sms.trash"),
       icon: <Trash className="w-4 h-4" />,
       count: emailCount?.trash,
     },
   ];
+
+  const getFolderLabel = (folder?: string) => {
+    switch (folder) {
+      case "inbox":
+        return t("email.inbox");
+      case "sent":
+        return t("email.sent");
+      case "draft":
+        return t("email.drafts");
+      case "trash":
+        return t("email.trash");
+      default:
+        return folder || "";
+    }
+  };
 
   return (
     <div className="h-[calc(100vh-100px)] flex bg-card rounded-xl border border-border overflow-hidden shadow-sm">
@@ -612,7 +627,8 @@ export const EmailPage: React.FC = () => {
                       className={`text-sm truncate pr-2 ${!email.is_read ? "font-bold text-slate-900" : "font-medium text-slate-700"}`}
                     >
                       {currentFolder === "drafts"
-                        ? getRecipients(email, "to") || "No recipient"
+                        ? getRecipients(email, "to") ||
+                          t("communications.noRecipient", "No recipient")
                         : getSender(email)}
                     </h3>
                     <div className="flex items-center gap-2">
@@ -640,7 +656,8 @@ export const EmailPage: React.FC = () => {
                       <p
                         className={`text-sm mb-1 truncate ${!email.is_read ? "text-slate-900 font-medium" : "text-slate-600"}`}
                       >
-                        {email.subject || "(No subject)"}
+                        {email.subject ||
+                          t("communications.noSubject", "(No subject)")}
                       </p>
                       <p className="text-xs text-slate-500 truncate">
                         {stripHtml(email.body)}
@@ -659,7 +676,11 @@ export const EmailPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="bg-primary text-white px-2 py-0.5 rounded-md mt-2 text-xs uppercase font-medium">
-                      {email.status}
+                      {email.status === "sent"
+                        ? t("common.sent")
+                        : email.status === "failed"
+                          ? t("common.failed")
+                          : email.status}
                     </span>
                     {currentFolder !== "drafts" && (
                       <div className="ml-2 flex flex-col gap-2">
@@ -700,7 +721,7 @@ export const EmailPage: React.FC = () => {
                   </h2>
                   <div className="flex items-center gap-1">
                     <span className="px-2 py-1 bg-slate-100 rounded text-xs font-medium text-slate-600 uppercase">
-                      {selectedEmail.category || "Inbox"}
+                      {getFolderLabel(selectedEmail.category)}
                     </span>
                   </div>
                 </div>
@@ -832,17 +853,26 @@ export const EmailPage: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-[15px] leading-tight">
                     {editingDraftId
-                      ? "Edit Draft"
+                      ? t("communications.editDraft", "Edit Draft")
                       : isNewEmail
-                        ? "New Message"
+                        ? t("communications.newMessage", "New Message")
                         : isCloningAttachments
-                          ? "Cloning attachments..."
+                          ? t(
+                              "communications.cloningAttachments",
+                              "Cloning attachments...",
+                            )
                           : composeSubject}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {editingDraftId
-                      ? "Update and save your draft"
-                      : "Compose and send an email"}
+                      ? t(
+                          "communications.updateAndSaveDraft",
+                          "Update and save your draft",
+                        )
+                      : t(
+                          "email.composeAndSendEmail",
+                          "Compose and send an email",
+                        )}
                   </p>
                 </div>
               </div>
@@ -860,7 +890,9 @@ export const EmailPage: React.FC = () => {
             >
               <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                 <div>
-                  <label className="block text-sm font-medium  mb-1">To</label>
+                  <label className="block text-sm font-medium  mb-1">
+                    {t("goals.analytics.filters.to", "To")}
+                  </label>
                   <EmailChipInput
                     value={composeTo}
                     onChange={setComposeTo}
@@ -992,7 +1024,9 @@ export const EmailPage: React.FC = () => {
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  {editingDraftId ? "Update Draft" : "Save as Draft"}
+                  {editingDraftId
+                    ? t("email.updateDraft", "Update Draft")
+                    : t("email.saveAsDraft", "Save as Draft")}
                 </button>
 
                 <div className="flex gap-3">
@@ -1027,15 +1061,25 @@ export const EmailPage: React.FC = () => {
         }
         onConfirm={handleConfirmDelete}
         title={
-          deleteConfirmation.isPermanent ? "Permanent Deletion" : "Delete Email"
+          deleteConfirmation.isPermanent
+            ? t("communications.permanentDeletion", "Permanent Deletion")
+            : t("communications.deleteNotification", "Delete Notification")
         }
         message={
           deleteConfirmation.isPermanent
-            ? "Are you sure you want to delete this email permanently? This action cannot be undone."
-            : "Are you sure you want to delete this email? It will be moved to the trash."
+            ? t(
+                "email.confirmPermanentDelete",
+                "Are you sure you want to delete this email permanently? This action cannot be undone.",
+              )
+            : t(
+                "email.confirmDelete",
+                "Are you sure you want to delete this email? It will be moved to the trash.",
+              )
         }
         confirmText={
-          deleteConfirmation.isPermanent ? "Delete Permanently" : "Delete"
+          deleteConfirmation.isPermanent
+            ? t("communications.deletePermanently", "Delete Permanently")
+            : t("common.delete", "Delete")
         }
         isLoading={deleteMutation.isPending || hardDeleteMutation.isPending}
       />
