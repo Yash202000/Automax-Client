@@ -439,7 +439,7 @@ export const ReportBuilderPage: React.FC = () => {
     } else {
       setStateFields([]);
     }
-  }, [dataSource, loadedTemplate, i18n.language]);
+  }, [dataSource, loadedTemplate]);
 
   // Server-driven paginated preview
   const fetchReportData = async (page = 1) => {
