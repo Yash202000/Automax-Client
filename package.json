@@ -59,6 +59,9 @@
     "zod": "^4.3.5",
     "zustand": "^5.0.13"
   },
+  "overrides": {
+    "uuid": "$uuid"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.59.1",
