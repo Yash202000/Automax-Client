@@ -4017,7 +4017,7 @@ export const IncidentDetailPage: React.FC = () => {
                         const phone = incident.reporter?.phone;
                         if (phone) {
                           const reporterName = incident.reporter?.first_name
-                            ? `${incident.reporter.first_name} ${incident.reporter.middle_name} ${incident.reporter.last_name || ""}`.trim()
+                            ? `${incident.reporter.first_name} ${incident.reporter.middle_name || ""} ${incident.reporter.last_name || ""}`.trim()
                             : incident.reporter?.username ||
                               incident.reporter_name ||
                               "Unknown";
@@ -4031,7 +4031,7 @@ export const IncidentDetailPage: React.FC = () => {
                     >
                       <User className="w-3.5 h-3.5" />
                       {incident.reporter?.first_name
-                        ? `${incident.reporter.first_name} ${incident.reporter.middle_name}  ${incident.reporter.last_name || ""}`
+                        ? `${incident.reporter.first_name} ${incident.reporter.middle_name || ""}  ${incident.reporter.last_name || ""}`
                         : incident.reporter?.username ||
                           incident.reporter_name ||
                           "Unknown"}
