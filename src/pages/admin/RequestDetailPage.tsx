@@ -42,6 +42,7 @@ import {
   departmentApi,
   locationApi,
   classificationApi,
+  lookupApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type {
@@ -55,6 +56,7 @@ import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
+import { resolveSourceLabel } from "@/utils/sourceLabel";
 
 export const RequestDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -173,6 +175,17 @@ export const RequestDetailPage: React.FC = () => {
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
   });
+
+  const { data: sourceData } = useQuery({
+    queryKey: ["lookups", "categories"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find((cat) => cat.code === "SOURCE") || null
+      );
+    },
+  });
+
   const request = requestData?.data;
   const availableTransitions = transitionsData?.data || [];
   const history = historyData?.data || [];
@@ -1141,7 +1154,7 @@ export const RequestDetailPage: React.FC = () => {
                   </span>
                   <span className="text-sm text-[hsl(var(--foreground))] flex items-center gap-1 capitalize">
                     <Radio className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                    {request.source.replace("_", " ")}
+                    {resolveSourceLabel(request.source, sourceData)}
                   </span>
                 </div>
               )}

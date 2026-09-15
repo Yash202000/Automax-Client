@@ -46,6 +46,7 @@ import {
   classificationApi,
   commentTemplateApi,
   feedbackTemplateApi,
+  lookupApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
 import type {
@@ -60,6 +61,7 @@ import { cn, getLocalizedName } from "@/lib/utils";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { resolveSourceLabel } from "@/utils/sourceLabel";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -210,6 +212,16 @@ export const QueryDetailPage: React.FC = () => {
     queryFn: () =>
       feedbackTemplateApi.listByTransition(selectedTransition!.transition.id),
     enabled: !!selectedTransition?.transition.id,
+  });
+  // for master data sources for localization
+  const { data: sourceData } = useQuery({
+    queryKey: ["lookups", "categories"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find((cat) => cat.code === "SOURCE") || null
+      );
+    },
   });
 
   const commentTemplates = commentTemplatesData?.data || [];
@@ -839,7 +851,7 @@ export const QueryDetailPage: React.FC = () => {
                   color: query.current_state.color || "hsl(var(--foreground))",
                 }}
               >
-                {query.current_state.name}
+                {getLocalizedName(query.current_state)}
               </span>
             )}
             {query.sla_breached && (
@@ -1472,7 +1484,7 @@ export const QueryDetailPage: React.FC = () => {
                       {t("queries.source")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">
-                      {query.source.replace("_", " ")}
+                      {resolveSourceLabel(query.source, sourceData)}
                     </p>
                   </div>
                 </div>
@@ -1627,7 +1639,7 @@ export const QueryDetailPage: React.FC = () => {
                 {t("queries.workflow")}
               </h3>
               <p className="text-sm text-[hsl(var(--foreground))]">
-                {query.workflow.name}
+                {getLocalizedName(query.workflow)}
               </p>
               {query.workflow.description && (
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 mb-4">
