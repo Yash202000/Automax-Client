@@ -160,7 +160,6 @@ export const IncidentDetailPage: React.FC = () => {
     setIncomingCallNumber,
     setIncomingCallName,
     setIsCallerIncidentsMinimized,
-    setRedirectToContactDetails,
   } = useSoftphoneStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -1742,6 +1741,19 @@ export const IncidentDetailPage: React.FC = () => {
       </div>
     );
   }
+
+  const reporterName =
+    [
+      incident.reporter?.first_name,
+      incident.reporter?.middle_name,
+      incident.reporter?.last_name,
+    ]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(" ") ||
+    incident.reporter?.username ||
+    incident.reporter_name ||
+    t("common.unknown", "Unknown");
 
   const generatedTitle = generateRecordTitle({
     classification: incident.classification,
@@ -3954,7 +3966,6 @@ export const IncidentDetailPage: React.FC = () => {
                             setIncomingCallName(incident.reporter_name);
                             setOpenCallerIncidents(true);
                             setIsCallerIncidentsMinimized(false);
-                            setRedirectToContactDetails(false);
                           }
                         }}
                         className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
@@ -4018,26 +4029,16 @@ export const IncidentDetailPage: React.FC = () => {
                       onClick={() => {
                         const phone = incident.reporter?.phone;
                         if (phone) {
-                          const reporterName = incident.reporter?.first_name
-                            ? `${incident.reporter.first_name} ${incident.reporter.last_name || ""}`.trim()
-                            : incident.reporter?.username ||
-                              incident.reporter_name ||
-                              "Unknown";
                           setIncomingCallNumber(phone);
                           setIncomingCallName(reporterName);
                           setOpenCallerIncidents(true);
                           setIsCallerIncidentsMinimized(false);
-                          setRedirectToContactDetails(true);
                         }
                       }}
                       className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
                     >
                       <User className="w-3.5 h-3.5" />
-                      {incident.reporter?.first_name
-                        ? `${incident.reporter.first_name} ${incident.reporter.last_name || ""}`
-                        : incident.reporter?.username ||
-                          incident.reporter_name ||
-                          "Unknown"}
+                      {reporterName}
                     </button>
 
                     {incident.reporter?.email && (
