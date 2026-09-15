@@ -123,6 +123,7 @@ import { useSoftphoneStore } from "../../stores/softphoneStore";
 import { IncidentMentionTextarea } from "@/components/common/IncidentMentionTextarea";
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
+import { resolveSourceLabel } from "@/utils/sourceLabel";
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -1698,6 +1699,16 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () =>
       feedbackTemplateApi.listByTransition(selectedTransition!.transition.id),
     enabled: !!selectedTransition?.transition.id,
+  });
+
+  const { data: sourceData } = useQuery({
+    queryKey: ["lookups", "categories"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find((cat) => cat.code === "SOURCE") || null
+      );
+    },
   });
 
   const commentTemplates = commentTemplatesData?.data || [];
@@ -3658,7 +3669,7 @@ export const IncidentDetailPage: React.FC = () => {
                     <div className="mt-0.5 flex items-center gap-1.5 text-sm text-[hsl(var(--foreground))]">
                       <Radio className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
                       <span className="capitalize">
-                        {incident.source.replace("_", " ")}
+                        {resolveSourceLabel(incident.source, sourceData)}
                       </span>
                     </div>
                   </div>

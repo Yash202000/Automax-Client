@@ -36,6 +36,7 @@ import {
   departmentApi,
   locationApi,
   classificationApi,
+  lookupApi,
 } from "../../api/admin";
 import { API_URL } from "../../api/client";
 import { settingsApi } from "../../api/settings";
@@ -43,6 +44,7 @@ import { AudioPlayer } from "../../components/common/AudioPlayer";
 import type { AvailableTransition } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { cn, getLocalizedName } from "@/lib/utils";
+import { resolveSourceLabel } from "@/utils/sourceLabel";
 
 export const ComplaintDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -162,6 +164,16 @@ export const ComplaintDetailPage: React.FC = () => {
   const { data: fcClassificationsData } = useQuery({
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
+  });
+
+  const { data: sourceData } = useQuery({
+    queryKey: ["lookups", "categories"],
+    queryFn: async () => {
+      const categories = await lookupApi.listCategories();
+      return (
+        (categories.data || []).find((cat) => cat.code === "SOURCE") || null
+      );
+    },
   });
 
   const classificationPath = React.useMemo(() => {
@@ -512,7 +524,7 @@ export const ComplaintDetailPage: React.FC = () => {
                         "hsl(var(--foreground))",
                     }}
                   >
-                    {complaint.current_state.name}
+                    {getLocalizedName(complaint.current_state)}
                   </span>
                 )}
               </p>
@@ -858,7 +870,7 @@ export const ComplaintDetailPage: React.FC = () => {
                       {t("common.channel", "Channel")}
                     </p>
                     <p className="text-sm font-medium text-[hsl(var(--foreground))] capitalize">
-                      {complaint.channel}
+                      {resolveSourceLabel(complaint.channel, sourceData)}
                     </p>
                   </div>
                 </div>
