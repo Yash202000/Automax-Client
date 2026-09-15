@@ -144,6 +144,10 @@ export const IncidentDetailPage: React.FC = () => {
   const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
   const { users } = useAppSelector((state) => state.users);
 
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const isVd2 =
     window.APP_CONFIG?.CLIENT === "VD2" ||
     import.meta.env.VITE_CLIENT === "VD2";
@@ -3946,76 +3950,80 @@ export const IncidentDetailPage: React.FC = () => {
               </div>
 
               {/* Caller Information - form-entered contact */}
-              {(incident.reporter_name ||
-                incident.reporter_email ||
-                incident.reporter_phone) && (
-                <div className="pt-2 border-t border-[hsl(var(--border))]">
-                  <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                    {isVd2
-                      ? t("incidents.reporter")
-                      : t("incidents.callerInformation", "Caller Information")}
-                  </label>
-                  <div className="mt-1 space-y-1.5">
-                    {incident.reporter_name && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const phone = incident.reporter_phone;
-                          if (phone) {
-                            setIncomingCallNumber(phone);
-                            setIncomingCallName(incident.reporter_name);
-                            setOpenCallerIncidents(true);
-                            setIsCallerIncidentsMinimized(false);
-                          }
-                        }}
-                        className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
-                      >
-                        <User className="w-3.5 h-3.5" />
-                        {incident.reporter_name}
-                      </button>
-                    )}
-                    {incident.reporter_email && (
-                      <a
-                        href={`mailto:${incident.reporter_email}`}
-                        className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
-                      >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                          />
-                        </svg>
-                        {incident.reporter_email}
-                      </a>
-                    )}
-                    {incident.reporter_phone && (
-                      <div className="flex items-center gap-2">
+              {(isEPM940 || incident.source?.toLowerCase() === "web") &&
+                (incident.reporter_name ||
+                  incident.reporter_email ||
+                  incident.reporter_phone) && (
+                  <div className="pt-2 border-t border-[hsl(var(--border))]">
+                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                      {isVd2
+                        ? t("incidents.reporter")
+                        : t(
+                            "incidents.callerInformation",
+                            "Caller Information",
+                          )}
+                    </label>
+                    <div className="mt-1 space-y-1.5">
+                      {incident.reporter_name && (
                         <button
                           type="button"
                           onClick={() => {
-                            window.dispatchEvent(
-                              new CustomEvent("initiate-call", {
-                                detail: { number: incident.reporter_phone },
-                              }),
-                            );
+                            const phone = incident.reporter_phone;
+                            if (phone) {
+                              setIncomingCallNumber(phone);
+                              setIncomingCallName(incident.reporter_name);
+                              setOpenCallerIncidents(true);
+                              setIsCallerIncidentsMinimized(false);
+                            }
                           }}
+                          className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          {incident.reporter_name}
+                        </button>
+                      )}
+                      {incident.reporter_email && (
+                        <a
+                          href={`mailto:${incident.reporter_email}`}
                           className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
                         >
-                          <Phone className="w-3.5 h-3.5" />
-                          {incident.reporter_phone}
-                        </button>
-                      </div>
-                    )}
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
+                          </svg>
+                          {incident.reporter_email}
+                        </a>
+                      )}
+                      {incident.reporter_phone && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.dispatchEvent(
+                                new CustomEvent("initiate-call", {
+                                  detail: { number: incident.reporter_phone },
+                                }),
+                              );
+                            }}
+                            className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            {incident.reporter_phone}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Reporter - compact */}
               {!isVd2 ? (

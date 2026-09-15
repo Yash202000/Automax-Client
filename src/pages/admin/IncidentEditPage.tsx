@@ -911,6 +911,7 @@ export function IncidentEditPage() {
             </Card>
 
             {isEPM940 &&
+              incident.source?.toLowerCase() === "web" &&
               (workflowRequiredFields.includes("reporter_name") ||
                 workflowOptionalFields.includes("reporter_name") ||
                 workflowRequiredFields.includes("reporter_phone") ||
