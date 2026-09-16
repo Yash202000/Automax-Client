@@ -109,6 +109,10 @@ export function IncidentEditPage() {
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
 
+  const isVd2 =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
+
   const [formData, setFormData] = useState<
     Omit<
       IncidentUpdateRequest,
@@ -910,8 +914,8 @@ export function IncidentEditPage() {
               </div>
             </Card>
 
-            {isEPM940 &&
-              incident.source?.toLowerCase() === "web" &&
+            {(isVd2 ||
+              (isEPM940 && incident.source?.toLowerCase() === "web")) &&
               (workflowRequiredFields.includes("reporter_name") ||
                 workflowOptionalFields.includes("reporter_name") ||
                 workflowRequiredFields.includes("reporter_phone") ||

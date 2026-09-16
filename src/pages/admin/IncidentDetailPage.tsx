@@ -3950,7 +3950,8 @@ export const IncidentDetailPage: React.FC = () => {
               </div>
 
               {/* Caller Information - form-entered contact */}
-              {(isEPM940 || incident.source?.toLowerCase() === "web") &&
+              {(isVd2 ||
+                (isEPM940 && incident.source?.toLowerCase() === "web")) &&
                 (incident.reporter_name ||
                   incident.reporter_email ||
                   incident.reporter_phone) && (
