@@ -109,10 +109,6 @@ export function IncidentEditPage() {
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
 
-  const isVd2 =
-    window.APP_CONFIG?.CLIENT === "VD2" ||
-    import.meta.env.VITE_CLIENT === "VD2";
-
   const [formData, setFormData] = useState<
     Omit<
       IncidentUpdateRequest,
