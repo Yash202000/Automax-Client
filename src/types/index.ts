@@ -88,6 +88,7 @@ export interface Classification {
   level: number;
   path: string;
   is_active: boolean;
+  is_nasaq: boolean;
   sort_order: number;
   criticalities?: ClassificationCriticality[];
   children?: Classification[];
@@ -485,6 +486,7 @@ export interface ClassificationCreateRequest {
   types?: string[];
   parent_id?: string;
   sort_order?: number;
+  is_nasaq?: boolean;
   criticalities?: ClassificationCriticalityCreateRequest[];
 }
 
@@ -499,6 +501,7 @@ export interface ClassificationUpdateRequest {
   description?: string;
   types?: string[];
   is_active?: boolean;
+  is_nasaq?: boolean;
   sort_order?: number;
 }
 
