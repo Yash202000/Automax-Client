@@ -100,6 +100,7 @@ import type {
   Department,
   IncidentRejectionLog,
   AIQualityFeedback,
+  NasaqVerificationResult,
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -1150,6 +1151,48 @@ export const IncidentDetailPage: React.FC = () => {
       console.error("Failed to download report:", err);
     } finally {
       setGeneratingReport(false);
+    }
+  };
+
+  // Nasaq verification: manual-only per Phase 1 - the latest known result is
+  // loaded (not re-verified) when the incident is eligible, and a fresh
+  // verification only ever runs when the user clicks "Verify Nasaq".
+  const isNasaqEligible = !!incident?.classification?.is_nasaq;
+  const [verifyingNasaq, setVerifyingNasaq] = useState(false);
+  const [nasaqResult, setNasaqResult] =
+    useState<NasaqVerificationResult | null>(null);
+  const [nasaqError, setNasaqError] = useState<string | null>(null);
+
+  const { data: nasaqLatestResponse } = useQuery({
+    queryKey: ["incident-nasaq-verification", id],
+    queryFn: () => incidentApi.getNasaqVerification(id!),
+    enabled: !!id && isNasaqEligible,
+  });
+
+  useEffect(() => {
+    if (nasaqLatestResponse?.data) {
+      setNasaqResult(nasaqLatestResponse.data);
+    }
+  }, [nasaqLatestResponse]);
+
+  const handleVerifyNasaq = async () => {
+    if (!id) return;
+    setVerifyingNasaq(true);
+    setNasaqError(null);
+    try {
+      const response = await incidentApi.verifyNasaq(id);
+      setNasaqResult(response.data ?? null);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Nasaq verification failed:", err);
+      setNasaqError(
+        t(
+          "incidents.nasaqVerifyFailed",
+          "Nasaq verification could not be completed. Please try again.",
+        ),
+      );
+    } finally {
+      setVerifyingNasaq(false);
     }
   };
 
@@ -4153,6 +4196,221 @@ export const IncidentDetailPage: React.FC = () => {
                 )}
             </div>
           </div>
+
+          {/* Nasaq Verification - manual-only action, only for incidents whose
+              classification is configured as is_nasaq=true */}
+          {isNasaqEligible &&
+            (isSuperAdmin ||
+              hasPermission(PERMISSIONS.INCIDENTS_VERIFY_NASAQ)) && (
+              <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="w-5 h-5 text-[hsl(var(--primary))]" />
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                    {t("incidents.nasaqVerification")}
+                  </h3>
+                </div>
+
+                {verifyingNasaq ? (
+                  <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    {t("incidents.verifyingNasaq")}
+                  </div>
+                ) : nasaqError ? (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-500/5 border border-red-500/15">
+                      <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      <span className="text-sm text-red-600">{nasaqError}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleVerifyNasaq}
+                    >
+                      {t("incidents.verifyAgain")}
+                    </Button>
+                  </div>
+                ) : !nasaqResult ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<ShieldCheck className="w-4 h-4" />}
+                    onClick={handleVerifyNasaq}
+                  >
+                    {t("incidents.verifyNasaq")}
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      {nasaqResult.status === "MATCHED" && (
+                        <CheckCircle2 className="w-4 h-4 text-[hsl(var(--success))]" />
+                      )}
+                      {nasaqResult.status === "NO_MATCH" && (
+                        <XCircle className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                      )}
+                      {nasaqResult.status === "REVIEW_REQUIRED" && (
+                        <AlertTriangle className="w-4 h-4 text-orange-500" />
+                      )}
+                      {nasaqResult.status === "ERROR" && (
+                        <XCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      <span
+                        className={cn(
+                          "text-sm font-semibold",
+                          nasaqResult.status === "MATCHED" &&
+                            "text-[hsl(var(--success))]",
+                          nasaqResult.status === "NO_MATCH" &&
+                            "text-[hsl(var(--muted-foreground))]",
+                          nasaqResult.status === "REVIEW_REQUIRED" &&
+                            "text-orange-500",
+                          nasaqResult.status === "ERROR" && "text-red-600",
+                        )}
+                      >
+                        {nasaqResult.status === "MATCHED" &&
+                          t("incidents.nasaqStatusMatched")}
+                        {nasaqResult.status === "NO_MATCH" &&
+                          t("incidents.nasaqStatusNoMatch")}
+                        {nasaqResult.status === "REVIEW_REQUIRED" &&
+                          t("incidents.nasaqStatusReviewRequired")}
+                        {nasaqResult.status === "ERROR" &&
+                          t("incidents.nasaqStatusError")}
+                      </span>
+                    </div>
+
+                    {nasaqResult.status === "REVIEW_REQUIRED" && (
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("incidents.nasaqReviewRequiredMessage")}
+                      </p>
+                    )}
+
+                    {nasaqResult.status === "ERROR" &&
+                      (nasaqResult.errorMessage || nasaqResult.message) && (
+                        <p className="text-xs text-red-600">
+                          {nasaqResult.errorMessage || nasaqResult.message}
+                        </p>
+                      )}
+
+                    {nasaqResult.status === "MATCHED" &&
+                      nasaqResult.nasaqData && (
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                              {t("incidents.nasaqPermitNumber")}
+                            </label>
+                            <div className="text-[hsl(var(--foreground))] font-semibold">
+                              {nasaqResult.permitNumber}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqPermitStatus")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {nasaqResult.nasaqData.permitStatusName}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqPermitExpiry")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {nasaqResult.nasaqData.permitExpiryDate}
+                              </div>
+                            </div>
+                            {nasaqResult.nasaqData.permitWarrantyExpiryDate && (
+                              <div>
+                                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                  {t("incidents.nasaqWarrantyExpiry")}
+                                </label>
+                                <div className="text-[hsl(var(--foreground))]">
+                                  {
+                                    nasaqResult.nasaqData
+                                      .permitWarrantyExpiryDate
+                                  }
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqWarrantyStatus")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {nasaqResult.nasaqData.warrantyStatus}
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                              {t("incidents.nasaqContractorName")}
+                            </label>
+                            <div className="text-[hsl(var(--foreground))]">
+                              {nasaqResult.nasaqData.mainContractorName}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqContractorPmName")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {
+                                  nasaqResult.nasaqData
+                                    .mainContractorProjectManagerName
+                                }
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqContractorPmMobile")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {
+                                  nasaqResult.nasaqData
+                                    .mainContractorProjectManagerMobile
+                                }
+                              </div>
+                            </div>
+                          </div>
+                          {nasaqResult.nasaqData.polygonPathId && (
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqPolygonPathId")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {nasaqResult.nasaqData.polygonPathId}
+                              </div>
+                            </div>
+                          )}
+                          {typeof nasaqResult.distance === "number" && (
+                            <div>
+                              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                {t("incidents.nasaqDistance")}
+                              </label>
+                              <div className="text-[hsl(var(--foreground))]">
+                                {nasaqResult.distance} m
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-[hsl(var(--border))] border-dashed">
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("incidents.nasaqLastCheckedOn")}{" "}
+                        {formatDateTime(nasaqResult.retrievedAt)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleVerifyNasaq}
+                      >
+                        {t("incidents.verifyAgain")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* feedback view */}
           {incident.feedback && incident.feedback.length > 0 && (
