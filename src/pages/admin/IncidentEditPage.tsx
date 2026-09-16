@@ -914,8 +914,8 @@ export function IncidentEditPage() {
               </div>
             </Card>
 
-            {(isVd2 ||
-              (isEPM940 && incident.source?.toLowerCase() === "web")) &&
+            {/* Caller information*/}
+            {(!isEPM940 || incident.source?.toLowerCase() === "web") &&
               (workflowRequiredFields.includes("reporter_name") ||
                 workflowOptionalFields.includes("reporter_name") ||
                 workflowRequiredFields.includes("reporter_phone") ||
