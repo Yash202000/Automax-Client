@@ -336,7 +336,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
     const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
       return items.map((item) => ({
         id: item.id,
-        name: item.name,
+        name: getLocalizedName(item),
         children:
           item.children && item.children.length > 0
             ? convertToTreeNode(item.children)
@@ -344,7 +344,7 @@ export const CreateQueryModal: React.FC<CreateQueryModalProps> = ({
       }));
     };
     return convertToTreeNode(classifications);
-  }, [classifications]);
+  }, [classifications, i18n.language]);
 
   // Filter workflows based on selected classification
   const filteredWorkflows = useMemo(() => {
