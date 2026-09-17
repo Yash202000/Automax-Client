@@ -43,6 +43,8 @@ export default function IncidentLister() {
     incomingCallName,
     isCallerIncidentsMinimized,
     setIsCallerIncidentsMinimized,
+    setReporterId,
+    reporterId,
   } = useSoftphoneStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -51,6 +53,7 @@ export default function IncidentLister() {
     setOpenCallerIncidents(false);
     setSearchTerm("");
     setIncomingCallNumber("");
+    setReporterId(null);
   };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -233,7 +236,10 @@ export default function IncidentLister() {
                     type="button"
                     onClick={() => {
                       navigate("/call-centre/contacts", {
-                        state: { openContactSearch: incomingCallNumber },
+                        state: {
+                          openContactSearch: incomingCallNumber,
+                          reporterId: reporterId,
+                        },
                       });
                       setOpenCallerIncidents(false);
                     }}
