@@ -4123,7 +4123,7 @@ export const IncidentDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                           />
                           <Marker
                             position={[incident.latitude, incident.longitude]}
@@ -6164,7 +6164,7 @@ export const IncidentDetailPage: React.FC = () => {
                 >
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   <Marker
                     position={[incident.latitude, incident.longitude]}
