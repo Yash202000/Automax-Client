@@ -57,6 +57,7 @@ import type {
   IncidentAttachment,
   IncidentFilter,
   IncidentStats,
+  NasaqVerificationResult,
   AvailableTransition,
   TransitionHistory,
   IncidentRevision,
@@ -1840,6 +1841,28 @@ export const incidentApi = {
     const response = await apiClient.post<
       ApiResponse<{ mobile: string; incident_number: string; status: string }>
     >(`/incidents/${incidentId}/request-info`);
+    return response.data;
+  },
+
+  // Triggers a fresh Nasaq verification and stores it as a new snapshot.
+  // Manual-only per Phase 1 - never called automatically.
+  verifyNasaq: async (
+    incidentId: string,
+  ): Promise<ApiResponse<NasaqVerificationResult>> => {
+    const response = await apiClient.post<ApiResponse<NasaqVerificationResult>>(
+      `/incidents/${incidentId}/nasaq/verify`,
+    );
+    return response.data;
+  },
+
+  // Returns the latest stored Nasaq verification without triggering a new
+  // call - null when the incident has never been verified.
+  getNasaqVerification: async (
+    incidentId: string,
+  ): Promise<ApiResponse<NasaqVerificationResult | null>> => {
+    const response = await apiClient.get<
+      ApiResponse<NasaqVerificationResult | null>
+    >(`/incidents/${incidentId}/nasaq/verify`);
     return response.data;
   },
 };

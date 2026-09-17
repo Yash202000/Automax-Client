@@ -88,10 +88,54 @@ export interface Classification {
   level: number;
   path: string;
   is_active: boolean;
+  is_nasaq: boolean;
   sort_order: number;
   criticalities?: ClassificationCriticality[];
   children?: Classification[];
   created_at: string;
+}
+
+// Nasaq verification: the "Verify Nasaq" manual action on an Incident whose
+// Classification has is_nasaq=true. Mirrors the backend's
+// GET/POST /incidents/{id}/nasaq/verify response shape.
+export type NasaqVerificationStatus =
+  | "MATCHED"
+  | "NO_MATCH"
+  | "REVIEW_REQUIRED"
+  | "ERROR";
+
+export interface NasaqData {
+  polygonPathId?: string;
+  permitTypeName: string;
+  permitStatusName: string;
+  permitExpiryDate: string;
+  permitWarrantyExpiryDate?: string;
+  warrantyStatus: string;
+  mainContractorName: string;
+  mainContractorProjectManagerName: string;
+  mainContractorProjectManagerMobile: string;
+}
+
+export interface NasaqCandidate {
+  permitNumber: number;
+  distance: number;
+  permitTypeName: string;
+  permitStatusName: string;
+  permitExpiryDate: string;
+}
+
+export interface NasaqVerificationResult {
+  id: string;
+  incidentId: string;
+  status: NasaqVerificationStatus;
+  message?: string;
+  permitNumber?: number | null;
+  distance?: number | null;
+  responseId?: string;
+  retrievedAt: string;
+  nasaqData?: NasaqData | null;
+  candidates?: NasaqCandidate[] | null;
+  errorMessage?: string;
 }
 
 export interface ClassificationCriticality {
@@ -485,6 +529,7 @@ export interface ClassificationCreateRequest {
   types?: string[];
   parent_id?: string;
   sort_order?: number;
+  is_nasaq?: boolean;
   criticalities?: ClassificationCriticalityCreateRequest[];
 }
 
@@ -499,6 +544,7 @@ export interface ClassificationUpdateRequest {
   description?: string;
   types?: string[];
   is_active?: boolean;
+  is_nasaq?: boolean;
   sort_order?: number;
 }
 
