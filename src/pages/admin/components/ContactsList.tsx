@@ -272,6 +272,14 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     );
   }
 
+  const generateUserName = (user: User) => {
+    return (
+      [user.first_name, user.middle_name, user.last_name]
+        .filter(Boolean)
+        .join(" ") || `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] shadow-sm">
@@ -497,7 +505,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                             <p
                               className={`text-sm font-semibold ${"cursor-pointer hover:underline hover:text-primary"}`}
                             >
-                              {user.first_name} {user.last_name}
+                              {generateUserName(user)}
                             </p>
                             <p
                               className={`text-sm text-slate-500 ${"cursor-pointer hover:underline hover:text-primary"}`}
