@@ -276,7 +276,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     return (
       [user.first_name, user.middle_name, user.last_name]
         .filter(Boolean)
-        .join(" ") || user.username
+        .join(" ") || `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
     );
   };
 
@@ -505,7 +505,6 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                             <p
                               className={`text-sm font-semibold ${"cursor-pointer hover:underline hover:text-primary"}`}
                             >
-                              {/* {user.first_name} {user.last_name} */}
                               {generateUserName(user)}
                             </p>
                             <p
