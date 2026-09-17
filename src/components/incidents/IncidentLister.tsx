@@ -81,13 +81,17 @@ export default function IncidentLister() {
       "caller-lookup",
       debouncedSearch,
       incomingCallNumber,
+      reporterId,
     ],
     queryFn: ({ pageParam = 1 }) =>
       incidentApi.list({
         page: pageParam,
         limit: 15,
         search: debouncedSearch,
-        reporter_phone: incomingCallNumber || undefined,
+        reporter_id: reporterId || undefined,
+        reporter_phone: reporterId
+          ? undefined
+          : incomingCallNumber || undefined,
       }),
     getNextPageParam: (lastPage) => {
       if (lastPage.page < lastPage.total_pages) {
