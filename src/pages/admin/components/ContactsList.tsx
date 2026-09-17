@@ -84,13 +84,25 @@ export const ContactsList: React.FC<ContactsListProps> = ({
   useEffect(() => {
     const state = location.state as {
       openContactSearch?: string;
+      reporterId?: string;
     } | null;
     const contactSearch = state?.openContactSearch;
-    if (!contactSearch) return;
+    const reporterId = state?.reporterId;
+    if (!contactSearch && !reporterId) return;
 
     let ignore = false;
     (async () => {
       try {
+        if (reporterId) {
+          const res = await userApi.getById(reporterId);
+          if (!ignore && res.data) {
+            setSelectedUser(res.data);
+            setOpenContactDetails(true);
+            setContactIncidentPage(1);
+          }
+          return;
+        }
+
         const res = await userApi.list(1, 10, contactSearch);
         const match = res.data?.find((user) => user.phone === contactSearch);
         if (!ignore && match) {
@@ -99,7 +111,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
           setContactIncidentPage(1);
         } else if (!ignore) {
           // No matching contact — fall back to prefilling the search box.
-          setSearch(contactSearch);
+          setSearch(contactSearch || "");
         }
       } finally {
         if (!ignore) {

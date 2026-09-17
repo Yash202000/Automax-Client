@@ -165,6 +165,7 @@ export const IncidentDetailPage: React.FC = () => {
     setIncomingCallNumber,
     setIncomingCallName,
     setIsCallerIncidentsMinimized,
+    setReporterId,
   } = useSoftphoneStore();
 
   const [activeTab, setActiveTab] = useState<
@@ -3985,6 +3986,7 @@ export const IncidentDetailPage: React.FC = () => {
                               setIncomingCallName(incident.reporter_name);
                               setOpenCallerIncidents(true);
                               setIsCallerIncidentsMinimized(false);
+                              setReporterId(null);
                             }
                           }}
                           className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1.5 text-left"
@@ -4049,6 +4051,7 @@ export const IncidentDetailPage: React.FC = () => {
                         const phone = incident.reporter?.phone;
                         if (phone) {
                           setIncomingCallNumber(phone);
+                          setReporterId(incident.reporter?.id || null);
                           setIncomingCallName(reporterName);
                           setOpenCallerIncidents(true);
                           setIsCallerIncidentsMinimized(false);
