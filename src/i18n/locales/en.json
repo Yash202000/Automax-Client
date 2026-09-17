@@ -840,6 +840,7 @@
     "requestInfoSmsSent": "SMS sent successfully to citizen",
     "locationUpdateRequired": "Location must be updated before performing transitions",
     "nasaqVerification": "Nasaq Verification",
+    "nasaqInformation": "Nasaq Information",
     "verifyNasaq": "Verify Nasaq",
     "verifyingNasaq": "Verifying Nasaq...",
     "verifyAgain": "Verify Again",

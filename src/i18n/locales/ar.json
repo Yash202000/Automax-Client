@@ -835,6 +835,7 @@
     "requestInfoSmsSent": "تم إرسال رسالة نصية قصيرة إلى المواطن بنجاح",
     "locationUpdateRequired": "يجب تحديث الموقع قبل تنفيذ عمليات الانتقال",
     "nasaqVerification": "التحقق من نساق",
+    "nasaqInformation": "معلومات نساق",
     "verifyNasaq": "التحقق من نساق",
     "verifyingNasaq": "جاري التحقق من نساق...",
     "verifyAgain": "التحقق مرة أخرى",
