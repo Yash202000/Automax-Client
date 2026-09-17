@@ -8,18 +8,15 @@ import {
   useCreateOperationalKPI,
   useUpdateOperationalKPI,
   useOperationalKPIDetail,
-  useOperationalObjectives,
-  useProcesses,
   useDataSources,
-  useDomains,
   useOrganizations,
   useKpiDocumentaFolderInfo,
 } from "../../../hooks/useKpi";
-import { useGoals } from "../../../hooks/useGoals";
 import { departmentApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
 import { DocumentaFolderPicker } from "../../../components/kpi/DocumentaFolderPicker";
+import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { OperationalKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormOperationalPage: React.FC = () => {
@@ -31,22 +28,14 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
   const updateKpi = useUpdateOperationalKPI();
   const { data: existingData } = useOperationalKPIDetail(id ?? "");
 
-  const { data: goalsData } = useGoals({ limit: 200 });
-  const { data: objectivesData } = useOperationalObjectives();
-  const { data: processesData } = useProcesses();
   const { data: dataSourcesData } = useDataSources();
-  const { data: domainsData } = useDomains();
   const { data: organizationsData } = useOrganizations();
   const { data: departmentsData } = useQuery({
     queryKey: ["admin", "departments", "all"],
     queryFn: () => departmentApi.list(),
   });
 
-  const goals = (goalsData as any)?.data ?? [];
-  const objectives = objectivesData ?? [];
-  const processes = processesData ?? [];
   const dataSources = dataSourcesData ?? [];
-  const domains = domainsData ?? [];
   const organizations = organizationsData ?? [];
   const departments = departmentsData?.data ?? [];
 
@@ -54,25 +43,24 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     code: "",
     name_en: "",
     name_ar: "",
-    goal_id: "",
     operational_objective_id: "",
     process_id: "",
-    domain_id: "",
+    award_sub_criterion_id: "",
+    pillar_id: "",
     owner_type: "internal" as KPIOwnerType,
     owner_dept_id: "",
     owner_org_id: "",
     owning_agency_id: "",
+    related_units: "",
+    documenta_folder_id: "",
     polarity: "ascending",
+    reporting_frequency: "quarterly",
+    baseline: 0,
+    unit_of_measure: "",
     description_en: "",
     description_ar: "",
     formula: "",
-    baseline: 0,
-    unit_of_measure: "",
-    reporting_frequency: "quarterly",
-    lifecycle: "",
     data_source: "",
-    notes: "",
-    documenta_folder_id: "",
   });
   const [documentaFolderPath, setDocumentaFolderPath] = useState<string[]>([]);
   const [showFolderPicker, setShowFolderPicker] = useState(false);
@@ -95,25 +83,24 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
       code: kpi.code,
       name_en: kpi.name_en,
       name_ar: kpi.name_ar ?? "",
-      goal_id: kpi.goal_id ?? "",
       operational_objective_id: kpi.operational_objective_id ?? "",
       process_id: kpi.process_id ?? "",
-      domain_id: kpi.domain_id ?? "",
+      award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      pillar_id: kpi.pillar_id ?? "",
       owner_type: kpi.owner_type ?? "internal",
       owner_dept_id: kpi.owner_dept_id ?? "",
       owner_org_id: kpi.owner_org_id ?? "",
       owning_agency_id: kpi.owning_agency_id ?? "",
+      related_units: kpi.related_units ?? "",
+      documenta_folder_id: kpi.documenta_folder_id ?? "",
       polarity: kpi.polarity,
+      reporting_frequency: kpi.reporting_frequency ?? "quarterly",
+      baseline: kpi.baseline,
+      unit_of_measure: kpi.unit_of_measure ?? "",
       description_en: kpi.description_en ?? "",
       description_ar: kpi.description_ar ?? "",
       formula: kpi.formula ?? "",
-      baseline: kpi.baseline,
-      unit_of_measure: kpi.unit_of_measure ?? "",
-      reporting_frequency: kpi.reporting_frequency ?? "quarterly",
-      lifecycle: kpi.lifecycle ?? "",
       data_source: kpi.data_source ?? "",
-      notes: kpi.notes ?? "",
-      documenta_folder_id: kpi.documenta_folder_id ?? "",
     });
   }, [existingData]);
 
@@ -133,7 +120,6 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     if (
       !form.code ||
       !form.name_en ||
-      !form.goal_id ||
       !form.operational_objective_id ||
       !form.process_id
     ) {
@@ -144,7 +130,8 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
     const data: OperationalKPIRequest = {
       ...form,
       baseline: Number(form.baseline),
-      domain_id: form.domain_id || undefined,
+      pillar_id: form.pillar_id || undefined,
+      award_sub_criterion_id: form.award_sub_criterion_id || undefined,
       owner_dept_id: form.owner_dept_id || undefined,
       owning_agency_id: form.owning_agency_id || undefined,
       owner_org_id:
@@ -189,27 +176,13 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label={`${t("kpi.dictionary.fieldCode")} *`}
-              value={form.code}
-              onChange={handleChange("code")}
-              placeholder="OP-P1-01-01"
-              required
-            />
-            <Select
-              label={`${t("kpi.masterData.strategicGoal")} *`}
-              value={form.goal_id}
-              onChange={(v) =>
-                setForm((prev) => ({ ...prev, goal_id: v.target.value }))
-              }
-              options={goals.map((g: any) => ({
-                value: g.id,
-                label: g.title,
-              }))}
-              placeholder={t("common.selectAnOption")}
-            />
-          </div>
+          <Input
+            label={`${t("kpi.dictionary.fieldCode")} *`}
+            value={form.code}
+            onChange={handleChange("code")}
+            placeholder="OP-P1-01-01"
+            required
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -225,71 +198,13 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
             />
           </div>
 
-          <div>
-            <Select
-              label={`Objective (Parent › Child) *`}
-              value={form.process_id}
-              onChange={(v) => {
-                const selectedProcess = processes.find(
-                  (p: any) => p.id === v.target.value,
-                );
-                setForm((prev) => ({
-                  ...prev,
-                  process_id: v.target.value,
-                  operational_objective_id:
-                    selectedProcess?.operational_objective_id ??
-                    prev.operational_objective_id,
-                }));
-              }}
-              options={processes.map((p: any) => {
-                const parent = objectives.find(
-                  (o: any) => o.id === p.operational_objective_id,
-                );
-                return {
-                  value: p.id,
-                  label: p.name_en,
-                  group: parent?.name_en ?? "Other",
-                };
-              })}
-              placeholder={t("common.selectAnOption")}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Evidence Folder
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
-                <FolderOpen size={16} className="text-amber-500 shrink-0" />
-                {form.documenta_folder_id
-                  ? documentaFolderPath.join(" / ") || "Configured"
-                  : "Not configured — evidence will use a default folder on first upload"}
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowFolderPicker(true)}
-              >
-                Choose Folder
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label={t("kpi.masterData.domains")}
-              value={form.domain_id}
-              onChange={(v) =>
-                setForm((prev) => ({ ...prev, domain_id: v.target.value }))
-              }
-              options={domains.map((d: any) => ({
-                value: d.id,
-                label: d.name_en,
-              }))}
-              placeholder={t("common.selectAnOption")}
-            />
-          </div>
+          <KpiTaxonomyFields
+            operationalObjectiveId={form.operational_objective_id}
+            processId={form.process_id}
+            awardSubCriterionId={form.award_sub_criterion_id}
+            pillarId={form.pillar_id}
+            onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
@@ -361,6 +276,33 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
                 placeholder={t("common.selectAnOption")}
               />
             )}
+          </div>
+
+          <Input
+            label="Related Units"
+            value={form.related_units}
+            onChange={handleChange("related_units")}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Evidence Folder
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-2 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
+                <FolderOpen size={16} className="text-amber-500 shrink-0" />
+                {form.documenta_folder_id
+                  ? documentaFolderPath.join(" / ") || "Configured"
+                  : "Not configured — evidence will use a default folder on first upload"}
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowFolderPicker(true)}
+              >
+                Choose Folder
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -442,31 +384,17 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
             rows={2}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label={t("kpi.dictionary.fieldLifecycle")}
-              value={form.lifecycle}
-              onChange={handleChange("lifecycle")}
-            />
-            <Select
-              label={t("kpi.dictionary.fieldDataSource")}
-              value={form.data_source}
-              onChange={(v) =>
-                setForm((prev) => ({ ...prev, data_source: v.target.value }))
-              }
-              options={dataSources.map((d: any) => ({
-                value: d.name_en,
-                label: d.name_en,
-              }))}
-              placeholder={t("common.selectAnOption")}
-            />
-          </div>
-
-          <Textarea
-            label={t("kpi.dictionary.fieldNotes")}
-            value={form.notes}
-            onChange={handleChange("notes")}
-            rows={3}
+          <Select
+            label={t("kpi.dictionary.fieldDataSource")}
+            value={form.data_source}
+            onChange={(v) =>
+              setForm((prev) => ({ ...prev, data_source: v.target.value }))
+            }
+            options={dataSources.map((d: any) => ({
+              value: d.name_en,
+              label: d.name_en,
+            }))}
+            placeholder={t("common.selectAnOption")}
           />
         </div>
 
