@@ -3500,6 +3500,16 @@ export const IncidentDetailPage: React.FC = () => {
                                   </div>
                                 </div>
                               )}
+                              {nasaqResult.responseId && (
+                                <div>
+                                  <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                                    {t("incidents.nasaqResponseId")}
+                                  </label>
+                                  <div className="text-[hsl(var(--foreground))]">
+                                    {nasaqResult.responseId}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
