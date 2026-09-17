@@ -281,10 +281,14 @@ export interface StrategicKPI {
   owner_org?: KpiOrganization;
   owning_agency_id?: string;
   owning_agency?: DepartmentBrief;
-  goal_id: string;
+  goal_id?: string;
   goal?: GoalBrief;
+  operational_objective_id?: string;
+  operational_objective?: OperationalObjective;
   process_id?: string;
   process?: Process;
+  award_sub_criterion_id?: string;
+  award_sub_criterion?: AwardSubCriterion;
   polarity: string;
   activation_status: string;
   description_en: string;
@@ -308,50 +312,15 @@ export interface OperationalKPI {
   code: string;
   name_en: string;
   name_ar: string;
-  goal_id: string;
+  goal_id?: string;
   goal?: GoalBrief;
   operational_objective_id: string;
   operational_objective?: OperationalObjective;
   process_id: string;
   process?: Process;
-  domain_id?: string;
-  domain?: Domain;
-  owner_type: KPIOwnerType;
-  owner_dept_id?: string;
-  owner_dept?: DepartmentBrief;
-  owner_org_id?: string;
-  owner_org?: KpiOrganization;
-  owning_agency_id?: string;
-  owning_agency?: DepartmentBrief;
-  polarity: string;
-  activation_status: string;
-  description_en: string;
-  description_ar: string;
-  formula: string;
-  baseline: number;
-  unit_of_measure: string;
-  reporting_frequency: string;
-  lifecycle: string;
-  data_source: string;
-  notes: string;
-  documenta_folder_id?: string;
-  created_by?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    is_active: boolean;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AwardKPI {
-  id: string;
-  code: string;
-  name_en: string;
-  name_ar: string;
-  award_sub_criterion_id: string;
+  pillar_id?: string;
+  pillar?: Pillar;
+  award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
   domain_id?: string;
   domain?: Domain;
@@ -372,6 +341,55 @@ export interface AwardKPI {
   reporting_frequency: string;
   lifecycle: string;
   data_source: string;
+  related_units: string;
+  notes: string;
+  documenta_folder_id?: string;
+  created_by?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    is_active: boolean;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AwardKPI {
+  id: string;
+  code: string;
+  name_en: string;
+  name_ar: string;
+  goal_id?: string;
+  goal?: GoalBrief;
+  operational_objective_id?: string;
+  operational_objective?: OperationalObjective;
+  process_id?: string;
+  process?: Process;
+  award_sub_criterion_id?: string;
+  award_sub_criterion?: AwardSubCriterion;
+  pillar_id?: string;
+  pillar?: Pillar;
+  domain_id?: string;
+  domain?: Domain;
+  owner_type: KPIOwnerType;
+  owner_dept_id?: string;
+  owner_dept?: DepartmentBrief;
+  owner_org_id?: string;
+  owner_org?: KpiOrganization;
+  owning_agency_id?: string;
+  owning_agency?: DepartmentBrief;
+  polarity: string;
+  activation_status: string;
+  description_en: string;
+  description_ar: string;
+  formula: string;
+  baseline: number;
+  unit_of_measure: string;
+  reporting_frequency: string;
+  lifecycle: string;
+  data_source: string;
+  related_units: string;
   notes: string;
   documenta_folder_id?: string;
   created_by?: {
@@ -639,8 +657,9 @@ export interface StrategicKPIRequest {
   owner_dept_id?: string;
   owner_org_id?: string;
   owning_agency_id?: string;
-  goal_id: string;
+  operational_objective_id: string;
   process_id: string;
+  award_sub_criterion_id?: string;
   polarity?: string;
   description_en?: string;
   description_ar?: string;
@@ -660,9 +679,10 @@ export interface OperationalKPIRequest {
   code: string;
   name_en: string;
   name_ar?: string;
-  goal_id: string;
   operational_objective_id: string;
   process_id: string;
+  pillar_id?: string;
+  award_sub_criterion_id?: string;
   domain_id?: string;
   owner_type?: KPIOwnerType;
   owner_dept_id?: string;
@@ -677,6 +697,7 @@ export interface OperationalKPIRequest {
   reporting_frequency?: string;
   lifecycle?: string;
   data_source?: string;
+  related_units?: string;
   notes?: string;
   documenta_folder_id?: string;
 }
@@ -685,7 +706,10 @@ export interface AwardKPIRequest {
   code: string;
   name_en: string;
   name_ar?: string;
-  award_sub_criterion_id: string;
+  operational_objective_id: string;
+  process_id: string;
+  award_sub_criterion_id?: string;
+  pillar_id?: string;
   domain_id?: string;
   owner_type?: KPIOwnerType;
   owner_dept_id?: string;
@@ -700,6 +724,7 @@ export interface AwardKPIRequest {
   reporting_frequency?: string;
   lifecycle?: string;
   data_source?: string;
+  related_units?: string;
   notes?: string;
   documenta_folder_id?: string;
 }
