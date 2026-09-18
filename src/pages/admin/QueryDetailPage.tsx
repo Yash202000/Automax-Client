@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { publicUrl } from "../../utils/publicUrl";
 import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { ZoomableImage } from "../../components/common/ZoomableImage";
