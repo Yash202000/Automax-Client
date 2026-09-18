@@ -4238,7 +4238,7 @@ export const IncidentDetailPage: React.FC = () => {
           const stepTitles: Record<string, string> = {
             department: t("incidents.departmentAssignment"),
             user: t("incidents.userAssignment"),
-            field_changes: "Field Changes",
+            field_changes: t("incidents.fieldChanges"),
             duration: t("incidents.closingDuration", "Duration"),
             attachment: t("incidents.attachment"),
             feedback: t("incidents.feedback"),
@@ -4302,7 +4302,8 @@ export const IncidentDetailPage: React.FC = () => {
                           trans.from_state?.color || "hsl(var(--foreground))",
                       }}
                     >
-                      {trans.from_state?.name || t("incidents.current")}
+                      {getLocalizedName(trans.from_state) ||
+                        t("incidents.current")}
                     </span>
                     <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                     <span
@@ -4315,7 +4316,7 @@ export const IncidentDetailPage: React.FC = () => {
                           trans.to_state?.color || "hsl(var(--foreground))",
                       }}
                     >
-                      {trans.to_state?.name || t("incidents.next")}
+                      {getLocalizedName(trans.to_state) || t("incidents.next")}
                     </span>
                   </div>
                   <div className="flex items-center justify-center gap-1.5 mt-2">
