@@ -1,5 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { useTranslation } from "react-i18next";
 import { integrationApi } from "@/api/integration";
 import { toast } from "sonner";
@@ -196,6 +203,7 @@ export function LocationPicker({
       : null,
   );
   const [GISData, setGISData] = useState<any>(null);
+  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -466,7 +474,7 @@ export function LocationPicker({
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url={tileUrl}
           />
           <MapClickHandler onLocationSelect={handleMapClick} />
           <MapCenterUpdater center={mapCenter} />
