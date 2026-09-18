@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { ZoomableImage } from "../../components/common/ZoomableImage";
 import { toast } from "sonner";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -124,7 +125,7 @@ export const QueryDetailPage: React.FC = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const [baseUrl, setBaseUrl] = useState("");
+  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   // Queries
   const {
@@ -787,12 +788,6 @@ export const QueryDetailPage: React.FC = () => {
     setLightboxIndex(index);
     setLightboxOpen(true);
   };
-
-  useEffect(() => {
-    let baseUrl = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
-    baseUrl = (baseUrl || "").split("/api/v1")[0];
-    setBaseUrl(baseUrl);
-  }, []);
 
   if (isLoading) {
     return (
@@ -1602,7 +1597,7 @@ export const QueryDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url={baseUrl + "/osm-tiles/{z}/{x}/{y}.png"}
+                            url={tileUrl}
                           />
                           <Marker
                             position={[query.latitude, query.longitude]}
