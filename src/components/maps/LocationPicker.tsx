@@ -54,7 +54,7 @@ export default function LocationPicker({
     mapRef.current = map;
 
     let base_url = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
-    base_url = base_url.split("/api/v1")[0];
+    base_url = (base_url || "").split("/api/v1")[0];
 
     // Add tile layer (OpenStreetMap)
     L.tileLayer(base_url + "/osm-tiles/{z}/{x}/{y}.png", {

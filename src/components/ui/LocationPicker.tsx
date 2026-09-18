@@ -216,7 +216,7 @@ export function LocationPicker({
       }
     };
     let base_url = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
-    base_url = base_url.split("/api/v1")[0];
+    base_url = (base_url || "").split("/api/v1")[0];
     setBaseUrl(base_url);
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
