@@ -59,6 +59,14 @@ export function getLocalizedName(value: any): string {
   return language === "ar" && value?.name_ar ? value?.name_ar : value?.name;
 }
 
+export function getLocalizedDescription(value: any): string {
+  const language = i18n?.language;
+  if (!value) return "";
+  return language === "ar" && value?.description_ar
+    ? value?.description_ar
+    : value?.description;
+}
+
 export const getAvatarName = (name?: string): string => {
   if (!name) return "?";
 

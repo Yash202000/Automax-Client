@@ -29,7 +29,9 @@ import type {
   ConvertToRequestRequest,
   Incident,
 } from "../../types";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedDescription, getLocalizedName } from "@/lib/utils";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
+import i18n from "@/i18n";
 
 interface ConvertToRequestModalProps {
   incident: IncidentDetail;
@@ -146,7 +148,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     const convertToTreeNode = (items: Classification[]): TreeSelectNode[] => {
       return items.map((item) => ({
         id: item.id,
-        name: item.name,
+        name: getLocalizedName(item),
         children:
           item.children && item.children.length > 0
             ? convertToTreeNode(item.children)
@@ -154,7 +156,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       }));
     };
     return convertToTreeNode(classifications);
-  }, [classifications]);
+  }, [classifications, i18n.language]);
 
   // Helper to find classification by ID
   const findClassificationById = (
@@ -394,6 +396,13 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
   if (!isOpen) return null;
 
+  const generatedTitle = generateRecordTitle({
+    classification: incident.classification,
+    location: incident.location,
+    city: incident.city,
+    address: incident.address,
+  });
+
   return (
     <div className="fixed inset-0 bg-[hsl(var(--foreground)/0.6)] backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl max-w-2xl w-full animate-scale-in max-h-[90vh] flex flex-col">
@@ -404,7 +413,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               {t("requests.convertToRequest")}
             </h3>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              {incident.incident_number} - {incident.title}
+              {incident.incident_number} - {generatedTitle || incident.title}
             </p>
           </div>
           <button
@@ -595,7 +604,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                         "hsl(var(--foreground))",
                                     }}
                                   >
-                                    {req.current_state?.name || req.record_type}
+                                    {getLocalizedName(req.current_state) ||
+                                      req.record_type}
                                   </span>
                                 </div>
                               </button>
@@ -683,7 +693,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                 )}
                               </div>
                               <span className="font-medium text-[hsl(var(--foreground))]">
-                                {transition.transition.name}
+                                {getLocalizedName(transition.transition)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
@@ -699,7 +709,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                     "hsl(var(--foreground))",
                                 }}
                               >
-                                {transition.transition.from_state?.name}
+                                {getLocalizedName(
+                                  transition.transition.from_state,
+                                )}
                               </span>
                               <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
                               <span
@@ -714,7 +726,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                     "hsl(var(--foreground))",
                                 }}
                               >
-                                {transition.transition.to_state?.name}
+                                {getLocalizedName(
+                                  transition.transition.to_state,
+                                )}
                               </span>
                             </div>
                           </div>
@@ -964,7 +978,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-[hsl(var(--foreground))]">
-                              {workflow.name}
+                              {getLocalizedName(workflow)}
                             </span>
                             <span className="px-2 py-0.5 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
                               {workflow.code}
@@ -975,7 +989,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                           </div>
                           {workflow.description && (
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                              {workflow.description}
+                              {getLocalizedDescription(workflow)}
                             </p>
                           )}
                           {workflow.states && workflow.states.length > 0 && (
@@ -992,7 +1006,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                         state.color || "hsl(var(--foreground))",
                                     }}
                                   >
-                                    {state.name}
+                                    {getLocalizedName(state)}
                                   </span>
                                   {idx <
                                     Math.min(workflow.states!.length, 5) -
@@ -1059,9 +1073,12 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                       {t("requests.transition")}
                     </span>
                     <p className="text-sm text-[hsl(var(--foreground))]">
-                      {selectedTransition.transition.name}:{" "}
-                      {selectedTransition.transition.from_state?.name} →{" "}
-                      {selectedTransition.transition.to_state?.name}
+                      {getLocalizedName(selectedTransition.transition)}:{" "}
+                      {getLocalizedName(
+                        selectedTransition.transition.from_state,
+                      )}{" "}
+                      →{" "}
+                      {getLocalizedName(selectedTransition.transition.to_state)}
                     </p>
                   </div>
                 )}
@@ -1071,8 +1088,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     {t("requests.classification")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))]">
-                    {selectedClassification?.name ||
-                      selectedRequest?.classification?.name ||
+                    {getLocalizedName(selectedClassification) ||
+                      getLocalizedName(selectedRequest?.classification) ||
                       "—"}
                   </p>
                 </div>
@@ -1082,8 +1099,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     {t("requests.workflow")}
                   </span>
                   <p className="text-sm text-[hsl(var(--foreground))]">
-                    {selectedWorkflow?.name ||
-                      selectedRequest?.workflow?.name ||
+                    {getLocalizedName(selectedWorkflow) ||
+                      getLocalizedName(selectedRequest?.workflow) ||
                       "—"}{" "}
                     (
                     {selectedWorkflow?.code ||
