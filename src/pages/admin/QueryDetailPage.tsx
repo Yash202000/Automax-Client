@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { ZoomableImage } from "../../components/common/ZoomableImage";
 import { toast } from "sonner";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -123,6 +124,8 @@ export const QueryDetailPage: React.FC = () => {
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   // Queries
   const {
@@ -1594,7 +1597,7 @@ export const QueryDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            url={tileUrl}
                           />
                           <Marker
                             position={[query.latitude, query.longitude]}

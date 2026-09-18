@@ -918,11 +918,20 @@ export const kpiDashboardApi = {
     kpi_type?: string;
     year?: number;
     quarter?: number;
+    objective_id?: string;
+    criteria_id?: string;
+    sub_criteria_id?: string;
   }): Promise<ApiResponse<EnhancedKpiDashboardData>> => {
     const searchParams = new URLSearchParams();
     if (params?.kpi_type) searchParams.append("kpi_type", params.kpi_type);
     if (params?.year) searchParams.append("year", String(params.year));
     if (params?.quarter) searchParams.append("quarter", String(params.quarter));
+    if (params?.objective_id)
+      searchParams.append("objective_id", params.objective_id);
+    if (params?.criteria_id)
+      searchParams.append("criteria_id", params.criteria_id);
+    if (params?.sub_criteria_id)
+      searchParams.append("sub_criteria_id", params.sub_criteria_id);
     const res = await apiClient.get(
       `/kpi/dashboard?${searchParams.toString()}`,
     );

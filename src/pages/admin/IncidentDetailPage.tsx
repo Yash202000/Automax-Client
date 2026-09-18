@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { withCallStatusDot } from "../../utils/callStatus";
 import { capFilesByCount } from "../../utils/attachmentLimits";
 import {
@@ -232,6 +233,7 @@ export const IncidentDetailPage: React.FC = () => {
     new Set(),
   );
   const [transitionStep, setTransitionStep] = useState(0);
+  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -4422,7 +4424,7 @@ export const IncidentDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            url={tileUrl}
                           />
                           <Marker
                             position={[incident.latitude, incident.longitude]}
@@ -6462,7 +6464,7 @@ export const IncidentDetailPage: React.FC = () => {
                 >
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    url={tileUrl}
                   />
                   <Marker
                     position={[incident.latitude, incident.longitude]}

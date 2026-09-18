@@ -3861,7 +3861,10 @@
       "analyticsDescription": "ستظهر التحليلات والتصورات التفصيلية هنا.",
       "allTypes": "جميع الأنواع",
       "allYears": "جميع السنوات",
-      "allQuarters": "جميع الأرباع"
+      "allQuarters": "جميع الأرباع",
+      "allObjectives": "جميع الأهداف",
+      "allCriteria": "جميع المعايير",
+      "allSubCriteria": "جميع المعايير الفرعية"
     },
     "masterData": {
       "title": "البيانات الأساسية",
