@@ -291,6 +291,11 @@ export function IncidentCreatePage() {
     )?.name ?? "5",
   );
 
+  const MAX_DESCRIPTION_LENGTH = Number(
+    envConfigCategory?.values?.find((v) => v.code === "MAX_DESCRIPTION_LENGTH")
+      ?.name ?? "300",
+  );
+
   const isAttachmentOversized = (file: File) =>
     file.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
@@ -1236,8 +1241,13 @@ export function IncidentCreatePage() {
       !formData.description?.trim()
     )
       newErrors.description = t("incidents.descriptionRequired");
-    if (isEPM940 && (formData.description?.length || 0) > 300)
-      newErrors.description = t("incidents.descriptionTooLong", { max: 300 });
+    if (
+      isEPM940 &&
+      (formData.description?.length || 0) > MAX_DESCRIPTION_LENGTH
+    )
+      newErrors.description = t("incidents.descriptionTooLong", {
+        max: MAX_DESCRIPTION_LENGTH,
+      });
     if (workflowRequiredFields.includes("comment") && !comment.trim())
       newErrors.comment = t("incidents.fieldRequired", {
         field: t("incidents.comment", "Comment"),
@@ -1644,7 +1654,7 @@ export function IncidentCreatePage() {
                     rows={5}
                     required={workflowRequiredFields.includes("description")}
                     error={errors.description}
-                    maxLength={isEPM940 ? 300 : undefined}
+                    maxLength={isEPM940 ? MAX_DESCRIPTION_LENGTH : undefined}
                   />
                 )}
                 {(workflowRequiredFields.includes("description") ||
@@ -1654,12 +1664,14 @@ export function IncidentCreatePage() {
                       <span
                         className={cn(
                           "text-xs font-mono",
-                          (formData.description || "").length >= 300
+                          (formData.description || "").length >=
+                            MAX_DESCRIPTION_LENGTH
                             ? "text-[hsl(var(--destructive))] font-semibold"
                             : "text-[hsl(var(--muted-foreground))]",
                         )}
                       >
-                        {(formData.description || "").length}/300
+                        {(formData.description || "").length}/
+                        {MAX_DESCRIPTION_LENGTH}
                       </span>
                     </div>
                   )}
