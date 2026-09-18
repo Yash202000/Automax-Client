@@ -789,10 +789,8 @@ export const QueryDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
-    let baseUrl = import.meta.env.VITE_API_URL;
-    if (baseUrl.includes("/api/v1")) {
-      baseUrl = baseUrl.replace("/api/v1", "");
-    }
+    let baseUrl = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
+    baseUrl = baseUrl.split("/api/v1")[0];
     setBaseUrl(baseUrl);
   }, []);
 
