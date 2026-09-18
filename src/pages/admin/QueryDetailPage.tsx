@@ -1594,7 +1594,7 @@ export const QueryDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                           />
                           <Marker
                             position={[query.latitude, query.longitude]}

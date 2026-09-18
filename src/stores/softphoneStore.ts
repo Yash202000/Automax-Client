@@ -9,8 +9,10 @@ interface SoftphoneState {
   openCallerIncidents: boolean;
   incomingCallNumber: string | null;
   incomingCallName: string | null;
+  reporterId: string | null;
   setIncomingCallNumber: (incomingCallNumber: string | null) => void;
   setIncomingCallName: (incomingCallName: string | null) => void;
+  setReporterId: (reporterId: string | null) => void;
   setIsOpen: (isOpen: boolean) => void;
   setOpenCallerIncidents: (openCallerIncidents: boolean) => void;
   isCallerIncidentsMinimized: boolean;
@@ -33,9 +35,11 @@ export const useSoftphoneStore = create<SoftphoneState>()(
       isCallerIncidentsMinimized: false,
       incomingCallNumber: "",
       incomingCallName: "",
+      reporterId: null,
       setIncomingCallNumber: (incomingCallNumber) =>
         set({ incomingCallNumber }),
       setIncomingCallName: (incomingCallName) => set({ incomingCallName }),
+      setReporterId: (reporterId) => set({ reporterId }),
       setIsOpen: (isOpen) => set({ isOpen }),
       setOpenCallerIncidents: (openCallerIncidents) =>
         set({ openCallerIncidents }),

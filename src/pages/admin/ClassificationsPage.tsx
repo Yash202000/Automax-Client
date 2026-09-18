@@ -73,6 +73,7 @@ interface ClassificationFormData {
   parent_name: string;
   sort_order: number;
   types: string[];
+  is_nasaq: boolean;
   criticalities: CriticalityDraft[];
 }
 
@@ -85,6 +86,7 @@ const initialFormData: ClassificationFormData = {
   parent_name: "",
   sort_order: 0,
   types: ["incident", "request"],
+  is_nasaq: false,
   criticalities: [],
 };
 
@@ -273,6 +275,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               ? t("classifications.active")
               : t("classifications.inactive")}
           </span>
+          {!hasChildren && classification.is_nasaq && (
+            <span className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]">
+              {t("classifications.nasaq")}
+            </span>
+          )}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onView(classification)}
@@ -570,6 +577,7 @@ export const ClassificationsPage: React.FC = () => {
       types: classification.types?.length
         ? classification.types
         : ["incident", "request"],
+      is_nasaq: classification.is_nasaq || false,
       criticalities,
     });
     setIsModalOpen(true);
@@ -642,6 +650,13 @@ export const ClassificationsPage: React.FC = () => {
     const trimmedName = formData.name.trim();
     const trimmedNameAr = formData.name_ar.trim();
 
+    // Only leaf classifications (no children) may be marked NASAQ - the backend
+    // rejects is_nasaq=true for a classification that has sub-classifications.
+    const isLeafClassification =
+      !editingClassification ||
+      !editingClassification.children ||
+      editingClassification.children.length === 0;
+
     const payload = {
       name: trimmedName,
       name_ar: trimmedNameAr || undefined,
@@ -650,6 +665,7 @@ export const ClassificationsPage: React.FC = () => {
       parent_id: formData.parent_id || undefined,
       sort_order: formData.sort_order,
       types: formData.types,
+      is_nasaq: isLeafClassification ? formData.is_nasaq : false,
       criticalities: formData.criticalities.map((c) => ({
         ...c,
         max_closing_minutes: c.max_closing_minutes ?? 0,
@@ -942,6 +958,7 @@ export const ClassificationsPage: React.FC = () => {
         { header: "types", key: "types", width: 24 },
         { header: "sort_order", key: "sort_order", width: 12 },
         { header: "is_active", key: "is_active", width: 10 },
+        { header: "is_nasaq", key: "is_nasaq", width: 10 },
         { header: "criticalities", key: "criticalities", width: 40 },
       ];
 
@@ -960,6 +977,7 @@ export const ClassificationsPage: React.FC = () => {
           types: (c.types ?? []).join(", "),
           sort_order: c.sort_order,
           is_active: c.is_active ? "Yes" : "No",
+          is_nasaq: c.is_nasaq ? "Yes" : "No",
           criticalities: formatCriticalities(c.criticalities),
         });
       });
@@ -2195,6 +2213,42 @@ export const ClassificationsPage: React.FC = () => {
                   {t("classifications.sortOrderHelp")}
                 </p>
               </div>
+
+              {/* NASAQ - only a leaf classification (no sub-classifications) may be marked */}
+              {editingClassification &&
+              editingClassification.children &&
+              editingClassification.children.length > 0 ? (
+                <div className="flex items-start gap-2 p-3 bg-[hsl(var(--muted)/0.3)] rounded-xl border border-[hsl(var(--border))]">
+                  <Info className="w-4 h-4 text-[hsl(var(--muted-foreground))] mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {t("classifications.nasaqDisabledParent")}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="flex items-center gap-3 p-3 bg-[hsl(var(--muted)/0.3)] rounded-xl border border-[hsl(var(--border))] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_nasaq}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_nasaq: e.target.checked,
+                        })
+                      }
+                      className="rounded border-[hsl(var(--border))]"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        {t("classifications.nasaq")}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {t("classifications.nasaqHelp")}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {/* Criticality Configuration Section */}
               <div className="border-t border-[hsl(var(--border))] pt-4 mt-4">

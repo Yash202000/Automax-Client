@@ -43,6 +43,8 @@ export default function IncidentLister() {
     incomingCallName,
     isCallerIncidentsMinimized,
     setIsCallerIncidentsMinimized,
+    setReporterId,
+    reporterId,
   } = useSoftphoneStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -51,6 +53,7 @@ export default function IncidentLister() {
     setOpenCallerIncidents(false);
     setSearchTerm("");
     setIncomingCallNumber("");
+    setReporterId(null);
   };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -78,13 +81,17 @@ export default function IncidentLister() {
       "caller-lookup",
       debouncedSearch,
       incomingCallNumber,
+      reporterId,
     ],
     queryFn: ({ pageParam = 1 }) =>
       incidentApi.list({
         page: pageParam,
         limit: 15,
         search: debouncedSearch,
-        reporter_phone: incomingCallNumber || undefined,
+        reporter_id: reporterId || undefined,
+        reporter_phone: reporterId
+          ? undefined
+          : incomingCallNumber || undefined,
       }),
     getNextPageParam: (lastPage) => {
       if (lastPage.page < lastPage.total_pages) {
@@ -233,7 +240,10 @@ export default function IncidentLister() {
                     type="button"
                     onClick={() => {
                       navigate("/call-centre/contacts", {
-                        state: { openContactSearch: incomingCallNumber },
+                        state: {
+                          openContactSearch: incomingCallNumber,
+                          reporterId: reporterId,
+                        },
                       });
                       setOpenCallerIncidents(false);
                     }}
