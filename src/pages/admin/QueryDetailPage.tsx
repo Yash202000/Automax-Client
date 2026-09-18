@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { publicUrl } from "../../utils/publicUrl";
 import { ZoomableImage } from "../../components/common/ZoomableImage";
 import { toast } from "sonner";
@@ -123,6 +123,8 @@ export const QueryDetailPage: React.FC = () => {
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const [baseUrl, setBaseUrl] = useState("");
 
   // Queries
   const {
@@ -785,6 +787,14 @@ export const QueryDetailPage: React.FC = () => {
     setLightboxIndex(index);
     setLightboxOpen(true);
   };
+
+  useEffect(() => {
+    let baseUrl = import.meta.env.VITE_API_URL;
+    if (baseUrl.includes("/api/v1")) {
+      baseUrl = baseUrl.replace("/api/v1", "");
+    }
+    setBaseUrl(baseUrl);
+  }, []);
 
   if (isLoading) {
     return (
@@ -1594,7 +1604,7 @@ export const QueryDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            url={baseUrl + "/osm-tiles/{z}/{x}/{y}.png"}
                           />
                           <Marker
                             position={[query.latitude, query.longitude]}

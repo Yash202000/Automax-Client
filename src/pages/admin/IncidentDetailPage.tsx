@@ -232,6 +232,7 @@ export const IncidentDetailPage: React.FC = () => {
     new Set(),
   );
   const [transitionStep, setTransitionStep] = useState(0);
+  const [baseUrl, setBaseUrl] = useState("");
 
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -658,6 +659,12 @@ export const IncidentDetailPage: React.FC = () => {
 
     checkLocation();
   }, [incident]);
+
+  useEffect(() => {
+    let baseUrl = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
+    baseUrl = baseUrl.split("/api/v1")[0];
+    setBaseUrl(baseUrl);
+  }, []);
 
   // State-level edit restriction: if current state has editable_roles configured,
   // user must be in one of those roles (superadmin bypasses this check).
@@ -4418,7 +4425,7 @@ export const IncidentDetailPage: React.FC = () => {
                         >
                           <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            url={baseUrl + "/osm-tiles/{z}/{x}/{y}.png"}
                           />
                           <Marker
                             position={[incident.latitude, incident.longitude]}
@@ -6459,7 +6466,7 @@ export const IncidentDetailPage: React.FC = () => {
                 >
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    url={baseUrl + "/osm-tiles/{z}/{x}/{y}.png"}
                   />
                   <Marker
                     position={[incident.latitude, incident.longitude]}

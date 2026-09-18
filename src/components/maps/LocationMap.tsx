@@ -99,8 +99,11 @@ export default function LocationMap({
     const map = L.map(containerRef.current).setView(center, zoom);
     mapRef.current = map;
 
+    let base_url = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
+    base_url = base_url.split("/api/v1")[0];
+
     // Add tile layer (OpenStreetMap)
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer(base_url + "/osm-tiles/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);

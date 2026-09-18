@@ -196,6 +196,7 @@ export function LocationPicker({
       : null,
   );
   const [GISData, setGISData] = useState<any>(null);
+  const [base_url, setBaseUrl] = useState("");
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -214,6 +215,9 @@ export function LocationPicker({
         setShowSuggestions(false);
       }
     };
+    let base_url = window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL;
+    base_url = base_url.split("/api/v1")[0];
+    setBaseUrl(base_url);
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -466,7 +470,7 @@ export function LocationPicker({
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url={base_url + "/osm-tiles/{z}/{x}/{y}.png"}
           />
           <MapClickHandler onLocationSelect={handleMapClick} />
           <MapCenterUpdater center={mapCenter} />
