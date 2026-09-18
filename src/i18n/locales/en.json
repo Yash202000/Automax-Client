@@ -3862,7 +3862,10 @@
       "analyticsDescription": "Detailed analytics and visualizations will appear here.",
       "allTypes": "All Types",
       "allYears": "All Years",
-      "allQuarters": "All Quarters"
+      "allQuarters": "All Quarters",
+      "allObjectives": "All Objectives",
+      "allCriteria": "All Criteria",
+      "allSubCriteria": "All Sub-Criteria"
     },
     "masterData": {
       "title": "Master Data",

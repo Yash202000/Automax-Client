@@ -26,8 +26,15 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { useKpiDashboard } from "../../../hooks/useKpi";
+import {
+  useKpiDashboard,
+  useOperationalObjectives,
+  useProcesses,
+  useAwardCriteria,
+  useAwardSubCriteria,
+} from "../../../hooks/useKpi";
 import { Link } from "react-router-dom";
+import { MultiSelectFilter } from "../../../components/kpi/MultiSelectFilter";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "#22c55e",
@@ -41,15 +48,52 @@ export const KpiDashboardPage: React.FC = () => {
   const [kpiTypeFilter, setKpiTypeFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [quarterFilter, setQuarterFilter] = useState("");
+  const [objectiveFilter, setObjectiveFilter] = useState<string[]>([]);
+  const [criteriaFilter, setCriteriaFilter] = useState<string[]>([]);
+  const [subCriteriaFilter, setSubCriteriaFilter] = useState<string[]>([]);
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  const { data: objectivesData } = useOperationalObjectives();
+  const { data: processesData } = useProcesses();
+  const { data: criteriaData } = useAwardCriteria();
+  const { data: subCriteriaData } = useAwardSubCriteria();
+  const objectives = objectivesData ?? [];
+  const processes = processesData ?? [];
+  const criteria = criteriaData ?? [];
+  const subCriteria = subCriteriaData ?? [];
+
+  // Flat option list for the Objectives multi-select: each parent Objective
+  // is its own checkable option (broad — matches every KPI under any of its
+  // children), grouped with its child Processes right beneath it so the
+  // hierarchy stays visible while every node is independently selectable.
+  const objectiveOptions = objectives.flatMap((o) => [
+    { value: o.id, label: `${o.name_en} (All)`, group: o.name_en },
+    ...processes
+      .filter((p) => p.operational_objective_id === o.id)
+      .map((p) => ({ value: p.id, label: p.name_en, group: o.name_en })),
+  ]);
 
   const dashboardParams = useMemo(
     () => ({
       kpi_type: kpiTypeFilter || undefined,
       year: yearFilter ? Number(yearFilter) : undefined,
       quarter: quarterFilter ? Number(quarterFilter) : undefined,
+      objective_id: objectiveFilter.length
+        ? objectiveFilter.join(",")
+        : undefined,
+      criteria_id: criteriaFilter.length ? criteriaFilter.join(",") : undefined,
+      sub_criteria_id: subCriteriaFilter.length
+        ? subCriteriaFilter.join(",")
+        : undefined,
     }),
-    [kpiTypeFilter, yearFilter, quarterFilter],
+    [
+      kpiTypeFilter,
+      yearFilter,
+      quarterFilter,
+      objectiveFilter,
+      criteriaFilter,
+      subCriteriaFilter,
+    ],
   );
 
   const { data: dashboard, isLoading } = useKpiDashboard(dashboardParams);
@@ -172,6 +216,30 @@ export const KpiDashboardPage: React.FC = () => {
             </option>
           ))}
         </select>
+        <MultiSelectFilter
+          placeholder={t("kpi.dashboard.allObjectives")}
+          selected={objectiveFilter}
+          onChange={setObjectiveFilter}
+          options={objectiveOptions}
+        />
+        <MultiSelectFilter
+          placeholder={t("kpi.dashboard.allCriteria")}
+          selected={criteriaFilter}
+          onChange={setCriteriaFilter}
+          options={criteria.map((c) => ({
+            value: c.id,
+            label: `${c.criterion_no} - ${c.name_en}`,
+          }))}
+        />
+        <MultiSelectFilter
+          placeholder={t("kpi.dashboard.allSubCriteria")}
+          selected={subCriteriaFilter}
+          onChange={setSubCriteriaFilter}
+          options={subCriteria.map((s) => ({
+            value: s.id,
+            label: `${s.award_criterion?.criterion_no ?? ""}-${s.sub_no} ${s.name_en}`,
+          }))}
+        />
       </div>
 
       {isLoading ? (

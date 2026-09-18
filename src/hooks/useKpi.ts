@@ -1452,6 +1452,9 @@ export const useKpiDashboard = (params?: {
   kpi_type?: string;
   year?: number;
   quarter?: number;
+  objective_id?: string;
+  criteria_id?: string;
+  sub_criteria_id?: string;
 }) =>
   useQuery({
     queryKey: ["kpi", "dashboard", params],
