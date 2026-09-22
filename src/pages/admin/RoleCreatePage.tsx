@@ -16,16 +16,20 @@ import { useSettings } from "@/contexts/SettingsContext";
 
 interface RoleFormData {
   name: string;
+  name_ar: string;
   code: string;
   description: string;
+  description_ar: string;
   permission_ids: string[];
   bypass_login_totp?: boolean;
 }
 
 const initialFormData: RoleFormData = {
   name: "",
+  name_ar: "",
   code: "",
   description: "",
+  description_ar: "",
   permission_ids: [],
 };
 
@@ -104,11 +108,15 @@ export const RoleCreatePage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     const name = formData.name.trim();
+    const name_ar = formData.name_ar.trim();
     const code = formData.code.trim();
     if (!validateRequired(name)) {
       newErrors.name = t("roles.nameRequired");
     } else if (!validateRoleName(name)) {
       newErrors.name = t("roles.invalidName");
+    }
+    if (name_ar && !/^[؀-ۿ0-9\s]+$/.test(name_ar)) {
+      newErrors.name_ar = t("roles.invalidArabicName");
     }
     if (!isEPM940) {
       if (!validateRequired(code)) {
@@ -125,6 +133,7 @@ export const RoleCreatePage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const name = formData.name.trim();
+    const name_ar = formData.name_ar.trim();
     const code = formData.code.trim();
 
     if (!validate()) {
@@ -134,8 +143,10 @@ export const RoleCreatePage: React.FC = () => {
 
     createMutation.mutate({
       name,
+      name_ar: name_ar || undefined,
       code,
       description: formData.description,
+      description_ar: formData.description_ar.trim() || undefined,
       permission_ids: formData.permission_ids,
       bypass_login_totp: formData.bypass_login_totp,
     });
@@ -170,10 +181,10 @@ export const RoleCreatePage: React.FC = () => {
           </h2>
           <div
             className={`grid grid-cols-1 ${
-              !isEPM940 ? "md:grid-cols-2" : ""
+              !isEPM940 ? "md:grid-cols-3" : "md:grid-cols-2"
             } gap-6`}
           >
-            <div className={!isEPM940 ? "" : "md:col-span-2"}>
+            <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
@@ -194,6 +205,30 @@ export const RoleCreatePage: React.FC = () => {
               {errors.name && (
                 <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
                   {errors.name}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t("roles.roleNameAr")}
+              </label>
+              <input
+                type="text"
+                dir="rtl"
+                placeholder="الاسم بالعربية"
+                value={formData.name_ar}
+                onChange={(e) => {
+                  setFormData({ ...formData, name_ar: e.target.value });
+                  if (errors.name_ar) {
+                    setErrors((prev) => ({ ...prev, name_ar: "" }));
+                  }
+                }}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
+              />
+
+              {errors.name_ar && (
+                <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                  {errors.name_ar}
                 </p>
               )}
             </div>
@@ -225,19 +260,44 @@ export const RoleCreatePage: React.FC = () => {
                 )}
               </div>
             ) : null}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("common.description")}
-              </label>
-              <textarea
-                placeholder={t("roles.describeWhatThisRoleIsFor")}
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none resize-none"
-              />
+            <div className={!isEPM940 ? "md:col-span-3" : "md:col-span-2"}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t("common.description")}
+                  </label>
+                  <textarea
+                    placeholder={t("roles.describeWhatThisRoleIsFor")}
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t("roles.roleDescriptionAr")}
+                  </label>
+                  <textarea
+                    dir="rtl"
+                    placeholder="الوصف بالعربية"
+                    value={formData.description_ar}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_ar: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none resize-none"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           {shouldVerifyTotp && (

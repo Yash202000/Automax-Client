@@ -67,8 +67,10 @@ export interface Permission {
 export interface Role {
   id: string;
   name: string;
+  name_ar?: string | null;
   code: string;
   description: string;
+  description_ar?: string | null;
   is_system: boolean;
   is_active: boolean;
   is_department_manager: boolean;
@@ -608,15 +610,19 @@ export interface DepartmentUpdateRequest {
 // Role request types
 export interface RoleCreateRequest {
   name: string;
+  name_ar?: string;
   code: string;
   description?: string;
+  description_ar?: string;
   permission_ids?: string[];
   bypass_login_totp?: boolean;
 }
 
 export interface RoleUpdateRequest {
   name?: string;
+  name_ar?: string;
   description?: string;
+  description_ar?: string;
   permission_ids?: string[];
   is_active?: boolean;
   bypass_login_totp?: boolean;

@@ -1305,7 +1305,10 @@
     "importRolesTitle": "استيراد الأدوار",
     "importRolesSubtitle": "استيراد الأدوار من ملف JSON أو Excel.",
     "selectRoleImportFile": "اختر ملف استيراد الأدوار",
-    "supportedFormatsJsonXlsx": "الصيغ المدعومة: ‎.json، ‎.xlsx"
+    "supportedFormatsJsonXlsx": "الصيغ المدعومة: ‎.json، ‎.xlsx",
+    "roleNameAr": "اسم الدور (بالعربية)",
+    "roleDescriptionAr": "وصف الدور (بالعربية)",
+    "invalidArabicName": "يجب ألا يحتوي اسم الدور باللغة العربية إلا على أحرف عربية وأرقام ومسافات."
   },
   "departments": {
     "title": "الأقسام",
