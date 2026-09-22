@@ -13,13 +13,14 @@ import {
 import { useSoftphoneStore } from "../../stores/softphoneStore";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { incidentApi } from "@/api/admin";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SentimentStats } from "../sip/Softphone";
 import { useAuthStore } from "@/stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/permissions";
+import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 // The native softphone panel (Softphone.tsx) renders its own SentimentStats
 // and never mounts in cintrix mode, so this is the only place caller
@@ -359,57 +360,65 @@ export default function IncidentLister() {
             </div>
           ) : (
             <>
-              {incidents.map((incident) => (
-                <div
-                  key={incident.id}
-                  onClick={() => {
-                    navigate(`/incidents/${incident.id}`);
-                    // setOpenCallerIncidents(false);
-                  }}
-                  className={cn(
-                    "group relative p-4 bg-white border border-gray-100 rounded-2xl cursor-pointer transition-all duration-200",
-                    "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5",
-                    "active:scale-[0.98]",
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <span className="text-xs text-gray-900 text-sm mb-1 line-clamp-1">
-                        {incident.incident_number}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
-                      <Calendar className="w-2.5 h-2.5" />
-                      {new Date(incident.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <h4 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                    {incident.title}
-                  </h4>
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-3">
-                    {incident.description ||
-                      t("common.noDescription", "No description provided")}
-                  </p>
-
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
-                          getPriorityColor(incident?.priority || 0),
-                        )}
-                      >
-                        {getPriorityLabel(incident?.priority || 0)}
-                      </span>
-                      <div className="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider">
-                        {incident.current_state?.name || "New"}
+              {incidents.map((incident) => {
+                const generatedTitle = generateRecordTitle({
+                  classification: incident.classification,
+                  location: incident.location,
+                  city: incident.city,
+                  address: incident.address,
+                });
+                return (
+                  <div
+                    key={incident.id}
+                    onClick={() => {
+                      navigate(`/incidents/${incident.id}`);
+                      // setOpenCallerIncidents(false);
+                    }}
+                    className={cn(
+                      "group relative p-4 bg-white border border-gray-100 rounded-2xl cursor-pointer transition-all duration-200",
+                      "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5",
+                      "active:scale-[0.98]",
+                    )}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="text-xs text-gray-900 text-sm mb-1 line-clamp-1">
+                          {incident.incident_number}
+                        </span>
                       </div>
+                      <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
+                        <Calendar className="w-2.5 h-2.5" />
+                        {new Date(incident.created_at).toLocaleDateString()}
+                      </span>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+
+                    <h4 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                      {generatedTitle || incident.title}
+                    </h4>
+                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-3">
+                      {incident.description ||
+                        t("common.noDescription", "No description provided")}
+                    </p>
+
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
+                            getPriorityColor(incident?.priority || 0),
+                          )}
+                        >
+                          {getPriorityLabel(incident?.priority || 0)}
+                        </span>
+                        <div className="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider">
+                          {getLocalizedName(incident.current_state) || "New"}
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Lazy Loading Trigger */}
               <div

@@ -888,7 +888,8 @@
     "locationAutoMatched": "Location \"{{name}}\" auto-selected from master",
     "locationDefaultMapped": "No matching location found. Mapped to \"Default\" location.",
     "locationDefaultCreated": "No matching location found. Created and mapped to \"Default\" location.",
-    "locationMatchError": "Failed to match or create location. Please select manually."
+    "locationMatchError": "Failed to match or create location. Please select manually.",
+    "rateYourExperience": "Rate your experience with this resolution"
   },
   "priorities": {
     "critical": "Critical",
