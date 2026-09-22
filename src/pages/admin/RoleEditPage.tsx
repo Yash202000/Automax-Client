@@ -24,7 +24,9 @@ import { useSettings } from "@/contexts/SettingsContext";
 
 interface RoleFormData {
   name: string;
+  name_ar: string;
   description: string;
+  description_ar: string;
   permission_ids: string[];
   bypass_login_totp?: boolean;
 }
@@ -41,18 +43,23 @@ export const RoleEditPage: React.FC = () => {
   );
   const [formData, setFormData] = useState<RoleFormData>({
     name: "",
+    name_ar: "",
     description: "",
+    description_ar: "",
     permission_ids: [],
   });
   const [initialFormData, setInitialFormData] = useState<RoleFormData>({
     name: "",
+    name_ar: "",
     description: "",
+    description_ar: "",
     permission_ids: [],
   });
   const [initialized, setInitialized] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState("");
   const [permissionFilter, setPermissionFilter] =
     useState<PermissionFilterMode>("all");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEPM940 =
     window.APP_CONFIG?.CLIENT === "EPM940" ||
@@ -85,7 +92,9 @@ export const RoleEditPage: React.FC = () => {
   if (role && !initialized) {
     const initial: RoleFormData = {
       name: role.name,
+      name_ar: role.name_ar ?? "",
       description: role.description ?? "",
+      description_ar: role.description_ar ?? "",
       permission_ids: (role.permissions ?? []).map((p) => p.id),
       bypass_login_totp: role.bypass_login_totp ?? false,
     };
@@ -134,7 +143,9 @@ export const RoleEditPage: React.FC = () => {
   const isDirty = useMemo(() => {
     if (!initialized) return false;
     if (formData.name !== initialFormData.name) return true;
+    if (formData.name_ar !== initialFormData.name_ar) return true;
     if (formData.description !== initialFormData.description) return true;
+    if (formData.description_ar !== initialFormData.description_ar) return true;
     const a = [...formData.permission_ids].sort();
     const b = [...initialFormData.permission_ids].sort();
     if (a.length !== b.length) return true;
@@ -145,6 +156,7 @@ export const RoleEditPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = formData.name.trim();
+    const trimmedNameAr = formData.name_ar.trim();
     if (!trimmedName) {
       toast.error(t("roles.nameRequired"));
       return;
@@ -162,9 +174,20 @@ export const RoleEditPage: React.FC = () => {
       );
       return;
     }
+    if (trimmedNameAr && !/^[\u0600-\u06FF0-9\s]+$/.test(trimmedNameAr)) {
+      setErrors((prev) => ({
+        ...prev,
+        name_ar: t("roles.invalidArabicName"),
+      }));
+      toast.error(t("errors.validationError"));
+      return;
+    }
+    setErrors({});
     updateMutation.mutate({
       name: trimmedName,
+      name_ar: trimmedNameAr || undefined,
       description: formData.description,
+      description_ar: formData.description_ar.trim() || undefined,
       permission_ids: formData.permission_ids,
       bypass_login_totp: formData.bypass_login_totp,
     });
@@ -246,10 +269,10 @@ export const RoleEditPage: React.FC = () => {
           </h2>
           <div
             className={`grid grid-cols-1 ${
-              !isEPM940 ? "md:grid-cols-2" : ""
+              !isEPM940 ? "md:grid-cols-3" : "md:grid-cols-2"
             } gap-6`}
           >
-            <div className={!isEPM940 ? "" : "md:col-span-2"}>
+            <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("roles.roleName")} <span className="text-red-500">*</span>
               </label>
@@ -262,6 +285,30 @@ export const RoleEditPage: React.FC = () => {
                 required
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t("roles.roleNameAr")}
+              </label>
+              <input
+                type="text"
+                dir="rtl"
+                placeholder="الاسم بالعربية"
+                value={formData.name_ar}
+                onChange={(e) => {
+                  setFormData({ ...formData, name_ar: e.target.value });
+                  if (errors.name_ar) {
+                    setErrors((prev) => ({ ...prev, name_ar: "" }));
+                  }
+                }}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none"
+              />
+
+              {errors.name_ar && (
+                <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                  {errors.name_ar}
+                </p>
+              )}
             </div>
             {!isEPM940 ? (
               <div>
@@ -276,18 +323,43 @@ export const RoleEditPage: React.FC = () => {
                 />
               </div>
             ) : null}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t("common.description")}
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none resize-none"
-              />
+            <div className={!isEPM940 ? "md:col-span-3" : "md:col-span-2"}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t("common.description")}
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t("roles.roleDescriptionAr")}
+                  </label>
+                  <textarea
+                    dir="rtl"
+                    placeholder="الوصف بالعربية"
+                    value={formData.description_ar}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_ar: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] outline-none resize-none"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           {shouldVerifyTotp && (

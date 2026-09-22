@@ -1306,7 +1306,10 @@
     "importRolesTitle": "Import Roles",
     "importRolesSubtitle": "Import roles from a JSON or Excel file.",
     "selectRoleImportFile": "Select a role import file",
-    "supportedFormatsJsonXlsx": "Supported formats: .json, .xlsx"
+    "supportedFormatsJsonXlsx": "Supported formats: .json, .xlsx",
+    "roleNameAr": "Role Name (Arabic)",
+    "roleDescriptionAr": "Role Description (Arabic)",
+    "invalidArabicName": "Role name in Arabic can only contain Arabic letters, numbers and spaces"
   },
   "departments": {
     "title": "Departments",
