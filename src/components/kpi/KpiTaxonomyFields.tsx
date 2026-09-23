@@ -135,6 +135,12 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
             label: `${s.award_criterion?.criterion_no ?? ""}-${s.sub_no} ${s.name_en}`,
           }))}
           placeholder={t("common.selectAnOption")}
+          disabled={!!selectedCriterionId && visibleSubCriteria.length === 0}
+          hint={
+            selectedCriterionId && visibleSubCriteria.length === 0
+              ? t("kpi.masterData.noSubCriteriaAvailable")
+              : undefined
+          }
         />
       </div>
 

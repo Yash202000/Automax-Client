@@ -66,11 +66,25 @@ export const KpiDashboardPage: React.FC = () => {
   // is its own checkable option (broad — matches every KPI under any of its
   // children), grouped with its child Processes right beneath it so the
   // hierarchy stays visible while every node is independently selectable.
+  // isParent marks the Objective's own entry so MultiSelectFilter renders it
+  // AS the group's header row itself (bold, unindented) instead of a
+  // separate child-style row — the Objective's name then appears exactly
+  // once, never duplicated between a plain header and an "(All)" item.
   const objectiveOptions = objectives.flatMap((o) => [
-    { value: o.id, label: `${o.name_en} (All)`, group: o.name_en },
+    {
+      value: o.id,
+      label: o.name_en,
+      group: o.name_en,
+      isParent: true,
+    },
     ...processes
       .filter((p) => p.operational_objective_id === o.id)
-      .map((p) => ({ value: p.id, label: p.name_en, group: o.name_en })),
+      .map((p) => ({
+        value: p.id,
+        label: p.name_en,
+        group: o.name_en,
+        isParent: false,
+      })),
   ]);
 
   const dashboardParams = useMemo(
@@ -228,7 +242,7 @@ export const KpiDashboardPage: React.FC = () => {
           onChange={setCriteriaFilter}
           options={criteria.map((c) => ({
             value: c.id,
-            label: `${c.criterion_no} - ${c.name_en}`,
+            label: c.name_en,
           }))}
         />
         <MultiSelectFilter
@@ -237,7 +251,7 @@ export const KpiDashboardPage: React.FC = () => {
           onChange={setSubCriteriaFilter}
           options={subCriteria.map((s) => ({
             value: s.id,
-            label: `${s.award_criterion?.criterion_no ?? ""}-${s.sub_no} ${s.name_en}`,
+            label: s.name_en,
           }))}
         />
       </div>
