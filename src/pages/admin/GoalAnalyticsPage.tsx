@@ -49,47 +49,7 @@ import { departmentApi } from "../../api/admin";
 import { useAuthStore } from "../../stores/authStore";
 import { GoalPriorityBadge } from "../../components/goals/GoalPriorityBadge";
 import { GoalProgressBar } from "../../components/goals/GoalProgressBar";
-
-// ──────────────────────────────────────────────────
-// Print styles (retained as fallback for ctrl+P)
-// ──────────────────────────────────────────────────
-
-const PRINT_STYLE_ID = "goal-analytics-print-styles";
-
-function ensurePrintStyles() {
-  if (document.getElementById(PRINT_STYLE_ID)) return;
-  const style = document.createElement("style");
-  style.id = PRINT_STYLE_ID;
-  style.textContent = `
-    @media print {
-      /* Hide sidebar, navbar, toolbar controls */
-      nav, aside, header,
-      [data-print-hide],
-      .no-print { display: none !important; }
-
-      /* Full-width content */
-      main, [role="main"] {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-
-      /* White background for print */
-      body, html {
-        background: white !important;
-        color: black !important;
-      }
-
-      /* Avoid page breaks inside charts/cards */
-      .rounded-xl { break-inside: avoid; }
-
-      /* Hide the hidden pdf export container during native print */
-      #goal-analytics-pdf-export { display: none !important; }
-    }
-  `;
-  document.head.appendChild(style);
-}
+import "./GoalAnalyticsPage.print.css";
 
 // ──────────────────────────────────────────────────
 // Stat card config
@@ -226,7 +186,8 @@ export function GoalAnalyticsPage() {
   // ── Analytics queries ────────────────────────────
   const [atRiskPage, setAtRiskPage] = useState(1);
 
-  const { data: statsResp, isLoading: statsLoading } = useGoalStats(analyticsFilter);
+  const { data: statsResp, isLoading: statsLoading } =
+    useGoalStats(analyticsFilter);
   const { data: distResp, isLoading: distLoading } = useGoalDistributions(
     departmentId || undefined,
     analyticsFilter,
@@ -274,10 +235,12 @@ export function GoalAnalyticsPage() {
         analyticsFilter,
       );
       setPdfAtRiskAll(allAtRisk.data ?? []);
-      setPdfAtRiskTotal(allAtRisk.total ?? (allAtRisk.data?.length ?? 0));
+      setPdfAtRiskTotal(allAtRisk.total ?? allAtRisk.data?.length ?? 0);
 
       // Wait a tick for React to render the hidden PDF container with data
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => resolve(null)),
+      );
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       if (!reportRef.current) {
@@ -326,11 +289,6 @@ export function GoalAnalyticsPage() {
     statsLoading,
     t,
   ]);
-
-  // Ensure native print fallback CSS is injected (for Ctrl+P)
-  useEffect(() => {
-    ensurePrintStyles();
-  }, []);
 
   // ── Derived values for PDF ───────────────────────
   const generatedDate = new Date();
@@ -815,7 +773,9 @@ export function GoalAnalyticsPage() {
                             {goal.last_check_in_status.replace("_", " ")}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400">{"\u2014"}</span>
+                          <span className="text-xs text-slate-400">
+                            {"\u2014"}
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -892,8 +852,7 @@ export function GoalAnalyticsPage() {
               width: "210mm",
               backgroundColor: "#ffffff",
               color: "#0f172a",
-              fontFamily:
-                "'Inter', 'Helvetica Neue', Arial, sans-serif",
+              fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
               fontSize: "11px",
               lineHeight: 1.45,
             }}
@@ -1070,7 +1029,10 @@ export function GoalAnalyticsPage() {
               </div>
             </section>
 
-            <div className="pdf-page-break" style={{ pageBreakAfter: "always" }} />
+            <div
+              className="pdf-page-break"
+              style={{ pageBreakAfter: "always" }}
+            />
 
             {/* ───────── Executive Summary ───────── */}
             <section style={{ padding: "14mm 14mm 8mm 14mm" }}>
@@ -1226,9 +1188,7 @@ export function GoalAnalyticsPage() {
                   </tbody>
                 </table>
               ) : (
-                <p style={emptyStyle}>
-                  {t("goals.analytics.charts.noData")}
-                </p>
+                <p style={emptyStyle}>{t("goals.analytics.charts.noData")}</p>
               )}
             </section>
 
@@ -1305,9 +1265,7 @@ export function GoalAnalyticsPage() {
                   })()}
                 </div>
               ) : (
-                <p style={emptyStyle}>
-                  {t("goals.analytics.charts.noData")}
-                </p>
+                <p style={emptyStyle}>{t("goals.analytics.charts.noData")}</p>
               )}
             </section>
 
@@ -1387,13 +1345,14 @@ export function GoalAnalyticsPage() {
                   })()}
                 </div>
               ) : (
-                <p style={emptyStyle}>
-                  {t("goals.analytics.charts.noData")}
-                </p>
+                <p style={emptyStyle}>{t("goals.analytics.charts.noData")}</p>
               )}
             </section>
 
-            <div className="pdf-page-break" style={{ pageBreakAfter: "always" }} />
+            <div
+              className="pdf-page-break"
+              style={{ pageBreakAfter: "always" }}
+            />
 
             {/* ───────── Progress Summary ───────── */}
             <section style={{ padding: "14mm 14mm 4mm 14mm" }}>
@@ -1472,9 +1431,7 @@ export function GoalAnalyticsPage() {
                   </tbody>
                 </table>
               ) : (
-                <p style={emptyStyle}>
-                  {t("goals.analytics.charts.noData")}
-                </p>
+                <p style={emptyStyle}>{t("goals.analytics.charts.noData")}</p>
               )}
             </section>
 
@@ -1543,13 +1500,14 @@ export function GoalAnalyticsPage() {
                   </tbody>
                 </table>
               ) : (
-                <p style={emptyStyle}>
-                  {t("goals.analytics.charts.noData")}
-                </p>
+                <p style={emptyStyle}>{t("goals.analytics.charts.noData")}</p>
               )}
             </section>
 
-            <div className="pdf-page-break" style={{ pageBreakAfter: "always" }} />
+            <div
+              className="pdf-page-break"
+              style={{ pageBreakAfter: "always" }}
+            />
 
             {/* ───────── At-Risk Goals (full list) ───────── */}
             <section style={{ padding: "14mm 14mm 14mm 14mm" }}>
@@ -1707,9 +1665,7 @@ export function GoalAnalyticsPage() {
                   </tbody>
                 </table>
               ) : (
-                <p style={emptyStyle}>
-                  {t("goals.analytics.pdf.atRiskEmpty")}
-                </p>
+                <p style={emptyStyle}>{t("goals.analytics.pdf.atRiskEmpty")}</p>
               )}
             </section>
 
