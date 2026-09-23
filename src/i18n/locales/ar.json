@@ -887,7 +887,8 @@
     "locationAutoMatched": "تم تحديد الموقع \"{{name}}\" تلقائيًا من المواقع الرئيسية",
     "locationDefaultMapped": "لم يتم العثور على موقع مطابق. تم الربط بالموقع \"الافتراضي\".",
     "locationDefaultCreated": "لم يتم العثور على موقع مطابق. تم إنشاء الموقع \"الافتراضي\" والربط به.",
-    "locationMatchError": "فشلت مطابقة الموقع أو إنشائه. يرجى تحديد الموقع يدويًا."
+    "locationMatchError": "فشلت مطابقة الموقع أو إنشائه. يرجى تحديد الموقع يدويًا.",
+    "rateYourExperience": "قيّم تجربتك مع هذا الحل"
   },
   "priorities": {
     "critical": "حرج",
@@ -1304,7 +1305,10 @@
     "importRolesTitle": "استيراد الأدوار",
     "importRolesSubtitle": "استيراد الأدوار من ملف JSON أو Excel.",
     "selectRoleImportFile": "اختر ملف استيراد الأدوار",
-    "supportedFormatsJsonXlsx": "الصيغ المدعومة: ‎.json، ‎.xlsx"
+    "supportedFormatsJsonXlsx": "الصيغ المدعومة: ‎.json، ‎.xlsx",
+    "roleNameAr": "اسم الدور (بالعربية)",
+    "roleDescriptionAr": "وصف الدور (بالعربية)",
+    "invalidArabicName": "يجب ألا يحتوي اسم الدور باللغة العربية إلا على أحرف عربية وأرقام ومسافات."
   },
   "departments": {
     "title": "الأقسام",

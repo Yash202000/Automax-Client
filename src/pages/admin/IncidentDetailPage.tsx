@@ -2348,7 +2348,8 @@ export const IncidentDetailPage: React.FC = () => {
                           {merged.incident_number} - {merged.title}
                         </Link>
                         <p className="text-sm text-gray-500 mt-1">
-                          {t("incidents.status")}: {merged.current_state?.name}
+                          {t("incidents.status")}:{" "}
+                          {getLocalizedName(merged.current_state)}
                         </p>
                       </div>
                     </div>
@@ -2556,7 +2557,7 @@ export const IncidentDetailPage: React.FC = () => {
                             <div className="flex items-start justify-between mb-2">
                               <div>
                                 <span className="font-medium text-[hsl(var(--foreground))]">
-                                  {item.transition?.name ||
+                                  {getLocalizedName(item.transition) ||
                                     t("incidents.stateChanged")}
                                 </span>
                                 <span className="text-[hsl(var(--muted-foreground))] mx-2">
@@ -2576,11 +2577,14 @@ export const IncidentDetailPage: React.FC = () => {
                                           user.id === item.performed_by?.id,
                                       );
                                       return (
-                                        u?.department?.name ||
-                                        u?.departments?.[0]?.name ||
-                                        item.performed_by?.department?.name ||
-                                        item.performed_by?.departments?.[0]
-                                          ?.name ||
+                                        getLocalizedName(u?.department) ||
+                                        getLocalizedName(u?.departments?.[0]) ||
+                                        getLocalizedName(
+                                          item.performed_by?.department,
+                                        ) ||
+                                        getLocalizedName(
+                                          item.performed_by?.departments?.[0],
+                                        ) ||
                                         "-"
                                       );
                                     })()}
@@ -2605,7 +2609,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       "hsl(var(--foreground))",
                                   }}
                                 >
-                                  {item.from_state.name}
+                                  {getLocalizedName(item.from_state)}
                                 </span>
                                 <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                                 <span
@@ -2619,7 +2623,7 @@ export const IncidentDetailPage: React.FC = () => {
                                       "hsl(var(--foreground))",
                                   }}
                                 >
-                                  {item.to_state.name}
+                                  {getLocalizedName(item.to_state)}
                                 </span>
                               </div>
                             )}
@@ -4500,9 +4504,7 @@ export const IncidentDetailPage: React.FC = () => {
                 {t("incidents.workflow")}
               </h3>
               <p className="text-sm text-[hsl(var(--foreground))]">
-                {i18n.language === "ar" && incident.workflow.name_ar
-                  ? incident.workflow.name_ar
-                  : incident.workflow.name}
+                {getLocalizedName(incident.workflow)}
               </p>
               {incident.workflow.description && (
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 mb-4">
@@ -4535,7 +4537,7 @@ export const IncidentDetailPage: React.FC = () => {
           const stepTitles: Record<string, string> = {
             department: t("incidents.departmentAssignment"),
             user: t("incidents.userAssignment"),
-            field_changes: "Field Changes",
+            field_changes: t("incidents.fieldChanges"),
             duration: t("incidents.closingDuration", "Duration"),
             attachment: t("incidents.attachment"),
             feedback: t("incidents.feedback"),
@@ -4599,7 +4601,8 @@ export const IncidentDetailPage: React.FC = () => {
                           trans.from_state?.color || "hsl(var(--foreground))",
                       }}
                     >
-                      {trans.from_state?.name || t("incidents.current")}
+                      {getLocalizedName(trans.from_state) ||
+                        t("incidents.current")}
                     </span>
                     <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                     <span
@@ -4612,7 +4615,7 @@ export const IncidentDetailPage: React.FC = () => {
                           trans.to_state?.color || "hsl(var(--foreground))",
                       }}
                     >
-                      {trans.to_state?.name || t("incidents.next")}
+                      {getLocalizedName(trans.to_state) || t("incidents.next")}
                     </span>
                   </div>
                   <div className="flex items-center justify-center gap-1.5 mt-2">
