@@ -8,6 +8,13 @@ interface MultiSelectOption {
   // parent Objective's name), in first-seen order — options without a group
   // render as a flat list, unchanged from before grouping existed.
   group?: string;
+  // Marks the option that represents the group's own parent node (e.g. an
+  // Objective itself). Rendered as the group's header row — bold,
+  // unindented, and selectable — instead of a plain label, so the parent's
+  // name appears exactly once rather than duplicated as a separate row
+  // beneath its own header. Its child options (e.g. that Objective's
+  // Processes) render indented beneath it.
+  isParent?: boolean;
 }
 
 interface MultiSelectFilterProps {
@@ -53,7 +60,18 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   };
 
   const ungrouped = options.filter((o) => !o.group);
-  const groups: { name: string; options: MultiSelectOption[] }[] = [];
+  // Each group's own parent option (isParent: true, e.g. an Objective) is
+  // pulled out of `options` and rendered AS the group's header row itself —
+  // selectable, not a plain label — so the parent's name appears exactly
+  // once, never duplicated as a separate child-style row beneath its own
+  // header. Groups with no designated parent option (e.g. Criteria/
+  // Sub-Criteria, which aren't hierarchical) fall back to a plain text
+  // header, unchanged from before.
+  const groups: {
+    name: string;
+    parent?: MultiSelectOption;
+    options: MultiSelectOption[];
+  }[] = [];
   for (const option of options) {
     if (!option.group) continue;
     let group = groups.find((g) => g.name === option.group);
@@ -61,13 +79,21 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       group = { name: option.group, options: [] };
       groups.push(group);
     }
-    group.options.push(option);
+    if (option.isParent) {
+      group.parent = option;
+    } else {
+      group.options.push(option);
+    }
   }
 
   const renderCheckbox = (o: MultiSelectOption) => (
     <label
       key={o.value}
-      className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer"
+      className={`flex items-center gap-2 py-1.5 pe-3 text-sm cursor-pointer ${
+        o.isParent
+          ? "text-slate-700 dark:text-slate-200 font-semibold bg-slate-50 dark:bg-slate-900/40 ps-3 hover:bg-slate-100 dark:hover:bg-slate-900/60"
+          : `text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 ${o.group ? "ps-7" : "ps-3"}`
+      }`}
     >
       <input
         type="checkbox"
@@ -118,9 +144,13 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                 {ungrouped.map(renderCheckbox)}
                 {groups.map((g) => (
                   <div key={g.name}>
-                    <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/40">
-                      {g.name}
-                    </div>
+                    {g.parent ? (
+                      renderCheckbox(g.parent)
+                    ) : (
+                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/40">
+                        {g.name}
+                      </div>
+                    )}
                     {g.options.map(renderCheckbox)}
                   </div>
                 ))}
