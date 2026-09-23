@@ -3909,6 +3909,7 @@
       "noInitiatives": "No initiatives found.",
       "noDomains": "No domains found.",
       "noAwardCriteria": "No award criteria found.",
+      "noSubCriteriaAvailable": "No Sub-Criteria available",
       "linkedKpis": "Linked KPIs",
       "noLinkedKpis": "No KPIs are linked to this award criteria yet.",
       "noLinkedCollaborators": "No collaborators are linked to this award criteria yet.",
