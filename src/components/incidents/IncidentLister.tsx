@@ -20,6 +20,7 @@ import { SentimentStats } from "../sip/Softphone";
 import { useAuthStore } from "@/stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/permissions";
+import "./IncidentLister.css";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 // The native softphone panel (Softphone.tsx) renders its own SentimentStats
