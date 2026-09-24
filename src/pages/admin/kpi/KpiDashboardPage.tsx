@@ -36,10 +36,13 @@ import {
 import { Link } from "react-router-dom";
 import { MultiSelectFilter } from "../../../components/kpi/MultiSelectFilter";
 
-const STATUS_COLORS: Record<string, string> = {
-  active: "#22c55e",
-  draft: "#f59e0b",
-  inactive: "#94a3b8",
+// Matches the color coding already used for the Strategic/Operational/Award
+// stat cards above, so the donut's slices read consistently with the rest
+// of the page.
+const TYPE_COLORS: Record<string, string> = {
+  strategic: "#3b82f6",
+  operational: "#22c55e",
+  award: "#a855f7",
 };
 
 export const KpiDashboardPage: React.FC = () => {
@@ -147,11 +150,13 @@ export const KpiDashboardPage: React.FC = () => {
     },
   ];
 
-  const statusData = (dashboard?.kpis_by_status ?? []).map((s) => ({
-    name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
-    value: s.count,
-    fill: STATUS_COLORS[s.status] ?? "#94a3b8",
-  }));
+  const activeByTypeData = (dashboard?.active_kpis_by_type ?? [])
+    .filter((s) => s.count > 0)
+    .map((s) => ({
+      name: t(`kpi.dictionary.${s.type}`, s.type),
+      value: s.count,
+      fill: TYPE_COLORS[s.type] ?? "#94a3b8",
+    }));
 
   const trendData = (dashboard?.performance_trends ?? [])
     .map((t) => ({
@@ -333,13 +338,13 @@ export const KpiDashboardPage: React.FC = () => {
               )}
             </div>
 
-            {/* KPIs by Activation Status */}
+            {/* Active KPIs by Type */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-5">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
                 <BarChart3 size={20} className="text-blue-500" />
-                KPIs by Activation Status
+                Active KPIs by Type
               </h3>
-              {statusData.length === 0 ? (
+              {activeByTypeData.length === 0 ? (
                 <p className="text-sm text-slate-500 text-center py-8">
                   No data
                 </p>
@@ -348,7 +353,7 @@ export const KpiDashboardPage: React.FC = () => {
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
                       <Pie
-                        data={statusData}
+                        data={activeByTypeData}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -357,7 +362,7 @@ export const KpiDashboardPage: React.FC = () => {
                         dataKey="value"
                         label={({ name, value }) => `${name}: ${value}`}
                       >
-                        {statusData.map((entry, i) => (
+                        {activeByTypeData.map((entry, i) => (
                           <Cell key={i} fill={entry.fill} />
                         ))}
                       </Pie>

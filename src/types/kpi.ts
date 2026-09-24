@@ -199,7 +199,7 @@ export interface KpiDashboardData {
   total_operational: number;
   total_award: number;
   pending_reviews: number;
-  kpis_by_status: { status: string; count: number }[];
+  active_kpis_by_type: { type: string; count: number }[];
   kpis_by_goal: { goal: string; count: number }[];
 }
 
