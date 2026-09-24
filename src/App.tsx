@@ -35,6 +35,7 @@ import {
 import { CitizenAuthLayout } from "./components/layout/CitizenAuthLayout";
 import { CitizenLayout } from "./components/layout/CitizenLayout";
 import { CitizenVerifyPage } from "./pages/CitizenverifyPage";
+import { CitizenReportVerifyPage } from "./pages/CitizenReportVerifyPage";
 import { CitizenIncidentUpdatePage } from "./pages/CitizenIncidentUpdatePage";
 import { UserBootstrap } from "./components/common/UserBootstrap";
 import { ForgotPasswordPage } from "./pages/ForgetPasswordPage";
@@ -1284,6 +1285,10 @@ function App() {
                     <Route
                       path="/ivr/incident/sms-link/:id"
                       element={<CitizenVerifyPage />}
+                    />
+                    <Route
+                      path="/ivr/incident/report/:id"
+                      element={<CitizenReportVerifyPage />}
                     />
                   </Route>
                   <Route element={<CitizenLayout />}>
