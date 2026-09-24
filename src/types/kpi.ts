@@ -263,6 +263,7 @@ export interface EnhancedKpiDashboardData extends KpiDashboardData {
   recent_kpi_cards: KpiCardDef[];
   top_performers: KpiPerformanceSummary[];
   low_performers: KpiPerformanceSummary[];
+  available_years?: number[];
 }
 
 export interface StrategicKPI {

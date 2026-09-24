@@ -54,7 +54,6 @@ export const KpiDashboardPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState<string[]>([]);
   const [criteriaFilter, setCriteriaFilter] = useState<string[]>([]);
   const [subCriteriaFilter, setSubCriteriaFilter] = useState<string[]>([]);
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const { data: objectivesData } = useOperationalObjectives();
   const { data: processesData } = useProcesses();
@@ -114,6 +113,21 @@ export const KpiDashboardPage: React.FC = () => {
   );
 
   const { data: dashboard, isLoading } = useKpiDashboard(dashboardParams);
+
+  // Year options come from the years that actually have KPI Targets/Entries
+  // (unaffected by the active filters), plus the current year and whatever
+  // is selected so the dropdown never loses its own value mid-refetch.
+  const years = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...(dashboard?.available_years ?? []),
+          currentYear,
+          ...(yearFilter ? [Number(yearFilter)] : []),
+        ]),
+      ).sort((a, b) => b - a),
+    [dashboard?.available_years, currentYear, yearFilter],
+  );
 
   const cards = [
     {
