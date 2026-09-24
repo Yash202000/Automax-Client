@@ -3385,6 +3385,24 @@ export const SmsLinkApi = {
   },
 };
 
+// Public: report link sent in the Normal Closure SMS/Email — verifies the
+// signed token + last 6 digits of the citizen's mobile number, and returns
+// the citizen-facing incident report as a PDF blob.
+export const CitizenReportApi = {
+  verifyAndFetch: async (
+    id: string,
+    signed_token: string,
+    last6digits: string,
+  ): Promise<Blob> => {
+    const response = await apiClient.post(
+      `/ivr/incident/report/${id}/verify`,
+      { signed_token, last6digits },
+      { responseType: "blob" },
+    );
+    return response.data;
+  },
+};
+
 export const commentTemplateApi = {
   listByTransition: async (
     workflowTransitionId: string,
