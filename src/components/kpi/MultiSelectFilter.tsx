@@ -51,12 +51,49 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Parent/child cascade for hierarchical groups (a group with an isParent
+  // option, e.g. an Objective and its Processes): toggling the parent checks
+  // or unchecks all of its children with it; unchecking any child also
+  // unchecks the parent (a still-checked parent would otherwise keep
+  // matching that child's KPIs); and checking the last unchecked child
+  // checks the parent too. Flat/non-hierarchical options toggle alone.
   const toggleValue = (value: string) => {
-    if (selected.includes(value)) {
-      onChange(selected.filter((v) => v !== value));
-    } else {
-      onChange([...selected, value]);
+    const option = options.find((o) => o.value === value);
+    const parent =
+      option?.group !== undefined
+        ? options.find((o) => o.isParent && o.group === option.group)
+        : undefined;
+    const children = parent
+      ? options.filter((o) => o.group === parent.group && !o.isParent)
+      : [];
+    const isChecked = selected.includes(value);
+
+    if (parent && option?.isParent) {
+      const groupValues = [parent.value, ...children.map((c) => c.value)];
+      if (isChecked) {
+        onChange(selected.filter((v) => !groupValues.includes(v)));
+      } else {
+        onChange([
+          ...selected,
+          ...groupValues.filter((v) => !selected.includes(v)),
+        ]);
+      }
+      return;
     }
+
+    if (isChecked) {
+      onChange(selected.filter((v) => v !== value && v !== parent?.value));
+      return;
+    }
+    const next = [...selected, value];
+    if (
+      parent &&
+      !next.includes(parent.value) &&
+      children.every((c) => next.includes(c.value))
+    ) {
+      next.push(parent.value);
+    }
+    onChange(next);
   };
 
   const ungrouped = options.filter((o) => !o.group);
