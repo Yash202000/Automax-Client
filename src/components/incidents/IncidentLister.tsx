@@ -20,6 +20,7 @@ import { SentimentStats } from "../sip/Softphone";
 import { useAuthStore } from "@/stores/authStore";
 import usePermissions from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/permissions";
+import "./IncidentLister.css";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 
 // The native softphone panel (Softphone.tsx) renders its own SentimentStats
@@ -440,22 +441,6 @@ export default function IncidentLister() {
           </p>
         </div>
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}</style>
     </div>
   );
 }

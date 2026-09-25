@@ -11,6 +11,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import "./RichTextEditor.css";
 
 interface RichTextEditorProps {
   value: string;
@@ -126,17 +127,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         style={{ lineHeight: "1.6" }}
         data-placeholder={resolvedPlaceholder}
       />
-
-      <style>{`
-                [contentEditable]:empty:before {
-                    content: attr(data-placeholder);
-                    color: #94a3b8;
-                    pointer-events: none;
-                }
-                [contentEditable]:focus {
-                    outline: none;
-                }
-            `}</style>
     </div>
   );
 };

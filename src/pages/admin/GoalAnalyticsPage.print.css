@@ -1,0 +1,27 @@
+/* Native print fallback for ctrl+P on the Goal Analytics page */
+@media print {
+  /* Hide sidebar, navbar, toolbar controls */
+  nav, aside, header,
+  [data-print-hide],
+  .no-print { display: none !important; }
+
+  /* Full-width content */
+  main, [role="main"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* White background for print */
+  body, html {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Avoid page breaks inside charts/cards */
+  .rounded-xl { break-inside: avoid; }
+
+  /* Hide the hidden pdf export container during native print */
+  #goal-analytics-pdf-export { display: none !important; }
+}
