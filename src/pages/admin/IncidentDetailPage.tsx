@@ -3,6 +3,7 @@ import { publicUrl } from "../../utils/publicUrl";
 import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { withCallStatusDot } from "../../utils/callStatus";
 import { capFilesByCount } from "../../utils/attachmentLimits";
+import { useImageValidation } from "../../hooks/useImageValidation";
 import {
   useParams,
   useNavigate,
@@ -70,6 +71,7 @@ import {
   ConvertToRequestModal,
   UnmergeIncidentsModal,
   BulkUnmergeModal,
+  RejectedAttachmentsList,
 } from "../../components/incidents";
 import {
   incidentApi,
@@ -189,6 +191,10 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionComment, setTransitionComment] = useState("");
   const [transitionAttachment, setTransitionAttachment] = useState<File[]>([]);
   const [transitionUploading, setTransitionUploading] = useState(false);
+  const transitionImageValidation = useImageValidation();
+  const validatingTransitionAttachments =
+    transitionImageValidation.isValidating;
+  const attachmentsTabImageValidation = useImageValidation();
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
   const [transitionFieldValues, setTransitionFieldValues] = useState<
@@ -431,13 +437,20 @@ export const IncidentDetailPage: React.FC = () => {
     return "";
   };
 
-  const addTransitionAttachmentFiles = (newFiles: File[]) => {
+  // `replace` is used by the single-file picker: the selection replaces the
+  // current attachment instead of being appended.
+  const addTransitionAttachmentFiles = async (
+    newFiles: File[],
+    replace = false,
+  ) => {
+    const base = replace ? [] : transitionAttachment;
     const { accepted, skippedForLimit } = capFilesByCount(
-      newFiles,
-      transitionAttachment.length,
+      replace ? newFiles.slice(0, 1) : newFiles,
+      base.length,
       MAX_TRANSITION_ATTACHMENTS,
     );
-    const next = [...transitionAttachment, ...accepted];
+    const { valid } = await transitionImageValidation.validate(accepted);
+    const next = [...base, ...valid];
     setTransitionAttachment(next);
     setTransitionErrors((prev) => ({
       ...prev,
@@ -708,6 +721,8 @@ export const IncidentDetailPage: React.FC = () => {
         setSelectedTransition(null);
         setTransitionComment("");
         setTransitionAttachment([]);
+
+        transitionImageValidation.clearRejected();
         setTransitionFeedbackComment("");
         setReadyToCloseDuration("");
         setDepartmentMatchResult(null);
@@ -845,6 +860,8 @@ export const IncidentDetailPage: React.FC = () => {
       setSelectedTransition(null);
       setTransitionComment("");
       setTransitionAttachment([]);
+
+      transitionImageValidation.clearRejected();
       setTransitionFeedbackComment("");
       setTransitionFieldValues({});
       setReadyToCloseDuration("");
@@ -1265,6 +1282,8 @@ export const IncidentDetailPage: React.FC = () => {
     setSelectedTransition(null);
     setTransitionComment("");
     setTransitionAttachment([]);
+
+    transitionImageValidation.clearRejected();
     setTransitionFeedbackComment("");
     setTransitionFieldValues({});
     setReadyToCloseDuration("");
@@ -1731,11 +1750,15 @@ export const IncidentDetailPage: React.FC = () => {
     return history.find((h: any) => h.id === id);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadAttachmentMutation.mutate(file);
-    }
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const input = event.target;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const { valid } = await attachmentsTabImageValidation.validate([file]);
+    if (valid.length > 0) uploadAttachmentMutation.mutate(valid[0]);
   };
 
   const { data: commentTemplatesData } = useQuery({
@@ -2803,14 +2826,29 @@ export const IncidentDetailPage: React.FC = () => {
                         type="file"
                         className="hidden"
                         onChange={handleFileUpload}
-                        disabled={uploadAttachmentMutation.isPending}
+                        disabled={
+                          uploadAttachmentMutation.isPending ||
+                          attachmentsTabImageValidation.isValidating
+                        }
                       />
                     </label>
-                    {uploadAttachmentMutation.isPending && (
+                    {(uploadAttachmentMutation.isPending ||
+                      attachmentsTabImageValidation.isValidating) && (
                       <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("incidents.uploading")}
+                        {attachmentsTabImageValidation.isValidating
+                          ? t(
+                              "incidents.validatingImages",
+                              "Checking photos...",
+                            )
+                          : t("incidents.uploading")}
                       </span>
                     )}
+                    <div className="mt-2">
+                      <RejectedAttachmentsList
+                        items={attachmentsTabImageValidation.rejected}
+                        onDismiss={attachmentsTabImageValidation.clearRejected}
+                      />
+                    </div>
                   </div>
 
                   {/* Attachments List */}
@@ -5387,26 +5425,35 @@ export const IncidentDetailPage: React.FC = () => {
                                 )}
                               >
                                 <Upload className="w-4 h-4" />
-                                {transitionAttachmentLimitReached
-                                  ? t("incidents.attachmentLimit", {
-                                      max: MAX_TRANSITION_ATTACHMENTS,
-                                      defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
-                                    })
-                                  : t(
-                                      "incidents.addMoreAttachments",
-                                      "Add more attachments",
-                                    )}
+                                {validatingTransitionAttachments
+                                  ? t(
+                                      "incidents.validatingImages",
+                                      "Checking photos...",
+                                    )
+                                  : transitionAttachmentLimitReached
+                                    ? t("incidents.attachmentLimit", {
+                                        max: MAX_TRANSITION_ATTACHMENTS,
+                                        defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
+                                      })
+                                    : t(
+                                        "incidents.addMoreAttachments",
+                                        "Add more attachments",
+                                      )}
                                 <input
                                   type="file"
                                   className="hidden"
                                   multiple
-                                  disabled={transitionAttachmentLimitReached}
+                                  disabled={
+                                    transitionAttachmentLimitReached ||
+                                    validatingTransitionAttachments
+                                  }
                                   onChange={(e) => {
                                     const files = e.target.files;
                                     if (!files) return;
-                                    addTransitionAttachmentFiles(
+                                    void addTransitionAttachmentFiles(
                                       Array.from(files),
                                     );
+                                    e.target.value = "";
                                   }}
                                 />
                               </label>
@@ -5436,27 +5483,29 @@ export const IncidentDetailPage: React.FC = () => {
                         >
                           <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                            {t("incidents.clickToUpload")}
+                            {validatingTransitionAttachments
+                              ? t(
+                                  "incidents.validatingImages",
+                                  "Checking photos...",
+                                )
+                              : t("incidents.clickToUpload")}
                           </span>
                           <input
                             type="file"
                             className="hidden"
                             multiple={transitionAttachmentAllowsMultiple}
+                            disabled={validatingTransitionAttachments}
                             onChange={(e) => {
                               const files = e.target.files;
                               if (!files) return;
                               const selectedFiles = Array.from(files);
-                              if (transitionAttachmentAllowsMultiple) {
-                                addTransitionAttachmentFiles(selectedFiles);
-                              } else if (selectedFiles.length > 0) {
-                                setTransitionAttachment([selectedFiles[0]]);
-                                setTransitionErrors((prev) => ({
-                                  ...prev,
-                                  attachment: validateTransitionAttachments([
-                                    selectedFiles[0],
-                                  ]),
-                                }));
+                              if (selectedFiles.length > 0) {
+                                void addTransitionAttachmentFiles(
+                                  selectedFiles,
+                                  !transitionAttachmentAllowsMultiple,
+                                );
                               }
+                              e.target.value = "";
                             }}
                           />
                         </label>
@@ -5474,6 +5523,12 @@ export const IncidentDetailPage: React.FC = () => {
                           {transitionErrors.attachment}
                         </p>
                       )}
+                      <div className="mt-2">
+                        <RejectedAttachmentsList
+                          items={transitionImageValidation.rejected}
+                          onDismiss={transitionImageValidation.clearRejected}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -6035,9 +6090,10 @@ export const IncidentDetailPage: React.FC = () => {
                       onClick={handleStepNext}
                       disabled={
                         currentStepKey === "attachment" &&
-                        transitionAttachment.some(
-                          isTransitionAttachmentOversized,
-                        )
+                        (validatingTransitionAttachments ||
+                          transitionAttachment.some(
+                            isTransitionAttachmentOversized,
+                          ))
                       }
                       isLoading={
                         isLastStep &&

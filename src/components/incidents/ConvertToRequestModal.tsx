@@ -32,6 +32,8 @@ import type {
 import { cn, getLocalizedDescription, getLocalizedName } from "@/lib/utils";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import i18n from "@/i18n";
+import { useImageValidation } from "@/hooks/useImageValidation";
+import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
 
 interface ConvertToRequestModalProps {
   incident: IncidentDetail;
@@ -60,6 +62,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   const [transitionAttachment, setTransitionAttachment] = useState<File | null>(
     null,
   );
+  const imageValidation = useImageValidation();
+  const { clearRejected: clearRejectedImages } = imageValidation;
   const [feedbackRating, setFeedbackRating] = useState<number>(0);
   const [feedbackComment, setFeedbackComment] = useState("");
 
@@ -280,6 +284,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setSelectedTransition(null);
       setTransitionComment("");
       setTransitionAttachment(null);
+      clearRejectedImages();
       setFeedbackRating(0);
       setFeedbackComment("");
       setClassificationId("");
@@ -292,7 +297,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setShowRequestSearch(false);
       setSearchedRequests([]);
     }
-  }, [isOpen]);
+  }, [isOpen, clearRejectedImages]);
 
   const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
     {
@@ -333,6 +338,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
           const requiresFeedback = selectedTransition.requirements?.some(
             (r) => r.requirement_type === "feedback" && r.is_mandatory,
           );
+          if (imageValidation.isValidating) return false;
           if (requiresComment && !transitionComment.trim()) return false;
           if (requiresAttachment && !transitionAttachment) return false;
           if (requiresFeedback && feedbackRating === 0) return false;
@@ -837,18 +843,36 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                               <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                                 <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                  {t("incidents.clickToUpload")}
+                                  {imageValidation.isValidating
+                                    ? t(
+                                        "incidents.validatingImages",
+                                        "Checking photos...",
+                                      )
+                                    : t("incidents.clickToUpload")}
                                 </span>
                                 <input
                                   type="file"
                                   className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) setTransitionAttachment(file);
+                                  disabled={imageValidation.isValidating}
+                                  onChange={async (e) => {
+                                    const input = e.target;
+                                    const file = input.files?.[0];
+                                    input.value = "";
+                                    if (!file) return;
+                                    const { valid } =
+                                      await imageValidation.validate([file]);
+                                    if (valid[0])
+                                      setTransitionAttachment(valid[0]);
                                   }}
                                 />
                               </label>
                             )}
+                            <div className="mt-2">
+                              <RejectedAttachmentsList
+                                items={imageValidation.rejected}
+                                onDismiss={imageValidation.clearRejected}
+                              />
+                            </div>
                           </div>
                         )}
 
