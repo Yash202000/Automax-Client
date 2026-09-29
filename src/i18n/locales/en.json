@@ -268,7 +268,9 @@
     "goal": "Goal",
     "today": "Today",
     "yesterday": "Yesterday",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "more": "more",
+    "showLess": "Show less"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -889,7 +891,9 @@
     "locationDefaultMapped": "No matching location found. Mapped to \"Default\" location.",
     "locationDefaultCreated": "No matching location found. Created and mapped to \"Default\" location.",
     "locationMatchError": "Failed to match or create location. Please select manually.",
-    "rateYourExperience": "Rate your experience with this resolution"
+    "rateYourExperience": "Rate your experience with this resolution",
+    "latest": "Latest",
+    "hoverVisitNumberHint": "Hover a number to see visit date and status."
   },
   "priorities": {
     "critical": "Critical",
@@ -2373,43 +2377,30 @@
     "formFields": {
       "description": "Description",
       "descriptionDesc": "Detailed incident description",
-
       "classification": "Classification",
       "classificationDesc": "Incident category/type",
-
       "source": "Source",
       "sourceDesc": "Where the incident originated",
-
       "sourceIncidentReference": "Source Incident Reference",
       "sourceIncidentReferenceDesc": "Link to related incident/complaint/query",
-
       "assignee": "Assignee",
       "assigneeDesc": "User assigned to handle",
-
       "department": "Department",
       "departmentDesc": "Responsible department",
-
       "location": "Location",
       "locationDesc": "Physical location",
-
       "geolocation": "Geolocation",
       "geolocationDesc": "GPS coordinates (latitude & longitude)",
-
       "dueDate": "Due Date",
       "dueDateDesc": "Resolution deadline",
-
       "callerName": "Caller Name",
       "callerNameDesc": "Name of caller",
-
       "callerEmail": "Caller Email",
       "callerEmailDesc": "Email of caller",
-
       "callerPhoneNumber": "Caller Phone Number",
       "callerPhoneNumberDesc": "Phone number of caller",
-
       "attachments": "Attachments",
       "attachmentsDesc": "File attachments for the incident",
-
       "comment": "Comment",
       "commentDesc": "Comment required when creating the incident"
     },
@@ -2472,6 +2463,9 @@
     "maxLength": "Max Length",
     "minValue": "Min Value",
     "maxValue": "Max Value",
+    "allowMultipleValues": "Allow multiple values",
+    "allowMultipleValuesHint": "Each new entry is added to a list instead of replacing the previous value.",
+    "multipleValuesHint": "Press Enter or click Add — previously added values are kept.",
     "categoryNameExample": "e.g., Priority",
     "eG": "e.g., ????????",
     "eGCritical": "e.g., CRITICAL",

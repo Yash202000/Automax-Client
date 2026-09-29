@@ -268,7 +268,9 @@
     "goal": "هدف",
     "today": "اليوم",
     "yesterday": "أمس",
-    "unknown": "غير معروف"
+    "unknown": "غير معروف",
+    "more": "أكثر",
+    "showLess": "عرض أقل"
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -888,7 +890,9 @@
     "locationDefaultMapped": "لم يتم العثور على موقع مطابق. تم الربط بالموقع \"الافتراضي\".",
     "locationDefaultCreated": "لم يتم العثور على موقع مطابق. تم إنشاء الموقع \"الافتراضي\" والربط به.",
     "locationMatchError": "فشلت مطابقة الموقع أو إنشائه. يرجى تحديد الموقع يدويًا.",
-    "rateYourExperience": "قيّم تجربتك مع هذا الحل"
+    "rateYourExperience": "قيّم تجربتك مع هذا الحل",
+    "latest": "الأحدث",
+    "hoverVisitNumberHint": "مرر فوق الرقم لرؤية تاريخ الزيارة والحالة."
   },
   "priorities": {
     "critical": "حرج",
@@ -2371,43 +2375,30 @@
     "formFields": {
       "description": "الوصف",
       "descriptionDesc": "وصف تفصيلي للحادثة",
-
       "classification": "التصنيف",
       "classificationDesc": "فئة/نوع الحادثة",
-
       "source": "المصدر",
       "sourceDesc": "مكان نشأة الحادثة",
-
       "sourceIncidentReference": "مرجع الحادثة المصدر",
       "sourceIncidentReferenceDesc": "رابط للحادثة/الشكوى/الاستفسار المرتبط",
-
       "assignee": "المسند إليه",
       "assigneeDesc": "المستخدم المسند إليه للمعالجة",
-
       "department": "القسم",
       "departmentDesc": "القسم المسؤول",
-
       "location": "الموقع",
       "locationDesc": "الموقع الفعلي",
-
       "geolocation": "الموقع الجغرافي",
       "geolocationDesc": "إحداثيات GPS (خط العرض وخط الطول)",
-
       "dueDate": "تاريخ الاستحقاق",
       "dueDateDesc": "الموعد النهائي للحل",
-
       "callerName": "اسم المتصل",
       "callerNameDesc": "اسم المتصل",
-
       "callerEmail": "بريد المتصل الإلكتروني",
       "callerEmailDesc": "البريد الإلكتروني للمتصل",
-
       "callerPhoneNumber": "رقم هاتف المتصل",
       "callerPhoneNumberDesc": "رقم هاتف المتصل",
-
       "attachments": "المرفقات",
       "attachmentsDesc": "الملفات المرفقة بالحادثة",
-
       "comment": "تعليق",
       "commentDesc": "تعليق مطلوب عند إنشاء الحادثة"
     },
@@ -2470,6 +2461,9 @@
     "maxLength": "الحد الأقصى للطول",
     "minValue": "القيمة الدنيا",
     "maxValue": "القيمة القصوى",
+    "allowMultipleValues": "السماح بقيم متعددة",
+    "allowMultipleValuesHint": "تُضاف كل قيمة جديدة إلى قائمة بدلاً من استبدال القيمة السابقة.",
+    "multipleValuesHint": "اضغط Enter أو انقر على إضافة — يتم الاحتفاظ بالقيم المضافة سابقاً.",
     "categoryNameExample": "مثال: الأولوية",
     "eG": "مثال: الأولوية",
     "eGCritical": "مثال: CRITICAL",
