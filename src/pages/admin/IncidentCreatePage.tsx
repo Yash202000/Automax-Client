@@ -74,6 +74,8 @@ import { getAvatarName } from "@/lib/utils";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { capFilesByCount } from "@/utils/attachmentLimits";
+import { useImageValidation } from "@/hooks/useImageValidation";
+import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -154,6 +156,8 @@ export function IncidentCreatePage() {
     useState<Workflow | null>(null);
   const [isAutoMatched, setIsAutoMatched] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const imageValidation = useImageValidation();
+  const validatingAttachments = imageValidation.isValidating;
   const [callerNameParts, setCallerNameParts] = useState({
     first: "",
     middle: "",
@@ -319,13 +323,14 @@ export function IncidentCreatePage() {
     return "";
   };
 
-  const addAttachmentFiles = (newFiles: File[]) => {
+  const addAttachmentFiles = async (newFiles: File[]) => {
     const { accepted, skippedForLimit } = capFilesByCount(
       newFiles,
       attachments.length,
       MAX_ATTACHMENTS,
     );
-    const next = [...attachments, ...accepted];
+    const { valid } = await imageValidation.validate(accepted);
+    const next = [...attachments, ...valid];
     setAttachments(next);
     setErrors((prev) => ({
       ...prev,
@@ -767,7 +772,9 @@ export function IncidentCreatePage() {
       });
       setLookupValues({});
       setAttachments([]);
+      imageValidation.clearRejected();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // CTI prefill: navigated here from the Cintrix call widget ("Create incident").
@@ -2133,28 +2140,30 @@ export function IncidentCreatePage() {
                       errors.attachments
                         ? "border-[hsl(var(--destructive)/0.5)]"
                         : "border-[hsl(var(--border))]",
-                      attachmentLimitReached
+                      attachmentLimitReached || validatingAttachments
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)]",
                     )}
                   >
                     <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                     <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {attachmentLimitReached
-                        ? t("incidents.attachmentLimit", {
-                            max: MAX_ATTACHMENTS,
-                            defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
-                          })
-                        : t("incidents.clickToUpload")}
+                      {validatingAttachments
+                        ? t("incidents.validatingImages", "Checking photos...")
+                        : attachmentLimitReached
+                          ? t("incidents.attachmentLimit", {
+                              max: MAX_ATTACHMENTS,
+                              defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
+                            })
+                          : t("incidents.clickToUpload")}
                     </span>
                     <input
                       type="file"
                       className="hidden"
                       multiple
-                      disabled={attachmentLimitReached}
+                      disabled={attachmentLimitReached || validatingAttachments}
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
-                        if (files.length > 0) addAttachmentFiles(files);
+                        if (files.length > 0) void addAttachmentFiles(files);
                         e.target.value = "";
                       }}
                     />
@@ -2171,6 +2180,10 @@ export function IncidentCreatePage() {
                       {errors.attachments}
                     </p>
                   )}
+                  <RejectedAttachmentsList
+                    items={imageValidation.rejected}
+                    onDismiss={imageValidation.clearRejected}
+                  />
                 </div>
               </Card>
             )}
@@ -2342,7 +2355,10 @@ export function IncidentCreatePage() {
                   className="w-full"
                   leftIcon={<Save className="w-4 h-4" />}
                   isLoading={createMutation.isPending}
-                  disabled={attachments.some(isAttachmentOversized)}
+                  disabled={
+                    validatingAttachments ||
+                    attachments.some(isAttachmentOversized)
+                  }
                 >
                   {t("incidents.createIncident")}
                 </Button>
