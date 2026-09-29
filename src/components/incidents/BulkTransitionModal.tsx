@@ -81,7 +81,8 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
     input.value = "";
     if (!file) return;
     const { valid } = await imageValidation.validate([file]);
-    setAttachment(valid[0] ?? null);
+    // Keep the current attachment if the replacement is rejected.
+    if (valid[0]) setAttachment(valid[0]);
   };
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState(
