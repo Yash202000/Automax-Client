@@ -64,6 +64,12 @@ export function formatCustomLookupValue(
     return "-";
   }
 
+  // "Allow multiple values" text/number fields (e.g. Visit Number) store an
+  // array regardless of field_type — join it the same way multiselect does.
+  if (Array.isArray(field.value)) {
+    return field.value.join(", ");
+  }
+
   switch (field.field_type) {
     case "checkbox":
       return field.value ? t("common.yes", "Yes") : t("common.no", "No");
@@ -76,9 +82,6 @@ export function formatCustomLookupValue(
       }
 
     case "multiselect":
-      if (Array.isArray(field.value)) {
-        return field.value.join(", ");
-      }
       return String(field.value);
 
     default:
