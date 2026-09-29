@@ -1747,6 +1747,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                           value: "Latest Approved Value",
                           label: "Latest Approved Value",
                         },
+                        {
+                          value: "Recalculate Ratio from Approved Inputs",
+                          label: "Recalculate Ratio from Approved Inputs",
+                        },
                         { value: "Minimum", label: "Minimum" },
                         { value: "Maximum", label: "Maximum" },
                         {
