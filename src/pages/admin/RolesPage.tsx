@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { permissionApi, roleApi } from "../../api/admin";
 import type { Role } from "../../types";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedDescription, getLocalizedName } from "@/lib/utils";
 import { Button, HierarchicalTreeSelect } from "../../components/ui";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
@@ -628,7 +628,7 @@ export const RolesPage: React.FC = () => {
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
         <input
           type="text"
-          placeholder="Search..."
+          placeholder={t("nav.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] transition-all"
@@ -685,7 +685,7 @@ export const RolesPage: React.FC = () => {
                           {role.is_department_manager && (
                             <Crown className="w-4 h-4 text-indigo-500" />
                           )}
-                          {role.name}
+                          {getLocalizedName(role)}
                         </h3>
                         <p className="text-sm text-[hsl(var(--muted-foreground))] font-mono">
                           {role.code}
@@ -722,7 +722,8 @@ export const RolesPage: React.FC = () => {
                   </div>
 
                   <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
-                    {role.description || t("roles.noDescriptionProvided")}
+                    {getLocalizedDescription(role) ||
+                      t("roles.noDescriptionProvided")}
                   </p>
 
                   <div className="pt-4 border-t border-[hsl(var(--border))]">

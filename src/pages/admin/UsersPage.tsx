@@ -54,7 +54,7 @@ import type { User, Role, UpdateProfileRequest, Department } from "../../types";
 import type { LDAPUserListItem } from "../../api/ldap";
 import ExcelJs from "exceljs";
 import { saveAs } from "file-saver";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedName } from "@/lib/utils";
 import { FolderTree } from "lucide-react";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
@@ -2135,7 +2135,7 @@ export const UsersPage: React.FC = () => {
                               {role.is_department_manager && (
                                 <Crown className="w-3 h-3 text-indigo-500" />
                               )}
-                              {role.name}
+                              {getLocalizedName(role)}
                             </span>
                           ))}
                           {(user.roles?.length || 0) > 2 && (
@@ -2161,7 +2161,7 @@ export const UsersPage: React.FC = () => {
                                   className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-[hsl(var(--accent)/0.1)] rounded-lg"
                                 >
                                   <Building2 className="w-3 h-3" />
-                                  {dept.name}
+                                  {getLocalizedName(dept)}
                                 </span>
                               ))}
                               {user.departments.length > 2 && (
@@ -2173,7 +2173,7 @@ export const UsersPage: React.FC = () => {
                           ) : user.department ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs  bg-[hsl(var(--accent)/0.1)] rounded-lg">
                               <Building2 className="w-3 h-3" />
-                              {user.department.name}
+                              {getLocalizedName(user.department)}
                             </span>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -2192,7 +2192,7 @@ export const UsersPage: React.FC = () => {
                                   className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] rounded-lg"
                                 >
                                   <MapPin className="w-3 h-3" />
-                                  {loc.name}
+                                  {getLocalizedName(loc)}
                                 </span>
                               ))}
                               {user.locations.length > 2 && (
@@ -2204,7 +2204,7 @@ export const UsersPage: React.FC = () => {
                           ) : user.location ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] rounded-lg">
                               <MapPin className="w-3 h-3" />
-                              {user.location.name}
+                              {getLocalizedName(user.location)}
                             </span>
                           ) : (
                             <span className="text-sm text-[hsl(var(--muted-foreground))]">
