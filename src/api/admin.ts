@@ -1322,6 +1322,22 @@ export const workflowApi = {
   },
 };
 
+// Image validation API
+export const imageApi = {
+  validate: async (file: File): Promise<ApiResponse<unknown>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<ApiResponse<unknown>>(
+      "/images/validate",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return response.data;
+  },
+};
+
 // Incident API
 export const incidentApi = {
   create: async (

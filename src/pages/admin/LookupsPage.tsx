@@ -1017,6 +1017,34 @@ export const LookupsPage: React.FC = () => {
                   </div>
                 )}
 
+                {(categoryFormData.field_type === "text" ||
+                  categoryFormData.field_type === "number") && (
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={
+                        categoryFormData.validation_rules.allowMultiple || false
+                      }
+                      onChange={(e) =>
+                        setCategoryFormData({
+                          ...categoryFormData,
+                          validation_rules: {
+                            ...categoryFormData.validation_rules,
+                            allowMultiple: e.target.checked,
+                          },
+                        })
+                      }
+                      className="mt-0.5 w-4 h-4 rounded border-[hsl(var(--border))] text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                    />
+                    <span className="text-sm text-[hsl(var(--foreground))]">
+                      {t("lookups.allowMultipleValues")}
+                      <span className="block text-xs text-[hsl(var(--muted-foreground))] font-normal">
+                        {t("lookups.allowMultipleValuesHint")}
+                      </span>
+                    </span>
+                  </label>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <input

@@ -28,6 +28,8 @@ import {
   lookupApi,
 } from "../../api/admin";
 import type { Incident, AvailableTransition } from "../../types";
+import { useImageValidation } from "../../hooks/useImageValidation";
+import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
 import { cn } from "@/lib/utils";
 
 interface BulkTransitionModalProps {
@@ -69,6 +71,19 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   const [readyToCloseDuration, setReadyToCloseDuration] = useState("");
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+  const imageValidation = useImageValidation();
+
+  const handleAttachmentChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const { valid } = await imageValidation.validate([file]);
+    // Keep the current attachment if the replacement is rejected.
+    if (valid[0]) setAttachment(valid[0]);
+  };
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState(
     t("incidents.missingIncidentInformation"),
@@ -418,6 +433,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
     setFieldValues({});
     setReadyToCloseDuration("");
     setAttachment(null);
+    imageValidation.clearRejected();
     setFeedbackRating(0);
     setResults([]);
     setProgress({ current: 0, total: 0 });
@@ -1144,11 +1160,22 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-[hsl(var(--border))] border-dashed rounded-lg hover:border-[hsl(var(--primary)/0.5)] transition-colors cursor-pointer group relative">
                   <input
                     type="file"
-                    onChange={(e) => setAttachment(e.target.files?.[0] || null)}
+                    onChange={handleAttachmentChange}
+                    disabled={imageValidation.isValidating}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <div className="space-y-1 text-center">
-                    {attachment ? (
+                    {imageValidation.isValidating ? (
+                      <div className="flex flex-col items-center">
+                        <Upload className="mx-auto h-8 w-8 text-[hsl(var(--muted-foreground))]" />
+                        <p className="text-sm mt-2 text-[hsl(var(--muted-foreground))]">
+                          {t(
+                            "incidents.validatingImages",
+                            "Checking photos...",
+                          )}
+                        </p>
+                      </div>
+                    ) : attachment ? (
                       <div className="flex flex-col items-center">
                         <Paperclip className="mx-auto h-8 w-8 text-[hsl(var(--primary))]" />
                         <p className="text-sm font-medium mt-2">
@@ -1181,6 +1208,10 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                     )}
                   </div>
                 </div>
+                <RejectedAttachmentsList
+                  items={imageValidation.rejected}
+                  onDismiss={imageValidation.clearRejected}
+                />
               </div>
             </div>
           ) : currentStep === "comment" ? (
@@ -1246,7 +1277,9 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
               </Button>
             ) : (
               <Button
-                disabled={!canGoNext || isExecuting}
+                disabled={
+                  !canGoNext || isExecuting || imageValidation.isValidating
+                }
                 onClick={handleNext}
                 rightIcon={
                   currentStepIndex === transitionSteps.length - 1 ? (

@@ -3,6 +3,7 @@ import { publicUrl } from "../../utils/publicUrl";
 import { getOsmTileUrl } from "../../utils/osmTileUrl";
 import { withCallStatusDot } from "../../utils/callStatus";
 import { capFilesByCount } from "../../utils/attachmentLimits";
+import { useImageValidation } from "../../hooks/useImageValidation";
 import {
   useParams,
   useNavigate,
@@ -70,6 +71,7 @@ import {
   ConvertToRequestModal,
   UnmergeIncidentsModal,
   BulkUnmergeModal,
+  RejectedAttachmentsList,
 } from "../../components/incidents";
 import {
   incidentApi,
@@ -102,6 +104,8 @@ import type {
   IncidentRejectionLog,
   AIQualityFeedback,
   NasaqVerificationResult,
+  ValidationRules,
+  IncidentRevision,
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -137,6 +141,121 @@ const defaultIcon = new Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
+
+const parseAllowMultiple = (validationRules?: string): boolean => {
+  if (!validationRules) return false;
+  try {
+    const rules = JSON.parse(validationRules) as ValidationRules;
+    return !!rules.allowMultiple;
+  } catch {
+    return false;
+  }
+};
+
+const formatVisitDateTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+// "Allow multiple values" lookup categories (e.g. Visit Number) render
+// compactly: only the most recently recorded value is shown by default
+// (as a chip, since that's the one anyone scanning the Details panel
+// actually cares about), with everything else collapsed behind a single
+// "+N more" toggle instead of a wall of individually-bordered chips.
+// Hovering a value shows the visit date and the incident status at the
+// time it was recorded, when that's known.
+const VisitNumberChipGroup: React.FC<{
+  categoryLabel: string;
+  values: LookupValue[];
+  visitInfo: Record<string, { date: string; status: string }>;
+}> = ({ categoryLabel, values, visitInfo }) => {
+  const { t, i18n } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+
+  const sorted = useMemo(
+    () =>
+      [...values].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ),
+    [values],
+  );
+  const [latest, ...rest] = sorted;
+  const hasVisitInfo = Object.keys(visitInfo).length > 0;
+
+  const displayName = (value: LookupValue) =>
+    i18n.language === "ar" && value.name_ar ? value.name_ar : value.name;
+
+  const chipTooltip = (value: LookupValue) => {
+    const info = visitInfo[`lookup:${value.category?.code}:${value.name}`];
+    if (!info) return undefined;
+    return `${formatVisitDateTime(info.date)} · ${info.status}`;
+  };
+
+  return (
+    <div>
+      <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+        {categoryLabel}{" "}
+        <span className="text-[hsl(var(--primary))] normal-case">
+          ({values.length})
+        </span>
+      </label>
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        <span
+          title={chipTooltip(latest)}
+          className="inline-flex items-center px-2 py-0.5 rounded-lg text-sm font-mono font-bold border border-[hsl(var(--success))] text-[hsl(var(--success))] bg-[hsl(var(--success)/0.1)]"
+        >
+          {displayName(latest)}
+        </span>
+        {rest.length > 0 && (
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">
+            ({t("incidents.latest", "latest")})
+          </span>
+        )}
+        {rest.length > 0 &&
+          (expanded ? (
+            <>
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                {rest.map((value, i) => (
+                  <React.Fragment key={value.id}>
+                    {i > 0 && ", "}
+                    <span title={chipTooltip(value)}>{displayName(value)}</span>
+                  </React.Fragment>
+                ))}
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
+              >
+                {t("common.showLess", "Show less")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="text-xs text-[hsl(var(--primary))] hover:underline"
+            >
+              +{rest.length} {t("common.more", "more")}
+            </button>
+          ))}
+      </div>
+      {expanded && hasVisitInfo && (
+        <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
+          {t(
+            "incidents.hoverVisitNumberHint",
+            "Hover a number to see visit date and status.",
+          )}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export const IncidentDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -189,6 +308,10 @@ export const IncidentDetailPage: React.FC = () => {
   const [transitionComment, setTransitionComment] = useState("");
   const [transitionAttachment, setTransitionAttachment] = useState<File[]>([]);
   const [transitionUploading, setTransitionUploading] = useState(false);
+  const transitionImageValidation = useImageValidation();
+  const validatingTransitionAttachments =
+    transitionImageValidation.isValidating;
+  const attachmentsTabImageValidation = useImageValidation();
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
   const [transitionFieldValues, setTransitionFieldValues] = useState<
@@ -431,13 +554,20 @@ export const IncidentDetailPage: React.FC = () => {
     return "";
   };
 
-  const addTransitionAttachmentFiles = (newFiles: File[]) => {
+  // `replace` is used by the single-file picker: the selection replaces the
+  // current attachment instead of being appended.
+  const addTransitionAttachmentFiles = async (
+    newFiles: File[],
+    replace = false,
+  ) => {
+    const base = replace ? [] : transitionAttachment;
     const { accepted, skippedForLimit } = capFilesByCount(
-      newFiles,
-      transitionAttachment.length,
+      replace ? newFiles.slice(0, 1) : newFiles,
+      base.length,
       MAX_TRANSITION_ATTACHMENTS,
     );
-    const next = [...transitionAttachment, ...accepted];
+    const { valid } = await transitionImageValidation.validate(accepted);
+    const next = [...base, ...valid];
     setTransitionAttachment(next);
     setTransitionErrors((prev) => ({
       ...prev,
@@ -708,6 +838,8 @@ export const IncidentDetailPage: React.FC = () => {
         setSelectedTransition(null);
         setTransitionComment("");
         setTransitionAttachment([]);
+
+        transitionImageValidation.clearRejected();
         setTransitionFeedbackComment("");
         setReadyToCloseDuration("");
         setDepartmentMatchResult(null);
@@ -789,6 +921,44 @@ export const IncidentDetailPage: React.FC = () => {
     );
   }, [incident?.lookup_values]);
 
+  // "Allow multiple values" lookup categories (e.g. Visit Number) render as
+  // an accumulating chip list instead of a plain badge. To show the visit
+  // date + incident status each value was recorded at (on hover), correlate
+  // each value back to the "status_changed" revision that recorded it.
+  const { data: statusChangeRevisionsData } = useQuery({
+    queryKey: ["incident", id, "revisions", "status_changed"],
+    queryFn: () =>
+      incidentApi.getRevisions(id!, {
+        action_type: "status_changed",
+        limit: 200,
+      }),
+    enabled: !!id,
+  });
+
+  const lookupValueVisitInfo = useMemo(() => {
+    const map: Record<string, { date: string; status: string }> = {};
+    const revisions =
+      (statusChangeRevisionsData?.data as IncidentRevision[] | undefined) ?? [];
+    for (const rev of revisions) {
+      const statusChange = rev.changes?.find(
+        (c) => c.field_name === "current_state_id",
+      );
+      const status = statusChange?.new_value || "";
+      for (const change of rev.changes ?? []) {
+        if (!change.field_name.startsWith("lookup:") || !change.new_value) {
+          continue;
+        }
+        const key = `${change.field_name}:${change.new_value}`;
+        // Multiple revisions can carry the same value (e.g. the same visit
+        // number re-entered later) — keep the most recent one.
+        if (!map[key] || new Date(rev.created_at) > new Date(map[key].date)) {
+          map[key] = { date: rev.created_at, status };
+        }
+      }
+    }
+    return map;
+  }, [statusChangeRevisionsData]);
+
   // Parse custom lookup fields from custom_fields JSON
   const customLookupFields = useMemo(() => {
     return parseCustomLookupFields(incident?.custom_fields, lookupCategories);
@@ -845,6 +1015,8 @@ export const IncidentDetailPage: React.FC = () => {
       setSelectedTransition(null);
       setTransitionComment("");
       setTransitionAttachment([]);
+
+      transitionImageValidation.clearRejected();
       setTransitionFeedbackComment("");
       setTransitionFieldValues({});
       setReadyToCloseDuration("");
@@ -1265,6 +1437,8 @@ export const IncidentDetailPage: React.FC = () => {
     setSelectedTransition(null);
     setTransitionComment("");
     setTransitionAttachment([]);
+
+    transitionImageValidation.clearRejected();
     setTransitionFeedbackComment("");
     setTransitionFieldValues({});
     setReadyToCloseDuration("");
@@ -1731,11 +1905,15 @@ export const IncidentDetailPage: React.FC = () => {
     return history.find((h: any) => h.id === id);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadAttachmentMutation.mutate(file);
-    }
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const input = event.target;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const { valid } = await attachmentsTabImageValidation.validate([file]);
+    if (valid.length > 0) uploadAttachmentMutation.mutate(valid[0]);
   };
 
   const { data: commentTemplatesData } = useQuery({
@@ -2803,14 +2981,29 @@ export const IncidentDetailPage: React.FC = () => {
                         type="file"
                         className="hidden"
                         onChange={handleFileUpload}
-                        disabled={uploadAttachmentMutation.isPending}
+                        disabled={
+                          uploadAttachmentMutation.isPending ||
+                          attachmentsTabImageValidation.isValidating
+                        }
                       />
                     </label>
-                    {uploadAttachmentMutation.isPending && (
+                    {(uploadAttachmentMutation.isPending ||
+                      attachmentsTabImageValidation.isValidating) && (
                       <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))]">
-                        {t("incidents.uploading")}
+                        {attachmentsTabImageValidation.isValidating
+                          ? t(
+                              "incidents.validatingImages",
+                              "Checking photos...",
+                            )
+                          : t("incidents.uploading")}
                       </span>
                     )}
+                    <div className="mt-2">
+                      <RejectedAttachmentsList
+                        items={attachmentsTabImageValidation.rejected}
+                        onDismiss={attachmentsTabImageValidation.clearRejected}
+                      />
+                    </div>
                   </div>
 
                   {/* Attachments List */}
@@ -4081,37 +4274,58 @@ export const IncidentDetailPage: React.FC = () => {
 
                 {/* Dynamic Lookups - in 2-column grid */}
                 {Object.entries(groupedLookupValues).map(
-                  ([category, values]) => (
-                    <div key={category}>
-                      <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                        {i18n.language === "ar"
-                          ? values[0]?.category?.name_ar || category
-                          : category}
-                      </label>
-                      <div className="mt-0.5 flex flex-wrap gap-1.5">
-                        {(values as LookupValue[]).map((value) => (
-                          <span
-                            key={value.id}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                            style={{
-                              backgroundColor: value.color
-                                ? `${value.color}20`
-                                : "",
-                              color: value.color || "",
-                            }}
-                          >
-                            <RenderWithIncidentMentions
-                              text={
-                                i18n.language === "ar" && value.name_ar
-                                  ? value.name_ar
-                                  : value.name
-                              }
-                            />
-                          </span>
-                        ))}
+                  ([category, values]) => {
+                    const typedValues = values as LookupValue[];
+                    const categoryLabel =
+                      i18n.language === "ar"
+                        ? typedValues[0]?.category?.name_ar || category
+                        : category;
+
+                    if (
+                      parseAllowMultiple(
+                        typedValues[0]?.category?.validation_rules,
+                      )
+                    ) {
+                      return (
+                        <VisitNumberChipGroup
+                          key={category}
+                          categoryLabel={categoryLabel}
+                          values={typedValues}
+                          visitInfo={lookupValueVisitInfo}
+                        />
+                      );
+                    }
+
+                    return (
+                      <div key={category}>
+                        <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                          {categoryLabel}
+                        </label>
+                        <div className="mt-0.5 flex flex-wrap gap-1.5">
+                          {typedValues.map((value) => (
+                            <span
+                              key={value.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                              style={{
+                                backgroundColor: value.color
+                                  ? `${value.color}20`
+                                  : "",
+                                color: value.color || "",
+                              }}
+                            >
+                              <RenderWithIncidentMentions
+                                text={
+                                  i18n.language === "ar" && value.name_ar
+                                    ? value.name_ar
+                                    : value.name
+                                }
+                              />
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ),
+                    );
+                  },
                 )}
 
                 {/* Custom Lookup Fields (text, number, date, checkbox, textarea) - inside main grid */}
@@ -5387,26 +5601,35 @@ export const IncidentDetailPage: React.FC = () => {
                                 )}
                               >
                                 <Upload className="w-4 h-4" />
-                                {transitionAttachmentLimitReached
-                                  ? t("incidents.attachmentLimit", {
-                                      max: MAX_TRANSITION_ATTACHMENTS,
-                                      defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
-                                    })
-                                  : t(
-                                      "incidents.addMoreAttachments",
-                                      "Add more attachments",
-                                    )}
+                                {validatingTransitionAttachments
+                                  ? t(
+                                      "incidents.validatingImages",
+                                      "Checking photos...",
+                                    )
+                                  : transitionAttachmentLimitReached
+                                    ? t("incidents.attachmentLimit", {
+                                        max: MAX_TRANSITION_ATTACHMENTS,
+                                        defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
+                                      })
+                                    : t(
+                                        "incidents.addMoreAttachments",
+                                        "Add more attachments",
+                                      )}
                                 <input
                                   type="file"
                                   className="hidden"
                                   multiple
-                                  disabled={transitionAttachmentLimitReached}
+                                  disabled={
+                                    transitionAttachmentLimitReached ||
+                                    validatingTransitionAttachments
+                                  }
                                   onChange={(e) => {
                                     const files = e.target.files;
                                     if (!files) return;
-                                    addTransitionAttachmentFiles(
+                                    void addTransitionAttachmentFiles(
                                       Array.from(files),
                                     );
+                                    e.target.value = "";
                                   }}
                                 />
                               </label>
@@ -5436,27 +5659,29 @@ export const IncidentDetailPage: React.FC = () => {
                         >
                           <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                           <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                            {t("incidents.clickToUpload")}
+                            {validatingTransitionAttachments
+                              ? t(
+                                  "incidents.validatingImages",
+                                  "Checking photos...",
+                                )
+                              : t("incidents.clickToUpload")}
                           </span>
                           <input
                             type="file"
                             className="hidden"
                             multiple={transitionAttachmentAllowsMultiple}
+                            disabled={validatingTransitionAttachments}
                             onChange={(e) => {
                               const files = e.target.files;
                               if (!files) return;
                               const selectedFiles = Array.from(files);
-                              if (transitionAttachmentAllowsMultiple) {
-                                addTransitionAttachmentFiles(selectedFiles);
-                              } else if (selectedFiles.length > 0) {
-                                setTransitionAttachment([selectedFiles[0]]);
-                                setTransitionErrors((prev) => ({
-                                  ...prev,
-                                  attachment: validateTransitionAttachments([
-                                    selectedFiles[0],
-                                  ]),
-                                }));
+                              if (selectedFiles.length > 0) {
+                                void addTransitionAttachmentFiles(
+                                  selectedFiles,
+                                  !transitionAttachmentAllowsMultiple,
+                                );
                               }
+                              e.target.value = "";
                             }}
                           />
                         </label>
@@ -5474,6 +5699,12 @@ export const IncidentDetailPage: React.FC = () => {
                           {transitionErrors.attachment}
                         </p>
                       )}
+                      <div className="mt-2">
+                        <RejectedAttachmentsList
+                          items={transitionImageValidation.rejected}
+                          onDismiss={transitionImageValidation.clearRejected}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -6035,9 +6266,10 @@ export const IncidentDetailPage: React.FC = () => {
                       onClick={handleStepNext}
                       disabled={
                         currentStepKey === "attachment" &&
-                        transitionAttachment.some(
-                          isTransitionAttachmentOversized,
-                        )
+                        (validatingTransitionAttachments ||
+                          transitionAttachment.some(
+                            isTransitionAttachmentOversized,
+                          ))
                       }
                       isLoading={
                         isLastStep &&

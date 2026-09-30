@@ -228,6 +228,11 @@ export interface ValidationRules {
   minDate?: string;
   maxDate?: string;
   customErrorMessage?: string;
+  // "text" / "number" fields only: instead of a single value that gets
+  // replaced on every save, accumulate an array of entered values (e.g. a
+  // "Visit Number" field where each transition adds a new visit number
+  // without discarding the ones already recorded).
+  allowMultiple?: boolean;
 }
 
 export interface LookupCategory {

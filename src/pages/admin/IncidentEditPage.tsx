@@ -44,6 +44,7 @@ import type {
   Workflow,
   Classification,
   iLocationOption,
+  ValidationRules,
 } from "../../types";
 
 import { DynamicLookupField } from "../../components/common/DynamicLookupField";
@@ -135,6 +136,7 @@ export function IncidentEditPage() {
   });
 
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
+  const [lookupValuesSeeded, setLookupValuesSeeded] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
   const [callerNameParts, setCallerNameParts] = useState({
@@ -355,9 +357,27 @@ export function IncidentEditPage() {
 
     setExistingAttachments(incident.attachments || []);
 
-    // Pre-populate lookup values
-    if (incident.lookup_values && incidentLookupCategories.length > 0) {
-      const initialLookupValues: Record<string, any> = {};
+    setInitialized(true);
+  }, [incident, initialized]);
+
+  // Pre-populate lookup values — a separate effect (and its own "seeded"
+  // flag) from the form-data init above, because incidentLookupCategories
+  // comes from its own query and can resolve AFTER `incident` does. If this
+  // stayed inside the effect above, marking `initialized` on that first,
+  // categories-still-empty run would permanently skip seeding once
+  // categories actually arrived (the top guard would just bail out).
+  useEffect(() => {
+    if (
+      !incident ||
+      lookupValuesSeeded ||
+      incidentLookupCategories.length === 0
+    ) {
+      return;
+    }
+
+    const initialLookupValues: Record<string, any> = {};
+
+    if (incident.lookup_values) {
       for (const lv of incident.lookup_values) {
         const category = incidentLookupCategories.find((cat) =>
           cat.values?.some((v) => v.id === lv.id),
@@ -375,12 +395,49 @@ export function IncidentEditPage() {
           }
         }
       }
-
-      setLookupValues(initialLookupValues);
     }
 
-    setInitialized(true);
-  }, [incident, incidentLookupCategories, initialized]);
+    // "Allow multiple values" text/number fields (e.g. Visit Number) keep
+    // an accumulating list — seed it from the incident's saved
+    // custom_fields so a new transition adds to it instead of starting
+    // from empty and silently discarding what was already recorded.
+    if (incident.custom_fields) {
+      try {
+        const parsedCustomFields = JSON.parse(incident.custom_fields);
+        for (const category of incidentLookupCategories) {
+          if (
+            category.field_type !== "text" &&
+            category.field_type !== "number"
+          ) {
+            continue;
+          }
+          let validationRules: ValidationRules = {};
+          if (category.validation_rules) {
+            try {
+              validationRules = JSON.parse(category.validation_rules);
+            } catch {
+              validationRules = {};
+            }
+          }
+          if (!validationRules.allowMultiple) continue;
+
+          const saved = parsedCustomFields[`lookup:${category.code}`]?.value;
+          if (Array.isArray(saved)) {
+            initialLookupValues[category.id] = saved;
+          } else if (saved !== undefined && saved !== null && saved !== "") {
+            // Legacy single value saved before this field became multi-value.
+            initialLookupValues[category.id] = [saved];
+          }
+        }
+      } catch {
+        // Malformed custom_fields JSON — ignore, fields just start empty.
+      }
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLookupValues((prev) => ({ ...prev, ...initialLookupValues }));
+    setLookupValuesSeeded(true);
+  }, [incident, incidentLookupCategories, lookupValuesSeeded]);
 
   useEffect(() => {
     setCallerNameParts(splitCallerName(formData.reporter_name || ""));

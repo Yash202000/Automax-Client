@@ -1,7 +1,92 @@
-import React from "react";
+import React, { useState } from "react";
+import { X } from "lucide-react";
 import type { LookupCategory, ValidationRules } from "../../types";
 import { useTranslation } from "react-i18next";
 import { getLocalizedName } from "@/lib/utils";
+
+interface MultiValueFieldProps {
+  inputType: "text" | "number";
+  values: string[];
+  // eslint-disable-next-line no-unused-vars
+  onChange: (values: string[]) => void;
+  placeholder?: string;
+  inputClassName: string;
+}
+
+// Accumulates entries into a list instead of replacing a single value —
+// e.g. a "Visit Number" field where every transition adds a new visit
+// number without discarding the ones already recorded.
+const MultiValueField: React.FC<MultiValueFieldProps> = ({
+  inputType,
+  values,
+  onChange,
+  placeholder,
+  inputClassName,
+}) => {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState("");
+
+  const addDraft = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    onChange([...values, trimmed]);
+    setDraft("");
+  };
+
+  return (
+    <div>
+      {values.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {values.map((v, index) => (
+            <span
+              key={`${v}-${index}`}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] rounded-lg"
+            >
+              {v}
+              <button
+                type="button"
+                onClick={() => onChange(values.filter((_, i) => i !== index))}
+                className="hover:text-[hsl(var(--destructive))] transition-colors"
+                aria-label={t("common.remove", "Remove")}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          type={inputType}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addDraft();
+            }
+          }}
+          placeholder={placeholder}
+          className={inputClassName}
+        />
+        <button
+          type="button"
+          onClick={addDraft}
+          disabled={!draft.trim()}
+          className="px-4 py-2 text-sm font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-xl hover:bg-[hsl(var(--primary)/0.9)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {t("common.add", "Add")}
+        </button>
+      </div>
+      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+        {t(
+          "lookups.multipleValuesHint",
+          "Press Enter or click Add — previously added values are kept.",
+        )}
+      </p>
+    </div>
+  );
+};
 
 interface DynamicLookupFieldProps {
   category: LookupCategory;
@@ -44,6 +129,23 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
 
   switch (fieldType) {
     case "text":
+      if (validationRules.allowMultiple) {
+        return (
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+              {fieldLabel} {required && <span className="text-red-500">*</span>}
+            </label>
+            <MultiValueField
+              inputType="text"
+              values={Array.isArray(value) ? value : []}
+              onChange={handleChange}
+              placeholder={category.description || `Enter ${fieldLabel}`}
+              inputClassName={`${commonClasses} ${errorClasses}`}
+            />
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+          </div>
+        );
+      }
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -85,6 +187,23 @@ export const DynamicLookupField: React.FC<DynamicLookupFieldProps> = ({
       );
 
     case "number":
+      if (validationRules.allowMultiple) {
+        return (
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+              {fieldLabel} {required && <span className="text-red-500">*</span>}
+            </label>
+            <MultiValueField
+              inputType="number"
+              values={Array.isArray(value) ? value : []}
+              onChange={handleChange}
+              placeholder={category.description || `Enter ${fieldLabel}`}
+              inputClassName={`${commonClasses} ${errorClasses}`}
+            />
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+          </div>
+        );
+      }
       return (
         <div>
           <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
