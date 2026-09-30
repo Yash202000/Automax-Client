@@ -331,6 +331,11 @@ const ProcessDetailPage = lazy(() =>
     default: m.ProcessDetailPage,
   })),
 );
+const KpiDictionaryImportPage = lazy(() =>
+  import("./pages/admin/kpi/KpiDictionaryImportPage").then((m) => ({
+    default: m.KpiDictionaryImportPage,
+  })),
+);
 const KpiDictionaryPage = lazy(() =>
   import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
     default: m.KpiDictionaryPage,
@@ -1154,6 +1159,10 @@ function App() {
                         <Route
                           path="/goals/kpi/dictionary/new/award"
                           element={<KpiDictionaryFormAwardPage />}
+                        />
+                        <Route
+                          path="/goals/kpi/dictionary/import"
+                          element={<KpiDictionaryImportPage />}
                         />
                       </Route>
 

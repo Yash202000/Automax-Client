@@ -16,6 +16,7 @@ import {
   Award,
   Pencil,
   Crosshair,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   useStrategicKPIs,
@@ -79,7 +80,7 @@ const SortIcon: React.FC<{
 
 export const KpiDictionaryPage: React.FC = () => {
   const { t } = useTranslation();
-  const { canUpdateKpi } = usePermissions();
+  const { canUpdateKpi, canCreateKpi } = usePermissions();
   const [activeTab, setActiveTab] = useState<DictTab>("strategic");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -187,64 +188,75 @@ export const KpiDictionaryPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="relative">
-          <button
-            onClick={() => setNewMenuOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t("kpi.dictionary.newKpi")}
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          {newMenuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setNewMenuOpen(false)}
-              />
-              <div className="absolute end-0 mt-2 w-56 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg z-20 overflow-hidden">
-                <Link
-                  to="/goals/kpi/dictionary/new"
-                  onClick={() => setNewMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
-                >
-                  <Target size={18} className="text-blue-500" />
-                  <div>
-                    <p className="font-medium">Strategic KPI</p>
-                    <p className="text-xs text-slate-400">
-                      Linked to strategic goals
-                    </p>
-                  </div>
-                </Link>
-                <Link
-                  to="/goals/kpi/dictionary/new/operational"
-                  onClick={() => setNewMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors border-t border-slate-100 dark:border-slate-700"
-                >
-                  <TrendingUp size={18} className="text-green-500" />
-                  <div>
-                    <p className="font-medium">Operational KPI</p>
-                    <p className="text-xs text-slate-400">
-                      Linked to processes
-                    </p>
-                  </div>
-                </Link>
-                <Link
-                  to="/goals/kpi/dictionary/new/award"
-                  onClick={() => setNewMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors border-t border-slate-100 dark:border-slate-700"
-                >
-                  <Award size={18} className="text-purple-500" />
-                  <div>
-                    <p className="font-medium">Award KPI</p>
-                    <p className="text-xs text-slate-400">
-                      Linked to award criteria
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            </>
+        <div className="flex items-center gap-2">
+          {canCreateKpi() && (
+            <Link
+              to="/goals/kpi/dictionary/import"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              {t("kpi.dictionaryImport.button")}
+            </Link>
           )}
+          <div className="relative">
+            <button
+              onClick={() => setNewMenuOpen((prev) => !prev)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {t("kpi.dictionary.newKpi")}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {newMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setNewMenuOpen(false)}
+                />
+                <div className="absolute end-0 mt-2 w-56 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg z-20 overflow-hidden">
+                  <Link
+                    to="/goals/kpi/dictionary/new"
+                    onClick={() => setNewMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    <Target size={18} className="text-blue-500" />
+                    <div>
+                      <p className="font-medium">Strategic KPI</p>
+                      <p className="text-xs text-slate-400">
+                        Linked to strategic goals
+                      </p>
+                    </div>
+                  </Link>
+                  <Link
+                    to="/goals/kpi/dictionary/new/operational"
+                    onClick={() => setNewMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors border-t border-slate-100 dark:border-slate-700"
+                  >
+                    <TrendingUp size={18} className="text-green-500" />
+                    <div>
+                      <p className="font-medium">Operational KPI</p>
+                      <p className="text-xs text-slate-400">
+                        Linked to processes
+                      </p>
+                    </div>
+                  </Link>
+                  <Link
+                    to="/goals/kpi/dictionary/new/award"
+                    onClick={() => setNewMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors border-t border-slate-100 dark:border-slate-700"
+                  >
+                    <Award size={18} className="text-purple-500" />
+                    <div>
+                      <p className="font-medium">Award KPI</p>
+                      <p className="text-xs text-slate-400">
+                        Linked to award criteria
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

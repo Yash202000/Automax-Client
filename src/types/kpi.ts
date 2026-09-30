@@ -1732,3 +1732,60 @@ export interface KpiMetricPeriodSeries {
   year: number;
   points: KpiMetricPeriodPoint[];
 }
+
+// ─── KPI Dictionary bulk import ──────────────────────────────────────────────
+
+export type KpiImportExistingMode = "skip" | "update";
+export type KpiImportErrorMode = "skip_invalid" | "abort";
+export type KpiImportAction =
+  | "create"
+  | "update"
+  | "skip"
+  | "reject"
+  | "rolled_back";
+
+export interface KpiImportOptions {
+  existing_mode: KpiImportExistingMode;
+  error_mode: KpiImportErrorMode;
+}
+
+export interface KpiImportIssue {
+  severity: "error" | "warning";
+  sheet: string;
+  row: number;
+  record_id: string;
+  field: string;
+  message: string;
+}
+
+export interface KpiImportItem {
+  category: string;
+  kpi_type?: string;
+  record_id: string;
+  name: string;
+  sheet: string;
+  row: number;
+  action: KpiImportAction;
+  reason?: string;
+}
+
+export interface KpiImportCounts {
+  created: number;
+  updated: number;
+  skipped: number;
+  rejected: number;
+  rolled_back: number;
+}
+
+export interface KpiImportResult {
+  file_name: string;
+  options: KpiImportOptions;
+  committed: boolean;
+  can_commit: boolean;
+  commit_error?: string;
+  errors: KpiImportIssue[];
+  warnings: KpiImportIssue[];
+  items: KpiImportItem[];
+  categories: Record<string, KpiImportCounts>;
+  totals: KpiImportCounts;
+}
