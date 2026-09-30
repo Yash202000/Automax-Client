@@ -2045,7 +2045,7 @@ export const DepartmentsPage: React.FC = () => {
                         <option value="">
                           {t("departments.noneRootLevel")}
                         </option>
-                        {departmentsList?.data
+                        {treeData?.data
                           ?.filter(
                             (d: Department) => d.id !== editingDepartment?.id,
                           )
