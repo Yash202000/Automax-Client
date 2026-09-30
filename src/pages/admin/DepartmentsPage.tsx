@@ -358,7 +358,7 @@ export const DepartmentsPage: React.FC = () => {
 
   const { data: departmentsList } = useQuery({
     queryKey: ["admin", "departments", "list"],
-    queryFn: () => departmentApi.list({ limit: 100 }),
+    queryFn: () => departmentApi.list(),
   });
 
   const { data: locationsData } = useQuery({
@@ -2045,7 +2045,7 @@ export const DepartmentsPage: React.FC = () => {
                         <option value="">
                           {t("departments.noneRootLevel")}
                         </option>
-                        {departmentsList?.data
+                        {treeData?.data
                           ?.filter(
                             (d: Department) => d.id !== editingDepartment?.id,
                           )

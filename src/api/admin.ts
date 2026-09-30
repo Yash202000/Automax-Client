@@ -645,7 +645,6 @@ export const departmentApi = {
   list: async (filters?: {
     location?: string;
     classification?: string;
-    limit?: number;
   }): Promise<ApiResponse<Department[]>> => {
     const response = await apiClient.get<ApiResponse<Department[]>>(
       "/admin/departments",
