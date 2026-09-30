@@ -598,6 +598,7 @@ export interface DepartmentUpdateRequest {
   code?: string;
   description?: string;
   type?: "internal" | "external";
+  parent_id?: string;
   manager_id?: string;
   supervisor_id?: string;
   location_ids?: string[];

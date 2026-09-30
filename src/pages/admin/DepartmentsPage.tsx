@@ -358,7 +358,7 @@ export const DepartmentsPage: React.FC = () => {
 
   const { data: departmentsList } = useQuery({
     queryKey: ["admin", "departments", "list"],
-    queryFn: () => departmentApi.list(),
+    queryFn: () => departmentApi.list({ limit: 100 }),
   });
 
   const { data: locationsData } = useQuery({
