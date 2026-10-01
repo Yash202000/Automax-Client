@@ -15,7 +15,6 @@ import {
   Upload,
   User,
   Building2,
-  Tags,
   Search,
 } from "lucide-react";
 import { Button, Select, TreeSelect, type TreeSelectNode } from "../ui";
@@ -910,17 +909,6 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
             </div>
           ) : currentStep === "field_changes" ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Tags className="w-5 h-5 text-[hsl(var(--primary))]" />
-                <h4 className="font-semibold">
-                  {t("incidents.fieldChanges")}
-                  {isMandatory && (
-                    <span className="text-[hsl(var(--destructive))] ml-1">
-                      *
-                    </span>
-                  )}
-                </h4>
-              </div>
               <div className="space-y-4">
                 {transition?.field_changes?.map((fc) => (
                   <div key={fc.field_name} className="space-y-1.5">

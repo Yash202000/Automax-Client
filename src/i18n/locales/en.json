@@ -465,6 +465,24 @@
     "setGoalsTrackMetrics": "Set goals, track metrics, manage approvals"
   },
   "incidents": {
+    "nearby": {
+      "button": "Nearby Incidents",
+      "title": "Nearby Incidents",
+      "empty": "No nearby incidents found.",
+      "error": "Failed to load nearby incidents.",
+      "location": "Location",
+      "showing": "Showing {{from}}–{{to}} of {{total}} incidents",
+      "viewAllOnMap": "View all on map",
+      "mapModalTitle": "Nearby Incidents Map",
+      "currentIncident": "Current Incident",
+      "filterPlaceholder": "Search nearby incidents...",
+      "fitAll": "Fit All",
+      "centerCurrent": "Current Incident",
+      "viewDetails": "View Details",
+      "oneIncidentCount": "1 nearby incident",
+      "incidentsCount": "{{count}} nearby incidents",
+      "within_km": "within {{value}}km radius"
+    },
     "title": "Incidents",
     "subtitle": "Track and manage incident reports",
     "failedToLoad": "Failed to Load Incidents",

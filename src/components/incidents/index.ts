@@ -10,3 +10,5 @@ export { IncidentFilters } from "./IncidentFilters";
 export type { IncidentFiltersProps, ColumnConfig } from "./IncidentFilters";
 export { IncidentStatusStatsRow } from "./IncidentStatusStatsRow";
 export { RejectedAttachmentsList } from "./RejectedAttachmentsList";
+export { default as NearbyIncidents } from "./NearbyIncidents";
+export { NearbyIncidentsMapModal } from "./NearbyIncidentsMapModal";

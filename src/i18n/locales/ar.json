@@ -465,6 +465,25 @@
     "setGoalsTrackMetrics": "تحديد الأهداف، وتتبع المؤشرات، وإدارة الموافقات"
   },
   "incidents": {
+    "nearby": {
+      "button": "البلاغات القريبة",
+      "title": "البلاغات القريبة (نفس التصنيف)",
+      "empty": "لم يتم العثور على بلاغات قريبة.",
+      "error": "فشل تحميل البلاغات القريبة.",
+      "location": "الموقع",
+      "showing": "عرض {{from}}–{{to}} من {{total}} بلاغ",
+      "viewAllOnMap": "عرض الكل على الخريطة",
+      "mapModalTitle": "خريطة البلاغات القريبة",
+      "currentIncident": "البلاغ الحالي",
+      "withinRadius": "ضمن نطاق {{radius}} كم",
+      "filterPlaceholder": "البحث في البلاغات القريبة...",
+      "fitAll": "عرض الكل",
+      "centerCurrent": "البلاغ الحالي",
+      "viewDetails": "عرض التفاصيل",
+      "oneIncidentCount": "بلاغ واحد قريب",
+      "incidentsCount": "{{count}} بلاغات قريبة",
+      "within_km": "ضمن نطاق {{value}} كم"
+    },
     "title": "البلاغات",
     "subtitle": "تتبع وإدارة البلاغات",
     "failedToLoad": "فشل تحميل البلاغات",

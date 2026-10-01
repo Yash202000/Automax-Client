@@ -1337,6 +1337,19 @@ export const imageApi = {
   },
 };
 
+export interface NearbyIncident {
+  id: string;
+  incident_number: string;
+  latitude: number | null;
+  longitude: number | null;
+  classification_name: string;
+  location_name: string;
+  status: string;
+  status_color: string;
+  created_at: string;
+  distance?: string;
+}
+
 // Incident API
 export const incidentApi = {
   create: async (
@@ -1391,6 +1404,33 @@ export const incidentApi = {
       "/incidents/search",
       body,
     );
+    return response.data;
+  },
+
+  // Incidents within the backend-configured radius (NEARBY_INCIDENT_RADIUS_METERS)
+  // sharing the given classification; the source incident is excluded server-side.
+  searchNearby: async (params: {
+    incidentId: string;
+    latitude: number;
+    longitude: number;
+    classificationId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: NearbyIncident[];
+    page: number;
+    limit: number;
+    total_items: number;
+    total_pages: number;
+  }> => {
+    const response = await apiClient.post("/incidents/search/summary", {
+      latitude: params.latitude,
+      longitude: params.longitude,
+      classification_id: [params.classificationId],
+      exclude_incident_id: params.incidentId,
+      page: params.page ?? 1,
+      limit: params.limit ?? 5,
+    });
     return response.data;
   },
 
