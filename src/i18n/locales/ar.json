@@ -2803,7 +2803,8 @@
     "sentimentSubtitle": "Rate the caller's mood during this call",
     "skip": "Skip",
     "cintrix": "سينتريكس",
-    "automax": "أوتوماكس"
+    "automax": "أوتوماكس",
+    "callUnavailable": "نظام الاتصال غير متاح"
   },
   "queries": {
     "title": "الاستفسارات",
