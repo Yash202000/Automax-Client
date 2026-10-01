@@ -2778,7 +2778,7 @@ export const UsersPage: React.FC = () => {
                             {role.is_department_manager && (
                               <Crown className="w-3.5 h-3.5 text-indigo-500" />
                             )}
-                            {role.name}
+                            {getLocalizedName(role)}
                           </button>
                         ))
                       )}
