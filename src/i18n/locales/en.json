@@ -2806,7 +2806,8 @@
     "calls": "Calls",
     "feedbackSubmitted": "Feedback submitted. Thank you!",
     "cintrix": "Cintrix",
-    "automax": "Automax"
+    "automax": "Automax",
+    "callUnavailable": "Call system unavailable"
   },
   "queries": {
     "title": "Queries",

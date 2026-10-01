@@ -174,7 +174,7 @@ export const CintrixCtiHost: React.FC = () => {
         scheduleRefresh(Math.max((data.expires_in - 300) * 1000, RETRY_MS));
       } catch {
         if (cancelled) return;
-        setError("Call system unavailable");
+        setError(t("softphone.callUnavailable"));
         // Auto-recover: keep retrying without requiring the Retry button.
         schedule(() => void boot(), RETRY_MS);
       } finally {
@@ -347,7 +347,7 @@ export const CintrixCtiHost: React.FC = () => {
             className="underline"
             onClick={() => bootRef.current()}
           >
-            Retry
+            {t("common.retry", "Retry")}
           </button>
         </div>
       )}
