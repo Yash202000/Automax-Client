@@ -296,7 +296,7 @@ export function NearbyIncidentsMapModal({
       radiusCircleRef.current = circle;
 
       // Add Current Incident Marker
-      const currentIcon = createCurrentIncidentIcon(incidentNumber);
+      const currentIcon = createCurrentIncidentIcon();
       const currentMarker = L.marker([latitude, longitude], {
         icon: currentIcon,
         zIndexOffset: 1000,
