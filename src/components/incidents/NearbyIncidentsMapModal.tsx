@@ -11,7 +11,6 @@ import {
   LocateFixed,
   ExternalLink,
   Layers,
-  ChevronRight,
   Compass,
   AlertCircle,
   X,
@@ -45,7 +44,7 @@ interface NearbyIncidentsMapModalProps {
 }
 
 // Create custom animated icon for the current reference incident
-function createCurrentIncidentIcon(incidentNumber?: string): L.DivIcon {
+function createCurrentIncidentIcon(): L.DivIcon {
   return L.divIcon({
     className: "current-incident-marker",
     html: `
