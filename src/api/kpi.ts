@@ -82,6 +82,8 @@ import type {
   KpiDocumentaAnchor,
   KpiDocumentaAnchorParams,
   KpiDocumentaFolder,
+  KpiImportOptions,
+  KpiImportResult,
 } from "../types/kpi";
 
 // KPI Evidence Folder Configuration — resolve/browse/create Documenta
@@ -911,6 +913,31 @@ export const kpiCorrectiveActionApi = {
     );
     return res.data;
   },
+};
+
+// KPI Dictionary bulk import. Both calls upload the workbook: validate is a
+// dry run (validation report + preview), commit re-validates the same file
+// server-side and applies it with the chosen options.
+const postKpiImport = async (
+  step: "validate" | "commit",
+  file: File,
+  options: KpiImportOptions,
+): Promise<ApiResponse<KpiImportResult>> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("existing_mode", options.existing_mode);
+  formData.append("error_mode", options.error_mode);
+  const res = await apiClient.post(`/kpi/dictionary-import/${step}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const kpiDictionaryImportApi = {
+  validate: (file: File, options: KpiImportOptions) =>
+    postKpiImport("validate", file, options),
+  commit: (file: File, options: KpiImportOptions) =>
+    postKpiImport("commit", file, options),
 };
 
 export const kpiDashboardApi = {
