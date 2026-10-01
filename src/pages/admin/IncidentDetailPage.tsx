@@ -62,6 +62,7 @@ import {
   ModalHeader,
   ModalTitle,
 } from "../../components/ui";
+import NearbyIncidents from "../../components/incidents/NearbyIncidents";
 import { TreeSelect } from "../../components/ui/TreeSelect";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { MiniWorkflowView } from "../../components/workflow";
@@ -2450,6 +2451,14 @@ export const IncidentDetailPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          <NearbyIncidents
+            incidentId={incident.id}
+            latitude={incident.latitude}
+            longitude={incident.longitude}
+            classificationId={incident.classification?.id}
+            incidentNumber={incident.incident_number}
+          />
 
           {/* Merged Incidents Section */}
           {showMergedIncidents && mergedIncidents.length > 0 && (
@@ -4853,8 +4862,10 @@ export const IncidentDetailPage: React.FC = () => {
                   key={currentStepKey}
                   className="flex-1 overflow-y-auto p-6 space-y-4"
                 >
-                  {/* Step label */}
-                  <div className="flex items-center justify-between">
+                  {/* Step label — field changes show required markers per field */}
+                  <div
+                    className={`flex items-center justify-between ${currentStepKey === "field_changes" ? "hidden" : ""}`}
+                  >
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
                         {stepTitles[currentStepKey]}
