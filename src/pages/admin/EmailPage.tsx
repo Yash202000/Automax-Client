@@ -781,7 +781,7 @@ export const EmailPage: React.FC = () => {
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
               <div
-                className="prose max-w-none  border border-border p-4 rounded-lg"
+                className="prose max-w-none wrap-break-word border border-border p-4 rounded-lg"
                 dangerouslySetInnerHTML={{
                   __html: DOMPurify.sanitize(
                     selectedEmail.body_html || selectedEmail.body || "",
