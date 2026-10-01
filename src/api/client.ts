@@ -20,6 +20,7 @@ declare global {
       SESSION_TIMEOUT_MINUTES?: string;
       APP_VERSION?: string;
       ENABLE_SIGNUP?: string;
+      NEARBY_INCIDENT_RADIUS_METERS?: string;
     };
   }
 }
