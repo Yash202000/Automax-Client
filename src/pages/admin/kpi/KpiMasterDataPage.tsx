@@ -301,6 +301,18 @@ export const KpiMasterDataPage: React.FC = () => {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
     }
+    if (modalType === "award-criterion" && !(Number(form.criterion_no) > 0)) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
+    if (
+      (modalType === "operational-objective" && !form.goal_id) ||
+      (modalType === "process" &&
+        (!form.operational_objective_id || !form.goal_id))
+    ) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
     try {
       if (modalType === "pillar") {
         const data: PillarRequest = {
@@ -1029,7 +1041,7 @@ export const KpiMasterDataPage: React.FC = () => {
           {modalType === "operational-objective" && (
             <>
               <Select
-                label={t("kpi.masterData.strategicGoal")}
+                label={`${t("kpi.masterData.strategicGoal")} *`}
                 options={(goals ?? []).map((g: any) => ({
                   value: g.id,
                   label: g.title,
@@ -1067,7 +1079,7 @@ export const KpiMasterDataPage: React.FC = () => {
           {modalType === "process" && (
             <>
               <Select
-                label={t("kpi.masterData.operationalObjective")}
+                label={`${t("kpi.masterData.operationalObjective")} *`}
                 options={(operationalObjectives ?? []).map(
                   (o: OperationalObjective) => ({
                     value: o.id,
@@ -1089,7 +1101,7 @@ export const KpiMasterDataPage: React.FC = () => {
                 placeholder={t("common.selectAnOption")}
               />
               <Input
-                label={t("kpi.masterData.strategicGoal")}
+                label={`${t("kpi.masterData.strategicGoal")} *`}
                 value={
                   (operationalObjectives ?? []).find(
                     (o: OperationalObjective) =>
@@ -1210,7 +1222,7 @@ export const KpiMasterDataPage: React.FC = () => {
 
           {modalType === "award-criterion" && (
             <Input
-              label={t("kpi.masterData.criterionNo")}
+              label={`${t("kpi.masterData.criterionNo")} *`}
               value={form.criterion_no}
               onChange={set("criterion_no")}
               type="number"
