@@ -785,6 +785,7 @@
     "commentRequired": "Comment is required",
     "departmentSelectionRequired": "Please select a department",
     "downloadReport": "Download Report",
+    "includeLogs": "Include logs",
     "durationRequired": "Please select a duration",
     "escalationActions": "Escalation Actions",
     "expiresAt": "Expires at",
