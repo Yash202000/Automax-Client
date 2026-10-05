@@ -3962,7 +3962,10 @@
       "noOrganizations": "No organizations found.",
       "failedToLoad": "Failed to load master data.",
       "nameEnRequired": "Name (EN) is required",
-      "requiredFieldsMissing": "Please fill in all required fields"
+      "requiredFieldsMissing": "Please fill in all required fields",
+      "importSummary": "Imported {{imported}}, skipped {{skipped}} (already exist), failed {{failed}}",
+      "importRow": "Row {{row}}",
+      "importInvalidCriterionNo": "Criterion No. \"{{value}}\" is missing or not a positive whole number"
     },
     "dictionary": {
       "title": "KPI Dictionary",

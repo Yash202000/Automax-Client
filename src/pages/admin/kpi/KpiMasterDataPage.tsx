@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Database,
   Plus,
@@ -70,6 +70,7 @@ import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/SelectInput";
 import { departmentApi } from "../../../api/admin";
+import { kpiMasterDataApi } from "../../../api/kpi";
 import { exportToExcel as exportToExcelUtil } from "../../../utils/exportExcel";
 import type {
   Pillar,
@@ -453,6 +454,9 @@ export const KpiMasterDataPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [importType, setImportType] = useState<EntityType>("pillar");
+  // Criterion numbers created earlier in the current import file.
+  const importedCriterionNos = useRef<Set<number>>(new Set());
+  const queryClient = useQueryClient();
 
   const exportToExcel = async (data: any[], label: string) =>
     await exportToExcelUtil(
@@ -473,6 +477,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    importedCriterionNos.current = new Set();
 
     try {
       const workbook = new ExcelJS.Workbook();
@@ -488,14 +493,18 @@ export const KpiMasterDataPage: React.FC = () => {
       let headers: string[] = [];
 
       worksheet.eachRow((row, rowNumber) => {
-        const values = (row.values as unknown[]).slice(1);
+        const values = (row.values as unknown[]).slice(1).map(cellText);
 
         if (rowNumber === 1) {
           headers = values.map((header) => String(header ?? "").trim());
         } else {
-          const obj: Record<string, unknown> = {};
+          // Each value is stored under its header as written AND under a
+          // normalized key ("Criterion No." / "criterion_no" → "criterionno"),
+          // so files with human-readable headers import too.
+          const obj: Record<string, unknown> = { __row: rowNumber };
           headers.forEach((header, index) => {
             obj[header] = values[index];
+            obj[normHeaderKey(header)] = values[index];
           });
           rows.push(obj);
         }
@@ -506,23 +515,42 @@ export const KpiMasterDataPage: React.FC = () => {
         return;
       }
 
-      const validRows = rows.filter((row) => {
-        const name = row.name_en || row.NameEn || row.Name || "";
-        return !!name;
-      });
+      const validRows = rows.filter((row) => !!rowNameEn(row));
 
       let imported = 0;
+      let skipped = 0;
+      const failures: string[] = [];
 
       for (const row of validRows) {
         try {
-          await submitImportRow(importType, row);
-          imported++;
-        } catch {
-          // Skip failed rows
+          const outcome = await submitImportRow(importType, row);
+          if (outcome === "skipped") skipped++;
+          else imported++;
+        } catch (err) {
+          failures.push(
+            `${t("kpi.masterData.importRow", { row: row.__row })}: ${importErrorMessage(err)}`,
+          );
         }
       }
+      if (importType === "award-criterion") {
+        queryClient.invalidateQueries({ queryKey: ["kpi", "award-criteria"] });
+      }
 
-      toast.success(t("common.imported", { count: imported }));
+      const summary = t("kpi.masterData.importSummary", {
+        imported,
+        skipped,
+        failed: failures.length,
+      });
+      if (failures.length) {
+        toast.error(summary, {
+          description: failures.slice(0, 5).join("\n"),
+          duration: 10000,
+        });
+      } else if (imported) {
+        toast.success(summary);
+      } else {
+        toast.info(summary);
+      }
     } catch {
       toast.error(t("common.invalidFile"));
     } finally {
@@ -541,10 +569,15 @@ export const KpiMasterDataPage: React.FC = () => {
     return dept?.id;
   };
 
-  const submitImportRow = async (type: EntityType, row: any) => {
-    const name_en = row.name_en || row.NameEn || row.Name || "";
-    const name_ar = row.name_ar || row.NameAr || "";
-    if (!name_en) return;
+  const submitImportRow = async (
+    type: EntityType,
+    row: any,
+  ): Promise<"created" | "skipped"> => {
+    const name_en = rowNameEn(row);
+    const name_ar = String(
+      row.name_ar || row.NameAr || row.namear || row.arabicname || "",
+    );
+    if (!name_en) return "skipped";
     if (type === "pillar") {
       await createPillar.mutateAsync({
         name_en,
@@ -594,11 +627,36 @@ export const KpiMasterDataPage: React.FC = () => {
         type: row.type || "",
       } as DomainRequest);
     } else if (type === "award-criterion") {
-      await createAwardCriterion.mutateAsync({
+      // Criterion No. is unique and mandatory — never default it (the old
+      // fallback of 1 made every row after the first collide). Numbers that
+      // already exist are skipped, so re-importing an export is harmless.
+      const raw =
+        row.criterion_no ??
+        row.criterionno ??
+        row.criterionnumber ??
+        row.criterion ??
+        row.no ??
+        "";
+      const criterion_no = Number(String(raw).trim());
+      if (!Number.isInteger(criterion_no) || criterion_no <= 0) {
+        throw new Error(
+          t("kpi.masterData.importInvalidCriterionNo", { value: String(raw) }),
+        );
+      }
+      if (
+        (awardCriteria ?? []).some(
+          (c: AwardCriterion) => c.criterion_no === criterion_no,
+        ) ||
+        importedCriterionNos.current.has(criterion_no)
+      ) {
+        return "skipped";
+      }
+      await kpiMasterDataApi.createAwardCriterion({
         name_en,
         name_ar,
-        criterion_no: Number(row.criterion_no || row.criterionNo || 1),
+        criterion_no,
       } as AwardCriterionRequest);
+      importedCriterionNos.current.add(criterion_no);
     } else if (type === "award-sub-criterion") {
       await createAwardSubCriterion.mutateAsync({
         name_en,
@@ -623,6 +681,7 @@ export const KpiMasterDataPage: React.FC = () => {
         contact_info: row.contact_info || row.ContactInfo || undefined,
       } as KpiOrganizationRequest);
     }
+    return "created";
   };
 
   const getDepartmentName = (departmentId?: string) => {
@@ -1277,6 +1336,60 @@ interface Column<T> {
   accessor: keyof T | ((item: T) => string | number | boolean);
   render?: (item: T) => React.ReactNode;
 }
+
+// ExcelJS returns rich-text, formula and hyperlink cells as objects; reduce
+// every cell to its displayed text/number.
+const cellText = (v: unknown): unknown => {
+  if (v === null || v === undefined) return "";
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "object") {
+    const o = v as {
+      richText?: { text: string }[];
+      result?: unknown;
+      text?: unknown;
+    };
+    if (Array.isArray(o.richText))
+      return o.richText.map((r) => r.text).join("");
+    if ("result" in o) return cellText(o.result);
+    if ("text" in o) return cellText(o.text);
+    return "";
+  }
+  return typeof v === "string" ? v.trim() : v;
+};
+
+const normHeaderKey = (h: string) =>
+  h.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]/g, "");
+
+const rowNameEn = (row: Record<string, unknown>) =>
+  String(
+    row.name_en ||
+      row.NameEn ||
+      row.Name ||
+      row.nameen ||
+      row.name ||
+      row.englishname ||
+      "",
+  ).trim();
+
+const importErrorMessage = (err: unknown): string => {
+  const e = err as {
+    message?: string;
+    response?: {
+      data?: {
+        message?: string;
+        error?: string;
+        errors?: { field?: string; message?: string }[];
+      };
+    };
+  };
+  const data = e?.response?.data;
+  if (data?.errors?.length) {
+    return data.errors
+      .map((x) => [x.field, x.message].filter(Boolean).join(": "))
+      .join("; ");
+  }
+  return data?.message || data?.error || e?.message || "Unknown error";
+};
 
 function MasterTable<T extends { id: string }>({
   data,

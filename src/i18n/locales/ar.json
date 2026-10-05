@@ -3960,7 +3960,10 @@
       "noOrganizations": "لا توجد منظمات.",
       "failedToLoad": "فشل تحميل البيانات الأساسية.",
       "nameEnRequired": "الاسم (بالإنجليزية) مطلوب",
-      "requiredFieldsMissing": "يرجى ملء جميع الحقول المطلوبة"
+      "requiredFieldsMissing": "يرجى ملء جميع الحقول المطلوبة",
+      "importSummary": "تم استيراد {{imported}}، وتخطي {{skipped}} (موجودة مسبقاً)، وفشل {{failed}}",
+      "importRow": "الصف {{row}}",
+      "importInvalidCriterionNo": "رقم المعيار \"{{value}}\" مفقود أو ليس رقماً صحيحاً موجباً"
     },
     "dictionary": {
       "title": "قاموس مؤشرات الأداء",
