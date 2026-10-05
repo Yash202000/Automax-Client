@@ -59,6 +59,7 @@ import {
   Button,
   Modal,
   ModalBody,
+  ModalFooter,
   ModalHeader,
   ModalTitle,
 } from "../../components/ui";
@@ -1314,19 +1315,27 @@ export const IncidentDetailPage: React.FC = () => {
   }, [compareModalOpen]);
 
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [includeReportLogs, setIncludeReportLogs] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   const handleDownloadReport = async () => {
     if (!id || !incident) return;
     try {
       setGeneratingReport(true);
       const lang = i18n.language.startsWith("ar") ? "ar" : "en";
-      const blob = await incidentApi.downloadReport(id, "pdf", lang);
+      const blob = await incidentApi.downloadReport(
+        id,
+        "pdf",
+        lang,
+        isEPM940 ? includeReportLogs : undefined,
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `incident_${incident.incident_number}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      setReportModalOpen(false);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("Failed to download report:", err);
@@ -2236,17 +2245,19 @@ export const IncidentDetailPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDownloadReport}
-              disabled={generatingReport}
+              onClick={() =>
+                isEPM940 ? setReportModalOpen(true) : handleDownloadReport()
+              }
+              disabled={!isEPM940 && generatingReport}
               leftIcon={
-                generatingReport ? (
+                !isEPM940 && generatingReport ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <Download className="w-4 h-4" />
                 )
               }
             >
-              {generatingReport
+              {!isEPM940 && generatingReport
                 ? t("incidents.generating", "Generating...")
                 : t("incidents.downloadReport", "Download Report")}
             </Button>
@@ -6684,6 +6695,52 @@ export const IncidentDetailPage: React.FC = () => {
           refetchMergedIncidents();
         }}
       />
+
+      {canViewReports && isEPM940 && (
+        <Modal
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          size="sm"
+        >
+          <ModalHeader>
+            <ModalTitle>
+              {t("incidents.downloadReport", "Download Report")}
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <label className="flex items-center gap-3 text-sm text-[hsl(var(--foreground))] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeReportLogs}
+                onChange={(event) => setIncludeReportLogs(event.target.checked)}
+                disabled={generatingReport}
+                className="rounded border-[hsl(var(--border))]"
+              />
+              {t("incidents.includeLogs", "Include logs")}
+            </label>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setReportModalOpen(false)}
+              disabled={generatingReport}
+            >
+              {t("common.cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={handleDownloadReport}
+              isLoading={generatingReport}
+              leftIcon={
+                generatingReport ? undefined : <Download className="w-4 h-4" />
+              }
+            >
+              {generatingReport
+                ? t("incidents.generating", "Generating...")
+                : t("incidents.downloadReport", "Download Report")}
+            </Button>
+          </ModalFooter>
+        </Modal>
+      )}
 
       {incident.latitude !== undefined && incident.longitude !== undefined && (
         <Modal

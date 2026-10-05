@@ -1765,9 +1765,14 @@ export const incidentApi = {
     incidentId: string,
     format: "pdf" | "html" | "json" | "txt" = "pdf",
     lang: "ar" | "en" = "ar",
+    includeLogs?: boolean,
   ): Promise<Blob> => {
+    const params = new URLSearchParams({ format, lang });
+    if (includeLogs !== undefined) {
+      params.set("include_logs", String(includeLogs));
+    }
     const response = await apiClient.get(
-      `/incidents/${incidentId}/report?format=${format}&lang=${lang}`,
+      `/incidents/${incidentId}/report?${params.toString()}`,
       {
         responseType: "blob",
       },
