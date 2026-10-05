@@ -3916,9 +3916,9 @@
       "unit": "Unit",
       "status": "Status",
       "type": "Type",
-      "criterionNo": "Criterion #",
+      "criterionNo": "Criterion No.",
       "awardCriterion": "Award Criterion",
-      "subNo": "Sub #",
+      "subNo": "Sub-Criterion No.",
       "noPillars": "No pillars found.",
       "noEnablers": "No enablers found.",
       "noGoals": "No strategic goals found.",
@@ -3963,7 +3963,10 @@
       "noOrganizations": "No organizations found.",
       "failedToLoad": "Failed to load master data.",
       "nameEnRequired": "Name (EN) is required",
-      "requiredFieldsMissing": "Please fill in all required fields"
+      "requiredFieldsMissing": "Please fill in all required fields",
+      "importSummary": "Imported {{imported}}, skipped {{skipped}} (already exist), failed {{failed}}",
+      "importRow": "Row {{row}}",
+      "importInvalidCriterionNo": "Criterion No. \"{{value}}\" is missing or not a positive whole number"
     },
     "dictionary": {
       "title": "KPI Dictionary",
