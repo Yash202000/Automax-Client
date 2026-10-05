@@ -532,8 +532,12 @@ export const KpiMasterDataPage: React.FC = () => {
           );
         }
       }
-      if (importType === "award-criterion") {
-        queryClient.invalidateQueries({ queryKey: ["kpi", "award-criteria"] });
+      // Rows are created through the API directly (not the create hooks,
+      // which toast on every row), so refresh the list once here.
+      if (imported) {
+        queryClient.invalidateQueries({
+          queryKey: ["kpi", importQueryKey[importType]],
+        });
       }
 
       const summary = t("kpi.masterData.importSummary", {
@@ -579,19 +583,19 @@ export const KpiMasterDataPage: React.FC = () => {
     );
     if (!name_en) return "skipped";
     if (type === "pillar") {
-      await createPillar.mutateAsync({
+      await kpiMasterDataApi.createPillar({
         name_en,
         name_ar,
         owner_id: resolveOwnerId(row),
       } as PillarRequest);
     } else if (type === "enabler") {
-      await createEnabler.mutateAsync({
+      await kpiMasterDataApi.createEnabler({
         name_en,
         name_ar,
         owner_id: resolveOwnerId(row),
       } as EnablerRequest);
     } else if (type === "operational-objective") {
-      await createOperationalObjective.mutateAsync({
+      await kpiMasterDataApi.createOperationalObjective({
         name_en,
         name_ar,
         goal_id: row.goal_id,
@@ -599,7 +603,7 @@ export const KpiMasterDataPage: React.FC = () => {
         enabler_id: row.enabler_id || undefined,
       } as OperationalObjectiveRequest);
     } else if (type === "process") {
-      await createProcess.mutateAsync({
+      await kpiMasterDataApi.createProcess({
         name_en,
         name_ar,
         operational_objective_id: row.operational_objective_id,
@@ -610,7 +614,7 @@ export const KpiMasterDataPage: React.FC = () => {
         unit: row.unit || undefined,
       } as ProcessRequest);
     } else if (type === "initiative") {
-      await createInitiative.mutateAsync({
+      await kpiMasterDataApi.createInitiative({
         name_en,
         name_ar,
         goal_id: row.goal_id,
@@ -621,7 +625,7 @@ export const KpiMasterDataPage: React.FC = () => {
         status: row.status || undefined,
       } as InitiativeRequest);
     } else if (type === "domain") {
-      await createDomain.mutateAsync({
+      await kpiMasterDataApi.createDomain({
         name_en,
         name_ar,
         type: row.type || "",
@@ -658,24 +662,24 @@ export const KpiMasterDataPage: React.FC = () => {
       } as AwardCriterionRequest);
       importedCriterionNos.current.add(criterion_no);
     } else if (type === "award-sub-criterion") {
-      await createAwardSubCriterion.mutateAsync({
+      await kpiMasterDataApi.createAwardSubCriterion({
         name_en,
         name_ar,
         award_criterion_id: row.award_criterion_id,
         sub_no: row.sub_no || row.subNo || "1",
       } as AwardSubCriterionRequest);
     } else if (type === "data-source") {
-      await createDataSource.mutateAsync({
+      await kpiMasterDataApi.createDataSource({
         name_en,
         name_ar,
       } as KpiDataSourceRequest);
     } else if (type === "segmentation-dimension") {
-      await createSegmentationDimension.mutateAsync({
+      await kpiMasterDataApi.createSegmentationDimension({
         name_en,
         name_ar,
       } as KpiSegmentationDimensionRequest);
     } else if (type === "organization") {
-      await createOrganization.mutateAsync({
+      await kpiMasterDataApi.createOrganization({
         name_en,
         name_ar,
         contact_info: row.contact_info || row.ContactInfo || undefined,
@@ -1355,6 +1359,22 @@ const cellText = (v: unknown): unknown => {
     return "";
   }
   return typeof v === "string" ? v.trim() : v;
+};
+
+// List query key (under "kpi") refreshed after an import of each type.
+const importQueryKey: Record<EntityType, string> = {
+  pillar: "pillars",
+  enabler: "enablers",
+  "operational-objective": "operational-objectives",
+  process: "processes",
+  "objectives-tree": "operational-objectives",
+  initiative: "initiatives",
+  domain: "domains",
+  "award-criterion": "award-criteria",
+  "award-sub-criterion": "award-sub-criteria",
+  "data-source": "data-sources",
+  "segmentation-dimension": "segmentation-dimensions",
+  organization: "organizations",
 };
 
 const normHeaderKey = (h: string) =>
