@@ -306,10 +306,21 @@ export const KpiMasterDataPage: React.FC = () => {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
     }
+    // A process's Goal is read-only and always comes from its Parent
+    // Objective, so resolve it from the objective here rather than relying
+    // only on form state (e.g. an older process saved without goal_id).
+    const processGoalId =
+      form.goal_id ||
+      (() => {
+        const o = (operationalObjectives ?? []).find(
+          (x: OperationalObjective) => x.id === form.operational_objective_id,
+        );
+        return o?.goal_id ?? o?.goal?.id ?? "";
+      })();
     if (
       (modalType === "operational-objective" && !form.goal_id) ||
       (modalType === "process" &&
-        (!form.operational_objective_id || !form.goal_id))
+        (!form.operational_objective_id || !processGoalId))
     ) {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
@@ -350,7 +361,7 @@ export const KpiMasterDataPage: React.FC = () => {
           name_en: form.name_en,
           name_ar: form.name_ar,
           operational_objective_id: form.operational_objective_id,
-          goal_id: form.goal_id,
+          goal_id: processGoalId,
           pillar_id: form.pillar_id || undefined,
           enabler_id: form.enabler_id || undefined,
           department_id: form.department_id || undefined,
