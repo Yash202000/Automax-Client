@@ -1409,7 +1409,7 @@ function MasterTable<T extends { id: string }>({
                 </th>
               ))}
               {(canManage || onView) && (
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   {t("common.actions")}
                 </th>
               )}
