@@ -30,7 +30,7 @@ import usePermissions from "@/hooks/usePermissions";
 import { SoftphoneButton } from "../sip/SoftphoneButton";
 
 export const Navbar: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { hasAnyPermission, isSuperAdmin } = usePermissions();
   const navigate = useNavigate();
@@ -47,7 +47,8 @@ export const Navbar: React.FC = () => {
 
   // In-app notifications
   const { data: notifData } = useQuery({
-    queryKey: ["in-app-notifications", user?.id],
+    // Language in the key so notifications refetch in the new language
+    queryKey: ["in-app-notifications", user?.id, i18n.language],
     queryFn: () =>
       emailApi.list({
         channel: "notification",

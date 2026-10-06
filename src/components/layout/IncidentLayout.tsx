@@ -92,7 +92,8 @@ export const IncidentLayout: React.FC = () => {
 
   // In-app notifications
   const { data: notifData } = useQuery({
-    queryKey: ["in-app-notifications", user?.id],
+    // Language in the key so notifications refetch in the new language
+    queryKey: ["in-app-notifications", user?.id, i18n.language],
     queryFn: () =>
       emailApi.list({
         channel: "notification",
