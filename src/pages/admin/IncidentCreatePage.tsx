@@ -76,6 +76,7 @@ import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { capFilesByCount } from "@/utils/attachmentLimits";
 import { useImageValidation } from "@/hooks/useImageValidation";
 import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
+import { isSamePhoneNumber } from "@/utils/validations";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -971,6 +972,9 @@ export function IncidentCreatePage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+    if (field === "reporter_phone" && errors.alternate_mobile) {
+      setErrors((prev) => ({ ...prev, alternate_mobile: "" }));
+    }
   };
 
   const handleLookupChange = (categoryId: string, value: any) => {
@@ -1389,6 +1393,14 @@ export function IncidentCreatePage() {
           });
         }
       }
+    }
+
+    // Alternate number is optional, but when given it must differ from the main phone
+    if (isSamePhoneNumber(formData.alternate_mobile, formData.reporter_phone)) {
+      newErrors.alternate_mobile = t(
+        "incidents.alternatePhoneSameAsPhone",
+        "Alternative number must be different from the caller phone number",
+      );
     }
 
     if (attachments.length > 0) {
@@ -1862,6 +1874,7 @@ export function IncidentCreatePage() {
                           "incidents.reporterPhonePlaceholder",
                           "+971 50 000 0000",
                         )}
+                        error={errors.alternate_mobile}
                       />
                     </div>
                     {(workflowRequiredFields.includes("reporter_email") ||
