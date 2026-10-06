@@ -26,6 +26,11 @@ function resolveError(
         "citizenReport.error404",
         "Phone number not recognised. Please check and try again.",
       );
+    case 403:
+      return t(
+        "citizenReport.error403",
+        "This incident report is not available yet.",
+      );
     default:
       return t(
         "citizenReport.error400",
@@ -35,10 +40,20 @@ function resolveError(
 }
 
 export function CitizenReportVerifyPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const signedToken = searchParams.get("signed_token") ?? "";
+  // Language of the SMS/email template that carried this link ("en" | "ar").
+  // It drives both this page and the language of the report PDF.
+  const lang = searchParams.get("lang") === "en" ? "en" : "ar";
+
+  // Apply the link language to the page (not persisted: this is a one-off citizen view).
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    void i18n.changeLanguage(lang);
+  }, [lang, i18n]);
 
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState("");
@@ -104,7 +119,7 @@ export function CitizenReportVerifyPage() {
       id: string;
       signed_token: string;
       last6digits: string;
-    }) => CitizenReportApi.verifyAndFetch(id, signed_token, last6digits),
+    }) => CitizenReportApi.verifyAndFetch(id, signed_token, last6digits, lang),
 
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);

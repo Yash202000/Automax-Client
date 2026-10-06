@@ -4483,6 +4483,21 @@
     },
     "allUsers": "All Users"
   },
+  "citizenReport": {
+    "title": "Incident Report",
+    "verifyTitle": "Verify your identity",
+    "verifySubtitle": "Enter the last 6 digits of the mobile number registered on this incident to view the report.",
+    "mobileDigitsLabel": "Last 6 digits of mobile number",
+    "digit": "Digit",
+    "enterAllDigits": "Please enter all 6 digits.",
+    "verifyAndView": "Verify & View Report",
+    "secureNote": "This link is unique to your incident and will expire.",
+    "error400": "Something went wrong. Please try again.",
+    "error401": "Invalid link. Please use the link from your SMS/email.",
+    "error403": "This incident report is not available yet.",
+    "error404": "Phone number not recognised. Please check and try again.",
+    "error410": "This link has expired. Please contact support."
+  },
   "citizen": {
     "closePage": "You may safely close this page.",
     "commentPlaceholder": "Describe what happened, any hazards, or anything else that may help our team respond...",

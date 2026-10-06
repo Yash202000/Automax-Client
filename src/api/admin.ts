@@ -3454,10 +3454,11 @@ export const CitizenReportApi = {
     id: string,
     signed_token: string,
     last6digits: string,
+    lang?: string,
   ): Promise<Blob> => {
     const response = await apiClient.post(
       `/ivr/incident/report/${id}/verify`,
-      { signed_token, last6digits },
+      { signed_token, last6digits, ...(lang ? { lang } : {}) },
       { responseType: "blob" },
     );
     return response.data;
