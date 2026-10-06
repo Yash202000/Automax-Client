@@ -4635,6 +4635,29 @@ export const IncidentDetailPage: React.FC = () => {
                         </button>
                       </div>
                     ) : null}
+                    {incident.reporter?.alternate_mobile ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const phone = incident.reporter?.alternate_mobile;
+                            window.dispatchEvent(
+                              new CustomEvent("initiate-call", {
+                                detail: { number: phone },
+                              }),
+                            );
+                          }}
+                          className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                          title={t(
+                            "users.alternateMobile",
+                            "Alternate Mobile Number",
+                          )}
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          {incident.reporter.alternate_mobile}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
