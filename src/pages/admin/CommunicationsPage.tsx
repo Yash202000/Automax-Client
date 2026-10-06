@@ -1116,12 +1116,12 @@ export const CommunicationsPage: React.FC = () => {
               {selectedEmail.status === "failed" && (
                 <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0 wrap-break-word">
                       <div className="flex items-center gap-2 font-semibold">
                         <AlertCircle className="w-4 h-4" />
                         {t("communications.deliveryError", "Delivery error")}
                       </div>
-                      <p className="mt-1">
+                      <p className="mt-1 wrap-break-word">
                         {getFailureMessage(selectedEmail) ||
                           t("communications.deliveryFailed", "Delivery failed")}
                       </p>
@@ -1141,7 +1141,7 @@ export const CommunicationsPage: React.FC = () => {
               )}
 
               <div
-                className="prose max-w-none bg-card border border-border p-4 rounded-lg"
+                className="prose max-w-none wrap-break-word bg-card border border-border p-4 rounded-lg"
                 dangerouslySetInnerHTML={{
                   __html: DOMPurify.sanitize(
                     selectedEmail.body_html || selectedEmail.body || "",
