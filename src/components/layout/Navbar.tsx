@@ -47,7 +47,7 @@ export const Navbar: React.FC = () => {
 
   // In-app notifications
   const { data: notifData } = useQuery({
-    queryKey: ["in-app-notifications", user?.id],
+    queryKey: ["in-app-notifications", user?.id, currentLang],
     queryFn: () =>
       emailApi.list({
         channel: "notification",
