@@ -559,6 +559,7 @@
     "reporterNamePlaceholder": "Name of caller",
     "reporterEmailPlaceholder": "caller@example.com",
     "reporterPhonePlaceholder": "+971 50 000 0000",
+    "reporterAlternativePhone": "Caller Alternative Number",
     "firstName": "First Name",
     "middleName": "Middle Name",
     "lastName": "Last Name",
@@ -1255,7 +1256,9 @@
     "importEmailRequired": "Email is required",
     "importPhoneRequired": "Phone is required",
     "totalRecords": "Total",
-    "downloadTemplate": "Download User Import Template"
+    "downloadTemplate": "Download User Import Template",
+    "alternateMobile": "Alternate Mobile Number",
+    "noAlternateMobile": "No alternate mobile number"
   },
   "roles": {
     "title": "Roles",

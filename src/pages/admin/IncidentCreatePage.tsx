@@ -147,6 +147,7 @@ export function IncidentCreatePage() {
     reporter_name: "",
     reporter_email: "",
     reporter_phone: "",
+    alternate_mobile: "",
   });
 
   const [comment, setComment] = useState("");
@@ -529,6 +530,7 @@ export function IncidentCreatePage() {
           reporter_name: d.data.reporter_name || "",
           reporter_email: d.data.reporter_email || "",
           reporter_phone: d.data.reporter_phone || "",
+          alternate_mobile: d.data.reporter?.alternate_mobile || "",
         });
 
         // Clone lookup values
@@ -769,6 +771,7 @@ export function IncidentCreatePage() {
         reporter_name: "",
         reporter_email: "",
         reporter_phone: "",
+        alternate_mobile: "",
       });
       setLookupValues({});
       setAttachments([]);
@@ -1819,29 +1822,48 @@ export function IncidentCreatePage() {
                       />
                     </div>
 
-                    <Input
-                      className="w-full"
-                      label={t(
-                        "incidents.reporterPhone",
-                        "Caller Phone Number",
-                      )}
-                      type="tel"
-                      value={formData.reporter_phone || ""}
-                      onChange={(e) =>
-                        handleChange(
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Input
+                        label={t(
+                          "incidents.reporterPhone",
+                          "Caller Phone Number",
+                        )}
+                        type="tel"
+                        value={formData.reporter_phone || ""}
+                        onChange={(e) =>
+                          handleChange(
+                            "reporter_phone",
+                            e.target.value.replace(/[^0-9+\-\s()]/g, ""),
+                          )
+                        }
+                        placeholder={t(
+                          "incidents.reporterPhonePlaceholder",
+                          "+971 50 000 0000",
+                        )}
+                        required={workflowRequiredFields.includes(
                           "reporter_phone",
-                          e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                        )
-                      }
-                      placeholder={t(
-                        "incidents.reporterPhonePlaceholder",
-                        "+971 50 000 0000",
-                      )}
-                      required={workflowRequiredFields.includes(
-                        "reporter_phone",
-                      )}
-                      error={errors.reporter_phone}
-                    />
+                        )}
+                        error={errors.reporter_phone}
+                      />
+                      <Input
+                        label={`${t(
+                          "incidents.reporterAlternativePhone",
+                          "Caller Alternative Number",
+                        )} (${t("incidents.optional", "optional")})`}
+                        type="tel"
+                        value={formData.alternate_mobile || ""}
+                        onChange={(e) =>
+                          handleChange(
+                            "alternate_mobile",
+                            e.target.value.replace(/[^0-9+\-\s()]/g, ""),
+                          )
+                        }
+                        placeholder={t(
+                          "incidents.reporterPhonePlaceholder",
+                          "+971 50 000 0000",
+                        )}
+                      />
+                    </div>
                     {(workflowRequiredFields.includes("reporter_email") ||
                       workflowOptionalFields.includes("reporter_email")) && (
                       <Input

@@ -561,6 +561,7 @@
     "reporterNamePlaceholder": "اسم المتصل",
     "reporterEmailPlaceholder": "reporter@example.com",
     "reporterPhonePlaceholder": "+971 50 000 0000",
+    "reporterAlternativePhone": "رقم المتصل البديل",
     "firstName": "الاسم الأول",
     "middleName": "اسم الأب/الاسم الأوسط",
     "lastName": "اسم العائلة",
@@ -1254,7 +1255,9 @@
     "importEmailRequired": "البريد الإلكتروني مطلوب",
     "importPhoneRequired": "رقم الهاتف مطلوب",
     "totalRecords": "الإجمالي",
-    "downloadTemplate": "تحميل قالب استيراد المستخدمين"
+    "downloadTemplate": "تحميل قالب استيراد المستخدمين",
+    "alternateMobile": "رقم الجوال البديل",
+    "noAlternateMobile": "لا يوجد رقم جوال بديل"
   },
   "roles": {
     "title": "الأدوار",
