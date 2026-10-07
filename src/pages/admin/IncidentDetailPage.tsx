@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { publicUrl } from "../../utils/publicUrl";
-import { getOsmTileUrl } from "../../utils/osmTileUrl";
+import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { withCallStatusDot } from "../../utils/callStatus";
 import { capFilesByCount } from "../../utils/attachmentLimits";
 import { useImageValidation } from "../../hooks/useImageValidation";
@@ -113,8 +112,6 @@ import { cn, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "../../stores/authStore";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   parseCustomLookupFields,
@@ -132,17 +129,6 @@ import { IncidentMentionTextarea } from "@/components/common/IncidentMentionText
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { resolveSourceLabel } from "@/utils/sourceLabel";
-
-// Fix for default marker icon - using local images
-const defaultIcon = new Icon({
-  iconUrl: publicUrl("images/leaflet/marker-icon.png"),
-  iconRetinaUrl: publicUrl("images/leaflet/marker-icon-2x.png"),
-  shadowUrl: publicUrl("images/leaflet/marker-shadow.png"),
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
 
 const parseAllowMultiple = (validationRules?: string): boolean => {
   if (!validationRules) return false;
@@ -358,7 +344,6 @@ export const IncidentDetailPage: React.FC = () => {
     new Set(),
   );
   const [transitionStep, setTransitionStep] = useState(0);
-  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -4672,22 +4657,10 @@ export const IncidentDetailPage: React.FC = () => {
                     <div className="mt-1.5 space-y-1.5">
                       {/* Map - smaller height */}
                       <div className="relative h-32 rounded-lg overflow-hidden border border-[hsl(var(--border))]">
-                        <MapContainer
-                          center={[incident.latitude, incident.longitude]}
-                          zoom={15}
-                          className="h-full w-full z-0"
-                          style={{ height: "100%", width: "100%" }}
-                          scrollWheelZoom={false}
-                        >
-                          <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url={tileUrl}
-                          />
-                          <Marker
-                            position={[incident.latitude, incident.longitude]}
-                            icon={defaultIcon}
-                          />
-                        </MapContainer>
+                        <SingleLocationMap
+                          latitude={incident.latitude}
+                          longitude={incident.longitude}
+                        />
                         <button
                           type="button"
                           onClick={() => setLocationMapModalOpen(true)}
@@ -6778,22 +6751,12 @@ export const IncidentDetailPage: React.FC = () => {
           <ModalBody className="overflow-y-auto">
             <div className="space-y-4">
               <div className="h-[65vh] min-h-[420px] rounded-lg overflow-hidden border border-[hsl(var(--border))]">
-                <MapContainer
-                  center={[incident.latitude, incident.longitude]}
-                  zoom={15}
-                  className="h-full w-full z-0"
-                  style={{ height: "100%", width: "100%" }}
-                  scrollWheelZoom={true}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url={tileUrl}
-                  />
-                  <Marker
-                    position={[incident.latitude, incident.longitude]}
-                    icon={defaultIcon}
-                  />
-                </MapContainer>
+                <SingleLocationMap
+                  latitude={incident.latitude}
+                  longitude={incident.longitude}
+                  scrollWheelZoom
+                  showMapControls
+                />
               </div>
 
               <div className="rounded-lg bg-[hsl(var(--muted)/0.35)] border border-[hsl(var(--border))] p-4 text-sm">

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { publicUrl } from "../../utils/publicUrl";
-import { getOsmTileUrl } from "../../utils/osmTileUrl";
+import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { ZoomableImage } from "../../components/common/ZoomableImage";
 import { toast } from "sonner";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -59,21 +58,8 @@ import type {
 } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
 import { cn, getLocalizedName } from "@/lib/utils";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { resolveSourceLabel } from "@/utils/sourceLabel";
-
-// Fix for default marker icon - using local images
-const defaultIcon = new Icon({
-  iconUrl: publicUrl("images/leaflet/marker-icon.png"),
-  iconRetinaUrl: publicUrl("images/leaflet/marker-icon-2x.png"),
-  shadowUrl: publicUrl("images/leaflet/marker-shadow.png"),
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
 
 export const QueryDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -124,8 +110,6 @@ export const QueryDetailPage: React.FC = () => {
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-
-  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   // Queries
   const {
@@ -1588,22 +1572,10 @@ export const QueryDetailPage: React.FC = () => {
                     <div className="space-y-2">
                       {/* Map - compact height */}
                       <div className="h-32 rounded-lg overflow-hidden border border-[hsl(var(--border))]">
-                        <MapContainer
-                          center={[query.latitude, query.longitude]}
-                          zoom={15}
-                          className="h-full w-full"
-                          style={{ height: "100%", width: "100%" }}
-                          scrollWheelZoom={false}
-                        >
-                          <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url={tileUrl}
-                          />
-                          <Marker
-                            position={[query.latitude, query.longitude]}
-                            icon={defaultIcon}
-                          />
-                        </MapContainer>
+                        <SingleLocationMap
+                          latitude={query.latitude}
+                          longitude={query.longitude}
+                        />
                       </div>
                       {/* Compact location info */}
                       <div className="text-xs text-[hsl(var(--muted-foreground))] space-y-1">
