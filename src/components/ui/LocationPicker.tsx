@@ -1,25 +1,33 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { publicUrl } from "../../utils/publicUrl";
-import { getOsmTileUrl } from "../../utils/osmTileUrl";
+import BaseMapLayer from "../maps/BaseMapLayer";
+import GoogleBaseMap from "../maps/google/GoogleBaseMap";
+import MapFallbackNotice from "../maps/MapFallbackNotice";
+import MapSwitch from "../maps/MapSwitch";
+import { useMapProvider } from "../../utils/mapProvider";
+import {
+  reverseGeocodeGoogle,
+  searchGooglePlaces,
+  type GeoAddress,
+  type PlaceSuggestion,
+} from "../../utils/googleGeo";
+import {
+  AdvancedMarker,
+  ControlPosition,
+  useMap as useGoogleMap,
+} from "@vis.gl/react-google-maps";
 import { useTranslation } from "react-i18next";
 import { integrationApi } from "@/api/integration";
 import { toast } from "sonner";
 
 import {
   MapContainer,
-  TileLayer,
   Marker,
   useMapEvents,
   useMap,
   ZoomControl,
 } from "react-leaflet";
-import { LatLng, Icon } from "leaflet";
+import { Icon } from "leaflet";
 import {
   MapPin,
   Loader2,
@@ -104,7 +112,7 @@ function MapClickHandler({
   onLocationSelect,
 }: {
   // eslint-disable-next-line no-unused-vars
-  onLocationSelect: (_latlng: LatLng) => void;
+  onLocationSelect: (_latlng: { lat: number; lng: number }) => void;
 }) {
   useMapEvents({
     click: (e) => {
@@ -127,25 +135,61 @@ function MapCenterUpdater({ center }: { center: [number, number] | null }) {
   return null;
 }
 
+// Same as MapCenterUpdater, for the native Google map.
+function GoogleMapCenterUpdater({
+  center,
+}: {
+  center: [number, number] | null;
+}) {
+  const map = useGoogleMap();
+
+  useEffect(() => {
+    if (map && center) {
+      map.panTo({ lat: center[0], lng: center[1] });
+      map.setZoom(15);
+    }
+  }, [center, map]);
+
+  return null;
+}
+
 async function reverseGeocode(
   lat: number,
   lng: number,
+  useGoogle = false,
 ): Promise<Partial<LocationData>> {
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-      {
-        headers: {
-          "Accept-Language": "en",
+    let base: GeoAddress;
+    if (useGoogle) {
+      base = await reverseGeocodeGoogle(lat, lng);
+    } else {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+        {
+          headers: {
+            "Accept-Language": "en",
+          },
         },
-      },
-    );
+      );
 
-    if (!response.ok) {
-      throw new Error("Geocoding failed");
+      if (!response.ok) {
+        throw new Error("Geocoding failed");
+      }
+
+      const data: NominatimResponse = await response.json();
+      base = {
+        address: data.display_name,
+        city: data.address.city || data.address.town || data.address.village,
+        state: data.address.state || data.address.province,
+        country: data.address.country,
+        postal_code: data.address.postcode,
+        district:
+          data.address.district ||
+          data.address.county ||
+          data.address.state_district ||
+          data.address.suburb,
+      };
     }
-
-    const data: NominatimResponse = await response.json();
     let gisData = undefined;
     if (ENABLE_GIS === "true") {
       gisData = await integrationApi.gisLocation({ lat, lng });
@@ -154,24 +198,14 @@ async function reverseGeocode(
       }
     }
 
-    const districtValue =
-      data.address.district ||
-      data.address.county ||
-      data.address.state_district ||
-      data.address.suburb;
-
     const gisAddress = `${gisData?.data?.plan_no}, ${gisData?.data?.street_fullname}, ${gisData?.data?.municipality_name}, ${gisData?.data?.district_name}`;
 
     return {
+      ...base,
       address:
         ENABLE_GIS === "true" && gisData?.data?.isInsideBoundary
           ? gisAddress
-          : data.display_name,
-      city: data.address.city || data.address.town || data.address.village,
-      state: data.address.state || data.address.province,
-      country: data.address.country,
-      postal_code: data.address.postcode,
-      district: districtValue,
+          : base.address,
       gis: gisData ? gisData.data : undefined,
     };
   } catch (error) {
@@ -191,11 +225,13 @@ export function LocationPicker({
   onToggleExpand,
 }: LocationPickerProps) {
   const { t } = useTranslation();
+  const { provider } = useMapProvider();
+  const isGoogle = provider === "google";
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [geoError, setGeoError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<NominatimResponse[]>([]);
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(
     value?.latitude && value?.longitude
@@ -203,7 +239,6 @@ export function LocationPicker({
       : null,
   );
   const [GISData, setGISData] = useState<any>(null);
-  const tileUrl = useMemo(() => getOsmTileUrl(), []);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -226,35 +261,65 @@ export function LocationPicker({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSearch = useCallback(async (query: string) => {
-    if (!query || query.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
-        {
-          headers: {
-            "Accept-Language": "en",
-          },
-        },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data);
-        setShowSuggestions(true);
+  const handleSearch = useCallback(
+    async (query: string) => {
+      if (!query || query.length < 3) {
+        setSuggestions([]);
+        return;
       }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("Search error:", err);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+
+      setIsSearching(true);
+      try {
+        if (isGoogle) {
+          setSuggestions(await searchGooglePlaces(query));
+          setShowSuggestions(true);
+          return;
+        }
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
+          {
+            headers: {
+              "Accept-Language": "en",
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data: NominatimResponse[] = await response.json();
+          setSuggestions(
+            data.map((result) => ({
+              label: result.display_name,
+              resolve: async () => ({
+                latitude: parseFloat(result.lat),
+                longitude: parseFloat(result.lon),
+                address: result.display_name,
+                city:
+                  result.address.city ||
+                  result.address.town ||
+                  result.address.village,
+                state: result.address.state || result.address.province,
+                country: result.address.country,
+                postal_code: result.address.postcode,
+                district:
+                  result.address.district ||
+                  result.address.county ||
+                  result.address.state_district ||
+                  result.address.suburb,
+              }),
+            })),
+          );
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Search error:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [isGoogle],
+  );
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -273,33 +338,19 @@ export function LocationPicker({
   };
 
   const handleSelectSuggestion = useCallback(
-    (suggestion: NominatimResponse) => {
-      const lat = parseFloat(suggestion.lat);
-      const lon = parseFloat(suggestion.lon);
-
-      const districtValue =
-        suggestion.address.district ||
-        suggestion.address.county ||
-        suggestion.address.state_district ||
-        suggestion.address.suburb;
-
-      const locationData: LocationData = {
-        latitude: lat,
-        longitude: lon,
-        address: suggestion.display_name,
-        city:
-          suggestion.address.city ||
-          suggestion.address.town ||
-          suggestion.address.village,
-        state: suggestion.address.state || suggestion.address.province,
-        country: suggestion.address.country,
-        postal_code: suggestion.address.postcode,
-        district: districtValue,
-      };
+    async (suggestion: PlaceSuggestion) => {
+      let locationData: LocationData;
+      try {
+        locationData = await suggestion.resolve();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Place lookup error:", err);
+        return;
+      }
 
       onChange(locationData);
-      setMapCenter([lat, lon]);
-      setSearchQuery(suggestion.display_name);
+      setMapCenter([locationData.latitude, locationData.longitude]);
+      setSearchQuery(suggestion.label);
       setShowSuggestions(false);
 
       // Restore focus to input to avoid browser scroll-to-top on suggestion button unmount
@@ -324,7 +375,7 @@ export function LocationPicker({
         const { latitude, longitude } = position.coords;
 
         // Reverse geocode to get address
-        const addressData = await reverseGeocode(latitude, longitude);
+        const addressData = await reverseGeocode(latitude, longitude, isGoogle);
 
         const locationData: LocationData = {
           latitude,
@@ -354,12 +405,16 @@ export function LocationPicker({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-  }, [onChange, t]);
+  }, [onChange, t, isGoogle]);
 
   const handleMapClick = useCallback(
-    async (latlng: LatLng) => {
+    async (latlng: { lat: number; lng: number }) => {
       setIsLoading(true);
-      const addressData = await reverseGeocode(latlng.lat, latlng.lng);
+      const addressData = await reverseGeocode(
+        latlng.lat,
+        latlng.lng,
+        isGoogle,
+      );
 
       const locationData: LocationData = {
         latitude: latlng.lat,
@@ -371,7 +426,7 @@ export function LocationPicker({
       setMapCenter([latlng.lat, latlng.lng]);
       setIsLoading(false);
     },
-    [onChange],
+    [onChange, isGoogle],
   );
 
   const handleClear = useCallback(() => {
@@ -386,6 +441,7 @@ export function LocationPicker({
       const addressData = await reverseGeocode(
         value?.latitude,
         value?.longitude,
+        isGoogle,
       );
 
       const locationData: LocationData = {
@@ -465,28 +521,59 @@ export function LocationPicker({
               : "",
         }}
       >
-        <MapContainer
-          center={mapCenter || defaultCenter}
-          zoom={mapCenter ? 15 : 10}
-          className={"h-full w-full z-0"}
-          style={{ height: "100%", width: "100%" }}
-          zoomControl={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url={tileUrl}
-          />
-          <MapClickHandler onLocationSelect={handleMapClick} />
-          <MapCenterUpdater center={mapCenter} />
-          <ZoomControl position={"bottomleft"} />
+        {/* Controls are positioned clear of the search box (top) and the
+            expand button (bottom right). */}
+        <MapSwitch
+          google={
+            <GoogleBaseMap
+              defaultCenter={{
+                lat: (mapCenter || defaultCenter)[0],
+                lng: (mapCenter || defaultCenter)[1],
+              }}
+              defaultZoom={mapCenter ? 15 : 10}
+              controls
+              zoomControlOptions={{ position: ControlPosition.RIGHT_CENTER }}
+              streetViewControlOptions={{ position: ControlPosition.RIGHT_TOP }}
+              mapTypeControlOptions={{ position: ControlPosition.BOTTOM_LEFT }}
+              onClick={(e) => {
+                const latLng = e.detail.latLng;
+                if (latLng)
+                  handleMapClick({ lat: latLng.lat, lng: latLng.lng });
+              }}
+            >
+              <GoogleMapCenterUpdater center={mapCenter} />
+              {value?.latitude && value?.longitude && (
+                <AdvancedMarker
+                  position={{ lat: value.latitude, lng: value.longitude }}
+                />
+              )}
+            </GoogleBaseMap>
+          }
+          osm={
+            <>
+              <MapContainer
+                center={mapCenter || defaultCenter}
+                zoom={mapCenter ? 15 : 10}
+                className={"h-full w-full z-0"}
+                style={{ height: "100%", width: "100%" }}
+                zoomControl={false}
+              >
+                <BaseMapLayer />
+                <MapClickHandler onLocationSelect={handleMapClick} />
+                <MapCenterUpdater center={mapCenter} />
+                <ZoomControl position={"bottomleft"} />
 
-          {value?.latitude && value?.longitude && (
-            <Marker
-              position={[value.latitude, value.longitude]}
-              icon={defaultIcon}
-            />
-          )}
-        </MapContainer>
+                {value?.latitude && value?.longitude && (
+                  <Marker
+                    position={[value.latitude, value.longitude]}
+                    icon={defaultIcon}
+                  />
+                )}
+              </MapContainer>
+              <MapFallbackNotice className="bottom-3 start-14" />
+            </>
+          }
+        />
 
         {/* Search Overlay */}
         <div className="absolute top-3 left-3 right-3 z-1" ref={searchRef}>
@@ -522,7 +609,7 @@ export function LocationPicker({
                   className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-50 last:border-0 transition-colors"
                 >
                   <p className="font-medium text-gray-900 truncate">
-                    {suggestion.display_name}
+                    {suggestion.label}
                   </p>
                 </button>
               ))}

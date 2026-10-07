@@ -34,6 +34,7 @@ import type { Incident, UpdateProfileRequest, User } from "../../../types";
 import { cn } from "@/lib/utils";
 import CallablePhone from "@/components/common/CallablePhone";
 import { useDebounce } from "@/hooks/useDebounce";
+import { isSamePhoneNumber } from "@/utils/validations";
 
 interface ContactsListProps {
   variant?: "default" | "call-centre";
@@ -76,8 +77,12 @@ export const ContactsList: React.FC<ContactsListProps> = ({
     middle_name: "",
     last_name: "",
     phone: "",
+    alternate_mobile: "",
   });
   const [editError, setEditError] = useState<string | null>(null);
+  const [alternateMobileError, setAlternateMobileError] = useState<
+    string | null
+  >(null);
 
   const debouncedSearch = useDebounce(search, 600);
 
@@ -196,18 +201,32 @@ export const ContactsList: React.FC<ContactsListProps> = ({
       middle_name: user.middle_name || "",
       last_name: user.last_name || "",
       phone: user.phone || "",
+      alternate_mobile: user.alternate_mobile || "",
     });
     setEditError(null);
+    setAlternateMobileError(null);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setEditError(null);
+    // Alternate mobile is optional, but when given it must differ from the phone
+    if (isSamePhoneNumber(editForm.alternate_mobile, editForm.phone)) {
+      setAlternateMobileError(
+        t(
+          "users.alternateMobileSameAsPhone",
+          "Alternate mobile number must be different from the phone number",
+        ),
+      );
+      return;
+    }
+    setAlternateMobileError(null);
     updateContactMutation.mutate({
       first_name: editForm.first_name,
       middle_name: editForm.middle_name,
       last_name: editForm.last_name,
       phone: editForm.phone,
+      alternate_mobile: editForm.alternate_mobile,
     });
   };
 
@@ -812,6 +831,17 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                 {selectedUser?.phone || t("users.noPhone")}
               </p>
             </div>
+            {selectedUser?.alternate_mobile && (
+              <div>
+                <span className="text-xs text-muted-foreground">
+                  {t("users.alternateMobile", "Alternate Mobile Number")}
+                </span>
+                <p className="font-medium">
+                  {selectedUser?.alternate_mobile ||
+                    t("users.noAlternateMobile")}
+                </p>
+              </div>
+            )}
             <div>
               <span className="text-xs text-muted-foreground">
                 {t("users.location", "Latest Incident Location")}
@@ -982,18 +1012,47 @@ export const ContactsList: React.FC<ContactsListProps> = ({
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                {t("users.phone")}
-              </label>
-              <input
-                type="text"
-                value={editForm.phone}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, phone: e.target.value })
-                }
-                className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {t("users.phone")}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.phone}
+                  onChange={(e) => {
+                    setEditForm({ ...editForm, phone: e.target.value });
+                    setAlternateMobileError(null);
+                  }}
+                  className="w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                  {`${t("users.alternateMobile", "Alternate Mobile Number")} (${t("incidents.optional", "optional")})`}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.alternate_mobile}
+                  onChange={(e) => {
+                    setEditForm({
+                      ...editForm,
+                      alternate_mobile: e.target.value,
+                    });
+                    setAlternateMobileError(null);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-2 bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))] focus:bg-[hsl(var(--background))] transition-all text-sm",
+                    alternateMobileError &&
+                      "border-[hsl(var(--destructive))] focus:border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive)/0.2)]",
+                  )}
+                />
+                {alternateMobileError && (
+                  <p className="mt-1.5 text-xs text-[hsl(var(--destructive))]">
+                    {alternateMobileError}
+                  </p>
+                )}
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>

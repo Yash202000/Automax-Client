@@ -17,3 +17,10 @@ export const validateCode = (value: string): boolean => {
 export const validateRoleName = (value: string): boolean => {
   return ROLE_NAME_REGEX.test(value.trim());
 };
+
+//check if two phone number are same
+export const isSamePhoneNumber = (a?: string, b?: string): boolean => {
+  const digitsA = (a ?? "").replace(/\D/g, "");
+  const digitsB = (b ?? "").replace(/\D/g, "");
+  return digitsA.length > 0 && digitsA === digitsB;
+};

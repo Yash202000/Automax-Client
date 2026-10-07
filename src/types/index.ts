@@ -20,6 +20,7 @@ export interface User {
   middle_name?: string;
   last_name: string;
   phone: string;
+  alternate_mobile?: string;
   avatar: string;
   department_id: string | null;
   department?: Department;
@@ -484,6 +485,7 @@ export interface UpdateProfileRequest {
   middle_name?: string;
   last_name?: string;
   phone?: string;
+  alternate_mobile?: string;
   department_id?: string;
   extension?: string;
   location_id?: string;
@@ -1447,6 +1449,7 @@ export interface IncidentCreateRequest {
   reporter_email?: string;
   reporter_name?: string;
   reporter_phone?: string;
+  alternate_mobile?: string;
   custom_fields?: string;
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;

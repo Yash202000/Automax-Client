@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useTranslation } from "react-i18next";
-import { getOsmTileUrl } from "../../utils/osmTileUrl";
+import { attachOsmBaseLayer } from "../../utils/mapProvider";
 
 // Fix default marker icon issue with webpack/vite
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -54,11 +54,7 @@ export default function LocationPicker({
     );
     mapRef.current = map;
 
-    // Add tile layer (OpenStreetMap)
-    L.tileLayer(getOsmTileUrl(), {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
+    attachOsmBaseLayer(map);
 
     // Add marker if coordinates exist
     if (latitude !== undefined && longitude !== undefined) {
