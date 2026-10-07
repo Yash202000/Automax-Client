@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReportDataSource } from "../../types";
+import { isPerformanceDataSource } from "../../constants/reportFields";
 
 interface DataSourceSelectorProps {
   value: ReportDataSource | null;
@@ -83,6 +84,31 @@ const dataSources: {
     descKey: "reports.dataSources.workflowsDesc",
     icon: "GitBranch",
   },
+  {
+    key: "performance_department",
+    labelKey: "reports.dataSources.performance",
+    descKey: "reports.dataSources.performanceDesc",
+    icon: "BarChart3",
+  },
+];
+
+const performanceTypes: { key: ReportDataSource; labelKey: string }[] = [
+  {
+    key: "performance_department",
+    labelKey: "reports.dataSources.performance_types.department",
+  },
+  {
+    key: "performance_closure",
+    labelKey: "reports.dataSources.performance_types.closure",
+  },
+  {
+    key: "performance_sla",
+    labelKey: "reports.dataSources.performance_types.sla",
+  },
+  {
+    key: "performance_channel",
+    labelKey: "reports.dataSources.performance_types.channel",
+  },
 ];
 
 export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
@@ -92,7 +118,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
       {dataSources.map((source) => {
         const Icon = iconMap[source.icon] || AlertCircle;
         const isSelected =
@@ -101,7 +127,9 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
             value === "locations_by_count") ||
           (source.key === "classifications_by_status" &&
             value === "classifications_by_count") ||
-          (source.key === "users" && value === "users_performance");
+          (source.key === "users" && value === "users_performance") ||
+          (source.key === "performance_department" &&
+            isPerformanceDataSource(value));
 
         return (
           <button
@@ -178,6 +206,19 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
                   <option value="users_performance">
                     {t("reports.dataSources.user_types.performance")}
                   </option>
+                </select>
+              ) : source.key === "performance_department" && isSelected ? (
+                <select
+                  value={value || "performance_department"}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => onChange(e.target.value as ReportDataSource)}
+                  className="mt-2 w-full p-1 text-[10px] border rounded bg-white dark:bg-slate-800 text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {performanceTypes.map((type) => (
+                    <option key={type.key} value={type.key}>
+                      {t(type.labelKey)}
+                    </option>
+                  ))}
                 </select>
               ) : (
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-2">

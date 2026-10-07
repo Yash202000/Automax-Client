@@ -1735,7 +1735,19 @@
       "workflows": "Workflows",
       "workflowsDesc": "Workflow definitions",
       "usersPerformance": "User Performance",
-      "usersPerformanceDesc": "User performance tracking data"
+      "usersPerformanceDesc": "User performance tracking data",
+      "performance": "Performance Report",
+      "performanceDesc": "Aggregated KPIs by department or channel",
+      "performance_department": "Department Performance",
+      "performance_closure": "Closure & Reopen Performance",
+      "performance_sla": "Speed of Performance (SLA)",
+      "performance_channel": "Incidents by Channel",
+      "performance_types": {
+        "department": "Department Performance",
+        "closure": "Closure & Reopen",
+        "sla": "Speed of Performance (SLA)",
+        "channel": "Incidents by Channel"
+      }
     },
     "limit": "limit",
     "records": "records",
@@ -1951,7 +1963,9 @@
       "User": "User",
       "Basic Info": "Basic Info",
       "Other": "Other",
-      "States": "States"
+      "States": "States",
+      "Dimension": "Group By",
+      "KPIs": "KPIs"
     }
   },
   "permissions": {

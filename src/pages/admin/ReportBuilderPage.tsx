@@ -37,6 +37,7 @@ import {
   DATA_SOURCES,
   getFieldsForDataSource,
   getDefaultFieldsForDataSource,
+  isPerformanceDataSource,
 } from "../../constants/reportFields";
 import type {
   ReportDataSource,
@@ -379,7 +380,20 @@ export const ReportBuilderPage: React.FC = () => {
   const handleDataSourceChange = useCallback((source: ReportDataSource) => {
     setDataSource(source);
     setSelectedColumns(getDefaultFieldsForDataSource(source));
-    setFilters([]);
+    // Performance reports are period-based, so start with an empty date range
+    // filter ready to fill. Empty ranges are dropped by getValidFilters.
+    setFilters(
+      isPerformanceDataSource(source)
+        ? [
+            {
+              id: "filter_date_range",
+              field: "created_at",
+              operator: "between",
+              value: { from: "", to: "" },
+            },
+          ]
+        : [],
+    );
     setSorting([]);
     setPreviewData([]);
     setDbTotalCount(0);
@@ -446,9 +460,11 @@ export const ReportBuilderPage: React.FC = () => {
     const request: ReportQueryRequest = {
       data_source: dataSource!,
       columns: selectedColumns,
-      filters: getValidFilters(filters).map(({ field, value }) => ({
+      // Performance sources need the real operator (date range "between",
+      // multiselect "in"); other sources keep their existing behaviour.
+      filters: getValidFilters(filters).map(({ field, operator, value }) => ({
         field,
-        operator: "equals",
+        operator: isPerformanceDataSource(dataSource) ? operator : "equals",
         value,
       })),
       sorting,

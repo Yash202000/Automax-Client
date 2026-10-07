@@ -1707,7 +1707,11 @@ export type ReportDataSource =
   | "locations"
   | "classifications_by_status"
   | "classifications_by_count"
-  | "workflows";
+  | "workflows"
+  | "performance_department"
+  | "performance_closure"
+  | "performance_sla"
+  | "performance_channel";
 
 // Filter Operators
 export type FilterOperator =
@@ -1766,6 +1770,8 @@ export interface ReportFieldDefinition {
     | "Creator"
     | "User"
     | "Basic Info"
+    | "Dimension"
+    | "KPIs"
     | "Other";
   sortable: boolean;
   filterable: boolean;
@@ -1778,6 +1784,7 @@ export interface ReportFieldDefinition {
   multiselect?: boolean;
   hidden?: boolean;
   isUrl?: boolean;
+  isPercent?: boolean; // Render numeric value with a % suffix (performance KPIs)
 }
 
 export interface ReportFieldOption {

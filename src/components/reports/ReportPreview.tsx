@@ -34,6 +34,20 @@ export const toHumanReadable = (key: string): string =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
+/**
+ * Format a numeric cell. Percent fields (performance KPIs) arrive on a 0–100
+ * scale and are shown with one decimal, e.g. 87.5 → "87.5%".
+ */
+const formatNumberValue = (
+  value: unknown,
+  field: ReportFieldDefinition,
+): string => {
+  const num = typeof value === "number" ? value : Number(value);
+  if (Number.isNaN(num)) return String(value);
+  if (field.isPercent) return `${num.toFixed(1)}%`;
+  return num.toLocaleString();
+};
+
 // ── Styled cell helpers ──────────────────────────────────────────────────────
 
 const getPriorityConfig = (
@@ -159,11 +173,7 @@ export const renderStyledCell = (
 
   // Number
   if (field.type === "number") {
-    return (
-      <span>
-        {typeof value === "number" ? value.toLocaleString() : String(value)}
-      </span>
-    );
+    return <span>{formatNumberValue(value, field)}</span>;
   }
 
   if (field.isUrl && Array.isArray(value)) {
@@ -279,7 +289,7 @@ export const formatCellValue = (
   }
 
   if (field.type === "number") {
-    return typeof value === "number" ? value.toLocaleString() : String(value);
+    return formatNumberValue(value, field);
   }
 
   return String(value) || "-";

@@ -1734,7 +1734,19 @@
       "workflows": "سير العمل",
       "workflowsDesc": "تعريفات سير العمل",
       "usersPerformance": "أداء المستخدمين",
-      "usersPerformanceDesc": "بيانات تتبع أداء المستخدمين"
+      "usersPerformanceDesc": "بيانات تتبع أداء المستخدمين",
+      "performance": "تقرير الأداء",
+      "performanceDesc": "مؤشرات أداء مجمعة حسب القسم أو القناة",
+      "performance_department": "أداء الأقسام",
+      "performance_closure": "أداء الإغلاق وإعادة الفتح",
+      "performance_sla": "سرعة الأداء (SLA)",
+      "performance_channel": "الحوادث حسب القناة",
+      "performance_types": {
+        "department": "أداء الأقسام",
+        "closure": "الإغلاق وإعادة الفتح",
+        "sla": "سرعة الأداء (SLA)",
+        "channel": "الحوادث حسب القناة"
+      }
     },
     "limit": "حد",
     "records": "سجلات",
@@ -1950,7 +1962,9 @@
       "User": "المستخدم",
       "Basic Info": "المعلومات الأساسية",
       "Other": "أخرى",
-      "States": "الحالات"
+      "States": "الحالات",
+      "Dimension": "التجميع حسب",
+      "KPIs": "مؤشرات الأداء"
     }
   },
   "permissions": {
