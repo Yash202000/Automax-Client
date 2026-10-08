@@ -74,6 +74,11 @@ const defaultColumns: ColumnConfig[] = [
     visible: true,
     required: true,
   },
+  {
+    id: "recurring_incidents",
+    label: "incidents.recurringIncidents",
+    visible: true,
+  },
   { id: "state", label: "incidents.status", visible: true },
   { id: "priority", label: "incidents.priority", visible: true },
   { id: "assignee", label: "incidents.assignee", visible: true },
@@ -119,6 +124,16 @@ export const IncidentsPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isVD2Client =
+    window.APP_CONFIG?.CLIENT === "VD2" ||
+    import.meta.env.VITE_CLIENT === "VD2";
+
+  const recurrenceRadiusMeters = Number(
+    window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS ||
+      import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS ||
+      500,
+  );
+
   const statusFilter = useMemo(() => {
     const stateTypeParam = searchParams.get("state_type");
     const statusParam = searchParams.get("status");
@@ -317,10 +332,6 @@ export const IncidentsPage: React.FC = () => {
 
   // Global cross-view filtering is a VD2-specific requirement — other
   // clients keep each incident view's filter fully independent.
-  const isVD2Client =
-    window.APP_CONFIG?.CLIENT === "VD2" ||
-    import.meta.env.VITE_CLIENT === "VD2";
-
   const filter: IncidentFilter = useMemo(() => {
     // On VD2, any field the URL doesn't specify falls back to whatever was
     // last set from another incident view (Assigned to me/Created by me) or
@@ -457,6 +468,10 @@ export const IncidentsPage: React.FC = () => {
       incidentApi.list({
         ...queryFilter,
         ...(canViewAllIncidents ? {} : { my_record: user?.id }),
+        radius:
+          isVD2Client && recurrenceRadiusMeters
+            ? Number(recurrenceRadiusMeters)
+            : undefined,
       }),
     enabled: !isShortSearch,
     placeholderData: keepPreviousData,
@@ -892,7 +907,11 @@ export const IncidentsPage: React.FC = () => {
         recordType="incident"
         showAssigneeFilter={canViewAllIncidents}
         showColumnConfig={true}
-        columns={columns}
+        columns={
+          isVD2Client
+            ? columns
+            : columns.filter((column) => column.id !== "recurring_incidents")
+        }
         onToggleColumn={toggleColumn}
         onResetColumns={() => setColumns(defaultColumns)}
         disableStateFilter={hasStatusFilter}
@@ -955,7 +974,7 @@ export const IncidentsPage: React.FC = () => {
                 isFetching && "opacity-60",
               )}
             >
-              <table className="min-w-full">
+              <table className="w-full min-w-350">
                 <thead>
                   <tr className="border-b border-[hsl(var(--border))]">
                     {/* Select Checkbox Column */}
@@ -974,6 +993,13 @@ export const IncidentsPage: React.FC = () => {
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("incidents.title")}
+                        </span>
+                      </th>
+                    )}
+                    {isVD2Client && isColumnVisible("recurring_incidents") && (
+                      <th className="w-56 min-w-56 px-6 py-4 text-start">
+                        <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                          {t("incidents.recurringIncidents")}
                         </span>
                       </th>
                     )}
@@ -1144,6 +1170,27 @@ export const IncidentsPage: React.FC = () => {
                             </div>
                           </td>
                         )}
+                        {isVD2Client &&
+                          isColumnVisible("recurring_incidents") && (
+                            <td className="w-56 min-w-56 px-6 py-4">
+                              <div className="flex items-center gap-2 whitespace-nowrap">
+                                {incident.recurrence_incident_number ? (
+                                  <span className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1 font-mono text-xs font-medium text-amber-700">
+                                    {incident.recurrence_incident_number}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                    -
+                                  </span>
+                                )}
+                                {(incident.recurrence_count ?? 0) > 1 && (
+                                  <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                                    +{incident.recurrence_count! - 1} more
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         {isColumnVisible("state") && (
                           <td className="px-6 py-4">
                             {incident.current_state ? (

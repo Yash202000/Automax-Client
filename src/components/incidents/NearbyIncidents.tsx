@@ -77,6 +77,7 @@ const NearbyIncidents = ({
         classificationId: classificationId as string,
         page,
         limit: PAGE_SIZE,
+        radius: NEARBY_RADIUS_METERS ? Number(NEARBY_RADIUS_METERS) : 5000,
       }),
     enabled,
     placeholderData: (prev) => prev,

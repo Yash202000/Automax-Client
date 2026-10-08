@@ -1191,6 +1191,8 @@ export interface NotificationTemplate {
 export interface Incident {
   id: string;
   incident_number: string;
+  recurrence_count?: number;
+  recurrence_incident_number?: string;
   title: string;
   description: string;
   record_type: RecordType;
@@ -1572,6 +1574,7 @@ export interface IncidentFilter {
   reporter_phone_search?: string;
   momra_ref?: string;
   current_state_code?: string;
+  radius?: number;
 }
 
 // Convert Incident to Request types
