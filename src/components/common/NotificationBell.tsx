@@ -7,7 +7,7 @@ import { emailApi, incidentApi } from "../../api/admin";
 import { useTranslation } from "react-i18next";
 
 export const NotificationBell: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { user } = useAuthStore();
@@ -15,7 +15,8 @@ export const NotificationBell: React.FC = () => {
   const queryClient = useQueryClient();
 
   const { data: notifData } = useQuery({
-    queryKey: ["in-app-notifications", user?.id],
+    // Language in the key so notifications refetch in the new language
+    queryKey: ["in-app-notifications", user?.id, i18n.language],
     queryFn: () =>
       emailApi.list({
         channel: "notification",

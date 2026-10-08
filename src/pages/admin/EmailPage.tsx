@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Email, EmailFilter, EmailAttachment } from "../../types";
 import { emailApi, smsApi } from "../../api/admin";
@@ -31,7 +31,7 @@ import DOMPurify from "dompurify";
 type Folder = "inbox" | "sent" | "drafts" | "trash";
 
 export const EmailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [currentFolder, setCurrentFolder] = useState<Folder>("inbox");
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
@@ -64,7 +64,8 @@ export const EmailPage: React.FC = () => {
 
   // Fetch Emails
   const { data: emailData, isLoading } = useQuery({
-    queryKey: ["emails", currentFolder, page, searchTerm],
+    // Language in the key so the list refetches in the new language
+    queryKey: ["emails", currentFolder, page, searchTerm, i18n.language],
     queryFn: () => {
       const filter: EmailFilter = {
         page,
@@ -99,6 +100,12 @@ export const EmailPage: React.FC = () => {
       console.error(error);
     },
   });
+
+  // The open email is loaded via a mutation, so reload it on language change
+  useEffect(() => {
+    if (selectedEmail?.id) getEmailById(selectedEmail.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   const { mutate: getAttachment } = useMutation({
     mutationFn: (id: string) => emailApi.attachmentById(id),
