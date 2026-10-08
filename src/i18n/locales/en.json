@@ -483,6 +483,18 @@
       "incidentsCount": "{{count}} nearby incidents",
       "within_km": "within {{value}}km radius"
     },
+    "locationRecurrence": {
+      "title": "Recurrence detected",
+      "oneOccurrence": "{{count}} occurrence at this location",
+      "multipleOccurrences": "{{count}} occurrences at this location",
+      "recurrenceOf": "Recurrence of {{incidentNumber}}",
+      "coordinates": "Nearby incidents were reported within {{radius}} m of coordinates {{latitude}}, {{longitude}}.",
+      "inspectionHistory": "Inspection history",
+      "radius": "Within {{radius}} m",
+      "empty": "No other incidents found within this radius.",
+      "error": "Failed to load incidents at this location.",
+      "page": "Page {{page}} of {{totalPages}}"
+    },
     "title": "Incidents",
     "subtitle": "Track and manage incident reports",
     "failedToLoad": "Failed to Load Incidents",
@@ -490,6 +502,7 @@
     "showingSlaBreach": "Showing incidents that have breached their SLA deadline",
     "showingStatus": "Showing incidents with status",
     "allIncidents": "All Incidents",
+    "recurringIncidents": "Recurring Incidents",
     "ratingExcellent": "Excellent",
     "ratingGood": "Good",
     "ratingFair": "Fair",

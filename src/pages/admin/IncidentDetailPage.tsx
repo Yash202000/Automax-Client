@@ -248,6 +248,11 @@ const VisitNumberChipGroup: React.FC<{
 export const IncidentDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const configuredNearbyRadiusMeters =
+    window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS ||
+    import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS;
+  const nearbyIncidentsEnabled = !!configuredNearbyRadiusMeters;
+  const recurrenceRadiusMeters = Number(configuredNearbyRadiusMeters || 500);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -290,6 +295,7 @@ export const IncidentDetailPage: React.FC = () => {
     | "ai-quality"
     | "linked-systems"
   >("activity");
+  const [recurrencePage, setRecurrencePage] = useState(1);
   const [commentText, setCommentText] = useState("");
   const [isInternalComment, setIsInternalComment] = useState(false);
   const [transitionModalOpen, setTransitionModalOpen] = useState(false);
@@ -403,6 +409,31 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => incidentApi.getHistory(id!),
     enabled: !!id,
   });
+
+  const {
+    data: recurrenceData,
+    isLoading: recurrenceLoading,
+    isError: recurrenceError,
+  } = useQuery({
+    queryKey: ["incident", id, "recurrence", recurrencePage],
+    queryFn: () =>
+      incidentApi.searchNearby({
+        incidentId: id!,
+        limit: 20,
+        page: recurrencePage,
+        radius: recurrenceRadiusMeters,
+        recurrence_of_incident_id: incidentData?.data?.id,
+      }),
+    enabled:
+      nearbyIncidentsEnabled &&
+      !!id &&
+      typeof incidentData?.data?.latitude === "number" &&
+      typeof incidentData?.data?.longitude === "number",
+  });
+
+  useEffect(() => {
+    setRecurrencePage(1);
+  }, [id]);
 
   const { data: combinedCommentData, refetch: refetchComments } = useQuery({
     queryKey: ["incident", id, "activity"],
@@ -2858,6 +2889,176 @@ export const IncidentDetailPage: React.FC = () => {
                       ))}
                     </div>
                   )}
+
+                  {nearbyIncidentsEnabled &&
+                    (recurrenceLoading ||
+                      recurrenceError ||
+                      recurrenceData) && (
+                      <div className="space-y-4">
+                        {Boolean(recurrenceData?.total_items) && (
+                          <section className="rounded-lg border border-amber-500/40 bg-[hsl(var(--card))] p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-amber-500">
+                                <AlertTriangle className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-semibold text-[hsl(var(--foreground))]">
+                                    {t("incidents.locationRecurrence.title")} :
+                                  </h3>
+                                  {recurrenceData && (
+                                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                                      {t(
+                                        recurrenceData.total_items === 1
+                                          ? "incidents.locationRecurrence.oneOccurrence"
+                                          : "incidents.locationRecurrence.multipleOccurrences",
+                                        { count: recurrenceData.total_items },
+                                      )}
+                                    </span>
+                                  )}
+                                  <span className="rounded-full border border-amber-500/50 px-2.5 py-1 text-xs font-medium text-amber-500">
+                                    {t(
+                                      "incidents.locationRecurrence.recurrenceOf",
+                                      {
+                                        incidentNumber:
+                                          incident.incident_number,
+                                      },
+                                    )}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+                                  {t(
+                                    "incidents.locationRecurrence.coordinates",
+                                    {
+                                      radius: recurrenceRadiusMeters,
+                                      latitude: incident.latitude?.toFixed(6),
+                                      longitude: incident.longitude?.toFixed(6),
+                                    },
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </section>
+                        )}
+
+                        <section className="rounded-lg border border-[hsl(var(--border))] bg-background p-4">
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-5 w-5 text-teal-500" />
+                              <h3 className="font-semibold uppercase text-[hsl(var(--foreground))]">
+                                {t(
+                                  "incidents.locationRecurrence.inspectionHistory",
+                                )}
+                              </h3>
+                            </div>
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              {t("incidents.locationRecurrence.radius", {
+                                radius: recurrenceRadiusMeters,
+                              })}
+                            </span>
+                          </div>
+
+                          {recurrenceLoading ? (
+                            <p className="py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                              {t("common.loading")}
+                            </p>
+                          ) : recurrenceError ? (
+                            <p className="py-3 text-sm text-red-500">
+                              {t("incidents.locationRecurrence.error")}
+                            </p>
+                          ) : recurrenceData?.data.length === 0 ? (
+                            <p className="py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                              {t("incidents.locationRecurrence.empty")}
+                            </p>
+                          ) : (
+                            <div className="max-h-[280px] space-y-2 overflow-y-auto overscroll-contain pe-1">
+                              {recurrenceData?.data.map((item) => (
+                                <Link
+                                  key={item.id}
+                                  to={`/incidents/${item.id}`}
+                                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.2)] px-3 py-2.5 hover:bg-[hsl(var(--muted)/0.5)]"
+                                >
+                                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                                    <span className="rounded bg-[hsl(var(--muted))] px-2 py-1 text-xs font-semibold text-[hsl(var(--foreground))]">
+                                      {item.classification_name}
+                                    </span>
+                                    <span className="font-mono text-sm font-bold text-[hsl(var(--primary))]">
+                                      {item.incident_number}
+                                    </span>
+                                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                      {item.location_name || "-"}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {item.status
+                                      .toLowerCase()
+                                      .includes("closed") && (
+                                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                    )}
+                                    <span
+                                      className="rounded px-2 py-1 text-xs font-medium text-white"
+                                      style={{
+                                        backgroundColor:
+                                          item.status_color || "#6b7280",
+                                      }}
+                                    >
+                                      {item.status}
+                                    </span>
+                                    <time className="text-xs text-[hsl(var(--muted-foreground))]">
+                                      {formatDateTime(item.created_at)}
+                                    </time>
+                                  </div>
+                                </Link>
+                              ))}
+                              {(recurrenceData?.total_pages ?? 1) > 1 && (
+                                <div className="flex items-center justify-between pt-1 text-sm">
+                                  <span className="text-[hsl(var(--muted-foreground))]">
+                                    {t("incidents.locationRecurrence.page", {
+                                      page: recurrenceData?.page,
+                                      totalPages: recurrenceData?.total_pages,
+                                    })}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setRecurrencePage((page) =>
+                                          Math.max(1, page - 1),
+                                        )
+                                      }
+                                      disabled={recurrencePage <= 1}
+                                      aria-label={t("common.previous")}
+                                      className="rounded border border-[hsl(var(--border))] p-1.5 disabled:opacity-40"
+                                    >
+                                      <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setRecurrencePage((page) =>
+                                          Math.min(
+                                            recurrenceData?.total_pages ?? page,
+                                            page + 1,
+                                          ),
+                                        )
+                                      }
+                                      disabled={
+                                        recurrencePage >=
+                                        (recurrenceData?.total_pages ?? 1)
+                                      }
+                                      aria-label={t("common.next")}
+                                      className="rounded border border-[hsl(var(--border))] p-1.5 disabled:opacity-40"
+                                    >
+                                      <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </section>
+                      </div>
+                    )}
                 </div>
               )}
 

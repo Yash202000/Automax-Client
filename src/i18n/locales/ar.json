@@ -484,6 +484,18 @@
       "incidentsCount": "{{count}} بلاغات قريبة",
       "within_km": "ضمن نطاق {{value}} كم"
     },
+    "locationRecurrence": {
+      "title": "تم اكتشاف التكرار",
+      "oneOccurrence": "حالة واحدة في هذا الموقع",
+      "multipleOccurrences": "{{count}} حالات في هذا الموقع",
+      "recurrenceOf": "تكرار البلاغ {{incidentNumber}}",
+      "coordinates": "تم تسجيل بلاغات قريبة ضمن نطاق {{radius}} م من الإحداثيات {{latitude}}، {{longitude}}.",
+      "inspectionHistory": "سجل التفتيش",
+      "radius": "ضمن {{radius}} م",
+      "empty": "لم يتم العثور على بلاغات أخرى ضمن هذا النطاق.",
+      "error": "تعذر تحميل البلاغات في هذا الموقع.",
+      "page": "الصفحة {{page}} من {{totalPages}}"
+    },
     "title": "البلاغات",
     "subtitle": "تتبع وإدارة البلاغات",
     "failedToLoad": "فشل تحميل البلاغات",
@@ -491,6 +503,7 @@
     "showingSlaBreach": "عرض البلاغات التي تجاوزت اتفاقية مستوى الخدمة",
     "showingStatus": "عرض البلاغات بالحالة",
     "allIncidents": "جميع البلاغات",
+    "recurringIncidents": "البلاغات المتكررة",
     "myIncidents": "بلاغاتي",
     "newIncident": "بلاغ جديد",
     "addIncident": "إضافة بلاغ",

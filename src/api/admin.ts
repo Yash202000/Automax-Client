@@ -1400,6 +1400,7 @@ export const incidentApi = {
     if (filter.momra_ref) body.momra_ref = filter.momra_ref;
     if (filter.current_state_code)
       body.current_state_code = [filter.current_state_code];
+    if (filter.radius) body.radius = filter.radius;
     const response = await apiClient.post<PaginatedResponse<Incident>>(
       "/incidents/search",
       body,
@@ -1411,25 +1412,34 @@ export const incidentApi = {
   // sharing the given classification; the source incident is excluded server-side.
   searchNearby: async (params: {
     incidentId: string;
-    latitude: number;
-    longitude: number;
-    classificationId: string;
+    latitude?: number;
+    longitude?: number;
+    classificationId?: string;
     page?: number;
     limit?: number;
+    radius?: number;
+    recurrence_of_incident_id?: string;
   }): Promise<{
     data: NearbyIncident[];
     page: number;
     limit: number;
     total_items: number;
     total_pages: number;
+    radius: number;
+    recurrence_of_incident_id?: string;
   }> => {
     const response = await apiClient.post("/incidents/search/summary", {
-      latitude: params.latitude,
-      longitude: params.longitude,
-      classification_id: [params.classificationId],
+      latitude: params?.latitude,
+      longitude: params?.longitude,
+      classification_id: params?.classificationId
+        ? [params.classificationId]
+        : undefined,
       exclude_incident_id: params.incidentId,
+      record_type: "incident",
+      radius: params.radius ?? 1000,
       page: params.page ?? 1,
       limit: params.limit ?? 5,
+      recurrence_of_incident_id: params?.recurrence_of_incident_id,
     });
     return response.data;
   },
