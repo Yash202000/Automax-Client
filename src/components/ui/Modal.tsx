@@ -74,7 +74,7 @@ const Modal = ({
         {showCloseButton && (
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors z-10"
+            className="absolute top-4 end-4 p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors z-10"
           >
             <X className="w-5 h-5" />
           </button>
