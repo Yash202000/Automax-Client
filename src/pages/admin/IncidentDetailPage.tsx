@@ -248,11 +248,11 @@ const VisitNumberChipGroup: React.FC<{
 export const IncidentDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const recurrenceRadiusMeters = Number(
+  const configuredNearbyRadiusMeters =
     window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS ||
-      import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS ||
-      500,
-  );
+    import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS;
+  const nearbyIncidentsEnabled = !!configuredNearbyRadiusMeters;
+  const recurrenceRadiusMeters = Number(configuredNearbyRadiusMeters || 500);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -417,15 +417,13 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () =>
       incidentApi.searchNearby({
         incidentId: id!,
-        latitude: incidentData?.data?.latitude as number,
-        longitude: incidentData?.data?.longitude as number,
-        classificationId: incidentData?.data?.classification?.id,
         limit: 20,
         page: recurrencePage,
         radius: recurrenceRadiusMeters,
+        recurrence_of_incident_id: incidentData?.data?.id,
       }),
     enabled:
-      isVd2 &&
+      nearbyIncidentsEnabled &&
       !!id &&
       typeof incidentData?.data?.latitude === "number" &&
       typeof incidentData?.data?.longitude === "number",
@@ -2890,7 +2888,7 @@ export const IncidentDetailPage: React.FC = () => {
                     </div>
                   )}
 
-                  {isVd2 &&
+                  {nearbyIncidentsEnabled &&
                     (recurrenceLoading ||
                       recurrenceError ||
                       recurrenceData) && (

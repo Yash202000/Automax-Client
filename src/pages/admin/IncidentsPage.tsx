@@ -128,11 +128,11 @@ export const IncidentsPage: React.FC = () => {
     window.APP_CONFIG?.CLIENT === "VD2" ||
     import.meta.env.VITE_CLIENT === "VD2";
 
-  const recurrenceRadiusMeters = Number(
+  const configuredNearbyRadiusMeters =
     window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS ||
-      import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS ||
-      500,
-  );
+    import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS;
+  const nearbyIncidentsEnabled = !!configuredNearbyRadiusMeters;
+  const recurrenceRadiusMeters = Number(configuredNearbyRadiusMeters || 500);
 
   const statusFilter = useMemo(() => {
     const stateTypeParam = searchParams.get("state_type");
@@ -468,10 +468,7 @@ export const IncidentsPage: React.FC = () => {
       incidentApi.list({
         ...queryFilter,
         ...(canViewAllIncidents ? {} : { my_record: user?.id }),
-        radius:
-          isVD2Client && recurrenceRadiusMeters
-            ? Number(recurrenceRadiusMeters)
-            : undefined,
+        radius: nearbyIncidentsEnabled ? recurrenceRadiusMeters : undefined,
       }),
     enabled: !isShortSearch,
     placeholderData: keepPreviousData,

@@ -1412,12 +1412,13 @@ export const incidentApi = {
   // sharing the given classification; the source incident is excluded server-side.
   searchNearby: async (params: {
     incidentId: string;
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
     classificationId?: string;
     page?: number;
     limit?: number;
     radius?: number;
+    recurrence_of_incident_id?: string;
   }): Promise<{
     data: NearbyIncident[];
     page: number;
@@ -1425,10 +1426,11 @@ export const incidentApi = {
     total_items: number;
     total_pages: number;
     radius: number;
+    recurrence_of_incident_id?: string;
   }> => {
     const response = await apiClient.post("/incidents/search/summary", {
-      latitude: params.latitude,
-      longitude: params.longitude,
+      latitude: params?.latitude,
+      longitude: params?.longitude,
       classification_id: params?.classificationId
         ? [params.classificationId]
         : undefined,
@@ -1437,6 +1439,7 @@ export const incidentApi = {
       radius: params.radius ?? 1000,
       page: params.page ?? 1,
       limit: params.limit ?? 5,
+      recurrence_of_incident_id: params?.recurrence_of_incident_id,
     });
     return response.data;
   },

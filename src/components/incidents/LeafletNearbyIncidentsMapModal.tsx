@@ -161,6 +161,7 @@ export default function LeafletNearbyIncidentsMapModal({
         classificationId,
         page: 1,
         limit: 100,
+        radius: radiusMeters,
       }),
     enabled:
       isOpen && !!classificationId && latitude != null && longitude != null,

@@ -20,10 +20,11 @@ const PAGE_SIZE = 5;
 // Mirrors the backend's NEARBY_INCIDENT_RADIUS_METERS config — if whoever
 // deployed this instance hasn't set a radius there, there's nothing for this
 // feature to search within, so the button shouldn't show at all.
-const NEARBY_RADIUS_METERS =
-  window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS ??
+const configuredNearbyRadiusMeters =
+  window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS ||
   import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS;
-const NEARBY_FEATURE_ENABLED = !!NEARBY_RADIUS_METERS;
+const NEARBY_FEATURE_ENABLED = !!configuredNearbyRadiusMeters;
+const NEARBY_RADIUS_METERS = Number(configuredNearbyRadiusMeters || 500);
 
 interface Props {
   incidentId: string;
@@ -77,7 +78,7 @@ const NearbyIncidents = ({
         classificationId: classificationId as string,
         page,
         limit: PAGE_SIZE,
-        radius: NEARBY_RADIUS_METERS ? Number(NEARBY_RADIUS_METERS) : 5000,
+        radius: NEARBY_RADIUS_METERS,
       }),
     enabled,
     placeholderData: (prev) => prev,
@@ -116,10 +117,7 @@ const NearbyIncidents = ({
             <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
               {t("incidents.nearby.title")}(
               {t("incidents.nearby.within_km", {
-                value: (
-                  (import.meta.env.VITE_NEARBY_INCIDENT_RADIUS_METERS ||
-                    window.APP_CONFIG?.NEARBY_INCIDENT_RADIUS_METERS) / 1000
-                ).toFixed(2),
+                value: (NEARBY_RADIUS_METERS / 1000).toFixed(2),
               })}
               )
             </span>
@@ -260,9 +258,7 @@ const NearbyIncidents = ({
             latitude={latitude}
             longitude={longitude}
             classificationId={classificationId}
-            radiusMeters={
-              NEARBY_RADIUS_METERS ? Number(NEARBY_RADIUS_METERS) : 5000
-            }
+            radiusMeters={NEARBY_RADIUS_METERS}
           />
         )}
     </div>
