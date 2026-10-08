@@ -443,14 +443,21 @@ export const IncidentDetailPage: React.FC = () => {
         incidentApi.listFeedbacks(id!),
       ]);
 
-      const feedbacks = (feedbacksRes?.data || []).map((item: any) => ({
-        ...item,
-        author: item?.created_by,
-        content: item?.comment,
-        type: "feedback",
-      }));
+      // Rating-only/empty feedback has no text, so it must not render as a blank comment
+      const feedbacks = (feedbacksRes?.data || [])
+        .filter((item: any) => item?.comment?.trim())
+        .map((item: any) => ({
+          ...item,
+          author: item?.created_by,
+          content: item?.comment,
+          type: "feedback",
+        }));
 
-      return [...(commentsRes?.data || []), ...feedbacks].sort(
+      const commentItems = (commentsRes?.data || []).filter((c: any) =>
+        c?.content?.trim(),
+      );
+
+      return [...commentItems, ...feedbacks].sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
