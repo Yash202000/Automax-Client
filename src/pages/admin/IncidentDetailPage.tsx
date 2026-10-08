@@ -3398,27 +3398,30 @@ export const IncidentDetailPage: React.FC = () => {
                                         {formatDateTime(attachment.created_at)}
                                       </p>
                                       {attachment.uploaded_by && (
-                                        <p className="truncate text-white/70 mt-0.5">
+                                        <div className="text-white/70 mt-0.5">
                                           {attachment.uploaded_by.first_name}{" "}
                                           {attachment.uploaded_by.last_name}
                                           <span className="ml-1 opacity-60">
                                             ·{" "}
-                                            {attachment.uploaded_by.roles?.[0]
-                                              ?.name || "No Role"}
+                                            {getLocalizedName(
+                                              attachment.uploaded_by.roles?.[0],
+                                            ) || t("incidents.noRole")}
                                           </span>
-                                          <span className="ml-1">
-                                            ·{" "}
-                                            {(
-                                              attachment.uploaded_by
-                                                ?.departments || []
-                                            )
-                                              .map(
-                                                (department: any) =>
-                                                  department.name,
+                                          <p className="truncate">
+                                            <span className="ml-1">
+                                              ·{" "}
+                                              {(
+                                                attachment.uploaded_by
+                                                  ?.departments || []
                                               )
-                                              .join(", ") || "No Department"}
-                                          </span>
-                                        </p>
+                                                .map((department: any) =>
+                                                  getLocalizedName(department),
+                                                )
+                                                .join(", ") ||
+                                                t("incidents.noDepartment")}
+                                            </span>
+                                          </p>
+                                        </div>
                                       )}
 
                                       {/* transition */}
@@ -3435,12 +3438,12 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.from_state?.color
                                             }
                                           >
-                                            {
+                                            {getLocalizedName(
                                               getHistoryById(
                                                 attachment.transition_history_id ||
                                                   "",
-                                              )?.from_state?.name
-                                            }
+                                              )?.from_state,
+                                            )}
                                           </span>
                                           <ArrowRight className="w-4 h-4" />
                                           <span
@@ -3452,12 +3455,12 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.to_state?.color
                                             }
                                           >
-                                            {
+                                            {getLocalizedName(
                                               getHistoryById(
                                                 attachment.transition_history_id ||
                                                   "",
-                                              )?.to_state?.name
-                                            }
+                                              )?.to_state,
+                                            )}
                                           </span>
                                         </div>
                                       )}
@@ -3514,8 +3517,10 @@ export const IncidentDetailPage: React.FC = () => {
                                             {attachment.uploaded_by.last_name}
                                             <span className="ml-1 opacity-60">
                                               ·{" "}
-                                              {attachment.uploaded_by.roles?.[0]
-                                                ?.name || "No Role"}
+                                              {getLocalizedName(
+                                                attachment.uploaded_by
+                                                  .roles?.[0],
+                                              ) || t("incidents.noRole")}
                                             </span>
                                             <span className="ml-1 opacity-60">
                                               ·{" "}
@@ -3527,9 +3532,12 @@ export const IncidentDetailPage: React.FC = () => {
                                                 )
                                                 ?.departments?.map(
                                                   (department: any) =>
-                                                    department.name,
+                                                    getLocalizedName(
+                                                      department,
+                                                    ),
                                                 )
-                                                .join(", ") || "No Department"}
+                                                .join(", ") ||
+                                                t("incidents.noDepartment")}
                                             </span>
                                           </p>
                                         )}
@@ -3548,12 +3556,12 @@ export const IncidentDetailPage: React.FC = () => {
                                                 )?.from_state?.color
                                               }
                                             >
-                                              {
+                                              {getLocalizedName(
                                                 getHistoryById(
                                                   attachment.transition_history_id ||
                                                     "",
-                                                )?.from_state?.name
-                                              }
+                                                )?.from_state,
+                                              )}
                                             </span>
                                             <ArrowRight className="w-4 h-4" />
                                             <span
@@ -3565,12 +3573,12 @@ export const IncidentDetailPage: React.FC = () => {
                                                 )?.to_state?.color
                                               }
                                             >
-                                              {
+                                              {getLocalizedName(
                                                 getHistoryById(
                                                   attachment.transition_history_id ||
                                                     "",
-                                                )?.to_state?.name
-                                              }
+                                                )?.to_state,
+                                              )}
                                             </span>
                                           </div>
                                         )}
@@ -3646,8 +3654,9 @@ export const IncidentDetailPage: React.FC = () => {
                                           {attachment.uploaded_by.last_name}
                                           <span className="ml-1 opacity-60">
                                             ·{" "}
-                                            {attachment.uploaded_by.roles?.[0]
-                                              ?.name || "No Role"}
+                                            {getLocalizedName(
+                                              attachment.uploaded_by.roles?.[0],
+                                            ) || t("incidents.noRole")}
                                           </span>
                                           <span className="ml-1 opacity-60">
                                             ·{" "}
@@ -3659,9 +3668,10 @@ export const IncidentDetailPage: React.FC = () => {
                                               )
                                               ?.departments?.map(
                                                 (department: any) =>
-                                                  department.name,
+                                                  getLocalizedName(department),
                                               )
-                                              .join(", ") || "No Department"}
+                                              .join(", ") ||
+                                              t("incidents.noDepartment")}
                                           </span>
                                         </p>
                                       )}
@@ -3679,12 +3689,12 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.from_state?.color
                                             }
                                           >
-                                            {
+                                            {getLocalizedName(
                                               getHistoryById(
                                                 attachment.transition_history_id ||
                                                   "",
-                                              )?.from_state?.name
-                                            }
+                                              )?.from_state,
+                                            )}
                                           </span>
                                           <ArrowRight className="w-4 h-4" />
                                           <span
@@ -3696,12 +3706,12 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.to_state?.color
                                             }
                                           >
-                                            {
+                                            {getLocalizedName(
                                               getHistoryById(
                                                 attachment.transition_history_id ||
                                                   "",
-                                              )?.to_state?.name
-                                            }
+                                              )?.to_state,
+                                            )}
                                           </span>
                                         </div>
                                       )}
