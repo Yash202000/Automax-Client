@@ -118,7 +118,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
       {dataSources.map((source) => {
         const Icon = iconMap[source.icon] || AlertCircle;
         const isSelected =
@@ -137,7 +137,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
             type="button"
             onClick={() => onChange(source.key)}
             className={cn(
-              "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px]",
+              "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px] min-w-0",
               isSelected
                 ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]"
                 : "border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--primary)/0.5)]",
@@ -145,7 +145,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
           >
             <div
               className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center",
+                "w-10 h-10 shrink-0 rounded-lg flex items-center justify-center",
                 isSelected
                   ? "bg-[hsl(var(--primary))] text-white"
                   : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
@@ -153,10 +153,10 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
             >
               <Icon className="w-5 h-5" />
             </div>
-            <div className="text-center w-full">
+            <div className="text-center w-full min-w-0">
               <p
                 className={cn(
-                  "text-sm font-medium",
+                  "text-sm font-medium break-words",
                   isSelected
                     ? "text-[hsl(var(--primary))]"
                     : "text-[hsl(var(--foreground))]",
@@ -221,7 +221,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
                   ))}
                 </select>
               ) : (
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-2">
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-2 break-words">
                   {t(source.descKey)}
                 </p>
               )}
