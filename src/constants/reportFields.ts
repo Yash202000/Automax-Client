@@ -2565,6 +2565,169 @@ export const workflowFields: ReportFieldDefinition[] = [
   },
 ];
 
+// ── Performance Reports ─────────────────────────────────────────────────────
+// Aggregated data sources: each row is a group (department / channel) and the
+// KPI columns are calculated by the backend.
+
+// Builds a KPI column. KPIs are selectable/sortable but not filterable.
+const kpi = (
+  field: string,
+  label: string,
+  label_ar: string,
+  isPercent = false,
+): ReportFieldDefinition => ({
+  field,
+  label,
+  label_ar,
+  type: "number",
+  category: "KPIs",
+  sortable: true,
+  filterable: false,
+  defaultSelected: true,
+  isPercent,
+});
+
+const performanceDepartmentDimension: ReportFieldDefinition = {
+  field: "department_name",
+  label: "Department",
+  label_ar: "القسم",
+  type: "string",
+  category: "Dimension",
+  sortable: true,
+  filterable: false,
+  defaultSelected: true,
+};
+
+// Filter-only fields shared by every performance report.
+const performanceCommonFilters: ReportFieldDefinition[] = [
+  {
+    field: "department_id",
+    label: "Department",
+    label_ar: "القسم",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: true,
+    dynamicOptions: "departments",
+    canBeColumn: false,
+    multiselect: true,
+  },
+  {
+    field: "classification_id",
+    label: "Classification",
+    label_ar: "التصنيف",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: true,
+    dynamicOptions: "classifications",
+    canBeColumn: false,
+    multiselect: true,
+  },
+  {
+    field: "location_id",
+    label: "Location",
+    label_ar: "الموقع",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: true,
+    dynamicOptions: "locations",
+    canBeColumn: false,
+    multiselect: true,
+  },
+  {
+    field: "channel",
+    label: "Channel",
+    label_ar: "القناة",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: true,
+    dynamicOptions: "sources",
+    canBeColumn: false,
+    multiselect: true,
+  },
+  {
+    field: "created_at",
+    label: "Created At",
+    label_ar: "تاريخ الإنشاء",
+    type: "datetime",
+    category: "Core",
+    sortable: false,
+    filterable: true,
+    canBeColumn: false,
+  },
+];
+
+export const performanceDepartmentFields: ReportFieldDefinition[] = [
+  performanceDepartmentDimension,
+  kpi("total", "Total Incidents", "إجمالي الحوادث"),
+  kpi("closed", "Closed", "المغلقة"),
+  kpi("under_resolution", "Under Resolution", "قيد المعالجة"),
+  kpi("closed_pct", "Closed %", "نسبة الإغلاق %", true),
+  kpi("satisfaction_pct", "Satisfaction %", "نسبة الرضا %", true),
+  kpi("sla_breach_count", "No. SLA Breach", "عدد تجاوزات SLA"),
+  kpi("sla_breach_pct", "SLA Breach %", "نسبة تجاوز SLA %", true),
+  kpi("speed_pct", "Speed of Performance %", "سرعة الأداء %", true),
+  ...performanceCommonFilters,
+];
+
+export const performanceClosureFields: ReportFieldDefinition[] = [
+  performanceDepartmentDimension,
+  kpi("total", "Total", "الإجمالي"),
+  kpi("closed", "Closed", "المغلقة"),
+  kpi("reopened_count", "No. Reopened", "عدد المعاد فتحها"),
+  kpi("reopened_pct", "Reopened %", "نسبة إعادة الفتح %", true),
+  kpi("converted_count", "No. Converted to Request", "عدد المحولة إلى طلب"),
+  kpi(
+    "converted_pct",
+    "Converted to Request %",
+    "نسبة التحويل إلى طلب %",
+    true,
+  ),
+  kpi("not_belong_count", "No. Not Belong", "عدد لا تخص"),
+  kpi("not_belong_pct", "Not Belong %", "نسبة لا تخص %", true),
+  kpi("missing_info_count", "No. Missing Information", "عدد نقص المعلومات"),
+  kpi(
+    "missing_info_pct",
+    "Missing Information %",
+    "نسبة نقص المعلومات %",
+    true,
+  ),
+  ...performanceCommonFilters,
+];
+
+export const performanceSlaFields: ReportFieldDefinition[] = [
+  performanceDepartmentDimension,
+  kpi("total_closed", "Total Closed", "إجمالي المغلقة"),
+  kpi("closed_within_sla", "Closed Within SLA", "المغلقة ضمن SLA"),
+  kpi("sla_breach_count", "SLA Breach No.", "عدد تجاوزات SLA"),
+  kpi("speed_pct", "Performance % (SLA)", "نسبة الأداء (SLA) %", true),
+  kpi("sla_breach_pct", "Breach %", "نسبة التجاوز %", true),
+  ...performanceCommonFilters,
+];
+
+// Channel is both the grouping column and a filter here, so it is declared
+// once (column + filterable) instead of reusing the filter-only definition.
+export const performanceChannelFields: ReportFieldDefinition[] = [
+  {
+    field: "channel",
+    label: "Channel",
+    label_ar: "القناة",
+    type: "enum",
+    category: "Dimension",
+    sortable: true,
+    filterable: true,
+    dynamicOptions: "sources",
+    multiselect: true,
+    defaultSelected: true,
+  },
+  kpi("total_incidents", "Total Incidents", "إجمالي الحوادث"),
+  kpi("incidents_pct", "Incidents %", "نسبة الحوادث %", true),
+  ...performanceCommonFilters.filter((f) => f.field !== "channel"),
+];
+
 // All Data Sources with their definitions
 export const DATA_SOURCES: DataSourceDefinition[] = [
   {
@@ -2644,7 +2807,38 @@ export const DATA_SOURCES: DataSourceDefinition[] = [
     icon: "GitBranch",
     fields: workflowFields,
   },
+  {
+    key: "performance_department",
+    label: "Department Performance",
+    description: "Incident status, satisfaction and SLA KPIs per department",
+    icon: "BarChart3",
+    fields: performanceDepartmentFields,
+  },
+  {
+    key: "performance_closure",
+    label: "Closure & Reopen Performance",
+    description: "Reopened, converted and closure-type KPIs per department",
+    icon: "BarChart3",
+    fields: performanceClosureFields,
+  },
+  {
+    key: "performance_sla",
+    label: "Speed of Performance (SLA)",
+    description: "Closed within SLA vs. breached per department",
+    icon: "BarChart3",
+    fields: performanceSlaFields,
+  },
+  {
+    key: "performance_channel",
+    label: "Incidents by Channel",
+    description: "Incident volume and share per creation channel",
+    icon: "BarChart3",
+    fields: performanceChannelFields,
+  },
 ];
+
+export const isPerformanceDataSource = (dataSource?: string | null) =>
+  !!dataSource && dataSource.startsWith("performance_");
 
 // Helper function to get fields for a data source
 export const getFieldsForDataSource = (

@@ -58,6 +58,22 @@ const dataSourceInfo: Record<
     color:
       "text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400",
   },
+  performance_department: {
+    labelKey: "reports.dataSources.performance_department",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
+  performance_closure: {
+    labelKey: "reports.dataSources.performance_closure",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
+  performance_sla: {
+    labelKey: "reports.dataSources.performance_sla",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
+  performance_channel: {
+    labelKey: "reports.dataSources.performance_channel",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 

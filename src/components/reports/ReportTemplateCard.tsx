@@ -20,6 +20,7 @@ import {
   Users,
   Building2,
   MapPin,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button, Modal, ModalBody, ModalHeader } from "@/components/ui";
@@ -67,6 +68,7 @@ const iconMap: Record<string, React.ElementType> = {
   Building2,
   MapPin,
   GitBranch,
+  BarChart3,
 };
 
 const dataSourceInfo: Record<
@@ -141,6 +143,26 @@ const dataSourceInfo: Record<
     icon: "GitBranch",
     color:
       "text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400",
+  },
+  performance_department: {
+    labelKey: "reports.dataSources.performance_department",
+    icon: "BarChart3",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
+  performance_closure: {
+    labelKey: "reports.dataSources.performance_closure",
+    icon: "BarChart3",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
+  performance_sla: {
+    labelKey: "reports.dataSources.performance_sla",
+    icon: "BarChart3",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
+  },
+  performance_channel: {
+    labelKey: "reports.dataSources.performance_channel",
+    icon: "BarChart3",
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400",
   },
 };
 
