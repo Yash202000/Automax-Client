@@ -264,6 +264,8 @@ export const IncidentDetailPage: React.FC = () => {
 
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
+  const canIncludeReportLogs =
+    isSuperAdmin || hasPermission(PERMISSIONS.ACTION_LOGS_VIEW);
   const canMergeIncidents =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_MERGE);
   const canCloneIncident =
@@ -1312,7 +1314,7 @@ export const IncidentDetailPage: React.FC = () => {
         id,
         "pdf",
         lang,
-        isEPM940 ? includeReportLogs : undefined,
+        isEPM940 ? canIncludeReportLogs && includeReportLogs : undefined,
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -6704,16 +6706,20 @@ export const IncidentDetailPage: React.FC = () => {
             </ModalTitle>
           </ModalHeader>
           <ModalBody>
-            <label className="flex items-center gap-3 text-sm text-[hsl(var(--foreground))] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeReportLogs}
-                onChange={(event) => setIncludeReportLogs(event.target.checked)}
-                disabled={generatingReport}
-                className="rounded border-[hsl(var(--border))]"
-              />
-              {t("incidents.includeLogs", "Include logs")}
-            </label>
+            {canIncludeReportLogs && (
+              <label className="flex items-center gap-3 text-sm text-[hsl(var(--foreground))] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeReportLogs}
+                  onChange={(event) =>
+                    setIncludeReportLogs(event.target.checked)
+                  }
+                  disabled={generatingReport}
+                  className="rounded border-[hsl(var(--border))]"
+                />
+                {t("incidents.includeLogs", "Include logs")}
+              </label>
+            )}
           </ModalBody>
           <ModalFooter>
             <Button
