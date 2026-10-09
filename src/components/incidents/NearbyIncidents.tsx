@@ -14,6 +14,7 @@ import {
 import { incidentApi } from "../../api/admin";
 import NearbyIncidentsMapModal from "./NearbyIncidentsMapModal";
 import { getIncidentDistance } from "../../utils/geoDistance";
+import { localizeNearbyIncident } from "../../utils/nearbyIncidentLocale";
 
 const PAGE_SIZE = 5;
 
@@ -41,7 +42,8 @@ const NearbyIncidents = ({
   classificationId,
   incidentNumber,
 }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith("ar");
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
@@ -152,6 +154,7 @@ const NearbyIncidents = ({
                   n.longitude,
                   n.distance,
                 );
+                const label = localizeNearbyIncident(n, isArabic);
 
                 return (
                   <li key={n.id}>
@@ -171,7 +174,7 @@ const NearbyIncidents = ({
                               backgroundColor: n.status_color || "#6b7280",
                             }}
                           >
-                            {n.status}
+                            {label.status}
                           </span>
                         </div>
                         <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -181,16 +184,18 @@ const NearbyIncidents = ({
                       <div className="flex items-center justify-between gap-2 mt-1">
                         <div>
                           <div className="text-sm text-[hsl(var(--foreground))]">
-                            {n.classification_name}
+                            {label.classificationName}
                           </div>
                           <div className="text-xs text-[hsl(var(--muted-foreground))]">
                             {t("incidents.nearby.location")}:{" "}
-                            {n.location_name || "-"}
+                            {label.locationName || "-"}
                           </div>
                         </div>
                         {distanceStr && (
                           <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded shrink-0">
-                            {distanceStr} away
+                            {t("incidents.nearby.away", {
+                              distance: distanceStr,
+                            })}
                           </span>
                         )}
                       </div>

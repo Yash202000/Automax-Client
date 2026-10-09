@@ -481,7 +481,10 @@
       "viewDetails": "View Details",
       "oneIncidentCount": "1 nearby incident",
       "incidentsCount": "{{count}} nearby incidents",
-      "within_km": "within {{value}}km radius"
+      "within_km": "within {{value}}km radius",
+      "radiusCircle": "{{radius}}km Circle",
+      "away": "{{distance}} away",
+      "incidentsAtLocation": "{{count}} incidents at this location"
     },
     "locationRecurrence": {
       "title": "Recurrence detected",

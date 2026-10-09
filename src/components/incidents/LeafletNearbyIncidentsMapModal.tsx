@@ -15,6 +15,10 @@ import { Modal, ModalBody, ModalHeader, ModalTitle } from "../ui/Modal";
 import { incidentApi, type NearbyIncident } from "../../api/admin";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
 import { getIncidentDistance } from "../../utils/geoDistance";
+import {
+  localizeNearbyIncident,
+  matchesNearbySearch,
+} from "../../utils/nearbyIncidentLocale";
 import NearbyIncidentsSidebar from "./NearbyIncidentsSidebar";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
 
@@ -135,7 +139,8 @@ export default function LeafletNearbyIncidentsMapModal({
   classificationId,
   radiusMeters = 5000,
 }: NearbyIncidentsMapModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith("ar");
   const navigate = useNavigate();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -186,13 +191,7 @@ export default function LeafletNearbyIncidentsMapModal({
   const filteredItems = useMemo(() => {
     if (!searchFilter.trim()) return itemsWithCoords;
     const q = searchFilter.toLowerCase().trim();
-    return itemsWithCoords.filter(
-      (item) =>
-        item.incident_number?.toLowerCase().includes(q) ||
-        item.location_name?.toLowerCase().includes(q) ||
-        item.status?.toLowerCase().includes(q) ||
-        item.classification_name?.toLowerCase().includes(q),
-    );
+    return itemsWithCoords.filter((item) => matchesNearbySearch(item, q));
   }, [itemsWithCoords, searchFilter]);
 
   // Handle delegated navigation from Leaflet popups
@@ -419,7 +418,7 @@ export default function LeafletNearbyIncidentsMapModal({
           ${
             isMultiple
               ? `<div style="font-size: 12px; font-weight: 700; color: #1f2937; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid #e5e7eb;">
-                  ${count} Incidents at this location
+                  ${t("incidents.nearby.incidentsAtLocation", { count })}
                 </div>`
               : ""
           }
@@ -432,6 +431,7 @@ export default function LeafletNearbyIncidentsMapModal({
                 item.longitude,
                 item.distance,
               );
+              const label = localizeNearbyIncident(item, isArabic);
 
               return `
               <div style="margin-bottom: 10px; padding-bottom: 8px; ${idx < groupItems.length - 1 ? "border-bottom: 1px dashed #e5e7eb;" : ""}">
@@ -440,25 +440,25 @@ export default function LeafletNearbyIncidentsMapModal({
                     ${item.incident_number}
                   </span>
                   <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 9999px; color: #ffffff; background-color: ${item.status_color || "#6b7280"};">
-                    ${item.status}
+                    ${label.status}
                   </span>
                 </div>
 
                 <div style="font-size: 12px; font-weight: 500; color: #374151; margin-top: 3px;">
-                  ${item.classification_name}
+                  ${label.classificationName}
                 </div>
 
                 ${
-                  item.location_name
+                  label.locationName
                     ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
-                        <span>📍</span><span>${item.location_name}</span>
+                        <span>📍</span><span>${label.locationName}</span>
                        </div>`
                     : ""
                 }
 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px;">
                   <span style="font-size: 11px; color: #059669; font-weight: 600; background: #ecfdf5; padding: 1px 6px; border-radius: 4px;">
-                    ${distStr} away
+                    ${t("incidents.nearby.away", { distance: distStr })}
                   </span>
                   <button
                     type="button"
@@ -495,7 +495,7 @@ export default function LeafletNearbyIncidentsMapModal({
 
     // Auto-fit to show both current and nearby incidents
     mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-  }, [itemsWithCoords, selectedIncidentId, latitude, longitude, t]);
+  }, [itemsWithCoords, selectedIncidentId, latitude, longitude, t, isArabic]);
 
   const radiusKm = (radiusMeters / 1000).toFixed(0);
 
@@ -575,7 +575,9 @@ export default function LeafletNearbyIncidentsMapModal({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>{radiusKm}km Circle</span>
+              <span>
+                {t("incidents.nearby.radiusCircle", { radius: radiusKm })}
+              </span>
             </button>
           </div>
 
