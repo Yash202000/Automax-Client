@@ -3416,7 +3416,6 @@ export const IncidentDetailPage: React.FC = () => {
                                           </span>
                                           <p className="truncate">
                                             <span className="ml-1">
-                                              ·{" "}
                                               {(
                                                 attachment.uploaded_by
                                                   ?.departments || []
