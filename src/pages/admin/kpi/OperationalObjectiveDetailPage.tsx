@@ -228,7 +228,7 @@ export const OperationalObjectiveDetailPage: React.FC = () => {
 
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-4">
-              {t("kpi.masterData.awardInformation")}
+              {t("kpi.masterData.objectiveInformation")}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
@@ -289,6 +289,7 @@ export const OperationalObjectiveDetailPage: React.FC = () => {
 
       {activeTab === "kpis" && (
         <RelatedKpisTable
+          entity="objective"
           kpis={kpis}
           loading={kpisLoading}
           kpiType="operational"
@@ -297,6 +298,7 @@ export const OperationalObjectiveDetailPage: React.FC = () => {
 
       {activeTab === "collaborators" && (
         <RelatedCollaboratorsTable
+          entity="objective"
           collaborators={collaborators}
           loading={collaboratorsLoading}
         />
@@ -304,6 +306,7 @@ export const OperationalObjectiveDetailPage: React.FC = () => {
 
       {activeTab === "evidence" && (
         <RelatedEvidenceTable
+          entity="objective"
           evidence={evidence}
           loading={evidenceLoading}
           onView={(evidenceId) => viewEvidence.mutate(evidenceId)}

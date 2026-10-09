@@ -3962,9 +3962,6 @@
       "noAwardCriteria": "No award criteria found.",
       "noSubCriteriaAvailable": "No Sub-Criteria available",
       "linkedKpis": "Linked KPIs",
-      "noLinkedKpis": "No KPIs are linked to this award criteria yet.",
-      "noLinkedCollaborators": "No collaborators are linked to this award criteria yet.",
-      "noLinkedEvidence": "No files or evidence are linked to this award criteria yet.",
       "evidenceFileName": "File Name",
       "evidenceDateAdded": "Date Added",
       "evidenceAddedBy": "Added/Updated By",
@@ -3999,7 +3996,25 @@
       "requiredFieldsMissing": "Please fill in all required fields",
       "importSummary": "Imported {{imported}}, skipped {{skipped}} (already exist), failed {{failed}}",
       "importRow": "Row {{row}}",
-      "importInvalidCriterionNo": "Criterion No. \"{{value}}\" is missing or not a positive whole number"
+      "importInvalidCriterionNo": "Criterion No. \"{{value}}\" is missing or not a positive whole number",
+      "relatedEmpty": {
+        "objective": {
+          "kpis": "No KPIs are linked to this objective yet.",
+          "collaborators": "No collaborators are linked to this objective yet.",
+          "evidence": "No files or evidence are linked to this objective yet."
+        },
+        "awardCriterion": {
+          "kpis": "No KPIs are linked to this award criterion yet.",
+          "collaborators": "No collaborators are linked to this award criterion yet.",
+          "evidence": "No files or evidence are linked to this award criterion yet."
+        },
+        "awardSubCriterion": {
+          "kpis": "No KPIs are linked to this award sub-criterion yet.",
+          "collaborators": "No collaborators are linked to this award sub-criterion yet.",
+          "evidence": "No files or evidence are linked to this award sub-criterion yet."
+        }
+      },
+      "objectiveInformation": "Objective Information"
     },
     "dictionary": {
       "title": "KPI Dictionary",

@@ -187,14 +187,23 @@ export const StatTiles: React.FC<{
   );
 };
 
+// Which taxonomy entity a Related tab belongs to — picks the wording of the
+// empty-state messages ("…linked to this objective / award criterion…").
+export type TaxonomyEntity =
+  | "objective"
+  | "awardCriterion"
+  | "awardSubCriterion";
+
 export const RelatedKpisTable = <T extends RelatedKpiSummary>({
   kpis,
   loading,
   kpiType,
+  entity,
 }: {
   kpis: T[];
   loading: boolean;
   kpiType: "award" | "operational";
+  entity: TaxonomyEntity;
 }) => {
   const { t } = useTranslation();
   const paged = usePagedSearch<T>(kpis, (kpi, q) =>
@@ -218,7 +227,7 @@ export const RelatedKpisTable = <T extends RelatedKpiSummary>({
         </p>
       ) : kpis.length === 0 ? (
         <p className="p-6 text-sm text-slate-400 dark:text-slate-500">
-          {t("kpi.masterData.noLinkedKpis")}
+          {t(`kpi.masterData.relatedEmpty.${entity}.kpis`)}
         </p>
       ) : paged.filteredCount === 0 ? (
         <p className="p-6 text-sm text-slate-400 dark:text-slate-500">
@@ -314,7 +323,8 @@ export const RelatedKpisTable = <T extends RelatedKpiSummary>({
 export const RelatedCollaboratorsTable: React.FC<{
   collaborators: KpiCollaboratorAssignment[];
   loading: boolean;
-}> = ({ collaborators, loading }) => {
+  entity: TaxonomyEntity;
+}> = ({ collaborators, loading, entity }) => {
   const { t } = useTranslation();
   const paged = usePagedSearch<KpiCollaboratorAssignment>(
     collaborators,
@@ -343,7 +353,7 @@ export const RelatedCollaboratorsTable: React.FC<{
         </p>
       ) : collaborators.length === 0 ? (
         <p className="p-6 text-sm text-slate-400 dark:text-slate-500">
-          {t("kpi.masterData.noLinkedCollaborators")}
+          {t(`kpi.masterData.relatedEmpty.${entity}.collaborators`)}
         </p>
       ) : paged.filteredCount === 0 ? (
         <p className="p-6 text-sm text-slate-400 dark:text-slate-500">
@@ -423,9 +433,11 @@ export const RelatedEvidenceTable: React.FC<{
   viewPending: boolean;
   onDownload: (args: { evidenceId: string; fileName: string }) => void;
   downloadPending: boolean;
+  entity: TaxonomyEntity;
 }> = ({
   evidence,
   loading,
+  entity,
   onView,
   viewPending,
   onDownload,
@@ -453,7 +465,7 @@ export const RelatedEvidenceTable: React.FC<{
         </p>
       ) : evidence.length === 0 ? (
         <p className="p-6 text-sm text-slate-400 dark:text-slate-500">
-          {t("kpi.masterData.noLinkedEvidence")}
+          {t(`kpi.masterData.relatedEmpty.${entity}.evidence`)}
         </p>
       ) : paged.filteredCount === 0 ? (
         <p className="p-6 text-sm text-slate-400 dark:text-slate-500">
