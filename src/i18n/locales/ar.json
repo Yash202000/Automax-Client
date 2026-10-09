@@ -4239,7 +4239,6 @@
     "kpiUpdateFailed": "فشل تحديث المؤشر",
     "kpiDeleted": "تم حذف المؤشر",
     "kpiDeleteFailed": "فشل حذف المؤشر",
-    "targetSet": "تم تحديد الهدف السنوي",
     "targetSetFailed": "فشل تحديد الهدف",
     "targetDeleted": "تم حذف الهدف",
     "targetDeleteFailed": "فشل حذف الهدف",
@@ -4381,6 +4380,22 @@
         "annual_target": "المستهدفات السنوية",
         "performance": "الأداء الربعي"
       }
+    },
+    "targetMessages": {
+      "periods": {
+        "monthly": "الشهري",
+        "quarterly": "الربعي",
+        "semiAnnual": "النصف سنوي",
+        "annual": "السنوي",
+        "custom": "للفترة المخصصة"
+      },
+      "created": "تم إنشاء المستهدف {{period}} بنجاح",
+      "updated": "تم تحديث المستهدف {{period}} بنجاح",
+      "draft": "تم حفظ المستهدف {{period}} كمسودة",
+      "submitted": "تم إرسال المستهدف {{period}} بنجاح",
+      "approve": "تم اعتماد المستهدف",
+      "reject": "تم رفض المستهدف",
+      "return": "تمت إعادة المستهدف للمراجعة"
     }
   },
   "navigation": {

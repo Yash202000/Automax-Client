@@ -4241,7 +4241,6 @@
     "kpiUpdateFailed": "Failed to update KPI",
     "kpiDeleted": "KPI deleted",
     "kpiDeleteFailed": "Failed to delete KPI",
-    "targetSet": "Annual target set",
     "targetSetFailed": "Failed to set target",
     "targetDeleted": "Target deleted",
     "targetDeleteFailed": "Failed to delete target",
@@ -4383,6 +4382,22 @@
         "annual_target": "Annual targets",
         "performance": "Quarterly performance"
       }
+    },
+    "targetMessages": {
+      "periods": {
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "semiAnnual": "Semi-annual",
+        "annual": "Annual",
+        "custom": "Custom period"
+      },
+      "created": "{{period}} target created successfully",
+      "updated": "{{period}} target updated successfully",
+      "draft": "{{period}} target saved as draft",
+      "submitted": "{{period}} target submitted successfully",
+      "approve": "Target approved",
+      "reject": "Target rejected",
+      "return": "Target returned for revision"
     }
   },
   "categories": {
