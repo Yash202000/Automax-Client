@@ -588,6 +588,7 @@
     "assignment": "التعيين",
     "unassigned": "غير مُسند",
     "noDepartment": "لا يوجد قسم",
+    "noRole": "لا يوجد دور",
     "noLocation": "لا يوجد موقع",
     "selectWorkflow": "اختر سير العمل...",
     "selectClassification": "اختر التصنيف...",

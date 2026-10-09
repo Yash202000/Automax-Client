@@ -586,6 +586,7 @@
     "assignment": "Assignment",
     "unassigned": "Unassigned",
     "noDepartment": "No department",
+    "noRole": "No role",
     "noLocation": "No location",
     "selectWorkflow": "Select workflow...",
     "selectClassification": "Select classification...",
