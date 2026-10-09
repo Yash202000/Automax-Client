@@ -376,6 +376,9 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
   );
 };
 
+const DUPLICATE_METRIC_NAME_MSG =
+  "Metric name already exists under this KPI. Please use a unique metric name.";
+
 export const KpiDictionaryDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
@@ -516,6 +519,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const selectedMetric =
     (metrics ?? []).find((m) => m.id === selectedMetricId) ?? null;
 
+  // Metric names must be unique within this KPI (trimmed, case-insensitive)
+  // — mirrors the backend check, which remains the source of truth.
+  const isDuplicateMetricName = (name: string, excludeId?: string) => {
+    const key = name.trim().toLowerCase();
+    return (metrics ?? []).some(
+      (m) => m.id !== excludeId && m.name.trim().toLowerCase() === key,
+    );
+  };
+
   const metricToRequest = (m: KpiMetric): KpiMetricRequest => ({
     name: m.name,
     metric_code: m.metric_code,
@@ -566,6 +578,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     if (!selectedMetric || !configForm) return;
     if (!configForm.name.trim()) {
       toast.error("Metric name is required");
+      return;
+    }
+    if (isDuplicateMetricName(configForm.name, selectedMetric.id)) {
+      toast.error(DUPLICATE_METRIC_NAME_MSG);
       return;
     }
     await updateMetric.mutateAsync({
@@ -642,6 +658,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const handleCreateMetric = async () => {
     if (!metricForm.name.trim()) {
       toast.error("Name is required");
+      return;
+    }
+    if (isDuplicateMetricName(metricForm.name)) {
+      toast.error(DUPLICATE_METRIC_NAME_MSG);
       return;
     }
     if (metricAttachmentFile) {
