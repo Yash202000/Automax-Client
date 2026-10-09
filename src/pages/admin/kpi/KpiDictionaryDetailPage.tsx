@@ -1222,13 +1222,18 @@ export const KpiDictionaryDetailPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {infoTiles.map((tile, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  // min-w-0 on the grid item and its text column (plus
+                  // w-full on the link button, which otherwise sizes to its
+                  // text) keeps a long value inside its own column — it is
+                  // truncated with an ellipsis and shown in full on hover,
+                  // instead of spilling over the neighbouring tile.
+                  <div key={i} className="flex items-center gap-3 min-w-0">
                     <div
                       className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${tile.bg}`}
                     >
                       {tile.icon}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {tile.label}
                       </p>
@@ -1236,12 +1241,16 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={tile.onClick}
-                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate block text-left"
+                          title={tile.value || undefined}
+                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate block w-full max-w-full text-start"
                         >
                           {tile.value || "-"}
                         </button>
                       ) : (
-                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                        <p
+                          title={tile.value || undefined}
+                          className="text-sm font-medium text-slate-900 dark:text-white truncate"
+                        >
                           {tile.value || "-"}
                         </p>
                       )}
