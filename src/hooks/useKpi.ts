@@ -1025,15 +1025,53 @@ export const useKpiTargets = (params?: {
     enabled: true,
   });
 
+// Success message for a saved target, built from what was actually saved:
+// its period (from period_code — "jan".."dec" monthly, "q1".."q4"
+// quarterly, "h1"/"h2" semi-annual, "annual") and its status, e.g.
+// "Monthly target submitted" — never a fixed "Annual target set".
+const targetPeriodKey = (periodCode?: string) => {
+  const c = (periodCode ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\d{4}-/, "");
+  if (
+    /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|0[1-9]|1[0-2])$/.test(c)
+  )
+    return "monthly";
+  if (/^q[1-4]$/.test(c)) return "quarterly";
+  if (/^h[12]$/.test(c)) return "semiAnnual";
+  if (c === "annual" || /^\d{4}$/.test(c)) return "annual";
+  return "custom";
+};
+
+const targetSavedMessage = (
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  data: KpiAnnualTargetRequest,
+  isUpdate: boolean,
+) => {
+  const period = t(
+    `kpi.targetMessages.periods.${targetPeriodKey(data.period_code)}`,
+  );
+  const action =
+    data.target_status === "submitted"
+      ? "submitted"
+      : data.target_status === "draft"
+        ? "draft"
+        : isUpdate
+          ? "updated"
+          : "created";
+  return t(`kpi.targetMessages.${action}`, { period });
+};
+
 export const useSetKpiTarget = () => {
   const qc = useQueryClient();
   const { t } = useTranslation();
   return useMutation({
     mutationFn: (data: KpiAnnualTargetRequest) =>
       kpiPerformanceApi.setTarget(data),
-    onSuccess: () => {
+    onSuccess: (_res, data) => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
-      toast.success(t("kpi.targetSet"));
+      toast.success(targetSavedMessage(t, data, false));
     },
     onError: (err) => toast.error(getApiError(err)),
   });
@@ -1048,9 +1086,9 @@ export const useUpdateKpiTarget = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: KpiAnnualTargetRequest }) =>
       kpiPerformanceApi.updateTarget(id, data),
-    onSuccess: () => {
+    onSuccess: (_res, { data }) => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
-      toast.success(t("kpi.targetSet"));
+      toast.success(targetSavedMessage(t, data, true));
     },
     onError: (err) => toast.error(getApiError(err)),
   });
@@ -1070,9 +1108,9 @@ export const useTransitionKpiTarget = () => {
       id: string;
       action: "approve" | "reject" | "return";
     }) => kpiPerformanceApi.transitionTarget(id, action),
-    onSuccess: () => {
+    onSuccess: (_res, { action }) => {
       qc.invalidateQueries({ queryKey: ["kpi", "targets"] });
-      toast.success(t("kpi.targetSet"));
+      toast.success(t(`kpi.targetMessages.${action}`));
     },
     onError: (err: any) => toast.error(getApiError(err)),
   });

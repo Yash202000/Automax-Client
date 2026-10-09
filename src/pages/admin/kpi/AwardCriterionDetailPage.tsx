@@ -269,11 +269,17 @@ export const AwardCriterionDetailPage: React.FC = () => {
       )}
 
       {activeTab === "kpis" && (
-        <RelatedKpisTable kpis={kpis} loading={kpisLoading} kpiType="award" />
+        <RelatedKpisTable
+          entity="awardCriterion"
+          kpis={kpis}
+          loading={kpisLoading}
+          kpiType="award"
+        />
       )}
 
       {activeTab === "collaborators" && (
         <RelatedCollaboratorsTable
+          entity="awardCriterion"
           collaborators={collaborators}
           loading={collaboratorsLoading}
         />
@@ -281,6 +287,7 @@ export const AwardCriterionDetailPage: React.FC = () => {
 
       {activeTab === "evidence" && (
         <RelatedEvidenceTable
+          entity="awardCriterion"
           evidence={evidence}
           loading={evidenceLoading}
           onView={(evidenceId) => viewEvidence.mutate(evidenceId)}

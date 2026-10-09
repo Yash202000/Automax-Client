@@ -3961,9 +3961,6 @@
       "noAwardCriteria": "لا توجد معايير جوائز.",
       "noSubCriteriaAvailable": "لا توجد معايير فرعية متاحة",
       "linkedKpis": "مؤشرات الأداء المرتبطة",
-      "noLinkedKpis": "لا توجد مؤشرات أداء مرتبطة بمعيار الجائزة هذا حتى الآن.",
-      "noLinkedCollaborators": "لا يوجد متعاونون مرتبطون بمعيار الجائزة هذا حتى الآن.",
-      "noLinkedEvidence": "لا توجد ملفات أو أدلة مرتبطة بمعيار الجائزة هذا حتى الآن.",
       "evidenceFileName": "اسم الملف",
       "evidenceDateAdded": "تاريخ الإضافة",
       "evidenceAddedBy": "أضيف/حُدث بواسطة",
@@ -3998,7 +3995,25 @@
       "requiredFieldsMissing": "يرجى ملء جميع الحقول المطلوبة",
       "importSummary": "تم استيراد {{imported}}، وتخطي {{skipped}} (موجودة مسبقاً)، وفشل {{failed}}",
       "importRow": "الصف {{row}}",
-      "importInvalidCriterionNo": "رقم المعيار \"{{value}}\" مفقود أو ليس رقماً صحيحاً موجباً"
+      "importInvalidCriterionNo": "رقم المعيار \"{{value}}\" مفقود أو ليس رقماً صحيحاً موجباً",
+      "relatedEmpty": {
+        "objective": {
+          "kpis": "لا توجد مؤشرات أداء مرتبطة بهذا الهدف حتى الآن.",
+          "collaborators": "لا يوجد متعاونون مرتبطون بهذا الهدف حتى الآن.",
+          "evidence": "لا توجد ملفات أو أدلة مرتبطة بهذا الهدف حتى الآن."
+        },
+        "awardCriterion": {
+          "kpis": "لا توجد مؤشرات أداء مرتبطة بمعيار الجائزة هذا حتى الآن.",
+          "collaborators": "لا يوجد متعاونون مرتبطون بمعيار الجائزة هذا حتى الآن.",
+          "evidence": "لا توجد ملفات أو أدلة مرتبطة بمعيار الجائزة هذا حتى الآن."
+        },
+        "awardSubCriterion": {
+          "kpis": "لا توجد مؤشرات أداء مرتبطة بالمعيار الفرعي هذا حتى الآن.",
+          "collaborators": "لا يوجد متعاونون مرتبطون بالمعيار الفرعي هذا حتى الآن.",
+          "evidence": "لا توجد ملفات أو أدلة مرتبطة بالمعيار الفرعي هذا حتى الآن."
+        }
+      },
+      "objectiveInformation": "معلومات الهدف"
     },
     "dictionary": {
       "title": "قاموس مؤشرات الأداء",
@@ -4225,7 +4240,6 @@
     "kpiUpdateFailed": "فشل تحديث المؤشر",
     "kpiDeleted": "تم حذف المؤشر",
     "kpiDeleteFailed": "فشل حذف المؤشر",
-    "targetSet": "تم تحديد الهدف السنوي",
     "targetSetFailed": "فشل تحديد الهدف",
     "targetDeleted": "تم حذف الهدف",
     "targetDeleteFailed": "فشل حذف الهدف",
@@ -4367,6 +4381,22 @@
         "annual_target": "المستهدفات السنوية",
         "performance": "الأداء الربعي"
       }
+    },
+    "targetMessages": {
+      "periods": {
+        "monthly": "الشهري",
+        "quarterly": "الربعي",
+        "semiAnnual": "النصف سنوي",
+        "annual": "السنوي",
+        "custom": "للفترة المخصصة"
+      },
+      "created": "تم إنشاء المستهدف {{period}} بنجاح",
+      "updated": "تم تحديث المستهدف {{period}} بنجاح",
+      "draft": "تم حفظ المستهدف {{period}} كمسودة",
+      "submitted": "تم إرسال المستهدف {{period}} بنجاح",
+      "approve": "تم اعتماد المستهدف",
+      "reject": "تم رفض المستهدف",
+      "return": "تمت إعادة المستهدف للمراجعة"
     }
   },
   "navigation": {

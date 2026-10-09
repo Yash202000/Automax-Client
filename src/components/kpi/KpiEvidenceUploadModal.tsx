@@ -17,6 +17,9 @@ interface KpiEvidenceUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   metrics?: KpiMetric[];
+  // Metric the upload was started from (e.g. Add Entry on a metric) — the
+  // Metric field is pre-selected with it each time the modal opens.
+  defaultMetricId?: string;
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -31,6 +34,7 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
   isOpen,
   onClose,
   metrics,
+  defaultMetricId,
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -57,6 +61,11 @@ export const KpiEvidenceUploadModal: React.FC<KpiEvidenceUploadModalProps> = ({
     setThumbnailUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  // Pre-select the originating metric whenever the modal opens.
+  useEffect(() => {
+    if (isOpen) setMetricId(defaultMetricId ?? "");
+  }, [isOpen, defaultMetricId]);
 
   if (!isOpen) return null;
 
