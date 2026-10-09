@@ -3415,17 +3415,15 @@ export const IncidentDetailPage: React.FC = () => {
                                             ) || t("incidents.noRole")}
                                           </span>
                                           <p className="truncate">
-                                            <span className="ml-1">
-                                              {(
-                                                attachment.uploaded_by
-                                                  ?.departments || []
+                                            {(
+                                              attachment.uploaded_by
+                                                ?.departments || []
+                                            )
+                                              .map((department: any) =>
+                                                getLocalizedName(department),
                                               )
-                                                .map((department: any) =>
-                                                  getLocalizedName(department),
-                                                )
-                                                .join(", ") ||
-                                                t("incidents.noDepartment")}
-                                            </span>
+                                              .join(", ") ||
+                                              t("incidents.noDepartment")}
                                           </p>
                                         </div>
                                       )}
