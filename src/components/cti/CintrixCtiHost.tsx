@@ -339,18 +339,6 @@ export const CintrixCtiHost: React.FC = () => {
   // adjacent (above), never instead.
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
-      {error && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          {error}{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => bootRef.current()}
-          >
-            {t("common.retry", "Retry")}
-          </button>
-        </div>
-      )}
       {canViewSentiment && user && activeCaller && (
         <div className="w-80">
           <SentimentStats calleeId={user.id} callerId={activeCaller} t={t} />
