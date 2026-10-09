@@ -1437,6 +1437,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         kpiType={kpiType}
         kpiId={kpiId}
         metrics={metric ? [metric] : undefined}
+        defaultMetricId={metric?.id}
         isOpen={showEvidenceModal}
         onClose={() => setShowEvidenceModal(false)}
       />
