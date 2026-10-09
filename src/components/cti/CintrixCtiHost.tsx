@@ -71,7 +71,6 @@ const RETRY_MS = 60_000;
 
 export const CintrixCtiHost: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   // True from cintrix:incoming-call / cintrix:call-answered until
   // cintrix:call-ended. Read by the token-refresh loop below.
@@ -169,12 +168,13 @@ export const CintrixCtiHost: React.FC = () => {
           sipWssUrl: data.sip_wss_url,
           iceServers,
         });
-        setError("");
+        // setError("");
         // Re-mint before expiry (widget keeps its SIP registration through it).
         scheduleRefresh(Math.max((data.expires_in - 300) * 1000, RETRY_MS));
       } catch {
         if (cancelled) return;
-        setError(t("softphone.callUnavailable"));
+        // setError(t("softphone.callUnavailable"));
+        console.error(t("softphone.callUnavailable"));
         // Auto-recover: keep retrying without requiring the Retry button.
         schedule(() => void boot(), RETRY_MS);
       } finally {
@@ -339,18 +339,6 @@ export const CintrixCtiHost: React.FC = () => {
   // adjacent (above), never instead.
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
-      {error && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          {error}{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => bootRef.current()}
-          >
-            {t("common.retry", "Retry")}
-          </button>
-        </div>
-      )}
       {canViewSentiment && user && activeCaller && (
         <div className="w-80">
           <SentimentStats calleeId={user.id} callerId={activeCaller} t={t} />

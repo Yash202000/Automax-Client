@@ -522,7 +522,6 @@ export default function LeafletNearbyIncidentsMapModal({
               </span>
               <span>•</span>
               <span className="font-medium text-[hsl(var(--primary))]">
-                {itemsWithCoords.length}{" "}
                 {itemsWithCoords.length === 1
                   ? t("incidents.nearby.oneIncidentCount") || "nearby incident"
                   : t("incidents.nearby.incidentsCount", {
