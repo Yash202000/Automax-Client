@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import usePermissions from "@/hooks/usePermissions";
 import { useMapProvider } from "../../utils/mapProvider";
 
 // Corner notice for the Leaflet/OSM maps explaining why Google Maps isn't being
-// used. Renders nothing unless a configured Google Maps setup actually failed.
+// used. Renders nothing unless a configured Google Maps setup actually failed,
+// and only super admins see it (other users just get the OSM map).
 // The parent must be `position: relative`.
 export default function MapFallbackNotice({
   className = "bottom-7 start-2",
@@ -13,9 +15,10 @@ export default function MapFallbackNotice({
 }) {
   const { t } = useTranslation();
   const { googleError } = useMapProvider();
+  const { isSuperAdmin } = usePermissions();
   const [dismissed, setDismissed] = useState(false);
 
-  if (!googleError || dismissed) return null;
+  if (!isSuperAdmin || !googleError || dismissed) return null;
 
   return (
     <div
