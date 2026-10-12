@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Search,
   ChevronLeft,
@@ -271,13 +272,46 @@ export const ActionLogsPage: React.FC = () => {
   //   }
   // };
 
-  const handleExport = (format: "csv" | "excel") => {
-    if (!data?.data || data.data.length === 0) return;
+  const [isExporting, setIsExporting] = useState(false);
 
-    if (format === "csv") {
-      exportToCSV(data.data, t);
-    } else {
-      exportToExcel(data.data, t);
+  // Export every log matching the current filters/sort — not just the page
+  // on screen. The API caps a page at 100 rows, so fetch all pages (a few
+  // at a time) and keep them in order.
+  const fetchAllForExport = async (): Promise<ActionLog[]> => {
+    const PAGE_SIZE = 100;
+    const CONCURRENCY = 6;
+    const base: ActionLogFilter = { ...filter, limit: PAGE_SIZE };
+    const first = await actionLogApi.list({ ...base, page: 1 });
+    const pages: ActionLog[][] = [first.data ?? []];
+    const totalPages = first.total_pages ?? 1;
+    for (let start = 2; start <= totalPages; start += CONCURRENCY) {
+      const batch = Array.from(
+        { length: Math.min(CONCURRENCY, totalPages - start + 1) },
+        (_, i) => start + i,
+      );
+      const results = await Promise.all(
+        batch.map((page) => actionLogApi.list({ ...base, page })),
+      );
+      results.forEach((r, i) => (pages[batch[i] - 1] = r.data ?? []));
+    }
+    return pages.flat();
+  };
+
+  const handleExport = async (format: "csv" | "excel") => {
+    if (!data?.data || data.data.length === 0 || isExporting) return;
+    setIsExporting(true);
+    try {
+      const logs = await fetchAllForExport();
+      if (format === "csv") {
+        exportToCSV(logs, t);
+      } else {
+        await exportToExcel(logs, t);
+      }
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error(t("actionLogs.exportFailed"));
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -352,8 +386,11 @@ export const ActionLogsPage: React.FC = () => {
               size="sm"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={() => handleExport("excel")}
+              disabled={isExporting}
             >
-              {t("actionLogs.exportExcel")}
+              {isExporting
+                ? t("common.exporting")
+                : t("actionLogs.exportExcel")}
             </Button>
           )}
         </div>
