@@ -3,10 +3,19 @@ import { saveAs } from "file-saver";
 import type { Goal } from "../types/goal";
 
 export async function exportGoalsToXlsx(goals: Goal[]) {
-  const rows: Record<string, string | number>[] = [];
+  // One row per goal on the "Goals" sheet (matching the All Goals list).
+  // Metric details go to a separate "Metrics" sheet, one row per metric,
+  // linked by goal ID/title — previously each metric produced its own row
+  // on the goals sheet, so a goal with N metrics appeared N times.
+  const goalRows: Record<string, string | number>[] = [];
+  const metricRows: Record<string, string | number>[] = [];
+  const seen = new Set<string>();
 
   for (const goal of goals) {
-    const baseRow = {
+    if (seen.has(goal.id)) continue;
+    seen.add(goal.id);
+
+    goalRows.push({
       ID: goal.id,
       Title: goal.title,
       Description: goal.description || "",
@@ -27,42 +36,44 @@ export async function exportGoalsToXlsx(goals: Goal[]) {
         ? new Date(goal.review_date).toLocaleDateString()
         : "",
       "Progress (%)": Math.round(goal.progress * 10) / 10,
-    };
+      Metrics: goal.metrics?.length ?? 0,
+    });
 
-    if (!goal.metrics || goal.metrics.length === 0) {
-      rows.push({
-        ...baseRow,
-        "Metric Name": "",
-        "Metric Type": "",
-        Unit: "",
-        "Baseline Value": "",
-        "Current Value": "",
-        "Target Value": "",
-        Weight: "",
+    for (const metric of goal.metrics ?? []) {
+      metricRows.push({
+        "Goal ID": goal.id,
+        "Goal Title": goal.title,
+        "Metric Name": metric.name,
+        "Metric Type": metric.metric_type,
+        Unit: metric.unit || "",
+        "Baseline Value": metric.baseline_value,
+        "Current Value": metric.current_value,
+        "Target Value": metric.target_value,
+        Weight: metric.weight,
       });
-    } else {
-      for (const metric of goal.metrics) {
-        rows.push({
-          ...baseRow,
-          "Metric Name": metric.name,
-          "Metric Type": metric.metric_type,
-          Unit: metric.unit || "",
-          "Baseline Value": metric.baseline_value,
-          "Current Value": metric.current_value,
-          "Target Value": metric.target_value,
-          Weight: metric.weight,
-        });
-      }
     }
   }
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Goals");
 
+  const workbook = new ExcelJS.Workbook();
+  addSheet(workbook, "Goals", goalRows);
+  if (metricRows.length > 0) addSheet(workbook, "Metrics", metricRows);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  saveAs(blob, `goals_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+function addSheet(
+  workbook: ExcelJS.Workbook,
+  name: string,
+  rows: Record<string, string | number>[],
+) {
+  const worksheet = workbook.addWorksheet(name);
   if (rows.length > 0) {
     const headers = Object.keys(rows[0]);
-
     worksheet.addRow(headers);
-
     rows.forEach((row) => {
       worksheet.addRow(headers.map((header) => row[header]));
     });
@@ -78,10 +89,4 @@ export async function exportGoalsToXlsx(goals: Goal[]) {
     });
     column.width = Math.min(maxLength + 2, 50);
   }
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  saveAs(blob, `goals_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
