@@ -1162,7 +1162,29 @@ export const UsersPage: React.FC = () => {
         { header: "roles", key: "roles", width: 40 },
         { header: "is_active", key: "is_active", width: 10 },
         { header: "is_super_admin", key: "is_super_admin", width: 16 },
+        { header: "extension", key: "extension", width: 14 },
+        {
+          header: "last_login",
+          key: "last_login",
+          width: 20,
+          style: { numFmt: "yyyy-mm-dd hh:mm" },
+        },
+        {
+          header: "account_created",
+          key: "account_created",
+          width: 20,
+          style: { numFmt: "yyyy-mm-dd hh:mm" },
+        },
       ];
+      // Excel stores dates without a timezone and ExcelJS writes them as
+      // UTC, so shift to the viewer's local time to match the user details
+      // view. Missing/invalid dates stay blank like other empty fields.
+      const excelDate = (v: unknown): Date | "" => {
+        if (!v) return "";
+        const d = new Date(String(v));
+        if (Number.isNaN(d.getTime())) return "";
+        return new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      };
       users.forEach((u: Record<string, unknown>) => {
         worksheet.addRow({
           username: u.username,
@@ -1179,6 +1201,9 @@ export const UsersPage: React.FC = () => {
           roles: resolveNames(u.role_ids, roleNameMap),
           is_active: u.is_active ? "Yes" : "No",
           is_super_admin: u.is_super_admin ? "Yes" : "No",
+          extension: u.extension || "",
+          last_login: excelDate(u.last_login_at),
+          account_created: excelDate(u.created_at),
         });
       });
 

@@ -4788,7 +4788,8 @@
     "statuses": {
       "success": "Success",
       "failed": "Failed"
-    }
+    },
+    "exportFailed": "Failed to export action logs. Please try again."
   },
   "documents": {
     "info": "Info",

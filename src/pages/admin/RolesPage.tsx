@@ -37,12 +37,20 @@ import {
 const normalizeImportHeader = (header: string | undefined) => {
   if (!header) return "";
 
-  return header
+  const key = header
     .toString()
     .trim()
     .replace(/\s*\((required|optional)\)\s*$/i, "")
     .replace(/[\s-]+/g, "_")
     .toLowerCase();
+  // The Excel export uses "Role Name" / "Role Code" headers; accept them so
+  // an exported file can be re-imported.
+  return EXPORT_HEADER_ALIASES[key] ?? key;
+};
+
+const EXPORT_HEADER_ALIASES: Record<string, string> = {
+  role_name: "name",
+  role_code: "code",
 };
 
 const isImportMetadataRow = (
@@ -163,22 +171,41 @@ export const RolesPage: React.FC = () => {
               selectedIds.includes(role.id),
             );
 
+      // Users per role come from the backend role export (one request,
+      // guarded by roles:view) rather than one user query per role.
+      const exported: { id: string; users?: string[] }[] = JSON.parse(
+        await (await roleApi.export()).text(),
+      );
+      const usersByRole = new Map(
+        exported.map((r) => [r.id, (r.users ?? []).join(", ")]),
+      );
+
       const workbook = new ExcelJs.Workbook();
       const worksheet = workbook.addWorksheet("Roles");
 
       worksheet.columns = [
-        { header: "name", key: "name", width: 26 },
-        { header: "code", key: "code", width: 26 },
+        { header: "Role Name", key: "name", width: 26 },
+        { header: "Role Name (Arabic)", key: "name_ar", width: 26 },
+        { header: "Role Code", key: "code", width: 26 },
         { header: "description", key: "description", width: 40 },
+        {
+          header: "Role Description (Arabic)",
+          key: "description_ar",
+          width: 40,
+        },
         { header: "permissions", key: "permissions", width: 50 },
+        { header: "Users", key: "users", width: 50 },
       ];
 
       roles.forEach((role: Role) => {
         worksheet.addRow({
           name: role.name,
+          name_ar: role.name_ar || "",
           code: role.code,
           description: role.description || "",
+          description_ar: role.description_ar || "",
           permissions: role.permissions?.map((p) => p.code).join(", ") || "",
+          users: usersByRole.get(role.id) ?? "",
         });
       });
 
