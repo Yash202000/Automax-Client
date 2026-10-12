@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { checkInStatusLabel } from "./checkInStatusLabel";
 import type { CheckInStatus } from "../../types/goal";
 
 interface CheckInStatusBadgeProps {
@@ -24,7 +25,7 @@ export const CheckInStatusBadge: React.FC<CheckInStatusBadgeProps> = ({
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] ?? STATUS_STYLES.blocked}`}
     >
-      {t(`goals.components.badges.checkIn.${status}`, { defaultValue: status })}
+      {checkInStatusLabel(t, status)}
     </span>
   );
 };

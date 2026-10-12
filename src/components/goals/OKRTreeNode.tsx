@@ -1,12 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  ChevronRight,
-  ChevronDown,
-  Building2,
-  Target,
-} from "lucide-react";
+import { checkInStatusLabel } from "./checkInStatusLabel";
+import { ChevronRight, ChevronDown, Building2, Target } from "lucide-react";
 import { GoalStatusBadge } from "./GoalStatusBadge";
 import { GoalProgressBar } from "./GoalProgressBar";
 import type { OKRDepartmentNode, OKRGoalNode } from "../../types/goalAnalytics";
@@ -32,7 +28,7 @@ const GoalNode: React.FC<{ node: OKRGoalNode; depth: number }> = ({
   const isFilteredOut = node.is_filtered_out === true;
 
   const healthLabel = (h: string): string => {
-    return t(`goals.components.badges.checkIn.${h}`, { defaultValue: h });
+    return checkInStatusLabel(t, h);
   };
 
   return (
