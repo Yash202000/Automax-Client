@@ -65,6 +65,7 @@ function formatStatus(status: string) {
 const FILTER_OPTIONS = [
   { value: "", label: "All Results", label_ar: "جميع النتائج" },
   { value: "resolved", label: "Resolved", label_ar: "تم الحل" },
+  { value: "not_resolved", label: "Not Resolved", label_ar: "لم يتم الحل" },
   { value: "cannot_verify", label: "Cannot Verify", label_ar: "تعذر التحقق" },
   { value: "mismatch", label: "Mismatch", label_ar: "عدم تطابق" },
 ];
@@ -95,7 +96,7 @@ export default function QualityAuditPage() {
 
       const matchesStatus =
         !statusFilter ||
-        r.resolution_status?.toLowerCase().includes(statusFilter);
+        r.resolution_status?.toLowerCase() === statusFilter.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
