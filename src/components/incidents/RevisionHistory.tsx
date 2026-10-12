@@ -96,14 +96,22 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
   };
 
   const handleExport = async () => {
-    // Fetch all revisions for export
-    const allData = await incidentApi.getRevisions(incidentId, {
-      page: 1,
-      limit: 10000,
-      action_type: filterType || undefined,
-    });
+    // Fetch all revisions for export. The API caps a page at 100 rows (a
+    // larger limit silently falls back to 20), so page through them.
+    const PAGE_SIZE = 100;
+    const fetchPage = (p: number) =>
+      incidentApi.getRevisions(incidentId, {
+        page: p,
+        limit: PAGE_SIZE,
+        action_type: filterType || undefined,
+      });
+    const first = await fetchPage(1);
+    const allRevisions = [...(first.data ?? [])];
+    for (let p = 2; p <= (first.total_pages ?? 1); p++) {
+      allRevisions.push(...((await fetchPage(p)).data ?? []));
+    }
 
-    const rows = allData.data.map((rev) => ({
+    const rows = allRevisions.map((rev) => ({
       "#": rev.revision_number,
       Timestamp: `${formatDate(rev.created_at)} ${formatTime(rev.created_at)}`,
       Action: rev.action_description,
@@ -124,10 +132,22 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Revisions");
 
-    const headers = Object.keys(rows[0] ?? {});
-    worksheet.columns = headers.map((head) => ({
-      head,
-      key: head,
+    // Same columns as the Revisions tab. ExcelJS reads the column title
+    // from `header` (it was misspelled `head`, so the file had no header
+    // row); defined explicitly so headers are present even with no rows.
+    const columnWidths: Record<string, number> = {
+      "#": 6,
+      Timestamp: 24,
+      Action: 60,
+      "Action Taken By": 26,
+      Department: 24,
+      Role: 26,
+      Mobile: 18,
+    };
+    worksheet.columns = Object.entries(columnWidths).map(([header, width]) => ({
+      header,
+      key: header,
+      width,
     }));
 
     rows.forEach((row) => {

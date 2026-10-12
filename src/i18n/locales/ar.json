@@ -482,7 +482,10 @@
       "viewDetails": "عرض التفاصيل",
       "oneIncidentCount": "بلاغ واحد قريب",
       "incidentsCount": "{{count}} بلاغات قريبة",
-      "within_km": "ضمن نطاق {{value}} كم"
+      "within_km": "ضمن نطاق {{value}} كم",
+      "radiusCircle": "دائرة نصف قطرها {{radius}} كم",
+      "away": "على بعد {{distance}}",
+      "incidentsAtLocation": "{{count}} بلاغات في هذا الموقع"
     },
     "locationRecurrence": {
       "title": "تم اكتشاف التكرار",
@@ -4547,7 +4550,8 @@
     "statuses": {
       "success": "نجاح",
       "failed": "فشل"
-    }
+    },
+    "exportFailed": "تعذر تصدير سجلات الإجراءات. يرجى المحاولة مرة أخرى."
   },
   "categories": {
     "subtitle": "إدارة التسلسل الهرمي لفئات الأهداف",

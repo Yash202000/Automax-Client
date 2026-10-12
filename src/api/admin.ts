@@ -1343,8 +1343,11 @@ export interface NearbyIncident {
   latitude: number | null;
   longitude: number | null;
   classification_name: string;
+  classification_name_ar?: string | null;
   location_name: string;
+  location_name_ar?: string | null;
   status: string;
+  status_ar?: string | null;
   status_color: string;
   created_at: string;
   distance?: string;

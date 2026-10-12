@@ -482,7 +482,10 @@
       "oneIncidentCount": "1 nearby incident",
       "incidentsCount": "{{count}} nearby incidents",
       "within_km": "within {{value}}km radius",
-      "withinRadius": "within {{radius}}km radius"
+      "withinRadius": "within {{radius}}km radius",
+      "radiusCircle": "{{radius}}km Circle",
+      "away": "{{distance}} away",
+      "incidentsAtLocation": "{{count}} incidents at this location"
     },
     "locationRecurrence": {
       "title": "Recurrence detected",
@@ -4788,7 +4791,8 @@
     "statuses": {
       "success": "Success",
       "failed": "Failed"
-    }
+    },
+    "exportFailed": "Failed to export action logs. Please try again."
   },
   "documents": {
     "info": "Info",

@@ -18,6 +18,10 @@ import {
 import { Modal, ModalBody, ModalHeader, ModalTitle } from "../ui/Modal";
 import { incidentApi, type NearbyIncident } from "../../api/admin";
 import { getIncidentDistance } from "../../utils/geoDistance";
+import {
+  localizeNearbyIncident,
+  matchesNearbySearch,
+} from "../../utils/nearbyIncidentLocale";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import NearbyIncidentsSidebar from "./NearbyIncidentsSidebar";
 
@@ -261,6 +265,9 @@ function GroupPopup({
   // eslint-disable-next-line no-unused-vars
   onNavigate: (id: string) => void;
 }) {
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith("ar");
+
   return (
     <InfoWindow
       position={{ lat: group.lat, lng: group.lng }}
@@ -286,114 +293,122 @@ function GroupPopup({
               borderBottom: "1px solid #e5e7eb",
             }}
           >
-            {group.items.length} Incidents at this location
+            {t("incidents.nearby.incidentsAtLocation", {
+              count: group.items.length,
+            })}
           </div>
         )}
-        {group.items.map((item, idx) => (
-          <div
-            key={item.id}
-            style={{
-              marginBottom: 10,
-              paddingBottom: 8,
-              borderBottom:
-                idx < group.items.length - 1 ? "1px dashed #e5e7eb" : "none",
-            }}
-          >
+        {group.items.map((item, idx) => {
+          const label = localizeNearbyIncident(item, isArabic);
+          return (
             <div
+              key={item.id}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 6,
+                marginBottom: 10,
+                paddingBottom: 8,
+                borderBottom:
+                  idx < group.items.length - 1 ? "1px dashed #e5e7eb" : "none",
               }}
             >
-              <span style={{ fontWeight: 700, fontSize: 13, color: "#2563eb" }}>
-                {item.incident_number}
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  padding: "2px 6px",
-                  borderRadius: 9999,
-                  color: "#fff",
-                  backgroundColor: item.status_color || "#6b7280",
-                }}
-              >
-                {item.status}
-              </span>
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: "#374151",
-                marginTop: 3,
-              }}
-            >
-              {item.classification_name}
-            </div>
-            {item.location_name && (
               <div
                 style={{
-                  fontSize: 11,
-                  color: "#6b7280",
-                  marginTop: 2,
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
+                  justifyContent: "space-between",
+                  gap: 6,
                 }}
               >
-                <span>{"\u{1F4CD}"}</span>
-                <span>{item.location_name}</span>
+                <span
+                  style={{ fontWeight: 700, fontSize: 13, color: "#2563eb" }}
+                >
+                  {item.incident_number}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "2px 6px",
+                    borderRadius: 9999,
+                    color: "#fff",
+                    backgroundColor: item.status_color || "#6b7280",
+                  }}
+                >
+                  {label.status}
+                </span>
               </div>
-            )}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginTop: 6,
-              }}
-            >
-              <span
+              <div
                 style={{
-                  fontSize: 11,
-                  color: "#059669",
-                  fontWeight: 600,
-                  background: "#ecfdf5",
-                  padding: "1px 6px",
-                  borderRadius: 4,
-                }}
-              >
-                {getIncidentDistance(
-                  latitude,
-                  longitude,
-                  item.latitude,
-                  item.longitude,
-                  item.distance,
-                )}{" "}
-                away
-              </span>
-              <button
-                type="button"
-                onClick={() => onNavigate(item.id)}
-                style={{
-                  background: "#2563eb",
-                  color: "white",
-                  border: "none",
-                  padding: "4px 8px",
-                  borderRadius: 5,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 500,
-                  cursor: "pointer",
+                  color: "#374151",
+                  marginTop: 3,
                 }}
               >
-                {t("incidents.nearby.viewDetails") || "View Details"} →
-              </button>
+                {label.classificationName}
+              </div>
+              {label.locationName && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#6b7280",
+                    marginTop: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <span>{"\u{1F4CD}"}</span>
+                  <span>{label.locationName}</span>
+                </div>
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: 6,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "#059669",
+                    fontWeight: 600,
+                    background: "#ecfdf5",
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                  }}
+                >
+                  {t("incidents.nearby.away", {
+                    distance: getIncidentDistance(
+                      latitude,
+                      longitude,
+                      item.latitude,
+                      item.longitude,
+                      item.distance,
+                    ),
+                  })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate(item.id)}
+                  style={{
+                    background: "#2563eb",
+                    color: "white",
+                    border: "none",
+                    padding: "4px 8px",
+                    borderRadius: 5,
+                    fontSize: 11,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t("incidents.nearby.viewDetails") || "View Details"} →
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </InfoWindow>
   );
@@ -461,13 +476,7 @@ export default function GoogleNearbyIncidentsMapModal({
   const filteredItems = useMemo(() => {
     if (!searchFilter.trim()) return itemsWithCoords;
     const q = searchFilter.toLowerCase().trim();
-    return itemsWithCoords.filter(
-      (item) =>
-        item.incident_number?.toLowerCase().includes(q) ||
-        item.location_name?.toLowerCase().includes(q) ||
-        item.status?.toLowerCase().includes(q) ||
-        item.classification_name?.toLowerCase().includes(q),
-    );
+    return itemsWithCoords.filter((item) => matchesNearbySearch(item, q));
   }, [itemsWithCoords, searchFilter]);
 
   const markerGroups = useMemo(

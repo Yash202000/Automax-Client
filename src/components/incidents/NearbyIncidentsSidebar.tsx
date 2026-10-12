@@ -2,6 +2,7 @@ import { ExternalLink, MapPin, Compass, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { NearbyIncident } from "../../api/admin";
 import { getIncidentDistance } from "../../utils/geoDistance";
+import { localizeNearbyIncident } from "../../utils/nearbyIncidentLocale";
 
 interface NearbyIncidentsSidebarProps {
   incidentId: string;
@@ -36,7 +37,8 @@ export default function NearbyIncidentsSidebar({
   onCenterCurrent,
   onViewIncident,
 }: NearbyIncidentsSidebarProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language.startsWith("ar");
 
   return (
     <div className="w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-s border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col h-[40vh] md:h-[calc(92vh-130px)]">
@@ -117,6 +119,7 @@ export default function NearbyIncidentsSidebar({
               item.distance,
             );
 
+            const label = localizeNearbyIncident(item, isArabic);
             return (
               <div
                 key={item.id}
@@ -137,19 +140,19 @@ export default function NearbyIncidentsSidebar({
                       backgroundColor: item.status_color || "#6b7280",
                     }}
                   >
-                    {item.status}
+                    {label.status}
                   </span>
                 </div>
 
                 <div className="mt-1 text-xs font-medium text-[hsl(var(--foreground))] line-clamp-1">
-                  {item.classification_name}
+                  {label.classificationName}
                 </div>
 
                 <div className="mt-1 flex items-center justify-between text-[11px] text-[hsl(var(--muted-foreground))]">
                   <div className="flex items-center gap-1 truncate max-w-[170px]">
                     <MapPin className="w-3 h-3 shrink-0 text-[hsl(var(--muted-foreground))]" />
                     <span className="truncate">
-                      {item.location_name || "-"}
+                      {label.locationName || "-"}
                     </span>
                   </div>
                   {distFormatted && (
