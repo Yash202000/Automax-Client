@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { checkInStatusLabel } from "./checkInStatusLabel";
 import { Send, ChevronDown, ChevronUp } from "lucide-react";
 import { CHECK_IN_STATUS_OPTIONS } from "../../types/goal";
 import type {
@@ -116,7 +117,7 @@ export const CheckInForm: React.FC<CheckInFormProps> = ({
                   : STATUS_BUTTON_STYLES[opt.value]
               }`}
             >
-              {t(`goals.components.badges.checkIn.${opt.value}`)}
+              {checkInStatusLabel(t, opt.value)}
             </button>
           ))}
         </div>
