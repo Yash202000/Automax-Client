@@ -87,9 +87,9 @@ export const SettingsManagementPage: React.FC = () => {
         time_format: data.time_format || "",
         default_language: data.default_language || "",
         show_evaluate_button: data.show_evaluate_button ?? false,
-        auth_setting: data.auth_setting || {
-          totp_enabled: false,
-          show_forgot_password: true,
+        auth_setting: {
+          totp_enabled: data.auth_setting?.totp_enabled ?? false,
+          show_forgot_password: data.auth_setting?.show_forgot_password ?? true,
         },
       });
     }
