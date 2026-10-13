@@ -136,6 +136,10 @@ export const PERMISSIONS = {
   SETTINGS_UPDATE: "settings:update",
 
   // Escalation Group permissions
+  ERROR_LOGS_VIEW: "error-logs:view",
+  ERROR_LOGS_UPDATE: "error-logs:update",
+  ERROR_LOGS_EXPORT: "error-logs:export",
+  ERROR_LOGS_VIEW_TECHNICAL: "error-logs:view_technical",
   ESCALATION_GROUPS_VIEW: "escalation-groups:view",
   ESCALATION_GROUPS_CREATE: "escalation-groups:create",
   ESCALATION_GROUPS_UPDATE: "escalation-groups:update",

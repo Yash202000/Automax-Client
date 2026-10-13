@@ -48,6 +48,8 @@ import {
   classificationApi,
   // extensionApi, // Extension assignment disabled for user create/edit
 } from "../../api/admin";
+import axios from "axios";
+import { errorLogApi } from "../../api/errorLogs";
 import { ldapApi } from "../../api/ldap";
 import { toast } from "sonner";
 import type { User, Role, UpdateProfileRequest, Department } from "../../types";
@@ -1481,6 +1483,14 @@ export const UsersPage: React.FC = () => {
       }
 
       if (jsonRows.length === 0) {
+        void errorLogApi.Report({
+          module: "import",
+          action: "Import users",
+          error_type: "invalid_file",
+          message: "No data found in the import file",
+          related_type: "import_file",
+          related_label: importFile.name,
+        });
         setImportResult({
           imported: 0,
           skipped: 0,
@@ -1529,6 +1539,19 @@ export const UsersPage: React.FC = () => {
         return true;
       });
 
+      if (clientSkipped.length > 0) {
+        void errorLogApi.Report({
+          module: "import",
+          action: "Import users",
+          error_type: "row_failed",
+          severity: "low",
+          message: `${clientSkipped.length} row error(s) in the import file`,
+          details: clientSkipped.slice(0, 20).join("\n"),
+          related_type: "import_file",
+          related_label: importFile.name,
+        });
+      }
+
       if (validRows.length === 0) {
         setImportResult({
           imported: 0,
@@ -1559,6 +1582,21 @@ export const UsersPage: React.FC = () => {
       setImportFile(null);
     } catch (importError) {
       console.error("Import failed:", importError);
+      // File could not be read/parsed in the browser, so the API never saw it.
+      // (Server-side failures are already logged by the backend.)
+      if (!axios.isAxiosError(importError)) {
+        void errorLogApi.Report({
+          module: "import",
+          action: "Import users",
+          error_type: "invalid_file",
+          message:
+            importError instanceof Error
+              ? importError.message
+              : "The import file could not be read",
+          related_type: "import_file",
+          related_label: importFile.name,
+        });
+      }
       toast.error(t("users.importFailed"));
     } finally {
       setIsImporting(false);

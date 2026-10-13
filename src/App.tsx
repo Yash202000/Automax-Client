@@ -95,6 +95,16 @@ const ClassificationsPage = lazy(() =>
   })),
 );
 const CategoriesPage = lazy(() => import("./pages/admin/CategoriesPage"));
+const ErrorLogsPage = lazy(() =>
+  import("./pages/admin/ErrorLogsPage").then((m) => ({
+    default: m.ErrorLogsPage,
+  })),
+);
+const ErrorLogDetailPage = lazy(() =>
+  import("./pages/admin/ErrorLogDetailPage").then((m) => ({
+    default: m.ErrorLogDetailPage,
+  })),
+);
 const ActionLogsPage = lazy(() =>
   import("./pages/admin/ActionLogsPage").then((m) => ({
     default: m.ActionLogsPage,
@@ -639,6 +649,23 @@ function App() {
                         <Route
                           path="/admin/action-logs"
                           element={<ActionLogsPage />}
+                        />
+                      </Route>
+                      {/* Error log - requires error-logs:view permission */}
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.ERROR_LOGS_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/admin/error-logs"
+                          element={<ErrorLogsPage />}
+                        />
+                        <Route
+                          path="/admin/error-logs/:id"
+                          element={<ErrorLogDetailPage />}
                         />
                       </Route>
                       {/* Lookups - requires lookups:view permission */}

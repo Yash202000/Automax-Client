@@ -41,6 +41,12 @@ export const NotificationBell: React.FC = () => {
   });
 
   const navigateToNotif = async (subject: string) => {
+    // Critical error alerts open the Error Log filtered to that error
+    const errorMatch = subject.match(/Critical error.*?(ERR-\d+)/i);
+    if (errorMatch) {
+      navigate(`/admin/error-logs?search=${errorMatch[1]}`);
+      return;
+    }
     const match = subject.match(/Incident\s+([A-Z0-9-]+)/i);
     if (!match) return;
     const num = match[1];

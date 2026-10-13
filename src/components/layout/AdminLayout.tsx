@@ -28,6 +28,7 @@ import {
   Link2,
   Settings,
   AlertTriangle,
+  AlertOctagon,
   KeyRound,
   Zap,
   Lock,
@@ -148,6 +149,12 @@ const sidebarSectionsConfig: SidebarSection[] = [
         labelKey: "admin.actionLogs",
         path: "/admin/action-logs",
         permission: "action-logs:view",
+      },
+      {
+        icon: AlertOctagon,
+        labelKey: "admin.errorLog",
+        path: "/admin/error-logs",
+        permission: PERMISSIONS.ERROR_LOGS_VIEW,
       },
       {
         icon: AlertTriangle,

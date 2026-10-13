@@ -1957,6 +1957,8 @@ export interface Settings {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button: boolean;
+  error_log_retention_value?: number;
+  error_log_retention_unit?: "days" | "months";
   auth_setting: {
     totp_enabled: boolean;
   };
@@ -1990,6 +1992,8 @@ export interface SettingsUpdateRequest {
   sip_domain?: string;
   sip_socket_url?: string;
   show_evaluate_button?: boolean;
+  error_log_retention_value?: number;
+  error_log_retention_unit?: "days" | "months";
   auth_setting?: {
     totp_enabled?: boolean;
   };
@@ -2418,4 +2422,56 @@ export interface RejectionLogListResponse {
   page: number;
   limit: number;
   total_pages: number;
+}
+
+// Error Log types
+export type ErrorLogModule =
+  | "import"
+  | "call"
+  | "attachment"
+  | "incident"
+  | "integration"
+  | "contact"
+  | "auth";
+export type ErrorLogSeverity = "low" | "medium" | "high" | "critical";
+export type ErrorLogStatus = "new" | "in_review" | "resolved" | "ignored";
+
+export interface ErrorLogHistory {
+  from_status: string;
+  to_status: string;
+  note?: string;
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface ErrorLog {
+  id: string;
+  error_code: string;
+  occurred_at: string;
+  module: ErrorLogModule;
+  action: string;
+  error_type: string;
+  severity: ErrorLogSeverity;
+  message: string;
+  technical_details?: string;
+  user_id?: string;
+  user: string;
+  related_type?: string;
+  related_id?: string;
+  related_label?: string;
+  status: ErrorLogStatus;
+  retry_count: number;
+  history?: ErrorLogHistory[];
+}
+
+export interface ErrorLogFilter {
+  search?: string;
+  module?: string;
+  severity?: string;
+  status?: string;
+  user_id?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  limit?: number;
 }

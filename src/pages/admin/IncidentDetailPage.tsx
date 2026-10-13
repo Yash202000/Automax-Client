@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { withCallStatusDot } from "../../utils/callStatus";
 import { capFilesByCount } from "../../utils/attachmentLimits";
+import { errorLogApi } from "../../api/errorLogs";
 import { useImageValidation } from "../../hooks/useImageValidation";
 import {
   useParams,
@@ -572,6 +573,17 @@ export const IncidentDetailPage: React.FC = () => {
     }
     const oversized = files.find(isTransitionAttachmentOversized);
     if (oversized) {
+      void errorLogApi.Report({
+        module: "attachment",
+        action: "Upload attachment",
+        error_type: "file_too_large",
+        severity: "low",
+        message: "Attachment exceeds the maximum allowed size",
+        details: `size=${oversized.size} bytes, limit=${MAX_TRANSITION_ATTACHMENT_SIZE_MB}MB, type=${oversized.type}`,
+        related_type: "incident",
+        related_id: id,
+        related_label: oversized.name,
+      });
       return t("incidents.attachmentTooLarge", {
         name: oversized.name,
         max: MAX_TRANSITION_ATTACHMENT_SIZE_MB,
