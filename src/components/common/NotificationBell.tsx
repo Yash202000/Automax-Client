@@ -40,7 +40,27 @@ export const NotificationBell: React.FC = () => {
       }),
   });
 
-  const navigateToNotif = async (subject: string) => {
+  const navigateToNotif = async (
+    subject: string,
+    type?: string,
+    id?: string,
+  ) => {
+    if (type && id) {
+      switch (type.toLowerCase()) {
+        case "incident":
+          navigate(`/incidents/${id}`);
+          return;
+        case "request":
+          navigate(`/requests/${id}`);
+          return;
+        case "complaint":
+          navigate(`/complaints/${id}`);
+          return;
+        case "query":
+          navigate(`/queries/${id}`);
+          return;
+      }
+    }
     const match = subject.match(/Incident\s+([A-Z0-9-]+)/i);
     if (!match) return;
     const num = match[1];
@@ -119,7 +139,11 @@ export const NotificationBell: React.FC = () => {
                   onClick={async () => {
                     if (!notif.is_read) markReadMutation.mutate(notif.id);
                     setIsOpen(false);
-                    await navigateToNotif(notif.subject);
+                    await navigateToNotif(
+                      notif.subject,
+                      notif?.meta?.type,
+                      notif?.meta?.id,
+                    );
                   }}
                   className={`px-4 py-3 cursor-pointer transition-colors hover:bg-slate-50 ${
                     !notif.is_read ? "bg-blue-50/50" : ""

@@ -2054,6 +2054,10 @@ export interface Email {
   provider?: string;
   template_code?: string;
   language?: string;
+  meta?: {
+    type?: string;
+    id?: string;
+  };
 }
 
 export interface EmailFilter {
