@@ -1062,6 +1062,8 @@
     "authConfigurationDesc": "Manage authentication verification requirements.",
     "enableTotpVerification": "Enable TOTP Verification",
     "enableTotpVerificationDesc": "Require time-based one-time passcode verification during authentication.",
+    "showForgotPassword": "Show Forgot Password",
+    "showForgotPasswordDesc": "Show the forgot password link on the login page.",
     "bypassTotpVerification": "Bypass Login TOTP Verification",
     "bypassTotpVerificationDesc": "Users assigned this role skip time-based one-time passcode verification during login."
   },

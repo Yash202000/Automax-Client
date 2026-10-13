@@ -49,6 +49,7 @@ export const SettingsManagementPage: React.FC = () => {
     show_evaluate_button: false,
     auth_setting: {
       totp_enabled: false,
+      show_forgot_password: true,
     },
   });
 
@@ -86,7 +87,10 @@ export const SettingsManagementPage: React.FC = () => {
         time_format: data.time_format || "",
         default_language: data.default_language || "",
         show_evaluate_button: data.show_evaluate_button ?? false,
-        auth_setting: data.auth_setting,
+        auth_setting: data.auth_setting || {
+          totp_enabled: false,
+          show_forgot_password: true,
+        },
       });
     }
   }, [settingsResponse]);
@@ -568,34 +572,68 @@ export const SettingsManagementPage: React.FC = () => {
             </div>
           </div>
 
-          <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
-            <input
-              type="checkbox"
-              name="enable_totp_verification"
-              checked={formData.auth_setting.totp_enabled}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  auth_setting: { totp_enabled: e.target.checked },
-                }))
-              }
-              className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600 focus:ring-2 focus:ring-cyan-500"
-            />
-            <span className="flex-1">
-              <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
-                {t(
-                  "settings.enableTotpVerification",
-                  "Enable TOTP Verification",
-                )}
+          <div className="space-y-4">
+            <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                name="enable_totp_verification"
+                checked={formData.auth_setting.totp_enabled}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    auth_setting: {
+                      ...prev.auth_setting,
+                      totp_enabled: e.target.checked,
+                    },
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                  {t(
+                    "settings.enableTotpVerification",
+                    "Enable TOTP Verification",
+                  )}
+                </span>
+                <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(
+                    "settings.enableTotpVerificationDesc",
+                    "Require time-based one-time passcode verification during authentication.",
+                  )}
+                </span>
               </span>
-              <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                {t(
-                  "settings.enableTotpVerificationDesc",
-                  "Require time-based one-time passcode verification during authentication.",
-                )}
+            </label>
+
+            <label className="flex items-start gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                name="show_forgot_password"
+                checked={formData.auth_setting.show_forgot_password}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    auth_setting: {
+                      ...prev.auth_setting,
+                      show_forgot_password: e.target.checked,
+                    },
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-[hsl(var(--border))] text-cyan-600 focus:ring-2 focus:ring-cyan-500"
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">
+                  {t("settings.showForgotPassword", "Show Forgot Password")}
+                </span>
+                <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  {t(
+                    "settings.showForgotPasswordDesc",
+                    "Show the forgot password link on the login page.",
+                  )}
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+          </div>
         </div>
         {/* Feature Toggles Section */}
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
