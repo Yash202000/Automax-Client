@@ -467,6 +467,9 @@ export const KpiMasterDataPage: React.FC = () => {
   const [importType, setImportType] = useState<EntityType>("pillar");
   // Criterion numbers created earlier in the current import file.
   const importedCriterionNos = useRef<Set<number>>(new Set());
+  // Duplicate keys (see importDuplicateKey) created earlier in the current
+  // import file, so a row repeated inside the same file is skipped too.
+  const importedKeys = useRef<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const exportToExcel = async (data: any[], label: string) =>
@@ -489,6 +492,7 @@ export const KpiMasterDataPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     importedCriterionNos.current = new Set();
+    importedKeys.current = new Set();
 
     try {
       const workbook = new ExcelJS.Workbook();
@@ -593,6 +597,20 @@ export const KpiMasterDataPage: React.FC = () => {
       row.name_ar || row.NameAr || row.namear || row.arabicname || "",
     );
     if (!name_en) return "skipped";
+    // Skip records that already exist (or appeared earlier in this file)
+    // instead of creating a second copy.
+    const dupKey = importDuplicateKey(type, row, name_en);
+    if (dupKey !== null) {
+      if (
+        existingImportKeys(type).has(dupKey) ||
+        importedKeys.current.has(dupKey)
+      ) {
+        return "skipped";
+      }
+    }
+    const markImported = () => {
+      if (dupKey !== null) importedKeys.current.add(dupKey);
+    };
     if (type === "pillar") {
       await kpiMasterDataApi.createPillar({
         name_en,
@@ -696,7 +714,61 @@ export const KpiMasterDataPage: React.FC = () => {
         contact_info: row.contact_info || row.ContactInfo || undefined,
       } as KpiOrganizationRequest);
     }
+    markImported();
     return "created";
+  };
+
+  // What makes two master-data records "the same" for import purposes —
+  // compared trimmed and case-insensitively. Child records are compared
+  // within their parent (e.g. a sub-criterion number within its criterion).
+  // Award criteria are matched by criterion number in submitImportRow.
+  const importDuplicateKey = (
+    type: EntityType,
+    row: any,
+    name: string,
+  ): string | null => {
+    const n = normKey(name);
+    switch (type) {
+      case "pillar":
+      case "enabler":
+      case "data-source":
+      case "segmentation-dimension":
+      case "organization":
+        return n;
+      case "domain":
+        return `${normKey(row.type)}|${n}`;
+      case "initiative":
+      case "operational-objective":
+        return `${normKey(row.goal_id)}|${n}`;
+      case "process":
+        return `${normKey(row.operational_objective_id)}|${n}`;
+      case "award-sub-criterion":
+        return `${normKey(row.award_criterion_id)}|${normKey(row.sub_no || row.subNo || "1")}`;
+      default:
+        return null;
+    }
+  };
+
+  const existingImportKeys = (type: EntityType): Set<string> => {
+    const list: any[] =
+      {
+        pillar: pillars,
+        enabler: enablers,
+        "data-source": dataSources,
+        "segmentation-dimension": segmentationDimensions,
+        organization: organizations,
+        domain: domains,
+        initiative: initiatives,
+        "operational-objective": operationalObjectives,
+        process: processes,
+        "award-sub-criterion": awardSubCriteria,
+      }[type as string] ?? [];
+    const keys = new Set<string>();
+    for (const item of list) {
+      const key = importDuplicateKey(type, item, item.name_en ?? "");
+      if (key !== null) keys.add(key);
+    }
+    return keys;
   };
 
   const getDepartmentName = (departmentId?: string) => {
@@ -1387,6 +1459,11 @@ const importQueryKey: Record<EntityType, string> = {
   "segmentation-dimension": "segmentation-dimensions",
   organization: "organizations",
 };
+
+const normKey = (v: unknown) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase();
 
 const normHeaderKey = (h: string) =>
   h.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]/g, "");
