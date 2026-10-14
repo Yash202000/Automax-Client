@@ -19,7 +19,7 @@ export const SortingConfig: React.FC<SortingConfigProps> = ({
   canAddRemove = true,
   canChangeField = true,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const sortableFields = fields.filter((f) => f.sortable);
 
   const addSort = () => {
