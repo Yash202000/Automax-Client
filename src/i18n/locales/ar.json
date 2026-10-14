@@ -1060,6 +1060,8 @@
     "authConfigurationDesc": "إدارة متطلبات التحقق من المصادقة.",
     "enableTotpVerification": "تفعيل التحقق عبر OTP",
     "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول.",
+    "showForgotPassword": "إظهار نسيت كلمة المرور",
+    "showForgotPasswordDesc": "إظهار رابط نسيت كلمة المرور في صفحة تسجيل الدخول.",
     "bypassTotpVerification": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
     "bypassTotpVerificationDesc": "المستخدمون المعينون لهذا الدور يتخطون التحقق برمز مؤقت لمرة واحدة عند تسجيل الدخول."
   },

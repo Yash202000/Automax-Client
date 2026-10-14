@@ -1959,6 +1959,7 @@ export interface Settings {
   show_evaluate_button: boolean;
   auth_setting: {
     totp_enabled: boolean;
+    show_forgot_password: boolean;
   };
   sms_max_length: number;
   updated_at: string;
@@ -1992,6 +1993,7 @@ export interface SettingsUpdateRequest {
   show_evaluate_button?: boolean;
   auth_setting?: {
     totp_enabled?: boolean;
+    show_forgot_password?: boolean;
   };
 }
 
