@@ -2979,44 +2979,53 @@ export const IncidentDetailPage: React.FC = () => {
                             </p>
                           ) : (
                             <div className="max-h-[280px] space-y-2 overflow-y-auto overscroll-contain pe-1">
-                              {recurrenceData?.data.map((item) => (
-                                <Link
-                                  key={item.id}
-                                  to={`/incidents/${item.id}`}
-                                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.2)] px-3 py-2.5 hover:bg-[hsl(var(--muted)/0.5)]"
-                                >
-                                  <div className="flex min-w-0 flex-wrap items-center gap-3">
-                                    <span className="rounded bg-[hsl(var(--muted))] px-2 py-1 text-xs font-semibold text-[hsl(var(--foreground))]">
-                                      {item.classification_name}
-                                    </span>
-                                    <span className="font-mono text-sm font-bold text-[hsl(var(--primary))]">
-                                      {item.incident_number}
-                                    </span>
-                                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                      {item.location_name || "-"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {item.status
-                                      .toLowerCase()
-                                      .includes("closed") && (
-                                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                    )}
-                                    <span
-                                      className="rounded px-2 py-1 text-xs font-medium text-white"
-                                      style={{
-                                        backgroundColor:
-                                          item.status_color || "#6b7280",
-                                      }}
-                                    >
-                                      {item.status}
-                                    </span>
-                                    <time className="text-xs text-[hsl(var(--muted-foreground))]">
-                                      {formatDateTime(item.created_at)}
-                                    </time>
-                                  </div>
-                                </Link>
-                              ))}
+                              {recurrenceData?.data.map((item) => {
+                                const isArabic = i18n.language === "ar";
+                                return (
+                                  <Link
+                                    key={item.id}
+                                    to={`/incidents/${item.id}`}
+                                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.2)] px-3 py-2.5 hover:bg-[hsl(var(--muted)/0.5)]"
+                                  >
+                                    <div className="flex min-w-0 flex-wrap items-center gap-3">
+                                      <span className="rounded bg-[hsl(var(--muted))] px-2 py-1 text-xs font-semibold text-[hsl(var(--foreground))]">
+                                        {isArabic && item.classification_name_ar
+                                          ? item.classification_name_ar
+                                          : item.classification_name}
+                                      </span>
+                                      <span className="font-mono text-sm font-bold text-[hsl(var(--primary))]">
+                                        {item.incident_number}
+                                      </span>
+                                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                        {(isArabic && item.location_name_ar
+                                          ? item.location_name_ar
+                                          : item.location_name) || "-"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {item.status
+                                        .toLowerCase()
+                                        .includes("closed") && (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                      )}
+                                      <span
+                                        className="rounded px-2 py-1 text-xs font-medium text-white"
+                                        style={{
+                                          backgroundColor:
+                                            item.status_color || "#6b7280",
+                                        }}
+                                      >
+                                        {isArabic && item.status_ar
+                                          ? item.status_ar
+                                          : item.status}
+                                      </span>
+                                      <time className="text-xs text-[hsl(var(--muted-foreground))]">
+                                        {formatDateTime(item.created_at)}
+                                      </time>
+                                    </div>
+                                  </Link>
+                                );
+                              })}
                               {(recurrenceData?.total_pages ?? 1) > 1 && (
                                 <div className="flex items-center justify-between pt-1 text-sm">
                                   <span className="text-[hsl(var(--muted-foreground))]">

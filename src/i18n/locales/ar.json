@@ -497,7 +497,8 @@
       "radius": "ضمن {{radius}} م",
       "empty": "لم يتم العثور على بلاغات أخرى ضمن هذا النطاق.",
       "error": "تعذر تحميل البلاغات في هذا الموقع.",
-      "page": "الصفحة {{page}} من {{totalPages}}"
+      "page": "الصفحة {{page}} من {{totalPages}}",
+      "moreCount": "+{{count}} أخرى"
     },
     "title": "البلاغات",
     "subtitle": "تتبع وإدارة البلاغات",
@@ -1060,6 +1061,8 @@
     "authConfigurationDesc": "إدارة متطلبات التحقق من المصادقة.",
     "enableTotpVerification": "تفعيل التحقق عبر OTP",
     "enableTotpVerificationDesc": "طلب التحقق برمز مؤقت لمرة واحدة أثناء تسجيل الدخول.",
+    "showForgotPassword": "إظهار نسيت كلمة المرور",
+    "showForgotPasswordDesc": "إظهار رابط نسيت كلمة المرور في صفحة تسجيل الدخول.",
     "bypassTotpVerification": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
     "bypassTotpVerificationDesc": "المستخدمون المعينون لهذا الدور يتخطون التحقق برمز مؤقت لمرة واحدة عند تسجيل الدخول."
   },

@@ -497,7 +497,8 @@
       "radius": "Within {{radius}} m",
       "empty": "No other incidents found within this radius.",
       "error": "Failed to load incidents at this location.",
-      "page": "Page {{page}} of {{totalPages}}"
+      "page": "Page {{page}} of {{totalPages}}",
+      "moreCount": "+{{count}} more"
     },
     "title": "Incidents",
     "subtitle": "Track and manage incident reports",
@@ -1062,6 +1063,8 @@
     "authConfigurationDesc": "Manage authentication verification requirements.",
     "enableTotpVerification": "Enable TOTP Verification",
     "enableTotpVerificationDesc": "Require time-based one-time passcode verification during authentication.",
+    "showForgotPassword": "Show Forgot Password",
+    "showForgotPasswordDesc": "Show the forgot password link on the login page.",
     "bypassTotpVerification": "Bypass Login TOTP Verification",
     "bypassTotpVerificationDesc": "Users assigned this role skip time-based one-time passcode verification during login."
   },

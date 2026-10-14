@@ -95,6 +95,8 @@ export const LoginForm: React.FC = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
   const setUser = useAuthStore((state) => state.setUser);
   const shouldVerifyTotp = settings?.auth_setting.totp_enabled === true;
+  const showForgotPassword =
+    settings?.auth_setting?.show_forgot_password ?? true;
 
   const sendOtpMutation = useMutation({
     mutationFn: ({
@@ -449,18 +451,22 @@ export const LoginForm: React.FC = () => {
             leftIcon={<Lock className="w-5 h-5" />}
             {...register("password")}
           />
-          <div className="flex items-center justify-between">
+          <div
+            className={`flex items-center ${showForgotPassword ? "justify-between" : "justify-start"}`}
+          >
             <Checkbox
               label={t("auth.rememberMe")}
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
             />
-            <Link
-              to="/forgot-password"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              {t("auth.forgotPassword")}
-            </Link>
+            {showForgotPassword && (
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                {t("auth.forgotPassword")}
+              </Link>
+            )}
           </div>
           {shouldVerifyTotp ? (
             <div className="space-y-3">

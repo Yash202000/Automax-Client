@@ -1182,7 +1182,12 @@ export const IncidentsPage: React.FC = () => {
                                 )}
                                 {(incident.recurrence_count ?? 0) > 1 && (
                                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-                                    +{incident.recurrence_count! - 1} more
+                                    {t(
+                                      "incidents.locationRecurrence.moreCount",
+                                      {
+                                        count: incident.recurrence_count! - 1,
+                                      },
+                                    )}
                                   </span>
                                 )}
                               </div>
