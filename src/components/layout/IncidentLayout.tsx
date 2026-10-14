@@ -101,6 +101,17 @@ export const IncidentLayout: React.FC = () => {
     setIsLangOpen(false);
   };
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Fetch incident stats to get statuses. Merges in whatever filter is
   // currently shared across the incident views (All/Assigned to
   // me/Created by me) so the "By Status" counts stay consistent with
