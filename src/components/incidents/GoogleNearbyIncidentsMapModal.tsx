@@ -733,7 +733,9 @@ export default function GoogleNearbyIncidentsMapModal({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>{radiusKm}km Circle</span>
+                <span>
+                  {t("incidents.nearby.radiusCircle", { radius: radiusKm })}
+                </span>
               </button>
             </div>
 
