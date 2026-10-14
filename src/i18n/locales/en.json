@@ -497,7 +497,8 @@
       "radius": "Within {{radius}} m",
       "empty": "No other incidents found within this radius.",
       "error": "Failed to load incidents at this location.",
-      "page": "Page {{page}} of {{totalPages}}"
+      "page": "Page {{page}} of {{totalPages}}",
+      "moreCount": "+{{count}} more"
     },
     "title": "Incidents",
     "subtitle": "Track and manage incident reports",
