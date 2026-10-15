@@ -824,7 +824,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.owner_dept.name,
     });
   }
-  if (type === "strategic" && kpi.pillar) {
+  // Pillar and Criteria/Sub-Criteria are optional tags on every KPI type
+  // (see KpiTaxonomyFields), so show them whenever set, not only for the
+  // type they were originally introduced on.
+  if (kpi.pillar) {
     infoTiles.push({
       icon: <Layers className="w-5 h-5 text-green-600 dark:text-green-400" />,
       bg: "bg-green-50 dark:bg-green-900/20",
@@ -847,7 +850,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
         navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
     });
   }
-  if (type === "award" && kpi.award_sub_criterion) {
+  if (kpi.award_sub_criterion?.award_criterion) {
+    const criterionId = kpi.award_sub_criterion.award_criterion.id;
+    infoTiles.push({
+      icon: (
+        <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+      ),
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      label: t("kpi.masterData.awardCriteria"),
+      value: kpi.award_sub_criterion.award_criterion.name_en,
+      onClick: () =>
+        navigate(`/goals/kpi/master-data/award-criteria/${criterionId}`),
+    });
+  }
+  if (kpi.award_sub_criterion) {
     const subCriterionId = kpi.award_sub_criterion.id;
     infoTiles.push({
       icon: (
