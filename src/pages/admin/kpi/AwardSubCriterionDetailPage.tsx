@@ -305,7 +305,6 @@ export const AwardSubCriterionDetailPage: React.FC = () => {
           entity="awardSubCriterion"
           kpis={kpis}
           loading={kpisLoading}
-          kpiType="award"
         />
       )}
 

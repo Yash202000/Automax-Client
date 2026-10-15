@@ -292,7 +292,6 @@ export const OperationalObjectiveDetailPage: React.FC = () => {
           entity="objective"
           kpis={kpis}
           loading={kpisLoading}
-          kpiType="operational"
         />
       )}
 
