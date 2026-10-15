@@ -761,16 +761,24 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   }
 
   // ── Parent Objective resolution ─────────────────────
-  // Operational KPIs carry operational_objective_id directly; Strategic (and
-  // Award) KPIs have no such field, so fall back to matching an Operational
-  // Objective by shared goal_id — the closest read-only equivalent of "this
-  // KPI's parent objective" available from the current data model.
+  // Use the KPI's own parent objective when set; otherwise the parent of its
+  // child objective (process) — that is the real parent for KPIs linked
+  // only to a child objective. Matching an objective by shared goal_id is
+  // the last resort (it can pick a different objective under the same goal).
   const allOperationalObjectives = operationalObjectivesRes ?? [];
+  const childParentId =
+    kpi.process?.operational_objective_id ??
+    kpi.process?.operational_objective?.id;
   const parentObjective: OperationalObjective | undefined =
     kpi.operational_objective ??
     allOperationalObjectives.find(
       (o: OperationalObjective) => o.id === kpi.operational_objective_id,
     ) ??
+    (childParentId
+      ? allOperationalObjectives.find(
+          (o: OperationalObjective) => o.id === childParentId,
+        )
+      : undefined) ??
     (kpi.goal_id
       ? allOperationalObjectives.find(
           (o: OperationalObjective) => o.goal_id === kpi.goal_id,
@@ -798,7 +806,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     infoTiles.push({
       icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
       bg: "bg-teal-50 dark:bg-teal-900/20",
-      label: "Objective",
+      label: "Parent Objective",
       value: parentObjective.name_en,
       onClick: () =>
         navigate(
@@ -824,7 +832,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.pillar.name_en,
     });
   }
-  if (type === "operational" && kpi.process) {
+  // Any KPI type can be linked to a child objective (process) — show it
+  // whenever present, not only for Operational KPIs.
+  if (kpi.process) {
     const childObjectiveId = kpi.process.id;
     infoTiles.push({
       icon: (
