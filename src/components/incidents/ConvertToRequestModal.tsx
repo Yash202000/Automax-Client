@@ -84,9 +84,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   const [showRequestSearch, setShowRequestSearch] = useState(true);
   const [searchedRequests, setSearchedRequests] = useState<Incident[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
-  const [convertableRequestStateId, setConvertableRequestStateId] = useState<
-    string | null
-  >(null);
+  // Narrow the existing-request list to the incident's classification and location
+  const [matchContext, setMatchContext] = useState(true);
 
   // Query for available transitions
   const { data: transitionsData } = useQuery({
@@ -131,12 +130,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         (item, index, self) =>
           index === self.findIndex((t) => t.id === item.id),
       );
-      if (unique?.length && unique[0]?.states?.length) {
-        const convertableRequestState =
-          unique[0].states.find((x: any) => x.state_type === "initial")?.id ||
-          "";
-        setConvertableRequestStateId(convertableRequestState);
-      }
       return { success: true, data: unique };
     },
     enabled: isOpen && currentStep === "workflow",
@@ -233,6 +226,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
   // Debounced search for requests
   useEffect(() => {
+    if (!isOpen) return;
     const timer = setTimeout(async () => {
       // Always load requests - show all if search is empty, or filter by search
       setRequestsLoading(true);
@@ -240,8 +234,16 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         const params: any = {
           record_type: "request",
           limit: 20,
-          current_state_id: convertableRequestStateId,
+          exclude_closed: true,
         };
+        if (matchContext) {
+          if (incident.classification?.id) {
+            params.classification_ids = [incident.classification.id];
+          }
+          if (incident.location?.id) {
+            params.location_ids = [incident.location.id];
+          }
+        }
         if (requestSearch && requestSearch.length >= 2) {
           params.search = requestSearch;
         }
@@ -256,7 +258,13 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [requestSearch]);
+  }, [
+    isOpen,
+    requestSearch,
+    matchContext,
+    incident.classification?.id,
+    incident.location?.id,
+  ]);
 
   // Convert mutation
   const convertMutation = useMutation({
@@ -294,7 +302,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setConvertType("new");
       setSelectedRequest(null);
       setRequestSearch("");
-      setShowRequestSearch(false);
+      setShowRequestSearch(true);
       setSearchedRequests([]);
     }
   }, [isOpen, clearRejectedImages]);
@@ -535,6 +543,18 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                     </p>
                   </div>
 
+                  <label className="flex items-center gap-2 text-sm text-[hsl(var(--foreground))]">
+                    <input
+                      type="checkbox"
+                      checked={matchContext}
+                      onChange={(e) => setMatchContext(e.target.checked)}
+                    />
+                    {t(
+                      "requests.matchClassificationLocation",
+                      "Only show requests with the same classification and location",
+                    )}
+                  </label>
+
                   {selectedRequest ? (
                     <div className="flex items-center justify-between p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
                       <div>
@@ -547,7 +567,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setSelectedRequest(null)}
+                        onClick={() => {
+                          setSelectedRequest(null);
+                          setShowRequestSearch(true);
+                        }}
                         className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -568,7 +591,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                         className="w-full pl-10 pr-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       />
 
-                      {showRequestSearch && requestSearch.length >= 2 && (
+                      {showRequestSearch && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
                           {requestsLoading ? (
                             <div className="p-4 text-center">
