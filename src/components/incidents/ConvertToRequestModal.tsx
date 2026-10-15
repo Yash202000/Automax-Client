@@ -227,6 +227,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   // Debounced search for requests
   useEffect(() => {
     if (!isOpen) return;
+    // Set on cleanup so a slow response for outdated filters can't overwrite newer results
+    let cancelled = false;
     const timer = setTimeout(async () => {
       // Always load requests - show all if search is empty, or filter by search
       setRequestsLoading(true);
@@ -248,16 +250,21 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
           params.search = requestSearch;
         }
         const response = await incidentApi.list(params);
+        if (cancelled) return;
         setSearchedRequests(response.data || []);
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to search requests:", error);
         setSearchedRequests([]);
       } finally {
-        setRequestsLoading(false);
+        if (!cancelled) setRequestsLoading(false);
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [
     isOpen,
     requestSearch,
