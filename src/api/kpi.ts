@@ -31,6 +31,7 @@ import type {
   OperationalKPI,
   OperationalKPIRequest,
   AwardKPI,
+  RelatedKpi,
   AwardKPIRequest,
   KpiTarget,
   KpiAnnualTargetRequest,
@@ -197,7 +198,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForOperationalObjective: async (
     id: string,
-  ): Promise<ApiResponse<OperationalKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/operational-objectives/${id}/kpis`);
     return res.data;
   },
@@ -241,7 +242,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForProcess: async (
     id: string,
-  ): Promise<ApiResponse<OperationalKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/processes/${id}/kpis`);
     return res.data;
   },
@@ -323,7 +324,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForAwardCriterion: async (
     id: string,
-  ): Promise<ApiResponse<AwardKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/award-criteria/${id}/kpis`);
     return res.data;
   },
@@ -371,7 +372,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForAwardSubCriterion: async (
     id: string,
-  ): Promise<ApiResponse<AwardKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/award-sub-criteria/${id}/kpis`);
     return res.data;
   },
