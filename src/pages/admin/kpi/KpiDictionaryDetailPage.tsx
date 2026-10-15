@@ -761,16 +761,24 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   }
 
   // ── Parent Objective resolution ─────────────────────
-  // Operational KPIs carry operational_objective_id directly; Strategic (and
-  // Award) KPIs have no such field, so fall back to matching an Operational
-  // Objective by shared goal_id — the closest read-only equivalent of "this
-  // KPI's parent objective" available from the current data model.
+  // Use the KPI's own parent objective when set; otherwise the parent of its
+  // child objective (process) — that is the real parent for KPIs linked
+  // only to a child objective. Matching an objective by shared goal_id is
+  // the last resort (it can pick a different objective under the same goal).
   const allOperationalObjectives = operationalObjectivesRes ?? [];
+  const childParentId =
+    kpi.process?.operational_objective_id ??
+    kpi.process?.operational_objective?.id;
   const parentObjective: OperationalObjective | undefined =
     kpi.operational_objective ??
     allOperationalObjectives.find(
       (o: OperationalObjective) => o.id === kpi.operational_objective_id,
     ) ??
+    (childParentId
+      ? allOperationalObjectives.find(
+          (o: OperationalObjective) => o.id === childParentId,
+        )
+      : undefined) ??
     (kpi.goal_id
       ? allOperationalObjectives.find(
           (o: OperationalObjective) => o.goal_id === kpi.goal_id,
@@ -794,7 +802,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.goal.title,
     });
   }
-  if (parentObjective) {
+  // "Objective" is the child objective (process) picked in the KPI form's
+  // "Objective *" field — show that, linking to its own page (which shows
+  // its parent). Only KPIs with no child objective fall back to the parent.
+  if (kpi.process) {
+    const childObjectiveId = kpi.process.id;
+    infoTiles.push({
+      icon: <GitBranch className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
+      bg: "bg-teal-50 dark:bg-teal-900/20",
+      label: "Objective",
+      value: kpi.process.name_en,
+      onClick: () =>
+        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
+    });
+  } else if (parentObjective) {
     infoTiles.push({
       icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
       bg: "bg-teal-50 dark:bg-teal-900/20",
@@ -816,7 +837,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.owner_dept.name,
     });
   }
-  if (type === "strategic" && kpi.pillar) {
+  // Pillar and Criteria/Sub-Criteria are optional tags on every KPI type
+  // (see KpiTaxonomyFields), so show them whenever set, not only for the
+  // type they were originally introduced on.
+  if (kpi.pillar) {
     infoTiles.push({
       icon: <Layers className="w-5 h-5 text-green-600 dark:text-green-400" />,
       bg: "bg-green-50 dark:bg-green-900/20",
@@ -824,20 +848,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.pillar.name_en,
     });
   }
-  if (type === "operational" && kpi.process) {
-    const childObjectiveId = kpi.process.id;
+  if (kpi.award_sub_criterion?.award_criterion) {
+    const criterionId = kpi.award_sub_criterion.award_criterion.id;
     infoTiles.push({
       icon: (
-        <GitBranch className="w-5 h-5 text-green-600 dark:text-green-400" />
+        <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
       ),
-      bg: "bg-green-50 dark:bg-green-900/20",
-      label: "Child Objective",
-      value: kpi.process.name_en,
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      label: t("kpi.masterData.awardCriteria"),
+      value: kpi.award_sub_criterion.award_criterion.name_en,
       onClick: () =>
-        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
+        navigate(`/goals/kpi/master-data/award-criteria/${criterionId}`),
     });
   }
-  if (type === "award" && kpi.award_sub_criterion) {
+  if (kpi.award_sub_criterion) {
     const subCriterionId = kpi.award_sub_criterion.id;
     infoTiles.push({
       icon: (

@@ -175,6 +175,25 @@ export interface KpiAdministrativeUnit {
 }
 
 export type KPIType = "strategic" | "operational" | "award";
+
+// Common summary of a KPI of any type, returned by the taxonomy "Related
+// KPIs" endpoints (Objective / Process / Award Criterion / Sub-Criterion).
+// Those entities are optional tags on every KPI type, so the list mixes
+// types — kpi_type says which dictionary page each row links to.
+export interface RelatedKpi {
+  kpi_type: KPIType;
+  id: string;
+  code: string;
+  name_en: string;
+  description_en: string;
+  activation_status: string;
+  reporting_frequency: string;
+  owner_dept?: { name: string };
+  owner_org?: { name_en: string };
+  owning_agency?: { name: string };
+  created_by?: { first_name: string; last_name: string };
+  updated_at: string;
+}
 export type KPIPolarity = "ascending" | "descending";
 // KPI Workflow states — Draft -> Reviewed -> Approved -> Active -> Closed.
 // "inactive" is retained only for reading pre-existing rows from before this
