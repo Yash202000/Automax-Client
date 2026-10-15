@@ -206,7 +206,7 @@ export const BulkConvertToRequestModal: React.FC<
   const [workflowId, setWorkflowId] = useState("");
 
   // Optional overrides
-  const [convertType, setConvertType] = useState("existing");
+  const [convertType, setConvertType] = useState("");
   const [requestSearch, setRequestSearch] = useState("");
   const [showRequestSearch, setShowRequestSearch] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<IncidentDetail | null>(
@@ -382,16 +382,27 @@ export const BulkConvertToRequestModal: React.FC<
 
   // Reset state when modal opens
   useEffect(() => {
-    if (isOpen && convertType) {
-      setCurrentStep(convertType === "new" ? "transition" : "review");
-      setSelectedTransition(null);
-      setTransitionComment("");
-      setTransitionAttachment(null);
-      setFeedbackRating(0);
-      setFeedbackComment("");
-      setClassificationId("");
-      setWorkflowId("");
+    if (!isOpen) {
+      setConvertType("");
+      setSelectedRequest(null);
+      setShowRequestSearch(false);
+      setRequestSearch("");
+      return;
     }
+
+    if (!convertType) {
+      setCurrentStep("transition");
+      return;
+    }
+
+    setCurrentStep(convertType === "new" ? "transition" : "review");
+    setSelectedTransition(null);
+    setTransitionComment("");
+    setTransitionAttachment(null);
+    setFeedbackRating(0);
+    setFeedbackComment("");
+    setClassificationId("");
+    setWorkflowId("");
   }, [isOpen, convertType]);
 
   const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
@@ -422,6 +433,7 @@ export const BulkConvertToRequestModal: React.FC<
   const canProceed = () => {
     switch (currentStep) {
       case "transition":
+        if (!convertType) return false;
         // Transition is optional, but if selected, validate requirements
         if (selectedTransition) {
           const requiresComment = selectedTransition.requirements?.some(
@@ -494,7 +506,7 @@ export const BulkConvertToRequestModal: React.FC<
   };
 
   const handleClose = () => {
-    setConvertType("existing");
+    setConvertType("");
     setSelectedRequest(null);
     onClose();
     setShowRequestSearch(false);
@@ -525,19 +537,20 @@ export const BulkConvertToRequestModal: React.FC<
         </div>
 
         <div className="px-6 flex items-center gap-3 py-4 border-b border-border ">
-          <label className="relative w-full cursor-pointer">
+          <label className="group relative w-full cursor-pointer">
             <input
               type="radio"
               name="convertRequest"
               value="existing"
               className="peer hidden"
+              disabled={convertType === "new"}
               checked={convertType === "existing"}
-              onChange={(e) => setConvertType(e.target.value)}
+              onChange={() => setConvertType("existing")}
             />
 
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
-    peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 hover:border-primary"
+    peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed hover:border-primary"
             >
               <Link className="w-5 h-5 text-muted-foreground mt-0.5" />
 
@@ -548,21 +561,30 @@ export const BulkConvertToRequestModal: React.FC<
                 </p>
               </div>
             </div>
+            {convertType === "new" && (
+              <span
+                role="tooltip"
+                className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--popover))] p-2 text-xs text-[hsl(var(--popover-foreground))] shadow-md group-hover:visible"
+              >
+                {t("requests.convertTypeLockedTooltip")}
+              </span>
+            )}
           </label>
 
-          <label className="relative w-full cursor-pointer">
+          <label className="group relative w-full cursor-pointer">
             <input
               type="radio"
               name="convertRequest"
               value="new"
               className="peer hidden"
+              disabled={convertType === "existing"}
               checked={convertType === "new"}
-              onChange={(e) => setConvertType(e.target.value)}
+              onChange={() => setConvertType("new")}
             />
 
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
-    peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 hover:border-primary"
+    peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed hover:border-primary"
             >
               <PlusCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
 
@@ -573,10 +595,25 @@ export const BulkConvertToRequestModal: React.FC<
                 </p>
               </div>
             </div>
+            {convertType === "existing" && (
+              <span
+                role="tooltip"
+                className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--popover))] p-2 text-xs text-[hsl(var(--popover-foreground))] shadow-md group-hover:visible"
+              >
+                {t("requests.convertTypeLockedTooltip")}
+              </span>
+            )}
           </label>
         </div>
         <div className="min-h-0 overflow-y-auto">
-          {isExisting ? (
+          {convertType === "" ? (
+            <p className="px-6 py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+              {t(
+                "requests.selectRequestType",
+                "Select a request type to continue.",
+              )}
+            </p>
+          ) : isExisting ? (
             <div className="px-6 py-4">
               {selectedRequest ? (
                 <div className="flex items-center justify-between p-3 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">

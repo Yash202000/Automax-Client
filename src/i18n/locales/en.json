@@ -2637,6 +2637,7 @@
     "conversionWarningDetails": "The original incident will remain unchanged and will be linked to the new request.",
     "convert": "Convert",
     "convertToRequest": "Convert to Request",
+    "convertTypeLockedTooltip": "You can't switch convert types after selecting one. Close and reopen this modal to choose the other type.",
     "create": "Create Request",
     "createError": "Failed to create request",
     "createRequestDescription": "Create a new request record",

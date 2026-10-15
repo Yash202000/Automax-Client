@@ -2635,6 +2635,7 @@
     "conversionWarningDetails": "سيبقى البلاغ الأصلي دون تغيير وسيتم ربطه بالطلب الجديد.",
     "convert": "تحويل",
     "convertToRequest": "تحويل إلى طلب",
+    "convertTypeLockedTooltip": "لا يمكنك تغيير نوع التحويل بعد اختياره. أغلق هذه النافذة وأعد فتحها لاختيار النوع الآخر.",
     "create": "إنشاء طلب",
     "createError": "فشل إنشاء الطلب",
     "createRequestDescription": "إنشاء سجل طلب جديد",

@@ -78,7 +78,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   // const [description, setDescription] = useState("");
 
   // Convert type (existing or new request)
-  const [convertType, setConvertType] = useState<"existing" | "new">("new");
+  const [convertType, setConvertType] = useState<"existing" | "new" | "">("");
   const [selectedRequest, setSelectedRequest] = useState<Incident | null>(null);
   const [requestSearch, setRequestSearch] = useState("");
   const [showRequestSearch, setShowRequestSearch] = useState(true);
@@ -291,7 +291,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setWorkflowId("");
       // setTitle("");
       // setDescription("");
-      setConvertType("new");
+      setConvertType("");
       setSelectedRequest(null);
       setRequestSearch("");
       setShowRequestSearch(false);
@@ -343,16 +343,19 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
           if (requiresAttachment && !transitionAttachment) return false;
           if (requiresFeedback && feedbackRating === 0) return false;
         }
-        return true;
+        return convertType !== "";
       case "classification":
+        if (convertType === "") return false;
         // Classification not required if linking to existing request
         if (convertType === "existing") return true;
         return !!classificationId;
       case "workflow":
+        if (convertType === "") return false;
         // Workflow not required if linking to existing request
         if (convertType === "existing") return true;
         return !!workflowId;
       case "review":
+        if (convertType === "") return false;
         // Feedback is mandatory
         if (!feedbackComment.trim()) return false;
         // For existing request, need selectedRequest
@@ -378,6 +381,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   };
 
   const handleConvert = () => {
+    if (convertType === "") return;
     // For existing request, require selected request
     if (convertType === "existing" && !selectedRequest) return;
 
@@ -464,12 +468,13 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
         {/* Convert Type Toggle */}
         <div className="px-6 py-4 border-b border-[hsl(var(--border))] flex items-center gap-3">
-          <label className="relative w-full cursor-pointer">
+          <label className="group relative w-full cursor-pointer">
             <input
               type="radio"
               name="convertRequest"
               value="existing"
               className="peer hidden"
+              disabled={convertType === "new"}
               checked={convertType === "existing"}
               onChange={(e) =>
                 setConvertType(e.target.value as "existing" | "new")
@@ -477,7 +482,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
             />
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
-              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] hover:border-[hsl(var(--primary))]"
+              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] peer-disabled:opacity-50 peer-disabled:cursor-not-allowed hover:border-[hsl(var(--primary))]"
             >
               <Link className="w-5 h-5 text-[hsl(var(--muted-foreground))] mt-0.5" />
               <div>
@@ -489,14 +494,23 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 </p>
               </div>
             </div>
+            {convertType === "new" && (
+              <span
+                role="tooltip"
+                className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--popover))] p-2 text-xs text-[hsl(var(--popover-foreground))] shadow-md group-hover:visible"
+              >
+                {t("requests.convertTypeLockedTooltip")}
+              </span>
+            )}
           </label>
 
-          <label className="relative w-full cursor-pointer">
+          <label className="group relative w-full cursor-pointer">
             <input
               type="radio"
               name="convertRequest"
               value="new"
               className="peer hidden"
+              disabled={convertType === "existing"}
               checked={convertType === "new"}
               onChange={(e) =>
                 setConvertType(e.target.value as "existing" | "new")
@@ -504,7 +518,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
             />
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
-              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] hover:border-[hsl(var(--primary))]"
+              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] peer-disabled:opacity-50 peer-disabled:cursor-not-allowed hover:border-[hsl(var(--primary))]"
             >
               <PlusCircle className="w-5 h-5 text-[hsl(var(--muted-foreground))] mt-0.5" />
               <div>
@@ -516,6 +530,14 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 </p>
               </div>
             </div>
+            {convertType === "existing" && (
+              <span
+                role="tooltip"
+                className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--popover))] p-2 text-xs text-[hsl(var(--popover-foreground))] shadow-md group-hover:visible"
+              >
+                {t("requests.convertTypeLockedTooltip")}
+              </span>
+            )}
           </label>
         </div>
 
@@ -524,7 +546,14 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
           {/* Step 1: Transition */}
           {currentStep === "transition" && (
             <div className="space-y-4">
-              {convertType === "existing" ? (
+              {convertType === "" ? (
+                <p className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                  {t(
+                    "requests.selectRequestType",
+                    "Select a request type to continue.",
+                  )}
+                </p>
+              ) : convertType === "existing" ? (
                 <>
                   <div>
                     <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
