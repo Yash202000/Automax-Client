@@ -299,7 +299,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     }
   }, [isOpen, clearRejectedImages]);
 
-  const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
+  const allSteps: { key: Step; label: string; icon: React.ReactNode }[] = [
     {
       key: "transition",
       label: t("requests.stepTransition"),
@@ -321,6 +321,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       icon: <FileText className="w-4 h-4" />,
     },
   ];
+  const steps = allSteps.filter(
+    (step) => convertType !== "new" || step.key !== "transition",
+  );
 
   const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
@@ -512,9 +515,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
               className="peer hidden"
               disabled={convertType === "existing"}
               checked={convertType === "new"}
-              onChange={(e) =>
-                setConvertType(e.target.value as "existing" | "new")
-              }
+              onChange={() => {
+                setConvertType("new");
+                setCurrentStep("classification");
+              }}
             />
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all

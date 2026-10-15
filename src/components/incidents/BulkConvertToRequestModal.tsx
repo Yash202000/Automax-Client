@@ -395,7 +395,7 @@ export const BulkConvertToRequestModal: React.FC<
       return;
     }
 
-    setCurrentStep(convertType === "new" ? "transition" : "review");
+    setCurrentStep(convertType === "new" ? "classification" : "review");
     setSelectedTransition(null);
     setTransitionComment("");
     setTransitionAttachment(null);
@@ -405,7 +405,7 @@ export const BulkConvertToRequestModal: React.FC<
     setWorkflowId("");
   }, [isOpen, convertType]);
 
-  const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
+  const allSteps: { key: Step; label: string; icon: React.ReactNode }[] = [
     {
       key: "transition",
       label: t("requests.stepTransition", "Transition"),
@@ -427,6 +427,9 @@ export const BulkConvertToRequestModal: React.FC<
       icon: <FileText className="w-4 h-4" />,
     },
   ];
+  const steps = allSteps.filter(
+    (step) => convertType !== "new" || step.key !== "transition",
+  );
 
   const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
