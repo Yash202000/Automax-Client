@@ -802,11 +802,24 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.goal.title,
     });
   }
-  if (parentObjective) {
+  // "Objective" is the child objective (process) picked in the KPI form's
+  // "Objective *" field — show that, linking to its own page (which shows
+  // its parent). Only KPIs with no child objective fall back to the parent.
+  if (kpi.process) {
+    const childObjectiveId = kpi.process.id;
+    infoTiles.push({
+      icon: <GitBranch className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
+      bg: "bg-teal-50 dark:bg-teal-900/20",
+      label: "Objective",
+      value: kpi.process.name_en,
+      onClick: () =>
+        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
+    });
+  } else if (parentObjective) {
     infoTiles.push({
       icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
       bg: "bg-teal-50 dark:bg-teal-900/20",
-      label: "Parent Objective",
+      label: "Objective",
       value: parentObjective.name_en,
       onClick: () =>
         navigate(
@@ -833,21 +846,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       bg: "bg-green-50 dark:bg-green-900/20",
       label: t("kpi.masterData.pillar"),
       value: kpi.pillar.name_en,
-    });
-  }
-  // Any KPI type can be linked to a child objective (process) — show it
-  // whenever present, not only for Operational KPIs.
-  if (kpi.process) {
-    const childObjectiveId = kpi.process.id;
-    infoTiles.push({
-      icon: (
-        <GitBranch className="w-5 h-5 text-green-600 dark:text-green-400" />
-      ),
-      bg: "bg-green-50 dark:bg-green-900/20",
-      label: "Child Objective",
-      value: kpi.process.name_en,
-      onClick: () =>
-        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
     });
   }
   if (kpi.award_sub_criterion?.award_criterion) {
