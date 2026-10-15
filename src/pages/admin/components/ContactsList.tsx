@@ -227,6 +227,7 @@ export const ContactsList: React.FC<ContactsListProps> = ({
       last_name: editForm.last_name,
       phone: editForm.phone,
       alternate_mobile: editForm.alternate_mobile,
+      contact_center: true,
     });
   };
 
