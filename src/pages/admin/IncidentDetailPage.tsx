@@ -6881,9 +6881,14 @@ export const IncidentDetailPage: React.FC = () => {
           incident={incident}
           isOpen={convertModalOpen}
           onClose={() => setConvertModalOpen(false)}
-          onSuccess={(newRequestId) => {
+          onSuccess={(newRequestId, requestNumber) => {
             setConvertModalOpen(false);
-            navigate(`/requests/${newRequestId}`);
+            toast.success(
+              newRequestId && requestNumber
+                ? t("requests.createdSuccessfullyWithNumber", { requestNumber })
+                : t("requests.createdSuccessfully"),
+            );
+            /* navigate(`/requests/${newRequestId}`); */
           }}
         />
       )}

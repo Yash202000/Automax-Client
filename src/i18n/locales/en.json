@@ -2640,6 +2640,8 @@
     "convertTypeLockedTooltip": "You can't switch convert types after selecting one. Close and reopen this modal to choose the other type.",
     "create": "Create Request",
     "createError": "Failed to create request",
+    "createdSuccessfully": "Request created successfully.",
+    "createdSuccessfullyWithNumber": "Request {{requestNumber}} created successfully.",
     "createRequestDescription": "Create a new request record",
     "descriptionPlaceholder": "Describe the request...",
     "enterFeedback": "Enter Feedback",

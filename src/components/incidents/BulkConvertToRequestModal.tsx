@@ -34,7 +34,7 @@ interface BulkConvertToRequestModalProps {
   incidents: IncidentDetail[];
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newRequestId: string) => void;
+  onSuccess: (newRequestId: string, requestNumber?: string) => void;
 }
 
 type Step = "transition" | "classification" | "workflow" | "review";
@@ -372,7 +372,8 @@ export const BulkConvertToRequestModal: React.FC<
     onSuccess: (result) => {
       const firstSuccess = result.data?.results?.find((r: any) => r.success);
       if (firstSuccess?.new_request?.id) {
-        onSuccess(firstSuccess.new_request.id);
+        const newRequestId = firstSuccess.new_request.id;
+        onSuccess(newRequestId, firstSuccess.new_request.incident_number);
       }
     },
     onError: (error) => {

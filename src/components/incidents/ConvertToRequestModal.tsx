@@ -39,7 +39,7 @@ interface ConvertToRequestModalProps {
   incident: IncidentDetail;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newRequestId: string) => void;
+  onSuccess: (newRequestId: string, requestNumber?: string) => void;
 }
 
 type Step = "transition" | "classification" | "workflow" | "review";
@@ -272,7 +272,8 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     },
     onSuccess: (result) => {
       if (result.data?.new_request?.id) {
-        onSuccess(result.data.new_request.id);
+        const newRequestId = result.data.new_request.id;
+        onSuccess(newRequestId, result.data.new_request.incident_number);
       }
     },
   });

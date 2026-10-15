@@ -2638,6 +2638,8 @@
     "convertTypeLockedTooltip": "لا يمكنك تغيير نوع التحويل بعد اختياره. أغلق هذه النافذة وأعد فتحها لاختيار النوع الآخر.",
     "create": "إنشاء طلب",
     "createError": "فشل إنشاء الطلب",
+    "createdSuccessfully": "تم إنشاء الطلب بنجاح.",
+    "createdSuccessfullyWithNumber": "تم إنشاء الطلب {{requestNumber}} بنجاح.",
     "createRequestDescription": "إنشاء سجل طلب جديد",
     "descriptionPlaceholder": "صف الطلب...",
     "enterFeedback": "أدخل التقييم",
