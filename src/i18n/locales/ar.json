@@ -2641,6 +2641,7 @@
     "descriptionPlaceholder": "صف الطلب...",
     "enterFeedback": "أدخل التقييم",
     "existingRequest": "طلب موجود",
+    "matchClassificationLocation": "عرض الطلبات ذات التصنيف والموقع نفسه فقط",
     "existingRequestDescription": "ابحث وحدد طلبًا لربط هذا البلاغ به.",
     "fieldRequired": "{{field}} مطلوب",
     "geolocation": "الموقع الجغرافي",
