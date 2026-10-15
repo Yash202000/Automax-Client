@@ -497,6 +497,7 @@ export interface UpdateProfileRequest {
   mobile_verified?: boolean;
   bypass_login_totp?: boolean;
   enable_login_totp?: boolean;
+  contact_center?: boolean;
 }
 
 export interface ManagerScopeResponse {
