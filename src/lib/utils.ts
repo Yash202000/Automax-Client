@@ -67,6 +67,15 @@ export function getLocalizedDescription(value: any): string {
     : value?.description;
 }
 
+//localize any field
+export function getLocalizedField(obj: any, field: string): string {
+  const language = i18n?.language;
+  if (!obj) return "";
+  return language === "ar" && obj?.[`${field}_ar`]
+    ? obj[`${field}_ar`]
+    : (obj?.[field] ?? "");
+}
+
 export const getAvatarName = (name?: string): string => {
   if (!name) return "?";
 

@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import type { ReportSort, ReportFieldDefinition } from "../../types";
+import { getLocalizedField } from "@/lib/utils";
 
 interface SortingConfigProps {
   fields: ReportFieldDefinition[];
@@ -98,14 +99,16 @@ export const SortingConfig: React.FC<SortingConfigProps> = ({
                   >
                     {availableFields.map((fieldDef) => (
                       <option key={fieldDef.field} value={fieldDef.field}>
-                        {fieldDef.label}
+                        {getLocalizedField(fieldDef, "label")}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <span className="text-sm font-medium px-2 py-1 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded">
-                    {fields.find((f) => f.field === sort.field)?.label ||
-                      sort.field}
+                    {getLocalizedField(
+                      fields.find((f) => f.field === sort.field),
+                      "label",
+                    ) || sort.field}
                   </span>
                 )}
 
