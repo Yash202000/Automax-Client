@@ -1566,6 +1566,7 @@ export interface IncidentFilter {
   channel?: string; // For complaints
   source?: string;
   converted_to_request?: boolean;
+  exclude_closed?: boolean;
   start_date?: string;
   end_date?: string;
   page?: number;

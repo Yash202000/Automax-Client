@@ -212,7 +212,7 @@ export const BulkConvertToRequestModal: React.FC<
   // Optional overrides
   const [convertType, setConvertType] = useState("");
   const [requestSearch, setRequestSearch] = useState("");
-  const [showRequestSearch, setShowRequestSearch] = useState(false);
+  const [showRequestSearch, setShowRequestSearch] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<IncidentDetail | null>(
     null,
   );
@@ -268,17 +268,33 @@ export const BulkConvertToRequestModal: React.FC<
     enabled: isOpen && currentStep === "workflow",
   });
 
+  // Narrow the existing-request list to the incident's classification and location
+  const [matchContext, setMatchContext] = useState(true);
+
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
-    queryKey: ["requests", requestSearch],
+    queryKey: [
+      "requests",
+      requestSearch,
+      matchContext,
+      incidents?.[0]?.classification?.id,
+      incidents?.[0]?.location?.id,
+    ],
     queryFn: () =>
       incidentApi.list({
         search: requestSearch,
         record_type: "request",
-        location_ids: incidents?.[0]?.location?.id
-          ? [incidents[0].location!.id]
-          : undefined,
+        exclude_closed: true,
+        location_ids:
+          matchContext && incidents?.[0]?.location?.id
+            ? [incidents[0].location!.id]
+            : undefined,
+        classification_ids:
+          matchContext && incidents?.[0]?.classification?.id
+            ? [incidents[0].classification!.id]
+            : undefined,
       }),
-    enabled: requestSearch.length >= 3,
+    enabled:
+      isOpen && (requestSearch.length === 0 || requestSearch.length >= 3),
   });
 
   const availableTransitions =
@@ -524,7 +540,7 @@ export const BulkConvertToRequestModal: React.FC<
     setConvertType("");
     setSelectedRequest(null);
     onClose();
-    setShowRequestSearch(false);
+    setShowRequestSearch(true);
     setRequestSearch("");
   };
 
@@ -642,7 +658,10 @@ export const BulkConvertToRequestModal: React.FC<
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSelectedRequest(null)}
+                    onClick={() => {
+                      setSelectedRequest(null);
+                      setShowRequestSearch(true);
+                    }}
                     className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -655,6 +674,17 @@ export const BulkConvertToRequestModal: React.FC<
                     className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2"
                   >
                     {t("requests.selectRequest")}
+                  </label>
+                  <label className="flex items-center gap-2 mb-2 text-sm text-[hsl(var(--foreground))]">
+                    <input
+                      type="checkbox"
+                      checked={matchContext}
+                      onChange={(e) => setMatchContext(e.target.checked)}
+                    />
+                    {t(
+                      "requests.matchClassificationLocation",
+                      "Only show requests with the same classification and location",
+                    )}
                   </label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
@@ -675,7 +705,7 @@ export const BulkConvertToRequestModal: React.FC<
                   </div>
 
                   {/* Search Results Dropdown */}
-                  {showRequestSearch && requestSearch.length ? (
+                  {showRequestSearch ? (
                     <div className=" top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                       {requestsLoading ? (
                         <div className="p-4 text-center">

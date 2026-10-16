@@ -2648,6 +2648,7 @@
     "descriptionPlaceholder": "Describe the request...",
     "enterFeedback": "Enter Feedback",
     "existingRequest": "Existing Request",
+    "matchClassificationLocation": "Only show requests with the same classification and location",
     "existingRequestDescription": "Search and select a request to link this incident to.",
     "fieldRequired": "{{field}} is required",
     "geolocation": "Geolocation",

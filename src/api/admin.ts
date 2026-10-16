@@ -1395,6 +1395,7 @@ export const incidentApi = {
     if (filter.converted_to_request !== undefined)
       body.converted_to_request = filter.converted_to_request;
     if (filter.record_type) body.record_type = filter.record_type;
+    if (filter.exclude_closed) body.exclude_closed = true;
     if (filter.start_date) body.start_date_str = filter.start_date;
     if (filter.end_date) body.end_date_str = filter.end_date;
     if (filter.transition_id) body.transition_id = filter.transition_id;
