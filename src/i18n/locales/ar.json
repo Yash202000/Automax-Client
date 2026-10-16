@@ -2642,6 +2642,8 @@
     "createdSuccessfullyWithNumber": "تم إنشاء الطلب {{requestNumber}} بنجاح.",
     "linkedSuccessfully": "تم ربط البلاغ بالطلب بنجاح.",
     "linkedSuccessfullyWithNumber": "تم الربط بالطلب {{requestNumber}} بنجاح.",
+    "bulkConvertFailed": "فشل تحويل {{count}} بلاغ.",
+    "bulkConvertPartial": "تم تحويل {{success}} من {{total}} بلاغات. فشل تحويل بعض البلاغات.",
     "createRequestDescription": "إنشاء سجل طلب جديد",
     "descriptionPlaceholder": "صف الطلب...",
     "enterFeedback": "أدخل التقييم",

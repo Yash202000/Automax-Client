@@ -2644,6 +2644,8 @@
     "createdSuccessfullyWithNumber": "Request {{requestNumber}} created successfully.",
     "linkedSuccessfully": "Incident linked to the request successfully.",
     "linkedSuccessfullyWithNumber": "Linked to request {{requestNumber}} successfully.",
+    "bulkConvertFailed": "Failed to convert {{count}} incident(s).",
+    "bulkConvertPartial": "{{success}} of {{total}} incidents converted. Some incidents failed.",
     "createRequestDescription": "Create a new request record",
     "descriptionPlaceholder": "Describe the request...",
     "enterFeedback": "Enter Feedback",

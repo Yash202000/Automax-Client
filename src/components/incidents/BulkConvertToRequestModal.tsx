@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   X,
   ChevronRight,
@@ -392,6 +393,39 @@ export const BulkConvertToRequestModal: React.FC<
       });
     },
     onSuccess: (result) => {
+      // The API returns 2xx even when individual incidents fail, so check each result
+      const results: {
+        incident_id: string;
+        success: boolean;
+        error?: string;
+      }[] = result.data?.results || [];
+      const failed = results.filter((r) => !r.success);
+      if (failed.length > 0) {
+        const reasons = failed
+          .map((r) => {
+            const number = incidents.find(
+              (i) => i.id === r.incident_id,
+            )?.incident_number;
+            return `${number || r.incident_id}: ${r.error || t("common.error")}`;
+          })
+          .join(" • ");
+        if (failed.length === results.length) {
+          toast.error(
+            t("requests.bulkConvertFailed", { count: failed.length }),
+            { description: reasons },
+          );
+        } else {
+          toast.warning(
+            t("requests.bulkConvertPartial", {
+              success: results.length - failed.length,
+              total: results.length,
+            }),
+            { description: reasons },
+          );
+        }
+        return;
+      }
+
       if (isExisting && selectedRequest) {
         onSuccess(selectedRequest.id, selectedRequest.incident_number, true);
         return;
