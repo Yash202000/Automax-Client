@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { Suspense, lazy, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -19,7 +19,8 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { cn, getLocalizedName } from "@/lib/utils";
-import ImageEditor from "@/components/common/ImageEditor";
+// Lazy-loaded: the editor only downloads when its modal opens.
+const ImageEditor = lazy(() => import("@/components/common/ImageEditor"));
 import { useAuthStore } from "../../../../stores/authStore";
 import { useImageValidation } from "../../../../hooks/useImageValidation";
 import { useFullscreen } from "../../../../hooks/useFullscreen";
@@ -681,22 +682,24 @@ export function AttachmentsTab({
 
       {/* Image editor — same replace / save-as-copy flow as IncidentDetailPage. */}
       {editorAttachment ? (
-        <ImageEditor
-          isOpen
-          onClose={() => setEditorAttachment(null)}
-          imageUrl={getAttachmentUrl(editorAttachment.id)}
-          showReplaceButton={
-            !!currentUserId &&
-            editorAttachment.uploaded_by?.id === currentUserId
-          }
-          showSaveAsCopyButton
-          onSave={(edited) => {
-            void replaceImage(edited);
-          }}
-          onSaveAsCopy={(saved) => {
-            void saveAsCopy(saved);
-          }}
-        />
+        <Suspense fallback={null}>
+          <ImageEditor
+            isOpen
+            onClose={() => setEditorAttachment(null)}
+            imageUrl={getAttachmentUrl(editorAttachment.id)}
+            showReplaceButton={
+              !!currentUserId &&
+              editorAttachment.uploaded_by?.id === currentUserId
+            }
+            showSaveAsCopyButton
+            onSave={(edited) => {
+              void replaceImage(edited);
+            }}
+            onSaveAsCopy={(saved) => {
+              void saveAsCopy(saved);
+            }}
+          />
+        </Suspense>
       ) : null}
     </div>
   );

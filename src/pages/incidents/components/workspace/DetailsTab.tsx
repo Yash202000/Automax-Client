@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -28,11 +28,23 @@ import {
 } from "lucide-react";
 import { cn, getLocalizedName } from "@/lib/utils";
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
-import NearbyIncidents from "../../../../components/incidents/NearbyIncidents";
+// Lazy-loaded: map vendor code only downloads with this component.
+const NearbyIncidents = lazy(
+  () => import("../../../../components/incidents/NearbyIncidents"),
+);
 import { incidentApi } from "../../../../api/admin";
 import { usePermissions } from "../../../../hooks/usePermissions";
 import { PERMISSIONS } from "../../../../constants/permissions";
-import SingleLocationMap from "../../../../components/maps/SingleLocationMap";
+// Lazy-loaded: Leaflet only downloads when a map is viewed.
+const SingleLocationMap = lazy(
+  () => import("../../../../components/maps/SingleLocationMap"),
+);
+
+function MapLoadingFallback() {
+  return (
+    <div className="absolute inset-0 animate-pulse bg-[hsl(var(--muted)/0.6)]" />
+  );
+}
 import {
   Modal,
   ModalBody,
@@ -453,13 +465,15 @@ export function DetailsTab({
               {t("incidents.incidentDescription")}
             </h3>
             <div className="flex items-center gap-1.5">
-              <NearbyIncidents
-                incidentId={incident.id}
-                latitude={incident.latitude}
-                longitude={incident.longitude}
-                classificationId={incident.classification?.id}
-                incidentNumber={incident.incident_number}
-              />
+              <Suspense fallback={null}>
+                <NearbyIncidents
+                  incidentId={incident.id}
+                  latitude={incident.latitude}
+                  longitude={incident.longitude}
+                  classificationId={incident.classification?.id}
+                  incidentNumber={incident.incident_number}
+                />
+              </Suspense>
               {canEditClosedDescription && !isEditingDescription ? (
                 <button
                   type="button"
@@ -606,11 +620,13 @@ export function DetailsTab({
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl overflow-hidden flex flex-col shadow-sm min-h-[220px] min-w-0">
           <div className="relative bg-[hsl(var(--muted)/0.5)] overflow-hidden flex-1 min-h-[140px]">
             {hasCoords ? (
-              <SingleLocationMap
-                key={`${incident.id}-${incident.latitude}-${incident.longitude}`}
-                latitude={Number(incident.latitude)}
-                longitude={Number(incident.longitude)}
-              />
+              <Suspense fallback={<MapLoadingFallback />}>
+                <SingleLocationMap
+                  key={`${incident.id}-${incident.latitude}-${incident.longitude}`}
+                  latitude={Number(incident.latitude)}
+                  longitude={Number(incident.longitude)}
+                />
+              </Suspense>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-4 text-center">
                 <MapPin className="h-5 w-5 text-[hsl(var(--muted-foreground))]" />
@@ -1216,14 +1232,16 @@ export function DetailsTab({
           </ModalHeader>
           <ModalBody className="overflow-y-auto">
             <div className="space-y-4">
-              <div className="h-[65vh] min-h-[420px] rounded-lg overflow-hidden border border-[hsl(var(--border))]">
-                <SingleLocationMap
-                  key={`modal-${incident.id}-${incident.latitude}-${incident.longitude}`}
-                  latitude={Number(incident.latitude)}
-                  longitude={Number(incident.longitude)}
-                  scrollWheelZoom
-                  showMapControls
-                />
+              <div className="relative h-[65vh] min-h-[420px] rounded-lg overflow-hidden border border-[hsl(var(--border))]">
+                <Suspense fallback={<MapLoadingFallback />}>
+                  <SingleLocationMap
+                    key={`modal-${incident.id}-${incident.latitude}-${incident.longitude}`}
+                    latitude={Number(incident.latitude)}
+                    longitude={Number(incident.longitude)}
+                    scrollWheelZoom
+                    showMapControls
+                  />
+                </Suspense>
               </div>
 
               <div className="rounded-lg bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] p-4 text-sm">

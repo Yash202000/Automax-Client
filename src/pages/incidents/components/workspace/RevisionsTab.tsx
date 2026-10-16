@@ -24,7 +24,6 @@ import type {
   IncidentRevisionActionType,
 } from "../../../../types";
 import { stateTone } from "@/utils/incidentTone";
-import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 const PAGE_LIMIT = 10;
@@ -127,8 +126,13 @@ export function RevisionsTab({
   const handleExport = async () => {
     // Same client-side export as RevisionHistory: the API caps a page at
     // 100 rows (a larger limit silently falls back to 20), so page through.
+    // ExcelJS loads on demand (export click only).
     try {
       setExporting(true);
+      const excelNamespace = (await import("exceljs")) as unknown as {
+        default?: typeof import("exceljs");
+      } & typeof import("exceljs");
+      const ExcelJS = excelNamespace.default ?? excelNamespace;
       const PAGE_SIZE = 100;
       const fetchPage = (p: number) =>
         incidentApi.getRevisions(incidentId, {
