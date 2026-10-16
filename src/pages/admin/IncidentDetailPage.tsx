@@ -2777,45 +2777,49 @@ export const IncidentDetailPage: React.FC = () => {
                             />
                           </div>
                           <div className="bg-[hsl(var(--muted)/0.3)] rounded-lg p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <span className="font-medium text-[hsl(var(--foreground))]">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="min-w-0 flex-1 wrap-break-word">
+                                <bdi className="font-medium text-[hsl(var(--foreground))]">
                                   {getLocalizedName(item.transition) ||
                                     t("incidents.stateChanged")}
-                                </span>
+                                </bdi>
                                 <span className="text-[hsl(var(--muted-foreground))] mx-2">
                                   {t("incidents.by")}
                                 </span>
-                                <span className="font-medium text-[hsl(var(--foreground))]">
+                                <bdi className="font-medium text-[hsl(var(--foreground))]">
                                   {item.performed_by?.first_name ||
                                     item.performed_by?.username ||
                                     t("incidents.system")}
-                                </span>
+                                </bdi>
                                 {item.performed_by && (
-                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
+                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ms-2">
                                     (
-                                    {(() => {
-                                      const u = users.find(
-                                        (user) =>
-                                          user.id === item.performed_by?.id,
-                                      );
-                                      return (
-                                        getLocalizedName(u?.department) ||
-                                        getLocalizedName(u?.departments?.[0]) ||
-                                        getLocalizedName(
-                                          item.performed_by?.department,
-                                        ) ||
-                                        getLocalizedName(
-                                          item.performed_by?.departments?.[0],
-                                        ) ||
-                                        "-"
-                                      );
-                                    })()}
+                                    <bdi>
+                                      {(() => {
+                                        const u = users.find(
+                                          (user) =>
+                                            user.id === item.performed_by?.id,
+                                        );
+                                        return (
+                                          getLocalizedName(u?.department) ||
+                                          getLocalizedName(
+                                            u?.departments?.[0],
+                                          ) ||
+                                          getLocalizedName(
+                                            item.performed_by?.department,
+                                          ) ||
+                                          getLocalizedName(
+                                            item.performed_by?.departments?.[0],
+                                          ) ||
+                                          "-"
+                                        );
+                                      })()}
+                                    </bdi>
                                     )
                                   </span>
                                 )}
                               </div>
-                              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              <span className="shrink-0 text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(item.transitioned_at)}
                               </span>
                             </div>
@@ -3458,7 +3462,7 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.from_state,
                                             )}
                                           </span>
-                                          <ArrowRight className="w-4 h-4" />
+                                          <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
                                           <span
                                             className={
                                               "text-xs  mt-0.5" +
@@ -3576,7 +3580,7 @@ export const IncidentDetailPage: React.FC = () => {
                                                 )?.from_state,
                                               )}
                                             </span>
-                                            <ArrowRight className="w-4 h-4" />
+                                            <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
                                             <span
                                               className={
                                                 "text-xs  mt-0.5" +
@@ -3709,7 +3713,7 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.from_state,
                                             )}
                                           </span>
-                                          <ArrowRight className="w-4 h-4" />
+                                          <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
                                           <span
                                             className={
                                               "text-xs  mt-0.5" +
@@ -4272,7 +4276,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {part}
                               </span>
                               {idx < classificationPath.length - 1 && (
-                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                               )}
                             </React.Fragment>
                           ))}
@@ -4306,7 +4310,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {part}
                               </span>
                               {idx < departmentPath.length - 1 && (
-                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                               )}
                             </React.Fragment>
                           ))}
@@ -4367,7 +4371,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {part}
                               </span>
                               {idx < locationPath.length - 1 && (
-                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                               )}
                             </React.Fragment>
                           ))}
