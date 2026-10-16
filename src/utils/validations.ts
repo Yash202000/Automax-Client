@@ -24,3 +24,18 @@ export const isSamePhoneNumber = (a?: string, b?: string): boolean => {
   const digitsB = (b ?? "").replace(/\D/g, "");
   return digitsA.length > 0 && digitsA === digitsB;
 };
+
+export type MobileNumberIssue = "invalidFormat" | "tooShort" | "tooLong";
+
+// Mirrors the backend rule: 8-15 digits, optionally prefixed with "+"
+// (spaces, dashes and parentheses are ignored). Returns null when valid.
+export const getMobileNumberIssue = (
+  value: string,
+): MobileNumberIssue | null => {
+  const normalized = value.replace(/[\s\-()]/g, "");
+  if (!/^\+?\d*$/.test(normalized)) return "invalidFormat";
+  const digits = normalized.replace("+", "").length;
+  if (digits < 8) return "tooShort";
+  if (digits > 15) return "tooLong";
+  return null;
+};

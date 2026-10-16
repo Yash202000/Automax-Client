@@ -76,7 +76,7 @@ import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { capFilesByCount } from "@/utils/attachmentLimits";
 import { useImageValidation } from "@/hooks/useImageValidation";
 import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
-import { isSamePhoneNumber } from "@/utils/validations";
+import { isSamePhoneNumber, getMobileNumberIssue } from "@/utils/validations";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -891,12 +891,29 @@ export function IncidentCreatePage() {
     },
     onError: (error: any) => {
       console.error("Mutation error:", error);
+      // Backend field errors come as { errors: { AlternateMobile: "..." } };
+      // map PascalCase keys to our snake_case form fields so they show under the field
+      const fieldErrors: Record<string, string> = {};
+      const backendErrors = error.response?.data?.errors;
+      if (backendErrors && typeof backendErrors === "object") {
+        for (const [key, msg] of Object.entries(backendErrors)) {
+          const field = key
+            .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+            .toLowerCase();
+          fieldErrors[field] = String(msg);
+        }
+      }
       const message =
         error.response?.data?.message ||
         error.response?.data?.error ||
-        error.message ||
+        (Object.keys(fieldErrors).length > 0
+          ? t(
+              "incidents.fixErrorsBeforeSubmit",
+              "Please fix the errors before submitting",
+            )
+          : error.message) ||
         "Failed to create incident";
-      setErrors((prev) => ({ ...prev, submit: message }));
+      setErrors((prev) => ({ ...prev, ...fieldErrors, submit: message }));
     },
   });
 
@@ -972,9 +989,55 @@ export function IncidentCreatePage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-    if (field === "reporter_phone" && errors.alternate_mobile) {
-      setErrors((prev) => ({ ...prev, alternate_mobile: "" }));
+    // Re-check the alternate number live whenever either phone field changes,
+    // so the message appears/disappears under the field as the user types
+    if (field === "reporter_phone" || field === "alternate_mobile") {
+      const phone =
+        field === "reporter_phone" ? value : formData.reporter_phone;
+      const alternate =
+        field === "alternate_mobile" ? value : formData.alternate_mobile;
+      setErrors((prev) => ({
+        ...prev,
+        // Format is checked on blur/submit, not per keystroke
+        alternate_mobile: getAlternateMobileError(alternate, phone, false),
+      }));
     }
+  };
+
+  // Alternate number is optional, but when given it must be a valid mobile
+  // number and differ from the main phone
+  const getAlternateMobileError = (
+    alternate?: string,
+    phone?: string,
+    checkFormat = true,
+  ) => {
+    if (!alternate?.trim()) return "";
+    const issue = checkFormat ? getMobileNumberIssue(alternate) : null;
+    if (issue === "invalidFormat") {
+      return t(
+        "incidents.alternatePhoneInvalidFormat",
+        '"+" is only allowed at the start of the number',
+      );
+    }
+    if (issue === "tooShort") {
+      return t(
+        "incidents.alternatePhoneTooShort",
+        "Alternative number is too short. Enter at least 8 digits",
+      );
+    }
+    if (issue === "tooLong") {
+      return t(
+        "incidents.alternatePhoneTooLong",
+        "Alternative number is too long. Enter at most 15 digits",
+      );
+    }
+    if (isSamePhoneNumber(alternate, phone)) {
+      return t(
+        "incidents.alternatePhoneSameAsPhone",
+        "Alternative number must be different from the caller phone number",
+      );
+    }
+    return "";
   };
 
   const handleLookupChange = (categoryId: string, value: any) => {
@@ -1395,12 +1458,12 @@ export function IncidentCreatePage() {
       }
     }
 
-    // Alternate number is optional, but when given it must differ from the main phone
-    if (isSamePhoneNumber(formData.alternate_mobile, formData.reporter_phone)) {
-      newErrors.alternate_mobile = t(
-        "incidents.alternatePhoneSameAsPhone",
-        "Alternative number must be different from the caller phone number",
-      );
+    const alternateMobileError = getAlternateMobileError(
+      formData.alternate_mobile,
+      formData.reporter_phone,
+    );
+    if (alternateMobileError) {
+      newErrors.alternate_mobile = alternateMobileError;
     }
 
     if (attachments.length > 0) {
@@ -1869,6 +1932,15 @@ export function IncidentCreatePage() {
                             "alternate_mobile",
                             e.target.value.replace(/[^0-9+\-\s()]/g, ""),
                           )
+                        }
+                        onBlur={() =>
+                          setErrors((prev) => ({
+                            ...prev,
+                            alternate_mobile: getAlternateMobileError(
+                              formData.alternate_mobile,
+                              formData.reporter_phone,
+                            ),
+                          }))
                         }
                         placeholder={t(
                           "incidents.reporterPhonePlaceholder",
