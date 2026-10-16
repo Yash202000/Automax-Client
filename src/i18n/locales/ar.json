@@ -2640,6 +2640,8 @@
     "createError": "فشل إنشاء الطلب",
     "createdSuccessfully": "تم إنشاء الطلب بنجاح.",
     "createdSuccessfullyWithNumber": "تم إنشاء الطلب {{requestNumber}} بنجاح.",
+    "linkedSuccessfully": "تم ربط البلاغ بالطلب بنجاح.",
+    "linkedSuccessfullyWithNumber": "تم الربط بالطلب {{requestNumber}} بنجاح.",
     "createRequestDescription": "إنشاء سجل طلب جديد",
     "descriptionPlaceholder": "صف الطلب...",
     "enterFeedback": "أدخل التقييم",

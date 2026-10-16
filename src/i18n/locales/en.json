@@ -2642,6 +2642,8 @@
     "createError": "Failed to create request",
     "createdSuccessfully": "Request created successfully.",
     "createdSuccessfullyWithNumber": "Request {{requestNumber}} created successfully.",
+    "linkedSuccessfully": "Incident linked to the request successfully.",
+    "linkedSuccessfullyWithNumber": "Linked to request {{requestNumber}} successfully.",
     "createRequestDescription": "Create a new request record",
     "descriptionPlaceholder": "Describe the request...",
     "enterFeedback": "Enter Feedback",

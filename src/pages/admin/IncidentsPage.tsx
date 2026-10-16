@@ -1449,14 +1449,17 @@ export const IncidentsPage: React.FC = () => {
         incidents={selectedIncidents}
         isOpen={showConvertModal}
         onClose={() => setShowConvertModal(false)}
-        onSuccess={(newRequestId, requestNumber) => {
+        onSuccess={(requestId, requestNumber, isLinked) => {
           setShowConvertModal(false);
           toast.success(
-            newRequestId && requestNumber
-              ? t("requests.createdSuccessfullyWithNumber", { requestNumber })
-              : t("requests.createdSuccessfully"),
+            isLinked
+              ? requestNumber
+                ? t("requests.linkedSuccessfullyWithNumber", { requestNumber })
+                : t("requests.linkedSuccessfully")
+              : requestId && requestNumber
+                ? t("requests.createdSuccessfullyWithNumber", { requestNumber })
+                : t("requests.createdSuccessfully"),
           );
-          /*  navigate(`/requests/${newRequestId}`); */
         }}
       />
     </div>

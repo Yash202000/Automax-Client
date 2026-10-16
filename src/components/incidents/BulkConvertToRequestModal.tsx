@@ -34,7 +34,11 @@ interface BulkConvertToRequestModalProps {
   incidents: IncidentDetail[];
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newRequestId: string, requestNumber?: string) => void;
+  onSuccess: (
+    requestId: string,
+    requestNumber?: string,
+    isLinked?: boolean,
+  ) => void;
 }
 
 type Step = "transition" | "classification" | "workflow" | "review";
@@ -214,6 +218,8 @@ export const BulkConvertToRequestModal: React.FC<
   );
   const [feedbackError, setFeedbackError] = useState("");
 
+  const isExisting = convertType === "existing";
+
   // Query for available transitions
   const { data: transitionsData } = useQuery({
     queryKey: ["incident", incidents?.[0]?.id, "transitions"],
@@ -370,10 +376,17 @@ export const BulkConvertToRequestModal: React.FC<
       });
     },
     onSuccess: (result) => {
+      if (isExisting && selectedRequest) {
+        onSuccess(selectedRequest.id, selectedRequest.incident_number, true);
+        return;
+      }
       const firstSuccess = result.data?.results?.find((r: any) => r.success);
       if (firstSuccess?.new_request?.id) {
-        const newRequestId = firstSuccess.new_request.id;
-        onSuccess(newRequestId, firstSuccess.new_request.incident_number);
+        onSuccess(
+          firstSuccess.new_request.id,
+          firstSuccess.new_request.incident_number,
+          false,
+        );
       }
     },
     onError: (error) => {
@@ -502,8 +515,6 @@ export const BulkConvertToRequestModal: React.FC<
 
     convertMutation.mutate(request);
   };
-
-  const isExisting = convertType === "existing";
 
   const handleSelectRequest = (request: IncidentDetail) => {
     setSelectedRequest(request);
