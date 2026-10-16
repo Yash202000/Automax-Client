@@ -6883,6 +6883,8 @@ export const IncidentDetailPage: React.FC = () => {
           onClose={() => setConvertModalOpen(false)}
           onSuccess={(requestId, requestNumber, isLinked) => {
             setConvertModalOpen(false);
+            // Refreshes the incident and its transitions, history and activity
+            queryClient.invalidateQueries({ queryKey: ["incident", id] });
             toast.success(
               isLinked
                 ? requestNumber

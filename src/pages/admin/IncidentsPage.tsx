@@ -1451,6 +1451,8 @@ export const IncidentsPage: React.FC = () => {
         onClose={() => setShowConvertModal(false)}
         onSuccess={(requestId, requestNumber, isLinked) => {
           setShowConvertModal(false);
+          clearSelection();
+          refetch();
           toast.success(
             isLinked
               ? requestNumber
