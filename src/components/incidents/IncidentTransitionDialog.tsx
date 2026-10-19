@@ -487,10 +487,7 @@ export function IncidentTransitionDialog({
         transition_id: transitionId,
         comment,
         attachments,
-        feedback: {
-          rating: feedbackRating || 0,
-          comment: feedback?.comment,
-        },
+        feedback: feedback ?? undefined,
         department_id,
         user_ids,
         field_changes,
@@ -653,6 +650,7 @@ export function IncidentTransitionDialog({
 
   const executeTransition = async () => {
     if (!selectedTransition) return;
+    if (transitionMutation.isPending || transitionUploading) return;
 
     const requiresComment = selectedTransition.requirements?.some(
       (r) => r.requirement_type === "comment" && r.is_mandatory,
@@ -755,6 +753,11 @@ export function IncidentTransitionDialog({
         departmentId = effectiveDepartmentId;
       }
 
+      const hasFeedbackRequirement =
+        selectedTransition.requirements?.some(
+          (r) => r.requirement_type === "feedback",
+        ) || false;
+
       const userIds =
         (tr.manual_select_user || tr.auto_match_user) &&
         effectiveUserIds.length > 0
@@ -765,9 +768,13 @@ export function IncidentTransitionDialog({
         transitionId: selectedTransition.transition.id,
         comment: transitionComment || undefined,
         attachments: attachmentIds,
-        feedback: transitionFeedbackComment
-          ? { rating: 0, comment: transitionFeedbackComment || undefined }
-          : undefined,
+        feedback:
+          transitionFeedbackComment || hasFeedbackRequirement
+            ? {
+                rating: feedbackRating,
+                comment: transitionFeedbackComment || undefined,
+              }
+            : undefined,
         department_id: departmentId,
         user_ids: userIds,
         field_changes:
@@ -1368,12 +1375,15 @@ export function IncidentTransitionDialog({
               type="button"
               onClick={handleStepNext}
               disabled={
-                currentStepKey === "attachment" &&
-                (validatingTransitionAttachments ||
-                  transitionAttachment.some(
-                    (f) =>
-                      f.size > MAX_TRANSITION_ATTACHMENT_SIZE_MB * 1024 * 1024,
-                  ))
+                (currentStepKey === "attachment" &&
+                  (validatingTransitionAttachments ||
+                    transitionAttachment.some(
+                      (f) =>
+                        f.size >
+                        MAX_TRANSITION_ATTACHMENT_SIZE_MB * 1024 * 1024,
+                    ))) ||
+                transitionMutation.isPending ||
+                transitionUploading
               }
               className="px-4 py-2 text-sm font-semibold bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
             >
