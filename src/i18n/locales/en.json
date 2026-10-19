@@ -960,7 +960,6 @@
     "hoverVisitNumberHint": "Hover a number to see visit date and status.",
     "applyFilters": "Apply Filters",
     "withinSLA": "Within SLA",
-    "slaAtRiskFull": "At Risk (< 24h)",
     "feedSearchPlaceholder": "Search by ID, location, or desc...",
     "selectStates": "Select states...",
     "selectTransitions": "Select transitions...",

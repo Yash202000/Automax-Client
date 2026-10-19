@@ -958,7 +958,6 @@
     "hoverVisitNumberHint": "مرر فوق الرقم لرؤية تاريخ الزيارة والحالة.",
     "applyFilters": "تطبيق المرشحات",
     "withinSLA": "ضمن SLA",
-    "slaAtRiskFull": "معرض للخطر (< 24 ساعة)",
     "feedSearchPlaceholder": "البحث بالرقم أو الموقع أو الوصف...",
     "selectStates": "اختر الحالات...",
     "selectTransitions": "اختر الإجراءات...",

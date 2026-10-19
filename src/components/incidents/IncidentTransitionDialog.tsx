@@ -487,10 +487,7 @@ export function IncidentTransitionDialog({
         transition_id: transitionId,
         comment,
         attachments,
-        feedback: {
-          rating: feedbackRating || 0,
-          comment: feedback?.comment,
-        },
+        feedback: feedback ?? undefined,
         department_id,
         user_ids,
         field_changes,
@@ -921,24 +918,26 @@ export function IncidentTransitionDialog({
             </div>
           </div>
 
-          <DepartmentStep
-            t={t}
-            trans={tr}
-            matchLoading={matchLoading}
-            match={momraFilteredDepartmentMatch}
-            selectedId={effectiveDepartmentId}
-            searchQuery={deptSearchQuery}
-            setSearchQuery={setDeptSearchQuery}
-            collapsedIds={collapsedDeptIds}
-            setCollapsedIds={setCollapsedDeptIds}
-            onSelect={(id) => {
-              setSelectedDepartmentId(id);
-              setTransitionErrors((prev) =>
-                prev.department ? { ...prev, department: "" } : prev,
-              );
-            }}
-            error={transitionErrors.department}
-          />
+          {currentStepKey === "department" && (
+            <DepartmentStep
+              t={t}
+              trans={tr}
+              matchLoading={matchLoading}
+              match={momraFilteredDepartmentMatch}
+              selectedId={effectiveDepartmentId}
+              searchQuery={deptSearchQuery}
+              setSearchQuery={setDeptSearchQuery}
+              collapsedIds={collapsedDeptIds}
+              setCollapsedIds={setCollapsedDeptIds}
+              onSelect={(id) => {
+                setSelectedDepartmentId(id);
+                setTransitionErrors((prev) =>
+                  prev.department ? { ...prev, department: "" } : prev,
+                );
+              }}
+              error={transitionErrors.department}
+            />
+          )}
 
           {currentStepKey === "user" && (
             <UserStep

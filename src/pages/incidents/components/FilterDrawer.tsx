@@ -1039,9 +1039,7 @@ export function FilterDrawer({
                 label={
                   draft.sla === "within"
                     ? t("incidents.withinSLA")
-                    : draft.sla === "breached"
-                      ? t("incidents.slaBreached")
-                      : t("incidents.slaAtRiskFull")
+                    : t("incidents.slaBreached")
                 }
                 onRemove={() => patch({ sla: undefined })}
               />
@@ -1055,7 +1053,6 @@ export function FilterDrawer({
                 [
                   { id: "within", label: t("incidents.withinSLA") },
                   { id: "breached", label: t("incidents.slaBreached") },
-                  { id: "atrisk", label: t("incidents.slaAtRiskFull") },
                 ] as { id: SlaFilter; label: string }[]
               ).map((o) => (
                 <label

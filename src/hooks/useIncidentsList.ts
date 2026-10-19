@@ -96,11 +96,10 @@ export function useIncidentsList({
           : {}),
         ...(filters?.startDate ? { start_date: filters.startDate } : {}),
         ...(filters?.endDate ? { end_date: filters.endDate } : {}),
-        // "At risk" items have not breached yet, so they sit in the
-        // non-breached pool together with "within SLA".
+        // "Within SLA" means not yet breached; "breached" means past deadline.
         ...(filters?.sla === "breached"
           ? { sla_breached: true }
-          : filters?.sla === "within" || filters?.sla === "atrisk"
+          : filters?.sla === "within"
             ? { sla_breached: false }
             : {}),
         ...(filters?.reporterPhone

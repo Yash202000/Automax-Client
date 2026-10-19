@@ -1583,8 +1583,8 @@ export interface IncidentFilter {
   radius?: number;
 }
 
-// SLA tri-state used by the incidents feed filter drawer.
-export type SlaFilter = "within" | "breached" | "atrisk";
+// SLA state used by the incidents feed filter drawer.
+export type SlaFilter = "within" | "breached";
 
 // Combined filter model for the /incidents/list feed + filter drawer.
 export interface FeedFilters {
