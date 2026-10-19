@@ -57,6 +57,7 @@ export function useIncidentsList({
       end: filters?.endDate ?? null,
       sla: filters?.sla ?? null,
       phone: filters?.reporterPhone ?? null,
+      reporter: filters?.reporterId ?? null,
       scope: canViewAll ? "all" : `mine:${user?.id ?? "anon"}`,
     },
   ];
@@ -77,7 +78,9 @@ export function useIncidentsList({
           ? { transition_id: filters.transitionId }
           : {}),
         ...(filters?.assigneeIds?.length
-          ? { assignee_ids: filters.assigneeIds }
+          ? filters.assigneeIds.length === 1
+            ? { assignee_id: filters.assigneeIds[0] }
+            : { assignee_ids: filters.assigneeIds }
           : {}),
         ...(filters?.departmentIds?.length
           ? { department_ids: filters.departmentIds }
@@ -103,6 +106,10 @@ export function useIncidentsList({
         ...(filters?.reporterPhone
           ? { reporter_phone_search: filters.reporterPhone }
           : {}),
+        ...(filters?.reporterId ? { reporter_id: filters.reporterId } : {}),
+        ...(canViewAll || filters?.assigneeIds?.length || filters?.reporterId
+          ? {}
+          : { my_record: user?.id }),
       }),
     placeholderData: keepPreviousData,
   });

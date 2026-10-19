@@ -53,21 +53,36 @@ const PAGE_LIMIT = 10;
  *   (left only), scrollable cards, pagination pinned LAST.
  * - CENTER: details workspace (own scroll), wired to the selection.
  */
-export function IncidentsListPage() {
+export function IncidentsListPage({
+  type = "all",
+}: { type?: "all" | "assigned" | "created" } = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  const user = useAuthStore((s) => s.user);
 
   const canCreate = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [applied, setApplied] = useState<FeedFilters>(EMPTY_FEED_FILTERS);
+  const [applied, setApplied] = useState<FeedFilters>(() => {
+    const base: FeedFilters = { ...EMPTY_FEED_FILTERS };
+    if (type === "assigned" && user?.id) base.assigneeIds = [user.id];
+    if (type === "created" && user?.id) base.reporterId = user.id;
+    return base;
+  });
   const [draft, setDraft] = useState<FeedFilters>(EMPTY_FEED_FILTERS);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    const next: FeedFilters = { ...EMPTY_FEED_FILTERS };
+    if (type === "assigned" && user?.id) next.assigneeIds = [user.id];
+    if (type === "created" && user?.id) next.reporterId = user.id;
+    setApplied(next);
+    setPage(1);
+  }, [type, user?.id]);
 
   // Bulk selection + bulk ops — same gates and modals as the old list.
   const [selectedIncidents, setSelectedIncidents] = useState<Incident[]>([]);
@@ -342,6 +357,10 @@ export function IncidentsListPage() {
     } else if (!preselectedId) {
       // Total (or any param-less visit): clear sidebar-owned dimensions.
       patch.stateIds = [];
+      patch.sla = undefined;
+    }
+
+    if ((urlStateId || urlStatus) && !urlSlaBreached) {
       patch.sla = undefined;
     }
     if (urlSlaBreached) patch.sla = "breached";

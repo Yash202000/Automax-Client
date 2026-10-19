@@ -1591,6 +1591,7 @@ export interface FeedFilters {
   stateIds: string[];
   transitionId?: string;
   assigneeIds: string[];
+  reporterId?: string;
   departmentIds: string[];
   classificationIds: string[];
   locationIds: string[];

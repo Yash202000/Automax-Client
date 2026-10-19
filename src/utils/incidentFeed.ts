@@ -5,6 +5,7 @@ export const EMPTY_FEED_FILTERS: FeedFilters = {
   stateIds: [],
   transitionId: undefined,
   assigneeIds: [],
+  reporterId: undefined,
   departmentIds: [],
   classificationIds: [],
   locationIds: [],
@@ -20,6 +21,7 @@ export function isFeedFilterActive(f: FeedFilters): boolean {
     f.stateIds.length > 0 ||
     !!f.transitionId ||
     f.assigneeIds.length > 0 ||
+    !!f.reporterId ||
     f.departmentIds.length > 0 ||
     f.classificationIds.length > 0 ||
     f.locationIds.length > 0 ||

@@ -836,7 +836,13 @@ function App() {
                       >
                         <Route
                           path="/incidents/my-assigned"
-                          element={<MyIncidentsPage type="assigned" />}
+                          element={
+                            isEPM940Client ? (
+                              <IncidentsListPage type="assigned" />
+                            ) : (
+                              <MyIncidentsPage type="assigned" />
+                            )
+                          }
                         />
                       </Route>
                       <Route
@@ -848,7 +854,13 @@ function App() {
                       >
                         <Route
                           path="/incidents/my-created"
-                          element={<MyIncidentsPage type="created" />}
+                          element={
+                            isEPM940Client ? (
+                              <IncidentsListPage type="created" />
+                            ) : (
+                              <MyIncidentsPage type="created" />
+                            )
+                          }
                         />
                         <Route
                           path="/incidents/new"

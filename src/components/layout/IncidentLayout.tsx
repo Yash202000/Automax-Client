@@ -68,10 +68,14 @@ export const IncidentLayout: React.FC = () => {
 
   // The new EPM940 split-view incidents page manages its own gutters —
   // render it full-bleed instead of inside the padded container.
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
   const isNewIncidentView =
-    location.pathname === "/incidents" &&
-    (window.APP_CONFIG?.CLIENT === "EPM940" ||
-      import.meta.env.VITE_CLIENT === "EPM940");
+    isEPM940 &&
+    (location.pathname === "/incidents" ||
+      location.pathname === "/incidents/my-assigned" ||
+      location.pathname === "/incidents/my-created");
 
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
