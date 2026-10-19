@@ -1556,9 +1556,13 @@ export interface IncidentFilter {
   search?: string;
   workflow_id?: string;
   current_state_id?: string;
+  /** Multi-select variant — when non-empty, sent as-is instead of current_state_id. */
+  current_state_ids?: string[];
   classification_ids?: string[];
   priority?: number;
   assignee_id?: string;
+  /** Multi-select variant — when non-empty, sent as-is instead of assignee_id. */
+  assignee_ids?: string[];
   department_ids?: string[];
   my_record?: string;
   location_ids?: string[];
@@ -1579,6 +1583,25 @@ export interface IncidentFilter {
   momra_ref?: string;
   current_state_code?: string;
   radius?: number;
+}
+
+// SLA state used by the incidents feed filter drawer.
+export type SlaFilter = "within" | "breached";
+
+// Combined filter model for the /incidents/list feed + filter drawer.
+export interface FeedFilters {
+  stateIds: string[];
+  transitionId?: string;
+  assigneeIds: string[];
+  reporterId?: string;
+  departmentIds: string[];
+  classificationIds: string[];
+  locationIds: string[];
+  priority?: number;
+  startDate?: string;
+  endDate?: string;
+  sla?: SlaFilter;
+  reporterPhone?: string;
 }
 
 // Convert Incident to Request types

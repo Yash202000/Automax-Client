@@ -66,6 +66,17 @@ export const IncidentLayout: React.FC = () => {
   const { setIsOpen } = useSoftphoneStore();
   const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
 
+  // The new EPM940 split-view incidents page manages its own gutters —
+  // render it full-bleed instead of inside the padded container.
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+  const isNewIncidentView =
+    isEPM940 &&
+    (location.pathname === "/incidents" ||
+      location.pathname === "/incidents/my-assigned" ||
+      location.pathname === "/incidents/my-created");
+
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
   const canTransitionIncident =
@@ -880,7 +891,7 @@ export const IncidentLayout: React.FC = () => {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-background">
-          <div className="p-4 lg:p-8">
+          <div className={isNewIncidentView ? "p-2 lg:p-4" : "p-4 lg:p-8"}>
             <div className="max-w-7xl mx-auto">
               <Outlet />
             </div>

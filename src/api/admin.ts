@@ -1377,13 +1377,16 @@ export const incidentApi = {
     if (filter.search) body.search = filter.search;
     if (filter.workflow_id) body.workflow_id = [filter.workflow_id];
     if (filter.my_record) body.my_record = filter.my_record;
-    if (filter.current_state_id)
+    if (filter.current_state_ids?.length)
+      body.current_state_id = filter.current_state_ids;
+    else if (filter.current_state_id)
       body.current_state_id = [filter.current_state_id];
     if (filter.classification_ids?.length)
       body.classification_id = filter.classification_ids;
     if (filter.priority) body.priority = filter.priority;
     if (filter.reporter_phone) body.reporter_phone = filter.reporter_phone;
-    if (filter.assignee_id) body.assignee_id = [filter.assignee_id];
+    if (filter.assignee_ids?.length) body.assignee_id = filter.assignee_ids;
+    else if (filter.assignee_id) body.assignee_id = [filter.assignee_id];
     if (filter.reporter_id) body.reporter_id = [filter.reporter_id];
     if (filter.department_ids?.length)
       body.department_id = filter.department_ids;
@@ -1590,6 +1593,43 @@ export const incidentApi = {
       `/incidents/${incidentId}/feedbacks`,
     );
     return response.data;
+  },
+
+  // Combined comments + text-bearing feedbacks, newest first — same source
+  // the incident detail page counts and lists (includes internal comments).
+  listCombinedComments: async (
+    incidentId: string,
+  ): Promise<IncidentComment[]> => {
+    const [commentsRes, feedbacksRes] = await Promise.all([
+      incidentApi.listComments(incidentId),
+      incidentApi.listFeedbacks(incidentId),
+    ]);
+    // Rating-only/empty feedback has no text, so it must not surface as a
+    // blank comment.
+    const feedbacks: IncidentComment[] = (
+      (feedbacksRes?.data ?? []) as Array<{
+        comment?: string;
+        created_by?: IncidentComment["author"];
+        created_at: string;
+      }>
+    )
+      .filter((item) => item?.comment?.trim())
+      .map((item) => ({
+        id: `feedback-${item.created_at}`,
+        incident_id: incidentId,
+        author: item?.created_by,
+        content: item?.comment ?? "",
+        is_internal: false,
+        created_at: item.created_at,
+        type: "feedback",
+      }));
+    const commentItems = (
+      (commentsRes?.data ?? []) as IncidentComment[]
+    ).filter((c) => c?.content?.trim());
+    return [...commentItems, ...feedbacks].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
   },
 
   updateComment: async (

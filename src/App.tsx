@@ -1,6 +1,12 @@
 import { Suspense } from "react";
 import { lazyWithRetry as lazy } from "./utils/lazyWithRetry";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+} from "react-router-dom";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -130,6 +136,28 @@ const IncidentDetailPage = lazy(() =>
     default: m.IncidentDetailPage,
   })),
 );
+// New isolated incidents list view (src/pages/incidents) — existing
+// incident components untouched. Reuses same APIs + IncidentLayout.
+const IncidentsListPage = lazy(() =>
+  import("./pages/incidents/ListPage").then((m) => ({
+    default: m.IncidentsListPage,
+  })),
+);
+
+// Client-gated incident experience: the EPM940 client renders the new
+// split-view incidents page, every other client keeps the legacy pages.
+const isEPM940Client =
+  window.APP_CONFIG?.CLIENT === "EPM940" ||
+  import.meta.env.VITE_CLIENT === "EPM940";
+
+function IncidentDetailsRoute() {
+  const { id } = useParams();
+  // The new design has no standalone details page — deep links land on the
+  // split view with the incident preselected via ?id=.
+  if (isEPM940Client && id)
+    return <Navigate to={`/incidents?id=${id}`} replace />;
+  return <IncidentDetailPage />;
+}
 const IncidentFeedbackPage = lazy(() =>
   import("./pages/IncidentFeedbackPage").then((m) => ({
     default: m.CitizenIncidentFeedbackPage,
@@ -778,10 +806,19 @@ function App() {
                           />
                         }
                       >
-                        <Route path="/incidents" element={<IncidentsPage />} />
+                        <Route
+                          path="/incidents"
+                          element={
+                            isEPM940Client ? (
+                              <IncidentsListPage />
+                            ) : (
+                              <IncidentsPage />
+                            )
+                          }
+                        />
                         <Route
                           path="/incidents/:id"
-                          element={<IncidentDetailPage />}
+                          element={<IncidentDetailsRoute />}
                         />
                         <Route
                           path="/incidents/:id/edit"
@@ -799,7 +836,13 @@ function App() {
                       >
                         <Route
                           path="/incidents/my-assigned"
-                          element={<MyIncidentsPage type="assigned" />}
+                          element={
+                            isEPM940Client ? (
+                              <IncidentsListPage type="assigned" />
+                            ) : (
+                              <MyIncidentsPage type="assigned" />
+                            )
+                          }
                         />
                       </Route>
                       <Route
@@ -811,7 +854,13 @@ function App() {
                       >
                         <Route
                           path="/incidents/my-created"
-                          element={<MyIncidentsPage type="created" />}
+                          element={
+                            isEPM940Client ? (
+                              <IncidentsListPage type="created" />
+                            ) : (
+                              <MyIncidentsPage type="created" />
+                            )
+                          }
                         />
                         <Route
                           path="/incidents/new"

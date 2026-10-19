@@ -5,7 +5,6 @@ export interface TreeSelectNode {
   children?: TreeSelectNode[];
   [key: string]: unknown;
 }
-
 // Helper to find a node by ID in the tree
 export const findNodeById = (
   nodes: TreeSelectNode[],
@@ -42,3 +41,24 @@ export const getNodePath = (
   }
   return [];
 };
+
+// Filter a tree by name, keeping ancestors of matching nodes so the
+// hierarchy stays intact. Returns the original list when query is blank.
+export function filterTreeByName<T extends TreeSelectNode>(
+  nodes: T[],
+  query: string,
+): T[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return nodes;
+  const out: T[] = [];
+  for (const node of nodes) {
+    const children = node.children
+      ? filterTreeByName(node.children as T[], query)
+      : [];
+    const label = `${node.name} ${node.name_ar || ""}`.toLowerCase();
+    if (label.includes(q) || children.length) {
+      out.push({ ...node, children } as T);
+    }
+  }
+  return out;
+}
