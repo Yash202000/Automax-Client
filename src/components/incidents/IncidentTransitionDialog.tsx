@@ -487,7 +487,10 @@ export function IncidentTransitionDialog({
         transition_id: transitionId,
         comment,
         attachments,
-        feedback: feedback ?? undefined,
+        feedback: {
+          rating: feedbackRating || 0,
+          comment: feedback?.comment,
+        },
         department_id,
         user_ids,
         field_changes,

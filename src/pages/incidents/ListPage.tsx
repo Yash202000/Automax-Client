@@ -272,6 +272,16 @@ export function IncidentsListPage({
   const preselectDetail = preselectQuery.data?.data ?? null;
 
   const autoNarrowedFor = useRef<string | null>(null);
+  const lastPreselectRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (preselectedId && lastPreselectRef.current !== preselectedId) {
+      lastPreselectRef.current = preselectedId;
+      setSelectedId(null);
+    } else if (!preselectedId) {
+      lastPreselectRef.current = null;
+    }
+  }, [preselectedId]);
 
   useEffect(() => {
     if (!preselectedId || selectedId) return;
