@@ -63,7 +63,6 @@ export const IncidentLayout: React.FC = () => {
   const currentStateId = queryParams.get("current_state_id");
   const isSlaBreached = queryParams.get("sla_breached") === "true";
   const langRef = useRef<HTMLDivElement>(null);
-  // const notifRef = useRef<HTMLDivElement>(null);
   const { setIsOpen } = useSoftphoneStore();
   const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
 

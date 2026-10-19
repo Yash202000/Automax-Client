@@ -133,6 +133,7 @@ const TABS: TabKey[] = [
   "rejectionHistory",
   "quality",
   "linkedSystems",
+  "nasaq",
 ];
 
 const TAB_ICONS: Record<TabKey, LucideIcon> = {

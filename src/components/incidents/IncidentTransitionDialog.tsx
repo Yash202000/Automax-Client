@@ -1296,10 +1296,10 @@ export function IncidentTransitionDialog({
                       }
                       onChange={(e) => {
                         setTransitionFeedbackComment(e.target.value);
-                        if (transitionErrors.feedbackComment) {
+                        if (transitionErrors.feedback) {
                           setTransitionErrors((prev) => ({
                             ...prev,
-                            feedbackComment: "",
+                            feedback: "",
                           }));
                         }
                       }}
@@ -1317,10 +1317,10 @@ export function IncidentTransitionDialog({
                       value={transitionFeedbackComment}
                       onChange={(e) => {
                         setTransitionFeedbackComment(e.target.value);
-                        if (transitionErrors.feedbackComment) {
+                        if (transitionErrors.feedback) {
                           setTransitionErrors((prev) => ({
                             ...prev,
-                            feedbackComment: "",
+                            feedback: "",
                           }));
                         }
                       }}

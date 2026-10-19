@@ -58,21 +58,23 @@ export function useDepartmentTree(): TreeSelectNode[] {
 }
 
 export function useClassificationTree(): TreeSelectNode[] {
-  return useTreeNodes(
-    ["admin", "classifications", "tree", "incident-all"],
-    async () => {
+  // Same query key AND same raw-array shape as FilterDrawer, so both
+  // consumers share one cache entry without shape mismatch.
+  const { data } = useQuery({
+    queryKey: ["admin", "classifications", "tree", "incident-all"],
+    queryFn: async () => {
       const [a, b] = await Promise.all([
         classificationApi.getTree("incident"),
         classificationApi.getTree("all"),
       ]);
       const combined = [...(a.data || []), ...(b.data || [])];
-      return {
-        data: combined.filter(
-          (c, i, self) => i === self.findIndex((x) => x.id === c.id),
-        ),
-      };
+      return combined.filter(
+        (c, i, self) => i === self.findIndex((x) => x.id === c.id),
+      );
     },
-  );
+    staleTime: 300_000,
+  });
+  return useMemo(() => (data || []) as unknown as TreeSelectNode[], [data]);
 }
 
 export function useLocationTree(): TreeSelectNode[] {

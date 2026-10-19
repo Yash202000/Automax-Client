@@ -242,8 +242,10 @@ export function AttachmentsTab({
     if (!editorAttachment) return;
     try {
       const file = await dataUrlToFile(editedImage);
-      await incidentApi.deleteAttachment(incidentId, editorAttachment.id);
+      // Upload the replacement first — the original is deleted only after
+      // the upload succeeds, so a failed upload never loses the file.
       await incidentApi.uploadAttachment(incidentId, file);
+      await incidentApi.deleteAttachment(incidentId, editorAttachment.id);
       refreshAttachments();
       toast.success(t("incidents.attachmentUploaded"));
       setEditorAttachment(null);
