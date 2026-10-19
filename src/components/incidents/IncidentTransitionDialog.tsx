@@ -554,6 +554,7 @@ export function IncidentTransitionDialog({
     } else if (stepKey === "user") {
       if (
         tr.manual_select_user &&
+        tr.view_assigne_user_list &&
         tr.assignment_roles &&
         tr.assignment_roles.length > 0 &&
         !tr.assign_user_id &&
@@ -714,6 +715,7 @@ export function IncidentTransitionDialog({
 
     if (
       tr.manual_select_user &&
+      tr.view_assigne_user_list &&
       tr.assignment_roles &&
       tr.assignment_roles.length > 0 &&
       !tr.assign_user_id &&
@@ -797,7 +799,9 @@ export function IncidentTransitionDialog({
   if (!isOpen || !selectedTransition) return null;
 
   const tr = selectedTransition.transition;
-  const isLastStep = transitionStep === transitionSteps.length - 1;
+  const isLastStep =
+    transitionSteps.length === 0 ||
+    transitionStep === transitionSteps.length - 1;
   const currentStepKey = transitionSteps[transitionStep];
   const stepTitles: Record<string, string> = {
     department: t("incidents.departmentAssignment"),

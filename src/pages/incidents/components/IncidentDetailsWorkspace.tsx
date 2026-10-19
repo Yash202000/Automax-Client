@@ -213,8 +213,11 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   useEffect(() => {
     const checkLocation = async () => {
       try {
+        // Always update the identity before any early return, so a late
+        // response from a superseded incident cannot overwrite the current
+        // incident's approval gate.
+        pendingIncidentRef.current = incident?.id ?? null;
         if (!incident?.latitude || !incident?.longitude) return;
-        pendingIncidentRef.current = incident.id;
         const response = (await gisLocationApi.identifyLocation({
           x: incident.longitude,
           y: incident.latitude,
