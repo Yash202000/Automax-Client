@@ -192,7 +192,11 @@ function transitionIcon(transition: WorkflowTransition) {
 export function IncidentDetailsWorkspace({ incident }: Props) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
+  const { hasPermission, isSuperAdmin } = usePermissions();
+  const canViewAllIncidents =
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabKey>("details");
@@ -203,16 +207,19 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const [bulkUnmergeModalOpen, setBulkUnmergeModalOpen] = useState(false);
   const [disableApproveTransition, setDisableApproveTransition] =
     useState(false);
+  const pendingIncidentRef = useRef<string | null>(null);
 
   /* GIS boundary check — same approve-gate as IncidentDetailPage. */
   useEffect(() => {
     const checkLocation = async () => {
       try {
         if (!incident?.latitude || !incident?.longitude) return;
+        pendingIncidentRef.current = incident.id;
         const response = (await gisLocationApi.identifyLocation({
           x: incident.longitude,
           y: incident.latitude,
         })) as { results?: unknown[] };
+        if (pendingIncidentRef.current !== incident.id) return;
         const results = response?.results || [];
         if (Array.isArray(results) && results.length === 0) {
           setDisableApproveTransition(true);
@@ -220,6 +227,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
           setDisableApproveTransition(false);
         }
       } catch (error) {
+        if (pendingIncidentRef.current !== incident?.id) return;
         // eslint-disable-next-line no-console
         console.error("GIS identify failed", error);
         setDisableApproveTransition(false);
@@ -227,6 +235,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     };
     if (!incident) {
       setDisableApproveTransition(false);
+      pendingIncidentRef.current = null;
       return;
     }
     setDisableApproveTransition(false);
@@ -579,7 +588,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     return roles.length === 0 || roles.some((r) => userRoles.includes(r.id));
   })();
   const canViewTransitions =
-    canViewAllIncidents() ||
+    canViewAllIncidents ||
     incident?.assignees?.some((assignee) => assignee.id === user?.id) ||
     incident?.assignee?.id === user?.id;
 
