@@ -956,6 +956,7 @@ export interface TransitionFieldChange {
   transition_id: string;
   field_name: string;
   label: string;
+  label_ar: string;
   is_required: boolean;
   department_type_filter?: string;
   sort_order: number;
@@ -964,6 +965,7 @@ export interface TransitionFieldChange {
 export interface TransitionFieldChangeRequest {
   field_name: string;
   label?: string;
+  label_ar?: string;
   is_required: boolean;
   department_type_filter?: string;
   sort_order?: number;
