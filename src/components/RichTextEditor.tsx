@@ -116,7 +116,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <LinkIcon className="w-4 h-4 text-slate-600" />
         </button>
       </div>
-
       {/* Editor */}
       <div
         ref={editorRef}
@@ -125,18 +124,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         className="flex-1 p-3 min-h-[200px] outline-none overflow-y-auto prose prose-sm max-w-none "
         style={{ lineHeight: "1.6" }}
         data-placeholder={resolvedPlaceholder}
-      />
-
-      <style>{`
-                [contentEditable]:empty:before {
-                    content: attr(data-placeholder);
-                    color: #94a3b8;
-                    pointer-events: none;
-                }
-                [contentEditable]:focus {
-                    outline: none;
-                }
-            `}</style>
+      />{" "}
     </div>
   );
 };

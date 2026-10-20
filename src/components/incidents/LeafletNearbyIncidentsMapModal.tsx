@@ -21,6 +21,7 @@ import {
 } from "../../utils/nearbyIncidentLocale";
 import NearbyIncidentsSidebar from "./NearbyIncidentsSidebar";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
+import { cspSafeHtml, escapeHtml } from "../../utils/cspSafeHtml";
 
 // Fix default marker icon issue with bundlers
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -49,7 +50,7 @@ interface NearbyIncidentsMapModalProps {
 function createCurrentIncidentIcon(): L.DivIcon {
   return L.divIcon({
     className: "current-incident-marker",
-    html: `
+    html: cspSafeHtml(`
       <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
         <div style="
           position: absolute;
@@ -81,7 +82,7 @@ function createCurrentIncidentIcon(): L.DivIcon {
           </svg>
         </div>
       </div>
-    `,
+    `),
     iconSize: [38, 38],
     iconAnchor: [19, 19],
     popupAnchor: [0, -20],
@@ -99,11 +100,11 @@ function createNearbyIncidentIcon(
 
   return L.divIcon({
     className: "nearby-incident-marker",
-    html: `
+    html: cspSafeHtml(`
       <div style="
         width: ${size}px;
         height: ${size}px;
-        background-color: ${color};
+        background-color: ${escapeHtml(color)};
         border: ${borderWidth}px solid white;
         border-radius: 50%;
         box-shadow: 0 3px 10px rgba(0,0,0,0.35);
@@ -122,7 +123,7 @@ function createNearbyIncidentIcon(
             : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`
         }
       </div>
-    `,
+    `),
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2],
@@ -304,7 +305,7 @@ export default function LeafletNearbyIncidentsMapModal({
             </span>
           </div>
           <div style="font-weight: 700; font-size: 14px; color: #111827; margin-bottom: 2px;">
-            ${incidentNumber || incidentId}
+            ${escapeHtml(incidentNumber || incidentId)}
           </div>
           <div style="font-size: 11px; color: #6b7280;">
             ${latitude.toFixed(5)}, ${longitude.toFixed(5)}
@@ -314,7 +315,7 @@ export default function LeafletNearbyIncidentsMapModal({
           </div>
         </div>
       `;
-      currentMarker.bindPopup(currentPopup);
+      currentMarker.bindPopup(cspSafeHtml(currentPopup));
       currentMarkerRef.current = currentMarker;
 
       map.invalidateSize();
@@ -437,21 +438,21 @@ export default function LeafletNearbyIncidentsMapModal({
               <div style="margin-bottom: 10px; padding-bottom: 8px; ${idx < groupItems.length - 1 ? "border-bottom: 1px dashed #e5e7eb;" : ""}">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                   <span style="font-weight: 700; font-size: 13px; color: #2563eb;">
-                    ${item.incident_number}
+                    ${escapeHtml(item.incident_number)}
                   </span>
-                  <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 9999px; color: #ffffff; background-color: ${item.status_color || "#6b7280"};">
-                    ${label.status}
+                  <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 9999px; color: #ffffff; background-color: ${escapeHtml(item.status_color || "#6b7280")};">
+                    ${escapeHtml(label.status)}
                   </span>
                 </div>
 
                 <div style="font-size: 12px; font-weight: 500; color: #374151; margin-top: 3px;">
-                  ${label.classificationName}
+                  ${escapeHtml(label.classificationName)}
                 </div>
 
                 ${
                   label.locationName
                     ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
-                        <span>📍</span><span>${label.locationName}</span>
+                        <span>📍</span><span>${escapeHtml(label.locationName)}</span>
                        </div>`
                     : ""
                 }
@@ -462,7 +463,7 @@ export default function LeafletNearbyIncidentsMapModal({
                   </span>
                   <button
                     type="button"
-                    data-view-incident-id="${item.id}"
+                    data-view-incident-id="${escapeHtml(item.id)}"
                     style="
                       background: #2563eb;
                       color: white;
@@ -484,7 +485,7 @@ export default function LeafletNearbyIncidentsMapModal({
         </div>
       `;
 
-      marker.bindPopup(popupHtml);
+      marker.bindPopup(cspSafeHtml(popupHtml));
 
       groupItems.forEach((item) => {
         markersRef.current.set(item.id, marker);

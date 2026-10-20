@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import type { Location } from "../../types";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
 import MapFallbackNotice from "./MapFallbackNotice";
+import { cspSafeHtml, escapeHtml } from "../../utils/cspSafeHtml";
 
 // Fix default marker icon issue with webpack/vite
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -51,11 +52,11 @@ const createColoredIcon = (
 
   return L.divIcon({
     className: "custom-marker",
-    html: `
+    html: cspSafeHtml(`
       <div style="
         width: ${size}px;
         height: ${size}px;
-        background-color: ${color};
+        background-color: ${escapeHtml(color)};
         border: ${borderWidth}px solid white;
         border-radius: 50%;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
@@ -69,7 +70,7 @@ const createColoredIcon = (
       ">
         ${isGroup ? count : ""}
       </div>
-    `,
+    `),
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2],
@@ -154,13 +155,13 @@ export default function LeafletLocationMap({
               (location, idx) => `
             <div style="margin-bottom: 12px; padding-bottom: 8px; ${idx < items.length - 1 ? "border-bottom: 1px dashed #eee;" : ""}">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                <strong style="font-size: 14px; color: #1e293b; display: block;">${location.name}</strong>
-                <span style="font-size: 10px; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #64748b;">${location.code}</span>
+                <strong style="font-size: 14px; color: #1e293b; display: block;">${escapeHtml(location.name)}</strong>
+                <span style="font-size: 10px; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #64748b;">${escapeHtml(location.code)}</span>
               </div>
-              <p style="margin: 4px 0; font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${location.description || ""}</p>
-              ${location.address ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">${location.address}</div>` : ""}
+              <p style="margin: 4px 0; font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(location.description)}</p>
+              ${location.address ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">${escapeHtml(location.address)}</div>` : ""}
               <div style="margin-top: 6px;">
-                <a href="${window.location.origin}${import.meta.env.VITE_BASE_PATH}incidents/${location.id}" style="color: #3b82f6; font-size: 12px; text-decoration: none; font-weight: 500;">View Detail →</a>
+                <a href="${escapeHtml(window.location.origin)}${escapeHtml(import.meta.env.VITE_BASE_PATH)}incidents/${encodeURIComponent(String(location.id))}" style="color: #3b82f6; font-size: 12px; text-decoration: none; font-weight: 500;">View Detail →</a>
               </div>
             </div>
           `,
@@ -168,7 +169,7 @@ export default function LeafletLocationMap({
             .join("")}
         </div>
       `;
-      marker.bindPopup(popupContent);
+      marker.bindPopup(cspSafeHtml(popupContent));
 
       // Handle click
       marker.on("click", () => {

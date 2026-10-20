@@ -210,7 +210,6 @@ export default function IncidentLister() {
         className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden pointer-events-auto"
         onClick={handleClose}
       />
-
       <div
         className={cn(
           "relative w-full max-w-[420px] bg-white/95 backdrop-blur-xl shadow-2xl flex flex-col pointer-events-auto",
@@ -439,23 +438,7 @@ export default function IncidentLister() {
             Automax
           </p>
         </div>
-      </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}</style>
+      </div>{" "}
     </div>
   );
 }
