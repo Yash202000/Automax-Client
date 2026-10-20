@@ -14,7 +14,7 @@ import {
   Workflow,
   GitMerge,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedField } from "@/lib/utils";
 import { Button } from "../ui";
 import { incidentApi } from "../../api/admin";
 import type { IncidentRevisionActionType } from "../../types";
@@ -302,7 +302,10 @@ export const RevisionHistory: React.FC<RevisionHistoryProps> = ({
                     <td className="px-4 py-3 flex flex-col gap-2">
                       <span className="text-sm text-[hsl(var(--foreground))]">
                         <RenderWithIncidentMentions
-                          text={revision.action_description}
+                          text={
+                            getLocalizedField(revision, "action_description") ||
+                            revision.action_description
+                          }
                         />
                       </span>
                       {revision.transition?.name && (
