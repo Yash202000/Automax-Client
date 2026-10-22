@@ -114,7 +114,7 @@ const NearbyIncidents = ({
       </button>
 
       {open && (
-        <div className="absolute start-0 top-full z-20 mt-2 w-80 lg:w-1/2 lg:max-w-md rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden">
+        <div className="absolute inset-inline-start-0 top-full z-20 mt-2 w-[360px] min-w-[300px] max-w-[calc(100vw-1.5rem)] lg:w-96 lg:max-w-lg rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
             <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
               {t("incidents.nearby.title")}(

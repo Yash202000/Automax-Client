@@ -996,6 +996,7 @@
     "updating": "جارٍ التحديث…",
     "noCoordinates": "لا توجد إحداثيات لهذا البلاغ.",
     "copyIncidentId": "نسخ رقم البلاغ",
+    "copyIncidentUrl": "نسخ رابط البلاغ",
     "phoneLabel": "الهاتف",
     "escalation": "التصعيد",
     "moreComingSoon": "سيُبنى هذا القسم هنا لاحقًا.",

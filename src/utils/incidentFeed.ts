@@ -6,6 +6,10 @@ export const EMPTY_FEED_FILTERS: FeedFilters = {
   transitionId: undefined,
   assigneeIds: [],
   reporterId: undefined,
+  workflowId: undefined,
+  source: undefined,
+  momraRef: undefined,
+  convertedToRequest: undefined,
   departmentIds: [],
   classificationIds: [],
   locationIds: [],
@@ -29,6 +33,10 @@ export function isFeedFilterActive(f: FeedFilters): boolean {
     !!f.startDate ||
     !!f.endDate ||
     !!f.sla ||
-    !!f.reporterPhone
+    !!f.reporterPhone ||
+    !!f.workflowId ||
+    !!f.source ||
+    !!f.momraRef ||
+    f.convertedToRequest !== undefined
   );
 }

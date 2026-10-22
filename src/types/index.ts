@@ -1594,6 +1594,10 @@ export interface FeedFilters {
   transitionId?: string;
   assigneeIds: string[];
   reporterId?: string;
+  workflowId?: string;
+  source?: string;
+  momraRef?: string;
+  convertedToRequest?: boolean;
   departmentIds: string[];
   classificationIds: string[];
   locationIds: string[];
