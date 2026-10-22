@@ -514,6 +514,20 @@ export function FilterDrawer({
         color: v.color,
       }));
   }, [lookupData]);
+
+  /* Source options from SOURCE lookup category */
+  const sourceOptions = useMemo(() => {
+    const cat = (lookupData?.data || []).find((c) => c.code === "SOURCE");
+    return [...(cat?.values || [])].map((v) => ({
+      value: v.code.toLowerCase(),
+      label: getLocalizedName(v),
+    }));
+  }, [lookupData]);
+
+  const isEPM940 =
+    window.APP_CONFIG?.CLIENT === "EPM940" ||
+    import.meta.env.VITE_CLIENT === "EPM940";
+
   const activePriority = priorityOptions.find(
     (p) => p.sortOrder === draft.priority,
   );
@@ -1093,6 +1107,188 @@ export function FilterDrawer({
             />
           </div>
         ) : null}
+
+        {/* Workflow */}
+        <SelectBox
+          label={t("common.workflow")}
+          isOpen={openBox === "workflow"}
+          onToggle={() => toggleBox("workflow")}
+          trigger={
+            draft.workflowId ? (
+              <Chip
+                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                label={
+                  getLocalizedName(
+                    workflowsData?.find((w) => w.id === draft.workflowId),
+                  ) || draft.workflowId
+                }
+                onRemove={() => patch({ workflowId: undefined })}
+              />
+            ) : (
+              placeholder
+            )
+          }
+          dropdown={
+            <div className="space-y-1 max-h-32 overflow-y-auto pe-0.5">
+              {workflowsData?.map((w) => (
+                <label
+                  key={w.id}
+                  className="flex items-center gap-2 p-1 rounded hover:bg-[hsl(var(--muted)/0.6)] cursor-pointer group"
+                >
+                  <input
+                    checked={draft.workflowId === w.id}
+                    onChange={() =>
+                      patch({
+                        workflowId:
+                          draft.workflowId === w.id ? undefined : w.id,
+                      })
+                    }
+                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                    type="checkbox"
+                  />
+                  <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
+                    {getLocalizedName(w)}
+                  </span>
+                </label>
+              ))}
+              {workflowsData?.length === 0 ? (
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))] p-1">
+                  {t("common.noResults")}
+                </p>
+              ) : null}
+            </div>
+          }
+        />
+
+        {/* Source */}
+        <SelectBox
+          label={t("common.source")}
+          isOpen={openBox === "source"}
+          onToggle={() => toggleBox("source")}
+          trigger={
+            draft.source ? (
+              <Chip
+                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                label={
+                  sourceOptions.find((s) => s.value === draft.source)?.label ||
+                  draft.source
+                }
+                onRemove={() => patch({ source: undefined })}
+              />
+            ) : (
+              placeholder
+            )
+          }
+          dropdown={
+            <div className="space-y-1 max-h-32 overflow-y-auto pe-0.5">
+              {sourceOptions.map((s) => (
+                <label
+                  key={s.value}
+                  className="flex items-center gap-2 p-1 rounded hover:bg-[hsl(var(--muted)/0.6)] cursor-pointer group"
+                >
+                  <input
+                    checked={draft.source === s.value}
+                    onChange={() =>
+                      patch({
+                        source: draft.source === s.value ? undefined : s.value,
+                      })
+                    }
+                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                    type="checkbox"
+                  />
+                  <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
+                    {s.label}
+                  </span>
+                </label>
+              ))}
+              {sourceOptions.length === 0 ? (
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))] p-1">
+                  {t("common.noResults")}
+                </p>
+              ) : null}
+            </div>
+          }
+        />
+
+        {/* MOMRA Reference Number */}
+        {isEPM940 ? (
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
+              {t("incidents.momraRefNumLabel", "MOMRA Reference Number")}
+            </label>
+            <input
+              value={draft.momraRef || ""}
+              onChange={(e) => patch({ momraRef: e.target.value || undefined })}
+              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+              placeholder={t(
+                "incidents.momraRefNumPlaceholder",
+                "Enter MOMRA reference number",
+              )}
+            />
+          </div>
+        ) : null}
+
+        {/* Converted to Request */}
+        <SelectBox
+          label={t("incidents.convertedTo", "Converted to Request")}
+          isOpen={openBox === "converted"}
+          onToggle={() => toggleBox("converted")}
+          trigger={
+            draft.convertedToRequest !== undefined ? (
+              <Chip
+                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                label={
+                  draft.convertedToRequest ? t("common.yes") : t("common.no")
+                }
+                onRemove={() => patch({ convertedToRequest: undefined })}
+              />
+            ) : (
+              placeholder
+            )
+          }
+          dropdown={
+            <div className="space-y-1 max-h-32 overflow-y-auto pe-0.5">
+              <label
+                key="converted-yes"
+                className="flex items-center gap-2 p-1 rounded hover:bg-[hsl(var(--muted)/0.6)] cursor-pointer group"
+              >
+                <input
+                  checked={draft.convertedToRequest === true}
+                  onChange={() =>
+                    patch({
+                      convertedToRequest:
+                        draft.convertedToRequest === true ? undefined : true,
+                    })
+                  }
+                  className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                  type="checkbox"
+                />
+                <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
+                  {t("common.yes")}
+                </span>
+              </label>
+              <label
+                key="converted-no"
+                className="flex items-center gap-2 p-1 rounded hover:bg-[hsl(var(--muted)/0.6)] cursor-pointer group"
+              >
+                <input
+                  checked={draft.convertedToRequest === false}
+                  onChange={() =>
+                    patch({
+                      convertedToRequest:
+                        draft.convertedToRequest === false ? undefined : false,
+                    })
+                  }
+                  className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                  type="checkbox"
+                />
+                <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
+                  {t("common.no")}
+                </span>
+              </label>
+            </div>
+          }
+        />
       </div>
 
       {/* footer */}

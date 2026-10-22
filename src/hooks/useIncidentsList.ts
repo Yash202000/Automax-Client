@@ -58,6 +58,10 @@ export function useIncidentsList({
       sla: filters?.sla ?? null,
       phone: filters?.reporterPhone ?? null,
       reporter: filters?.reporterId ?? null,
+      workflow: filters?.workflowId ?? null,
+      source: filters?.source ?? null,
+      momraRef: filters?.momraRef ?? null,
+      convertedToRequest: filters?.convertedToRequest ?? null,
       scope: canViewAll ? "all" : `mine:${user?.id ?? "anon"}`,
     },
   ];
@@ -106,6 +110,12 @@ export function useIncidentsList({
           ? { reporter_phone_search: filters.reporterPhone }
           : {}),
         ...(filters?.reporterId ? { reporter_id: filters.reporterId } : {}),
+        ...(filters?.workflowId ? { workflow_id: filters.workflowId } : {}),
+        ...(filters?.source ? { source: filters.source } : {}),
+        ...(filters?.momraRef ? { momra_ref: filters.momraRef } : {}),
+        ...(filters?.convertedToRequest !== undefined
+          ? { converted_to_request: filters.convertedToRequest }
+          : {}),
         ...(canViewAll || filters?.assigneeIds?.length || filters?.reporterId
           ? {}
           : { my_record: user?.id }),
