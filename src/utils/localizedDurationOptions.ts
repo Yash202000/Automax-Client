@@ -1,15 +1,13 @@
-import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
-export function useLocalizeDurationLabel() {
-  const { t } = useTranslation();
+export function localizeDurationLabel(raw: string, t: TFunction): string {
+  // e.g. "1 Day" | "2 Days" | "3 Month" | "1 Year"
+  const match = raw.trim().match(/^(\d+)\s*(day|week|month|year)s?$/i);
+  if (!match) return raw;
 
-  return (raw: string): string => {
-    // eg    "1 Day" | "2 Week" | "3 Month" | "1 Year"
-    const match = raw.trim().match(/^(\d+)\s+(day|week|month|year)s?$/i);
-    if (!match) return raw;
+  const value = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  const key = value === 1 ? unit : `${unit}s`;
 
-    const [, count, unit] = match;
-    console.log("count, unit", count, unit);
-    return `${count} ${t(`incidents.duration.${unit.toLowerCase()}`)}`;
-  };
+  return t(`incidents.duration.${key}`, { value, defaultValue: raw });
 }

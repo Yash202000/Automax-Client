@@ -129,7 +129,7 @@ import { IncidentMentionTextarea } from "@/components/common/IncidentMentionText
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { resolveSourceLabel } from "@/utils/sourceLabel";
-import { useLocalizeDurationLabel } from "@/utils/localizedDurationOptions";
+import { localizeDurationLabel } from "@/utils/localizedDurationOptions";
 
 const parseAllowMultiple = (validationRules?: string): boolean => {
   if (!validationRules) return false;
@@ -621,8 +621,6 @@ export const IncidentDetailPage: React.FC = () => {
     enabled: isDurationTransition,
     staleTime: 5 * 60 * 1000,
   });
-
-  const getDurationLabel = useLocalizeDurationLabel();
 
   // Merge state-specific options with global defaults (state-specific takes priority)
   const readyToCloseDurationOptions: string[] = isDurationTransition
@@ -6433,7 +6431,7 @@ export const IncidentDetailPage: React.FC = () => {
                         </option>
                         {readyToCloseDurationOptions.map((opt) => (
                           <option key={opt} value={opt}>
-                            {getDurationLabel(opt)}
+                            {localizeDurationLabel(opt, t)}
                           </option>
                         ))}
                       </select>
