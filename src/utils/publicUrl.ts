@@ -14,3 +14,13 @@ export function publicUrl(filePath: string): string {
   const p = filePath.startsWith("/") ? filePath : `/${filePath}`;
   return `${base}${p}`;
 }
+
+/**
+ * Resolves a logo setting that may be a full URL or a file name inside public/.
+ * Returns null when empty.
+ */
+export function resolveLogoUrl(value?: string | null): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  return /^(https?:|data:|blob:|\/\/)/i.test(v) ? v : publicUrl(v);
+}

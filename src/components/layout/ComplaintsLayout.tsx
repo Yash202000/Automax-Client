@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { publicUrl } from "../../utils/publicUrl";
+import { publicUrl, resolveLogoUrl } from "../../utils/publicUrl";
+import { useSettings } from "../../contexts/SettingsContext";
 import {
   Outlet,
   NavLink,
@@ -45,6 +46,9 @@ import { NotificationBell } from "../common/NotificationBell";
 
 export const ComplaintsLayout: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const navLogo =
+    resolveLogoUrl(settings?.logo_small_url) ?? publicUrl("epm-logo.png");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -139,8 +143,8 @@ export const ComplaintsLayout: React.FC = () => {
       >
         <div className="flex items-center gap-3">
           <img
-            src={publicUrl("epm-logo.png")}
-            alt="Automax"
+            src={navLogo}
+            alt={settings?.logo_alt_text || "Automax"}
             className={collapsed ? "h-8 w-auto" : "h-10 w-auto"}
           />
         </div>

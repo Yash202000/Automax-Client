@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { publicUrl } from "../../utils/publicUrl";
+import { publicUrl, resolveLogoUrl } from "../../utils/publicUrl";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,9 +25,13 @@ import ThemeToggle from "../common/ThemeToggle";
 import usePermissions from "@/hooks/usePermissions";
 import { SoftphoneButton } from "../sip/SoftphoneButton";
 import { NotificationBell } from "../common/NotificationBell";
+import { useSettings } from "../../contexts/SettingsContext";
 
 export const Navbar: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const navLogo =
+    resolveLogoUrl(settings?.logo_small_url) ?? publicUrl("epm-logo.png");
   const { user, isAuthenticated, logout } = useAuthStore();
   const { hasAnyPermission, isSuperAdmin } = usePermissions();
   const navigate = useNavigate();
@@ -100,8 +104,8 @@ export const Navbar: React.FC = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 mr-8">
               <img
-                src={publicUrl("epm-logo.png")}
-                alt="Automax"
+                src={navLogo}
+                alt={settings?.logo_alt_text || "Automax"}
                 className="h-9 w-auto"
               />
             </Link>
