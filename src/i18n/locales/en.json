@@ -1012,7 +1012,17 @@
     "priorityLevel": "Level {{level}}",
     "outsideBoundaryTitle": "Outside Location Boundary",
     "outsideBoundary": "Incident appears outside the defined location boundary — approvals disabled",
-    "showingFiles": "Showing {{count}} files"
+    "showingFiles": "Showing {{count}} files",
+    "duration": {
+      "day": "{{value}} Day",
+      "days": "{{value}} Days",
+      "week": "{{value}} Week",
+      "weeks": "{{value}} Weeks",
+      "month": "{{value}} Month",
+      "months": "{{value}} Months",
+      "year": "{{value}} Year",
+      "years": "{{value}} Years"
+    }
   },
   "priorities": {
     "critical": "Critical",

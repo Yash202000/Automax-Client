@@ -40,6 +40,7 @@ import type {
   User as UserType,
   UserMatchResponse,
 } from "../../types";
+import { localizeDurationLabel } from "@/utils/localizedDurationOptions";
 
 export interface IncidentTransitionDialogProps {
   incident: Incident;
@@ -1028,7 +1029,7 @@ export function IncidentTransitionDialog({
                 <option value="">{t("incidents.selectDuration")}</option>
                 {readyToCloseDurationOptions.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {localizeDurationLabel(opt, t)}
                   </option>
                 ))}
               </select>

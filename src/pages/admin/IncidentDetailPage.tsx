@@ -108,7 +108,7 @@ import type {
   ValidationRules,
   IncidentRevision,
 } from "../../types";
-import { cn, getLocalizedName } from "@/lib/utils";
+import { cn, getLocalizedField, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "../../stores/authStore";
@@ -129,6 +129,7 @@ import { IncidentMentionTextarea } from "@/components/common/IncidentMentionText
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { resolveSourceLabel } from "@/utils/sourceLabel";
+import { localizeDurationLabel } from "@/utils/localizedDurationOptions";
 
 const parseAllowMultiple = (validationRules?: string): boolean => {
   if (!validationRules) return false;
@@ -6098,7 +6099,7 @@ export const IncidentDetailPage: React.FC = () => {
                         {trans.field_changes!.map((fc) => (
                           <div key={fc.id}>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
-                              {fc.label || fc.field_name}
+                              {getLocalizedField(fc, "label") || fc.field_name}
                               {fc.is_required && (
                                 <span className="text-red-500 ml-1">*</span>
                               )}
@@ -6430,7 +6431,7 @@ export const IncidentDetailPage: React.FC = () => {
                         </option>
                         {readyToCloseDurationOptions.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt}
+                            {localizeDurationLabel(opt, t)}
                           </option>
                         ))}
                       </select>
