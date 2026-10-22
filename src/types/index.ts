@@ -1376,6 +1376,7 @@ export interface IncidentRevision {
   revision_number: number;
   action_type: IncidentRevisionActionType;
   action_description: string;
+  action_description_ar?: string | null;
   changes: IncidentFieldChange[];
   performed_by_id: string;
   performed_by?: User;
