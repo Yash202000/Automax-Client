@@ -1010,7 +1010,13 @@
     "priorityLevel": "المستوى {{level}}",
     "outsideBoundaryTitle": "خارج نطاق الموقع",
     "outsideBoundary": "يبدو أن البلاغ خارج نطاق الموقع المحدد — تم تعطيل الاعتمادات",
-    "showingFiles": "عرض {{count}} ملفات"
+    "showingFiles": "عرض {{count}} ملفات",
+    "duration": {
+      "day": "يوم",
+      "week": "أسبوع",
+      "month": "شهر",
+      "year": "سنة"
+    }
   },
   "priorities": {
     "critical": "حرج",
