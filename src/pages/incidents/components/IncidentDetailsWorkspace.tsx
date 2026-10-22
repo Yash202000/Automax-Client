@@ -606,8 +606,14 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
 
   const copyUrl = async () => {
     try {
+      const basePath =
+        window.APP_CONFIG?.BASE_PATH ??
+        import.meta.env.VITE_BASE_PATH ??
+        import.meta.env.BASE_URL ??
+        "/";
+      const normalizedBase = basePath.replace(/\/$/, "");
       await navigator.clipboard.writeText(
-        `${window.location.origin}/incidents/${incident.id}`,
+        `${window.location.origin}${normalizedBase}/incidents/${incident.id}`,
       );
       toast.success(t("incidents.copied"));
     } catch {

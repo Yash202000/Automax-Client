@@ -1118,8 +1118,9 @@ export function FilterDrawer({
               <Chip
                 className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
                 label={
-                  workflowsData?.find((w) => w.id === draft.workflowId)?.name ||
-                  draft.workflowId
+                  getLocalizedName(
+                    workflowsData?.find((w) => w.id === draft.workflowId),
+                  ) || draft.workflowId
                 }
                 onRemove={() => patch({ workflowId: undefined })}
               />
