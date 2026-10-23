@@ -293,7 +293,9 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     if (reopenTransition) {
       setSelectedTransition(reopenTransition);
     }
-    setSearchParams({}, { replace: true });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("action");
+    setSearchParams(newParams, { replace: true });
   }, [transitionsData?.data, searchParams, setSearchParams]);
 
   const { data: attachmentsData } = useQuery({
@@ -607,8 +609,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   })();
   const canViewTransitions =
     canViewAllIncidents() ||
-    incident?.assignees?.some((assignee) => assignee.id === user?.id) ||
-    incident?.assignee?.id === user?.id;
+    assigneeList.some((assignee) => assignee.id === user?.id);
 
   const copyId = async () => {
     try {
