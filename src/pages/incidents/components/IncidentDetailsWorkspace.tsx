@@ -287,6 +287,19 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   useEffect(() => {
     if (searchParams.get("action") !== "reopen") return;
     if (!transitionsData?.data?.length) return;
+
+    // Apply same visibility gates as the transition filter:
+    // hide if location is "Default" or incident is merged non-master.
+    const isLocationDefault = incident?.location?.name === "Default";
+    const isMergedNonMaster =
+      incident?.is_merged && incident?.master_incident_id !== incident?.id;
+    if (isLocationDefault || isMergedNonMaster) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("action");
+      setSearchParams(newParams, { replace: true });
+      return;
+    }
+
     const reopenTransition = transitionsData.data.find(
       (t) => t.transition.is_reopen && t.can_execute,
     );
@@ -296,7 +309,14 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("action");
     setSearchParams(newParams, { replace: true });
-  }, [transitionsData?.data, searchParams, setSearchParams]);
+  }, [
+    transitionsData?.data,
+    searchParams,
+    setSearchParams,
+    incident?.location?.name,
+    incident?.is_merged,
+    incident?.master_incident_id,
+  ]);
 
   const { data: attachmentsData } = useQuery({
     queryKey: ["incidents", "v2-list", "attachments", incident?.id ?? "none"],
