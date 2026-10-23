@@ -286,6 +286,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     if (searchParams.get("action") !== "reopen") return;
+    if (!incident?.id) return; // wait for incident to be selected
     if (transitionsLoading) return; // wait for transitions to load
 
     // Always consume the action after we've made our decision,
@@ -323,6 +324,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     transitionsLoading,
     searchParams,
     setSearchParams,
+    incident?.id,
     incident?.location?.name,
     incident?.is_merged,
     incident?.master_incident_id,
