@@ -286,6 +286,12 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     if (searchParams.get("action") !== "reopen") return;
+
+    // Always consume the action param to avoid leaking it to other incidents.
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("action");
+    setSearchParams(newParams, { replace: true });
+
     if (!transitionsData?.data?.length) return;
 
     // Apply same visibility gates as the transition filter:
@@ -293,12 +299,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     const isLocationDefault = incident?.location?.name === "Default";
     const isMergedNonMaster =
       incident?.is_merged && incident?.master_incident_id !== incident?.id;
-    if (isLocationDefault || isMergedNonMaster) {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete("action");
-      setSearchParams(newParams, { replace: true });
-      return;
-    }
+    if (isLocationDefault || isMergedNonMaster) return;
 
     const reopenTransition = transitionsData.data.find(
       (t) => t.transition.is_reopen && t.can_execute,
@@ -306,9 +307,6 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     if (reopenTransition) {
       setSelectedTransition(reopenTransition);
     }
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete("action");
-    setSearchParams(newParams, { replace: true });
   }, [
     transitionsData?.data,
     searchParams,
