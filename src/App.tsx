@@ -6,6 +6,7 @@ import {
   Route,
   Navigate,
   useParams,
+  useLocation,
 } from "react-router-dom";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -152,10 +153,14 @@ const isEPM940Client =
 
 function IncidentDetailsRoute() {
   const { id } = useParams();
+  const location = useLocation();
   // The new design has no standalone details page — deep links land on the
   // split view with the incident preselected via ?id=.
-  if (isEPM940Client && id)
-    return <Navigate to={`/incidents?id=${id}`} replace />;
+  // Preserve search params (e.g., ?action=reopen) for the new page.
+  if (isEPM940Client && id) {
+    const search = location.search ? `&${location.search.slice(1)}` : "";
+    return <Navigate to={`/incidents?id=${id}${search}`} replace />;
+  }
   return <IncidentDetailPage />;
 }
 const IncidentFeedbackPage = lazy(() =>

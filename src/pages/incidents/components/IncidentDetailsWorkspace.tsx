@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -192,11 +192,7 @@ function transitionIcon(transition: WorkflowTransition) {
 export function IncidentDetailsWorkspace({ incident }: Props) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { hasPermission, isSuperAdmin } = usePermissions();
-  const canViewAllIncidents =
-    isSuperAdmin ||
-    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
-    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
+  const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabKey>("details");
@@ -285,6 +281,20 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     enabled: !!incident?.id,
     staleTime: 30_000,
   });
+
+  /* Auto-open reopen transition when navigated with ?action=reopen — mirrors IncidentDetailPage. */
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("action") !== "reopen") return;
+    if (!transitionsData?.data?.length) return;
+    const reopenTransition = transitionsData.data.find(
+      (t) => t.transition.is_reopen && t.can_execute,
+    );
+    if (reopenTransition) {
+      setSelectedTransition(reopenTransition);
+    }
+    setSearchParams({}, { replace: true });
+  }, [transitionsData?.data, searchParams, setSearchParams]);
 
   const { data: attachmentsData } = useQuery({
     queryKey: ["incidents", "v2-list", "attachments", incident?.id ?? "none"],
@@ -566,9 +576,14 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const locName = getLocalizedName(incident.location);
   const classificationName = getLocalizedName(incident.classification);
   const attachments = attachmentsData?.data ?? [];
-  const transitions = (transitionsData?.data || []).filter(
-    (tr) => tr.can_execute,
-  );
+  const isLocationDefault = incident?.location?.name === "Default";
+  const isMergedNonMaster =
+    incident?.is_merged && incident?.master_incident_id !== incident?.id;
+  const transitions = (transitionsData?.data || []).filter((tr) => {
+    if (isLocationDefault) return false;
+    if (isMergedNonMaster) return false;
+    return tr.can_execute;
+  });
   const canConvertToRequest = canConvertData?.data?.can_convert ?? false;
   const mergedIncidents = mergedIncidentsData?.data ?? [];
 
@@ -591,7 +606,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     return roles.length === 0 || roles.some((r) => userRoles.includes(r.id));
   })();
   const canViewTransitions =
-    canViewAllIncidents ||
+    canViewAllIncidents() ||
     incident?.assignees?.some((assignee) => assignee.id === user?.id) ||
     incident?.assignee?.id === user?.id;
 
@@ -1153,7 +1168,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
           (transitions.length > 0 ||
             ((!incident.record_type || incident.record_type === "incident") &&
               canConvertToRequest &&
-              incident?.location?.name !== "Default")) ? (
+              !isLocationDefault)) ? (
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 px-0.5 flex-1 min-w-0 justify-end">
                 {transitions.map((a) => {
