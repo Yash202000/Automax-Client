@@ -327,6 +327,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   }, [
     transitionsData?.data,
     transitionsLoading,
+    transitionsError,
     searchParams,
     setSearchParams,
     incident?.id,
