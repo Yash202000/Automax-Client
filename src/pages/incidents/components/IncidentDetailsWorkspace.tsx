@@ -275,7 +275,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const [includeReportLogs, setIncludeReportLogs] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
 
-  const { data: transitionsData } = useQuery({
+  const { data: transitionsData, isLoading: transitionsLoading } = useQuery({
     queryKey: ["incidents", "v2-list", "transitions", incident?.id ?? "none"],
     queryFn: () => incidentApi.getAvailableTransitions(incident!.id),
     enabled: !!incident?.id,
@@ -286,20 +286,30 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     if (searchParams.get("action") !== "reopen") return;
+    if (transitionsLoading) return; // wait for transitions to load
 
-    // Always consume the action param to avoid leaking it to other incidents.
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete("action");
-    setSearchParams(newParams, { replace: true });
+    // Always consume the action after we've made our decision,
+    // regardless of whether we open the dialog or not.
+    const consumeAction = () => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("action");
+      setSearchParams(newParams, { replace: true });
+    };
 
-    if (!transitionsData?.data?.length) return;
+    if (!transitionsData?.data?.length) {
+      consumeAction();
+      return;
+    }
 
     // Apply same visibility gates as the transition filter:
     // hide if location is "Default" or incident is merged non-master.
     const isLocationDefault = incident?.location?.name === "Default";
     const isMergedNonMaster =
       incident?.is_merged && incident?.master_incident_id !== incident?.id;
-    if (isLocationDefault || isMergedNonMaster) return;
+    if (isLocationDefault || isMergedNonMaster) {
+      consumeAction();
+      return;
+    }
 
     const reopenTransition = transitionsData.data.find(
       (t) => t.transition.is_reopen && t.can_execute,
@@ -307,8 +317,10 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     if (reopenTransition) {
       setSelectedTransition(reopenTransition);
     }
+    consumeAction();
   }, [
     transitionsData?.data,
+    transitionsLoading,
     searchParams,
     setSearchParams,
     incident?.location?.name,
