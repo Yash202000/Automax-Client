@@ -235,10 +235,15 @@ export const CintrixCtiHost: React.FC = () => {
       const status = (e as CustomEvent<{ status?: string }>).detail?.status;
       const extension = extensionRef.current || user?.extension || "";
       if (!status || !extension) return;
-      // Cintrix vocabulary (available/away/offline) → Automax call_status.
-      // Only 'online' is routable; 'busy' and 'offline' both keep the agent
-      // out of round-robin, but stay distinguishable in the UI and reports.
-      const callStatus = status === "available" ? "online" : "offline";
+      // Cintrix vocabulary (online/available/away/offline) → Automax
+      // call_status. Only 'online' is routable; 'busy' and 'offline' both keep
+      // the agent out of round-robin, but stay distinguishable in the UI and
+      // reports. The widget emits "online" (older builds: "available").
+      const normalized = status.toLowerCase();
+      const callStatus =
+        normalized === "online" || normalized === "available"
+          ? "online"
+          : "offline";
       // The widget re-emits presence on device selection and on
       // reconnect-recovery, so the same value arrives repeatedly — skip the
       // redundant writes (parity with the native softphone's dedupe).
