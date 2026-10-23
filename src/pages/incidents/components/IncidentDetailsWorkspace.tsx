@@ -275,7 +275,11 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const [includeReportLogs, setIncludeReportLogs] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
 
-  const { data: transitionsData, isLoading: transitionsLoading } = useQuery({
+  const {
+    data: transitionsData,
+    isLoading: transitionsLoading,
+    isError: transitionsError,
+  } = useQuery({
     queryKey: ["incidents", "v2-list", "transitions", incident?.id ?? "none"],
     queryFn: () => incidentApi.getAvailableTransitions(incident!.id),
     enabled: !!incident?.id,
@@ -288,6 +292,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     if (searchParams.get("action") !== "reopen") return;
     if (!incident?.id) return; // wait for incident to be selected
     if (transitionsLoading) return; // wait for transitions to load
+    if (transitionsError) return; // don't consume action on error — preserve for retry
 
     // Always consume the action after we've made our decision,
     // regardless of whether we open the dialog or not.
