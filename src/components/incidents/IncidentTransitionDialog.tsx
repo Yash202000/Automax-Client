@@ -31,7 +31,8 @@ import type { TreeSelectNode } from "../../utils/treeUtils";
 import { IncidentMentionTextarea } from "../common/IncidentMentionTextarea";
 import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
 import { useImageValidation } from "../../hooks/useImageValidation";
-import { capFilesByCount } from "../../utils/attachmentLimits";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
+import type { RejectedAttachment } from "../../utils/imageValidation";
 import type {
   AvailableTransition,
   Department,
@@ -143,7 +144,7 @@ export function IncidentTransitionDialog({
 
   const trans = selectedTransition?.transition;
 
-  /* lookups for attachment limits */
+  /* lookups (feedback form options) */
   const { data: lookupCategoriesData } = useQuery({
     queryKey: ["admin", "lookups", "categories"],
     queryFn: () => lookupApi.listCategories(),
@@ -153,20 +154,14 @@ export function IncidentTransitionDialog({
     () => lookupCategoriesData?.data || [],
     [lookupCategoriesData?.data],
   );
-  const envConfigCategory = useMemo(
-    () => lookupCategories.find((cat) => cat.code === "ENV_CONFIGURATION"),
-    [lookupCategories],
-  );
-  const MAX_TRANSITION_ATTACHMENTS = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
-    )?.name ?? "5",
-  );
-  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
-    )?.name ?? "5",
-  );
+
+  /* attachment limits (System Settings → Attachments) */
+  const attachmentPolicy = useAttachmentPolicy("internal");
+  const [attachmentRejects, setAttachmentRejects] = useState<
+    RejectedAttachment[]
+  >([]);
+  const MAX_TRANSITION_ATTACHMENTS = attachmentPolicy.maxFiles;
+  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
   /* comment + feedback templates for this transition */
   const { data: commentTemplatesData } = useQuery({
@@ -380,6 +375,7 @@ export function IncidentTransitionDialog({
     file.size > MAX_TRANSITION_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
   const transitionAttachmentLimitReached =
+    !attachmentPolicy.enabled ||
     transitionAttachment.length >= MAX_TRANSITION_ATTACHMENTS;
 
   const validateTransitionAttachments = (files: File[]): string => {
@@ -405,23 +401,17 @@ export function IncidentTransitionDialog({
     replace = false,
   ) => {
     const base = replace ? [] : transitionAttachment;
-    const { accepted, skippedForLimit } = capFilesByCount(
+    const { accepted, rejected } = attachmentPolicy.check(
       replace ? newFiles.slice(0, 1) : newFiles,
       base.length,
-      MAX_TRANSITION_ATTACHMENTS,
     );
+    setAttachmentRejects(rejected);
     const { valid } = await transitionImageValidation.validate(accepted);
     const next = [...base, ...valid];
     setTransitionAttachment(next);
     setTransitionErrors((prev) => ({
       ...prev,
-      attachment:
-        skippedForLimit > 0
-          ? t("incidents.attachmentLimitExceeded", {
-              max: MAX_TRANSITION_ATTACHMENTS,
-              defaultValue: `Maximum ${MAX_TRANSITION_ATTACHMENTS} attachments allowed`,
-            })
-          : validateTransitionAttachments(next),
+      attachment: validateTransitionAttachments(next),
     }));
   };
 
@@ -429,6 +419,7 @@ export function IncidentTransitionDialog({
     setTransitionStep(0);
     setTransitionComment("");
     setTransitionAttachment([]);
+    setAttachmentRejects([]);
     transitionImageValidation.clearRejected();
     setTransitionFeedbackComment("");
     setTransitionFieldValues({});
@@ -1163,6 +1154,7 @@ export function IncidentTransitionDialog({
                           type="file"
                           className="hidden"
                           multiple
+                          accept={attachmentPolicy.accept}
                           disabled={
                             transitionAttachmentLimitReached ||
                             validatingTransitionAttachments
@@ -1210,6 +1202,7 @@ export function IncidentTransitionDialog({
                     type="file"
                     className="hidden"
                     multiple={transitionAttachmentAllowsMultiple}
+                    accept={attachmentPolicy.accept}
                     disabled={validatingTransitionAttachments}
                     onChange={(e) => {
                       const files = e.target.files;
@@ -1227,19 +1220,22 @@ export function IncidentTransitionDialog({
                 </label>
               )}
               <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                {t("citizen.maxSize", "Max")}{" "}
-                {MAX_TRANSITION_ATTACHMENT_SIZE_MB} MB ·{" "}
-                {t("incidents.attachmentLimit", {
-                  max: MAX_TRANSITION_ATTACHMENTS,
-                  defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
-                })}
+                {attachmentPolicy.hint}
               </p>
               {transitionErrors.attachment && (
                 <p className="text-xs text-red-500 mt-1">
                   {transitionErrors.attachment}
                 </p>
               )}
-              <div className="mt-2">
+              <div className="mt-2 space-y-2">
+                <RejectedAttachmentsList
+                  title={t("attachments.notAdded", {
+                    count: attachmentRejects.length,
+                    defaultValue: "{{count}} file(s) couldn't be added",
+                  })}
+                  items={attachmentRejects}
+                  onDismiss={() => setAttachmentRejects([])}
+                />
                 <RejectedAttachmentsList
                   items={transitionImageValidation.rejected}
                   onDismiss={transitionImageValidation.clearRejected}

@@ -270,7 +270,14 @@
     "yesterday": "أمس",
     "unknown": "غير معروف",
     "more": "أكثر",
-    "showLess": "عرض أقل"
+    "showLess": "عرض أقل",
+    "saving": "جارٍ الحفظ...",
+    "discard": "تجاهل",
+    "dismiss": "إغلاق",
+    "stay": "البقاء في الصفحة",
+    "saveAndLeave": "حفظ ومغادرة",
+    "unsavedChangesTitle": "لديك تغييرات غير محفوظة",
+    "unsavedChangesDesc": "احفظ تغييراتك قبل المغادرة، أو تجاهلها."
   },
   "search": {
     "minCharsTitle": "استمر في الكتابة...",
@@ -1149,7 +1156,46 @@
     "showForgotPassword": "إظهار نسيت كلمة المرور",
     "showForgotPasswordDesc": "إظهار رابط نسيت كلمة المرور في صفحة تسجيل الدخول.",
     "bypassTotpVerification": "تجاوز التحقق عبر OTP عند تسجيل الدخول",
-    "bypassTotpVerificationDesc": "المستخدمون المعينون لهذا الدور يتخطون التحقق برمز مؤقت لمرة واحدة عند تسجيل الدخول."
+    "bypassTotpVerificationDesc": "المستخدمون المعينون لهذا الدور يتخطون التحقق برمز مؤقت لمرة واحدة عند تسجيل الدخول.",
+    "attachments": {
+      "title": "إعدادات المرفقات وأنواع الملفات",
+      "activePolicies": "سياسات مفعّلة",
+      "description": "تهيئة الحدود العامة وفئات الملفات والامتدادات المسموح بها بشكل منفصل للمواطنين والمستخدمين الداخليين.",
+      "enableAttachments": "تفعيل المرفقات",
+      "enabledFor": "مفعّل لـ {{audience}}",
+      "disabledFor": "معطّل لـ {{audience}}",
+      "forCitizens": "المواطنين",
+      "forInternalUsers": "المستخدمين الداخليين",
+      "citizens": "المواطنون (روبوت المحادثة والبوابة)",
+      "internalUsers": "المستخدمون الداخليون (الوكلاء والمسؤولون)",
+      "countOf": "{{count}} من {{total}}",
+      "securityPolicy": "سياسة الأمان:",
+      "securityPolicyDesc": "تم حظر {{count}} من أنواع الملفات التنفيذية الخطرة (.exe, .bat, .sh, .cmd, .msi وغيرها) بشكل دائم.",
+      "maxFileSize": "الحد الأقصى لحجم الملف (ميغابايت)",
+      "maxFilesPerUpload": "الحد الأقصى للملفات في كل رفع",
+      "selectionMode": "وضع التحديد",
+      "selectAll": "تحديد الكل",
+      "selectNone": "إلغاء الكل",
+      "selectSpecific": "تحديد مخصص",
+      "totalSelected": "إجمالي المحدد",
+      "countSelected": "تم تحديد {{count}} من {{total}}",
+      "invalidLimits": "يجب أن يكون حجم الملف وعدد الملفات 1 على الأقل.",
+      "categories": {
+        "image": "الصور",
+        "document": "المستندات",
+        "spreadsheet": "جداول البيانات",
+        "presentation": "العروض التقديمية",
+        "audio": "الصوت",
+        "video": "الفيديو",
+        "archive": "الملفات المضغوطة"
+      },
+      "loading": "جارٍ تحميل إعدادات المرفقات...",
+      "loadFailed": "تعذر تحميل إعدادات المرفقات."
+    },
+    "saved": "تم تحديث الإعدادات بنجاح",
+    "saveFailed": "فشل تحديث الإعدادات",
+    "allChangesSaved": "تم حفظ جميع التغييرات",
+    "saveSettings": "حفظ الإعدادات"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -5205,5 +5251,14 @@
       "userLeft": "غادر مستخدم",
       "userStoppedViewing": "توقف {{user}} عن عرض هذه الحادثة"
     }
+  },
+  "attachments": {
+    "disabled": "المرفقات معطّلة حاليًا.",
+    "typeNotAllowed": "ملفات .{{ext}} غير مسموح بها.",
+    "tooLarge": "حجم الملف {{size}} ميغابايت، والحد الأقصى {{max}} ميغابايت.",
+    "limitReached": "يُسمح بـ {{max}} مرفقات فقط.",
+    "hintSize": "حتى {{max}} ميغابايت لكل ملف",
+    "hintCount": "{{max}} ملفات كحد أقصى",
+    "notAdded": "تعذّر إضافة {{count}} ملف"
   }
 }

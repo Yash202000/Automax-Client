@@ -270,7 +270,14 @@
     "yesterday": "Yesterday",
     "unknown": "Unknown",
     "more": "more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "saving": "Saving...",
+    "discard": "Discard",
+    "dismiss": "Dismiss",
+    "stay": "Stay on page",
+    "saveAndLeave": "Save & leave",
+    "unsavedChangesTitle": "You have unsaved changes",
+    "unsavedChangesDesc": "Save your changes before leaving, or discard them."
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -1151,7 +1158,46 @@
     "showForgotPassword": "Show Forgot Password",
     "showForgotPasswordDesc": "Show the forgot password link on the login page.",
     "bypassTotpVerification": "Bypass Login TOTP Verification",
-    "bypassTotpVerificationDesc": "Users assigned this role skip time-based one-time passcode verification during login."
+    "bypassTotpVerificationDesc": "Users assigned this role skip time-based one-time passcode verification during login.",
+    "attachments": {
+      "title": "Attachment & File Types Configuration",
+      "activePolicies": "Active Policies",
+      "description": "Configure global limits, allowed file categories, and extensions separately for Citizens and Internal Users.",
+      "enableAttachments": "Enable Attachments",
+      "enabledFor": "Enabled for {{audience}}",
+      "disabledFor": "Disabled for {{audience}}",
+      "forCitizens": "Citizens",
+      "forInternalUsers": "Internal Users",
+      "citizens": "Citizens (Chatbot & Portal)",
+      "internalUsers": "Internal Users (Agents & Admins)",
+      "countOf": "{{count}} of {{total}}",
+      "securityPolicy": "Security Policy:",
+      "securityPolicyDesc": "{{count}} dangerous executable file types (.exe, .bat, .sh, .cmd, .msi, etc.) are permanently blocked.",
+      "maxFileSize": "Max File Size (MB)",
+      "maxFilesPerUpload": "Max Files per Upload",
+      "selectionMode": "Selection Mode",
+      "selectAll": "Select All",
+      "selectNone": "Select None",
+      "selectSpecific": "Select Specific",
+      "totalSelected": "Total Selected",
+      "countSelected": "{{count}} of {{total}} selected",
+      "invalidLimits": "File size and file count must be at least 1.",
+      "categories": {
+        "image": "Images",
+        "document": "Documents",
+        "spreadsheet": "Spreadsheets",
+        "presentation": "Presentations",
+        "audio": "Audio",
+        "video": "Video",
+        "archive": "Archives"
+      },
+      "loading": "Loading attachment configuration...",
+      "loadFailed": "Couldn't load the attachment configuration."
+    },
+    "saved": "Settings updated successfully",
+    "saveFailed": "Failed to update settings",
+    "allChangesSaved": "All changes saved",
+    "saveSettings": "Save Settings"
   },
   "profile": {
     "title": "Profile",
@@ -5202,5 +5248,14 @@
       "userLeft": "User Left",
       "userStoppedViewing": "{{user}} stopped viewing this incident."
     }
+  },
+  "attachments": {
+    "disabled": "Attachments are currently disabled.",
+    "typeNotAllowed": ".{{ext}} files are not allowed.",
+    "tooLarge": "File is {{size}} MB, the limit is {{max}} MB.",
+    "limitReached": "Only {{max}} attachments are allowed.",
+    "hintSize": "Up to {{max}} MB each",
+    "hintCount": "Max {{max}} files",
+    "notAdded": "{{count}} file(s) couldn't be added"
   }
 }

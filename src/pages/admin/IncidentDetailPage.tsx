@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { withCallStatusDot } from "../../utils/callStatus";
-import { capFilesByCount } from "../../utils/attachmentLimits";
 import { useImageValidation } from "../../hooks/useImageValidation";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
+import type { RejectedAttachment } from "../../utils/imageValidation";
 import {
   useParams,
   useNavigate,
@@ -538,30 +539,18 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
-  const envConfigCategory = useMemo(
-    () =>
-      (lookupCategoriesData?.data || []).find(
-        (cat) => cat.code === "ENV_CONFIGURATION",
-      ),
-    [lookupCategoriesData],
-  );
-
-  const MAX_TRANSITION_ATTACHMENTS = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
-    )?.name ?? "5",
-  );
-
-  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
-    )?.name ?? "5",
-  );
+  const attachmentPolicy = useAttachmentPolicy("internal");
+  const [attachmentRejects, setAttachmentRejects] = useState<
+    RejectedAttachment[]
+  >([]);
+  const MAX_TRANSITION_ATTACHMENTS = attachmentPolicy.maxFiles;
+  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
   const isTransitionAttachmentOversized = (file: File) =>
     file.size > MAX_TRANSITION_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
   const transitionAttachmentLimitReached =
+    !attachmentPolicy.enabled ||
     transitionAttachment.length >= MAX_TRANSITION_ATTACHMENTS;
 
   const validateTransitionAttachments = (files: File[]): string => {
@@ -589,23 +578,17 @@ export const IncidentDetailPage: React.FC = () => {
     replace = false,
   ) => {
     const base = replace ? [] : transitionAttachment;
-    const { accepted, skippedForLimit } = capFilesByCount(
+    const { accepted, rejected } = attachmentPolicy.check(
       replace ? newFiles.slice(0, 1) : newFiles,
       base.length,
-      MAX_TRANSITION_ATTACHMENTS,
     );
+    setAttachmentRejects(rejected);
     const { valid } = await transitionImageValidation.validate(accepted);
     const next = [...base, ...valid];
     setTransitionAttachment(next);
     setTransitionErrors((prev) => ({
       ...prev,
-      attachment:
-        skippedForLimit > 0
-          ? t("incidents.attachmentLimitExceeded", {
-              max: MAX_TRANSITION_ATTACHMENTS,
-              defaultValue: `Maximum ${MAX_TRANSITION_ATTACHMENTS} attachments allowed`,
-            })
-          : validateTransitionAttachments(next),
+      attachment: validateTransitionAttachments(next),
     }));
   };
 
@@ -1948,7 +1931,9 @@ export const IncidentDetailPage: React.FC = () => {
     const file = input.files?.[0];
     input.value = "";
     if (!file) return;
-    const { valid } = await attachmentsTabImageValidation.validate([file]);
+    const { accepted, rejected } = attachmentPolicy.check([file], 0);
+    setAttachmentRejects(rejected);
+    const { valid } = await attachmentsTabImageValidation.validate(accepted);
     if (valid.length > 0) uploadAttachmentMutation.mutate(valid[0]);
   };
 
@@ -3209,6 +3194,7 @@ export const IncidentDetailPage: React.FC = () => {
                       <input
                         type="file"
                         className="hidden"
+                        accept={attachmentPolicy.accept}
                         onChange={handleFileUpload}
                         disabled={
                           uploadAttachmentMutation.isPending ||
@@ -3227,7 +3213,15 @@ export const IncidentDetailPage: React.FC = () => {
                           : t("incidents.uploading")}
                       </span>
                     )}
-                    <div className="mt-2">
+                    <div className="mt-2 space-y-2">
+                      <RejectedAttachmentsList
+                        title={t("attachments.notAdded", {
+                          count: attachmentRejects.length,
+                          defaultValue: "{{count}} file(s) couldn't be added",
+                        })}
+                        items={attachmentRejects}
+                        onDismiss={() => setAttachmentRejects([])}
+                      />
                       <RejectedAttachmentsList
                         items={attachmentsTabImageValidation.rejected}
                         onDismiss={attachmentsTabImageValidation.clearRejected}
@@ -5868,6 +5862,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   type="file"
                                   className="hidden"
                                   multiple
+                                  accept={attachmentPolicy.accept}
                                   disabled={
                                     transitionAttachmentLimitReached ||
                                     validatingTransitionAttachments
@@ -5919,6 +5914,7 @@ export const IncidentDetailPage: React.FC = () => {
                             type="file"
                             className="hidden"
                             multiple={transitionAttachmentAllowsMultiple}
+                            accept={attachmentPolicy.accept}
                             disabled={validatingTransitionAttachments}
                             onChange={(e) => {
                               const files = e.target.files;
@@ -5936,19 +5932,22 @@ export const IncidentDetailPage: React.FC = () => {
                         </label>
                       )}
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                        {t("citizen.maxSize", "Max")}{" "}
-                        {MAX_TRANSITION_ATTACHMENT_SIZE_MB} MB ·{" "}
-                        {t("incidents.attachmentLimit", {
-                          max: MAX_TRANSITION_ATTACHMENTS,
-                          defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
-                        })}
+                        {attachmentPolicy.hint}
                       </p>
                       {transitionErrors.attachment && (
                         <p className="text-xs text-red-500 mt-1">
                           {transitionErrors.attachment}
                         </p>
                       )}
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
+                        <RejectedAttachmentsList
+                          title={t("attachments.notAdded", {
+                            count: attachmentRejects.length,
+                            defaultValue: "{{count}} file(s) couldn't be added",
+                          })}
+                          items={attachmentRejects}
+                          onDismiss={() => setAttachmentRejects([])}
+                        />
                         <RejectedAttachmentsList
                           items={transitionImageValidation.rejected}
                           onDismiss={transitionImageValidation.clearRejected}

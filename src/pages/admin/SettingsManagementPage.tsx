@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { settingsApi } from "../../api/settings";
+import {
+  ATTACHMENT_CONFIG_QUERY_KEY,
+  attachmentConfigApi,
+  type AttachmentConfigValue,
+} from "../../api/attachmentConfig";
+import type { Settings } from "../../types";
 import { useTranslation } from "react-i18next";
 import { supportedLanguages } from "../../i18n";
 import {
@@ -16,100 +22,141 @@ import {
   Upload,
   ToggleLeft,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { AttachmentConfigCard } from "@/components/settings/AttachmentConfigCard";
+import { UnsavedChangesDialog } from "@/components/common/UnsavedChangesDialog";
+import { useUnsavedChangesPrompt } from "@/hooks/useUnsavedChangesPrompt";
+
+const SETTINGS_QUERY_KEY = ["settings"];
+
+// Editable subset of the settings, with defaults for missing values.
+const toSettingsForm = (data?: Settings) => ({
+  app_name: data?.app_name || "",
+  app_tagline: data?.app_tagline || "",
+  app_description: data?.app_description || "",
+  logo_url: data?.logo_url || "",
+  logo_small_url: data?.logo_small_url || "",
+  favicon_url: data?.favicon_url || "",
+  logo_alt_text: data?.logo_alt_text || "",
+  primary_color: data?.primary_color || "",
+  secondary_color: data?.secondary_color || "",
+  accent_color: data?.accent_color || "",
+  copyright_text: data?.copyright_text || "",
+  contact_email: data?.contact_email || "",
+  contact_phone: data?.contact_phone || "",
+  feature1_title: data?.feature1_title || "",
+  feature1_description: data?.feature1_description || "",
+  feature2_title: data?.feature2_title || "",
+  feature2_description: data?.feature2_description || "",
+  feature3_title: data?.feature3_title || "",
+  feature3_description: data?.feature3_description || "",
+  date_format: data?.date_format || "",
+  time_format: data?.time_format || "",
+  default_language: data?.default_language || "",
+  show_evaluate_button: data?.show_evaluate_button ?? false,
+  auth_setting: {
+    totp_enabled: data?.auth_setting?.totp_enabled ?? false,
+    show_forgot_password: data?.auth_setting?.show_forgot_password ?? true,
+  },
+});
+
+const isSame = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+const hasValidAttachmentLimits = (value: AttachmentConfigValue) =>
+  Object.values(value).every(
+    (audience) =>
+      audience.max_file_size_mb >= 1 && audience.max_files_per_upload >= 1,
+  );
 
 export const SettingsManagementPage: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState({
-    app_name: "",
-    app_tagline: "",
-    app_description: "",
-    logo_url: "",
-    logo_small_url: "",
-    favicon_url: "",
-    logo_alt_text: "",
-    primary_color: "",
-    secondary_color: "",
-    accent_color: "",
-    copyright_text: "",
-    contact_email: "",
-    contact_phone: "",
-    feature1_title: "",
-    feature1_description: "",
-    feature2_title: "",
-    feature2_description: "",
-    feature3_title: "",
-    feature3_description: "",
-    date_format: "",
-    time_format: "",
-    default_language: "",
-    show_evaluate_button: false,
-    auth_setting: {
-      totp_enabled: false,
-      show_forgot_password: true,
-    },
-  });
-
-  // Fetch settings
+  // Settings API
   const { data: settingsResponse, isLoading } = useQuery({
-    queryKey: ["settings"],
+    queryKey: SETTINGS_QUERY_KEY,
     queryFn: () => settingsApi.get(),
   });
+  const savedSettings = useMemo(
+    () => toSettingsForm(settingsResponse?.data),
+    [settingsResponse],
+  );
+  const [formData, setFormData] = useState(savedSettings);
+  React.useEffect(() => setFormData(savedSettings), [savedSettings]);
 
-  // Update form data when settings are loaded
-  React.useEffect(() => {
-    if (settingsResponse?.data) {
-      const data = settingsResponse.data;
-      setFormData({
-        app_name: data.app_name || "",
-        app_tagline: data.app_tagline || "",
-        app_description: data.app_description || "",
-        logo_url: data.logo_url || "",
-        logo_small_url: data.logo_small_url || "",
-        favicon_url: data.favicon_url || "",
-        logo_alt_text: data.logo_alt_text || "",
-        primary_color: data.primary_color || "",
-        secondary_color: data.secondary_color || "",
-        accent_color: data.accent_color || "",
-        copyright_text: data.copyright_text || "",
-        contact_email: data.contact_email || "",
-        contact_phone: data.contact_phone || "",
-        feature1_title: data.feature1_title || "",
-        feature1_description: data.feature1_description || "",
-        feature2_title: data.feature2_title || "",
-        feature2_description: data.feature2_description || "",
-        feature3_title: data.feature3_title || "",
-        feature3_description: data.feature3_description || "",
-        date_format: data.date_format || "",
-        time_format: data.time_format || "",
-        default_language: data.default_language || "",
-        show_evaluate_button: data.show_evaluate_button ?? false,
-        auth_setting: {
-          totp_enabled: data.auth_setting?.totp_enabled ?? false,
-          show_forgot_password: data.auth_setting?.show_forgot_password ?? true,
-        },
-      });
-    }
-  }, [settingsResponse]);
+  // Config API (attachment_config)
+  const { data: attachmentConfig, isError: attachmentConfigFailed } = useQuery({
+    queryKey: ATTACHMENT_CONFIG_QUERY_KEY,
+    queryFn: attachmentConfigApi.get,
+  });
+  const [attachmentDraft, setAttachmentDraft] = useState(
+    attachmentConfig?.value,
+  );
+  React.useEffect(
+    () => setAttachmentDraft(attachmentConfig?.value),
+    [attachmentConfig],
+  );
 
-  // Update settings mutation
-  const updateMutation = useMutation({
-    mutationFn: settingsApi.update,
+  const isSettingsDirty = !isSame(formData, savedSettings);
+  const isAttachmentDirty = !isSame(attachmentDraft, attachmentConfig?.value);
+  const isDirty = isSettingsDirty || isAttachmentDirty;
+
+  // Only the API(s) whose data changed are called.
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (isSettingsDirty) {
+        await settingsApi.update(formData);
+        await queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
+      }
+      if (isAttachmentDirty && attachmentConfig && attachmentDraft) {
+        await attachmentConfigApi.update(attachmentConfig.id, attachmentDraft);
+        await queryClient.invalidateQueries({
+          queryKey: ATTACHMENT_CONFIG_QUERY_KEY,
+        });
+      }
+    },
     onSuccess: () => {
-      toast.success("Settings updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast.success(t("settings.saved", "Settings updated successfully"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to update settings");
+      toast.error(
+        error.response?.data?.error ||
+          t("settings.saveFailed", "Failed to update settings"),
+      );
     },
   });
+
+  const saveChanges = async () => {
+    if (attachmentDraft && !hasValidAttachmentLimits(attachmentDraft)) {
+      toast.error(
+        t(
+          "settings.attachments.invalidLimits",
+          "File size and file count must be at least 1.",
+        ),
+      );
+      return false;
+    }
+    try {
+      await saveMutation.mutateAsync();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const discardChanges = () => {
+    setFormData(savedSettings);
+    setAttachmentDraft(attachmentConfig?.value);
+  };
+
+  const leavePrompt = useUnsavedChangesPrompt(isDirty);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate(formData);
+    void saveChanges();
   };
 
   const handleChange = (
@@ -555,6 +602,31 @@ export const SettingsManagementPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Attachment Configuration Section (config API) */}
+        {attachmentDraft ? (
+          <AttachmentConfigCard
+            value={attachmentDraft}
+            onChange={setAttachmentDraft}
+          />
+        ) : (
+          <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))] flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+            {attachmentConfigFailed ? (
+              t(
+                "settings.attachments.loadFailed",
+                "Couldn't load the attachment configuration.",
+              )
+            ) : (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {t(
+                  "settings.attachments.loading",
+                  "Loading attachment configuration...",
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* Auth Configuration Section */}
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
@@ -693,18 +765,50 @@ export const SettingsManagementPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-3">
-          <button
-            type="submit"
-            disabled={updateMutation.isPending}
-            className="px-6 py-3 bg-gradient-to-r from-primary to-accent text-white rounded-lg hover:from-accent hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-violet-500/30"
-          >
-            <Save className="w-5 h-5" />
-            {updateMutation.isPending ? "Saving..." : "Save Settings"}
-          </button>
+        {/* Save bar */}
+        <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/95 backdrop-blur shadow-lg">
+          <p className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+            <span
+              className={`w-2 h-2 rounded-full ${isDirty ? "bg-amber-500" : "bg-emerald-500"}`}
+            />
+            {isDirty
+              ? t("common.unsavedChangesTitle", "You have unsaved changes")
+              : t("settings.allChangesSaved", "All changes saved")}
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={discardChanges}
+              disabled={!isDirty || saveMutation.isPending}
+              className="px-5 py-2.5 rounded-lg border border-[hsl(var(--border))] text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t("common.discard", "Discard")}
+            </button>
+            <button
+              type="submit"
+              disabled={!isDirty || saveMutation.isPending}
+              className="px-6 py-2.5 bg-gradient-to-r from-primary to-accent text-white rounded-lg hover:from-accent hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-violet-500/30"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Save className="w-5 h-5" />
+              )}
+              {saveMutation.isPending
+                ? t("common.saving", "Saving...")
+                : t("settings.saveSettings", "Save Settings")}
+            </button>
+          </div>
         </div>
       </form>
+
+      <UnsavedChangesDialog
+        isOpen={leavePrompt.isOpen}
+        onLeave={leavePrompt.leave}
+        onStay={leavePrompt.stay}
+        onSave={saveChanges}
+        isSaving={saveMutation.isPending}
+      />
     </div>
   );
 };

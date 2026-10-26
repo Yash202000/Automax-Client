@@ -73,8 +73,9 @@ import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
 import { getAvatarName } from "@/lib/utils";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
-import { capFilesByCount } from "@/utils/attachmentLimits";
 import { useImageValidation } from "@/hooks/useImageValidation";
+import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
+import type { RejectedAttachment } from "@/utils/imageValidation";
 import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
 import { isSamePhoneNumber, getMobileNumberIssue } from "@/utils/validations";
 
@@ -285,17 +286,12 @@ export function IncidentCreatePage() {
     [lookupCategoriesData],
   );
 
-  const MAX_ATTACHMENTS = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
-    )?.name ?? "5",
-  );
-
-  const MAX_ATTACHMENT_SIZE_MB = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
-    )?.name ?? "5",
-  );
+  const attachmentPolicy = useAttachmentPolicy("internal");
+  const [attachmentRejects, setAttachmentRejects] = useState<
+    RejectedAttachment[]
+  >([]);
+  const MAX_ATTACHMENTS = attachmentPolicy.maxFiles;
+  const MAX_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
   const MAX_DESCRIPTION_LENGTH = Number(
     envConfigCategory?.values?.find((v) => v.code === "MAX_DESCRIPTION_LENGTH")
@@ -305,7 +301,8 @@ export function IncidentCreatePage() {
   const isAttachmentOversized = (file: File) =>
     file.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
-  const attachmentLimitReached = attachments.length >= MAX_ATTACHMENTS;
+  const attachmentLimitReached =
+    !attachmentPolicy.enabled || attachments.length >= MAX_ATTACHMENTS;
 
   const validateAttachments = (files: File[]): string => {
     if (files.length > MAX_ATTACHMENTS) {
@@ -326,24 +323,15 @@ export function IncidentCreatePage() {
   };
 
   const addAttachmentFiles = async (newFiles: File[]) => {
-    const { accepted, skippedForLimit } = capFilesByCount(
+    const { accepted, rejected } = attachmentPolicy.check(
       newFiles,
       attachments.length,
-      MAX_ATTACHMENTS,
     );
+    setAttachmentRejects(rejected);
     const { valid } = await imageValidation.validate(accepted);
     const next = [...attachments, ...valid];
     setAttachments(next);
-    setErrors((prev) => ({
-      ...prev,
-      attachments:
-        skippedForLimit > 0
-          ? t("incidents.attachmentLimitExceeded", {
-              max: MAX_ATTACHMENTS,
-              defaultValue: `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
-            })
-          : validateAttachments(next),
-    }));
+    setErrors((prev) => ({ ...prev, attachments: validateAttachments(next) }));
   };
 
   const sourceOptions = useMemo(() => {
@@ -2267,6 +2255,7 @@ export function IncidentCreatePage() {
                       type="file"
                       className="hidden"
                       multiple
+                      accept={attachmentPolicy.accept}
                       disabled={attachmentLimitReached || validatingAttachments}
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
@@ -2276,17 +2265,21 @@ export function IncidentCreatePage() {
                     />
                   </label>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {t("citizen.maxSize", "Max")} {MAX_ATTACHMENT_SIZE_MB} MB ·{" "}
-                    {t("incidents.attachmentLimit", {
-                      max: MAX_ATTACHMENTS,
-                      defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
-                    })}
+                    {attachmentPolicy.hint}
                   </p>
                   {errors.attachments && (
                     <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
                       {errors.attachments}
                     </p>
                   )}
+                  <RejectedAttachmentsList
+                    title={t("attachments.notAdded", {
+                      count: attachmentRejects.length,
+                      defaultValue: "{{count}} file(s) couldn't be added",
+                    })}
+                    items={attachmentRejects}
+                    onDismiss={() => setAttachmentRejects([])}
+                  />
                   <RejectedAttachmentsList
                     items={imageValidation.rejected}
                     onDismiss={imageValidation.clearRejected}
