@@ -998,6 +998,7 @@
     "updating": "updating…",
     "noCoordinates": "No coordinates for this incident.",
     "copyIncidentId": "Copy Incident ID",
+    "copyIncidentUrl": "Copy Incident URL",
     "phoneLabel": "Phone",
     "escalation": "Escalation",
     "moreComingSoon": "This section will be built here next.",

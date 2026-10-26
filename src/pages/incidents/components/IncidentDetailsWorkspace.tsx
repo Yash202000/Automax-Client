@@ -604,6 +604,23 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     }
   };
 
+  const copyUrl = async () => {
+    try {
+      const basePath =
+        window.APP_CONFIG?.BASE_PATH ??
+        import.meta.env.VITE_BASE_PATH ??
+        import.meta.env.BASE_URL ??
+        "/";
+      const normalizedBase = basePath.replace(/\/$/, "");
+      await navigator.clipboard.writeText(
+        `${window.location.origin}${normalizedBase}/incidents/${incident.id}`,
+      );
+      toast.success(t("incidents.copied"));
+    } catch {
+      toast.error(t("incidents.copyFailed"));
+    }
+  };
+
   // Same download logic as IncidentDetailPage: server-generated PDF via
   // incidentApi.downloadReport, EPM940 goes through the include-logs modal.
   const handleDownloadReport = async () => {
@@ -722,6 +739,16 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 : t("incidents.downloadReport")}
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={copyUrl}
+            className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm disabled:opacity-60"
+            title={t("incidents.copyIncidentUrl")}
+            aria-label={t("incidents.copyIncidentUrl")}
+          >
+            <Copy className="h-3.5 w-3.5 me-1.5" />
+            {t("incidents.copyIncidentUrl")}
+          </button>
         </div>
 
         {/* header banner */}
