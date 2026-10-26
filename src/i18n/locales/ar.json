@@ -2453,6 +2453,7 @@
     "fieldsTheUserCanEditDuringThis": "— الحقول التي يمكن للمستخدم تعديلها أثناء هذا الانتقال",
     "noFieldChangesConfigured": "لم يتم تكوين أي تغييرات على الحقول",
     "labelEGSelectDepartment": "التسمية (مثال: 'اختر القسم')",
+    "labelEGSelectDepartmentAr": "التسمية بالعربية (مثال: 'اختر القسم')",
     "emailNotificationSettings": "إعدادات إشعارات البريد الإلكتروني",
     "customEmailAddresses": "عناوين بريد إلكتروني مخصصة",
     "separateMultipleEmailsWithCommas": "افصل بين عدة عناوين بريد إلكتروني باستخدام الفواصل",
