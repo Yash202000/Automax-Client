@@ -29,7 +29,7 @@ import {
 import type { Incident, AvailableTransition } from "../../types";
 import { useImageValidation } from "../../hooks/useImageValidation";
 import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedField } from "@/lib/utils";
 
 interface BulkTransitionModalProps {
   isOpen: boolean;
@@ -913,7 +913,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 {transition?.field_changes?.map((fc) => (
                   <div key={fc.field_name} className="space-y-1.5">
                     <label className="text-sm font-medium flex items-center gap-1.5">
-                      {fc.label || fc.field_name}
+                      {getLocalizedField(fc, "label") || fc.field_name}
                       {fc.is_required && (
                         <span className="text-[hsl(var(--destructive))] ml-1">
                           *
@@ -935,7 +935,9 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                           }))
                         }
                         placeholder={t("incidents.selectValue", {
-                          field: fc.label || t("common.department"),
+                          field:
+                            getLocalizedField(fc, "label") ||
+                            t("common.department"),
                         })}
                         leafOnly={false}
                         maxHeight="240px"
@@ -954,7 +956,9 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                           }))
                         }
                         placeholder={t("incidents.selectValue", {
-                          field: fc.label || t("common.location"),
+                          field:
+                            getLocalizedField(fc, "label") ||
+                            t("common.location"),
                         })}
                         leafOnly={false}
                         maxHeight="240px"
@@ -973,7 +977,9 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                           }))
                         }
                         placeholder={t("incidents.selectValue", {
-                          field: fc.label || t("common.classification"),
+                          field:
+                            getLocalizedField(fc, "label") ||
+                            t("common.classification"),
                         })}
                         leafOnly={false}
                         maxHeight="240px"

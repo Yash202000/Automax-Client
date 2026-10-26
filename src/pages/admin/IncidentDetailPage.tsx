@@ -1517,7 +1517,7 @@ export const IncidentDetailPage: React.FC = () => {
           newErrors[fc.field_name] = t(
             "incidents.fieldRequired",
             "{{field}} is required",
-            { field: fc.label || fc.field_name },
+            { field: getLocalizedField(fc, "label") || fc.field_name },
           );
       }
     } else if (stepKey === "duration") {
@@ -1825,7 +1825,7 @@ export const IncidentDetailPage: React.FC = () => {
         newTransitionErrors[fc.field_name] = t(
           "incidents.fieldRequired",
           "{{field}} is required",
-          { field: fc.label || fc.field_name },
+          { field: getLocalizedField(fc, "label") || fc.field_name },
         );
     }
 

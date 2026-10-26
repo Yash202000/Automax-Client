@@ -15,7 +15,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { cn, getLocalizedName } from "@/lib/utils";
+import { cn, getLocalizedField, getLocalizedName } from "@/lib/utils";
 import {
   classificationApi,
   commentTemplateApi,
@@ -573,7 +573,7 @@ export function IncidentTransitionDialog({
             "incidents.fieldRequired",
             "{{field}} is required",
             {
-              field: fc.label || fc.field_name,
+              field: getLocalizedField(fc, "label") || fc.field_name,
             },
           );
       }
@@ -689,7 +689,7 @@ export function IncidentTransitionDialog({
           "incidents.fieldRequired",
           "{{field}} is required",
           {
-            field: fc.label || fc.field_name,
+            field: getLocalizedField(fc, "label") || fc.field_name,
           },
         );
     }
@@ -2029,7 +2029,7 @@ function FieldChangeInput({
   return (
     <div>
       <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
-        {fc.label || fc.field_name}
+        {getLocalizedField(fc, "label") || fc.field_name}
         {fc.is_required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {fc.field_name === "priority" && (

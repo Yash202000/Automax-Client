@@ -2428,6 +2428,7 @@
     "fieldsTheUserCanEditDuringThis": "— fields the user can edit during this transition",
     "noFieldChangesConfigured": "No field changes configured",
     "labelEGSelectDepartment": "Label (e.g. 'Select Department')",
+    "labelEGSelectDepartmentAr": "Arabic Label (e.g. 'اختر القسم')",
     "sendNotification": "Send Notification",
     "sendEmail": "Send Email",
     "callWebhook": "Call Webhook",
