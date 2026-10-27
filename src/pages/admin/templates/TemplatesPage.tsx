@@ -409,7 +409,7 @@ export default function TemplatesPage() {
                       key={idx}
                       className="border-b last:border-b-0 bg-[hsl(var(--muted)/0.08)] animate-pulse"
                     >
-                      <td className="px-4 py-4 h-12" colSpan={7} />
+                      <td className="px-4 py-4 h-12" colSpan={8} />
                     </tr>
                   ))
                 : templates.map((item: any) => (
