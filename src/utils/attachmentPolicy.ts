@@ -7,15 +7,15 @@ import type {
 export const BLOCKED_EXTENSIONS = [
   "exe",
   "bat",
-  "sh",
   "cmd",
   "msi",
-  "com",
-  "scr",
-  "ps1",
+  "js",
   "vbs",
+  "ps1",
+  "sh",
   "jar",
   "dll",
+  "scr",
 ];
 
 export interface AttachmentPolicy {

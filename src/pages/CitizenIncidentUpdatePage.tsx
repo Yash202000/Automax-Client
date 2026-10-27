@@ -21,9 +21,8 @@ import {
 } from "@/components/ui";
 import { incidentApi } from "@/api/admin";
 import IncidentDetailsCard from "@/components/incidents/IncidentDetailsCard";
-import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
+import { PolicyRejectedList } from "@/components/incidents/RejectedAttachmentsList";
 import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
-import type { RejectedAttachment } from "@/utils/imageValidation";
 
 export function CitizenIncidentUpdatePage() {
   const { t } = useTranslation();
@@ -42,9 +41,6 @@ export function CitizenIncidentUpdatePage() {
   const ivr_link_token = _location.state?.signed_token;
 
   const attachmentPolicy = useAttachmentPolicy("citizen");
-  const [attachmentRejects, setAttachmentRejects] = useState<
-    RejectedAttachment[]
-  >([]);
 
   // ── Submit mutation ──
   const submitMutation = useMutation({
@@ -90,13 +86,12 @@ export function CitizenIncidentUpdatePage() {
     },
   });
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     if (!files) return;
-    const { accepted, rejected } = attachmentPolicy.check(
+    const accepted = await attachmentPolicy.filterFiles(
       Array.from(files),
       attachments.length,
     );
-    setAttachmentRejects(rejected);
     setAttachments((p) => [...p, ...accepted]);
   };
 
@@ -275,7 +270,7 @@ export function CitizenIncidentUpdatePage() {
             <label
               className={`flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors
               hover:border-blue-400 hover:bg-blue-50
-              ${attachmentRejects.length > 0 ? "border-red-300 bg-red-50" : "border-gray-300"}
+              ${attachmentPolicy.rejected.length > 0 ? "border-red-300 bg-red-50" : "border-gray-300"}
             `}
             >
               <Upload className="w-6 h-6 text-gray-400" />
@@ -295,21 +290,14 @@ export function CitizenIncidentUpdatePage() {
                 accept={attachmentPolicy.accept}
                 className="hidden"
                 onChange={(e) => {
-                  handleFiles(e.target.files);
+                  void handleFiles(e.target.files);
                   e.target.value = "";
                 }}
               />
             </label>
 
             <div className="mt-3">
-              <RejectedAttachmentsList
-                title={t("attachments.notAdded", {
-                  count: attachmentRejects.length,
-                  defaultValue: "{{count}} file(s) couldn't be added",
-                })}
-                items={attachmentRejects}
-                onDismiss={() => setAttachmentRejects([])}
-              />
+              <PolicyRejectedList policy={attachmentPolicy} />
             </div>
           </Card>
         )}

@@ -28,6 +28,8 @@ import { Button } from "@/components/ui";
 import { AttachmentConfigCard } from "@/components/settings/AttachmentConfigCard";
 import { UnsavedChangesDialog } from "@/components/common/UnsavedChangesDialog";
 import { useUnsavedChangesPrompt } from "@/hooks/useUnsavedChangesPrompt";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { getActiveExtensions } from "@/utils/attachmentPolicy";
 
 const SETTINGS_QUERY_KEY = ["settings"];
 
@@ -70,6 +72,41 @@ const hasValidAttachmentLimits = (value: AttachmentConfigValue) =>
     (audience) =>
       audience.max_file_size_mb >= 1 && audience.max_files_per_upload >= 1,
   );
+
+// "Select None" for a user group means nobody in it can upload attachments.
+// Returns "citizen", "internal" or "both" when that happens, else null.
+const getGroupWithNoFileTypes = (value: AttachmentConfigValue) => {
+  const citizenNone = getActiveExtensions(value.citizen).length === 0;
+  const internalNone = getActiveExtensions(value.internal).length === 0;
+  if (citizenNone && internalNone) return "both";
+  if (citizenNone) return "citizen";
+  if (internalNone) return "internal";
+  return null;
+};
+
+type NoFileTypesGroup = NonNullable<ReturnType<typeof getGroupWithNoFileTypes>>;
+
+// English fallbacks for the "no file types allowed" prompt.
+const NO_FILE_TYPES_TEXT: Record<
+  NoFileTypesGroup,
+  { title: string; message: string }
+> = {
+  citizen: {
+    title: "Turn off citizen attachments?",
+    message:
+      "No file types will be allowed. Citizens will not be able to upload attachments in the chatbot or portal. Files already uploaded are not affected.",
+  },
+  internal: {
+    title: "Turn off internal user attachments?",
+    message:
+      "No file types will be allowed. Internal users will not be able to upload attachments. Files already uploaded are not affected.",
+  },
+  both: {
+    title: "Turn off all attachments?",
+    message:
+      "No file types will be allowed. Citizens and internal users will not be able to upload attachments. Files already uploaded are not affected.",
+  },
+};
 
 export const SettingsManagementPage: React.FC = () => {
   const { t } = useTranslation();
@@ -129,6 +166,18 @@ export const SettingsManagementPage: React.FC = () => {
     },
   });
 
+  // The open "no file types allowed" prompt: which group, and how to answer.
+  const [noFileTypesPrompt, setNoFileTypesPrompt] = useState<{
+    group: NoFileTypesGroup;
+    resolve: (confirmed: boolean) => void;
+  } | null>(null);
+  const askToConfirmNoFileTypes = (group: NoFileTypesGroup) =>
+    new Promise<boolean>((resolve) => setNoFileTypesPrompt({ group, resolve }));
+  const answerNoFileTypesPrompt = (confirmed: boolean) => {
+    noFileTypesPrompt?.resolve(confirmed);
+    setNoFileTypesPrompt(null);
+  };
+
   const saveChanges = async () => {
     if (attachmentDraft && !hasValidAttachmentLimits(attachmentDraft)) {
       toast.error(
@@ -137,6 +186,13 @@ export const SettingsManagementPage: React.FC = () => {
           "File size and file count must be at least 1.",
         ),
       );
+      return false;
+    }
+    const emptyGroup =
+      isAttachmentDirty && attachmentDraft
+        ? getGroupWithNoFileTypes(attachmentDraft)
+        : null;
+    if (emptyGroup && !(await askToConfirmNoFileTypes(emptyGroup))) {
       return false;
     }
     try {
@@ -610,7 +666,7 @@ export const SettingsManagementPage: React.FC = () => {
           />
         ) : (
           <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))] flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-            {attachmentConfigFailed ? (
+            {attachmentConfigFailed || attachmentConfig === null ? (
               t(
                 "settings.attachments.loadFailed",
                 "Couldn't load the attachment configuration.",
@@ -808,6 +864,24 @@ export const SettingsManagementPage: React.FC = () => {
         onStay={leavePrompt.stay}
         onSave={saveChanges}
         isSaving={saveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={noFileTypesPrompt !== null}
+        title={t(
+          `settings.attachments.noFileTypes.${noFileTypesPrompt?.group}.title`,
+          NO_FILE_TYPES_TEXT[noFileTypesPrompt?.group ?? "both"].title,
+        )}
+        message={t(
+          `settings.attachments.noFileTypes.${noFileTypesPrompt?.group}.message`,
+          NO_FILE_TYPES_TEXT[noFileTypesPrompt?.group ?? "both"].message,
+        )}
+        confirmLabel={t(
+          "settings.attachments.noFileTypes.confirm",
+          "Yes, allow none",
+        )}
+        onConfirm={() => answerNoFileTypesPrompt(true)}
+        onCancel={() => answerNoFileTypesPrompt(false)}
       />
     </div>
   );

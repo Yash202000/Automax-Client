@@ -29,10 +29,12 @@ import {
 import { TreeSelect } from "../ui/TreeSelect";
 import type { TreeSelectNode } from "../../utils/treeUtils";
 import { IncidentMentionTextarea } from "../common/IncidentMentionTextarea";
-import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
+import {
+  RejectedAttachmentsList,
+  PolicyRejectedList,
+} from "./RejectedAttachmentsList";
 import { useImageValidation } from "../../hooks/useImageValidation";
 import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
-import type { RejectedAttachment } from "../../utils/imageValidation";
 import type {
   AvailableTransition,
   Department,
@@ -157,9 +159,6 @@ export function IncidentTransitionDialog({
 
   /* attachment limits (System Settings → Attachments) */
   const attachmentPolicy = useAttachmentPolicy("internal");
-  const [attachmentRejects, setAttachmentRejects] = useState<
-    RejectedAttachment[]
-  >([]);
   const MAX_TRANSITION_ATTACHMENTS = attachmentPolicy.maxFiles;
   const MAX_TRANSITION_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
@@ -401,11 +400,10 @@ export function IncidentTransitionDialog({
     replace = false,
   ) => {
     const base = replace ? [] : transitionAttachment;
-    const { accepted, rejected } = attachmentPolicy.check(
+    const accepted = await attachmentPolicy.filterFiles(
       replace ? newFiles.slice(0, 1) : newFiles,
       base.length,
     );
-    setAttachmentRejects(rejected);
     const { valid } = await transitionImageValidation.validate(accepted);
     const next = [...base, ...valid];
     setTransitionAttachment(next);
@@ -419,7 +417,7 @@ export function IncidentTransitionDialog({
     setTransitionStep(0);
     setTransitionComment("");
     setTransitionAttachment([]);
-    setAttachmentRejects([]);
+    attachmentPolicy.clearRejected();
     transitionImageValidation.clearRejected();
     setTransitionFeedbackComment("");
     setTransitionFieldValues({});
@@ -1228,14 +1226,7 @@ export function IncidentTransitionDialog({
                 </p>
               )}
               <div className="mt-2 space-y-2">
-                <RejectedAttachmentsList
-                  title={t("attachments.notAdded", {
-                    count: attachmentRejects.length,
-                    defaultValue: "{{count}} file(s) couldn't be added",
-                  })}
-                  items={attachmentRejects}
-                  onDismiss={() => setAttachmentRejects([])}
-                />
+                <PolicyRejectedList policy={attachmentPolicy} />
                 <RejectedAttachmentsList
                   items={transitionImageValidation.rejected}
                   onDismiss={transitionImageValidation.clearRejected}

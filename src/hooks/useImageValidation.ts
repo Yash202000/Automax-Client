@@ -24,6 +24,11 @@ export function useImageValidation() {
   const [rejected, setRejected] = useState<RejectedAttachment[]>([]);
 
   const clearRejected = useCallback(() => setRejected([]), []);
+  const dismissRejected = useCallback(
+    (index: number) =>
+      setRejected((prev) => prev.filter((_, i) => i !== index)),
+    [],
+  );
 
   const validate = useCallback(
     async (files: File[]): Promise<ImageValidationResult> => {
@@ -75,5 +80,5 @@ export function useImageValidation() {
     [queryClient, t],
   );
 
-  return { validate, isValidating, rejected, clearRejected };
+  return { validate, isValidating, rejected, clearRejected, dismissRejected };
 }

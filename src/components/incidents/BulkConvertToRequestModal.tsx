@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
+import { PolicyRejectedList } from "./RejectedAttachmentsList";
 import { toast } from "sonner";
 import {
   X,
@@ -190,6 +192,7 @@ export const BulkConvertToRequestModal: React.FC<
   BulkConvertToRequestModalProps
 > = ({ incidents, isOpen, onClose, onSuccess }) => {
   const { t } = useTranslation();
+  const attachmentPolicy = useAttachmentPolicy("internal");
 
   // Step state
   const [currentStep, setCurrentStep] = useState<Step>("transition");
@@ -1063,13 +1066,24 @@ export const BulkConvertToRequestModal: React.FC<
                                   <input
                                     type="file"
                                     className="hidden"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
+                                    accept={attachmentPolicy.accept}
+                                    onChange={async (e) => {
+                                      const [file] =
+                                        await attachmentPolicy.filterFiles(
+                                          Array.from(
+                                            e.target.files ?? [],
+                                          ).slice(0, 1),
+                                        );
+                                      e.target.value = "";
                                       if (file) setTransitionAttachment(file);
                                     }}
                                   />
                                 </label>
                               )}
+                              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                                {attachmentPolicy.hint}
+                              </p>
+                              <PolicyRejectedList policy={attachmentPolicy} />
                             </div>
                           )}
 

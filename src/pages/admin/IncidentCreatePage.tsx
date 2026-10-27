@@ -15,9 +15,6 @@ import {
   AlertCircle,
   Info,
   Zap,
-  Upload,
-  X,
-  Paperclip,
   Loader2,
 } from "lucide-react";
 import {
@@ -75,8 +72,11 @@ import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { useImageValidation } from "@/hooks/useImageValidation";
 import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
-import type { RejectedAttachment } from "@/utils/imageValidation";
-import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
+import {
+  AttachmentDropzone,
+  AttachmentFileRow,
+  RejectedFileRows,
+} from "@/components/attachments/AttachmentUpload";
 import { isSamePhoneNumber, getMobileNumberIssue } from "@/utils/validations";
 
 const statusBadgeColor: any = {
@@ -287,9 +287,6 @@ export function IncidentCreatePage() {
   );
 
   const attachmentPolicy = useAttachmentPolicy("internal");
-  const [attachmentRejects, setAttachmentRejects] = useState<
-    RejectedAttachment[]
-  >([]);
   const MAX_ATTACHMENTS = attachmentPolicy.maxFiles;
   const MAX_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
@@ -323,11 +320,10 @@ export function IncidentCreatePage() {
   };
 
   const addAttachmentFiles = async (newFiles: File[]) => {
-    const { accepted, rejected } = attachmentPolicy.check(
+    const accepted = await attachmentPolicy.filterFiles(
       newFiles,
       attachments.length,
     );
-    setAttachmentRejects(rejected);
     const { valid } = await imageValidation.validate(accepted);
     const next = [...attachments, ...valid];
     setAttachments(next);
@@ -2163,126 +2159,57 @@ export function IncidentCreatePage() {
                     <span className="text-red-500 ml-1">*</span>
                   )}
                 </h2>
-                <div className="space-y-4">
-                  {attachments.length > 0 && (
-                    <div className="space-y-2">
-                      {attachments.map((file, index) => {
-                        const invalid = isAttachmentOversized(file);
-                        return (
-                          <div
-                            key={index}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-lg border",
-                              invalid
-                                ? "bg-red-50 border-red-400"
-                                : "bg-primary/10 border-primary",
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Paperclip
-                                className={cn(
-                                  "w-4 h-4",
-                                  invalid ? "text-red-500" : "text-gray-500",
-                                )}
-                              />
-                              <span
-                                className={cn(
-                                  "text-sm truncate max-w-[250px] hover:underline cursor-pointer",
-                                  invalid
-                                    ? "text-red-600"
-                                    : "text-muted-foreground",
-                                )}
-                                onClick={() => setPreviewIndex(index)}
-                              >
-                                {file.name}
-                              </span>
-                              <span
-                                className={cn(
-                                  "text-xs",
-                                  invalid ? "text-red-500" : "text-gray-500",
-                                )}
-                              >
-                                ({(file.size / 1024).toFixed(1)}{" "}
-                                {t("common.kb")})
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAttachments((prev) => {
-                                  const next = prev.filter(
-                                    (_, i) => i !== index,
-                                  );
-                                  setErrors((errPrev) => ({
-                                    ...errPrev,
-                                    attachments: validateAttachments(next),
-                                  }));
-                                  return next;
-                                });
-                              }}
-                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <label
-                    className={cn(
-                      "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-xl transition-colors",
-                      errors.attachments
-                        ? "border-[hsl(var(--destructive)/0.5)]"
-                        : "border-[hsl(var(--border))]",
-                      attachmentLimitReached || validatingAttachments
-                        ? "opacity-50 cursor-not-allowed"
-                        : "cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)]",
-                    )}
-                  >
-                    <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {validatingAttachments
+                <div className="space-y-3">
+                  <AttachmentDropzone
+                    policy={attachmentPolicy}
+                    onFiles={(files) => void addAttachmentFiles(files)}
+                    disabled={attachmentLimitReached || validatingAttachments}
+                    busyText={
+                      validatingAttachments
                         ? t("incidents.validatingImages", "Checking photos...")
-                        : attachmentLimitReached
-                          ? t("incidents.attachmentLimit", {
-                              max: MAX_ATTACHMENTS,
-                              defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
-                            })
-                          : t("incidents.clickToUpload")}
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      multiple
-                      accept={attachmentPolicy.accept}
-                      disabled={attachmentLimitReached || validatingAttachments}
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        if (files.length > 0) void addAttachmentFiles(files);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {attachmentPolicy.hint}
-                  </p>
+                        : undefined
+                    }
+                    hasError={!!errors.attachments}
+                  />
                   {errors.attachments && (
-                    <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                    <p className="text-sm text-[hsl(var(--destructive))]">
                       {errors.attachments}
                     </p>
                   )}
-                  <RejectedAttachmentsList
-                    title={t("attachments.notAdded", {
-                      count: attachmentRejects.length,
-                      defaultValue: "{{count}} file(s) couldn't be added",
-                    })}
-                    items={attachmentRejects}
-                    onDismiss={() => setAttachmentRejects([])}
+                  {attachments.map((file, index) => (
+                    <AttachmentFileRow
+                      key={`${file.name}-${index}`}
+                      name={file.name}
+                      size={file.size}
+                      status={
+                        isAttachmentOversized(file) ? "rejected" : "ready"
+                      }
+                      message={t("attachments.tooLarge", {
+                        size: (file.size / (1024 * 1024)).toFixed(1),
+                        max: MAX_ATTACHMENT_SIZE_MB,
+                        defaultValue:
+                          "File is {{size}} MB, the limit is {{max}} MB.",
+                      })}
+                      onNameClick={() => setPreviewIndex(index)}
+                      onRemove={() => {
+                        setAttachments((prev) => {
+                          const next = prev.filter((_, i) => i !== index);
+                          setErrors((errPrev) => ({
+                            ...errPrev,
+                            attachments: validateAttachments(next),
+                          }));
+                          return next;
+                        });
+                      }}
+                    />
+                  ))}
+                  <RejectedFileRows
+                    items={attachmentPolicy.rejected}
+                    onDismiss={attachmentPolicy.dismissRejected}
                   />
-                  <RejectedAttachmentsList
+                  <RejectedFileRows
                     items={imageValidation.rejected}
-                    onDismiss={imageValidation.clearRejected}
+                    onDismiss={imageValidation.dismissRejected}
                   />
                 </div>
               </Card>

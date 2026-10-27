@@ -277,7 +277,8 @@
     "stay": "Stay on page",
     "saveAndLeave": "Save & leave",
     "unsavedChangesTitle": "You have unsaved changes",
-    "unsavedChangesDesc": "Save your changes before leaving, or discard them."
+    "unsavedChangesDesc": "Save your changes before leaving, or discard them.",
+    "continue": "Continue"
   },
   "search": {
     "minCharsTitle": "Keep Typing…",
@@ -1162,7 +1163,7 @@
     "attachments": {
       "title": "Attachment & File Types Configuration",
       "activePolicies": "Active Policies",
-      "description": "Configure global limits, allowed file categories, and extensions separately for Citizens and Internal Users.",
+      "description": "Set upload limits and allowed file types for citizens and internal users.",
       "enableAttachments": "Enable Attachments",
       "enabledFor": "Enabled for {{audience}}",
       "disabledFor": "Disabled for {{audience}}",
@@ -1180,7 +1181,7 @@
       "selectNone": "Select None",
       "selectSpecific": "Select Specific",
       "totalSelected": "Total Selected",
-      "countSelected": "{{count}} of {{total}} selected",
+      "countSelected": "Total: {{count}} of {{total}} selected",
       "invalidLimits": "File size and file count must be at least 1.",
       "categories": {
         "image": "Images",
@@ -1192,7 +1193,23 @@
         "archive": "Archives"
       },
       "loading": "Loading attachment configuration...",
-      "loadFailed": "Couldn't load the attachment configuration."
+      "loadFailed": "Couldn't load the attachment configuration.",
+      "typeCount": "{{count}} of {{total}} selected",
+      "noFileTypes": {
+        "confirm": "Yes, allow none",
+        "citizen": {
+          "title": "Turn off citizen attachments?",
+          "message": "No file types will be allowed. Citizens will not be able to upload attachments in the chatbot or portal. Files already uploaded are not affected."
+        },
+        "internal": {
+          "title": "Turn off internal user attachments?",
+          "message": "No file types will be allowed. Internal users will not be able to upload attachments. Files already uploaded are not affected."
+        },
+        "both": {
+          "title": "Turn off all attachments?",
+          "message": "No file types will be allowed. Citizens and internal users will not be able to upload attachments. Files already uploaded are not affected."
+        }
+      }
     },
     "saved": "Settings updated successfully",
     "saveFailed": "Failed to update settings",
@@ -5251,11 +5268,21 @@
   },
   "attachments": {
     "disabled": "Attachments are currently disabled.",
-    "typeNotAllowed": ".{{ext}} files are not allowed.",
+    "typeNotAllowed": "This file type is not allowed.",
     "tooLarge": "File is {{size}} MB, the limit is {{max}} MB.",
     "limitReached": "Only {{max}} attachments are allowed.",
-    "hintSize": "Up to {{max}} MB each",
+    "hintSize": "Max {{max}} MB each",
     "hintCount": "Max {{max}} files",
-    "notAdded": "{{count}} file(s) couldn't be added"
+    "notAdded": "{{count}} file(s) couldn't be added",
+    "rulesLoading": "Attachment rules are still loading. Please try again in a moment.",
+    "typeNotAllowedWithList": "This file type is not allowed. Allowed types: {{allowed}}",
+    "hintAllowed": "Allowed: {{types}}",
+    "contentMismatch": "The file content does not match its extension. This file cannot be uploaded.",
+    "dragFilesHere": "Drag files here or",
+    "browse": "browse",
+    "ready": "Ready to upload",
+    "uploading": "Uploading...",
+    "uploaded": "Uploaded",
+    "uploadFailed": "Upload failed. Please try again."
   }
 }

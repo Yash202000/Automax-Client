@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 const GUARD_STATE_KEY = "unsavedChangesGuard";
 
+const pushGuardEntry = () => {
+  if (window.history.state?.[GUARD_STATE_KEY]) return;
+  window.history.pushState(
+    { ...window.history.state, [GUARD_STATE_KEY]: true },
+    "",
+  );
+};
+
 /**
  * Warns before leaving the current page with unsaved changes.
  * - Refresh / tab close: the browser's native "Leave site?" prompt.
@@ -32,7 +40,8 @@ export function useUnsavedChangesPrompt(isDirty: boolean) {
     if (!isDirty) return;
     const handleClick = (event: MouseEvent) => {
       if (isLeavingRef.current) return;
-      const anchor = (event.target as HTMLElement).closest("a");
+      if (!(event.target instanceof Element)) return;
+      const anchor = event.target.closest("a");
       if (
         !anchor?.href ||
         anchor.target === "_blank" ||
@@ -60,18 +69,18 @@ export function useUnsavedChangesPrompt(isDirty: boolean) {
   }, [isDirty]);
 
   // Back button: keep an extra history entry for this page, so pressing Back
-  // lands on the same page and we can ask before really going back.
+  // lands on the same page and we can ask before really going back. The entry
+  // is re-added on every Back, so pressing Back again while the dialog is
+  // open still can't leave the page.
   useEffect(() => {
     if (!isDirty) return;
-    if (!window.history.state?.[GUARD_STATE_KEY]) {
-      window.history.pushState(
-        { ...window.history.state, [GUARD_STATE_KEY]: true },
-        "",
-      );
-    }
+    pushGuardEntry();
     const handlePopState = (event: PopStateEvent) => {
+      // Ignore Forward back onto the guard entry.
       if (isLeavingRef.current || event.state?.[GUARD_STATE_KEY]) return;
-      setPendingLeave(() => () => window.history.back());
+      pushGuardEntry();
+      // Skip both this page's entry and the guard entry.
+      setPendingLeave(() => () => window.history.go(-2));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -83,16 +92,7 @@ export function useUnsavedChangesPrompt(isDirty: boolean) {
     setPendingLeave(null);
   };
 
-  const stay = () => {
-    // Back already removed the extra entry; add it again.
-    if (!window.history.state?.[GUARD_STATE_KEY]) {
-      window.history.pushState(
-        { ...window.history.state, [GUARD_STATE_KEY]: true },
-        "",
-      );
-    }
-    setPendingLeave(null);
-  };
+  const stay = () => setPendingLeave(null);
 
   return { isOpen: pendingLeave !== null, leave, stay };
 }

@@ -33,7 +33,11 @@ import { cn, getLocalizedDescription, getLocalizedName } from "@/lib/utils";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import i18n from "@/i18n";
 import { useImageValidation } from "@/hooks/useImageValidation";
-import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
+import {
+  RejectedAttachmentsList,
+  PolicyRejectedList,
+} from "./RejectedAttachmentsList";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
 
 interface ConvertToRequestModalProps {
   incident: IncidentDetail;
@@ -67,6 +71,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     null,
   );
   const imageValidation = useImageValidation();
+  const attachmentPolicy = useAttachmentPolicy("internal");
   const { clearRejected: clearRejectedImages } = imageValidation;
   const [feedbackRating, setFeedbackRating] = useState<number>(0);
   const [feedbackComment, setFeedbackComment] = useState("");
@@ -928,14 +933,20 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                 <input
                                   type="file"
                                   className="hidden"
+                                  accept={attachmentPolicy.accept}
                                   disabled={imageValidation.isValidating}
                                   onChange={async (e) => {
                                     const input = e.target;
                                     const file = input.files?.[0];
                                     input.value = "";
                                     if (!file) return;
+                                    const allowed =
+                                      await attachmentPolicy.filterFiles([
+                                        file,
+                                      ]);
+                                    if (allowed.length === 0) return;
                                     const { valid } =
-                                      await imageValidation.validate([file]);
+                                      await imageValidation.validate(allowed);
                                     if (valid[0])
                                       setTransitionAttachment(valid[0]);
                                   }}
@@ -943,6 +954,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                               </label>
                             )}
                             <div className="mt-2">
+                              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+                                {attachmentPolicy.hint}
+                              </p>
+                              <PolicyRejectedList policy={attachmentPolicy} />
                               <RejectedAttachmentsList
                                 items={imageValidation.rejected}
                                 onDismiss={imageValidation.clearRejected}

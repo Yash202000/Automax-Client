@@ -103,6 +103,13 @@ export const AttachmentConfigCard: React.FC<AttachmentConfigCardProps> = ({
       ),
     });
 
+  const toggleType = (typeName: string, active: boolean) =>
+    update({
+      file_types: current.file_types.map((type) =>
+        type.type === typeName ? withExtensions(type, () => active) : type,
+      ),
+    });
+
   const audienceTabs: {
     key: AttachmentAudience;
     icon: LucideIcon;
@@ -163,16 +170,11 @@ export const AttachmentConfigCard: React.FC<AttachmentConfigCardProps> = ({
                   "Attachment & File Types Configuration",
                 )}
               </h2>
-              <span
-                className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${badgeOn}`}
-              >
-                {t("settings.attachments.activePolicies", "Active Policies")}
-              </span>
             </div>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
               {t(
                 "settings.attachments.description",
-                "Configure global limits, allowed file categories, and extensions separately for Citizens and Internal Users.",
+                "Set upload limits and allowed file types for citizens and internal users.",
               )}
             </p>
           </div>
@@ -278,7 +280,7 @@ export const AttachmentConfigCard: React.FC<AttachmentConfigCardProps> = ({
         aria-disabled={!current.enabled}
       >
         {/* Limits + selection mode */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-4 items-start">
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
               {t("settings.attachments.maxFileSize", "Max File Size (MB)")}
@@ -317,39 +319,34 @@ export const AttachmentConfigCard: React.FC<AttachmentConfigCardProps> = ({
             />
           </div>
 
-          <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/40">
-            <div>
-              <p className="text-xs font-semibold tracking-wider uppercase text-[hsl(var(--muted-foreground))] mb-2">
-                {t("settings.attachments.selectionMode", "Selection Mode")}
-              </p>
-              <div className="flex flex-wrap gap-2">
+          <div className="md:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+              {t("settings.attachments.selectionMode", "Selection Mode")}
+            </label>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex p-1 rounded-lg bg-[hsl(var(--muted))]">
                 {selectionButtons.map(({ mode, label, onClick }) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={onClick}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       selectionMode === mode
-                        ? "bg-emerald-600 border-emerald-600 text-white"
-                        : "bg-[hsl(var(--card))] border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]"
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                     }`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="text-end">
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
-                {t("settings.attachments.totalSelected", "Total Selected")}
-              </p>
               <span
-                className={`inline-block px-3 py-1 text-sm font-semibold rounded-full border ${badgeOn}`}
+                className={`px-3 py-1 text-sm font-semibold rounded-full border ${badgeOn}`}
               >
                 {t("settings.attachments.countSelected", {
                   count: selectedCount,
                   total,
-                  defaultValue: "{{count}} of {{total}} selected",
+                  defaultValue: "Total: {{count}} of {{total}} selected",
                 })}
               </span>
             </div>
@@ -364,12 +361,27 @@ export const AttachmentConfigCard: React.FC<AttachmentConfigCardProps> = ({
               (e) => e.active,
             ).length;
             const hasAny = activeCount > 0;
+            const allActive = activeCount === fileType.extensions.length;
             return (
               <div
                 key={fileType.type}
                 className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]"
               >
-                <div className="flex items-center gap-3 sm:w-52 shrink-0">
+                <div className="flex items-center gap-3 sm:w-72 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={hasAny && allActive}
+                    // Partial (–) state when only some extensions are ticked.
+                    ref={(el) => {
+                      if (el) el.indeterminate = hasAny && !allActive;
+                    }}
+                    onChange={() => toggleType(fileType.type, !allActive)}
+                    aria-label={t(
+                      `settings.attachments.categories.${fileType.type}`,
+                      label,
+                    )}
+                    className="h-4 w-4 rounded accent-emerald-600 cursor-pointer"
+                  />
                   <div
                     className={`p-1.5 rounded-lg ${
                       hasAny
@@ -390,7 +402,11 @@ export const AttachmentConfigCard: React.FC<AttachmentConfigCardProps> = ({
                       hasAny ? badgeOn : badgeOff
                     }`}
                   >
-                    {activeCount} / {fileType.extensions.length}
+                    {t("settings.attachments.typeCount", {
+                      count: activeCount,
+                      total: fileType.extensions.length,
+                      defaultValue: "{{count}} of {{total}} selected",
+                    })}
                   </span>
                 </div>
 

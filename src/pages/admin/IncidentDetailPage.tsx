@@ -3,7 +3,7 @@ import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { withCallStatusDot } from "../../utils/callStatus";
 import { useImageValidation } from "../../hooks/useImageValidation";
 import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
-import type { RejectedAttachment } from "../../utils/imageValidation";
+import { AttachmentUploadPanel } from "../../components/attachments/AttachmentUpload";
 import {
   useParams,
   useNavigate,
@@ -74,6 +74,7 @@ import {
   UnmergeIncidentsModal,
   BulkUnmergeModal,
   RejectedAttachmentsList,
+  PolicyRejectedList,
 } from "../../components/incidents";
 import {
   incidentApi,
@@ -309,7 +310,6 @@ export const IncidentDetailPage: React.FC = () => {
   const transitionImageValidation = useImageValidation();
   const validatingTransitionAttachments =
     transitionImageValidation.isValidating;
-  const attachmentsTabImageValidation = useImageValidation();
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
   const [transitionFieldValues, setTransitionFieldValues] = useState<
@@ -540,9 +540,6 @@ export const IncidentDetailPage: React.FC = () => {
   });
 
   const attachmentPolicy = useAttachmentPolicy("internal");
-  const [attachmentRejects, setAttachmentRejects] = useState<
-    RejectedAttachment[]
-  >([]);
   const MAX_TRANSITION_ATTACHMENTS = attachmentPolicy.maxFiles;
   const MAX_TRANSITION_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
@@ -578,11 +575,10 @@ export const IncidentDetailPage: React.FC = () => {
     replace = false,
   ) => {
     const base = replace ? [] : transitionAttachment;
-    const { accepted, rejected } = attachmentPolicy.check(
+    const accepted = await attachmentPolicy.filterFiles(
       replace ? newFiles.slice(0, 1) : newFiles,
       base.length,
     );
-    setAttachmentRejects(rejected);
     const { valid } = await transitionImageValidation.validate(accepted);
     const next = [...base, ...valid];
     setTransitionAttachment(next);
@@ -1924,19 +1920,6 @@ export const IncidentDetailPage: React.FC = () => {
     return history.find((h: any) => h.id === id);
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const input = event.target;
-    const file = input.files?.[0];
-    input.value = "";
-    if (!file) return;
-    const { accepted, rejected } = attachmentPolicy.check([file], 0);
-    setAttachmentRejects(rejected);
-    const { valid } = await attachmentsTabImageValidation.validate(accepted);
-    if (valid.length > 0) uploadAttachmentMutation.mutate(valid[0]);
-  };
-
   const { data: commentTemplatesData } = useQuery({
     queryKey: ["comment-templates", selectedTransition?.transition.id],
     queryFn: () =>
@@ -3186,48 +3169,13 @@ export const IncidentDetailPage: React.FC = () => {
               {/* Attachments Tab */}
               {activeTab === "attachments" && (
                 <div className="space-y-4">
-                  {/* Upload Button */}
-                  <div>
-                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">
-                      <Upload className="w-4 h-4" />
-                      {t("incidents.uploadFile")}
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept={attachmentPolicy.accept}
-                        onChange={handleFileUpload}
-                        disabled={
-                          uploadAttachmentMutation.isPending ||
-                          attachmentsTabImageValidation.isValidating
-                        }
-                      />
-                    </label>
-                    {(uploadAttachmentMutation.isPending ||
-                      attachmentsTabImageValidation.isValidating) && (
-                      <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))]">
-                        {attachmentsTabImageValidation.isValidating
-                          ? t(
-                              "incidents.validatingImages",
-                              "Checking photos...",
-                            )
-                          : t("incidents.uploading")}
-                      </span>
-                    )}
-                    <div className="mt-2 space-y-2">
-                      <RejectedAttachmentsList
-                        title={t("attachments.notAdded", {
-                          count: attachmentRejects.length,
-                          defaultValue: "{{count}} file(s) couldn't be added",
-                        })}
-                        items={attachmentRejects}
-                        onDismiss={() => setAttachmentRejects([])}
-                      />
-                      <RejectedAttachmentsList
-                        items={attachmentsTabImageValidation.rejected}
-                        onDismiss={attachmentsTabImageValidation.clearRejected}
-                      />
-                    </div>
-                  </div>
+                  {/* Upload */}
+                  <AttachmentUploadPanel
+                    audience="internal"
+                    uploadFile={(file) =>
+                      uploadAttachmentMutation.mutateAsync(file)
+                    }
+                  />
 
                   {/* Attachments List */}
                   <div className="space-y-3">
@@ -5940,14 +5888,7 @@ export const IncidentDetailPage: React.FC = () => {
                         </p>
                       )}
                       <div className="mt-2 space-y-2">
-                        <RejectedAttachmentsList
-                          title={t("attachments.notAdded", {
-                            count: attachmentRejects.length,
-                            defaultValue: "{{count}} file(s) couldn't be added",
-                          })}
-                          items={attachmentRejects}
-                          onDismiss={() => setAttachmentRejects([])}
-                        />
+                        <PolicyRejectedList policy={attachmentPolicy} />
                         <RejectedAttachmentsList
                           items={transitionImageValidation.rejected}
                           onDismiss={transitionImageValidation.clearRejected}

@@ -61,3 +61,24 @@ export const RejectedAttachmentsList: React.FC<
     </div>
   );
 };
+
+interface PolicyRejectedListProps {
+  policy: { rejected: RejectedAttachment[]; clearRejected: () => void };
+}
+
+/** Files rejected by the attachment rules (type, size, count). */
+export const PolicyRejectedList: React.FC<PolicyRejectedListProps> = ({
+  policy,
+}) => {
+  const { t } = useTranslation();
+  return (
+    <RejectedAttachmentsList
+      title={t("attachments.notAdded", {
+        count: policy.rejected.length,
+        defaultValue: "{{count}} file(s) couldn't be added",
+      })}
+      items={policy.rejected}
+      onDismiss={policy.clearRejected}
+    />
+  );
+};
