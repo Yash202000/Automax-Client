@@ -376,6 +376,9 @@ export default function TemplatesPage() {
                 <th className="text-start px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
                   {t("notificationTemplates.table.code")}
                 </th>
+                <th className="text-start px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
+                  {t("notificationTemplates.table.providerTemplateId")}
+                </th>
 
                 <th className="text-start px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
                   {t("notificationTemplates.table.channel")}
@@ -421,6 +424,7 @@ export default function TemplatesPage() {
                       </td>
 
                       <td className="px-4 py-4">{item.code}</td>
+                      <td className="px-4 py-4">{item.provider_template_id}</td>
 
                       <td className="px-4 py-4 uppercase">
                         {t(`notificationTemplates.channels.${item.channel}`)}

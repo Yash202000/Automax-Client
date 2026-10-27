@@ -5024,6 +5024,7 @@
     "form": {
       "name": "Name",
       "code": "Code",
+      "providerTemplateId": "Provider Template ID",
       "channel": "Channel",
       "module": "Module",
       "action": "Action",
@@ -5051,6 +5052,7 @@
       "placeholders": {
         "name": "Enter template name",
         "code": "Enter template code",
+        "providerTemplateId": "Enter provider template ID",
         "subjectEnglish": "Enter the email subject in English",
         "subjectArabic": "Enter the email subject in Arabic",
         "bodyEnglish": "Enter the email body in English",

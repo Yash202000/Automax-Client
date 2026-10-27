@@ -71,6 +71,7 @@ export default function TemplateFormPage() {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
+    provider_template_id: "",
     channel: "email",
     module_type: "incident",
     action_type: "escalation",
@@ -135,6 +136,8 @@ export default function TemplateFormPage() {
 
       code: template.code || "",
 
+      provider_template_id: template.provider_template_id || "",
+
       channel: template.channel || "email",
 
       module_type: template.module_type || "incident",
@@ -197,6 +200,7 @@ export default function TemplateFormPage() {
   const buildPayload = () => ({
     name: formData.name,
     code: formData.code,
+    provider_template_id: formData.provider_template_id,
     channel: formData.channel,
     module_type: formData.module_type,
     action_type: formData.action_type,
@@ -309,6 +313,16 @@ export default function TemplateFormPage() {
             onChange={(e) => setField("code", e.target.value)}
             required
             error={errors.code}
+          />
+
+          <Input
+            label={t("notificationTemplates.form.providerTemplateId")}
+            placeholder={t(
+              "notificationTemplates.form.placeholders.providerTemplateId",
+            )}
+            value={formData.provider_template_id}
+            onChange={(e) => setField("provider_template_id", e.target.value)}
+            error={errors.provider_template_id}
           />
 
           <Select

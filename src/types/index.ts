@@ -1176,6 +1176,7 @@ export interface NotificationTemplate {
   id: string;
   name: string;
   code: string;
+  provider_template_id: string;
   channel: "email" | "sms";
   module_type: string;
   action_type: string;
