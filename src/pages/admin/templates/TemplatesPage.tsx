@@ -377,7 +377,7 @@ export default function TemplatesPage() {
                   {t("notificationTemplates.table.code")}
                 </th>
                 <th className="text-start px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
-                  {t("notificationTemplates.table.providerTemplateId")}
+                  {t("notificationTemplates.form.providerTemplateId")}
                 </th>
 
                 <th className="text-start px-4 py-3 font-medium text-[hsl(var(--muted-foreground))] text-xs uppercase tracking-wide">
