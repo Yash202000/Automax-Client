@@ -2066,7 +2066,7 @@ export const IncidentDetailPage: React.FC = () => {
                 <p className="text-sm font-semibold text-yellow-900">
                   {otherUsers.length === 1
                     ? t("incidents.alsoViewing")
-                    : t("usersViewing", { count: otherUsers.length })}
+                    : t("incidents.usersViewing", { count: otherUsers.length })}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {otherUsers.map((u, idx) => (
@@ -2076,7 +2076,9 @@ export const IncidentDetailPage: React.FC = () => {
                     >
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-xs font-medium text-yellow-900">
-                        {u.user_name || u.user_email || t("unknownUser")}
+                        {u.user_name ||
+                          u.user_email ||
+                          t("incidents.unknownUser")}
                       </span>
                     </div>
                   ))}
@@ -7064,6 +7066,8 @@ export const IncidentDetailPage: React.FC = () => {
 function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
   const { t } = useTranslation();
   const isResolved = feedback.resolution_status?.toLowerCase() === "resolved";
+  const changeSummary = getLocalizedField(feedback, "changed_summary");
+  const resolutionStatus = getLocalizedField(feedback, "resolution_status");
 
   console.log("[AIQuality] Rendering AIQualityReport with feedback:", feedback);
 
@@ -7147,7 +7151,7 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
                   : "text-yellow-800 dark:text-yellow-600",
               )}
             >
-              {feedback.resolution_status?.replace(/_/g, " ") || "—"}
+              {resolutionStatus ? resolutionStatus.replace(/_/g, " ") : "—"}
             </span>
           </div>
         </div>
@@ -7169,15 +7173,14 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
       </div>
 
       {/* Change summary */}
-      {feedback.changed_summary && (
+      {changeSummary && (
         <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 space-y-2">
           <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
             {t("incidents.changeSummary")}
           </p>
           <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
-            {feedback.changed_summary} |{" "}
-            {feedback.raw_response?.coordinates_check?.note}
+            {changeSummary} | {feedback.raw_response?.coordinates_check?.note}
           </p>
         </div>
       )}

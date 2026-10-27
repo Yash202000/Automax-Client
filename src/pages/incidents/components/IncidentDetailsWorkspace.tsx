@@ -94,6 +94,7 @@ import { RevisionsTab } from "./workspace/RevisionsTab";
 import { RejectionHistoryTab } from "./workspace/RejectionHistoryTab";
 import { LinkedSystemsTab } from "./workspace/LinkedSystemsTab";
 import { NasaqTab } from "./workspace/NasaqTab";
+import { useIncidentWebSocket } from "@/lib/services/incidentWebSocket";
 
 interface Props {
   incident: Incident | null;
@@ -395,6 +396,30 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     staleTime: 30_000,
   });
 
+  /* Real-time updates for the selected incident — same shared socket as the
+     old design. Refreshes the feed/transitions/history query keys (the new
+     design's cache layout) so state changes from another user land here. */
+  useIncidentWebSocket(incident?.id, user?.id);
+
+  /* Close the transition dialog if another user moved the incident out of the
+     transition's source state — mirrors IncidentDetailPage. */
+  useEffect(() => {
+    if (
+      selectedTransition &&
+      incident?.current_state?.id &&
+      incident.current_state.id !== selectedTransition.transition.from_state_id
+    ) {
+      setSelectedTransition(null);
+      toast.info(t("incidents.incidentUpdated", "Incident Updated"), {
+        description: t(
+          "incidents.incidentUpdatedDescription",
+          "This incident was updated by another user. Please review the changes.",
+        ),
+        duration: 5000,
+      });
+    }
+  }, [incident?.current_state?.id, incident?.version, selectedTransition, t]);
+
   const slaDeadline = incident?.sla_deadline;
   const slaDays = useMemo(() => {
     if (!slaDeadline) return null;
@@ -580,13 +605,42 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
 
   /* Presence — who else is viewing, same as IncidentDetailPage. */
   const { data: presenceData } = useQuery({
-    queryKey: ["incidents", "v2-list", "presence", incident?.id ?? "none"],
+    // Must match the key invalidated by useIncidentWebSocket on user_joined/user_left.
+    queryKey: ["incident-presence", incident?.id ?? "none"],
     queryFn: () => incidentApi.getPresence(incident!.id),
     enabled: !!incident?.id,
     staleTime: 30_000,
     refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
     retry: false,
   });
+
+  /* Mark presence on mount and refresh it every 3 minutes (Redis TTL is 5
+     minutes), removing it on unmount or when switching incidents. The socket
+     only broadcasts join/leave; this REST heartbeat is what writes the Redis
+     entry the presence endpoint reads. Mirrors IncidentDetailPage. */
+  useEffect(() => {
+    const id = incident?.id;
+    if (!id) return;
+
+    const mark = () =>
+      incidentApi.markPresence(id).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to mark presence:", err);
+      });
+
+    mark();
+    const presenceInterval = setInterval(mark, 180_000);
+
+    return () => {
+      clearInterval(presenceInterval);
+      incidentApi.removePresence(id).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to remove presence:", err);
+      });
+    };
+  }, [incident?.id]);
+
   const otherUsers = useMemo(
     () => presenceData?.data?.filter((u) => u.user_id !== user?.id) || [],
     [presenceData, user?.id],
@@ -740,7 +794,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
                   {otherUsers.length === 1
                     ? t("incidents.alsoViewing")
-                    : t("usersViewing", { count: otherUsers.length })}
+                    : t("incidents.usersViewing", { count: otherUsers.length })}
                 </p>
                 {otherUsers.map((u, idx) => (
                   <div
@@ -749,10 +803,16 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                     <span className="text-[11px] font-medium text-amber-800 dark:text-amber-200">
-                      {u.user_name || u.user_email || t("unknownUser")}
+                      {u.user_name ||
+                        u.user_email ||
+                        t("incidents.unknownUser")}
                     </span>
                   </div>
                 ))}
+                <p className="mt-1 flex w-full items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300">
+                  <TriangleAlert className="h-3 w-3 shrink-0" />
+                  {t("incidents.liveCollaborationActiveChangesMayOccurIn")}
+                </p>
               </div>
             </div>
           </div>

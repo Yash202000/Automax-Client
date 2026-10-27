@@ -1327,7 +1327,9 @@ export interface AIQualityFeedback {
   id: string;
   incident_id: string;
   changed_summary: string;
+  changed_summary_ar?: string;
   resolution_status: string;
+  resolution_status_ar?: string;
   distance_meters: number;
   is_reopened: boolean;
   created_at: string;
