@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Bot, MapPin, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Bot, FileText, MapPin, ShieldCheck } from "lucide-react";
+import { cn, getLocalizedField } from "@/lib/utils";
 import type { AIQualityFeedback } from "../../../../types";
 
 function formatQualityDate(dateStr?: string): string {
@@ -32,7 +32,7 @@ export function QualityTab({
   feedback: AIQualityFeedback | null;
   loading: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (loading) {
     return (
@@ -71,12 +71,19 @@ export function QualityTab({
   const statusColor = isResolved
     ? "text-emerald-700 dark:text-emerald-400"
     : "text-amber-700 dark:text-amber-400";
-  const resolutionText = (feedback.resolution_status || "—")
-    .split(/[\s_]+/)
-    .filter(Boolean)
-    .map((w) => w[0]?.toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+  const localizedStatus =
+    getLocalizedField(feedback, "resolution_status") || "—";
+  const hasArabicStatus =
+    i18n.language === "ar" && !!feedback.resolution_status_ar;
+  const resolutionText = hasArabicStatus
+    ? localizedStatus
+    : localizedStatus
+        .split(/[\s_]+/)
+        .filter(Boolean)
+        .map((w) => w[0]?.toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
   const drift = `${Number(feedback.distance_meters ?? 0).toFixed(1)} m`;
+  const changeSummary = getLocalizedField(feedback, "changed_summary");
 
   return (
     <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-5 shadow-sm space-y-4">
@@ -128,6 +135,20 @@ export function QualityTab({
           </div>
         </div>
       </div>
+      {changeSummary ? (
+        <div className="bg-[hsl(var(--muted)/0.6)] border border-[hsl(var(--border))] rounded-xl p-4 space-y-1.5 shadow-sm">
+          <div className="text-[11px] font-medium text-[hsl(var(--muted-foreground))] tracking-wide flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5" />
+            {t("incidents.changeSummary")}
+          </div>
+          <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
+            {changeSummary}
+            {feedback.raw_response?.coordinates_check?.note
+              ? ` | ${feedback.raw_response.coordinates_check.note}`
+              : null}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

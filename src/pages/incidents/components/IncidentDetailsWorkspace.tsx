@@ -740,7 +740,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
                   {otherUsers.length === 1
                     ? t("incidents.alsoViewing")
-                    : t("usersViewing", { count: otherUsers.length })}
+                    : t("incidents.usersViewing", { count: otherUsers.length })}
                 </p>
                 {otherUsers.map((u, idx) => (
                   <div
@@ -749,7 +749,9 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                     <span className="text-[11px] font-medium text-amber-800 dark:text-amber-200">
-                      {u.user_name || u.user_email || t("unknownUser")}
+                      {u.user_name ||
+                        u.user_email ||
+                        t("incidents.unknownUser")}
                     </span>
                   </div>
                 ))}
