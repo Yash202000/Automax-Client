@@ -1313,7 +1313,7 @@ export const useKpiStatusTransition = () => {
       qc.invalidateQueries({ queryKey: ["kpi", type, id, "transitions"] });
       toast.success("KPI status updated");
     },
-    onError: () => toast.error("Failed to update KPI status"),
+    onError: (err) => toast.error(getApiError(err)),
   });
 };
 
