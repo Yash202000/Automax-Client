@@ -14,7 +14,6 @@ import {
   Pen,
   Play,
   Trash2,
-  Upload,
   X,
   ZoomIn,
 } from "lucide-react";
@@ -22,9 +21,8 @@ import { cn, getLocalizedName } from "@/lib/utils";
 // Lazy-loaded: the editor only downloads when its modal opens.
 const ImageEditor = lazy(() => import("@/components/common/ImageEditor"));
 import { useAuthStore } from "../../../../stores/authStore";
-import { useImageValidation } from "../../../../hooks/useImageValidation";
 import { useFullscreen } from "../../../../hooks/useFullscreen";
-import { RejectedAttachmentsList } from "../../../../components/incidents";
+import { AttachmentUploadPanel } from "../../../../components/attachments/AttachmentUpload";
 import { incidentApi } from "../../../../api/admin";
 import type { IncidentAttachment, TransitionHistory } from "../../../../types";
 import {
@@ -188,7 +186,6 @@ export function AttachmentsTab({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((s) => s.user?.id);
-  const validation = useImageValidation();
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<
     IncidentAttachment[]
@@ -210,25 +207,11 @@ export function AttachmentsTab({
     void queryClient.invalidateQueries({ queryKey: ["incidents", "v2-list"] });
   };
 
-  const uploadMutation = useMutation({
-    mutationFn: (file: File) => incidentApi.uploadAttachment(incidentId, file),
-    onSuccess: () => refreshAttachments(),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (attachmentId: string) =>
       incidentApi.deleteAttachment(incidentId, attachmentId),
     onSuccess: () => refreshAttachments(),
   });
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target;
-    const file = input.files?.[0];
-    input.value = "";
-    if (!file) return;
-    const { valid } = await validation.validate([file]);
-    if (valid.length > 0) uploadMutation.mutate(valid[0]);
-  };
 
   const dataUrlToFile = async (editedImage: string): Promise<File> => {
     const response = await fetch(editedImage);
@@ -302,28 +285,13 @@ export function AttachmentsTab({
   return (
     <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-5 shadow-sm">
       <div className="space-y-4">
+        <AttachmentUploadPanel
+          audience="internal"
+          uploadFile={(file) => incidentApi.uploadAttachment(incidentId, file)}
+          onUploaded={refreshAttachments}
+        />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-md shadow-blue-950/50 transition-all cursor-pointer">
-              {uploadMutation.isPending || validation.isValidating ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <Upload className="h-3.5 w-3.5" />
-              )}
-              {validation.isValidating
-                ? t("incidents.validatingImages")
-                : uploadMutation.isPending
-                  ? t("incidents.uploading")
-                  : t("incidents.uploadFile")}
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => {
-                  void handleFileUpload(e);
-                }}
-                disabled={uploadMutation.isPending || validation.isValidating}
-              />
-            </label>
             {images.length >= 2 ? (
               <button
                 type="button"
@@ -363,12 +331,6 @@ export function AttachmentsTab({
             </span>
           </div>
         </div>
-        {validation.rejected.length > 0 ? (
-          <RejectedAttachmentsList
-            items={validation.rejected}
-            onDismiss={validation.clearRejected}
-          />
-        ) : null}
         {attachments.length === 0 ? (
           <p className="text-center text-xs text-[hsl(var(--muted-foreground))] py-8">
             {t("incidents.noAttachmentsYet")}

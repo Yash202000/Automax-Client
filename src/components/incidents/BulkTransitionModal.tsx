@@ -28,7 +28,11 @@ import {
 } from "../../api/admin";
 import type { Incident, AvailableTransition } from "../../types";
 import { useImageValidation } from "../../hooks/useImageValidation";
-import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
+import {
+  RejectedAttachmentsList,
+  PolicyRejectedList,
+} from "./RejectedAttachmentsList";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
 import { cn, getLocalizedField } from "@/lib/utils";
 
 interface BulkTransitionModalProps {
@@ -71,6 +75,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const imageValidation = useImageValidation();
+  const attachmentPolicy = useAttachmentPolicy("internal");
 
   const handleAttachmentChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -79,7 +84,9 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
     const file = input.files?.[0];
     input.value = "";
     if (!file) return;
-    const { valid } = await imageValidation.validate([file]);
+    const allowed = await attachmentPolicy.filterFiles([file]);
+    if (allowed.length === 0) return;
+    const { valid } = await imageValidation.validate(allowed);
     // Keep the current attachment if the replacement is rejected.
     if (valid[0]) setAttachment(valid[0]);
   };
@@ -1154,6 +1161,7 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-[hsl(var(--border))] border-dashed rounded-lg hover:border-[hsl(var(--primary)/0.5)] transition-colors cursor-pointer group relative">
                   <input
                     type="file"
+                    accept={attachmentPolicy.accept}
                     onChange={handleAttachmentChange}
                     disabled={imageValidation.isValidating}
                     className="absolute inset-0 opacity-0 cursor-pointer"
@@ -1196,12 +1204,13 @@ export const BulkTransitionModal: React.FC<BulkTransitionModalProps> = ({
                           <p className="pl-1">{t("incidents.orDragAndDrop")}</p>
                         </div>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          {t("incidents.uploadLimits")}
+                          {attachmentPolicy.hint}
                         </p>
                       </>
                     )}
                   </div>
                 </div>
+                <PolicyRejectedList policy={attachmentPolicy} />
                 <RejectedAttachmentsList
                   items={imageValidation.rejected}
                   onDismiss={imageValidation.clearRejected}

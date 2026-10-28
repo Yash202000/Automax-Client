@@ -40,6 +40,8 @@ import type {
   CreateComplaintRequest,
 } from "../../types";
 import { cn, getLocalizedName } from "@/lib/utils";
+import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
+import { PolicyRejectedList } from "@/components/incidents/RejectedAttachmentsList";
 import { useAuthStore } from "../../stores/authStore";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -76,6 +78,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
   const [incidentSearch, setIncidentSearch] = useState("");
   const [showIncidentSearch, setShowIncidentSearch] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const attachmentPolicy = useAttachmentPolicy("internal");
   const [lookupValues, setLookupValues] = useState<Record<string, string>>({});
   const [dueDate, setDueDate] = useState("");
 
@@ -472,6 +475,7 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
       setShowIncidentSearch(false);
 
       setAttachments([]);
+      attachmentPolicy.clearRejected();
 
       setLookupValues({});
 
@@ -1584,8 +1588,12 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                     type="file"
                     className="hidden"
                     multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
+                    accept={attachmentPolicy.accept}
+                    onChange={async (e) => {
+                      const files = await attachmentPolicy.filterFiles(
+                        Array.from(e.target.files || []),
+                        attachments.length,
+                      );
                       if (files.length > 0) {
                         setAttachments((prev) => [...prev, ...files]);
                         if (errors.attachments) {
@@ -1630,6 +1638,10 @@ export const CreateComplaintModal: React.FC<CreateComplaintModalProps> = ({
                 {errors.attachments && (
                   <p className="text-xs text-red-500">{errors.attachments}</p>
                 )}
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  {attachmentPolicy.hint}
+                </p>
+                <PolicyRejectedList policy={attachmentPolicy} />
               </div>
             </div>
           )}
