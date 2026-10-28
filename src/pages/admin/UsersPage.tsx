@@ -76,6 +76,7 @@ interface UserFormData {
   classification_ids: string[];
   role_ids: string[];
   is_active: boolean;
+  is_ad_user: boolean;
   bypass_login_totp?: boolean;
   enable_login_totp?: boolean;
 }
@@ -156,6 +157,7 @@ const initialFormData: UserFormData = {
   classification_ids: [],
   role_ids: [],
   is_active: true,
+  is_ad_user: false,
 };
 
 export const UsersPage: React.FC = () => {
@@ -176,6 +178,15 @@ export const UsersPage: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
+  // The "Add AD User" picker browses the directory over LDAP. With AD-Baseer
+  // (no directory API) AD users are added through the normal form instead.
+  const { data: adDirectoryEnabled = false } = useQuery({
+    queryKey: ["ldap", "directory-status"],
+    queryFn: async () =>
+      (await ldapApi.directoryStatus()).data?.enabled ?? false,
+    enabled: canCreateUser,
+    staleTime: 5 * 60 * 1000,
+  });
   const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
   const canPasswordReset = hasPermission(PERMISSIONS.USER_RESET_PASSWORD);
 
@@ -219,6 +230,7 @@ export const UsersPage: React.FC = () => {
     location_ids: [] as string[],
     classification_ids: [] as string[],
     role_ids: [] as string[],
+    is_ad_user: false,
     bypass_login_totp: false,
     enable_login_totp: false,
   });
@@ -901,6 +913,7 @@ export const UsersPage: React.FC = () => {
       location_ids: [],
       classification_ids: [],
       role_ids: [],
+      is_ad_user: false,
       bypass_login_totp: false,
       enable_login_totp: false,
     });
@@ -926,6 +939,7 @@ export const UsersPage: React.FC = () => {
       location_ids: [],
       classification_ids: [],
       role_ids: [],
+      is_ad_user: false,
       bypass_login_totp: false,
       enable_login_totp: false,
     });
@@ -955,7 +969,10 @@ export const UsersPage: React.FC = () => {
       });
     }
 
-    if (!createFormData.password.trim()) {
+    // AD users sign in through Active Directory: no password is stored.
+    if (createFormData.is_ad_user) {
+      // nothing to check
+    } else if (!createFormData.password.trim()) {
       errors.password = t("validation.fieldRequired", {
         field: t("auth.password"),
       });
@@ -983,6 +1000,7 @@ export const UsersPage: React.FC = () => {
     createMutation.mutate({
       data: {
         ...createFormData,
+        password: createFormData.is_ad_user ? "" : createFormData.password,
         extension: "",
         phone: createFormData.phone.trim(),
         bypass_login_totp: showCreateBypassTotpToggle
@@ -1041,6 +1059,7 @@ export const UsersPage: React.FC = () => {
       classification_ids: classificationIds,
       role_ids: user.roles?.map((r) => r.id) || [],
       is_active: user.is_active,
+      is_ad_user: !!user.is_ad_user,
       bypass_login_totp: user.bypass_login_totp ?? false,
       enable_login_totp: user.enable_login_totp ?? false,
     });
@@ -1114,6 +1133,7 @@ export const UsersPage: React.FC = () => {
       classification_ids: formData.classification_ids,
       role_ids: formData.role_ids,
       is_active: formData.is_active,
+      is_ad_user: formData.is_ad_user,
       bypass_login_totp: showEditBypassTotpToggle
         ? !!formData.bypass_login_totp
         : false,
@@ -1713,7 +1733,7 @@ export const UsersPage: React.FC = () => {
               {t("users.addUser")}
             </Button>
           )}
-          {canCreateUser && (
+          {canCreateUser && adDirectoryEnabled && (
             <Button
               leftIcon={<Building2 className="w-4 h-4" />}
               onClick={async () => {
@@ -2811,6 +2831,31 @@ export const UsersPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Active Directory user */}
+                <TotpToggleRow
+                  title={t("users.adUserToggle", "Active Directory user")}
+                  description={
+                    formData.is_ad_user && !editingUser.is_ad_user
+                      ? t(
+                          "users.adUserSwitchOnDesc",
+                          "The user's local password will be removed. They will sign in with AD and OTP.",
+                        )
+                      : !formData.is_ad_user && editingUser.is_ad_user
+                        ? t(
+                            "users.adUserSwitchOffDesc",
+                            "The user will have no password until you reset it.",
+                          )
+                        : t(
+                            "users.adUserToggleDesc",
+                            "Signs in with the AD username, password and OTP. No password is stored in Automax.",
+                          )
+                  }
+                  checked={formData.is_ad_user}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, is_ad_user: checked }))
+                  }
+                />
+
                 {/* Login TOTP override */}
                 {showEditBypassTotpToggle && (
                   <TotpToggleRow
@@ -3032,6 +3077,27 @@ export const UsersPage: React.FC = () => {
                   </label>
                 </div>
 
+                {/* Active Directory user */}
+                <TotpToggleRow
+                  title={t("users.adUserToggle", "Active Directory user")}
+                  description={t(
+                    "users.adUserToggleDesc",
+                    "Signs in with the AD username, password and OTP. No password is stored in Automax.",
+                  )}
+                  checked={createFormData.is_ad_user}
+                  onChange={(checked) => {
+                    setCreateFormData((prev) => ({
+                      ...prev,
+                      is_ad_user: checked,
+                      password: checked ? "" : prev.password,
+                    }));
+                    setCreateFormErrors((prev) => ({
+                      ...prev,
+                      password: undefined,
+                    }));
+                  }}
+                />
+
                 {/* Email & Username */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -3060,6 +3126,14 @@ export const UsersPage: React.FC = () => {
                       className={getInputClassName(!!createFormErrors.email)}
                     />
                     {renderFieldError(createFormErrors.email)}
+                    {createFormData.is_ad_user && (
+                      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                        {t(
+                          "users.adEmailHint",
+                          "Must match the user's email in Active Directory.",
+                        )}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -3094,39 +3168,52 @@ export const UsersPage: React.FC = () => {
                       )}
                     />
                     {renderFieldError(createFormErrors.username)}
+                    {createFormData.is_ad_user && (
+                      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                        {t(
+                          "users.adUsernameHint",
+                          "The AD login name the user types on the login screen.",
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                    {t("auth.password")}{" "}
-                    <span className="text-[hsl(var(--destructive))]">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    autoComplete="new-password"
-                    placeholder={t("users.enterPassword")}
-                    value={createFormData.password}
-                    onChange={(e) => {
-                      setCreateFormData({
-                        ...createFormData,
-                        password: e.target.value,
-                      });
-                      if (createFormErrors.password || createFormErrors.form) {
-                        setCreateFormErrors((prev) => ({
-                          ...prev,
-                          password: undefined,
-                          form: undefined,
-                        }));
-                      }
-                    }}
-                    className={getInputClassName(!!createFormErrors.password)}
-                  />
-                  {renderFieldError(createFormErrors.password)}
-                  <PasswordChecklist requirements={passwordRequirements} />
-                </div>
+                {/* Password (not stored for AD users) */}
+                {!createFormData.is_ad_user && (
+                  <div>
+                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                      {t("auth.password")}{" "}
+                      <span className="text-[hsl(var(--destructive))]">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      autoComplete="new-password"
+                      placeholder={t("users.enterPassword")}
+                      value={createFormData.password}
+                      onChange={(e) => {
+                        setCreateFormData({
+                          ...createFormData,
+                          password: e.target.value,
+                        });
+                        if (
+                          createFormErrors.password ||
+                          createFormErrors.form
+                        ) {
+                          setCreateFormErrors((prev) => ({
+                            ...prev,
+                            password: undefined,
+                            form: undefined,
+                          }));
+                        }
+                      }}
+                      className={getInputClassName(!!createFormErrors.password)}
+                    />
+                    {renderFieldError(createFormErrors.password)}
+                    <PasswordChecklist requirements={passwordRequirements} />
+                  </div>
+                )}
 
                 {/* Name Fields */}
                 <div className="grid grid-cols-2 gap-4">
@@ -3436,7 +3523,7 @@ export const UsersPage: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={
-                    !isCreatePasswordValid ||
+                    (!createFormData.is_ad_user && !isCreatePasswordValid) ||
                     createDeptLoading ||
                     createMutation.isPending
                   }
