@@ -652,9 +652,19 @@ export function IncidentsListPage({
         incidents={selectedIncidents as IncidentDetail[]}
         isOpen={showConvertModal}
         onClose={() => setShowConvertModal(false)}
-        onSuccess={(newRequestId) => {
+        onSuccess={(requestId, requestNumber, isLinked) => {
           setShowConvertModal(false);
-          navigate(`/requests/${newRequestId}`);
+          clearBulkSelection();
+          void refetch();
+          toast.success(
+            isLinked
+              ? requestNumber
+                ? t("requests.linkedSuccessfullyWithNumber", { requestNumber })
+                : t("requests.linkedSuccessfully")
+              : requestId && requestNumber
+                ? t("requests.createdSuccessfullyWithNumber", { requestNumber })
+                : t("requests.createdSuccessfully"),
+          );
         }}
       />
     </div>

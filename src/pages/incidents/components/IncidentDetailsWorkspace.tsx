@@ -1487,9 +1487,26 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
           incident={incident as IncidentDetail}
           isOpen={convertModalOpen}
           onClose={() => setConvertModalOpen(false)}
-          onSuccess={(newRequestId) => {
+          onSuccess={(requestId, requestNumber, isLinked) => {
             setConvertModalOpen(false);
-            navigate(`/requests/${newRequestId}`);
+            // Stay on the dashboard; refresh the list and this incident instead
+            queryClient.invalidateQueries({ queryKey: ["incidents"] });
+            queryClient.invalidateQueries({
+              queryKey: ["incident", incident.id],
+            });
+            toast.success(
+              isLinked
+                ? requestNumber
+                  ? t("requests.linkedSuccessfullyWithNumber", {
+                      requestNumber,
+                    })
+                  : t("requests.linkedSuccessfully")
+                : requestId && requestNumber
+                  ? t("requests.createdSuccessfullyWithNumber", {
+                      requestNumber,
+                    })
+                  : t("requests.createdSuccessfully"),
+            );
           }}
         />
       ) : null}
