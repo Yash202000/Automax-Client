@@ -113,6 +113,12 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // AD login 401s are credential/OTP failures, not an expired session —
+    // replaying them would also spend another OTP attempt.
+    if (originalRequest.url?.includes("/ldap/login")) {
+      return Promise.reject(error);
+    }
+
     // If this is the refresh token request itself failing, redirect to login
     if (originalRequest.url?.includes("/auth/refresh")) {
       redirectToLogin();

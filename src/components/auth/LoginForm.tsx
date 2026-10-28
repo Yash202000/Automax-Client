@@ -12,11 +12,12 @@ import {
   Fingerprint,
   Building2,
   ArrowLeft,
+  KeyRound,
 } from "lucide-react";
 import { Button, Input, Checkbox } from "../ui";
 import { authApi } from "../../api/auth";
 import { ssoApi } from "../../api/sso";
-import { ldapApi } from "../../api/ldap";
+import { ldapApi, isADOtpChallenge } from "../../api/ldap";
 import { useAuthStore } from "../../stores/authStore";
 import type { User } from "../../types";
 import { OTPInput } from "./OTPInput";
@@ -91,6 +92,9 @@ export const LoginForm: React.FC = () => {
   const [nationalId, setNationalId] = useState("");
   const [adUsername, setAdUsername] = useState("");
   const [adPassword, setAdPassword] = useState("");
+  // AD-Baseer second step: set when /ldap/login asks for the mobile OTP.
+  const [adChallengeId, setAdChallengeId] = useState<string | null>(null);
+  const [adOtp, setAdOtp] = useState("");
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const setUser = useAuthStore((state) => state.setUser);
@@ -178,6 +182,25 @@ export const LoginForm: React.FC = () => {
     setNationalId("");
     setAdUsername("");
     setAdPassword("");
+    setAdChallengeId(null);
+    setAdOtp("");
+  };
+
+  const apiErrorOf = (err: unknown) => {
+    const response =
+      typeof err === "object" && err !== null && "response" in err
+        ? (
+            err as {
+              response?: { data?: { error?: string; error_code?: string } };
+            }
+          ).response?.data
+        : undefined;
+    return {
+      message:
+        response?.error ||
+        (err instanceof Error ? err.message : t("auth.loginError")),
+      code: response?.error_code,
+    };
   };
 
   const handleSsoLogin = async (e: React.FormEvent) => {
@@ -234,6 +257,44 @@ export const LoginForm: React.FC = () => {
         username: adUsername,
         password: adPassword,
       });
+      const data = response.data;
+      if (response.success && data) {
+        if (isADOtpChallenge(data)) {
+          // AD-Baseer sent a code to the employee's mobile.
+          setAdPassword("");
+          setAdOtp("");
+          setAdChallengeId(data.challenge_id);
+        } else {
+          await completeLogin({
+            user: data.user as unknown as User,
+            token: data.token,
+            refreshToken: data.refresh_token,
+          });
+        }
+      } else {
+        setError(response.error || t("auth.loginError"));
+      }
+    } catch (err: unknown) {
+      setError(apiErrorOf(err).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adChallengeId || !/^\d{4,8}$/.test(adOtp.trim())) {
+      setError(t("auth.adOtpInvalidFormat"));
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await ldapApi.verifyOtp({
+        challenge_id: adChallengeId,
+        otp: adOtp.trim(),
+      });
       if (response.success && response.data) {
         await completeLogin({
           user: response.data.user as unknown as User,
@@ -244,13 +305,13 @@ export const LoginForm: React.FC = () => {
         setError(response.error || t("auth.loginError"));
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : t("auth.loginError");
-      if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosError = err as { response?: { data?: { error?: string } } };
-        setError(axiosError.response?.data?.error || errorMessage);
-      } else {
-        setError(errorMessage);
+      const { message, code } = apiErrorOf(err);
+      setError(message);
+      setAdOtp("");
+      // The challenge is gone (expired / too many tries / AD email not
+      // registered in Automax): back to step 1.
+      if (code === "ad_otp_restart" || code === "ad_user_not_registered") {
+        setAdChallengeId(null);
       }
     } finally {
       setIsLoading(false);
@@ -398,6 +459,50 @@ export const LoginForm: React.FC = () => {
             rightIcon={!isLoginPending && <ArrowRight className="w-5 h-5" />}
           >
             {t("auth.signIn")}
+          </Button>
+        </form>
+      ) : isLdap && adChallengeId ? (
+        <form onSubmit={handleAdVerifyOtp} className="space-y-5" noValidate>
+          <button
+            type="button"
+            onClick={() => {
+              setAdChallengeId(null);
+              setAdOtp("");
+              setError("");
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t("auth.backToLogin")}
+          </button>
+
+          <div className="text-center space-y-2">
+            <h4 className="text-2xl font-semibold text-slate-900">
+              {t("auth.verifyYourAccount")}
+            </h4>
+            <p className="text-sm text-slate-500">{t("auth.adOtpSent")}</p>
+          </div>
+
+          <Input
+            label={t("auth.adOtpLabel")}
+            placeholder={t("auth.adOtpPlaceholder")}
+            value={adOtp}
+            onChange={(e) => setAdOtp(e.target.value.replace(/\D/g, ""))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={8}
+            autoFocus
+            leftIcon={<KeyRound className="w-5 h-5" />}
+          />
+
+          <Button
+            type="submit"
+            size="lg"
+            fullWidth
+            isLoading={isLoginPending}
+            rightIcon={!isLoginPending && <ArrowRight className="w-5 h-5" />}
+          >
+            {t("auth.verify")}
           </Button>
         </form>
       ) : isLdap ? (

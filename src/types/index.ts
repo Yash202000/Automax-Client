@@ -498,6 +498,7 @@ export interface UpdateProfileRequest {
   bypass_login_totp?: boolean;
   enable_login_totp?: boolean;
   contact_center?: boolean;
+  is_ad_user?: boolean;
 }
 
 export interface ManagerScopeResponse {
