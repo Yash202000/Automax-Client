@@ -88,10 +88,13 @@ export const ldapApi = {
   },
 
   // Whether the AD directory can be browsed over LDAP ("Add AD User" picker).
-  directoryStatus: async (): Promise<ApiResponse<{ enabled: boolean }>> => {
-    const response = await apiClient.get<ApiResponse<{ enabled: boolean }>>(
-      "/ldap/directory-status",
-    );
+  // enabled: LDAP directory can be browsed; ad_users: AD users can be created.
+  directoryStatus: async (): Promise<
+    ApiResponse<{ enabled: boolean; ad_users: boolean }>
+  > => {
+    const response = await apiClient.get<
+      ApiResponse<{ enabled: boolean; ad_users: boolean }>
+    >("/ldap/directory-status");
     return response.data;
   },
 
