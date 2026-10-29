@@ -15,6 +15,7 @@ import { incidentApi } from "../../api/admin";
 import NearbyIncidentsMapModal from "./NearbyIncidentsMapModal";
 import { getIncidentDistance } from "../../utils/geoDistance";
 import { localizeNearbyIncident } from "../../utils/nearbyIncidentLocale";
+import { cn } from "../../lib/utils";
 
 const PAGE_SIZE = 5;
 
@@ -33,6 +34,8 @@ interface Props {
   longitude?: number | null;
   classificationId?: string | null;
   incidentNumber?: string;
+  fullWidthPanel?: boolean;
+  fullWidthButton?: boolean;
 }
 
 const NearbyIncidents = ({
@@ -41,6 +44,8 @@ const NearbyIncidents = ({
   longitude,
   classificationId,
   incidentNumber,
+  fullWidthPanel = false,
+  fullWidthButton = false,
 }: Props) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.startsWith("ar");
@@ -99,12 +104,17 @@ const NearbyIncidents = ({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[hsl(var(--border))] text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]"
+        className={cn(
+          "inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[hsl(var(--border))] text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]",
+          fullWidthButton && "w-full justify-between",
+        )}
       >
-        <LocateFixed className="w-4 h-4 text-[hsl(var(--primary))]" />
-        {t("incidents.nearby.button")}
-        <span className="px-1.5 rounded-full text-xs bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
-          {total}
+        <span className="flex items-center gap-2">
+          <LocateFixed className="w-4 h-4 text-[hsl(var(--primary))]" />
+          {t("incidents.nearby.button")}
+          <span className="px-1.5 rounded-full text-xs bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
+            {total}
+          </span>
         </span>
         {open ? (
           <ChevronUp className="w-4 h-4" />
@@ -114,7 +124,14 @@ const NearbyIncidents = ({
       </button>
 
       {open && (
-        <div className="absolute inset-inline-start-0 top-full z-20 mt-2 w-[360px] min-w-[300px] max-w-[calc(100vw-1.5rem)] lg:w-96 lg:max-w-lg rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden">
+        <div
+          className={cn(
+            "absolute inset-inline-start-0 top-full z-20 mt-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden",
+            fullWidthPanel
+              ? "w-full min-w-0 max-w-full"
+              : "w-[360px] min-w-[300px] max-w-[calc(100vw-1.5rem)] lg:w-96 lg:max-w-lg",
+          )}
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
             <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
               {t("incidents.nearby.title")}(
