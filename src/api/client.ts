@@ -17,6 +17,7 @@ declare global {
       CTI_PROVIDER?: string;
       SIP_PASSWORD?: string;
       ENABLE_GIS?: string;
+      ENABLE_WORKFLOW_CODE?: string;
       SESSION_TIMEOUT_MINUTES?: string;
       APP_VERSION?: string;
       ENABLE_SIGNUP?: string;
