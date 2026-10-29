@@ -1,7 +1,6 @@
 import {
   ChevronRight,
   Clock,
-  Eye,
   GitMerge,
   Link2,
   MapPin,
@@ -191,17 +190,6 @@ export function IncidentListCard({
             <MessageSquare className="h-2.5 w-2.5" />
             {incident.comments_count ?? 0}
           </span>
-          {(incident.active_viewers ?? 0) > 0 ? (
-            <span
-              className="flex items-center gap-1 text-amber-700 dark:text-amber-400"
-              title={t("incidents.currentlyViewing", {
-                count: incident.active_viewers,
-              })}
-            >
-              <Eye className="h-2.5 w-2.5" />
-              {incident.active_viewers}
-            </span>
-          ) : null}
           {isMasterIncident ? (
             <span
               className="flex items-center gap-1 text-blue-700 dark:text-blue-400"
