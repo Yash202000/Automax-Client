@@ -178,16 +178,19 @@ export const UsersPage: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const canCreateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_CREATE);
+  const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
   // The "Add AD User" picker browses the directory over LDAP. With AD-Baseer
   // (no directory API) AD users are added through the normal form instead.
-  const { data: adDirectoryEnabled = false } = useQuery({
+  // The "Active Directory user" toggle only shows where an AD login (LDAP or
+  // AD-Baseer) is configured; the backend refuses AD users elsewhere.
+  const { data: directoryStatus } = useQuery({
     queryKey: ["ldap", "directory-status"],
-    queryFn: async () =>
-      (await ldapApi.directoryStatus()).data?.enabled ?? false,
-    enabled: canCreateUser,
+    queryFn: async () => (await ldapApi.directoryStatus()).data,
+    enabled: canCreateUser || canUpdateUser,
     staleTime: 5 * 60 * 1000,
   });
-  const canUpdateUser = isSuperAdmin || hasPermission(PERMISSIONS.USERS_UPDATE);
+  const adDirectoryEnabled = directoryStatus?.enabled ?? false;
+  const adUsersEnabled = directoryStatus?.ad_users ?? false;
   const canPasswordReset = hasPermission(PERMISSIONS.USER_RESET_PASSWORD);
 
   const [search, setSearch] = useState("");
@@ -2832,29 +2835,31 @@ export const UsersPage: React.FC = () => {
                 </div>
 
                 {/* Active Directory user */}
-                <TotpToggleRow
-                  title={t("users.adUserToggle", "Active Directory user")}
-                  description={
-                    formData.is_ad_user && !editingUser.is_ad_user
-                      ? t(
-                          "users.adUserSwitchOnDesc",
-                          "The user's local password will be removed. They will sign in with AD and OTP.",
-                        )
-                      : !formData.is_ad_user && editingUser.is_ad_user
+                {adUsersEnabled && (
+                  <TotpToggleRow
+                    title={t("users.adUserToggle", "Active Directory user")}
+                    description={
+                      formData.is_ad_user && !editingUser.is_ad_user
                         ? t(
-                            "users.adUserSwitchOffDesc",
-                            "The user will have no password until you reset it.",
+                            "users.adUserSwitchOnDesc",
+                            "The user's local password will be removed. They will sign in with AD and OTP.",
                           )
-                        : t(
-                            "users.adUserToggleDesc",
-                            "Signs in with the AD username, password and OTP. No password is stored in Automax.",
-                          )
-                  }
-                  checked={formData.is_ad_user}
-                  onChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, is_ad_user: checked }))
-                  }
-                />
+                        : !formData.is_ad_user && editingUser.is_ad_user
+                          ? t(
+                              "users.adUserSwitchOffDesc",
+                              "The user will have no password until you reset it.",
+                            )
+                          : t(
+                              "users.adUserToggleDesc",
+                              "Signs in with the AD username, password and OTP. No password is stored in Automax.",
+                            )
+                    }
+                    checked={formData.is_ad_user}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, is_ad_user: checked }))
+                    }
+                  />
+                )}
 
                 {/* Login TOTP override */}
                 {showEditBypassTotpToggle && (
@@ -3078,25 +3083,27 @@ export const UsersPage: React.FC = () => {
                 </div>
 
                 {/* Active Directory user */}
-                <TotpToggleRow
-                  title={t("users.adUserToggle", "Active Directory user")}
-                  description={t(
-                    "users.adUserToggleDesc",
-                    "Signs in with the AD username, password and OTP. No password is stored in Automax.",
-                  )}
-                  checked={createFormData.is_ad_user}
-                  onChange={(checked) => {
-                    setCreateFormData((prev) => ({
-                      ...prev,
-                      is_ad_user: checked,
-                      password: checked ? "" : prev.password,
-                    }));
-                    setCreateFormErrors((prev) => ({
-                      ...prev,
-                      password: undefined,
-                    }));
-                  }}
-                />
+                {adUsersEnabled && (
+                  <TotpToggleRow
+                    title={t("users.adUserToggle", "Active Directory user")}
+                    description={t(
+                      "users.adUserToggleDesc",
+                      "Signs in with the AD username, password and OTP. No password is stored in Automax.",
+                    )}
+                    checked={createFormData.is_ad_user}
+                    onChange={(checked) => {
+                      setCreateFormData((prev) => ({
+                        ...prev,
+                        is_ad_user: checked,
+                        password: checked ? "" : prev.password,
+                      }));
+                      setCreateFormErrors((prev) => ({
+                        ...prev,
+                        password: undefined,
+                      }));
+                    }}
+                  />
+                )}
 
                 {/* Email & Username */}
                 <div className="grid grid-cols-2 gap-4">
