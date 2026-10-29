@@ -465,15 +465,30 @@ export const KpiTargetsPage: React.FC = () => {
     [freq],
   );
   const formCard = cardOptions.find((c) => c.code === formKpiCode);
-  const formFreq =
-    formCard?.reporting_frequency || formMetrics?.[0]?.reporting_frequency;
-  const formPeriodOptions = useMemo(
-    () => getPeriodOptionsByFrequency(formFreq),
-    [formFreq],
-  );
-
   const selectedMetric = (formMetrics ?? kpiMetrics ?? []).find(
     (m: any) => m.id === formMetricId,
+  );
+  // REL-05: target periods follow the selected metric's own frequency (an
+  // empty one means "Inherit from KPI") and stay within its start/due dates.
+  // The backend enforces the same rule; this keeps invalid periods out of the
+  // list. The saved period stays listed so an existing target still shows it.
+  const formFreq =
+    selectedMetric?.reporting_frequency ||
+    formCard?.reporting_frequency ||
+    formMetrics?.[0]?.reporting_frequency;
+  const metricStart: string = selectedMetric?.start_date?.slice(0, 10) ?? "";
+  const metricDue: string = selectedMetric?.due_date?.slice(0, 10) ?? "";
+  const formPeriodOptions = useMemo(
+    () =>
+      getPeriodOptionsByFrequency(formFreq).filter((p) => {
+        if (p.value === formPeriodCode) return true;
+        const { start, end } = getPeriodStartEnd(formYear, p.value);
+        return (
+          (!metricStart || end >= metricStart) &&
+          (!metricDue || start <= metricDue)
+        );
+      }),
+    [formFreq, formYear, formPeriodCode, metricStart, metricDue],
   );
   const calcType: string = selectedMetric?.calculation_type ?? "";
   const direction: string = selectedMetric?.direction ?? "";
@@ -1028,7 +1043,10 @@ export const KpiTargetsPage: React.FC = () => {
               <select
                 value={formMetricId}
                 disabled={formReadOnly}
-                onChange={(e) => setFormMetricId(e.target.value)}
+                onChange={(e) => {
+                  setFormMetricId(e.target.value);
+                  setFormPeriodCode("");
+                }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-60"
               >
                 <option value="">-- Select Metric --</option>
