@@ -17,6 +17,8 @@ import type {
   AwardCriterionRequest,
   AwardSubCriterion,
   AwardSubCriterionRequest,
+  KpiClassification,
+  KpiClassificationRequest,
   KpiDataSource,
   KpiDataSourceRequest,
   KpiSegmentationDimension,
@@ -410,6 +412,28 @@ export const kpiMasterDataApi = {
   },
   deleteDataSource: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/data-sources/${id}`);
+    return res.data;
+  },
+
+  listClassifications: async (): Promise<ApiResponse<KpiClassification[]>> => {
+    const res = await apiClient.get("/kpi/classifications");
+    return res.data;
+  },
+  createClassification: async (
+    data: KpiClassificationRequest,
+  ): Promise<ApiResponse<KpiClassification>> => {
+    const res = await apiClient.post("/kpi/classifications", data);
+    return res.data;
+  },
+  updateClassification: async (
+    id: string,
+    data: Partial<KpiClassificationRequest>,
+  ): Promise<ApiResponse<KpiClassification>> => {
+    const res = await apiClient.put(`/kpi/classifications/${id}`, data);
+    return res.data;
+  },
+  deleteClassification: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/classifications/${id}`);
     return res.data;
   },
 

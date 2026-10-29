@@ -132,6 +132,18 @@ export interface KpiDataSourceRequest {
   name_ar?: string;
 }
 
+export interface KpiClassification {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  is_active: boolean;
+}
+
+export interface KpiClassificationRequest {
+  name_en: string;
+  name_ar?: string;
+}
+
 export interface KpiSegmentationDimension {
   id: string;
   name_en: string;
@@ -309,6 +321,8 @@ export interface StrategicKPI {
   process?: Process;
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
+  classification_id?: string;
+  classification?: KpiClassification;
   polarity: string;
   activation_status: string;
   description_en: string;
@@ -342,6 +356,8 @@ export interface OperationalKPI {
   pillar?: Pillar;
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
+  classification_id?: string;
+  classification?: KpiClassification;
   domain_id?: string;
   domain?: Domain;
   owner_type: KPIOwnerType;
@@ -388,6 +404,8 @@ export interface AwardKPI {
   process?: Process;
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
+  classification_id?: string;
+  classification?: KpiClassification;
   pillar_id?: string;
   pillar?: Pillar;
   domain_id?: string;
@@ -680,6 +698,7 @@ export interface StrategicKPIRequest {
   operational_objective_id: string;
   process_id: string;
   award_sub_criterion_id?: string;
+  classification_id?: string;
   polarity?: string;
   description_en?: string;
   description_ar?: string;
@@ -703,6 +722,7 @@ export interface OperationalKPIRequest {
   process_id: string;
   pillar_id?: string;
   award_sub_criterion_id?: string;
+  classification_id?: string;
   domain_id?: string;
   owner_type?: KPIOwnerType;
   owner_dept_id?: string;
@@ -729,6 +749,7 @@ export interface AwardKPIRequest {
   operational_objective_id: string;
   process_id: string;
   award_sub_criterion_id?: string;
+  classification_id?: string;
   pillar_id?: string;
   domain_id?: string;
   owner_type?: KPIOwnerType;

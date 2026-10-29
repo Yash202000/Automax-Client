@@ -10,6 +10,7 @@ import {
   useAwardKPIDetail,
   useDataSources,
   useOrganizations,
+  useClassifications,
   useKpiDocumentaFolderInfo,
 } from "../../../hooks/useKpi";
 import { departmentApi } from "../../../api/admin";
@@ -20,7 +21,7 @@ import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { AwardKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormAwardPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
@@ -35,6 +36,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     queryFn: () => departmentApi.list(),
   });
 
+  const { data: classifications } = useClassifications();
   const dataSources = dataSourcesData ?? [];
   const organizations = organizationsData ?? [];
   const departments = departmentsData?.data ?? [];
@@ -46,6 +48,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     operational_objective_id: "",
     process_id: "",
     award_sub_criterion_id: "",
+    classification_id: "",
     pillar_id: "",
     owner_type: "internal" as KPIOwnerType,
     owner_dept_id: "",
@@ -86,6 +89,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       operational_objective_id: kpi.operational_objective_id ?? "",
       process_id: kpi.process_id ?? "",
       award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      classification_id: kpi.classification_id || "",
       pillar_id: kpi.pillar_id ?? "",
       owner_type: kpi.owner_type ?? "internal",
       owner_dept_id: kpi.owner_dept_id ?? "",
@@ -132,6 +136,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       baseline: Number(form.baseline),
       pillar_id: form.pillar_id || undefined,
       award_sub_criterion_id: form.award_sub_criterion_id || undefined,
+      classification_id: form.classification_id || undefined,
       owner_dept_id: form.owner_dept_id || undefined,
       owning_agency_id: form.owning_agency_id || undefined,
       owner_org_id:
@@ -304,6 +309,18 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          <Select
+            label={t("kpi.dictionary.fieldClassification")}
+            value={form.classification_id}
+            onChange={handleChange("classification_id")}
+            options={(classifications ?? []).map((c) => ({
+              value: c.id,
+              label:
+                i18n.language === "ar" && c.name_ar ? c.name_ar : c.name_en,
+            }))}
+            placeholder={t("kpi.dictionary.selectClassification")}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select

@@ -34,6 +34,7 @@ import {
   Layers,
   Gauge,
   ListTree,
+  Tags,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -569,6 +570,7 @@ export const GoalLayout: React.FC = () => {
                   ["award-criterion", "Award Criteria", ClipboardCheck],
                   ["award-sub-criterion", "Award Sub-Criteria", CheckCheck],
                   ["data-source", "Data Sources", FileSpreadsheet],
+                  ["classification", "KPI Classifications", Tags],
                   ["segmentation-dimension", "Segmentation Dimensions", Layers],
                 ] as const
               ).map(([tabKey, label, Icon]) => (

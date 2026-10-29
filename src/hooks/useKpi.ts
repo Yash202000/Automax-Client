@@ -730,6 +730,52 @@ export const useDeleteDataSource = () => {
   });
 };
 
+export const useClassifications = () =>
+  useQuery({
+    queryKey: ["kpi", "classifications"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listClassifications();
+      return res.data ?? [];
+    },
+  });
+
+export const useCreateClassification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => kpiMasterDataApi.createClassification(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "classifications"] });
+      toast.success("Classification saved");
+    },
+    onError: () => toast.error("Failed to save classification"),
+  });
+};
+
+export const useUpdateClassification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiMasterDataApi.updateClassification(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "classifications"] });
+      toast.success("Classification updated");
+    },
+    onError: () => toast.error("Failed to update classification"),
+  });
+};
+
+export const useDeleteClassification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => kpiMasterDataApi.deleteClassification(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "classifications"] });
+      toast.success("Classification deleted");
+    },
+    onError: () => toast.error("Failed to delete classification"),
+  });
+};
+
 export const useSegmentationDimensions = () =>
   useQuery({
     queryKey: ["kpi", "segmentation-dimensions"],
