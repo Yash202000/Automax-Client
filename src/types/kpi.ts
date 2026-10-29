@@ -1399,7 +1399,8 @@ export const THRESHOLD_MODE_OPTIONS: {
 export function getPeriodOptionsByFrequency(
   frequency?: string,
 ): { value: string; label: string }[] {
-  switch (frequency) {
+  // KPIs store "monthly"/"semi_annual", metrics store "Monthly"/"Semiannual".
+  switch (frequency?.toLowerCase().replace(/[\s_-]/g, "")) {
     case "monthly":
       return REPORTING_MONTHS.map((m) => ({
         value: m.toLowerCase(),
@@ -1410,7 +1411,6 @@ export function getPeriodOptionsByFrequency(
         value: q.toLowerCase(),
         label: q,
       }));
-    case "semi_annual":
     case "semiannual":
       return REPORTING_SEMI_ANNUALS.map((h) => ({
         value: h.toLowerCase(),

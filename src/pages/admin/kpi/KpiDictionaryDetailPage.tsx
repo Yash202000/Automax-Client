@@ -1651,6 +1651,8 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   label="Weight"
                   type="number"
                   step="0.1"
+                  min={0}
+                  max={100}
                   value={metricForm.weight}
                   onChange={(e) =>
                     setMetricForm((p) => ({
