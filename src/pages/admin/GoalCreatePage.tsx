@@ -19,6 +19,7 @@ import type {
 } from "../../types/goal";
 import type { Category } from "../../types/category";
 import { ParentGoalSelector } from "../../components/goals/ParentGoalSelector";
+import { isHiddenModulePath } from "../../constants/hiddenModules";
 import Select from "../../components/ui/SelectInput";
 
 // Flatten the category tree into a sorted flat list for select rendering.
@@ -42,7 +43,10 @@ export const GoalCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const createGoal = useCreateGoal();
   const { data: templatesData } = useActiveGoalTemplates();
-  const activeTemplates = templatesData?.data ?? [];
+  // Goal Templates is a hidden module, so the template picker stays hidden too.
+  const activeTemplates = isHiddenModulePath("/goals/templates")
+    ? []
+    : (templatesData?.data ?? []);
   const [searchParams] = useSearchParams();
   const presetParentId = searchParams.get("parent") ?? undefined;
   const { data: presetParentData } = useGoal(presetParentId ?? "");
