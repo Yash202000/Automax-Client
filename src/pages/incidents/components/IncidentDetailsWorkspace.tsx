@@ -94,6 +94,7 @@ import { RevisionsTab } from "./workspace/RevisionsTab";
 import { RejectionHistoryTab } from "./workspace/RejectionHistoryTab";
 import { LinkedSystemsTab } from "./workspace/LinkedSystemsTab";
 import { NasaqTab } from "./workspace/NasaqTab";
+import { useIncidentWebSocket } from "@/lib/services/incidentWebSocket";
 
 interface Props {
   incident: Incident | null;
@@ -395,6 +396,9 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     staleTime: 30_000,
   });
 
+  /* Live presence: WS join/leave events refresh the "Also viewing" card. */
+  useIncidentWebSocket(incident?.id, user?.id);
+
   const slaDeadline = incident?.sla_deadline;
   const slaDays = useMemo(() => {
     if (!slaDeadline) return null;
@@ -580,13 +584,36 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
 
   /* Presence — who else is viewing, same as IncidentDetailPage. */
   const { data: presenceData } = useQuery({
-    queryKey: ["incidents", "v2-list", "presence", incident?.id ?? "none"],
+    queryKey: ["incident-presence", incident?.id ?? "none"],
     queryFn: () => incidentApi.getPresence(incident!.id),
     enabled: !!incident?.id,
-    staleTime: 30_000,
     refetchInterval: 60_000,
-    retry: false,
+    refetchOnWindowFocus: false,
   });
+
+  /* Keep the user's presence alive (5-min TTL) until they leave. */
+  useEffect(() => {
+    const id = incident?.id;
+    if (!id) return;
+
+    const mark = () =>
+      incidentApi.markPresence(id).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to mark presence:", err);
+      });
+
+    mark();
+    const presenceInterval = setInterval(mark, 180_000);
+
+    return () => {
+      clearInterval(presenceInterval);
+      incidentApi.removePresence(id).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to remove presence:", err);
+      });
+    };
+  }, [incident?.id]);
+
   const otherUsers = useMemo(
     () => presenceData?.data?.filter((u) => u.user_id !== user?.id) || [],
     [presenceData, user?.id],
@@ -755,6 +782,10 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                     </span>
                   </div>
                 ))}
+                <p className="mt-1 flex w-full items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300">
+                  <TriangleAlert className="h-3 w-3 shrink-0" />
+                  {t("incidents.liveCollaborationActiveChangesMayOccurIn")}
+                </p>
               </div>
             </div>
           </div>

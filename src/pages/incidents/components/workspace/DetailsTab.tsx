@@ -402,6 +402,14 @@ export function DetailsTab({
   const recurrenceTotal = recurrenceData?.total_items ?? 0;
   const recurrenceItems = recurrenceData?.data ?? [];
 
+  // Nearby = separate card under the description; hide it entirely when the
+  // feature is not configured or the incident has no coordinates/classification.
+  const showNearbyCard =
+    recurrenceEnabled &&
+    incident.latitude != null &&
+    incident.longitude != null &&
+    !!incident.classification?.id;
+
   // Pre-expiry warning banners — same conditions as IncidentDetailPage:
   // shown only while 0 < hours left <= 24.
   const rtcExpiry = expiryCountdown(
@@ -451,20 +459,165 @@ export function DetailsTab({
           </div>
         </div>
       ) : null}
-      {/* description + map */}
+      {/* description + nearby + map */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div
-          className={cn(
-            "bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3 flex flex-col shadow-sm min-w-0",
-            attachments.length > 4 && "max-h-[20rem] overflow-y-auto",
-          )}
-        >
-          <div className="flex justify-between items-center pb-1.5 mb-1.5 border-b border-[hsl(var(--border))]">
-            <h3 className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-              <FileText className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
-              {t("incidents.incidentDescription")}
-            </h3>
-            <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 flex-col gap-3">
+          <div
+            className={cn(
+              "bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3 flex flex-col shadow-sm min-w-0",
+              attachments.length > 4 && "max-h-[20rem] overflow-y-auto",
+            )}
+          >
+            <div className="flex justify-between items-center mb-1.5">
+              <h3 className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                <FileText className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                {t("incidents.incidentDescription")}
+              </h3>
+              <div className="flex items-center gap-1.5">
+                {canEditClosedDescription && !isEditingDescription ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditedDescription(incident.description || "");
+                      setIsEditingDescription(true);
+                    }}
+                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 transition-colors"
+                    title={t("incidents.editDescription")}
+                    disabled={isSavingDescription}
+                  >
+                    <Pen className="h-3 w-3" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            {isEditingDescription ? (
+              <>
+                <textarea
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  onBlur={() => {
+                    if (editedDescription !== incident.description) {
+                      setIsSavingDescription(true);
+                      updateClosedSummaryMutation.mutate(editedDescription);
+                    } else {
+                      setIsEditingDescription(false);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setEditedDescription(incident.description || "");
+                      setIsEditingDescription(false);
+                    }
+                  }}
+                  autoFocus
+                  disabled={isSavingDescription}
+                  rows={4}
+                  className="text-[hsl(var(--muted-foreground))] text-xs leading-relaxed bg-[hsl(var(--muted)/0.5)] p-2.5 rounded-lg border border-[hsl(var(--border))] focus:border-cyan-500/60 focus:outline-none mb-2.5 whitespace-pre-wrap w-full resize-none"
+                  placeholder={t("incidents.enterDescription")}
+                />
+                {isSavingDescription ? (
+                  <div className="flex items-center gap-1.5 mb-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--border))] border-t-transparent" />
+                    {t("users.saving")}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-[hsl(var(--muted-foreground))] text-xs leading-relaxed bg-[hsl(var(--muted)/0.5)] p-2.5 rounded-lg border border-[hsl(var(--border))] mb-2.5 whitespace-pre-wrap">
+                {incident.description ? (
+                  <RenderWithIncidentMentions text={incident.description} />
+                ) : (
+                  incident.title || "—"
+                )}
+              </p>
+            )}
+            <div className="mb-2.5 border-b border-[hsl(var(--border))]" />
+            <div className="flex items-center justify-between mb-1.5">
+              <h4 className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                <Paperclip className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                {t("incidents.attachments")}{" "}
+                <span className="text-[hsl(var(--muted-foreground))] font-normal text-[11px]">
+                  (
+                  {t("incidents.attachmentFiles", {
+                    count: attachments.length,
+                  })}
+                  )
+                </span>
+              </h4>
+            </div>
+            {attachments.length === 0 ? (
+              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                {t("incidents.noAttachments")}
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {attachments.map((att) => {
+                  const preview = getAttachmentPreviewUrl(att.id);
+                  const isImg = att.mime_type.startsWith("image/");
+                  return (
+                    <div
+                      key={att.id}
+                      className="bg-[hsl(var(--muted)/0.7)] rounded-lg border border-[hsl(var(--border))] overflow-hidden hover:border-cyan-500/40 transition-all group"
+                    >
+                      <div
+                        className={cn(
+                          "h-10 bg-[hsl(var(--muted)/0.5)] relative overflow-hidden",
+                          isImg && "cursor-pointer",
+                        )}
+                        onClick={() => {
+                          if (isImg) onPreviewAttachment(att.id);
+                        }}
+                      >
+                        {isImg ? (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-300 opacity-80"
+                            style={{ backgroundImage: `url('${preview}')` }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <FileText className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                        {isImg ? (
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <span className="p-1 bg-white/90 rounded-full text-gray-700">
+                              <ZoomIn className="h-3 w-3" />
+                            </span>
+                          </div>
+                        ) : null}
+                        {/* Download hits the attachment endpoint (not /preview)
+                          with the download attr — same as IncidentDetailPage. */}
+                        <a
+                          href={getAttachmentUrl(att.id)}
+                          download={att.file_name}
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute bottom-1 end-1 bg-[hsl(var(--muted)/0.9)] hover:bg-cyan-600 text-slate-600 hover:text-white dark:text-white w-4 h-4 rounded flex items-center justify-center transition-colors shadow"
+                          title={t("common.download")}
+                        >
+                          <Download className="h-2 w-2" />
+                        </a>
+                      </div>
+                      <div className="p-1 text-xs leading-tight">
+                        <div className="font-semibold text-[hsl(var(--foreground))] truncate text-[10px]">
+                          {att.file_name}
+                        </div>
+                        <div className="text-[hsl(var(--muted-foreground))] text-[9px] mt-0.5 truncate">
+                          {(att.file_size / 1024 / 1024).toFixed(1)} MB ·{" "}
+                          {att.uploaded_by?.first_name ||
+                            att.uploaded_by?.username ||
+                            "—"}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {showNearbyCard ? (
+            <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3 shadow-sm">
               <Suspense fallback={null}>
                 <NearbyIncidents
                   incidentId={incident.id}
@@ -472,151 +625,16 @@ export function DetailsTab({
                   longitude={incident.longitude}
                   classificationId={incident.classification?.id}
                   incidentNumber={incident.incident_number}
+                  fullWidthPanel
+                  fullWidthButton
                 />
               </Suspense>
-              {canEditClosedDescription && !isEditingDescription ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditedDescription(incident.description || "");
-                    setIsEditingDescription(true);
-                  }}
-                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 transition-colors"
-                  title={t("incidents.editDescription")}
-                  disabled={isSavingDescription}
-                >
-                  <Pen className="h-3 w-3" />
-                </button>
-              ) : null}
             </div>
-          </div>
-          {isEditingDescription ? (
-            <>
-              <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                onBlur={() => {
-                  if (editedDescription !== incident.description) {
-                    setIsSavingDescription(true);
-                    updateClosedSummaryMutation.mutate(editedDescription);
-                  } else {
-                    setIsEditingDescription(false);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setEditedDescription(incident.description || "");
-                    setIsEditingDescription(false);
-                  }
-                }}
-                autoFocus
-                disabled={isSavingDescription}
-                rows={4}
-                className="text-[hsl(var(--muted-foreground))] text-xs leading-relaxed bg-[hsl(var(--muted)/0.5)] p-2.5 rounded-lg border border-[hsl(var(--border))] focus:border-cyan-500/60 focus:outline-none mb-2.5 whitespace-pre-wrap w-full resize-none"
-                placeholder={t("incidents.enterDescription")}
-              />
-              {isSavingDescription ? (
-                <div className="flex items-center gap-1.5 mb-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--border))] border-t-transparent" />
-                  {t("users.saving")}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-[hsl(var(--muted-foreground))] text-xs leading-relaxed bg-[hsl(var(--muted)/0.5)] p-2.5 rounded-lg border border-[hsl(var(--border))] mb-2.5 whitespace-pre-wrap">
-              {incident.description ? (
-                <RenderWithIncidentMentions text={incident.description} />
-              ) : (
-                incident.title || "—"
-              )}
-            </p>
-          )}
-          <div className="flex items-center justify-between mb-1.5">
-            <h4 className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-              <Paperclip className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
-              {t("incidents.attachments")}{" "}
-              <span className="text-[hsl(var(--muted-foreground))] font-normal text-[11px]">
-                (
-                {t("incidents.attachmentFiles", {
-                  count: attachments.length,
-                })}
-                )
-              </span>
-            </h4>
-          </div>
-          {attachments.length === 0 ? (
-            <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
-              {t("incidents.noAttachments")}
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {attachments.map((att) => {
-                const preview = getAttachmentPreviewUrl(att.id);
-                const isImg = att.mime_type.startsWith("image/");
-                return (
-                  <div
-                    key={att.id}
-                    className="bg-[hsl(var(--muted)/0.7)] rounded-lg border border-[hsl(var(--border))] overflow-hidden hover:border-cyan-500/40 transition-all group"
-                  >
-                    <div
-                      className={cn(
-                        "h-10 bg-[hsl(var(--muted)/0.5)] relative overflow-hidden",
-                        isImg && "cursor-pointer",
-                      )}
-                      onClick={() => {
-                        if (isImg) onPreviewAttachment(att.id);
-                      }}
-                    >
-                      {isImg ? (
-                        <div
-                          className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-300 opacity-80"
-                          style={{ backgroundImage: `url('${preview}')` }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                      {isImg ? (
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <span className="p-1 bg-white/90 rounded-full text-gray-700">
-                            <ZoomIn className="h-3 w-3" />
-                          </span>
-                        </div>
-                      ) : null}
-                      {/* Download hits the attachment endpoint (not /preview)
-                          with the download attr — same as IncidentDetailPage. */}
-                      <a
-                        href={getAttachmentUrl(att.id)}
-                        download={att.file_name}
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute bottom-1 end-1 bg-[hsl(var(--muted)/0.9)] hover:bg-cyan-600 text-slate-600 hover:text-white dark:text-white w-4 h-4 rounded flex items-center justify-center transition-colors shadow"
-                        title={t("common.download")}
-                      >
-                        <Download className="h-2 w-2" />
-                      </a>
-                    </div>
-                    <div className="p-1 text-xs leading-tight">
-                      <div className="font-semibold text-[hsl(var(--foreground))] truncate text-[10px]">
-                        {att.file_name}
-                      </div>
-                      <div className="text-[hsl(var(--muted-foreground))] text-[9px] mt-0.5 truncate">
-                        {(att.file_size / 1024 / 1024).toFixed(1)} MB ·{" "}
-                        {att.uploaded_by?.first_name ||
-                          att.uploaded_by?.username ||
-                          "—"}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          ) : null}
         </div>
 
         {/* map / GIS — same SingleLocationMap view as IncidentDetailPage,
-            constrained to this panel's dimensions */}
+          constrained to this panel's dimensions */}
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl overflow-hidden flex flex-col shadow-sm min-h-[220px] min-w-0">
           <div className="relative bg-[hsl(var(--muted)/0.5)] overflow-hidden flex-1 min-h-[140px]">
             {hasCoords ? (
