@@ -35,6 +35,7 @@ import {
 } from "../../../hooks/useKpi";
 import { Link } from "react-router-dom";
 import { MultiSelectFilter } from "../../../components/kpi/MultiSelectFilter";
+import { ModuleLink } from "../../../components/common/ModuleLink";
 
 // Matches the color coding already used for the Strategic/Operational/Award
 // stat cards above, so the donut's slices read consistently with the rest
@@ -476,12 +477,12 @@ export const KpiDashboardPage: React.FC = () => {
                   <Target size={20} className="text-blue-500" />
                   Segmentation Summary
                 </h3>
-                <Link
+                <ModuleLink
                   to="/goals/kpi/segmentation"
                   className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   View all
-                </Link>
+                </ModuleLink>
               </div>
               {!dashboard?.segmentation_summaries?.length ? (
                 <p className="text-sm text-slate-500 text-center py-8">

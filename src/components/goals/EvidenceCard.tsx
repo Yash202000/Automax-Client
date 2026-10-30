@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   FileText,
@@ -37,6 +36,7 @@ import { useFileVersions } from "../../hooks/useDocuments";
 import { EvidenceTransitionModal } from "./EvidenceTransitionModal";
 import EvidenceReplaceModal from "./EvidenceReplaceModal";
 import EvidenceVersionUploadModal from "./EvidenceVersionUploadModal";
+import { ModuleLink } from "../common/ModuleLink";
 
 interface EvidenceCardProps {
   evidence: Evidence;
@@ -99,8 +99,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
   );
 
   const stateName =
-    evidence.current_state?.name ??
-    t("goals.components.evidence.unknownState");
+    evidence.current_state?.name ?? t("goals.components.evidence.unknownState");
   const stateColor = evidence.current_state?.color ?? "#94a3b8";
   const stateType = evidence.current_state?.state_type ?? "";
   const stateCode = evidence.current_state?.code ?? "";
@@ -222,14 +221,14 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
               Opens the file directly in the Documents detail panel (versions,
               comments, tags) without having to navigate the folder tree. */}
           {hasDmsFile && (
-            <Link
+            <ModuleLink
               to={`/goals/documents?file=${evidence.documenta_file_id}`}
               className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               title={t("goals.components.evidence.openInDocumentsTitle")}
             >
               <ExternalLink className="w-3.5 h-3.5" />
               {t("goals.components.evidence.openInDocuments")}
-            </Link>
+            </ModuleLink>
           )}
 
           {/* Transition buttons */}
@@ -427,7 +426,9 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
                       <button
                         onClick={() => handleDownloadVersion(v.uuid)}
                         className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                        title={t("goals.components.evidence.downloadVersionTitle")}
+                        title={t(
+                          "goals.components.evidence.downloadVersionTitle",
+                        )}
                         aria-label={t(
                           "goals.components.evidence.downloadVersionTitle",
                         )}
