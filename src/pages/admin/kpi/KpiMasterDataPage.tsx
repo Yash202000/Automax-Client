@@ -814,7 +814,7 @@ export const KpiMasterDataPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-fit overflow-x-auto">
+      <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-fit overflow-x-auto scrollbar-hide">
         {isStandalone ? (
           <div className="px-4 py-2 text-sm font-medium">
             {tabs.find((t) => t.key === activeTab)?.label}

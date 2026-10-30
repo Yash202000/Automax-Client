@@ -20,7 +20,7 @@ import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { StrategicKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
@@ -46,6 +46,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
     operational_objective_id: "",
     process_id: "",
     award_sub_criterion_id: "",
+    classification: "",
     pillar_id: "",
     owner_type: "internal" as KPIOwnerType,
     owner_dept_id: "",
@@ -89,6 +90,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
       operational_objective_id: kpi.operational_objective_id ?? "",
       process_id: kpi.process_id ?? "",
       award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      classification: kpi.classification || "",
       pillar_id: kpi.pillar_id ?? "",
       owner_type: kpi.owner_type ?? "internal",
       owner_dept_id: kpi.owner_dept_id ?? "",
@@ -135,6 +137,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
       baseline: Number(form.baseline),
       pillar_id: form.pillar_id || undefined,
       award_sub_criterion_id: form.award_sub_criterion_id || undefined,
+      classification: form.classification || undefined,
       owner_dept_id: form.owner_dept_id || undefined,
       owning_agency_id: form.owning_agency_id || undefined,
       owner_org_id:
@@ -307,6 +310,24 @@ export const KpiDictionaryFormPage: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          <Select
+            label={t("kpi.dictionary.fieldClassification")}
+            value={form.classification}
+            onChange={handleChange("classification")}
+            options={[
+              { value: "kpi", label: i18n.language === "ar" ? "مؤشر" : "KPI" },
+              {
+                value: "measurement",
+                label: i18n.language === "ar" ? "مقياس" : "Measurement",
+              },
+              {
+                value: "output",
+                label: i18n.language === "ar" ? "مخرج" : "Output",
+              },
+            ]}
+            placeholder={t("kpi.dictionary.selectClassification")}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
