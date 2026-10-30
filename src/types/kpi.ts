@@ -238,6 +238,7 @@ export interface KpiCardDef {
   baseline: number;
   unit_of_measure?: string;
   polarity: string;
+  target_requirement: string;
   reporting_frequency: string;
   data_source: string;
   strategic_goal?: string;
@@ -310,6 +311,7 @@ export interface StrategicKPI {
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
   polarity: string;
+  target_requirement: string;
   activation_status: string;
   description_en: string;
   description_ar: string;
@@ -352,6 +354,7 @@ export interface OperationalKPI {
   owning_agency_id?: string;
   owning_agency?: DepartmentBrief;
   polarity: string;
+  target_requirement: string;
   activation_status: string;
   description_en: string;
   description_ar: string;
@@ -400,6 +403,7 @@ export interface AwardKPI {
   owning_agency_id?: string;
   owning_agency?: DepartmentBrief;
   polarity: string;
+  target_requirement: string;
   activation_status: string;
   description_en: string;
   description_ar: string;
@@ -681,6 +685,7 @@ export interface StrategicKPIRequest {
   process_id: string;
   award_sub_criterion_id?: string;
   polarity?: string;
+  target_requirement?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -709,6 +714,7 @@ export interface OperationalKPIRequest {
   owner_org_id?: string;
   owning_agency_id?: string;
   polarity?: string;
+  target_requirement?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -736,6 +742,7 @@ export interface AwardKPIRequest {
   owner_org_id?: string;
   owning_agency_id?: string;
   polarity?: string;
+  target_requirement?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -1653,6 +1660,7 @@ export interface KpiCardResponse {
   related_units_label: string;
   formula: string;
   polarity: string;
+  target_requirement: string;
   unit_of_measure: string;
   baseline: number;
   target_plan: KpiCardTargetRow[];
