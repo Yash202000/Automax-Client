@@ -422,15 +422,15 @@ export function IncidentsListPage({
                 title={t("incidents.openFilters")}
                 className={`px-2.5 py-2 border rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors shrink-0 shadow-sm cursor-pointer ${
                   filterActive || drawerOpen
-                    ? "bg-cyan-500/10 dark:bg-cyan-600/20 hover:bg-cyan-600/30 border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:text-[hsl(var(--foreground))]"
+                    ? "bg-primary/10 dark:bg-primary/20 hover:bg-primary/30 border-primary/40 text-primary hover:text-[hsl(var(--foreground))]"
                     : "bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted)/0.7)] border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                 }`}
               >
-                <Filter className="h-3 w-3 text-cyan-700 dark:text-cyan-400" />
+                <Filter className="h-3 w-3 text-primary" />
                 {t("common.filter")}
                 {filterActive ? (
                   <span
-                    className="h-1.5 w-1.5 rounded-full bg-cyan-400"
+                    className="h-1.5 w-1.5 rounded-full bg-primary"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -443,7 +443,7 @@ export function IncidentsListPage({
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t("incidents.feedSearchPlaceholder")}
                 aria-label={t("incidents.searchIncidents")}
-                className="w-full bg-[hsl(var(--muted)/0.8)] border border-[hsl(var(--border))] rounded-lg py-1 ps-7 pe-7 text-xs focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-[hsl(var(--muted-foreground))] text-[hsl(var(--foreground))] outline-none"
+                className="w-full bg-[hsl(var(--muted)/0.8)] border border-[hsl(var(--border))] rounded-lg py-1 ps-7 pe-7 text-xs focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-[hsl(var(--muted-foreground))] text-[hsl(var(--foreground))] outline-none"
               />
               <Search className="pointer-events-none absolute start-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
               {searchInput ? (
@@ -468,7 +468,7 @@ export function IncidentsListPage({
               <button
                 type="button"
                 onClick={clearBulkSelection}
-                className="text-[11px] text-cyan-700 dark:text-cyan-400 hover:text-cyan-700 dark:text-cyan-300 font-medium"
+                className="text-[11px] text-primary hover:text-primary font-medium"
               >
                 {t("common.clear")}
               </button>
@@ -477,7 +477,7 @@ export function IncidentsListPage({
                   type="button"
                   onClick={() => setShowMergeModal(true)}
                   disabled={isMergeDisabled}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-colors disabled:opacity-40"
                 >
                   <ArrowRightLeft className="h-3 w-3" />
                   {t("incidents.merge.title")}
@@ -521,7 +521,7 @@ export function IncidentsListPage({
           >
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="h-7 w-7 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
+                <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 <p className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
                   {t("incidents.loadingIncidents", "Loading incidents…")}
                 </p>
@@ -594,7 +594,7 @@ export function IncidentsListPage({
               role="status"
               aria-label={t("incidents.loadingIncident", "Loading incident")}
             >
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-[hsl(var(--border))] border-t-cyan-400" />
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-[hsl(var(--border))] border-t-primary" />
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
                 {t("incidents.loadingIncident", "Loading incident…")}
               </p>

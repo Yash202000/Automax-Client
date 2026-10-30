@@ -100,7 +100,7 @@ export function IncidentsPagination({
               className={cn(
                 "h-6 min-w-6 px-1 flex items-center justify-center rounded font-mono text-xs transition-colors",
                 p === current
-                  ? "bg-cyan-600 text-white font-semibold shadow-sm"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                   : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]",
               )}
             >

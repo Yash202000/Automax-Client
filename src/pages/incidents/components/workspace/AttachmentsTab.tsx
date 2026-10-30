@@ -55,7 +55,7 @@ function AttachmentCardFooter({
     attachment.uploaded_by?.username ||
     "—";
   return (
-    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#090e1a]/95 via-[#0e172a]/85 to-transparent pt-6 pb-2.5 px-3 border-t border-[hsl(var(--border))] backdrop-blur-md pointer-events-none">
+    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[hsl(var(--card)/0.95)] via-[hsl(var(--card)/0.85)] to-transparent pt-6 pb-2.5 px-3 border-t border-[hsl(var(--border))] backdrop-blur-md pointer-events-none">
       <div className="flex items-center justify-between mb-0.5 gap-2">
         <span className="font-bold text-xs text-[hsl(var(--foreground))] truncate">
           {attachment.file_name}
@@ -68,7 +68,7 @@ function AttachmentCardFooter({
         {formatActivityDateTime(attachment.created_at)}
       </div>
       <div className="text-[11px] text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
-        <span className="text-cyan-700 dark:text-cyan-400 font-medium truncate">
+        <span className="text-primary font-medium truncate">
           {uploaderName}
         </span>
         <span className="text-[hsl(var(--muted-foreground))] shrink-0">•</span>
@@ -88,7 +88,7 @@ function AttachmentCardFooter({
           <span className="text-[hsl(var(--muted-foreground))] truncate">
             {getLocalizedName(entry.from_state)}
           </span>
-          <ChevronRight className="h-3 w-3 text-cyan-700 dark:text-cyan-400 shrink-0 rtl:rotate-180" />
+          <ChevronRight className="h-3 w-3 text-primary shrink-0 rtl:rotate-180" />
           <span className="text-emerald-700 dark:text-emerald-400 font-semibold truncate">
             {getLocalizedName(entry.to_state)}
           </span>
@@ -319,7 +319,7 @@ export function AttachmentsTab({
                   setSliderPos(50);
                   setCompareModalOpen(true);
                 }}
-                className="px-3.5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-semibold transition-all shadow-md shadow-cyan-950/40"
+                className="px-3.5 py-2 bg-linear-to-r rtl:bg-linear-to-l from-primary to-accent text-primary-foreground rounded-lg text-xs font-semibold transition-all shadow-lg shadow-primary/0.25 hover:shadow-xl hover:shadow-[hsl(var(--primary)/0.3)]"
               >
                 {t("incidents.compareNow")}
               </button>
@@ -347,7 +347,7 @@ export function AttachmentsTab({
                       className={cn(
                         "relative rounded-xl overflow-hidden border bg-[hsl(var(--card))] shadow-lg group",
                         compareMode && selected
-                          ? "border-cyan-500/60 ring-1 ring-cyan-500/40"
+                          ? "border-primary/60 ring-1 ring-primary/40"
                           : "border-[hsl(var(--border))]",
                       )}
                     >
@@ -370,12 +370,12 @@ export function AttachmentsTab({
                               className={cn(
                                 "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
                                 selected
-                                  ? "bg-cyan-500 border-cyan-500"
-                                  : "bg-[hsl(var(--muted)/0.9)] border-[hsl(var(--border))] hover:border-cyan-400",
+                                  ? "bg-primary border-primary"
+                                  : "bg-[hsl(var(--muted)/0.9)] border-[hsl(var(--border))] hover:border-primary",
                               )}
                             >
                               {selected ? (
-                                <CheckCircle2 className="h-4 w-4 text-white" />
+                                <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
                               ) : (
                                 selectedForCompare.length < 2 && (
                                   <span className="text-[10px] font-mono text-[hsl(var(--muted-foreground))]">
@@ -425,7 +425,7 @@ export function AttachmentsTab({
                                 e.stopPropagation();
                                 setEditorAttachment(attachment);
                               }}
-                              className="w-7 h-7 rounded-full bg-cyan-950/80 hover:bg-cyan-900 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/40 transition-colors shadow-sm"
+                              className="w-7 h-7 rounded-full bg-primary/80 hover:bg-primary/90 text-primary-foreground flex items-center justify-center border border-primary/40 transition-colors shadow-sm"
                               title={t("common.edit", "Edit")}
                             >
                               <Pen className="h-3 w-3" />
@@ -473,7 +473,7 @@ export function AttachmentsTab({
                     className="relative rounded-xl overflow-hidden border bg-[hsl(var(--card))] shadow-lg group border-[hsl(var(--border))]"
                   >
                     <div className="w-full h-56 bg-[hsl(var(--muted)/0.9)] relative flex flex-col items-center justify-center gap-3 p-4 pb-28">
-                      <Music className="h-10 w-10 text-cyan-700 dark:text-cyan-400" />
+                      <Music className="h-10 w-10 text-primary" />
                       <audio
                         controls
                         className="w-full"
@@ -636,7 +636,7 @@ export function AttachmentsTab({
               max={100}
               value={sliderPos}
               onChange={(e) => setSliderPos(Number(e.target.value))}
-              className="flex-1 max-w-md accent-cyan-500"
+              className="flex-1 max-w-md accent-primary"
               aria-label={t("incidents.imageComparison")}
             />
             <span className="truncate">{selectedForCompare[1].file_name}</span>

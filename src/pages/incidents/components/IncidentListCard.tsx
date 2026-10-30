@@ -99,11 +99,11 @@ export function IncidentListCard({
       aria-pressed={!!selected}
       aria-disabled={isChildIncident}
       className={cn(
-        "w-full rounded-lg p-2.5 text-start transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500",
+        "w-full rounded-lg p-2.5 text-start transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-primary",
         isChildIncident
           ? "opacity-50 cursor-not-allowed border border-transparent"
           : selected
-            ? "cursor-pointer bg-[hsl(var(--muted)/0.5)] border border-cyan-500/50 shadow-cyan-950/50 ring-1 ring-cyan-500/20"
+            ? "cursor-pointer bg-[hsl(var(--muted)/0.5)] border border-primary/50 shadow-primary/25 ring-1 ring-primary/20"
             : "cursor-pointer border border-transparent hover:bg-[hsl(var(--muted))] hover:border-[hsl(var(--muted-foreground)/0.3)]",
         isExpiringSoon && "border-s-2 border-s-amber-400",
       )}
@@ -118,7 +118,7 @@ export function IncidentListCard({
               onClick={(e) => e.stopPropagation()}
               onChange={() => onToggle?.(incident)}
               aria-label={t("incidents.selectIncident", "Select incident")}
-              className="h-3.5 w-3.5 shrink-0 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-3.5 w-3.5 shrink-0 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary disabled:opacity-40 disabled:cursor-not-allowed"
             />
           ) : null}
           <span
@@ -149,7 +149,7 @@ export function IncidentListCard({
           className={cn(
             "font-mono text-[10px] flex items-center gap-1 leading-none shrink-0",
             selected
-              ? "text-cyan-700 dark:text-cyan-400 font-semibold"
+              ? "text-primary font-semibold"
               : "text-[hsl(var(--muted-foreground))]",
           )}
         >

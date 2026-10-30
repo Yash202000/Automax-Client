@@ -235,7 +235,7 @@ export function RevisionsTab({
                   );
                   setPage(1);
                 }}
-                className="appearance-none bg-[hsl(var(--muted)/0.5)] border border-cyan-500/30 hover:border-cyan-500/60 rounded-lg ps-8 pe-7 py-1.5 text-xs text-[hsl(var(--foreground))] shadow-sm transition-all focus:outline-none cursor-pointer"
+                className="appearance-none bg-[hsl(var(--muted)/0.5)] border border-primary/30 hover:border-primary/60 rounded-lg ps-8 pe-7 py-1.5 text-xs text-[hsl(var(--foreground))] shadow-sm transition-all focus:outline-none cursor-pointer"
                 aria-label={t("revisionHistory.allActions")}
               >
                 <option value="">{t("revisionHistory.allActions")}</option>
@@ -249,11 +249,11 @@ export function RevisionsTab({
                   </option>
                 ))}
               </select>
-              <Filter className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-cyan-700 dark:text-cyan-400 pointer-events-none" />
+              <Filter className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary pointer-events-none" />
               <ChevronDown className="absolute end-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))] pointer-events-none rtl:rotate-180" />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 dark:bg-cyan-950/40 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 text-xs font-mono font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-mono font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               {t("incidents.revisionsTotal", { count: totalItems })}
             </div>
           </div>
@@ -268,7 +268,7 @@ export function RevisionsTab({
             >
               <RefreshCw
                 className={cn(
-                  "h-3.5 w-3.5 text-cyan-700 dark:text-cyan-400",
+                  "h-3.5 w-3.5 text-primary",
                   isFetching && "animate-spin",
                 )}
               />
@@ -280,10 +280,10 @@ export function RevisionsTab({
                 void handleExport();
               }}
               disabled={exporting || revisions.length === 0}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-cyan-950/40 transition-all disabled:opacity-60"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-linear-to-r rtl:bg-linear-to-l from-primary to-accent text-primary-foreground rounded-lg text-xs font-semibold shadow-lg shadow-primary/0.25 hover:shadow-xl hover:shadow-[hsl(var(--primary)/0.3)] transition-all disabled:opacity-60"
             >
               {exporting ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
               ) : (
                 <Upload className="h-3.5 w-3.5" />
               )}
@@ -343,7 +343,7 @@ export function RevisionsTab({
                   const roleName = rev.performed_by?.roles?.[0]?.name || "";
                   const roleTone = /contractor|field/i.test(roleName)
                     ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-                    : "bg-cyan-500/10 dark:bg-cyan-950/50 border-cyan-500/30 text-cyan-700 dark:text-cyan-300";
+                    : "bg-primary/10 border-primary/30 text-primary";
                   const phone =
                     rev.performed_by_phone || rev.performed_by?.phone || "";
                   const departments = rev.performed_by?.departments ?? [];
@@ -359,7 +359,7 @@ export function RevisionsTab({
                       </td>
                       <td className="py-2.5 px-3.5 align-top whitespace-nowrap">
                         <div className="flex items-center gap-2 text-[hsl(var(--muted-foreground))]">
-                          <div className="w-6 h-6 rounded bg-cyan-500/10 dark:bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-700 dark:text-cyan-400">
+                          <div className="w-6 h-6 rounded bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 text-primary">
                             <Clock className="h-3 w-3" />
                           </div>
                           <div>
@@ -377,7 +377,7 @@ export function RevisionsTab({
                           <div className="flex items-center gap-2 flex-wrap">
                             {rev.action_type === "attachment_added" ||
                             rev.action_type === "attachment_removed" ? (
-                              <span className="px-2 py-0.5 rounded bg-blue-400/10 border border-blue-400/30 text-cyan-700 dark:text-cyan-300 text-[10px] font-semibold flex items-center gap-1">
+                              <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary text-[10px] font-semibold flex items-center gap-1">
                                 <Paperclip className="h-2.5 w-2.5" />
                                 {titleFor(rev)}
                               </span>
@@ -425,9 +425,9 @@ export function RevisionsTab({
                               <span className="text-[11px] text-[hsl(var(--muted-foreground))] font-medium">
                                 {attachedFile.file_name}
                               </span>
-                              <div className="inline-flex items-center gap-2 px-2 py-1 rounded bg-[hsl(var(--card))] border border-cyan-500/30 hover:border-cyan-500/60 transition-colors">
-                                <FileText className="h-3.5 w-3.5 text-cyan-700 dark:text-cyan-400" />
-                                <span className="font-mono font-semibold text-cyan-700 dark:text-cyan-300 text-xs">
+                              <div className="inline-flex items-center gap-2 px-2 py-1 rounded bg-[hsl(var(--card))] border border-primary/30 hover:border-primary/60 transition-colors">
+                                <FileText className="h-3.5 w-3.5 text-primary" />
+                                <span className="font-mono font-semibold text-primary text-xs">
                                   {attachedFile.file_name}
                                 </span>
                                 <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
@@ -443,7 +443,7 @@ export function RevisionsTab({
                                   onClick={() =>
                                     onPreviewAttachment(attachedFile.id)
                                   }
-                                  className="text-cyan-700 dark:text-cyan-400 hover:text-[hsl(var(--foreground))] text-[10px] font-semibold transition-colors ml-1"
+                                  className="text-primary hover:text-[hsl(var(--foreground))] text-[10px] font-semibold transition-colors ml-1"
                                 >
                                   <Upload className="h-2.5 w-2.5 inline me-0.5" />
                                   {t("common.view")}
@@ -455,7 +455,7 @@ export function RevisionsTab({
                       </td>
                       <td className="py-2.5 px-3.5 align-top">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center font-bold text-[11px] shadow-sm shrink-0 border border-cyan-400/40 font-mono">
+                          <div className="w-7 h-7 rounded-lg bg-linear-to-br from-primary to-accent text-primary-foreground flex items-center justify-center font-bold text-[11px] shadow-sm shrink-0 border border-primary/40 font-mono">
                             {actorInitials(rev)}
                           </div>
                           <div className="min-w-0 space-y-0.5">
@@ -478,10 +478,10 @@ export function RevisionsTab({
                               ) : null}
                               {phone ? (
                                 <span className="text-[hsl(var(--muted-foreground))] font-mono text-[10px] flex items-center gap-1">
-                                  <Smartphone className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />
+                                  <Smartphone className="h-2.5 w-2.5 text-primary" />
                                   <CallablePhone
                                     number={phone}
-                                    className="text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 font-mono text-[10px]"
+                                    className="text-[hsl(var(--muted-foreground))] hover:text-primary font-mono text-[10px]"
                                   />
                                 </span>
                               ) : null}
@@ -540,7 +540,7 @@ export function RevisionsTab({
                   className={cn(
                     "w-7 h-7 flex items-center justify-center rounded-lg font-mono text-xs transition-colors",
                     p === page
-                      ? "bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-sm"
+                      ? "bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm"
                       : "border border-transparent hover:border-[hsl(var(--muted-foreground)/0.3)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]",
                   )}
                 >
