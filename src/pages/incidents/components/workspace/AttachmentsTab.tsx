@@ -18,6 +18,7 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { cn, getLocalizedName } from "@/lib/utils";
+import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 // Lazy-loaded: the editor only downloads when its modal opens.
 const ImageEditor = lazy(() => import("@/components/common/ImageEditor"));
 import { useAuthStore } from "../../../../stores/authStore";
@@ -29,7 +30,6 @@ import {
   formatActivityDateTime,
   getAttachmentPreviewUrl,
   getAttachmentUrl,
-  shortTime,
 } from "./workspaceUtils";
 
 /* Attachments tab — same list/upload/delete/edit/compare flows as
@@ -54,38 +54,49 @@ function AttachmentCardFooter({
       .join(" ") ||
     attachment.uploaded_by?.username ||
     "—";
+  const roleName =
+    getLocalizedName(attachment.uploaded_by?.roles?.[0]) ||
+    t("incidents.noRole");
+  const departmentName =
+    (attachment.uploaded_by?.departments || [])
+      .map((d) => getLocalizedName(d))
+      .filter(Boolean)
+      .join(", ") || t("incidents.noDepartment");
   return (
-    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[hsl(var(--card)/0.95)] via-[hsl(var(--card)/0.85)] to-transparent pt-6 pb-2.5 px-3 border-t border-[hsl(var(--border))] backdrop-blur-md pointer-events-none">
-      <div className="flex items-center justify-between mb-0.5 gap-2">
-        <span className="font-bold text-xs text-[hsl(var(--foreground))] truncate">
+    <div className="absolute inset-x-0 bottom-0 rounded-b-xl bg-gradient-to-t from-[hsl(var(--card))] via-[hsl(var(--card)/0.97)] to-[hsl(var(--card)/0.85)] pt-3 pb-2 px-3 border-t border-[hsl(var(--border))] backdrop-blur-md pointer-events-none leading-tight">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-xs text-[hsl(var(--card-foreground))] truncate">
           {attachment.file_name}
         </span>
-        <span className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono shrink-0">
-          {shortTime(attachment.created_at)}
+        <span className="text-[10px] text-[hsl(var(--card-foreground)/0.72)] font-mono shrink-0">
+          {formatActivityDateTime(attachment.created_at)}
         </span>
       </div>
-      <div className="text-[10px] text-[hsl(var(--muted-foreground))] mb-0.5 font-mono">
-        {formatActivityDateTime(attachment.created_at)}
-      </div>
-      <div className="text-[11px] text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
-        <span className="text-primary font-medium truncate">
-          {uploaderName}
-        </span>
-        <span className="text-[hsl(var(--muted-foreground))] shrink-0">•</span>
-        <span className="text-[hsl(var(--muted-foreground))] truncate">
-          {getLocalizedName(attachment.uploaded_by?.roles?.[0]) ||
-            t("incidents.noRole")}
-        </span>
-      </div>
-      <div className="text-[10px] text-[hsl(var(--muted-foreground))] truncate mt-0.5 mb-1">
-        {(attachment.uploaded_by?.departments || [])
-          .map((d) => getLocalizedName(d))
-          .filter(Boolean)
-          .join(", ") || t("incidents.noDepartment")}
+      <div className="mt-0.5 flex items-center justify-between gap-2 min-w-0 text-[11px] text-[hsl(var(--card-foreground)/0.72)]">
+        <div
+          className="flex items-center gap-1.5 min-w-0"
+          title={`${uploaderName} • ${roleName}`}
+        >
+          <span className="text-primary font-medium truncate">
+            {uploaderName}
+          </span>
+          <span className="text-[hsl(var(--card-foreground)/0.5)] shrink-0">
+            •
+          </span>
+          <span className="truncate">{roleName}</span>
+        </div>
+        {entry?.from_state && entry?.to_state ? (
+          <span
+            className="max-w-[45%] shrink-0 truncate"
+            title={departmentName}
+          >
+            {departmentName}
+          </span>
+        ) : null}
       </div>
       {entry?.from_state && entry?.to_state ? (
-        <div className="flex items-center gap-1.5 text-[11px] font-medium pt-1 border-t border-[hsl(var(--border))]">
-          <span className="text-[hsl(var(--muted-foreground))] truncate">
+        <div className="mt-1 flex min-h-5 items-center gap-1.5 min-w-0 pt-1 border-t border-[hsl(var(--border))] text-[11px] font-medium">
+          <span className="text-[hsl(var(--card-foreground)/0.8)] truncate">
             {getLocalizedName(entry.from_state)}
           </span>
           <ChevronRight className="h-3 w-3 text-primary shrink-0 rtl:rotate-180" />
@@ -93,7 +104,13 @@ function AttachmentCardFooter({
             {getLocalizedName(entry.to_state)}
           </span>
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-1 flex min-h-5 items-center min-w-0 pt-1 text-[11px] text-[hsl(var(--card-foreground)/0.72)]">
+          <span className="truncate" title={departmentName}>
+            {departmentName}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -101,36 +118,80 @@ function AttachmentCardFooter({
 function MediaHoverActions({
   attachment,
   onDelete,
+  onPreview,
+  onEdit,
   deleting,
 }: {
   attachment: IncidentAttachment;
-  onDelete: (attachmentId: string) => void;
+  onDelete: () => void;
+  onPreview?: () => void;
+  onEdit?: () => void;
   deleting: boolean;
 }) {
   const { t } = useTranslation();
+  const actionButtonClass =
+    "w-7 h-7 rounded-full border flex items-center justify-center transition-colors shadow-sm cursor-pointer";
   return (
-    <div className="absolute top-2 end-2 hidden group-hover:flex items-center gap-1 bg-[hsl(var(--background)/0.85)] backdrop-blur-md p-1 rounded-full border border-[hsl(var(--border))] shadow-xl z-10">
+    <div className="absolute top-2 end-2 hidden group-hover:flex items-center gap-1 bg-[hsl(var(--popover)/0.95)] backdrop-blur-md p-1 rounded-full border border-[hsl(var(--border))] shadow-xl z-10">
+      {onPreview ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPreview();
+          }}
+          className={cn(
+            actionButtonClass,
+            "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted)/0.85)] border-[hsl(var(--border))] text-[hsl(var(--foreground))]",
+          )}
+          title={t("incidents.preview", "Preview")}
+        >
+          <ZoomIn className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
       <a
         href={getAttachmentUrl(attachment.id)}
         download={attachment.file_name}
         onClick={(e) => e.stopPropagation()}
-        className="w-7 h-7 rounded-full bg-[hsl(var(--muted)/0.9)] hover:bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] flex items-center justify-center transition-colors shadow-sm"
+        className={cn(
+          actionButtonClass,
+          "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted)/0.85)] border-[hsl(var(--border))] text-[hsl(var(--foreground))]",
+        )}
         title={t("common.download")}
       >
-        <Download className="h-3 w-3" />
+        <Download className="h-3.5 w-3.5" />
       </a>
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          onDelete(attachment.id);
+          onDelete();
         }}
         disabled={deleting}
-        className="w-7 h-7 rounded-full bg-rose-950/80 hover:bg-rose-900 text-rose-700 dark:text-rose-400 flex items-center justify-center border border-rose-500/40 transition-colors shadow-sm disabled:opacity-50"
+        className={cn(
+          actionButtonClass,
+          "bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-700 dark:text-rose-300 disabled:opacity-50",
+        )}
         title={t("common.delete", "Delete")}
       >
-        <Trash2 className="h-3 w-3" />
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className={cn(
+            actionButtonClass,
+            "bg-primary hover:bg-primary/90 border-primary/50 text-primary-foreground",
+          )}
+          title={t("common.edit", "Edit")}
+        >
+          <Pen className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -199,6 +260,9 @@ export function AttachmentsTab({
   } = useFullscreen<HTMLDivElement>();
   const [editorAttachment, setEditorAttachment] =
     useState<IncidentAttachment | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<IncidentAttachment | null>(
+    null,
+  );
 
   const refreshAttachments = () => {
     void queryClient.invalidateQueries({
@@ -210,8 +274,19 @@ export function AttachmentsTab({
   const deleteMutation = useMutation({
     mutationFn: (attachmentId: string) =>
       incidentApi.deleteAttachment(incidentId, attachmentId),
-    onSuccess: () => refreshAttachments(),
+    onSuccess: () => {
+      refreshAttachments();
+      setPendingDelete(null);
+      toast.success(t("incidents.attachmentDeleted"));
+    },
+    onError: () => {
+      toast.error(t("incidents.attachmentDeleteFailed"));
+    },
   });
+
+  const confirmDeleteAttachment = () => {
+    if (pendingDelete) deleteMutation.mutate(pendingDelete.id);
+  };
 
   const dataUrlToFile = async (editedImage: string): Promise<File> => {
     const response = await fetch(editedImage);
@@ -386,51 +461,13 @@ export function AttachmentsTab({
                             </div>
                           </div>
                         ) : (
-                          <div className="absolute top-2 end-2 hidden group-hover:flex items-center gap-1 bg-[hsl(var(--background)/0.85)] backdrop-blur-md p-1 rounded-full border border-[hsl(var(--border))] shadow-xl z-10">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onPreview(attachment.id);
-                              }}
-                              className="w-7 h-7 rounded-full bg-[hsl(var(--muted)/0.9)] hover:bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] flex items-center justify-center transition-colors shadow-sm"
-                              title={t("incidents.preview", "Preview")}
-                            >
-                              <ZoomIn className="h-3 w-3" />
-                            </button>
-                            <a
-                              href={getAttachmentUrl(attachment.id)}
-                              download={attachment.file_name}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-7 h-7 rounded-full bg-[hsl(var(--muted)/0.9)] hover:bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] flex items-center justify-center transition-colors shadow-sm"
-                              title={t("common.download")}
-                            >
-                              <Download className="h-3 w-3" />
-                            </a>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteMutation.mutate(attachment.id);
-                              }}
-                              disabled={deleteMutation.isPending}
-                              className="w-7 h-7 rounded-full bg-rose-950/80 hover:bg-rose-900 text-rose-700 dark:text-rose-400 flex items-center justify-center border border-rose-500/40 transition-colors shadow-sm disabled:opacity-50"
-                              title={t("common.delete", "Delete")}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditorAttachment(attachment);
-                              }}
-                              className="w-7 h-7 rounded-full bg-primary/80 hover:bg-primary/90 text-primary-foreground flex items-center justify-center border border-primary/40 transition-colors shadow-sm"
-                              title={t("common.edit", "Edit")}
-                            >
-                              <Pen className="h-3 w-3" />
-                            </button>
-                          </div>
+                          <MediaHoverActions
+                            attachment={attachment}
+                            onDelete={() => setPendingDelete(attachment)}
+                            onPreview={() => onPreview(attachment.id)}
+                            onEdit={() => setEditorAttachment(attachment)}
+                            deleting={deleteMutation.isPending}
+                          />
                         )}
                       </div>
                       <AttachmentCardFooter
@@ -453,7 +490,7 @@ export function AttachmentsTab({
                       <FileText className="h-12 w-12 text-[hsl(var(--muted-foreground))]" />
                       <MediaHoverActions
                         attachment={attachment}
-                        onDelete={(id) => deleteMutation.mutate(id)}
+                        onDelete={() => setPendingDelete(attachment)}
                         deleting={deleteMutation.isPending}
                       />
                     </div>
@@ -484,7 +521,7 @@ export function AttachmentsTab({
                       </audio>
                       <MediaHoverActions
                         attachment={attachment}
-                        onDelete={(id) => deleteMutation.mutate(id)}
+                        onDelete={() => setPendingDelete(attachment)}
                         deleting={deleteMutation.isPending}
                       />
                     </div>
@@ -509,7 +546,7 @@ export function AttachmentsTab({
                       />
                       <MediaHoverActions
                         attachment={attachment}
-                        onDelete={(id) => deleteMutation.mutate(id)}
+                        onDelete={() => setPendingDelete(attachment)}
                         deleting={deleteMutation.isPending}
                       />
                     </div>
@@ -665,6 +702,26 @@ export function AttachmentsTab({
           />
         </Suspense>
       ) : null}
+
+      <ConfirmationModal
+        isOpen={!!pendingDelete}
+        onClose={() => {
+          if (!deleteMutation.isPending) setPendingDelete(null);
+        }}
+        onConfirm={confirmDeleteAttachment}
+        title={t("confirmations.deleteTitle")}
+        message={
+          pendingDelete
+            ? t("incidents.deleteAttachmentMessage", {
+                name: pendingDelete.file_name,
+              })
+            : ""
+        }
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
