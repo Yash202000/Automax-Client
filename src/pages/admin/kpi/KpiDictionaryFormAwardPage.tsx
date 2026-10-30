@@ -55,6 +55,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     related_units: "",
     documenta_folder_id: "",
     polarity: "ascending",
+    target_requirement: "mandatory",
     reporting_frequency: "quarterly",
     baseline: 0,
     unit_of_measure: "",
@@ -96,6 +97,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       related_units: kpi.related_units ?? "",
       documenta_folder_id: kpi.documenta_folder_id ?? "",
       polarity: kpi.polarity,
+      target_requirement: kpi.target_requirement || "mandatory",
       reporting_frequency: kpi.reporting_frequency ?? "quarterly",
       baseline: kpi.baseline,
       unit_of_measure: kpi.unit_of_measure ?? "",
@@ -336,6 +338,26 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               options={[
                 { value: "ascending", label: "Ascending" },
                 { value: "descending", label: "Descending" },
+              ]}
+            />
+            <Select
+              label={t("kpi.dictionary.fieldTargetRequirement")}
+              value={form.target_requirement}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  target_requirement: v.target.value,
+                }))
+              }
+              options={[
+                {
+                  value: "mandatory",
+                  label: t("kpi.dictionary.targetMandatory"),
+                },
+                {
+                  value: "optional",
+                  label: t("kpi.dictionary.targetOptional"),
+                },
               ]}
             />
             <Select

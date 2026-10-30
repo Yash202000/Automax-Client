@@ -3060,6 +3060,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           entryMetric?.reporting_frequency || kpi?.reporting_frequency
         }
         kpiCode={kpi?.code}
+        targetRequirement={kpi?.target_requirement}
         isOpen={showAddEntry}
         onClose={() => setShowAddEntry(false)}
       />
