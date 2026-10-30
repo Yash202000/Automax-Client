@@ -80,6 +80,7 @@ import { AddEntryModal } from "../../../components/kpi/AddEntryModal";
 import { ViewEntriesModal } from "../../../components/kpi/ViewEntriesModal";
 import { CollaboratorsTab } from "../../../components/kpi/CollaboratorsTab";
 import { KpiEvidenceUploadModal } from "../../../components/kpi/KpiEvidenceUploadModal";
+import { BaselineRevisionPanel } from "../../../components/kpi/BaselineRevisionPanel";
 import type {
   KpiCheckInStatus,
   KpiEvidenceType,
@@ -406,7 +407,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const status = kpi?.activation_status ?? "";
   // Metric weights can only be corrected before the KPI is approved — the
   // backend enforces the same rule.
-  const weightLocked = ["approved", "active", "closed"].includes(status);
+  const configLocked = ["approved", "active", "closed"].includes(status);
 
   // ── Engagement data ─────────────────────────────────
   const kpiType = type ?? "strategic";
@@ -572,6 +573,17 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     setConfigForm(selectedMetric ? metricToRequest(selectedMetric) : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMetric?.id]);
+
+  // An approved baseline revision changes the Baseline server-side; carry it
+  // into the open form so a later Save doesn't send the old (locked) value.
+  React.useEffect(() => {
+    if (selectedMetric) {
+      setConfigForm((p) =>
+        p ? { ...p, baseline_value: selectedMetric.baseline_value } : p,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMetric?.baseline_value]);
 
   const handleCancelMetricConfig = () => {
     if (selectedMetric) setConfigForm(metricToRequest(selectedMetric));
@@ -2214,15 +2226,31 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   min={0}
                   max={100}
                   value={configForm.weight ?? 0}
-                  disabled={!canUpdateKpi() || weightLocked}
+                  disabled={!canUpdateKpi() || configLocked}
                   hint={
-                    weightLocked
+                    configLocked
                       ? "Locked once the KPI is approved or active"
                       : `Active metrics total ${totalWeight.toFixed(0)}% (must be 100% to activate)`
                   }
                   onChange={(e) =>
                     setConfigForm((p) =>
                       p ? { ...p, weight: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Baseline *"
+                  type="number"
+                  value={configForm.baseline_value ?? 0}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked for this cycle — request a revision below"
+                      : undefined
+                  }
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, baseline_value: Number(e.target.value) } : p,
                     )
                   }
                 />
@@ -2520,6 +2548,14 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     Formula-based calculation is Phase 2 — not available yet.
                   </span>
                 </div>
+              )}
+
+              {configLocked && (
+                <BaselineRevisionPanel
+                  kpiType={kpiType}
+                  kpiId={kpiId}
+                  metric={selectedMetric}
+                />
               )}
 
               {canUpdateKpi() && (

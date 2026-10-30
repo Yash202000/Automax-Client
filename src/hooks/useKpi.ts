@@ -1742,6 +1742,68 @@ export const useUpdateKpiMetric = (type: string, id: string) => {
   });
 };
 
+export const useKpiBaselineRevisions = (metricId: string) =>
+  useQuery({
+    queryKey: ["kpi", "baseline-revisions", metricId],
+    queryFn: () => kpiEngagementApi.listBaselineRevisions(metricId),
+    enabled: !!metricId,
+  });
+
+export const useRequestBaselineRevision = (metricId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { new_value: number; reason: string }) =>
+      kpiEngagementApi.requestBaselineRevision(metricId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "baseline-revisions", metricId],
+      });
+      toast.success("Baseline revision submitted for approval");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useReviewBaselineRevision = (
+  type: string,
+  id: string,
+  metricId: string,
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      revisionId,
+      decision,
+      comment,
+    }: {
+      revisionId: string;
+      decision: "approve" | "reject";
+      comment?: string;
+    }) =>
+      kpiEngagementApi.reviewBaselineRevision(revisionId, {
+        decision,
+        comment,
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "baseline-revisions", metricId],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "activity"],
+      });
+      toast.success(
+        vars.decision === "approve"
+          ? "Baseline revision approved"
+          : "Baseline revision rejected",
+      );
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
 export const useUpdateKpiMetricValue = (type: string, id: string) => {
   const qc = useQueryClient();
   return useMutation({

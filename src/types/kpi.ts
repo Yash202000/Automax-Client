@@ -997,6 +997,29 @@ export interface KpiMetric extends KpiMetricSnapshot {
   effective_target_period?: string;
 }
 
+// A request to change a metric's Baseline after its KPI is approved — the
+// Baseline is locked for the cycle and only changes once someone with
+// kpi:approve approves the revision.
+export type KpiBaselineRevisionStatus = "pending" | "approved" | "rejected";
+
+export interface KpiBaselineRevision {
+  id: string;
+  metric_id: string;
+  kpi_id: string;
+  kpi_type: string;
+  old_value: number;
+  new_value: number;
+  reason: string;
+  status: KpiBaselineRevisionStatus;
+  requested_by_id: string;
+  requested_by?: { first_name: string; last_name: string };
+  reviewed_by_id?: string | null;
+  reviewed_by?: { first_name: string; last_name: string };
+  reviewed_at?: string | null;
+  review_comment?: string;
+  created_at: string;
+}
+
 export interface KpiMetricRequest {
   name: string;
   metric_code?: string;

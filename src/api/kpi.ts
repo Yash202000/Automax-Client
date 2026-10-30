@@ -57,6 +57,7 @@ import type {
   KpiPerformanceEvidenceRequest,
   KpiMetric,
   KpiMetricRequest,
+  KpiBaselineRevision,
   KpiAttachmentUploadResult,
   KpiEngagementEvidence,
   KpiEngagementEvidenceRequest,
@@ -1022,6 +1023,34 @@ export const kpiEngagementApi = {
     const res = await apiClient.put(`/kpi/metrics/${metricId}/value`, {
       value,
     });
+    return res.data;
+  },
+  listBaselineRevisions: async (
+    metricId: string,
+  ): Promise<ApiResponse<KpiBaselineRevision[]>> => {
+    const res = await apiClient.get(
+      `/kpi/metrics/${metricId}/baseline-revisions`,
+    );
+    return res.data;
+  },
+  requestBaselineRevision: async (
+    metricId: string,
+    data: { new_value: number; reason: string },
+  ): Promise<ApiResponse<KpiBaselineRevision>> => {
+    const res = await apiClient.post(
+      `/kpi/metrics/${metricId}/baseline-revisions`,
+      data,
+    );
+    return res.data;
+  },
+  reviewBaselineRevision: async (
+    revisionId: string,
+    data: { decision: "approve" | "reject"; comment?: string },
+  ): Promise<ApiResponse<KpiBaselineRevision>> => {
+    const res = await apiClient.post(
+      `/kpi/baseline-revisions/${revisionId}/review`,
+      data,
+    );
     return res.data;
   },
   deleteMetric: async (metricId: string): Promise<ApiResponse<void>> => {
