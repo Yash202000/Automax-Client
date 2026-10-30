@@ -404,6 +404,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { data, isLoading, error } = currentQuery;
   const kpi = data?.data as any;
   const status = kpi?.activation_status ?? "";
+  // Metric weights can only be corrected before the KPI is approved — the
+  // backend enforces the same rule.
+  const weightLocked = ["approved", "active", "closed"].includes(status);
 
   // ── Engagement data ─────────────────────────────────
   const kpiType = type ?? "strategic";
@@ -2201,6 +2204,25 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   onChange={(e) =>
                     setConfigForm((p) =>
                       p ? { ...p, display_order: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Weight (%) *"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  max={100}
+                  value={configForm.weight ?? 0}
+                  disabled={!canUpdateKpi() || weightLocked}
+                  hint={
+                    weightLocked
+                      ? "Locked once the KPI is approved or active"
+                      : `Active metrics total ${totalWeight.toFixed(0)}% (must be 100% to activate)`
+                  }
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, weight: Number(e.target.value) } : p,
                     )
                   }
                 />
