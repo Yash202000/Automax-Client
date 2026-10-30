@@ -32,6 +32,8 @@ import type {
   KpiCheckInRequest,
   KpiEntryRequest,
   KpiEntryUpdateRequest,
+  KpiEntryCorrectionRequest,
+  KpiEntry,
   KpiCollaboratorAssignmentRequest,
   KPIType,
   KpiOrganizationRequest,
@@ -1742,6 +1744,71 @@ export const useUpdateKpiMetric = (type: string, id: string) => {
   });
 };
 
+export const useKpiBaselineRevisions = (metricId: string) =>
+  useQuery({
+    queryKey: ["kpi", "baseline-revisions", metricId],
+    queryFn: () => kpiEngagementApi.listBaselineRevisions(metricId),
+    enabled: !!metricId,
+  });
+
+export const useRequestBaselineRevision = (metricId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      new_value: number;
+      new_period?: string;
+      reason: string;
+    }) => kpiEngagementApi.requestBaselineRevision(metricId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "baseline-revisions", metricId],
+      });
+      toast.success("Baseline revision submitted for approval");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useReviewBaselineRevision = (
+  type: string,
+  id: string,
+  metricId: string,
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      revisionId,
+      decision,
+      comment,
+    }: {
+      revisionId: string;
+      decision: "approve" | "reject";
+      comment?: string;
+    }) =>
+      kpiEngagementApi.reviewBaselineRevision(revisionId, {
+        decision,
+        comment,
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "baseline-revisions", metricId],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "activity"],
+      });
+      toast.success(
+        vars.decision === "approve"
+          ? "Baseline revision approved"
+          : "Baseline revision rejected",
+      );
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
 export const useUpdateKpiMetricValue = (type: string, id: string) => {
   const qc = useQueryClient();
   return useMutation({
@@ -2051,6 +2118,49 @@ export const useCreateKpiEntry = (type: string, id: string) => {
       });
       qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
       toast.success("Entry added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// Starts an adjustment/reversal of an approved entry — a new draft entry
+// that still has to be submitted and approved. Like useUpdateKpiEntry, the
+// entry's own kpi_type/kpi_id scope the cache invalidation.
+export const useCreateKpiEntryCorrection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      entry,
+      data,
+    }: {
+      entry: KpiEntry;
+      data: KpiEntryCorrectionRequest;
+    }) => kpiEngagementApi.createEntryCorrection(entry.id, data),
+    onSuccess: (_res, { entry, data }) => {
+      qc.invalidateQueries({
+        queryKey: [
+          "kpi",
+          "engagement",
+          entry.kpi_type,
+          entry.kpi_id,
+          "entries",
+        ],
+      });
+      qc.invalidateQueries({
+        queryKey: [
+          "kpi",
+          "engagement",
+          entry.kpi_type,
+          entry.kpi_id,
+          "activity",
+        ],
+      });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
+      toast.success(
+        data.correction_type === "reversal"
+          ? "Reversal created as a draft — submit it for approval"
+          : "Adjustment created as a draft — submit it for approval",
+      );
     },
     onError: (err) => toast.error(getApiError(err)),
   });

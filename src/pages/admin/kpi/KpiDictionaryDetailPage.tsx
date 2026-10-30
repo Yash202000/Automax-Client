@@ -80,6 +80,8 @@ import { AddEntryModal } from "../../../components/kpi/AddEntryModal";
 import { ViewEntriesModal } from "../../../components/kpi/ViewEntriesModal";
 import { CollaboratorsTab } from "../../../components/kpi/CollaboratorsTab";
 import { KpiEvidenceUploadModal } from "../../../components/kpi/KpiEvidenceUploadModal";
+import { BaselineRevisionPanel } from "../../../components/kpi/BaselineRevisionPanel";
+import { BaselinePeriodPicker } from "../../../components/kpi/BaselinePeriodPicker";
 import type {
   KpiCheckInStatus,
   KpiEvidenceType,
@@ -91,6 +93,7 @@ import type {
   OperationalObjective,
   WorkflowTransitionBrief,
 } from "../../../types/kpi";
+import { formatBaselinePeriod } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -262,6 +265,11 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
           <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
             {formatValue(m, m.baseline_value)}
           </p>
+          {m.baseline_period && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {formatBaselinePeriod(m.baseline_period)}
+            </p>
+          )}
         </div>
         <div className="px-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
@@ -404,6 +412,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { data, isLoading, error } = currentQuery;
   const kpi = data?.data as any;
   const status = kpi?.activation_status ?? "";
+  // Metric weights can only be corrected before the KPI is approved — the
+  // backend enforces the same rule.
+  const configLocked = ["approved", "active", "closed"].includes(status);
 
   // ── Engagement data ─────────────────────────────────
   const kpiType = type ?? "strategic";
@@ -448,6 +459,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     unit: "",
     custom_unit_label: "",
     baseline_value: 0,
+    baseline_period: "",
     weight: 1,
     formula: "",
     calculation_type: "Direct Value",
@@ -538,6 +550,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     unit: m.unit,
     custom_unit_label: m.custom_unit_label,
     baseline_value: m.baseline_value,
+    baseline_period: m.baseline_period ?? "",
     weight: m.weight,
     formula: m.formula,
     calculation_type: m.calculation_type,
@@ -569,6 +582,23 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     setConfigForm(selectedMetric ? metricToRequest(selectedMetric) : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMetric?.id]);
+
+  // An approved baseline revision changes the Baseline server-side; carry it
+  // into the open form so a later Save doesn't send the old (locked) value.
+  React.useEffect(() => {
+    if (selectedMetric) {
+      setConfigForm((p) =>
+        p
+          ? {
+              ...p,
+              baseline_value: selectedMetric.baseline_value,
+              baseline_period: selectedMetric.baseline_period ?? "",
+            }
+          : p,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMetric?.baseline_value, selectedMetric?.baseline_period]);
 
   const handleCancelMetricConfig = () => {
     if (selectedMetric) setConfigForm(metricToRequest(selectedMetric));
@@ -1647,6 +1677,14 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
+                <BaselinePeriodPicker
+                  label="Baseline Period"
+                  value={metricForm.baseline_period ?? ""}
+                  hint="Month the Baseline was measured, e.g. Dec 2025"
+                  onChange={(v) =>
+                    setMetricForm((p) => ({ ...p, baseline_period: v }))
+                  }
+                />
                 <Input
                   label="Weight"
                   type="number"
@@ -2204,6 +2242,55 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     )
                   }
                 />
+                <Input
+                  label="Weight (%) *"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  max={100}
+                  value={configForm.weight ?? 0}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked once the KPI is approved or active"
+                      : `Active metrics total ${totalWeight.toFixed(0)}% (must be 100% to activate)`
+                  }
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, weight: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Baseline *"
+                  type="number"
+                  value={configForm.baseline_value ?? 0}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked for this cycle — request a revision below"
+                      : undefined
+                  }
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, baseline_value: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+                <BaselinePeriodPicker
+                  key={selectedMetric.id}
+                  label="Baseline Period"
+                  value={configForm.baseline_period ?? ""}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked with the Baseline — request a revision below"
+                      : undefined
+                  }
+                  onChange={(v) =>
+                    setConfigForm((p) => (p ? { ...p, baseline_period: v } : p))
+                  }
+                />
 
                 <div className="sm:col-span-2 lg:col-span-4">
                   <Textarea
@@ -2498,6 +2585,14 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     Formula-based calculation is Phase 2 — not available yet.
                   </span>
                 </div>
+              )}
+
+              {configLocked && (
+                <BaselineRevisionPanel
+                  kpiType={kpiType}
+                  kpiId={kpiId}
+                  metric={selectedMetric}
+                />
               )}
 
               {canUpdateKpi() && (

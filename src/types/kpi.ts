@@ -963,6 +963,8 @@ export interface KpiMetric extends KpiMetricSnapshot {
   unit?: string;
   custom_unit_label?: string;
   baseline_value: number;
+  // Month the Baseline was measured in, "YYYY-MM" (e.g. "2025-12").
+  baseline_period?: string;
   current_value: number;
   weight: number;
   formula?: string;
@@ -997,6 +999,41 @@ export interface KpiMetric extends KpiMetricSnapshot {
   effective_target_period?: string;
 }
 
+// A request to change a metric's Baseline after its KPI is approved — the
+// Baseline is locked for the cycle and only changes once someone with
+// kpi:approve approves the revision.
+export type KpiBaselineRevisionStatus = "pending" | "approved" | "rejected";
+
+// "2025-12" -> "Dec 2025"; "" when no Baseline Period is recorded.
+export const formatBaselinePeriod = (period?: string) => {
+  const m = /^(\d{4})-(\d{2})$/.exec(period ?? "");
+  if (!m) return "";
+  return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString(
+    "en-US",
+    { month: "short", year: "numeric" },
+  );
+};
+
+export interface KpiBaselineRevision {
+  id: string;
+  metric_id: string;
+  kpi_id: string;
+  kpi_type: string;
+  old_value: number;
+  new_value: number;
+  old_period?: string;
+  new_period?: string;
+  reason: string;
+  status: KpiBaselineRevisionStatus;
+  requested_by_id: string;
+  requested_by?: { first_name: string; last_name: string };
+  reviewed_by_id?: string | null;
+  reviewed_by?: { first_name: string; last_name: string };
+  reviewed_at?: string | null;
+  review_comment?: string;
+  created_at: string;
+}
+
 export interface KpiMetricRequest {
   name: string;
   metric_code?: string;
@@ -1007,6 +1044,7 @@ export interface KpiMetricRequest {
   unit?: string;
   custom_unit_label?: string;
   baseline_value?: number;
+  baseline_period?: string;
   weight?: number;
   formula?: string;
   calculation_type?: KpiCalculationType;
@@ -1206,7 +1244,19 @@ export interface KpiListResponse<T> {
 
 // ─── KPI Entries ──────────────────────────────────────────────────────────
 
-export type KpiEntryStatus = "draft" | "submitted" | "approved" | "rejected";
+// superseded/reversed: an approved entry retired by an approved correction
+// (adjustment/reversal). reversal: an approved reversal record. None of these
+// count toward a period's Actual — only "approved" does.
+export type KpiEntryStatus =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "superseded"
+  | "reversed"
+  | "reversal";
+
+export type KpiEntryCorrectionType = "adjustment" | "reversal";
 
 export interface KpiEntryComponentValue {
   component: string;
@@ -1261,6 +1311,8 @@ export interface KpiEntry {
   approved_by?: UserBrief;
   entry_version: number;
   supersedes_entry_id?: string;
+  correction_type?: KpiEntryCorrectionType;
+  correction_reason?: string;
   workflow_instance_id?: string;
   created_at: string;
   updated_at: string;
@@ -1289,6 +1341,11 @@ export type KpiEntryUpdateRequest = Omit<
   KpiEntryRequest,
   "metric_id" | "reporting_year" | "period_code"
 >;
+
+export type KpiEntryCorrectionRequest = KpiEntryUpdateRequest & {
+  correction_type: KpiEntryCorrectionType;
+  reason: string;
+};
 
 export interface KpiEntryEvidence {
   id: string;
