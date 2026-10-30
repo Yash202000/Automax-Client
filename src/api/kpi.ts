@@ -58,6 +58,7 @@ import type {
   KpiMetric,
   KpiMetricRequest,
   KpiBaselineRevision,
+  KpiEntryCorrectionRequest,
   KpiAttachmentUploadResult,
   KpiEngagementEvidence,
   KpiEngagementEvidenceRequest,
@@ -1261,6 +1262,16 @@ export const kpiEngagementApi = {
   ): Promise<ApiResponse<KpiEntry>> => {
     const res = await apiClient.put(
       `/kpi/${type}/${id}/entries/${entryId}`,
+      data,
+    );
+    return res.data;
+  },
+  createEntryCorrection: async (
+    entryId: string,
+    data: KpiEntryCorrectionRequest,
+  ): Promise<ApiResponse<KpiEntry>> => {
+    const res = await apiClient.post(
+      `/kpi/entries/${entryId}/corrections`,
       data,
     );
     return res.data;

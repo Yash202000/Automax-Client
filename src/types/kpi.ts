@@ -1229,7 +1229,19 @@ export interface KpiListResponse<T> {
 
 // ─── KPI Entries ──────────────────────────────────────────────────────────
 
-export type KpiEntryStatus = "draft" | "submitted" | "approved" | "rejected";
+// superseded/reversed: an approved entry retired by an approved correction
+// (adjustment/reversal). reversal: an approved reversal record. None of these
+// count toward a period's Actual — only "approved" does.
+export type KpiEntryStatus =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "superseded"
+  | "reversed"
+  | "reversal";
+
+export type KpiEntryCorrectionType = "adjustment" | "reversal";
 
 export interface KpiEntryComponentValue {
   component: string;
@@ -1284,6 +1296,8 @@ export interface KpiEntry {
   approved_by?: UserBrief;
   entry_version: number;
   supersedes_entry_id?: string;
+  correction_type?: KpiEntryCorrectionType;
+  correction_reason?: string;
   workflow_instance_id?: string;
   created_at: string;
   updated_at: string;
@@ -1312,6 +1326,11 @@ export type KpiEntryUpdateRequest = Omit<
   KpiEntryRequest,
   "metric_id" | "reporting_year" | "period_code"
 >;
+
+export type KpiEntryCorrectionRequest = KpiEntryUpdateRequest & {
+  correction_type: KpiEntryCorrectionType;
+  reason: string;
+};
 
 export interface KpiEntryEvidence {
   id: string;
