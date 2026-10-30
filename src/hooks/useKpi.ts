@@ -1754,8 +1754,11 @@ export const useKpiBaselineRevisions = (metricId: string) =>
 export const useRequestBaselineRevision = (metricId: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { new_value: number; reason: string }) =>
-      kpiEngagementApi.requestBaselineRevision(metricId, data),
+    mutationFn: (data: {
+      new_value: number;
+      new_period?: string;
+      reason: string;
+    }) => kpiEngagementApi.requestBaselineRevision(metricId, data),
     onSuccess: () => {
       qc.invalidateQueries({
         queryKey: ["kpi", "baseline-revisions", metricId],

@@ -17,6 +17,8 @@ import {
 } from "../../hooks/useKpi";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useAuthStore } from "../../stores/authStore";
+import { formatBaselinePeriod } from "../../types/kpi";
+import { BaselinePeriodPicker } from "./BaselinePeriodPicker";
 import type { KpiBaselineRevision, KpiMetric } from "../../types/kpi";
 
 const statusBadgeClass: Record<KpiBaselineRevision["status"], string> = {
@@ -25,6 +27,12 @@ const statusBadgeClass: Record<KpiBaselineRevision["status"], string> = {
   approved:
     "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+};
+
+// "82 (Dec 2025)", or just "82" when no period is recorded.
+const baselineLabel = (value: number, period?: string) => {
+  const p = formatBaselinePeriod(period);
+  return p ? `${value} (${p})` : String(value);
 };
 
 const personName = (p?: { first_name: string; last_name: string }) =>
@@ -51,6 +59,7 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
 
   const [showRequest, setShowRequest] = useState(false);
   const [newValue, setNewValue] = useState("");
+  const [newPeriod, setNewPeriod] = useState("");
   const [reason, setReason] = useState("");
   const [review, setReview] = useState<{
     revision: KpiBaselineRevision;
@@ -62,11 +71,13 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
   const canSubmitRequest =
     newValue.trim() !== "" &&
     Number.isFinite(newValueNum) &&
-    newValueNum !== metric.baseline_value &&
+    (newValueNum !== metric.baseline_value ||
+      newPeriod !== (metric.baseline_period ?? "")) &&
     reason.trim() !== "";
 
   const openRequest = () => {
     setNewValue(String(metric.baseline_value ?? 0));
+    setNewPeriod(metric.baseline_period ?? "");
     setReason("");
     setShowRequest(true);
   };
@@ -74,6 +85,7 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
   const submitRequest = async () => {
     await requestRevision.mutateAsync({
       new_value: newValueNum,
+      new_period: newPeriod,
       reason: reason.trim(),
     });
     setShowRequest(false);
@@ -131,7 +143,8 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {r.old_value} → {r.new_value}
+                      {baselineLabel(r.old_value, r.old_period)} →{" "}
+                      {baselineLabel(r.new_value, r.new_period)}
                     </span>
                     <span
                       className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadgeClass[r.status]}`}
@@ -195,7 +208,8 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
         <ModalHeader>
           <ModalTitle>Request Baseline Revision</ModalTitle>
           <ModalDescription>
-            Current baseline for “{metric.name}” is {metric.baseline_value}. The
+            Current baseline for “{metric.name}” is{" "}
+            {baselineLabel(metric.baseline_value, metric.baseline_period)}. The
             new value applies only after approval.
           </ModalDescription>
         </ModalHeader>
@@ -205,6 +219,11 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
             type="number"
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
+          />
+          <BaselinePeriodPicker
+            label="New Baseline Period"
+            value={newPeriod}
+            onChange={setNewPeriod}
           />
           <Textarea
             label="Reason *"
@@ -237,7 +256,7 @@ export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
           </ModalTitle>
           <ModalDescription>
             {review &&
-              `Baseline ${review.revision.old_value} → ${review.revision.new_value}. ${
+              `Baseline ${baselineLabel(review.revision.old_value, review.revision.old_period)} → ${baselineLabel(review.revision.new_value, review.revision.new_period)}. ${
                 review.decision === "approve"
                   ? "The metric's Baseline will be updated."
                   : "The Baseline stays unchanged."

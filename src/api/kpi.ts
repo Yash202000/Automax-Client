@@ -1036,7 +1036,7 @@ export const kpiEngagementApi = {
   },
   requestBaselineRevision: async (
     metricId: string,
-    data: { new_value: number; reason: string },
+    data: { new_value: number; new_period?: string; reason: string },
   ): Promise<ApiResponse<KpiBaselineRevision>> => {
     const res = await apiClient.post(
       `/kpi/metrics/${metricId}/baseline-revisions`,

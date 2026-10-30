@@ -963,6 +963,8 @@ export interface KpiMetric extends KpiMetricSnapshot {
   unit?: string;
   custom_unit_label?: string;
   baseline_value: number;
+  // Month the Baseline was measured in, "YYYY-MM" (e.g. "2025-12").
+  baseline_period?: string;
   current_value: number;
   weight: number;
   formula?: string;
@@ -1002,6 +1004,16 @@ export interface KpiMetric extends KpiMetricSnapshot {
 // kpi:approve approves the revision.
 export type KpiBaselineRevisionStatus = "pending" | "approved" | "rejected";
 
+// "2025-12" -> "Dec 2025"; "" when no Baseline Period is recorded.
+export const formatBaselinePeriod = (period?: string) => {
+  const m = /^(\d{4})-(\d{2})$/.exec(period ?? "");
+  if (!m) return "";
+  return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString(
+    "en-US",
+    { month: "short", year: "numeric" },
+  );
+};
+
 export interface KpiBaselineRevision {
   id: string;
   metric_id: string;
@@ -1009,6 +1021,8 @@ export interface KpiBaselineRevision {
   kpi_type: string;
   old_value: number;
   new_value: number;
+  old_period?: string;
+  new_period?: string;
   reason: string;
   status: KpiBaselineRevisionStatus;
   requested_by_id: string;
@@ -1030,6 +1044,7 @@ export interface KpiMetricRequest {
   unit?: string;
   custom_unit_label?: string;
   baseline_value?: number;
+  baseline_period?: string;
   weight?: number;
   formula?: string;
   calculation_type?: KpiCalculationType;
