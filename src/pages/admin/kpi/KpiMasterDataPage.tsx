@@ -53,10 +53,6 @@ import {
   useCreateDataSource,
   useUpdateDataSource,
   useDeleteDataSource,
-  useClassifications,
-  useCreateClassification,
-  useUpdateClassification,
-  useDeleteClassification,
   useSegmentationDimensions,
   useCreateSegmentationDimension,
   useUpdateSegmentationDimension,
@@ -96,7 +92,6 @@ import type {
   AwardCriterionRequest,
   AwardSubCriterionRequest,
   KpiDataSourceRequest,
-  KpiClassificationRequest,
   KpiSegmentationDimensionRequest,
   KpiOrganizationRequest,
 } from "../../../types/kpi";
@@ -113,8 +108,7 @@ type EntityType =
   | "award-sub-criterion"
   | "data-source"
   | "segmentation-dimension"
-  | "organization"
-  | "classification";
+  | "organization";
 
 interface FormState {
   name_en: string;
@@ -172,10 +166,6 @@ export const KpiMasterDataPage: React.FC = () => {
     },
     { key: "data-source", label: t("kpi.masterData.dataSources") },
     {
-      key: "classification" as EntityType,
-      label: t("kpi.masterData.classifications"),
-    },
-    {
       key: "segmentation-dimension",
       label: t("kpi.masterData.segmentationDimensions"),
     },
@@ -205,7 +195,6 @@ export const KpiMasterDataPage: React.FC = () => {
   const { data: awardCriteria } = useAwardCriteria();
   const { data: awardSubCriteria } = useAwardSubCriteria();
   const { data: dataSources } = useDataSources();
-  const { data: classifications } = useClassifications();
   const { data: segmentationDimensions } = useSegmentationDimensions();
   const { data: organizations } = useOrganizations();
 
@@ -243,9 +232,6 @@ export const KpiMasterDataPage: React.FC = () => {
   const createDataSource = useCreateDataSource();
   const updateDataSource = useUpdateDataSource();
   const deleteDataSource = useDeleteDataSource();
-  const createClassification = useCreateClassification();
-  const updateClassification = useUpdateClassification();
-  const deleteClassification = useDeleteClassification();
   const createSegmentationDimension = useCreateSegmentationDimension();
   const updateSegmentationDimension = useUpdateSegmentationDimension();
   const deleteSegmentationDimension = useDeleteSegmentationDimension();
@@ -432,14 +418,6 @@ export const KpiMasterDataPage: React.FC = () => {
         if (isEdit)
           await updateDataSource.mutateAsync({ id: modalItem.id, data });
         else await createDataSource.mutateAsync(data);
-      } else if (modalType === "classification") {
-        const data: KpiClassificationRequest = {
-          name_en: form.name_en,
-          name_ar: form.name_ar,
-        };
-        if (isEdit && modalItem)
-          await updateClassification.mutateAsync({ id: modalItem.id, data });
-        else await createClassification.mutateAsync(data);
       } else if (modalType === "segmentation-dimension") {
         const data: KpiSegmentationDimensionRequest = {
           name_en: form.name_en,
@@ -478,7 +456,6 @@ export const KpiMasterDataPage: React.FC = () => {
       "award-criterion": (i) => deleteAwardCriterion.mutate(i),
       "award-sub-criterion": (i) => deleteAwardSubCriterion.mutate(i),
       "data-source": (i) => deleteDataSource.mutate(i),
-      classification: (id: string) => deleteClassification.mutate(id),
       "segmentation-dimension": (i) => deleteSegmentationDimension.mutate(i),
       organization: (i) => deleteOrganization.mutate(i),
     };
@@ -725,11 +702,6 @@ export const KpiMasterDataPage: React.FC = () => {
         name_en,
         name_ar,
       } as KpiDataSourceRequest);
-    } else if (type === "classification") {
-      await kpiMasterDataApi.createClassification({
-        name_en,
-        name_ar,
-      } as KpiClassificationRequest);
     } else if (type === "segmentation-dimension") {
       await kpiMasterDataApi.createSegmentationDimension({
         name_en,
@@ -760,7 +732,6 @@ export const KpiMasterDataPage: React.FC = () => {
       case "pillar":
       case "enabler":
       case "data-source":
-      case "classification":
       case "segmentation-dimension":
       case "organization":
         return n;
@@ -784,7 +755,6 @@ export const KpiMasterDataPage: React.FC = () => {
         pillar: pillars,
         enabler: enablers,
         "data-source": dataSources,
-        classification: classifications,
         "segmentation-dimension": segmentationDimensions,
         organization: organizations,
         domain: domains,
@@ -818,7 +788,6 @@ export const KpiMasterDataPage: React.FC = () => {
     "award-criterion": "awardCriteria",
     "award-sub-criterion": "awardSubCriteria",
     "data-source": "dataSources",
-    classification: "classifications",
     "segmentation-dimension": "segmentationDimensions",
     organization: "organizations",
   };
@@ -1124,24 +1093,6 @@ export const KpiMasterDataPage: React.FC = () => {
             onAdd={() => handleAdd("data-source")}
             onExport={() => exportToExcel(dataSources ?? [], "DataSources")}
             onImport={() => handleImportExcel("data-source")}
-          />
-        )}
-        {activeTab === "classification" && (
-          <MasterTable
-            data={classifications ?? []}
-            columns={[
-              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
-              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
-            ]}
-            emptyMessage={t("kpi.masterData.noClassifications")}
-            canManage={canManage}
-            onEdit={(item: any) => handleEdit("classification", item)}
-            onDelete={(id: string) => handleDelete("classification", id)}
-            onAdd={() => handleAdd("classification")}
-            onExport={() =>
-              exportToExcel(classifications ?? [], "Classifications")
-            }
-            onImport={() => handleImportExcel("classification")}
           />
         )}
         {activeTab === "segmentation-dimension" && (
@@ -1505,7 +1456,6 @@ const importQueryKey: Record<EntityType, string> = {
   "award-criterion": "award-criteria",
   "award-sub-criterion": "award-sub-criteria",
   "data-source": "data-sources",
-  classification: "classifications",
   "segmentation-dimension": "segmentation-dimensions",
   organization: "organizations",
 };
