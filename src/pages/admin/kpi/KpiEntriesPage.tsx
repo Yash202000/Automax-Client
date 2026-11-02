@@ -20,6 +20,7 @@ import {
   XCircle,
   RotateCcw,
   Loader2,
+  PenLine,
 } from "lucide-react";
 import {
   useKpiAllEntries,
@@ -34,11 +35,17 @@ import { Modal } from "../../../components/ui/Modal";
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
 import { AddEntryModal } from "../../../components/kpi/AddEntryModal";
+import { CorrectEntryModal } from "../../../components/kpi/CorrectEntryModal";
 import type {
   KpiEntry,
   KpiMetric,
   KpiWorkflowAction,
   WorkflowTransitionBrief,
+} from "../../../types/kpi";
+import {
+  formatEntryDate,
+  periodCodeLabel,
+  periodWithYear,
 } from "../../../types/kpi";
 
 const entryStatusColor: Record<string, string> = {
@@ -49,6 +56,14 @@ const entryStatusColor: Record<string, string> = {
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   "Not Calculable":
     "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+};
+
+// Entries retired by an approved correction, and approved reversal records —
+// shown next to the performance status since none of them count as data.
+const correctionStatusLabel: Record<string, string> = {
+  superseded: "Superseded",
+  reversed: "Reversed",
+  reversal: "Reversal",
 };
 
 const transitionIconMap: Record<string, React.ReactNode> = {
@@ -193,6 +208,7 @@ function EntryDetailModal({
   onClose,
   onEdit,
   onDelete,
+  onCorrect,
   onTransition,
 }: {
   entry: KpiEntry | null;
@@ -200,6 +216,7 @@ function EntryDetailModal({
   onClose: () => void;
   onEdit: (entry: KpiEntry) => void;
   onDelete: (entry: KpiEntry) => void;
+  onCorrect: (entry: KpiEntry) => void;
   onTransition: (entry: KpiEntry, transition: WorkflowTransitionBrief) => void;
 }) {
   const { hasPermission } = usePermissions();
@@ -220,7 +237,7 @@ function EntryDetailModal({
               {entry.metric?.name ?? "Entry Details"}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {entry.reporting_year} / {entry.period_code}
+              {entry.reporting_year} / {periodCodeLabel(entry.period_code)}
             </p>
           </div>
           <div className="flex items-center gap-1 mr-8">
@@ -242,6 +259,16 @@ function EntryDetailModal({
                 </button>
               </>
             )}
+            {entry.status === "approved" && canEdit && (
+              <button
+                onClick={() => onCorrect(entry)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                title="Correct this approved entry with an adjustment or reversal"
+              >
+                <PenLine className="w-4 h-4" />
+                Adjust / Reverse
+              </button>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -258,7 +285,14 @@ function EntryDetailModal({
             />
             <DetailRow label="KPI Type" value={entry.kpi_type} />
             <DetailRow label="Year" value={entry.reporting_year} />
-            <DetailRow label="Period" value={entry.period_code} />
+            <DetailRow
+              label="Period"
+              value={periodCodeLabel(entry.period_code)}
+            />
+            <DetailRow
+              label="Entry Date"
+              value={formatEntryDate(entry.entry_date)}
+            />
             <DetailRow
               label="Period Start"
               value={
@@ -417,6 +451,18 @@ function EntryDetailModal({
             <div className="space-y-3">
               <DetailRow label="Status" value={entry.status} />
               <DetailRow label="Version" value={entry.entry_version} />
+              {entry.correction_type && (
+                <DetailRow
+                  label="Correction"
+                  value={`${entry.correction_type === "reversal" ? "Reversal" : "Adjustment"} of v${entry.entry_version - 1}`}
+                />
+              )}
+              {entry.correction_reason && (
+                <DetailRow
+                  label="Correction Reason"
+                  value={entry.correction_reason}
+                />
+              )}
               <DetailRow
                 label="Created"
                 value={
@@ -527,6 +573,7 @@ export const KpiEntriesPage: React.FC = () => {
 
   const [editTarget, setEditTarget] = useState<KpiEntry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<KpiEntry | null>(null);
+  const [correctTarget, setCorrectTarget] = useState<KpiEntry | null>(null);
   const [transitionPick, setTransitionPick] = useState<{
     entry: KpiEntry;
     transition: WorkflowTransitionBrief;
@@ -699,6 +746,9 @@ export const KpiEntriesPage: React.FC = () => {
                       Year / Period
                     </th>
                     <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Entry Date
+                    </th>
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Actual
                     </th>
                     <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -727,7 +777,11 @@ export const KpiEntriesPage: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300">
-                        {entry.reporting_year} / {entry.period_code}
+                        {entry.reporting_year} /{" "}
+                        {periodCodeLabel(entry.period_code)}
+                      </td>
+                      <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {formatEntryDate(entry.entry_date)}
                       </td>
                       <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300">
                         {entry.actual_value}
@@ -741,6 +795,11 @@ export const KpiEntriesPage: React.FC = () => {
                         >
                           {entry.performance_status}
                         </span>
+                        {correctionStatusLabel[entry.status] && (
+                          <span className="ms-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                            {correctionStatusLabel[entry.status]}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1">
@@ -768,6 +827,16 @@ export const KpiEntriesPage: React.FC = () => {
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </>
+                          )}
+                          {entry.status === "approved" && canEdit && (
+                            <button
+                              onClick={() => setCorrectTarget(entry)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap"
+                              title="Correct this approved entry with an adjustment or reversal"
+                            >
+                              <PenLine className="w-4 h-4" />
+                              Adjust / Reverse
+                            </button>
                           )}
                         </div>
                       </td>
@@ -818,6 +887,10 @@ export const KpiEntriesPage: React.FC = () => {
           setSelectedEntry(null);
           setDeleteTarget(entry);
         }}
+        onCorrect={(entry) => {
+          setSelectedEntry(null);
+          setCorrectTarget(entry);
+        }}
         onTransition={(entry, transition) => {
           setSelectedEntry(null);
           setTransitionPick({ entry, transition });
@@ -835,6 +908,12 @@ export const KpiEntriesPage: React.FC = () => {
         onSuccess={() => setEditTarget(null)}
       />
 
+      <CorrectEntryModal
+        key={correctTarget?.id ?? "none"}
+        entry={correctTarget}
+        onClose={() => setCorrectTarget(null)}
+      />
+
       {/* Delete confirm */}
       <Modal
         isOpen={!!deleteTarget}
@@ -848,7 +927,11 @@ export const KpiEntriesPage: React.FC = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Are you sure you want to delete the entry for{" "}
             <strong>
-              {deleteTarget?.period_code} {deleteTarget?.reporting_year}
+              {deleteTarget &&
+                periodWithYear(
+                  deleteTarget.period_code,
+                  deleteTarget.reporting_year,
+                )}
             </strong>
             ? This cannot be undone.
           </p>
@@ -882,8 +965,12 @@ export const KpiEntriesPage: React.FC = () => {
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Confirm this action for the entry (
-            {transitionPick?.entry.period_code}{" "}
-            {transitionPick?.entry.reporting_year}).
+            {transitionPick &&
+              periodWithYear(
+                transitionPick.entry.period_code,
+                transitionPick.entry.reporting_year,
+              )}
+            ).
           </p>
           <Input
             label="Comment (optional)"

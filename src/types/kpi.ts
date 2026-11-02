@@ -230,6 +230,7 @@ export interface PerformanceTrend {
 }
 
 export interface KpiCardDef {
+  id: string;
   code: string;
   type: string;
   name_en: string;
@@ -284,6 +285,82 @@ export interface EnhancedKpiDashboardData extends KpiDashboardData {
   top_performers: KpiPerformanceSummary[];
   low_performers: KpiPerformanceSummary[];
   available_years?: number[];
+  kpi_options?: { id: string; code: string; type: string; name_en: string }[];
+  metric_options?: {
+    id: string;
+    name: string;
+    kpi_code: string;
+    kpi_type: string;
+  }[];
+}
+
+// Dashboard Period filter: a quarter ("q1".."q4") or a month ("m1".."m12").
+export const DASHBOARD_PERIOD_OPTIONS: {
+  group: string;
+  options: { value: string; label: string }[];
+}[] = [
+  {
+    group: "Quarters",
+    options: [1, 2, 3, 4].map((q) => ({ value: `q${q}`, label: `Q${q}` })),
+  },
+  {
+    group: "Months",
+    options: Array.from({ length: 12 }, (_, i) => ({
+      value: `m${i + 1}`,
+      label: new Date(Date.UTC(2000, i, 1)).toLocaleString("en-US", {
+        month: "long",
+        timeZone: "UTC",
+      }),
+    })),
+  },
+];
+
+// Splits a Period filter value into the dashboard API's quarter/month params.
+export function dashboardPeriodParams(value: string): {
+  quarter?: number;
+  month?: number;
+} {
+  const n = Number(value.slice(1));
+  if (value.startsWith("q") && n >= 1 && n <= 4) return { quarter: n };
+  if (value.startsWith("m") && n >= 1 && n <= 12) return { month: n };
+  return {};
+}
+
+// Calendar months (1-12) a period code covers: "mar" → [3,3], "q1" → [1,3],
+// "h2" → [7,12], anything else (annual, custom) → the whole year.
+export function periodCodeMonths(code: string): [number, number] {
+  const c = code.toLowerCase();
+  const months = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+  ];
+  const m = months.indexOf(c);
+  if (m !== -1) return [m + 1, m + 1];
+  const q = /^q([1-4])$/.exec(c);
+  if (q) return [Number(q[1]) * 3 - 2, Number(q[1]) * 3];
+  if (c === "h1") return [1, 6];
+  if (c === "h2") return [7, 12];
+  return [1, 12];
+}
+
+// Whether a period code overlaps a Period filter value ("" matches all).
+export function periodMatchesFilter(code: string, filter: string): boolean {
+  if (!filter) return true;
+  const { quarter, month } = dashboardPeriodParams(filter);
+  const from = month ?? (quarter ? quarter * 3 - 2 : 1);
+  const to = month ?? (quarter ? quarter * 3 : 12);
+  const [start, end] = periodCodeMonths(code);
+  return start <= to && end >= from;
 }
 
 export interface StrategicKPI {
@@ -507,6 +584,7 @@ export interface KpiTarget {
   approved_by?: UserBrief;
   approved_at?: string;
   supersedes_entry_id?: string;
+  version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -784,6 +862,8 @@ export interface KpiAnnualTargetRequest {
   effective_from?: string;
   effective_to?: string;
   target_status?: KpiTargetStatus;
+  // Creates a new version of this approved target (Supersede).
+  supersedes_target_id?: string;
 }
 
 export interface KpiPerformanceRequest {
@@ -976,6 +1056,8 @@ export interface KpiMetric extends KpiMetricSnapshot {
   unit?: string;
   custom_unit_label?: string;
   baseline_value: number;
+  // Month the Baseline was measured in, "YYYY-MM" (e.g. "2025-12").
+  baseline_period?: string;
   current_value: number;
   weight: number;
   formula?: string;
@@ -1010,6 +1092,41 @@ export interface KpiMetric extends KpiMetricSnapshot {
   effective_target_period?: string;
 }
 
+// A request to change a metric's Baseline after its KPI is approved — the
+// Baseline is locked for the cycle and only changes once someone with
+// kpi:approve approves the revision.
+export type KpiBaselineRevisionStatus = "pending" | "approved" | "rejected";
+
+// "2025-12" -> "Dec 2025"; "" when no Baseline Period is recorded.
+export const formatBaselinePeriod = (period?: string) => {
+  const m = /^(\d{4})-(\d{2})$/.exec(period ?? "");
+  if (!m) return "";
+  return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString(
+    "en-US",
+    { month: "short", year: "numeric" },
+  );
+};
+
+export interface KpiBaselineRevision {
+  id: string;
+  metric_id: string;
+  kpi_id: string;
+  kpi_type: string;
+  old_value: number;
+  new_value: number;
+  old_period?: string;
+  new_period?: string;
+  reason: string;
+  status: KpiBaselineRevisionStatus;
+  requested_by_id: string;
+  requested_by?: { first_name: string; last_name: string };
+  reviewed_by_id?: string | null;
+  reviewed_by?: { first_name: string; last_name: string };
+  reviewed_at?: string | null;
+  review_comment?: string;
+  created_at: string;
+}
+
 export interface KpiMetricRequest {
   name: string;
   metric_code?: string;
@@ -1020,6 +1137,7 @@ export interface KpiMetricRequest {
   unit?: string;
   custom_unit_label?: string;
   baseline_value?: number;
+  baseline_period?: string;
   weight?: number;
   formula?: string;
   calculation_type?: KpiCalculationType;
@@ -1219,7 +1337,19 @@ export interface KpiListResponse<T> {
 
 // ─── KPI Entries ──────────────────────────────────────────────────────────
 
-export type KpiEntryStatus = "draft" | "submitted" | "approved" | "rejected";
+// superseded/reversed: an approved entry retired by an approved correction
+// (adjustment/reversal). reversal: an approved reversal record. None of these
+// count toward a period's Actual — only "approved" does.
+export type KpiEntryStatus =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "superseded"
+  | "reversed"
+  | "reversal";
+
+export type KpiEntryCorrectionType = "adjustment" | "reversal";
 
 export interface KpiEntryComponentValue {
   component: string;
@@ -1238,6 +1368,9 @@ export interface KpiEntry {
   period_code: string;
   period_start: string;
   period_end: string;
+  // Date the value was actually recorded; null on entries created before
+  // the field existed.
+  entry_date?: string | null;
   calculation_type_snapshot: KpiCalculationType;
   direction_snapshot: KpiDirection;
   unit_snapshot: string;
@@ -1274,6 +1407,8 @@ export interface KpiEntry {
   approved_by?: UserBrief;
   entry_version: number;
   supersedes_entry_id?: string;
+  correction_type?: KpiEntryCorrectionType;
+  correction_reason?: string;
   workflow_instance_id?: string;
   created_at: string;
   updated_at: string;
@@ -1283,6 +1418,7 @@ export interface KpiEntryRequest {
   metric_id: string;
   reporting_year: number;
   period_code: string;
+  entry_date: string;
   direct_actual_value?: number;
   numerator_value?: number;
   denominator_value?: number;
@@ -1302,6 +1438,11 @@ export type KpiEntryUpdateRequest = Omit<
   KpiEntryRequest,
   "metric_id" | "reporting_year" | "period_code"
 >;
+
+export type KpiEntryCorrectionRequest = KpiEntryUpdateRequest & {
+  correction_type: KpiEntryCorrectionType;
+  reason: string;
+};
 
 export interface KpiEntryEvidence {
   id: string;
@@ -1408,6 +1549,67 @@ export const THRESHOLD_MODE_OPTIONS: {
   { value: "Target Range", label: "Target Range" },
   { value: "No Thresholds", label: "No Thresholds" },
 ];
+
+// Milestone / Ad Hoc targets cover a custom date range; their period code is
+// built from the dates ("c:20260215-20260315") so entries match the target by
+// period code like any other period. Mirrors the backend's
+// services.CustomPeriodCode / ParseCustomPeriod.
+export const MILESTONE_TARGET_TYPE: KpiTargetType = "Milestone / Ad Hoc";
+const CUSTOM_PERIOD_RE = /^c:(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})$/i;
+
+export const isCustomPeriodCode = (code?: string) =>
+  !!code && CUSTOM_PERIOD_RE.test(code);
+
+// start/end as "YYYY-MM-DD".
+export const customPeriodCode = (start: string, end: string) =>
+  `c:${start.replace(/-/g, "")}-${end.replace(/-/g, "")}`;
+
+// { start, end } as "YYYY-MM-DD", or null if the code isn't a custom range.
+export function parseCustomPeriod(
+  code?: string,
+): { start: string; end: string } | null {
+  const m = CUSTOM_PERIOD_RE.exec(code ?? "");
+  return m
+    ? { start: `${m[1]}-${m[2]}-${m[3]}`, end: `${m[4]}-${m[5]}-${m[6]}` }
+    : null;
+}
+
+const formatDayMonth = (iso: string, withYear: boolean) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    ...(withYear ? { year: "numeric" } : {}),
+  });
+};
+
+// "05 Jan 2026" for an Entry Date (or any "YYYY-MM-DD…" date), read as a
+// calendar date so it never shifts a day with the viewer's time zone.
+export function formatEntryDate(iso?: string | null): string {
+  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "—";
+  const month = new Date(Date.UTC(2000, Number(m[2]) - 1, 1)).toLocaleString(
+    "en-US",
+    { month: "short", timeZone: "UTC" },
+  );
+  return `${m[3]} ${month} ${m[1]}`;
+}
+
+// "15 Feb – 15 Mar 2026" for a custom range; the code itself otherwise.
+export function periodCodeLabel(code: string): string {
+  const range = parseCustomPeriod(code);
+  if (!range) return code;
+  const sameYear = range.start.slice(0, 4) === range.end.slice(0, 4);
+  return `${formatDayMonth(range.start, !sameYear)} – ${formatDayMonth(range.end, true)}`;
+}
+
+// "sep 2026" for a regular period, just the range label for a custom one
+// (its dates already carry the year).
+export const periodWithYear = (code: string, year: number) =>
+  parseCustomPeriod(code) ? periodCodeLabel(code) : `${code} ${year}`;
+
+export const isAdHocFrequency = (frequency?: string) =>
+  frequency?.toLowerCase().replace(/[\s_-]/g, "") === "adhoc";
 
 export function getPeriodOptionsByFrequency(
   frequency?: string,
