@@ -26,6 +26,10 @@ import type {
 } from "../../types/kpi";
 import {
   getPeriodOptionsByFrequency,
+  isAdHocFrequency,
+  isCustomPeriodCode,
+  parseCustomPeriod,
+  periodCodeLabel,
   getYearOptions,
   getCurrentPeriodCode,
   DATA_SOURCE_TYPE_OPTIONS,
@@ -85,6 +89,12 @@ function derivePeriodRange(
   frequency?: string,
 ): { start: string; end: string } | null {
   if (!periodCode || !year) return null;
+  const custom = parseCustomPeriod(periodCode);
+  if (custom) {
+    const [sy, sm, sd] = custom.start.split("-").map(Number);
+    const [ey, em, ed] = custom.end.split("-").map(Number);
+    return { start: formatDMY(sy, sm, sd), end: formatDMY(ey, em, ed) };
+  }
   const freq = frequency ?? "monthly";
   const code = periodCode.toLowerCase();
   if (freq === "monthly") {
@@ -354,9 +364,12 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   // matching <option>, so the <select> visually shows its first option
   // ("Jan") without that ever being the real selected value, making it easy
   // to submit an entry for the wrong period without noticing.
-  const [periodCode, setPeriodCode] = useState(() =>
-    getCurrentPeriodCode(reportingFrequency),
-  );
+  // An Ad Hoc metric has no current period — its only periods are approved
+  // milestone ranges, so it starts unselected.
+  const defaultPeriodCode = isAdHocFrequency(reportingFrequency)
+    ? ""
+    : getCurrentPeriodCode(reportingFrequency);
+  const [periodCode, setPeriodCode] = useState(defaultPeriodCode);
   const [directActualValue, setDirectActualValue] = useState("");
   const [numeratorValue, setNumeratorValue] = useState("");
   const [denominatorValue, setDenominatorValue] = useState("");
@@ -418,10 +431,51 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   ].includes(calcType);
   const isFormulaType = calcType === "Formula";
 
-  const periodOptions = useMemo(
-    () => getPeriodOptionsByFrequency(reportingFrequency),
-    [reportingFrequency],
-  );
+  // Approved Milestone / Ad Hoc targets of this metric in the selected year
+  // are reportable periods too — each one's custom date range is offered
+  // alongside the regular periods (and is the only option for an Ad Hoc
+  // metric, which has no regular periods).
+  const { data: milestoneTargetsRes } = useQuery({
+    queryKey: [
+      "kpi",
+      "targets",
+      "milestones",
+      kpiCode,
+      metric?.id,
+      reportingYear,
+    ],
+    queryFn: () =>
+      kpiPerformanceApi.listTargets({
+        kpi_code: kpiCode,
+        metric_id: metric?.id,
+        year: reportingYear,
+      }),
+    enabled: isOpen && !isEditMode && !!kpiCode && !!metric?.id,
+  });
+  const periodOptions = useMemo(() => {
+    const milestones = (milestoneTargetsRes?.data ?? [])
+      .filter(
+        (t: KpiTarget) =>
+          t.target_status === "approved" && isCustomPeriodCode(t.period_code),
+      )
+      .map((t: KpiTarget) => ({
+        value: t.period_code,
+        label: periodCodeLabel(t.period_code),
+      }));
+    const regular = isAdHocFrequency(reportingFrequency)
+      ? []
+      : getPeriodOptionsByFrequency(reportingFrequency);
+    const options = [...regular, ...milestones];
+    // An entry being edited keeps showing its own period.
+    if (
+      isEditMode &&
+      periodCode &&
+      !options.some((o) => o.value === periodCode)
+    ) {
+      options.push({ value: periodCode, label: periodCodeLabel(periodCode) });
+    }
+    return options;
+  }, [reportingFrequency, milestoneTargetsRes, periodCode, isEditMode]);
   const yearOptions = useMemo(() => getYearOptions(), []);
 
   // ── Approved-target lookup for create mode. Scoped tightly (kpi_code +
@@ -583,7 +637,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
   const resetForm = () => {
     setReportingYear(new Date().getFullYear());
-    setPeriodCode(getCurrentPeriodCode(reportingFrequency));
+    setPeriodCode(defaultPeriodCode);
     setDirectActualValue("");
     setNumeratorValue("");
     setDenominatorValue("");

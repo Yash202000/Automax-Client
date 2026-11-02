@@ -1453,6 +1453,55 @@ export const THRESHOLD_MODE_OPTIONS: {
   { value: "No Thresholds", label: "No Thresholds" },
 ];
 
+// Milestone / Ad Hoc targets cover a custom date range; their period code is
+// built from the dates ("c:20260215-20260315") so entries match the target by
+// period code like any other period. Mirrors the backend's
+// services.CustomPeriodCode / ParseCustomPeriod.
+export const MILESTONE_TARGET_TYPE: KpiTargetType = "Milestone / Ad Hoc";
+const CUSTOM_PERIOD_RE = /^c:(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})$/i;
+
+export const isCustomPeriodCode = (code?: string) =>
+  !!code && CUSTOM_PERIOD_RE.test(code);
+
+// start/end as "YYYY-MM-DD".
+export const customPeriodCode = (start: string, end: string) =>
+  `c:${start.replace(/-/g, "")}-${end.replace(/-/g, "")}`;
+
+// { start, end } as "YYYY-MM-DD", or null if the code isn't a custom range.
+export function parseCustomPeriod(
+  code?: string,
+): { start: string; end: string } | null {
+  const m = CUSTOM_PERIOD_RE.exec(code ?? "");
+  return m
+    ? { start: `${m[1]}-${m[2]}-${m[3]}`, end: `${m[4]}-${m[5]}-${m[6]}` }
+    : null;
+}
+
+const formatDayMonth = (iso: string, withYear: boolean) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    ...(withYear ? { year: "numeric" } : {}),
+  });
+};
+
+// "15 Feb – 15 Mar 2026" for a custom range; the code itself otherwise.
+export function periodCodeLabel(code: string): string {
+  const range = parseCustomPeriod(code);
+  if (!range) return code;
+  const sameYear = range.start.slice(0, 4) === range.end.slice(0, 4);
+  return `${formatDayMonth(range.start, !sameYear)} – ${formatDayMonth(range.end, true)}`;
+}
+
+// "sep 2026" for a regular period, just the range label for a custom one
+// (its dates already carry the year).
+export const periodWithYear = (code: string, year: number) =>
+  parseCustomPeriod(code) ? periodCodeLabel(code) : `${code} ${year}`;
+
+export const isAdHocFrequency = (frequency?: string) =>
+  frequency?.toLowerCase().replace(/[\s_-]/g, "") === "adhoc";
+
 export function getPeriodOptionsByFrequency(
   frequency?: string,
 ): { value: string; label: string }[] {

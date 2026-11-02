@@ -33,7 +33,16 @@ import {
   REPORTING_MONTHS,
   REPORTING_QUARTERS,
   REPORTING_SEMI_ANNUALS,
+  MILESTONE_TARGET_TYPE,
+  customPeriodCode,
+  parseCustomPeriod,
+  periodCodeLabel,
+  isAdHocFrequency,
 } from "../../../types/kpi";
+
+// Period dropdown value that switches the form to a Milestone / Ad Hoc
+// custom date range; never sent to the backend.
+const CUSTOM_RANGE_OPTION = "__custom__";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300",
@@ -59,6 +68,7 @@ function formatTargetId(id: string): string {
 }
 
 function formatPeriodLabel(year: number, periodCode: string): string {
+  if (parseCustomPeriod(periodCode)) return periodCodeLabel(periodCode);
   const code = periodCode.toLowerCase();
   const monthIdx = REPORTING_MONTHS.findIndex((m) => m.toLowerCase() === code);
   if (monthIdx >= 0) return `${REPORTING_MONTHS[monthIdx]} ${year}`;
@@ -436,6 +446,10 @@ export const KpiTargetsPage: React.FC = () => {
   const [formTargetValue, setFormTargetValue] = useState("");
   const [formTargetType, setFormTargetType] =
     useState<KpiTargetType>("Period Target");
+  // Milestone / Ad Hoc targets pick their own Period Start/End ("YYYY-MM-DD")
+  // instead of a whole period; the period code is built from them on save.
+  const [formCustomStart, setFormCustomStart] = useState("");
+  const [formCustomEnd, setFormCustomEnd] = useState("");
   const [formTargetBasis, setFormTargetBasis] =
     useState<KpiTargetBasis>("Strategic Plan");
   const [formTargetRationale, setFormTargetRationale] = useState("");
@@ -490,6 +504,13 @@ export const KpiTargetsPage: React.FC = () => {
       }),
     [formFreq, formYear, formPeriodCode, metricStart, metricDue],
   );
+  const isMilestone = formTargetType === MILESTONE_TARGET_TYPE;
+  // An Ad Hoc metric has no reporting periods, so its targets are always
+  // Milestone / Ad Hoc date ranges.
+  const metricIsAdHoc = isAdHocFrequency(formFreq);
+  const targetTypeOptions = metricIsAdHoc
+    ? TARGET_TYPE_OPTIONS.filter((o) => o.value === MILESTONE_TARGET_TYPE)
+    : TARGET_TYPE_OPTIONS;
   const calcType: string = selectedMetric?.calculation_type ?? "";
   const direction: string = selectedMetric?.direction ?? "";
   const isFormulaMetric = calcType === "Formula";
@@ -523,6 +544,8 @@ export const KpiTargetsPage: React.FC = () => {
     setFormPeriodCode("");
     setFormTargetValue("");
     setFormTargetType("Period Target");
+    setFormCustomStart("");
+    setFormCustomEnd("");
     setFormTargetBasis("Strategic Plan");
     setFormTargetRationale("");
     setFormThresholdMode("Use Global KPI Rules");
@@ -550,6 +573,9 @@ export const KpiTargetsPage: React.FC = () => {
       target.target_value != null ? String(target.target_value) : "",
     );
     setFormTargetType(target.target_type);
+    const range = parseCustomPeriod(target.period_code);
+    setFormCustomStart(range?.start ?? "");
+    setFormCustomEnd(range?.end ?? "");
     setFormTargetBasis(target.target_basis);
     setFormTargetRationale(target.target_rationale);
     setFormThresholdMode(target.threshold_mode);
@@ -624,7 +650,16 @@ export const KpiTargetsPage: React.FC = () => {
       toast.error("KPI and Metric are required");
       return;
     }
-    if (!formPeriodCode) {
+    if (isMilestone) {
+      if (!formCustomStart || !formCustomEnd) {
+        toast.error("Period Start and Period End are required");
+        return;
+      }
+      if (formCustomEnd < formCustomStart) {
+        toast.error("Period End cannot be before Period Start");
+        return;
+      }
+    } else if (!formPeriodCode) {
       toast.error("Period is required");
       return;
     }
@@ -641,8 +676,10 @@ export const KpiTargetsPage: React.FC = () => {
       kpi_code: formKpiCode,
       kpi_type: formKpiType as any,
       metric_id: formMetricId,
-      target_year: formYear,
-      period_code: formPeriodCode,
+      target_year: isMilestone ? Number(formCustomStart.slice(0, 4)) : formYear,
+      period_code: isMilestone
+        ? customPeriodCode(formCustomStart, formCustomEnd)
+        : formPeriodCode,
       target_value:
         direction !== "Informational" ? Number(formTargetValue) : undefined,
       target_type: formTargetType,
@@ -660,8 +697,8 @@ export const KpiTargetsPage: React.FC = () => {
         : undefined,
       target_range_min: formRangeMin ? Number(formRangeMin) : undefined,
       target_range_max: formRangeMax ? Number(formRangeMax) : undefined,
-      period_start: periodDates.start,
-      period_end: periodDates.end,
+      period_start: isMilestone ? formCustomStart : periodDates.start,
+      period_end: isMilestone ? formCustomEnd : periodDates.end,
     };
 
     if (status) {
@@ -1044,8 +1081,19 @@ export const KpiTargetsPage: React.FC = () => {
                 value={formMetricId}
                 disabled={formReadOnly}
                 onChange={(e) => {
+                  const metric = (formMetrics ?? kpiMetrics ?? []).find(
+                    (m: any) => m.id === e.target.value,
+                  );
                   setFormMetricId(e.target.value);
                   setFormPeriodCode("");
+                  if (
+                    isAdHocFrequency(
+                      metric?.reporting_frequency ||
+                        formCard?.reporting_frequency,
+                    )
+                  ) {
+                    setFormTargetType(MILESTONE_TARGET_TYPE);
+                  }
                 }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-60"
               >
@@ -1081,65 +1129,137 @@ export const KpiTargetsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Target Year <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formYear}
-                disabled={formReadOnly}
-                onChange={(e) => setFormYear(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-              >
-                {yearOptions.map((y) => (
-                  <option key={y.value} value={y.value}>
-                    {y.label}
+          {isMilestone ? (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Target Year
+                </label>
+                <input
+                  type="text"
+                  value={formCustomStart ? formCustomStart.slice(0, 4) : "—"}
+                  readOnly
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Period
+                </label>
+                <input
+                  type="text"
+                  value={
+                    formCustomStart && formCustomEnd
+                      ? periodCodeLabel(
+                          customPeriodCode(formCustomStart, formCustomEnd),
+                        )
+                      : "Custom date range"
+                  }
+                  readOnly
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Period Start <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formCustomStart}
+                  min={metricStart || undefined}
+                  max={formCustomEnd || metricDue || undefined}
+                  disabled={formReadOnly}
+                  onChange={(e) => setFormCustomStart(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Period End <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formCustomEnd}
+                  min={formCustomStart || metricStart || undefined}
+                  max={metricDue || undefined}
+                  disabled={formReadOnly}
+                  onChange={(e) => setFormCustomEnd(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Target Year <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formYear}
+                  disabled={formReadOnly}
+                  onChange={(e) => setFormYear(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                >
+                  {yearOptions.map((y) => (
+                    <option key={y.value} value={y.value}>
+                      {y.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Period <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formPeriodCode}
+                  disabled={formReadOnly}
+                  onChange={(e) => {
+                    // A custom range is a Milestone / Ad Hoc target.
+                    if (e.target.value === CUSTOM_RANGE_OPTION) {
+                      setFormTargetType(MILESTONE_TARGET_TYPE);
+                      setFormPeriodCode("");
+                      return;
+                    }
+                    setFormPeriodCode(e.target.value);
+                  }}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
+                >
+                  <option value="">Select</option>
+                  {formPeriodOptions.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_RANGE_OPTION}>
+                    Custom date range…
                   </option>
-                ))}
-              </select>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Period Start
+                </label>
+                <input
+                  type="text"
+                  value={formatDateDisplay(periodDates.start) || "—"}
+                  readOnly
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Period End
+                </label>
+                <input
+                  type="text"
+                  value={formatDateDisplay(periodDates.end) || "—"}
+                  readOnly
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Period <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formPeriodCode}
-                disabled={formReadOnly}
-                onChange={(e) => setFormPeriodCode(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
-              >
-                <option value="">Select</option>
-                {formPeriodOptions.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Period Start
-              </label>
-              <input
-                type="text"
-                value={formatDateDisplay(periodDates.start) || "—"}
-                readOnly
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Period End
-              </label>
-              <input
-                type="text"
-                value={formatDateDisplay(periodDates.end) || "—"}
-                readOnly
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 outline-none cursor-not-allowed"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -1168,12 +1288,15 @@ export const KpiTargetsPage: React.FC = () => {
               <select
                 value={formTargetType}
                 disabled={formReadOnly}
-                onChange={(e) =>
-                  setFormTargetType(e.target.value as KpiTargetType)
-                }
+                onChange={(e) => {
+                  setFormTargetType(e.target.value as KpiTargetType);
+                  setFormPeriodCode("");
+                  setFormCustomStart("");
+                  setFormCustomEnd("");
+                }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
               >
-                {TARGET_TYPE_OPTIONS.map((o) => (
+                {targetTypeOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>

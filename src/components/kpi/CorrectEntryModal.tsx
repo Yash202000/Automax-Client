@@ -10,6 +10,7 @@ import {
   ModalFooter,
 } from "../ui/Modal";
 import { useCreateKpiEntryCorrection } from "../../hooks/useKpi";
+import { periodWithYear } from "../../types/kpi";
 import type {
   KpiEntry,
   KpiEntryComponentValue,
@@ -119,10 +120,11 @@ export function CorrectEntryModal({ entry, onClose }: Props) {
       <ModalHeader>
         <ModalTitle>Correct Approved Entry</ModalTitle>
         <ModalDescription>
-          {entry.metric?.name ?? "Entry"} · {entry.period_code}{" "}
-          {entry.reporting_year} · v{entry.entry_version} · Actual{" "}
-          {entry.actual_value}. The approved entry stays unchanged; the
-          correction applies only after it is approved.
+          {entry.metric?.name ?? "Entry"} ·{" "}
+          {periodWithYear(entry.period_code, entry.reporting_year)} · v
+          {entry.entry_version} · Actual {entry.actual_value}. The approved
+          entry stays unchanged; the correction applies only after it is
+          approved.
         </ModalDescription>
       </ModalHeader>
       <ModalBody className="space-y-4">

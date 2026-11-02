@@ -35,6 +35,7 @@ import type {
   KpiEntry,
   WorkflowTransitionBrief,
 } from "../../types/kpi";
+import { periodCodeLabel, periodWithYear } from "../../types/kpi";
 
 interface ViewEntriesModalProps {
   kpiType: string;
@@ -125,7 +126,7 @@ const EntryRow: React.FC<EntryRowProps> = ({
             {entry.status}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {entry.period_code}
+            {periodCodeLabel(entry.period_code)}
           </span>
           {entry.entry_version > 1 && (
             <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -352,7 +353,11 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Are you sure you want to delete the entry for{" "}
             <strong>
-              {deleteTarget?.period_code} {deleteTarget?.reporting_year}
+              {deleteTarget &&
+                periodWithYear(
+                  deleteTarget.period_code,
+                  deleteTarget.reporting_year,
+                )}
             </strong>
             ? This cannot be undone.
           </p>
@@ -386,8 +391,12 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Confirm this action for the entry (
-            {transitionPick?.entry.period_code}{" "}
-            {transitionPick?.entry.reporting_year}).
+            {transitionPick &&
+              periodWithYear(
+                transitionPick.entry.period_code,
+                transitionPick.entry.reporting_year,
+              )}
+            ).
           </p>
           <Input
             label="Comment (optional)"

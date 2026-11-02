@@ -42,6 +42,7 @@ import type {
   KpiWorkflowAction,
   WorkflowTransitionBrief,
 } from "../../../types/kpi";
+import { periodCodeLabel, periodWithYear } from "../../../types/kpi";
 
 const entryStatusColor: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
@@ -232,7 +233,7 @@ function EntryDetailModal({
               {entry.metric?.name ?? "Entry Details"}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {entry.reporting_year} / {entry.period_code}
+              {entry.reporting_year} / {periodCodeLabel(entry.period_code)}
             </p>
           </div>
           <div className="flex items-center gap-1 mr-8">
@@ -280,7 +281,10 @@ function EntryDetailModal({
             />
             <DetailRow label="KPI Type" value={entry.kpi_type} />
             <DetailRow label="Year" value={entry.reporting_year} />
-            <DetailRow label="Period" value={entry.period_code} />
+            <DetailRow
+              label="Period"
+              value={periodCodeLabel(entry.period_code)}
+            />
             <DetailRow
               label="Period Start"
               value={
@@ -762,7 +766,8 @@ export const KpiEntriesPage: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300">
-                        {entry.reporting_year} / {entry.period_code}
+                        {entry.reporting_year} /{" "}
+                        {periodCodeLabel(entry.period_code)}
                       </td>
                       <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300">
                         {entry.actual_value}
@@ -898,7 +903,11 @@ export const KpiEntriesPage: React.FC = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Are you sure you want to delete the entry for{" "}
             <strong>
-              {deleteTarget?.period_code} {deleteTarget?.reporting_year}
+              {deleteTarget &&
+                periodWithYear(
+                  deleteTarget.period_code,
+                  deleteTarget.reporting_year,
+                )}
             </strong>
             ? This cannot be undone.
           </p>
@@ -932,8 +941,12 @@ export const KpiEntriesPage: React.FC = () => {
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Confirm this action for the entry (
-            {transitionPick?.entry.period_code}{" "}
-            {transitionPick?.entry.reporting_year}).
+            {transitionPick &&
+              periodWithYear(
+                transitionPick.entry.period_code,
+                transitionPick.entry.reporting_year,
+              )}
+            ).
           </p>
           <Input
             label="Comment (optional)"
