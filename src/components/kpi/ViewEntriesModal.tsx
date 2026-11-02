@@ -35,7 +35,11 @@ import type {
   KpiEntry,
   WorkflowTransitionBrief,
 } from "../../types/kpi";
-import { periodCodeLabel, periodWithYear } from "../../types/kpi";
+import {
+  formatEntryDate,
+  periodCodeLabel,
+  periodWithYear,
+} from "../../types/kpi";
 
 interface ViewEntriesModalProps {
   kpiType: string;
@@ -158,7 +162,13 @@ const EntryRow: React.FC<EntryRowProps> = ({
             {entry.submitted_by.first_name} {entry.submitted_by.last_name}
           </span>
         )}
-        <span>{formatDate(entry.created_at)}</span>
+        {entry.entry_date ? (
+          <span title={`Created ${formatDate(entry.created_at)}`}>
+            Entry date {formatEntryDate(entry.entry_date)}
+          </span>
+        ) : (
+          <span>Created {formatDate(entry.created_at)}</span>
+        )}
       </div>
 
       {showActionsRow && (

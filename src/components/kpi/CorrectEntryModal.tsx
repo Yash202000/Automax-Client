@@ -49,6 +49,9 @@ export function CorrectEntryModal({ entry, onClose }: Props) {
   const [commentary, setCommentary] = useState(
     entry?.performance_commentary ?? "",
   );
+  const [entryDate, setEntryDate] = useState(
+    entry?.entry_date?.slice(0, 10) ?? "",
+  );
 
   if (!entry) return null;
 
@@ -57,6 +60,14 @@ export function CorrectEntryModal({ entry, onClose }: Props) {
     calc === "Percentage - Ratio" || calc === "Ratio" || calc === "Difference";
   const usesComponents =
     calc === "Average" || calc === "Sum" || calc === "Weighted Average";
+
+  const periodStart = entry.period_start?.slice(0, 10);
+  const periodEnd = entry.period_end?.slice(0, 10);
+  const entryDateValid =
+    type === "reversal" ||
+    (!!entryDate &&
+      (!periodStart || entryDate >= periodStart) &&
+      (!periodEnd || entryDate <= periodEnd));
 
   const valuesValid =
     type === "reversal" ||
@@ -67,7 +78,7 @@ export function CorrectEntryModal({ entry, onClose }: Props) {
       : usesComponents
         ? components.length > 0
         : numOrUndefined(direct) !== undefined);
-  const canSubmit = reason.trim() !== "" && valuesValid;
+  const canSubmit = reason.trim() !== "" && valuesValid && entryDateValid;
 
   const submit = async () => {
     await createCorrection.mutateAsync({
@@ -75,6 +86,7 @@ export function CorrectEntryModal({ entry, onClose }: Props) {
       data: {
         correction_type: type,
         reason: reason.trim(),
+        entry_date: entryDate,
         direct_actual_value:
           usesRatio || usesComponents ? undefined : numOrUndefined(direct),
         numerator_value: usesRatio ? numOrUndefined(numerator) : undefined,
@@ -136,6 +148,22 @@ export function CorrectEntryModal({ entry, onClose }: Props) {
           )}
           {typeButton("reversal", "Reversal", "Cancel this entry entirely")}
         </div>
+
+        {type === "adjustment" && (
+          <Input
+            label="Entry Date *"
+            type="date"
+            value={entryDate}
+            min={periodStart}
+            max={periodEnd}
+            onChange={(e) => setEntryDate(e.target.value)}
+            error={
+              entryDate && !entryDateValid
+                ? "Must fall within the entry's reporting period"
+                : undefined
+            }
+          />
+        )}
 
         {type === "adjustment" &&
           (usesRatio ? (

@@ -78,58 +78,43 @@ function lastDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
-// Best-effort client-side preview of the period's start/end dates — the
-// backend is the source of truth and computes these itself on save
-// (KpiEntryRequest carries no period_start_date/period_end_date field), so
-// this exists purely to render the "derived" read-only preview the mockup
-// shows before the entry is ever created.
-function derivePeriodRange(
+function isoDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// The period's first and last day ("YYYY-MM-DD"), computed client-side for
+// the read-only Period Start/End preview and to bound the Entry Date picker.
+// The backend recomputes and validates the period itself on save.
+function derivePeriodDates(
   year: number,
   periodCode: string,
   frequency?: string,
 ): { start: string; end: string } | null {
   if (!periodCode || !year) return null;
   const custom = parseCustomPeriod(periodCode);
-  if (custom) {
-    const [sy, sm, sd] = custom.start.split("-").map(Number);
-    const [ey, em, ed] = custom.end.split("-").map(Number);
-    return { start: formatDMY(sy, sm, sd), end: formatDMY(ey, em, ed) };
-  }
+  if (custom) return custom;
   const freq = frequency ?? "monthly";
   const code = periodCode.toLowerCase();
+  const range = (startMonth: number, endMonth: number) => ({
+    start: isoDate(year, startMonth, 1),
+    end: isoDate(year, endMonth, lastDayOfMonth(year, endMonth)),
+  });
   if (freq === "monthly") {
     const idx = REPORTING_MONTHS.findIndex((m) => m.toLowerCase() === code);
-    if (idx === -1) return null;
-    const month = idx + 1;
-    return {
-      start: formatDMY(year, month, 1),
-      end: formatDMY(year, month, lastDayOfMonth(year, month)),
-    };
+    return idx === -1 ? null : range(idx + 1, idx + 1);
   }
   if (freq === "quarterly") {
     const idx = REPORTING_QUARTERS.findIndex((q) => q.toLowerCase() === code);
-    if (idx === -1) return null;
-    const startMonth = idx * 3 + 1;
-    const endMonth = startMonth + 2;
-    return {
-      start: formatDMY(year, startMonth, 1),
-      end: formatDMY(year, endMonth, lastDayOfMonth(year, endMonth)),
-    };
+    return idx === -1 ? null : range(idx * 3 + 1, idx * 3 + 3);
   }
   if (freq === "semi_annual" || freq === "semiannual") {
     const idx = REPORTING_SEMI_ANNUALS.findIndex(
       (h) => h.toLowerCase() === code,
     );
-    if (idx === -1) return null;
-    const startMonth = idx === 0 ? 1 : 7;
-    const endMonth = idx === 0 ? 6 : 12;
-    return {
-      start: formatDMY(year, startMonth, 1),
-      end: formatDMY(year, endMonth, lastDayOfMonth(year, endMonth)),
-    };
+    return idx === -1 ? null : range(idx * 6 + 1, idx * 6 + 6);
   }
   if (freq === "annually" || freq === "annual") {
-    return { start: formatDMY(year, 1, 1), end: formatDMY(year, 12, 31) };
+    return range(1, 12);
   }
   return null;
 }
@@ -380,6 +365,9 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     useState<KpiDataSourceType>("Manual");
   const [sourceReference, setSourceReference] = useState("");
   const [dataCutoffDate, setDataCutoffDate] = useState("");
+  // The date the value was actually recorded ("YYYY-MM-DD"), within the
+  // period — separate from the record's creation timestamp.
+  const [entryDate, setEntryDate] = useState("");
   const [dataQualityStatus, setDataQualityStatus] =
     useState<KpiDataQualityStatus>("Complete");
   const [dataQualityNotes, setDataQualityNotes] = useState("");
@@ -627,13 +615,24 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     [actualCalc.value, targetVal, direction],
   );
 
-  const periodPreview =
-    isEditMode && entry
+  // ISO first/last day of the selected period; bounds the Entry Date.
+  const periodDates =
+    isEditMode && entry && entry.period_start && entry.period_end
       ? {
-          start: formatDateDMY(entry.period_start),
-          end: formatDateDMY(entry.period_end),
+          start: entry.period_start.slice(0, 10),
+          end: entry.period_end.slice(0, 10),
         }
-      : derivePeriodRange(reportingYear, periodCode, reportingFrequency);
+      : derivePeriodDates(reportingYear, periodCode, reportingFrequency);
+  const periodPreview = periodDates
+    ? {
+        start: formatDateDMY(periodDates.start),
+        end: formatDateDMY(periodDates.end),
+      }
+    : null;
+  const entryDateOutsidePeriod =
+    !!entryDate &&
+    !!periodDates &&
+    (entryDate < periodDates.start || entryDate > periodDates.end);
 
   const resetForm = () => {
     setReportingYear(new Date().getFullYear());
@@ -645,6 +644,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     setDataSourceType("Manual");
     setSourceReference("");
     setDataCutoffDate("");
+    setEntryDate("");
     setDataQualityStatus("Complete");
     setDataQualityNotes("");
     setPerformanceCommentary("");
@@ -681,6 +681,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
       setDataCutoffDate(
         entry.data_cutoff_date ? entry.data_cutoff_date.slice(0, 10) : "",
       );
+      setEntryDate(entry.entry_date ? entry.entry_date.slice(0, 10) : "");
       setDataQualityStatus(entry.data_quality_status);
       setDataQualityNotes(entry.data_quality_notes ?? "");
       setPerformanceCommentary(entry.performance_commentary ?? "");
@@ -741,6 +742,14 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
       toast.error("Reporting period is required");
       return;
     }
+    if (!entryDate) {
+      toast.error("Entry Date is required");
+      return;
+    }
+    if (entryDateOutsidePeriod) {
+      toast.error("Entry Date must fall within the selected reporting period");
+      return;
+    }
     if (!sourceReference.trim()) {
       toast.error("Source system / reference is required");
       return;
@@ -794,6 +803,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
       metric_id: metric?.id ?? "",
       reporting_year: reportingYear,
       period_code: periodCode,
+      entry_date: entryDate,
       data_source_type: dataSourceType,
       source_reference: sourceReference.trim(),
       data_cutoff_date: dataCutoffDate,
@@ -1053,6 +1063,31 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 label="Period End"
                 value={periodPreview?.end ?? "—"}
               />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className={labelClass}>
+                  Entry Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={entryDate}
+                  min={periodDates?.start}
+                  max={periodDates?.end}
+                  disabled={!periodDates}
+                  title={
+                    periodDates ? undefined : "Select a reporting period first"
+                  }
+                  onChange={(e) => setEntryDate(e.target.value)}
+                  className={inputClass}
+                />
+                {entryDateOutsidePeriod && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    Must be between {periodPreview?.start} and{" "}
+                    {periodPreview?.end}
+                  </p>
+                )}
+              </div>
             </div>
           </SectionCard>
 

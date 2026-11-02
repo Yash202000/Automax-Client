@@ -42,7 +42,11 @@ import type {
   KpiWorkflowAction,
   WorkflowTransitionBrief,
 } from "../../../types/kpi";
-import { periodCodeLabel, periodWithYear } from "../../../types/kpi";
+import {
+  formatEntryDate,
+  periodCodeLabel,
+  periodWithYear,
+} from "../../../types/kpi";
 
 const entryStatusColor: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
@@ -284,6 +288,10 @@ function EntryDetailModal({
             <DetailRow
               label="Period"
               value={periodCodeLabel(entry.period_code)}
+            />
+            <DetailRow
+              label="Entry Date"
+              value={formatEntryDate(entry.entry_date)}
             />
             <DetailRow
               label="Period Start"
@@ -738,6 +746,9 @@ export const KpiEntriesPage: React.FC = () => {
                       Year / Period
                     </th>
                     <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Entry Date
+                    </th>
+                    <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Actual
                     </th>
                     <th className="px-6 py-3 ltr:text-left rtl:text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -768,6 +779,9 @@ export const KpiEntriesPage: React.FC = () => {
                       <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300">
                         {entry.reporting_year} /{" "}
                         {periodCodeLabel(entry.period_code)}
+                      </td>
+                      <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {formatEntryDate(entry.entry_date)}
                       </td>
                       <td className="px-6 py-4 text-sm tabular-nums text-slate-700 dark:text-slate-300">
                         {entry.actual_value}

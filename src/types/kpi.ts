@@ -1278,6 +1278,9 @@ export interface KpiEntry {
   period_code: string;
   period_start: string;
   period_end: string;
+  // Date the value was actually recorded; null on entries created before
+  // the field existed.
+  entry_date?: string | null;
   calculation_type_snapshot: KpiCalculationType;
   direction_snapshot: KpiDirection;
   unit_snapshot: string;
@@ -1325,6 +1328,7 @@ export interface KpiEntryRequest {
   metric_id: string;
   reporting_year: number;
   period_code: string;
+  entry_date: string;
   direct_actual_value?: number;
   numerator_value?: number;
   denominator_value?: number;
@@ -1488,6 +1492,18 @@ const formatDayMonth = (iso: string, withYear: boolean) => {
     ...(withYear ? { year: "numeric" } : {}),
   });
 };
+
+// "05 Jan 2026" for an Entry Date (or any "YYYY-MM-DD…" date), read as a
+// calendar date so it never shifts a day with the viewer's time zone.
+export function formatEntryDate(iso?: string | null): string {
+  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "—";
+  const month = new Date(Date.UTC(2000, Number(m[2]) - 1, 1)).toLocaleString(
+    "en-US",
+    { month: "short", timeZone: "UTC" },
+  );
+  return `${m[3]} ${month} ${m[1]}`;
+}
 
 // "15 Feb – 15 Mar 2026" for a custom range; the code itself otherwise.
 export function periodCodeLabel(code: string): string {
