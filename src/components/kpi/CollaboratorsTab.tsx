@@ -95,24 +95,32 @@ export const CollaboratorsTab: React.FC<Props> = ({
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // When editing, the assigned user may fall outside the department filter.
-  // Keep them in the dropdown so the Select doesn't render blank.
-  const editingUser = editingId
-    ? assignments.find((a) => a.id === editingId)?.user
+  // When editing, the assigned user and delegate user may fall outside the
+  // department filter. Include them so the Select doesn't render blank.
+  const editingAssignment = editingId
+    ? assignments.find((a) => a.id === editingId)
     : undefined;
   const userOptions = React.useMemo(() => {
     const opts = users.map((u: any) => ({
       value: u.id,
       label: `${u.first_name} ${u.last_name} (${u.email})`,
     }));
-    if (editingUser && !users.some((u: any) => u.id === editingUser.id)) {
-      opts.unshift({
-        value: editingUser.id,
-        label: `${editingUser.first_name} ${editingUser.last_name} (${editingUser.email})`,
-      });
+    const existingIds = new Set(users.map((u: any) => u.id));
+    const extraUsers = [
+      editingAssignment?.user,
+      editingAssignment?.delegate_for_user,
+    ].filter(Boolean);
+    for (const u of extraUsers) {
+      if (u && !existingIds.has(u.id)) {
+        opts.push({
+          value: u.id,
+          label: `${u.first_name} ${u.last_name} (${u.email})`,
+        });
+        existingIds.add(u.id);
+      }
     }
     return opts;
-  }, [users, editingUser, editingId]);
+  }, [users, editingAssignment]);
 
   const emptyForm: KpiCollaboratorAssignmentRequest = {
     user_id: "",
