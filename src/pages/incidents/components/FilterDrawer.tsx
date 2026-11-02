@@ -104,7 +104,7 @@ function SelectBox({
           {label}
         </label>
         {selectedText ? (
-          <span className="text-[10px] text-cyan-700 dark:text-cyan-400 font-mono">
+          <span className="text-[10px] text-primary font-mono">
             {selectedText}
           </span>
         ) : null}
@@ -112,14 +112,14 @@ function SelectBox({
       <div className="relative space-y-1.5">
         <div
           onClick={onToggle}
-          className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-cyan-500/50 rounded-lg p-1.5 text-xs flex items-center justify-between text-[hsl(var(--foreground))] cursor-pointer shadow-inner min-h-[34px] transition-all gap-1"
+          className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-primary/50 rounded-lg p-1.5 text-xs flex items-center justify-between text-[hsl(var(--foreground))] cursor-pointer shadow-inner min-h-[34px] transition-all gap-1"
         >
           <div className="flex items-center gap-1 flex-wrap min-w-0 flex-1">
             {trigger}
           </div>
           <div className="flex items-center gap-1 shrink-0 ps-1">
             {badge != null && badge > 0 ? (
-              <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[9px] font-mono flex items-center justify-center font-bold">
+              <span className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] font-mono flex items-center justify-center font-bold">
                 {badge}
               </span>
             ) : null}
@@ -127,7 +127,7 @@ function SelectBox({
           </div>
         </div>
         {isOpen ? (
-          <div className="bg-[hsl(var(--card))] border border-cyan-500/30 rounded-lg shadow-2xl p-2 space-y-2 z-20">
+          <div className="bg-[hsl(var(--card))] border border-primary/30 rounded-lg shadow-2xl p-2 space-y-2 z-20">
             {dropdown}
           </div>
         ) : null}
@@ -147,7 +147,7 @@ function DropSearch({
     <div className="relative">
       <input
         onChange={(e) => onSearch(e.target.value)}
-        className="w-full bg-[hsl(var(--muted)/0.9)] border border-[hsl(var(--border))] rounded-md py-1 ps-6 pe-2 text-[11px] text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+        className="w-full bg-[hsl(var(--muted)/0.9)] border border-[hsl(var(--border))] rounded-md py-1 ps-6 pe-2 text-[11px] text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         placeholder={placeholder}
         type="text"
       />
@@ -202,7 +202,7 @@ function TreeView({
                   aria-label={
                     isCollapsed ? t("common.expand") : t("common.collapse")
                   }
-                  className="w-4 h-4 flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 shrink-0"
+                  className="w-4 h-4 flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-primary shrink-0"
                 >
                   {isCollapsed ? (
                     <ChevronRight className="h-2.5 w-2.5 rtl:rotate-180" />
@@ -216,7 +216,7 @@ function TreeView({
               <input
                 checked={checked}
                 onChange={() => onToggle(n.id)}
-                className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                 type="checkbox"
               />
               <span
@@ -225,7 +225,7 @@ function TreeView({
                   depth === 0
                     ? "font-semibold text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--foreground))]"
                     : checked
-                      ? "text-cyan-700 dark:text-cyan-300 font-medium group-hover:text-[hsl(var(--foreground))]"
+                      ? "text-primary font-medium group-hover:text-[hsl(var(--foreground))]"
                       : "text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))]",
                 )}
               >
@@ -543,7 +543,7 @@ export function FilterDrawer({
       {/* header */}
       <div className="h-12 flex items-center justify-between px-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.9)] shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-cyan-500/10 dark:bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-center text-cyan-700 dark:text-cyan-400">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
             <svg
               viewBox="0 0 24 24"
               className="h-3.5 w-3.5 fill-none stroke-current"
@@ -563,7 +563,7 @@ export function FilterDrawer({
             type="button"
             onClick={onReset}
             title={t("common.clearFilters")}
-            className="text-[11px] text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 px-2 py-1 rounded transition-colors"
+            className="text-[11px] text-[hsl(var(--muted-foreground))] hover:text-primary px-2 py-1 rounded transition-colors"
           >
             {t("common.reset")}
           </button>
@@ -596,9 +596,9 @@ export function FilterDrawer({
                       key={id}
                       className={
                         opt?.pill ||
-                        "bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                        "bg-primary/10 border border-primary/40 text-primary"
                       }
-                      dotClass={opt?.dot || "bg-cyan-400"}
+                      dotClass={opt?.dot || "bg-primary"}
                       label={opt?.label || stateMap.get(id) || id}
                       onRemove={() => toggleId("stateIds", id)}
                     />
@@ -627,7 +627,7 @@ export function FilterDrawer({
                       <input
                         checked={draft.stateIds.includes(o.id)}
                         onChange={() => toggleId("stateIds", o.id)}
-                        className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                        className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                         type="checkbox"
                       />
                       <span
@@ -665,7 +665,7 @@ export function FilterDrawer({
           trigger={
             draft.transitionId ? (
               <Chip
-                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                className="bg-primary/10 border border-primary/40 text-primary"
                 label={
                   transitionOptions.find((o) => o.id === draft.transitionId)
                     ?.label || draft.transitionId
@@ -709,7 +709,7 @@ export function FilterDrawer({
                                 draft.transitionId === o.id ? undefined : o.id,
                             })
                           }
-                          className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                          className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                           type="checkbox"
                         />
                         <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -735,7 +735,7 @@ export function FilterDrawer({
                 {draft.assigneeIds.map((id) => (
                   <Chip
                     key={id}
-                    className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                    className="bg-primary/10 border border-primary/40 text-primary"
                     label={userMap.get(id) || id}
                     onRemove={() => toggleId("assigneeIds", id)}
                   />
@@ -762,7 +762,7 @@ export function FilterDrawer({
                     <input
                       checked={draft.assigneeIds.includes(o.id)}
                       onChange={() => toggleId("assigneeIds", o.id)}
-                      className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                      className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                       type="checkbox"
                     />
                     <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -801,7 +801,7 @@ export function FilterDrawer({
                 {draft.departmentIds.map((id) => (
                   <Chip
                     key={id}
-                    className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                    className="bg-primary/10 border border-primary/40 text-primary"
                     label={nodeLabel(deptNodes, id)}
                     onRemove={() => toggleId("departmentIds", id)}
                   />
@@ -851,7 +851,7 @@ export function FilterDrawer({
                 {draft.classificationIds.map((id) => (
                   <Chip
                     key={id}
-                    className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                    className="bg-primary/10 border border-primary/40 text-primary"
                     label={nodeLabel(classNodes, id)}
                     onRemove={() => toggleId("classificationIds", id)}
                   />
@@ -901,7 +901,7 @@ export function FilterDrawer({
                 {draft.locationIds.map((id) => (
                   <Chip
                     key={id}
-                    className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                    className="bg-primary/10 border border-primary/40 text-primary"
                     label={nodeLabel(locNodes, id)}
                     onRemove={() => toggleId("locationIds", id)}
                   />
@@ -967,7 +967,7 @@ export function FilterDrawer({
                                 : o.sortOrder,
                           })
                         }
-                        className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                        className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                         type="checkbox"
                       />
                       <span
@@ -1012,7 +1012,7 @@ export function FilterDrawer({
               onChange={(e) =>
                 patch({ startDate: e.target.value || undefined })
               }
-              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2 py-1.5 text-xs text-[hsl(var(--foreground))] focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2 py-1.5 text-xs text-[hsl(var(--foreground))] focus:ring-1 focus:ring-primary focus:border-primary outline-none"
               style={{ colorScheme: "dark" }}
               type="date"
             />
@@ -1025,7 +1025,7 @@ export function FilterDrawer({
               value={draft.endDate || ""}
               min={draft.startDate || undefined}
               onChange={(e) => patch({ endDate: e.target.value || undefined })}
-              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2 py-1.5 text-xs text-[hsl(var(--foreground))] focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2 py-1.5 text-xs text-[hsl(var(--foreground))] focus:ring-1 focus:ring-primary focus:border-primary outline-none"
               style={{ colorScheme: "dark" }}
               type="date"
             />
@@ -1043,7 +1043,7 @@ export function FilterDrawer({
                 className={
                   draft.sla === "breached"
                     ? "bg-rose-500/10 dark:bg-rose-950/50 border border-rose-500/40 text-rose-700 dark:text-rose-300"
-                    : "bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                    : "bg-primary/10 border border-primary/40 text-primary"
                 }
                 icon={
                   draft.sla === "breached" ? (
@@ -1078,7 +1078,7 @@ export function FilterDrawer({
                     onChange={() =>
                       patch({ sla: draft.sla === o.id ? undefined : o.id })
                     }
-                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                     type="checkbox"
                   />
                   <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -1101,7 +1101,7 @@ export function FilterDrawer({
               onChange={(e) =>
                 patch({ reporterPhone: e.target.value || undefined })
               }
-              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:ring-1 focus:ring-primary focus:border-primary outline-none"
               placeholder={t("incidents.reporterPhonePlaceholder")}
               type="tel"
             />
@@ -1116,7 +1116,7 @@ export function FilterDrawer({
           trigger={
             draft.workflowId ? (
               <Chip
-                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                className="bg-primary/10 border border-primary/40 text-primary"
                 label={
                   getLocalizedName(
                     workflowsData?.find((w) => w.id === draft.workflowId),
@@ -1143,7 +1143,7 @@ export function FilterDrawer({
                           draft.workflowId === w.id ? undefined : w.id,
                       })
                     }
-                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                     type="checkbox"
                   />
                   <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -1168,7 +1168,7 @@ export function FilterDrawer({
           trigger={
             draft.source ? (
               <Chip
-                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                className="bg-primary/10 border border-primary/40 text-primary"
                 label={
                   sourceOptions.find((s) => s.value === draft.source)?.label ||
                   draft.source
@@ -1193,7 +1193,7 @@ export function FilterDrawer({
                         source: draft.source === s.value ? undefined : s.value,
                       })
                     }
-                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                     type="checkbox"
                   />
                   <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -1219,7 +1219,7 @@ export function FilterDrawer({
             <input
               value={draft.momraRef || ""}
               onChange={(e) => patch({ momraRef: e.target.value || undefined })}
-              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+              className="w-full bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] hover:border-[hsl(var(--border))] rounded-lg px-2.5 py-1.5 text-xs text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:ring-1 focus:ring-primary focus:border-primary outline-none"
               placeholder={t(
                 "incidents.momraRefNumPlaceholder",
                 "Enter MOMRA reference number",
@@ -1236,7 +1236,7 @@ export function FilterDrawer({
           trigger={
             draft.convertedToRequest !== undefined ? (
               <Chip
-                className="bg-cyan-500/10 dark:bg-cyan-950/60 border border-cyan-500/40 text-cyan-700 dark:text-cyan-300"
+                className="bg-primary/10 border border-primary/40 text-primary"
                 label={
                   draft.convertedToRequest ? t("common.yes") : t("common.no")
                 }
@@ -1260,7 +1260,7 @@ export function FilterDrawer({
                         draft.convertedToRequest === true ? undefined : true,
                     })
                   }
-                  className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                  className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                   type="checkbox"
                 />
                 <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -1279,7 +1279,7 @@ export function FilterDrawer({
                         draft.convertedToRequest === false ? undefined : false,
                     })
                   }
-                  className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer accent-cyan-500 shrink-0"
+                  className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
                   type="checkbox"
                 />
                 <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
@@ -1303,7 +1303,7 @@ export function FilterDrawer({
         <button
           type="button"
           onClick={onApply}
-          className="flex-1 py-1.5 px-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-semibold transition-all shadow-md shadow-cyan-950/40 flex items-center justify-center gap-1.5"
+          className="flex-1 py-1.5 px-3 bg-linear-to-r rtl:bg-linear-to-l from-primary to-accent text-primary-foreground rounded-lg text-xs font-semibold transition-all shadow-lg shadow-primary/0.25 hover:shadow-xl hover:shadow-[hsl(var(--primary)/0.3)] flex items-center justify-center gap-1.5"
         >
           <Check className="h-3 w-3" />
           {t("incidents.applyFilters")}

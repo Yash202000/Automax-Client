@@ -53,6 +53,7 @@ interface AddEntryModalProps {
   // createEntry (POST). Only draft entries should ever be passed here — the
   // backend enforces that anyway and returns a 403 otherwise.
   entry?: KpiEntry | null;
+  targetRequirement?: string;
 }
 
 // ─── Formatting helpers ─────────────────────────────────────────────────────
@@ -337,6 +338,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   onClose,
   onSuccess,
   entry,
+  targetRequirement,
 }) => {
   const isEditMode = !!entry;
   const createEntry = useCreateKpiEntry(kpiType, kpiId);
@@ -508,7 +510,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   // hits submit rather than only after a server error.
   const targetLookupResolved =
     targetLookupEnabled && liveTargetsRes !== undefined;
-  const noApprovedTargetForPeriod = targetLookupResolved && !approvedTarget;
+  const noApprovedTargetForPeriod =
+    targetLookupResolved && !approvedTarget && targetRequirement !== "optional";
 
   const targetVal: number | undefined =
     isEditMode && entry

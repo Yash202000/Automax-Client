@@ -20,7 +20,7 @@ import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { StrategicKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
@@ -46,6 +46,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
     operational_objective_id: "",
     process_id: "",
     award_sub_criterion_id: "",
+    classification: "",
     pillar_id: "",
     owner_type: "internal" as KPIOwnerType,
     owner_dept_id: "",
@@ -54,6 +55,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
     related_units: "",
     documenta_folder_id: "",
     polarity: "ascending",
+    target_requirement: "mandatory",
     reporting_frequency: "quarterly",
     baseline: 0,
     unit_of_measure: "",
@@ -89,6 +91,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
       operational_objective_id: kpi.operational_objective_id ?? "",
       process_id: kpi.process_id ?? "",
       award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      classification: kpi.classification || "",
       pillar_id: kpi.pillar_id ?? "",
       owner_type: kpi.owner_type ?? "internal",
       owner_dept_id: kpi.owner_dept_id ?? "",
@@ -97,6 +100,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
       related_units: kpi.related_units ?? "",
       documenta_folder_id: kpi.documenta_folder_id ?? "",
       polarity: kpi.polarity,
+      target_requirement: kpi.target_requirement || "mandatory",
       reporting_frequency: kpi.reporting_frequency ?? "quarterly",
       baseline: kpi.baseline,
       unit_of_measure: kpi.unit_of_measure ?? "",
@@ -135,6 +139,7 @@ export const KpiDictionaryFormPage: React.FC = () => {
       baseline: Number(form.baseline),
       pillar_id: form.pillar_id || undefined,
       award_sub_criterion_id: form.award_sub_criterion_id || undefined,
+      classification: form.classification || undefined,
       owner_dept_id: form.owner_dept_id || undefined,
       owning_agency_id: form.owning_agency_id || undefined,
       owner_org_id:
@@ -308,6 +313,24 @@ export const KpiDictionaryFormPage: React.FC = () => {
             </div>
           </div>
 
+          <Select
+            label={t("kpi.dictionary.fieldClassification")}
+            value={form.classification}
+            onChange={handleChange("classification")}
+            options={[
+              { value: "kpi", label: i18n.language === "ar" ? "مؤشر" : "KPI" },
+              {
+                value: "measurement",
+                label: i18n.language === "ar" ? "مقياس" : "Measurement",
+              },
+              {
+                value: "output",
+                label: i18n.language === "ar" ? "مخرج" : "Output",
+              },
+            ]}
+            placeholder={t("kpi.dictionary.selectClassification")}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
               label={t("kpi.dictionary.fieldPolarity")}
@@ -318,6 +341,26 @@ export const KpiDictionaryFormPage: React.FC = () => {
               options={[
                 { value: "ascending", label: "Ascending" },
                 { value: "descending", label: "Descending" },
+              ]}
+            />
+            <Select
+              label={t("kpi.dictionary.fieldTargetRequirement")}
+              value={form.target_requirement}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  target_requirement: v.target.value,
+                }))
+              }
+              options={[
+                {
+                  value: "mandatory",
+                  label: t("kpi.dictionary.targetMandatory"),
+                },
+                {
+                  value: "optional",
+                  label: t("kpi.dictionary.targetOptional"),
+                },
               ]}
             />
             <Select

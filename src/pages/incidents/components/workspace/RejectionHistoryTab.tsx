@@ -205,7 +205,7 @@ export function RejectionHistoryTab({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 p-2.5 bg-[hsl(var(--muted)/0.6)] rounded-lg border border-[hsl(var(--border))] text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-7 h-7 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center shrink-0">
-                      <User className="h-3.5 w-3.5 text-cyan-700 dark:text-cyan-400" />
+                      <User className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <div className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider">

@@ -32,6 +32,8 @@ import { goalApi } from "../../api/goals";
 import { exportGoalsToXlsx } from "../../utils/goalExport";
 import type { GoalFilter, Goal } from "../../types/goal";
 import { useGoalListWebSocket } from "../../lib/services/goalListWebSocket";
+import { isHiddenModulePath } from "../../constants/hiddenModules";
+import { ModuleLink } from "../../components/common/ModuleLink";
 
 function ExportDropdown({ filters }: { filters: GoalFilter }) {
   const { t } = useTranslation();
@@ -228,13 +230,13 @@ export const GoalsPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
+          <ModuleLink
             to="/goals/templates"
             className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
           >
             <LayoutTemplate className="w-4 h-4" />
             {t("goals.templates.title")}
-          </Link>
+          </ModuleLink>
           {canCreate && (
             <button
               onClick={() => setShowImportModal(true)}
@@ -244,13 +246,15 @@ export const GoalsPage: React.FC = () => {
               {t("goals.import")}
             </button>
           )}
-          <button
-            onClick={() => setShowMetricImportModal(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            {t("goals.metricImport.title")}
-          </button>
+          {!isHiddenModulePath("/goals/metric-batches") && (
+            <button
+              onClick={() => setShowMetricImportModal(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              {t("goals.metricImport.title")}
+            </button>
+          )}
           <ExportDropdown filters={effectiveFilters} />
           {canCreate && (
             <Link

@@ -171,9 +171,7 @@ function VisitNumberChipGroup({
     <div>
       <span className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
         {categoryLabel}{" "}
-        <span className="text-cyan-700 dark:text-cyan-400 normal-case">
-          ({values.length})
-        </span>
+        <span className="text-primary normal-case">({values.length})</span>
       </span>
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <span
@@ -210,7 +208,7 @@ function VisitNumberChipGroup({
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="text-[11px] text-cyan-700 dark:text-cyan-400 hover:underline"
+              className="text-[11px] text-primary hover:underline"
             >
               +{rest.length} {t("common.more", "more")}
             </button>
@@ -470,7 +468,7 @@ export function DetailsTab({
           >
             <div className="flex justify-between items-center mb-1.5">
               <h3 className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                <FileText className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                <FileText className="h-2.5 w-2.5 text-primary" />{" "}
                 {t("incidents.incidentDescription")}
               </h3>
               <div className="flex items-center gap-1.5">
@@ -481,7 +479,7 @@ export function DetailsTab({
                       setEditedDescription(incident.description || "");
                       setIsEditingDescription(true);
                     }}
-                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 transition-colors"
+                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-primary transition-colors"
                     title={t("incidents.editDescription")}
                     disabled={isSavingDescription}
                   >
@@ -512,7 +510,7 @@ export function DetailsTab({
                   autoFocus
                   disabled={isSavingDescription}
                   rows={4}
-                  className="text-[hsl(var(--muted-foreground))] text-xs leading-relaxed bg-[hsl(var(--muted)/0.5)] p-2.5 rounded-lg border border-[hsl(var(--border))] focus:border-cyan-500/60 focus:outline-none mb-2.5 whitespace-pre-wrap w-full resize-none"
+                  className="text-[hsl(var(--muted-foreground))] text-xs leading-relaxed bg-[hsl(var(--muted)/0.5)] p-2.5 rounded-lg border border-[hsl(var(--border))] focus:border-primary/60 focus:outline-none mb-2.5 whitespace-pre-wrap w-full resize-none"
                   placeholder={t("incidents.enterDescription")}
                 />
                 {isSavingDescription ? (
@@ -534,7 +532,7 @@ export function DetailsTab({
             <div className="mb-2.5 border-b border-[hsl(var(--border))]" />
             <div className="flex items-center justify-between mb-1.5">
               <h4 className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                <Paperclip className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                <Paperclip className="h-2.5 w-2.5 text-primary" />{" "}
                 {t("incidents.attachments")}{" "}
                 <span className="text-[hsl(var(--muted-foreground))] font-normal text-[11px]">
                   (
@@ -557,7 +555,7 @@ export function DetailsTab({
                   return (
                     <div
                       key={att.id}
-                      className="bg-[hsl(var(--muted)/0.7)] rounded-lg border border-[hsl(var(--border))] overflow-hidden hover:border-cyan-500/40 transition-all group"
+                      className="bg-[hsl(var(--muted)/0.7)] rounded-lg border border-[hsl(var(--border))] overflow-hidden hover:border-primary/40 transition-all group"
                     >
                       <div
                         className={cn(
@@ -592,7 +590,7 @@ export function DetailsTab({
                           href={getAttachmentUrl(att.id)}
                           download={att.file_name}
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute bottom-1 end-1 bg-[hsl(var(--muted)/0.9)] hover:bg-cyan-600 text-slate-600 hover:text-white dark:text-white w-4 h-4 rounded flex items-center justify-center transition-colors shadow"
+                          className="absolute bottom-1 end-1 bg-[hsl(var(--muted)/0.9)] hover:bg-primary text-[hsl(var(--muted-foreground))] hover:text-primary-foreground w-4 h-4 rounded flex items-center justify-center transition-colors shadow"
                           title={t("common.download")}
                         >
                           <Download className="h-2 w-2" />
@@ -653,7 +651,7 @@ export function DetailsTab({
                 </p>
               </div>
             )}
-            <div className="absolute bottom-1 end-2 bg-[hsl(var(--muted)/0.9)] border border-[hsl(var(--border))] rounded px-1.5 py-0.5 text-[9px] font-mono text-cyan-700 dark:text-cyan-300 shadow z-10 pointer-events-none">
+            <div className="absolute bottom-1 end-2 bg-[hsl(var(--muted)/0.9)] border border-[hsl(var(--border))] rounded px-1.5 py-0.5 text-[9px] font-mono text-primary shadow z-10 pointer-events-none">
               GIS {coords}
             </div>
             {hasCoords ? (
@@ -669,7 +667,7 @@ export function DetailsTab({
           </div>
           <div className="p-2 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.4)]">
             <div className="flex items-start gap-2">
-              <div className="w-5 h-5 rounded bg-cyan-500/10 dark:bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-center shrink-0 mt-0.5 text-cyan-700 dark:text-cyan-400">
+              <div className="w-5 h-5 rounded bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 mt-0.5 text-primary">
                 <MapPin className="h-2.5 w-2.5" />
               </div>
               <div className="min-w-0">
@@ -691,7 +689,7 @@ export function DetailsTab({
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3.5 flex flex-col shadow-sm justify-start min-w-0">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-[hsl(var(--border))]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
                 <Phone className="h-3.5 w-3.5" />
               </div>
               <h3 className="text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider leading-none">
@@ -702,7 +700,7 @@ export function DetailsTab({
           <div className="flex flex-col gap-2 text-xs w-full">
             <div className="bg-[hsl(var(--muted)/0.6)] border border-[hsl(var(--border))] rounded-lg p-2.5 flex flex-col space-y-2 hover:border-[hsl(var(--border))] transition-all justify-start w-full">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-mono font-semibold text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 dark:bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-mono font-semibold text-primary bg-primary/10 border border-primary/30 px-1.5 py-0.5 rounded">
                   <Phone className="h-2 w-2" /> {t("incidents.caller")}
                 </span>
               </div>
@@ -726,7 +724,7 @@ export function DetailsTab({
                   <div className="flex items-center justify-between gap-1 mt-0.5">
                     {showCallerInfo && incident.reporter_phone ? (
                       <a
-                        className="text-cyan-700 dark:text-cyan-400 font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
+                        className="text-primary font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
                         href={`tel:${incident.reporter_phone}`}
                       >
                         <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
@@ -764,7 +762,7 @@ export function DetailsTab({
                   </span>
                   {showCallerInfo && incident.reporter_email ? (
                     <a
-                      className="text-[hsl(var(--foreground))] font-mono text-[11px] font-medium hover:text-cyan-700 dark:text-cyan-300 hover:underline truncate block leading-tight mt-0.5"
+                      className="text-[hsl(var(--foreground))] font-mono text-[11px] font-medium hover:text-primary hover:underline truncate block leading-tight mt-0.5"
                       href={`mailto:${incident.reporter_email}`}
                       title={incident.reporter_email}
                     >
@@ -780,8 +778,8 @@ export function DetailsTab({
             </div>
             <div className="bg-[hsl(var(--muted)/0.6)] border border-[hsl(var(--border))] rounded-lg p-2.5 flex flex-col space-y-2 hover:border-[hsl(var(--border))] transition-all justify-start w-full">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-mono font-semibold text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 dark:bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded">
-                  <User className="h-2 w-2 text-cyan-700 dark:text-cyan-400" />{" "}
+                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-mono font-semibold text-primary bg-primary/10 border border-primary/30 px-1.5 py-0.5 rounded">
+                  <User className="h-2 w-2 text-primary" />{" "}
                   {t("incidents.reporter")}
                 </span>
               </div>
@@ -801,7 +799,7 @@ export function DetailsTab({
                   <div className="flex items-center justify-between gap-1 mt-0.5">
                     {reporterPhone ? (
                       <a
-                        className="text-cyan-700 dark:text-cyan-400 font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
+                        className="text-primary font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
                         href={`tel:${reporterPhone}`}
                       >
                         <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
@@ -832,7 +830,7 @@ export function DetailsTab({
                   {reporterAltPhone ? (
                     <div className="flex items-center justify-between gap-1 mt-1">
                       <a
-                        className="text-cyan-700 dark:text-cyan-400 font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
+                        className="text-primary font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
                         href={`tel:${reporterAltPhone}`}
                         title={t(
                           "users.alternateMobile",
@@ -851,7 +849,7 @@ export function DetailsTab({
                   </span>
                   {reporterEmail ? (
                     <a
-                      className="text-[hsl(var(--foreground))] font-mono text-[11px] font-medium hover:text-cyan-700 dark:text-cyan-300 hover:underline truncate block leading-tight mt-0.5"
+                      className="text-[hsl(var(--foreground))] font-mono text-[11px] font-medium hover:text-primary hover:underline truncate block leading-tight mt-0.5"
                       href={`mailto:${reporterEmail}`}
                       title={reporterEmail}
                     >
@@ -872,7 +870,7 @@ export function DetailsTab({
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3.5 flex flex-col justify-between shadow-sm min-w-0">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-[hsl(var(--border))]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
                 <BadgeCheck className="h-3.5 w-3.5" />
               </div>
               <h3 className="text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider leading-none">
@@ -990,7 +988,7 @@ export function DetailsTab({
       {mergedIncidents.length > 0 ? (
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3.5 shadow-sm min-w-0">
           <div className="flex items-center gap-2 pb-2 mb-2 border-b border-[hsl(var(--border))]">
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
               <GitMerge className="h-3.5 w-3.5" />
             </div>
             <h3 className="text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider leading-none">
@@ -1007,7 +1005,7 @@ export function DetailsTab({
                   <button
                     type="button"
                     onClick={() => navigate(`/incidents/${merged.id}`)}
-                    className="font-medium text-xs text-cyan-700 dark:text-cyan-400 hover:text-cyan-700 dark:text-cyan-300 hover:underline truncate block text-start"
+                    className="font-medium text-xs text-primary hover:text-primary hover:underline truncate block text-start"
                   >
                     {merged.incident_number} - {merged.title}
                   </button>
@@ -1168,7 +1166,7 @@ export function DetailsTab({
                       <span className="rounded bg-[hsl(var(--muted))] px-2 py-1 text-[11px] font-semibold text-[hsl(var(--foreground))]">
                         {item.classification_name}
                       </span>
-                      <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400">
+                      <span className="font-mono text-xs font-bold text-primary">
                         {item.incident_number}
                       </span>
                       <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -1264,7 +1262,7 @@ export function DetailsTab({
 
               <div className="rounded-lg bg-[hsl(var(--muted)/0.5)] border border-[hsl(var(--border))] p-4 text-sm">
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-cyan-700 dark:text-cyan-400 mt-0.5 shrink-0" />
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-medium text-[hsl(var(--foreground))]">
                       {Number(incident.latitude).toFixed(6)},{" "}

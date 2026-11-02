@@ -239,6 +239,7 @@ export interface KpiCardDef {
   baseline: number;
   unit_of_measure?: string;
   polarity: string;
+  target_requirement: string;
   reporting_frequency: string;
   data_source: string;
   strategic_goal?: string;
@@ -386,7 +387,9 @@ export interface StrategicKPI {
   process?: Process;
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
+  classification?: string;
   polarity: string;
+  target_requirement: string;
   activation_status: string;
   description_en: string;
   description_ar: string;
@@ -419,6 +422,7 @@ export interface OperationalKPI {
   pillar?: Pillar;
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
+  classification?: string;
   domain_id?: string;
   domain?: Domain;
   owner_type: KPIOwnerType;
@@ -429,6 +433,7 @@ export interface OperationalKPI {
   owning_agency_id?: string;
   owning_agency?: DepartmentBrief;
   polarity: string;
+  target_requirement: string;
   activation_status: string;
   description_en: string;
   description_ar: string;
@@ -465,6 +470,7 @@ export interface AwardKPI {
   process?: Process;
   award_sub_criterion_id?: string;
   award_sub_criterion?: AwardSubCriterion;
+  classification?: string;
   pillar_id?: string;
   pillar?: Pillar;
   domain_id?: string;
@@ -477,6 +483,7 @@ export interface AwardKPI {
   owning_agency_id?: string;
   owning_agency?: DepartmentBrief;
   polarity: string;
+  target_requirement: string;
   activation_status: string;
   description_en: string;
   description_ar: string;
@@ -758,7 +765,9 @@ export interface StrategicKPIRequest {
   operational_objective_id: string;
   process_id: string;
   award_sub_criterion_id?: string;
+  classification?: string;
   polarity?: string;
+  target_requirement?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -781,12 +790,14 @@ export interface OperationalKPIRequest {
   process_id: string;
   pillar_id?: string;
   award_sub_criterion_id?: string;
+  classification?: string;
   domain_id?: string;
   owner_type?: KPIOwnerType;
   owner_dept_id?: string;
   owner_org_id?: string;
   owning_agency_id?: string;
   polarity?: string;
+  target_requirement?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -807,6 +818,7 @@ export interface AwardKPIRequest {
   operational_objective_id: string;
   process_id: string;
   award_sub_criterion_id?: string;
+  classification?: string;
   pillar_id?: string;
   domain_id?: string;
   owner_type?: KPIOwnerType;
@@ -814,6 +826,7 @@ export interface AwardKPIRequest {
   owner_org_id?: string;
   owning_agency_id?: string;
   polarity?: string;
+  target_requirement?: string;
   description_en?: string;
   description_ar?: string;
   formula?: string;
@@ -1855,6 +1868,7 @@ export interface KpiCardResponse {
   related_units_label: string;
   formula: string;
   polarity: string;
+  target_requirement: string;
   unit_of_measure: string;
   baseline: number;
   target_plan: KpiCardTargetRow[];

@@ -4,7 +4,9 @@ import { useSettings } from "../../contexts/SettingsContext";
 import {
   Outlet,
   NavLink,
+  Navigate,
   useNavigate,
+  useLocation,
   Link,
   useSearchParams,
 } from "react-router-dom";
@@ -46,6 +48,8 @@ import {
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import ThemeToggle from "../common/ThemeToggle";
+import { ModuleNavLink } from "../common/ModuleLink";
+import { isHiddenModulePath } from "../../constants/hiddenModules";
 import { NotificationBell } from "../common/NotificationBell";
 import { SoftphoneButton } from "../sip/SoftphoneButton";
 
@@ -61,6 +65,7 @@ export const GoalLayout: React.FC = () => {
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const currentTab = searchParams.get("tab") || "";
   const isActiveMasterData = (tab: string) => {
@@ -212,7 +217,7 @@ export const GoalLayout: React.FC = () => {
           </NavLink>
 
           {/* OKR Alignment */}
-          <NavLink
+          <ModuleNavLink
             to="/goals/okr-alignment"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -230,11 +235,11 @@ export const GoalLayout: React.FC = () => {
                 )}
               </>
             )}
-          </NavLink>
+          </ModuleNavLink>
 
           {/* Reviews — review cycle administration, gated to approvers/admins */}
           {canManageReviews && (
-            <NavLink
+            <ModuleNavLink
               to="/goals/reviews"
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) => navLinkClass(isActive)}
@@ -252,12 +257,12 @@ export const GoalLayout: React.FC = () => {
                   )}
                 </>
               )}
-            </NavLink>
+            </ModuleNavLink>
           )}
 
           {/* Approvals */}
           {canApprove && (
-            <NavLink
+            <ModuleNavLink
               to="/goals/approvals"
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) => navLinkClass(isActive)}
@@ -275,13 +280,13 @@ export const GoalLayout: React.FC = () => {
                   )}
                 </>
               )}
-            </NavLink>
+            </ModuleNavLink>
           )}
 
           {/* Documents — workspace-wide DMS browser; contributors access their
               goal-linked evidence via the goal detail page instead. */}
           {canAdminGoals && (
-            <NavLink
+            <ModuleNavLink
               to="/goals/documents"
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) => navLinkClass(isActive)}
@@ -299,12 +304,12 @@ export const GoalLayout: React.FC = () => {
                   )}
                 </>
               )}
-            </NavLink>
+            </ModuleNavLink>
           )}
 
           {/* Metric Imports — bulk admin operation */}
           {canAdminGoals && (
-            <NavLink
+            <ModuleNavLink
               to="/goals/metric-batches"
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) => navLinkClass(isActive)}
@@ -322,11 +327,11 @@ export const GoalLayout: React.FC = () => {
                   )}
                 </>
               )}
-            </NavLink>
+            </ModuleNavLink>
           )}
 
           {/* Templates */}
-          <NavLink
+          <ModuleNavLink
             to="/goals/templates"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -344,7 +349,7 @@ export const GoalLayout: React.FC = () => {
                 )}
               </>
             )}
-          </NavLink>
+          </ModuleNavLink>
 
           {/* KPI Management */}
           <div className="mt-6 mb-2 px-3">
@@ -415,7 +420,7 @@ export const GoalLayout: React.FC = () => {
             )}
           </NavLink>
 
-          <NavLink
+          <ModuleNavLink
             to="/goals/kpi/performance"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -433,9 +438,9 @@ export const GoalLayout: React.FC = () => {
                 )}
               </>
             )}
-          </NavLink>
+          </ModuleNavLink>
 
-          <NavLink
+          <ModuleNavLink
             to="/goals/kpi/approvals"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -453,7 +458,7 @@ export const GoalLayout: React.FC = () => {
                 )}
               </>
             )}
-          </NavLink>
+          </ModuleNavLink>
 
           <NavLink
             to="/goals/kpi/benchmarks"
@@ -473,7 +478,7 @@ export const GoalLayout: React.FC = () => {
             )}
           </NavLink>
 
-          <NavLink
+          <ModuleNavLink
             to="/goals/kpi/segmentation"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -489,7 +494,7 @@ export const GoalLayout: React.FC = () => {
                 )}
               </>
             )}
-          </NavLink>
+          </ModuleNavLink>
 
           <NavLink
             to="/goals/kpi/report"
@@ -509,7 +514,7 @@ export const GoalLayout: React.FC = () => {
             )}
           </NavLink>
 
-          <NavLink
+          <ModuleNavLink
             to="/goals/kpi/performance-bands"
             onClick={() => setMobileMenuOpen(false)}
             className={({ isActive }) => navLinkClass(isActive)}
@@ -527,7 +532,7 @@ export const GoalLayout: React.FC = () => {
                 )}
               </>
             )}
-          </NavLink>
+          </ModuleNavLink>
 
           <NavLink
             to="/goals/kpi/entries"
@@ -652,6 +657,11 @@ export const GoalLayout: React.FC = () => {
       </div>
     </div>
   );
+
+  // Hidden modules (constants/hiddenModules) can't be opened by direct link.
+  if (isHiddenModulePath(pathname)) {
+    return <Navigate to="/goals" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-background">

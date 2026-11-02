@@ -83,7 +83,7 @@ export function NasaqTab({ incidentId }: { incidentId: string }) {
     <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-5 shadow-sm">
       <div className="space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-[hsl(var(--border))]">
-          <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
             <ShieldCheck className="h-3.5 w-3.5" />
           </div>
           <h3 className="text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider leading-none">
@@ -122,7 +122,7 @@ export function NasaqTab({ incidentId }: { incidentId: string }) {
             }}
             className="px-3.5 py-1.5 bg-[hsl(var(--muted)/0.9)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:text-[hsl(var(--foreground))] rounded-lg text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
           >
-            <ShieldCheck className="h-3.5 w-3.5 text-cyan-700 dark:text-cyan-400" />
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
             {t("incidents.verifyNasaq")}
           </button>
         ) : (
