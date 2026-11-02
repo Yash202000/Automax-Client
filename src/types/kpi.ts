@@ -500,6 +500,7 @@ export interface KpiTarget {
   approved_by?: UserBrief;
   approved_at?: string;
   supersedes_entry_id?: string;
+  version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -771,6 +772,8 @@ export interface KpiAnnualTargetRequest {
   effective_from?: string;
   effective_to?: string;
   target_status?: KpiTargetStatus;
+  // Creates a new version of this approved target (Supersede).
+  supersedes_target_id?: string;
 }
 
 export interface KpiPerformanceRequest {

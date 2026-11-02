@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Crosshair, Plus, AlertCircle, X, HelpCircle } from "lucide-react";
+import {
+  Crosshair,
+  Plus,
+  AlertCircle,
+  X,
+  HelpCircle,
+  History,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   useKpiTargets,
@@ -438,6 +445,10 @@ export const KpiTargetsPage: React.FC = () => {
   const formSectionRef = useRef<HTMLDivElement>(null);
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [editingTarget, setEditingTarget] = useState<KpiTarget | null>(null);
+  // The approved target a new revision (Supersede) replaces once approved.
+  const [supersedingTarget, setSupersedingTarget] = useState<KpiTarget | null>(
+    null,
+  );
   const [formKpiCode, setFormKpiCode] = useState("");
   const [formKpiType, setFormKpiType] = useState<string>("strategic");
   const [formMetricId, setFormMetricId] = useState("");
@@ -464,6 +475,11 @@ export const KpiTargetsPage: React.FC = () => {
   const [formStatus, setFormStatus] = useState<KpiTargetStatus>("draft");
 
   const formReadOnly = formMode === "view";
+  // A revision keeps the KPI, Metric and Period of the target it supersedes;
+  // only its values can change.
+  const isRevision =
+    !!supersedingTarget || !!editingTarget?.supersedes_entry_id;
+  const formScopeLocked = formReadOnly || isRevision;
 
   const { data: formMetrics } = useKpiMetricsByCode(formKpiCode || undefined);
 
@@ -556,6 +572,7 @@ export const KpiTargetsPage: React.FC = () => {
     setFormRangeMax("");
     setFormStatus("draft");
     setEditingTarget(null);
+    setSupersedingTarget(null);
   };
 
   const handleOpenCreate = () => {
@@ -615,10 +632,7 @@ export const KpiTargetsPage: React.FC = () => {
     scrollToForm();
   };
 
-  // Copy and Supersede both open a prefilled *new* draft target. The
-  // KpiAnnualTargetRequest payload has no supersedes_entry_id field to send,
-  // so a true supersession link can't be created from this form today —
-  // Supersede intentionally behaves like Copy until the backend exposes one.
+  // Copy opens a prefilled, unrelated new draft target.
   const handleCopyTarget = (target: KpiTarget) => {
     resetForm();
     populateFormFromTarget(target);
@@ -627,8 +641,12 @@ export const KpiTargetsPage: React.FC = () => {
     scrollToForm();
   };
 
+  // Supersede opens a prefilled new version of an approved target. It goes
+  // through approval like any target; the original stays approved (and
+  // unchanged) until the new version is approved, then becomes Superseded.
   const handleSupersedeTarget = (target: KpiTarget) => {
     handleCopyTarget(target);
+    setSupersedingTarget(target);
   };
 
   const handleCancelForm = () => {
@@ -703,6 +721,9 @@ export const KpiTargetsPage: React.FC = () => {
 
     if (status) {
       payload.target_status = status;
+    }
+    if (supersedingTarget && !editingTarget) {
+      payload.supersedes_target_id = supersedingTarget.id;
     }
 
     // Editing an existing target must PUT to it, not POST a new one —
@@ -968,6 +989,11 @@ export const KpiTargetsPage: React.FC = () => {
                           target.target_year,
                           target.period_code,
                         )}
+                        {(target.version ?? 1) > 1 && (
+                          <span className="ms-2 inline-flex px-1.5 py-0.5 rounded text-xs font-sans font-medium bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
+                            v{target.version}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-sm tabular-nums font-semibold text-slate-900 dark:text-white ltr:text-right rtl:text-left">
                         {formatTargetValue(
@@ -1022,7 +1048,11 @@ export const KpiTargetsPage: React.FC = () => {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700/60">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-            Create / Edit Target
+            {supersedingTarget
+              ? "Supersede Target"
+              : isRevision
+                ? "Edit Target Revision"
+                : "Create / Edit Target"}
           </h2>
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">
             Draft only
@@ -1030,6 +1060,22 @@ export const KpiTargetsPage: React.FC = () => {
         </div>
 
         <div className="p-6 space-y-5">
+          {supersedingTarget && (
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 p-4 text-sm text-blue-700 dark:text-blue-300 flex items-start gap-3">
+              <History className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>
+                Creating version {(supersedingTarget.version ?? 1) + 1} of the
+                approved target{" "}
+                {formatPeriodLabel(
+                  supersedingTarget.target_year,
+                  supersedingTarget.period_code,
+                )}{" "}
+                (value {supersedingTarget.target_value}). The current version
+                stays approved and unchanged until this one is approved, then it
+                is marked Superseded.
+              </span>
+            </div>
+          )}
           {isFormulaMetric && (
             <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 p-4 text-sm text-amber-700 dark:text-amber-400 flex items-start gap-3">
               <HelpCircle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -1054,7 +1100,7 @@ export const KpiTargetsPage: React.FC = () => {
             </label>
             <select
               value={formKpiCode}
-              disabled={formReadOnly}
+              disabled={formScopeLocked}
               onChange={(e) => {
                 const c = cardOptions.find((o) => o.code === e.target.value);
                 setFormKpiCode(e.target.value);
@@ -1079,7 +1125,7 @@ export const KpiTargetsPage: React.FC = () => {
               </label>
               <select
                 value={formMetricId}
-                disabled={formReadOnly}
+                disabled={formScopeLocked}
                 onChange={(e) => {
                   const metric = (formMetrics ?? kpiMetrics ?? []).find(
                     (m: any) => m.id === e.target.value,
@@ -1168,7 +1214,7 @@ export const KpiTargetsPage: React.FC = () => {
                   value={formCustomStart}
                   min={metricStart || undefined}
                   max={formCustomEnd || metricDue || undefined}
-                  disabled={formReadOnly}
+                  disabled={formScopeLocked}
                   onChange={(e) => setFormCustomStart(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
                 />
@@ -1182,7 +1228,7 @@ export const KpiTargetsPage: React.FC = () => {
                   value={formCustomEnd}
                   min={formCustomStart || metricStart || undefined}
                   max={metricDue || undefined}
-                  disabled={formReadOnly}
+                  disabled={formScopeLocked}
                   onChange={(e) => setFormCustomEnd(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
                 />
@@ -1196,7 +1242,7 @@ export const KpiTargetsPage: React.FC = () => {
                 </label>
                 <select
                   value={formYear}
-                  disabled={formReadOnly}
+                  disabled={formScopeLocked}
                   onChange={(e) => setFormYear(Number(e.target.value))}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
                 >
@@ -1213,7 +1259,7 @@ export const KpiTargetsPage: React.FC = () => {
                 </label>
                 <select
                   value={formPeriodCode}
-                  disabled={formReadOnly}
+                  disabled={formScopeLocked}
                   onChange={(e) => {
                     // A custom range is a Milestone / Ad Hoc target.
                     if (e.target.value === CUSTOM_RANGE_OPTION) {
@@ -1287,7 +1333,7 @@ export const KpiTargetsPage: React.FC = () => {
               </label>
               <select
                 value={formTargetType}
-                disabled={formReadOnly}
+                disabled={formScopeLocked}
                 onChange={(e) => {
                   setFormTargetType(e.target.value as KpiTargetType);
                   setFormPeriodCode("");
