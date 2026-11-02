@@ -62,9 +62,15 @@ interface Props {
   type: string;
   id: string;
   canAssign: boolean;
+  departmentFilterIds?: string[];
 }
 
-export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
+export const CollaboratorsTab: React.FC<Props> = ({
+  type,
+  id,
+  canAssign,
+  departmentFilterIds,
+}) => {
   const { data: assignments = [], isLoading } = useKpiCollaboratorAssignments(
     type,
     id,
@@ -77,9 +83,11 @@ export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
   const { data: metrics = [] } = useKpiMetrics(type, id);
 
   const { data: users = [] } = useQuery({
-    queryKey: ["users", "active"],
+    queryKey: ["users", "active", departmentFilterIds],
     queryFn: async () => {
-      const res = await userApi.list(1, 500);
+      const res = departmentFilterIds?.length
+        ? await userApi.list(1, 500, "", [], departmentFilterIds)
+        : await userApi.list(1, 500);
       return res.data ?? [];
     },
   });

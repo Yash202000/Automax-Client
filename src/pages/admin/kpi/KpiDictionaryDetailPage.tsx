@@ -2692,6 +2692,11 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           type={type ?? ""}
           id={id ?? ""}
           canAssign={canAssignKpi()}
+          departmentFilterIds={[
+            ...(kpi?.owner_dept_id ? [kpi.owner_dept_id] : []),
+            ...(kpi?.owning_agency_id ? [kpi.owning_agency_id] : []),
+            ...(kpi?.related_departments?.map((d: any) => d.id) ?? []),
+          ].filter((v: string, i: number, a: string[]) => a.indexOf(v) === i)}
         />
       )}
 
