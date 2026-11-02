@@ -388,7 +388,7 @@ const DUPLICATE_METRIC_NAME_MSG =
   "Metric name already exists under this KPI. Please use a unique metric name.";
 
 export const KpiDictionaryDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
   const navigate = useNavigate();
   const { canUpdateKpi, canAssignKpi } = usePermissions();
@@ -902,6 +902,19 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.award_sub_criterion.name_en,
       onClick: () =>
         navigate(`/goals/kpi/master-data/award-sub-criteria/${subCriterionId}`),
+    });
+  }
+  if (kpi.award_kpi_measure) {
+    const m = kpi.award_kpi_measure;
+    infoTiles.push({
+      icon: (
+        <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+      ),
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      label: t("kpi.dictionary.fieldAwardKpiMeasure"),
+      value: `${m.code ? `${m.code.toUpperCase()} — ` : ""}${
+        (i18n.language?.startsWith("ar") ? m.name_ar : m.name_en) || m.name_en
+      }`,
     });
   }
   if (kpi.reporting_frequency) {

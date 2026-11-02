@@ -572,6 +572,7 @@ export const GoalLayout: React.FC = () => {
                   ["initiative", "Initiatives", Sparkles],
                   ["domain", "Domains", FolderOpen],
                   ["award-criterion", "Award Criteria", ClipboardCheck],
+                  ["award-kpi-measure", "Award KPIs and Measures", Target],
                   ["award-sub-criterion", "Award Sub-Criteria", CheckCheck],
                   ["data-source", "Data Sources", FileSpreadsheet],
                   ["segmentation-dimension", "Segmentation Dimensions", Layers],

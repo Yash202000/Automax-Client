@@ -42,6 +42,10 @@ import {
   useUpdateDomain,
   useDeleteDomain,
   useAwardCriteria,
+  useAwardKpiMeasures,
+  useCreateAwardKpiMeasure,
+  useUpdateAwardKpiMeasure,
+  useDeleteAwardKpiMeasure,
   useCreateAwardCriterion,
   useUpdateAwardCriterion,
   useDeleteAwardCriterion,
@@ -79,6 +83,7 @@ import type {
   Initiative,
   Domain,
   AwardCriterion,
+  AwardKpiMeasure,
   AwardSubCriterion,
   KpiDataSource,
   KpiSegmentationDimension,
@@ -90,6 +95,7 @@ import type {
   InitiativeRequest,
   DomainRequest,
   AwardCriterionRequest,
+  AwardKpiMeasureRequest,
   AwardSubCriterionRequest,
   KpiDataSourceRequest,
   KpiSegmentationDimensionRequest,
@@ -105,6 +111,7 @@ type EntityType =
   | "initiative"
   | "domain"
   | "award-criterion"
+  | "award-kpi-measure"
   | "award-sub-criterion"
   | "data-source"
   | "segmentation-dimension"
@@ -161,6 +168,10 @@ export const KpiMasterDataPage: React.FC = () => {
     { key: "domain", label: t("kpi.masterData.domains") },
     { key: "award-criterion", label: t("kpi.masterData.awardCriteria") },
     {
+      key: "award-kpi-measure",
+      label: t("kpi.masterData.awardKpiMeasures"),
+    },
+    {
       key: "award-sub-criterion",
       label: t("kpi.masterData.awardSubCriteria"),
     },
@@ -193,6 +204,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const { data: initiatives } = useInitiatives();
   const { data: domains } = useDomains();
   const { data: awardCriteria } = useAwardCriteria();
+  const { data: awardKpiMeasures } = useAwardKpiMeasures();
   const { data: awardSubCriteria } = useAwardSubCriteria();
   const { data: dataSources } = useDataSources();
   const { data: segmentationDimensions } = useSegmentationDimensions();
@@ -226,6 +238,9 @@ export const KpiMasterDataPage: React.FC = () => {
   const createAwardCriterion = useCreateAwardCriterion();
   const updateAwardCriterion = useUpdateAwardCriterion();
   const deleteAwardCriterion = useDeleteAwardCriterion();
+  const createAwardKpiMeasure = useCreateAwardKpiMeasure();
+  const updateAwardKpiMeasure = useUpdateAwardKpiMeasure();
+  const deleteAwardKpiMeasure = useDeleteAwardKpiMeasure();
   const createAwardSubCriterion = useCreateAwardSubCriterion();
   const updateAwardSubCriterion = useUpdateAwardSubCriterion();
   const deleteAwardSubCriterion = useDeleteAwardSubCriterion();
@@ -299,6 +314,10 @@ export const KpiMasterDataPage: React.FC = () => {
       modalType === "award-sub-criterion" &&
       (!form.award_criterion_id || !form.sub_no)
     ) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
+    if (modalType === "domain" && !form.type) {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
     }
@@ -400,6 +419,14 @@ export const KpiMasterDataPage: React.FC = () => {
         if (isEdit)
           await updateAwardCriterion.mutateAsync({ id: modalItem.id, data });
         else await createAwardCriterion.mutateAsync(data);
+      } else if (modalType === "award-kpi-measure") {
+        const data: AwardKpiMeasureRequest = {
+          name_en: form.name_en,
+          name_ar: form.name_ar,
+        };
+        if (isEdit)
+          await updateAwardKpiMeasure.mutateAsync({ id: modalItem.id, data });
+        else await createAwardKpiMeasure.mutateAsync(data);
       } else if (modalType === "award-sub-criterion") {
         const data: AwardSubCriterionRequest = {
           award_criterion_id: form.award_criterion_id,
@@ -454,6 +481,7 @@ export const KpiMasterDataPage: React.FC = () => {
       initiative: (i) => deleteInitiative.mutate(i),
       domain: (i) => deleteDomain.mutate(i),
       "award-criterion": (i) => deleteAwardCriterion.mutate(i),
+      "award-kpi-measure": (i) => deleteAwardKpiMeasure.mutate(i),
       "award-sub-criterion": (i) => deleteAwardSubCriterion.mutate(i),
       "data-source": (i) => deleteDataSource.mutate(i),
       "segmentation-dimension": (i) => deleteSegmentationDimension.mutate(i),
@@ -697,6 +725,11 @@ export const KpiMasterDataPage: React.FC = () => {
         award_criterion_id: row.award_criterion_id,
         sub_no: row.sub_no || row.subNo || "1",
       } as AwardSubCriterionRequest);
+    } else if (type === "award-kpi-measure") {
+      await kpiMasterDataApi.createAwardKpiMeasure({
+        name_en,
+        name_ar,
+      } as AwardKpiMeasureRequest);
     } else if (type === "data-source") {
       await kpiMasterDataApi.createDataSource({
         name_en,
@@ -732,6 +765,7 @@ export const KpiMasterDataPage: React.FC = () => {
       case "pillar":
       case "enabler":
       case "data-source":
+      case "award-kpi-measure":
       case "segmentation-dimension":
       case "organization":
         return n;
@@ -755,6 +789,7 @@ export const KpiMasterDataPage: React.FC = () => {
         pillar: pillars,
         enabler: enablers,
         "data-source": dataSources,
+        "award-kpi-measure": awardKpiMeasures,
         "segmentation-dimension": segmentationDimensions,
         organization: organizations,
         domain: domains,
@@ -786,6 +821,7 @@ export const KpiMasterDataPage: React.FC = () => {
     initiative: "initiatives",
     domain: "domains",
     "award-criterion": "awardCriteria",
+    "award-kpi-measure": "awardKpiMeasures",
     "award-sub-criterion": "awardSubCriteria",
     "data-source": "dataSources",
     "segmentation-dimension": "segmentationDimensions",
@@ -975,6 +1011,11 @@ export const KpiMasterDataPage: React.FC = () => {
           <MasterTable<Domain>
             data={domains ?? []}
             columns={[
+              {
+                header: "ID",
+                accessor: "code",
+                render: (r) => r.code?.toUpperCase() ?? "-",
+              },
               { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
               { header: t("kpi.masterData.type"), accessor: "type" },
@@ -1072,6 +1113,29 @@ export const KpiMasterDataPage: React.FC = () => {
               )
             }
             onImport={() => handleImportExcel("award-sub-criterion")}
+          />
+        )}
+        {activeTab === "award-kpi-measure" && (
+          <MasterTable<AwardKpiMeasure>
+            data={awardKpiMeasures ?? []}
+            columns={[
+              {
+                header: "ID",
+                accessor: "code",
+                render: (r) => r.code?.toUpperCase() ?? "-",
+              },
+              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
+            ]}
+            emptyMessage={t("kpi.masterData.noAwardKpiMeasures")}
+            canManage={canManage}
+            onEdit={(item) => handleEdit("award-kpi-measure", item)}
+            onDelete={(id) => handleDelete("award-kpi-measure", id)}
+            onAdd={() => handleAdd("award-kpi-measure")}
+            onExport={() =>
+              exportToExcel(awardKpiMeasures ?? [], "AwardKpiMeasures")
+            }
+            onImport={() => handleImportExcel("award-kpi-measure")}
           />
         )}
         {activeTab === "data-source" && (
@@ -1346,9 +1410,20 @@ export const KpiMasterDataPage: React.FC = () => {
             </>
           )}
 
+          {(modalType === "award-kpi-measure" || modalType === "domain") &&
+            modalItem?.code && (
+              <Input
+                label="ID"
+                value={modalItem.code?.toUpperCase()}
+                readOnly
+                disabled
+                onChange={() => {}}
+              />
+            )}
+
           {modalType === "domain" && (
             <Select
-              label={t("kpi.masterData.type")}
+              label={`${t("kpi.masterData.type")} *`}
               options={[
                 {
                   value: "strategy",
@@ -1454,6 +1529,7 @@ const importQueryKey: Record<EntityType, string> = {
   initiative: "initiatives",
   domain: "domains",
   "award-criterion": "award-criteria",
+  "award-kpi-measure": "award-kpi-measures",
   "award-sub-criterion": "award-sub-criteria",
   "data-source": "data-sources",
   "segmentation-dimension": "segmentation-dimensions",
