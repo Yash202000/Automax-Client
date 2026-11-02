@@ -35,6 +35,10 @@ import {
 } from "../../../hooks/useKpi";
 import { Link } from "react-router-dom";
 import { MultiSelectFilter } from "../../../components/kpi/MultiSelectFilter";
+import {
+  DASHBOARD_PERIOD_OPTIONS,
+  dashboardPeriodParams,
+} from "../../../types/kpi";
 
 // Matches the color coding already used for the Strategic/Operational/Award
 // stat cards above, so the donut's slices read consistently with the rest
@@ -50,7 +54,11 @@ export const KpiDashboardPage: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const [kpiTypeFilter, setKpiTypeFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
-  const [quarterFilter, setQuarterFilter] = useState("");
+  // KPI filter value is "type:code" (codes may repeat across KPI types).
+  const [kpiFilter, setKpiFilter] = useState("");
+  const [metricFilter, setMetricFilter] = useState("");
+  // Period filter: "q1".."q4" or "m1".."m12" (see DASHBOARD_PERIOD_OPTIONS).
+  const [periodFilter, setPeriodFilter] = useState("");
   const [objectiveFilter, setObjectiveFilter] = useState<string[]>([]);
   const [criteriaFilter, setCriteriaFilter] = useState<string[]>([]);
   const [subCriteriaFilter, setSubCriteriaFilter] = useState<string[]>([]);
@@ -89,11 +97,15 @@ export const KpiDashboardPage: React.FC = () => {
       })),
   ]);
 
+  const kpiFilterType = kpiFilter.split(":")[0];
+
   const dashboardParams = useMemo(
     () => ({
       kpi_type: kpiTypeFilter || undefined,
+      kpi: kpiFilter || undefined,
+      metric_id: metricFilter || undefined,
       year: yearFilter ? Number(yearFilter) : undefined,
-      quarter: quarterFilter ? Number(quarterFilter) : undefined,
+      ...dashboardPeriodParams(periodFilter),
       objective_id: objectiveFilter.length
         ? objectiveFilter.join(",")
         : undefined,
@@ -104,8 +116,10 @@ export const KpiDashboardPage: React.FC = () => {
     }),
     [
       kpiTypeFilter,
+      kpiFilter,
+      metricFilter,
       yearFilter,
-      quarterFilter,
+      periodFilter,
       objectiveFilter,
       criteriaFilter,
       subCriteriaFilter,
@@ -217,13 +231,49 @@ export const KpiDashboardPage: React.FC = () => {
       <div className="flex items-center gap-4 flex-wrap">
         <select
           value={kpiTypeFilter}
-          onChange={(e) => setKpiTypeFilter(e.target.value)}
+          onChange={(e) => {
+            setKpiTypeFilter(e.target.value);
+            // A KPI or Metric of another type would filter to nothing.
+            if (e.target.value && kpiFilterType !== e.target.value) {
+              setKpiFilter("");
+              setMetricFilter("");
+            }
+          }}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">{t("kpi.dashboard.allTypes")}</option>
           <option value="strategic">{t("kpi.dictionary.strategic")}</option>
           <option value="operational">{t("kpi.dictionary.operational")}</option>
           <option value="award">{t("kpi.dictionary.award")}</option>
+        </select>
+        <select
+          value={kpiFilter}
+          onChange={(e) => {
+            setKpiFilter(e.target.value);
+            setMetricFilter("");
+          }}
+          className="max-w-[16rem] px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">{t("kpi.dashboard.allKpis", "All KPIs")}</option>
+          {(dashboard?.kpi_options ?? []).map((k) => (
+            <option key={`${k.type}:${k.id}`} value={`${k.type}:${k.code}`}>
+              {k.code} — {k.name_en}
+            </option>
+          ))}
+        </select>
+        <select
+          value={metricFilter}
+          onChange={(e) => setMetricFilter(e.target.value)}
+          className="max-w-[16rem] px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">
+            {t("kpi.dashboard.allMetrics", "All Metrics")}
+          </option>
+          {(dashboard?.metric_options ?? []).map((m) => (
+            <option key={m.id} value={m.id}>
+              {kpiFilter ? m.name : `${m.name} (${m.kpi_code})`}
+            </option>
+          ))}
         </select>
         <select
           value={yearFilter}
@@ -238,15 +288,21 @@ export const KpiDashboardPage: React.FC = () => {
           ))}
         </select>
         <select
-          value={quarterFilter}
-          onChange={(e) => setQuarterFilter(e.target.value)}
+          value={periodFilter}
+          onChange={(e) => setPeriodFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">{t("kpi.dashboard.allQuarters")}</option>
-          {[1, 2, 3, 4].map((q) => (
-            <option key={q} value={q}>
-              Q{q}
-            </option>
+          <option value="">
+            {t("kpi.dashboard.allPeriods", "All Periods")}
+          </option>
+          {DASHBOARD_PERIOD_OPTIONS.map((g) => (
+            <optgroup key={g.group} label={g.group}>
+              {g.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <MultiSelectFilter

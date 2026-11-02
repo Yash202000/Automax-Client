@@ -1490,8 +1490,11 @@ export const useKpiCard = (type?: KPIType | string, id?: string) =>
 
 export const useKpiDashboard = (params?: {
   kpi_type?: string;
+  kpi?: string;
+  metric_id?: string;
   year?: number;
   quarter?: number;
+  month?: number;
   objective_id?: string;
   criteria_id?: string;
   sub_criteria_id?: string;

@@ -230,6 +230,7 @@ export interface PerformanceTrend {
 }
 
 export interface KpiCardDef {
+  id: string;
   code: string;
   type: string;
   name_en: string;
@@ -283,6 +284,82 @@ export interface EnhancedKpiDashboardData extends KpiDashboardData {
   top_performers: KpiPerformanceSummary[];
   low_performers: KpiPerformanceSummary[];
   available_years?: number[];
+  kpi_options?: { id: string; code: string; type: string; name_en: string }[];
+  metric_options?: {
+    id: string;
+    name: string;
+    kpi_code: string;
+    kpi_type: string;
+  }[];
+}
+
+// Dashboard Period filter: a quarter ("q1".."q4") or a month ("m1".."m12").
+export const DASHBOARD_PERIOD_OPTIONS: {
+  group: string;
+  options: { value: string; label: string }[];
+}[] = [
+  {
+    group: "Quarters",
+    options: [1, 2, 3, 4].map((q) => ({ value: `q${q}`, label: `Q${q}` })),
+  },
+  {
+    group: "Months",
+    options: Array.from({ length: 12 }, (_, i) => ({
+      value: `m${i + 1}`,
+      label: new Date(Date.UTC(2000, i, 1)).toLocaleString("en-US", {
+        month: "long",
+        timeZone: "UTC",
+      }),
+    })),
+  },
+];
+
+// Splits a Period filter value into the dashboard API's quarter/month params.
+export function dashboardPeriodParams(value: string): {
+  quarter?: number;
+  month?: number;
+} {
+  const n = Number(value.slice(1));
+  if (value.startsWith("q") && n >= 1 && n <= 4) return { quarter: n };
+  if (value.startsWith("m") && n >= 1 && n <= 12) return { month: n };
+  return {};
+}
+
+// Calendar months (1-12) a period code covers: "mar" → [3,3], "q1" → [1,3],
+// "h2" → [7,12], anything else (annual, custom) → the whole year.
+export function periodCodeMonths(code: string): [number, number] {
+  const c = code.toLowerCase();
+  const months = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+  ];
+  const m = months.indexOf(c);
+  if (m !== -1) return [m + 1, m + 1];
+  const q = /^q([1-4])$/.exec(c);
+  if (q) return [Number(q[1]) * 3 - 2, Number(q[1]) * 3];
+  if (c === "h1") return [1, 6];
+  if (c === "h2") return [7, 12];
+  return [1, 12];
+}
+
+// Whether a period code overlaps a Period filter value ("" matches all).
+export function periodMatchesFilter(code: string, filter: string): boolean {
+  if (!filter) return true;
+  const { quarter, month } = dashboardPeriodParams(filter);
+  const from = month ?? (quarter ? quarter * 3 - 2 : 1);
+  const to = month ?? (quarter ? quarter * 3 : 12);
+  const [start, end] = periodCodeMonths(code);
+  return start <= to && end >= from;
 }
 
 export interface StrategicKPI {
