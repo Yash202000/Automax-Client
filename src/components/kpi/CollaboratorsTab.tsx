@@ -82,18 +82,37 @@ export const CollaboratorsTab: React.FC<Props> = ({
   const { data: organizations = [] } = useOrganizations();
   const { data: metrics = [] } = useKpiMetrics(type, id);
 
+  const hasDeptFilter = (departmentFilterIds?.length ?? 0) > 0;
   const { data: users = [] } = useQuery({
     queryKey: ["users", "active", departmentFilterIds],
     queryFn: async () => {
-      const res = departmentFilterIds?.length
-        ? await userApi.list(1, 500, "", [], departmentFilterIds)
-        : await userApi.list(1, 500);
+      if (!hasDeptFilter) return [];
+      const res = await userApi.list(1, 500, "", [], departmentFilterIds!);
       return res.data ?? [];
     },
   });
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // When editing, the assigned user may fall outside the department filter.
+  // Keep them in the dropdown so the Select doesn't render blank.
+  const editingUser = editingId
+    ? assignments.find((a) => a.id === editingId)?.user
+    : undefined;
+  const userOptions = React.useMemo(() => {
+    const opts = users.map((u: any) => ({
+      value: u.id,
+      label: `${u.first_name} ${u.last_name} (${u.email})`,
+    }));
+    if (editingUser && !users.some((u: any) => u.id === editingUser.id)) {
+      opts.unshift({
+        value: editingUser.id,
+        label: `${editingUser.first_name} ${editingUser.last_name} (${editingUser.email})`,
+      });
+    }
+    return opts;
+  }, [users, editingUser, editingId]);
 
   const emptyForm: KpiCollaboratorAssignmentRequest = {
     user_id: "",
@@ -262,10 +281,7 @@ export const CollaboratorsTab: React.FC<Props> = ({
               onChange={(e) =>
                 setForm((p) => ({ ...p, user_id: e.target.value }))
               }
-              options={users.map((u: any) => ({
-                value: u.id,
-                label: `${u.first_name} ${u.last_name} (${u.email})`,
-              }))}
+              options={userOptions}
               placeholder="Select a user"
             />
             <Select
@@ -388,10 +404,7 @@ export const CollaboratorsTab: React.FC<Props> = ({
                   delegate_for_user_id: e.target.value || undefined,
                 }))
               }
-              options={users.map((u: any) => ({
-                value: u.id,
-                label: `${u.first_name} ${u.last_name} (${u.email})`,
-              }))}
+              options={userOptions}
               placeholder="Select a user"
             />
             <Textarea
