@@ -828,6 +828,16 @@ export const KpiEntriesPage: React.FC = () => {
                               </button>
                             </>
                           )}
+                          {entry.status === "approved" && canEdit && (
+                            <button
+                              onClick={() => setCorrectTarget(entry)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap"
+                              title="Correct this approved entry with an adjustment or reversal"
+                            >
+                              <PenLine className="w-4 h-4" />
+                              Adjust / Reverse
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
