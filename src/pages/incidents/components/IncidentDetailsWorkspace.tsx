@@ -873,7 +873,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
               <button
                 type="button"
                 onClick={copyId}
-                className="text-[hsl(var(--muted-foreground))] hover:text-cyan-700 dark:text-cyan-300 ms-0.5 transition-colors"
+                className="text-[hsl(var(--muted-foreground))] hover:text-primary ms-0.5 transition-colors"
                 title={t("incidents.copyIncidentId")}
                 aria-label={t("incidents.copyIncidentId")}
               >
@@ -898,7 +898,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   className="px-2.5 py-1 bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold text-[hsl(var(--foreground))] transition-colors flex items-center gap-1.5 shadow-sm"
                 >
                   {t("incidents.edit")}
-                  <Pen className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />
+                  <Pen className="h-2.5 w-2.5 text-primary" />
                 </button>
               ) : null}
               {canCloneIncident ? (
@@ -908,7 +908,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   className="px-2.5 py-1 bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold text-[hsl(var(--foreground))] transition-colors flex items-center gap-1.5 shadow-sm"
                 >
                   {t("incidents.clone", "Clone")}
-                  <Copy className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />
+                  <Copy className="h-2.5 w-2.5 text-primary" />
                 </button>
               ) : null}
               {canMergeIncidents && incident.is_merged ? (
@@ -918,7 +918,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   className="px-2.5 py-1 bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold text-[hsl(var(--foreground))] transition-colors flex items-center gap-1.5 shadow-sm"
                 >
                   {t("incidents.merge.unmerge", "Unmerge")}
-                  <ArrowRightLeft className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />
+                  <ArrowRightLeft className="h-2.5 w-2.5 text-primary" />
                 </button>
               ) : null}
               {canMergeIncidents && mergedIncidents.length > 0 ? (
@@ -929,7 +929,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 >
                   {t("incidents.merge.mergedIncidents", "Merged incidents")} (
                   {mergedIncidents.length})
-                  <Users className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />
+                  <Users className="h-2.5 w-2.5 text-primary" />
                 </button>
               ) : null}
             </div>
@@ -939,7 +939,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 py-3 border-b border-[hsl(var(--border))]">
             <div className={tile}>
               <div className={tileLabel}>
-                <Clock className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                <Clock className="h-2.5 w-2.5 text-primary" />{" "}
                 {t("incidents.created")}
               </div>
               <div className="text-xs font-semibold text-[hsl(var(--foreground))]">
@@ -970,7 +970,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                     "h-2.5 w-2.5",
                     incident.sla_breached
                       ? "text-rose-700 dark:text-rose-400"
-                      : "text-cyan-700 dark:text-cyan-400",
+                      : "text-primary",
                   )}
                 />
                 SLA Deadline
@@ -1021,7 +1021,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             </div>
             <div className={tile}>
               <div className={tileLabel}>
-                <Smartphone className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                <Smartphone className="h-2.5 w-2.5 text-primary" />{" "}
                 {t("incidents.source")}
               </div>
               <div className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">
@@ -1033,7 +1033,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             </div>
             <div className={tile}>
               <div className={tileLabel}>
-                <Boxes className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                <Boxes className="h-2.5 w-2.5 text-primary" />{" "}
                 {t("incidents.department")}
               </div>
               <div className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">
@@ -1047,7 +1047,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             </div>
             <div className={tile}>
               <div className={tileLabel}>
-                <MapPin className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400" />{" "}
+                <MapPin className="h-2.5 w-2.5 text-primary" />{" "}
                 {t("incidents.location")}
               </div>
               <div className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">
@@ -1066,7 +1066,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 {t("incidents.classification")}:
               </span>
               <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.6)] px-2.5 py-1 rounded-md border border-[hsl(var(--border))] min-w-0">
-                <Layers className="h-2.5 w-2.5 text-cyan-700 dark:text-cyan-400 shrink-0" />
+                <Layers className="h-2.5 w-2.5 text-primary shrink-0" />
                 {classificationPath.length > 1 ? (
                   <span className="flex items-center gap-1 min-w-0">
                     {classificationPath.slice(0, -1).map((part, idx) => (
@@ -1104,7 +1104,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                       {assigneeList.length > 1
                         ? t("incidents.assignees")
                         : t("incidents.assignee")}
-                      <span className="text-cyan-700 dark:text-cyan-400 font-mono">
+                      <span className="text-primary font-mono">
                         {" "}
                         ({assigneeList.length})
                       </span>
@@ -1124,7 +1124,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                               className="w-4 h-4 rounded-full object-cover shrink-0"
                             />
                           ) : (
-                            <span className="w-4 h-4 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                            <span className="w-4 h-4 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-[8px] font-bold shrink-0">
                               {first.first_name?.[0] ||
                                 first.username?.[0] ||
                                 "?"}
@@ -1163,7 +1163,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                                 className="w-6 h-6 rounded-full object-cover shrink-0"
                               />
                             ) : (
-                              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                              <span className="w-6 h-6 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-[10px] font-bold shrink-0">
                                 {assignee.first_name?.[0] ||
                                   assignee.username?.[0] ||
                                   "?"}
@@ -1204,7 +1204,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                     {t("incidents.momraIncidentNumber")}:
                   </span>
-                  <span className="font-mono font-semibold text-cyan-700 dark:text-cyan-300">
+                  <span className="font-mono font-semibold text-primary">
                     {momraRef}
                   </span>
                 </span>
@@ -1304,7 +1304,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                       active
                         ? emerald
                           ? "border-b-2 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/15"
-                          : "border-b-2 border-cyan-400 text-cyan-700 dark:text-cyan-300 font-semibold bg-cyan-950/20"
+                          : "border-b-2 border-primary text-primary font-semibold bg-primary/10"
                         : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted)/0.4)]",
                     )}
                   >
@@ -1317,7 +1317,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                           active
                             ? emerald
                               ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
-                              : "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/40"
+                              : "bg-primary/20 text-primary border-primary/40"
                             : "bg-[hsl(var(--muted))] border-[hsl(var(--border))]",
                         )}
                       >
@@ -1593,7 +1593,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                     setIncludeReportLogs(event.target.checked)
                   }
                   disabled={generatingReport}
-                  className="rounded border-[hsl(var(--border))] bg-[hsl(var(--muted))] accent-cyan-500"
+                  className="rounded border-[hsl(var(--border))] bg-[hsl(var(--muted))] accent-primary"
                 />
                 {t("incidents.includeLogs")}
               </label>

@@ -57,7 +57,7 @@ export function CommentsTab({
                 type="checkbox"
                 checked={isInternalComment}
                 onChange={(e) => setIsInternalComment(e.target.checked)}
-                className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-cyan-600 dark:text-cyan-500 cursor-pointer focus:ring-0 focus:outline-none"
+                className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer focus:ring-0 focus:outline-none"
               />
               <span className="text-xs text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--muted-foreground))] transition-colors">
                 {t("incidents.internalComment")}
@@ -72,10 +72,10 @@ export function CommentsTab({
                 })
               }
               disabled={!commentText.trim() || addCommentMutation.isPending}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-cyan-950/40 transition-all disabled:opacity-60"
+              className="px-3.5 py-1.5 bg-linear-to-r rtl:bg-linear-to-l from-primary to-accent text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-primary/0.25 hover:shadow-xl hover:shadow-[hsl(var(--primary)/0.3)] transition-all disabled:opacity-60"
             >
               {addCommentMutation.isPending ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
               ) : (
                 <Send className="h-3.5 w-3.5" />
               )}
@@ -104,7 +104,7 @@ export function CommentsTab({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
                         {(
                           comment.author?.first_name?.[0] ||
                           comment.author?.username?.[0] ||
