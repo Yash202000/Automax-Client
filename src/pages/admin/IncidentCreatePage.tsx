@@ -21,6 +21,7 @@ import {
   Button,
   Card,
   Input,
+  PhoneNumberInput,
   Select,
   Textarea,
   TreeSelect,
@@ -78,6 +79,11 @@ import {
   RejectedFileRows,
 } from "@/components/attachments/AttachmentUpload";
 import { isSamePhoneNumber, getMobileNumberIssue } from "@/utils/validations";
+import {
+  getPhoneCountryName,
+  getPhoneNumberCountryIssue,
+  normalizePhoneNumber,
+} from "@/utils/phoneCountries";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -988,14 +994,39 @@ export function IncidentCreatePage() {
     }
   };
 
-  // Alternate number is optional, but when given it must be a valid mobile
-  // number and differ from the main phone
+  const getCountryPhoneError = (value?: string) => {
+    const country = getPhoneNumberCountryIssue(value);
+    if (!country) return "";
+    return t("incidents.phoneInvalidForCountry", {
+      defaultValue:
+        "Enter a valid {{country}} number, e.g. +{{dialCode}} {{example}}",
+      country: getPhoneCountryName(country, i18n.language),
+      dialCode: country.dialCode,
+      example: country.example,
+    });
+  };
+
   const getAlternateMobileError = (
     alternate?: string,
     phone?: string,
     checkFormat = true,
   ) => {
     if (!alternate?.trim()) return "";
+    if (isEPM940) {
+      const countryError = checkFormat ? getCountryPhoneError(alternate) : "";
+      if (countryError) return countryError;
+      // Compare canonical forms so "0501234567" equals "+966501234567"
+      if (
+        phone?.trim() &&
+        normalizePhoneNumber(alternate) === normalizePhoneNumber(phone)
+      ) {
+        return t(
+          "incidents.alternatePhoneSameAsPhone",
+          "Alternative number must be different from the caller phone number",
+        );
+      }
+      return "";
+    }
     const issue = checkFormat ? getMobileNumberIssue(alternate) : null;
     if (issue === "invalidFormat") {
       return t(
@@ -1343,6 +1374,8 @@ export function IncidentCreatePage() {
           defaultValue: "Caller name is required",
         });
       }
+      const phoneError = getCountryPhoneError(formData.reporter_phone);
+      if (phoneError) newErrors.reporter_phone = phoneError;
     }
 
     // Always require classification, location, source on web client
@@ -1484,6 +1517,15 @@ export function IncidentCreatePage() {
       location_id: finalLocationId,
       comment: comment.trim() || undefined,
     };
+
+    // Prefilled caller IDs may still be local ("0501234567"); send the
+    // country-coded form the agent saw in the phone fields
+    if (isEPM940) {
+      submitData.reporter_phone = normalizePhoneNumber(formData.reporter_phone);
+      submitData.alternate_mobile = normalizePhoneNumber(
+        formData.alternate_mobile,
+      );
+    }
 
     // Ensure empty strings are not sent for optional UUID fields
     if (submitData.assignee_id === "") {
@@ -1882,40 +1924,36 @@ export function IncidentCreatePage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
+                      <PhoneNumberInput
                         label={t(
                           "incidents.reporterPhone",
                           "Caller Phone Number",
                         )}
-                        type="tel"
                         value={formData.reporter_phone || ""}
-                        onChange={(e) =>
-                          handleChange(
-                            "reporter_phone",
-                            e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                          )
+                        onChange={(value) =>
+                          handleChange("reporter_phone", value)
                         }
-                        placeholder={t(
-                          "incidents.reporterPhonePlaceholder",
-                          "+971 50 000 0000",
-                        )}
+                        onBlur={() =>
+                          setErrors((prev) => ({
+                            ...prev,
+                            reporter_phone: getCountryPhoneError(
+                              formData.reporter_phone,
+                            ),
+                          }))
+                        }
                         required={workflowRequiredFields.includes(
                           "reporter_phone",
                         )}
                         error={errors.reporter_phone}
                       />
-                      <Input
+                      <PhoneNumberInput
                         label={`${t(
                           "incidents.reporterAlternativePhone",
                           "Caller Alternative Number",
                         )} (${t("incidents.optional", "optional")})`}
-                        type="tel"
                         value={formData.alternate_mobile || ""}
-                        onChange={(e) =>
-                          handleChange(
-                            "alternate_mobile",
-                            e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                          )
+                        onChange={(value) =>
+                          handleChange("alternate_mobile", value)
                         }
                         onBlur={() =>
                           setErrors((prev) => ({
@@ -1926,10 +1964,6 @@ export function IncidentCreatePage() {
                             ),
                           }))
                         }
-                        placeholder={t(
-                          "incidents.reporterPhonePlaceholder",
-                          "+971 50 000 0000",
-                        )}
                         error={errors.alternate_mobile}
                       />
                     </div>

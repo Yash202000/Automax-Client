@@ -1,5 +1,8 @@
 {
   "common": {
+    "countryCode": "رمز الدولة",
+    "searchCountry": "ابحث عن دولة...",
+    "noCountryFound": "لم يتم العثور على دولة",
     "loading": "جاري التحميل...",
     "error": "خطأ",
     "retry": "إعادة المحاولة",
@@ -592,6 +595,7 @@
     "reporterEmailPlaceholder": "reporter@example.com",
     "reporterPhonePlaceholder": "+971 50 000 0000",
     "reporterAlternativePhone": "رقم المتصل البديل",
+    "phoneInvalidForCountry": "أدخل رقمًا صحيحًا لـ {{country}}، مثال: +{{dialCode}} {{example}}",
     "alternatePhoneSameAsPhone": "يجب أن يكون الرقم البديل مختلفًا عن رقم هاتف المتصل",
     "alternatePhoneInvalidFormat": "يُسمح بعلامة \"+\" في بداية الرقم فقط",
     "alternatePhoneTooShort": "الرقم البديل قصير جدًا. أدخل 8 أرقام على الأقل",

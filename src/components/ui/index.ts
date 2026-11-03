@@ -33,6 +33,7 @@ export {
   ModalBody,
   ModalFooter,
 } from "./Modal";
+export { PhoneNumberInput } from "./PhoneNumberInput";
 export { MultiSelect } from "./MultiSelect";
 export { MultiTreeSelect } from "./MultiTreeSelect";
 export type { Option as MultiSelectOption } from "./MultiSelect";

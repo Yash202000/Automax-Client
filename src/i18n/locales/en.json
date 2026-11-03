@@ -1,5 +1,8 @@
 {
   "common": {
+    "countryCode": "Country code",
+    "searchCountry": "Search country...",
+    "noCountryFound": "No country found",
     "loading": "Loading...",
     "error": "Error",
     "hide": "Hide",
@@ -591,6 +594,7 @@
     "reporterEmailPlaceholder": "caller@example.com",
     "reporterPhonePlaceholder": "+971 50 000 0000",
     "reporterAlternativePhone": "Caller Alternative Number",
+    "phoneInvalidForCountry": "Enter a valid {{country}} number, e.g. +{{dialCode}} {{example}}",
     "alternatePhoneSameAsPhone": "Alternative number must be different from the caller phone number",
     "alternatePhoneInvalidFormat": "\"+\" is only allowed at the start of the number",
     "alternatePhoneTooShort": "Alternative number is too short. Enter at least 8 digits",
