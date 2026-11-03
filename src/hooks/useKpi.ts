@@ -22,6 +22,7 @@ import type {
   ProcessRequest,
   InitiativeRequest,
   DomainRequest,
+  AwardKpiMeasureRequest,
   AwardCriterionRequest,
   AwardSubCriterionRequest,
   OperationalKPIRequest,
@@ -424,6 +425,63 @@ export const useDeleteDomain = () => {
       toast.success(t("kpi.domainDeleted"));
     },
     onError: () => toast.error(t("kpi.domainDeleteFailed")),
+  });
+};
+
+// ─── Award KPIs and Measures ─────────────────────────────────────────────────
+
+export const useAwardKpiMeasures = () =>
+  useQuery({
+    queryKey: ["kpi", "award-kpi-measures"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listAwardKpiMeasures();
+      return res.data ?? [];
+    },
+  });
+
+export const useCreateAwardKpiMeasure = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: (data: AwardKpiMeasureRequest) =>
+      kpiMasterDataApi.createAwardKpiMeasure(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      toast.success(t("kpi.awardKpiMeasureCreated"));
+    },
+    onError: () => toast.error(t("kpi.awardKpiMeasureCreateFailed")),
+  });
+};
+
+export const useUpdateAwardKpiMeasure = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<AwardKpiMeasureRequest>;
+    }) => kpiMasterDataApi.updateAwardKpiMeasure(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      toast.success(t("kpi.awardKpiMeasureUpdated"));
+    },
+    onError: () => toast.error(t("kpi.awardKpiMeasureUpdateFailed")),
+  });
+};
+
+export const useDeleteAwardKpiMeasure = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: (id: string) => kpiMasterDataApi.deleteAwardKpiMeasure(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      toast.success(t("kpi.awardKpiMeasureDeleted"));
+    },
+    onError: () => toast.error(t("kpi.awardKpiMeasureDeleteFailed")),
   });
 };
 

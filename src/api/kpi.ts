@@ -12,6 +12,8 @@ import type {
   Initiative,
   InitiativeRequest,
   Domain,
+  AwardKpiMeasure,
+  AwardKpiMeasureRequest,
   DomainRequest,
   AwardCriterion,
   AwardCriterionRequest,
@@ -300,6 +302,28 @@ export const kpiMasterDataApi = {
   },
   deleteDomain: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/domains/${id}`);
+    return res.data;
+  },
+
+  listAwardKpiMeasures: async (): Promise<ApiResponse<AwardKpiMeasure[]>> => {
+    const res = await apiClient.get("/kpi/award-kpi-measures");
+    return res.data;
+  },
+  createAwardKpiMeasure: async (
+    data: AwardKpiMeasureRequest,
+  ): Promise<ApiResponse<AwardKpiMeasure>> => {
+    const res = await apiClient.post("/kpi/award-kpi-measures", data);
+    return res.data;
+  },
+  updateAwardKpiMeasure: async (
+    id: string,
+    data: Partial<AwardKpiMeasureRequest>,
+  ): Promise<ApiResponse<AwardKpiMeasure>> => {
+    const res = await apiClient.put(`/kpi/award-kpi-measures/${id}`, data);
+    return res.data;
+  },
+  deleteAwardKpiMeasure: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/award-kpi-measures/${id}`);
     return res.data;
   },
 

@@ -47,6 +47,8 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     operational_objective_id: "",
     process_id: "",
     award_sub_criterion_id: "",
+    award_kpi_measure_id: "",
+    domain_id: "",
     classification: "",
     pillar_id: "",
     owner_type: "internal" as KPIOwnerType,
@@ -89,6 +91,8 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       operational_objective_id: kpi.operational_objective_id ?? "",
       process_id: kpi.process_id ?? "",
       award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      award_kpi_measure_id: kpi.award_kpi_measure_id ?? "",
+      domain_id: kpi.domain_id ?? "",
       classification: kpi.classification || "",
       pillar_id: kpi.pillar_id ?? "",
       owner_type: kpi.owner_type ?? "internal",
@@ -138,6 +142,8 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       baseline: Number(form.baseline),
       pillar_id: form.pillar_id || undefined,
       award_sub_criterion_id: form.award_sub_criterion_id || undefined,
+      award_kpi_measure_id: form.award_kpi_measure_id || undefined,
+      domain_id: form.domain_id || undefined,
       classification: form.classification || undefined,
       owner_dept_id: form.owner_dept_id || undefined,
       owning_agency_id: form.owning_agency_id || undefined,
@@ -209,6 +215,8 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             operationalObjectiveId={form.operational_objective_id}
             processId={form.process_id}
             awardSubCriterionId={form.award_sub_criterion_id}
+            awardKpiMeasureId={form.award_kpi_measure_id}
+            domainId={form.domain_id}
             pillarId={form.pillar_id}
             onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           />
