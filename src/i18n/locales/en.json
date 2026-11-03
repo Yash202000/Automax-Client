@@ -4230,7 +4230,7 @@
       "selectClassification": "Select classification",
       "fieldLifecycle": "Lifecycle",
       "fieldSegmentation": "Segmentation Axes",
-      "fieldRelatedUnits": "Related Units",
+      "fieldRelatedDepartments": "Related Departments",
       "fieldNotes": "Notes",
       "fieldOwnerType": "Owner Type",
       "ownerTypeInternal": "Internal",

@@ -400,7 +400,7 @@ export interface StrategicKPI {
   lifecycle: string;
   data_source: string;
   segmentation_axes: string;
-  related_units: string;
+  related_departments?: DepartmentBrief[];
   notes: string;
   documenta_folder_id?: string;
   created_at: string;
@@ -443,7 +443,7 @@ export interface OperationalKPI {
   reporting_frequency: string;
   lifecycle: string;
   data_source: string;
-  related_units: string;
+  related_departments?: DepartmentBrief[];
   notes: string;
   documenta_folder_id?: string;
   created_by?: {
@@ -493,7 +493,7 @@ export interface AwardKPI {
   reporting_frequency: string;
   lifecycle: string;
   data_source: string;
-  related_units: string;
+  related_departments?: DepartmentBrief[];
   notes: string;
   documenta_folder_id?: string;
   created_by?: {
@@ -777,7 +777,7 @@ export interface StrategicKPIRequest {
   lifecycle?: string;
   data_source?: string;
   segmentation_axes?: string;
-  related_units?: string;
+  related_department_ids?: string[];
   notes?: string;
   documenta_folder_id?: string;
 }
@@ -806,7 +806,7 @@ export interface OperationalKPIRequest {
   reporting_frequency?: string;
   lifecycle?: string;
   data_source?: string;
-  related_units?: string;
+  related_department_ids?: string[];
   notes?: string;
   documenta_folder_id?: string;
 }
@@ -835,7 +835,7 @@ export interface AwardKPIRequest {
   reporting_frequency?: string;
   lifecycle?: string;
   data_source?: string;
-  related_units?: string;
+  related_department_ids?: string[];
   notes?: string;
   documenta_folder_id?: string;
 }
@@ -1865,7 +1865,7 @@ export interface KpiCardResponse {
   criterion_label: string;
   reporting_frequency: string;
   data_source: string;
-  related_units_label: string;
+  related_departments_label: string;
   formula: string;
   polarity: string;
   target_requirement: string;

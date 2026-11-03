@@ -62,9 +62,15 @@ interface Props {
   type: string;
   id: string;
   canAssign: boolean;
+  departmentFilterIds?: string[];
 }
 
-export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
+export const CollaboratorsTab: React.FC<Props> = ({
+  type,
+  id,
+  canAssign,
+  departmentFilterIds,
+}) => {
   const { data: assignments = [], isLoading } = useKpiCollaboratorAssignments(
     type,
     id,
@@ -76,16 +82,45 @@ export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
   const { data: organizations = [] } = useOrganizations();
   const { data: metrics = [] } = useKpiMetrics(type, id);
 
+  const hasDeptFilter = (departmentFilterIds?.length ?? 0) > 0;
   const { data: users = [] } = useQuery({
-    queryKey: ["users", "active"],
+    queryKey: ["users", "active", departmentFilterIds],
     queryFn: async () => {
-      const res = await userApi.list(1, 500);
+      if (!hasDeptFilter) return [];
+      const res = await userApi.list(1, 500, "", [], departmentFilterIds!);
       return res.data ?? [];
     },
   });
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // When editing, the assigned user and delegate user may fall outside the
+  // department filter. Include them so the Select doesn't render blank.
+  const editingAssignment = editingId
+    ? assignments.find((a) => a.id === editingId)
+    : undefined;
+  const userOptions = React.useMemo(() => {
+    const opts = users.map((u: any) => ({
+      value: u.id,
+      label: `${u.first_name} ${u.last_name} (${u.email})`,
+    }));
+    const existingIds = new Set(users.map((u: any) => u.id));
+    const extraUsers = [
+      editingAssignment?.user,
+      editingAssignment?.delegate_for_user,
+    ].filter(Boolean);
+    for (const u of extraUsers) {
+      if (u && !existingIds.has(u.id)) {
+        opts.push({
+          value: u.id,
+          label: `${u.first_name} ${u.last_name} (${u.email})`,
+        });
+        existingIds.add(u.id);
+      }
+    }
+    return opts;
+  }, [users, editingAssignment]);
 
   const emptyForm: KpiCollaboratorAssignmentRequest = {
     user_id: "",
@@ -254,10 +289,7 @@ export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
               onChange={(e) =>
                 setForm((p) => ({ ...p, user_id: e.target.value }))
               }
-              options={users.map((u: any) => ({
-                value: u.id,
-                label: `${u.first_name} ${u.last_name} (${u.email})`,
-              }))}
+              options={userOptions}
               placeholder="Select a user"
             />
             <Select
@@ -380,10 +412,7 @@ export const CollaboratorsTab: React.FC<Props> = ({ type, id, canAssign }) => {
                   delegate_for_user_id: e.target.value || undefined,
                 }))
               }
-              options={users.map((u: any) => ({
-                value: u.id,
-                label: `${u.first_name} ${u.last_name} (${u.email})`,
-              }))}
+              options={userOptions}
               placeholder="Select a user"
             />
             <Textarea

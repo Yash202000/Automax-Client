@@ -15,6 +15,7 @@ import {
 import { departmentApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
+import { MultiSelect } from "../../../components/ui/MultiSelect";
 import { DocumentaFolderPicker } from "../../../components/kpi/DocumentaFolderPicker";
 import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { AwardKPIRequest, KPIOwnerType } from "../../../types/kpi";
@@ -52,7 +53,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     owner_dept_id: "",
     owner_org_id: "",
     owning_agency_id: "",
-    related_units: "",
+    related_department_ids: [] as string[],
     documenta_folder_id: "",
     polarity: "ascending",
     target_requirement: "mandatory",
@@ -94,7 +95,8 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       owner_dept_id: kpi.owner_dept_id ?? "",
       owner_org_id: kpi.owner_org_id ?? "",
       owning_agency_id: kpi.owning_agency_id ?? "",
-      related_units: kpi.related_units ?? "",
+      related_department_ids:
+        kpi.related_departments?.map((d: any) => d.id) ?? [],
       documenta_folder_id: kpi.documenta_folder_id ?? "",
       polarity: kpi.polarity,
       target_requirement: kpi.target_requirement || "mandatory",
@@ -283,10 +285,18 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             )}
           </div>
 
-          <Input
-            label="Related Units"
-            value={form.related_units}
-            onChange={handleChange("related_units")}
+          <MultiSelect
+            label={t("kpi.dictionary.fieldRelatedDepartments")}
+            value={form.related_department_ids}
+            onChange={(v) =>
+              setForm((prev) => ({ ...prev, related_department_ids: v }))
+            }
+            options={departments.map((d: any) => ({
+              value: d.id,
+              label: d.name,
+            }))}
+            searchable
+            placeholder={t("common.selectAnOption")}
           />
 
           <div>
