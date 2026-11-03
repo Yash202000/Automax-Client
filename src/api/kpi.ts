@@ -1419,6 +1419,18 @@ export const kpiComposedApi = {
     const res = await apiClient.get(`/kpi/${type}/${id}/dashboard`);
     return res.data;
   },
+  updateNarrative: async (
+    type: KPIType,
+    id: string,
+    data: {
+      curve_description: string;
+      shortcomings_description: string;
+      proposed_improvement: string;
+    },
+  ): Promise<ApiResponse<null>> => {
+    const res = await apiClient.put(`/kpi/${type}/${id}/narrative`, data);
+    return res.data;
+  },
   getAnnualRollup: async (
     type: KPIType,
     id: string,

@@ -1910,9 +1910,9 @@ export interface KpiAnnualRollupRow {
 export interface KpiSingleDashboardResponse {
   card: KpiCardResponse;
   annual_rollup: KpiAnnualRollupRow[];
-  trend_description: string;
-  justification: string;
-  corrective_action: string;
+  curve_description: string;
+  shortcomings_description: string;
+  proposed_improvement: string;
   benchmarks: KpiBenchmark[];
 }
 
