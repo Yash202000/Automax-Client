@@ -61,7 +61,12 @@ export const PhoneNumberInput = ({
   );
 
   // An international value carries its own country; a local one uses the selection
-  const { country, national } = parsePhoneNumber(value, selectedIso2);
+  const { country, national, unsupportedDigits } = parsePhoneNumber(
+    value,
+    selectedIso2,
+  );
+  // A code we don't list stays visible as typed so the agent can correct it
+  const displayValue = unsupportedDigits ? `+${unsupportedDigits}` : national;
 
   const countryOptions = useMemo(
     () =>
@@ -90,6 +95,10 @@ export const PhoneNumberInput = ({
     // Pasting a full international number switches the country to match
     if (/^\s*(\+|00)/.test(text)) {
       const parsed = parsePhoneNumber(text, country.iso2);
+      if (parsed.unsupportedDigits) {
+        onChange(`+${parsed.unsupportedDigits}`);
+        return;
+      }
       setSelectedIso2(parsed.country.iso2);
       onChange(formatPhoneNumber(parsed.country, parsed.national));
       return;
@@ -174,7 +183,7 @@ export const PhoneNumberInput = ({
           type="tel"
           inputMode="tel"
           autoComplete="tel-national"
-          value={national}
+          value={displayValue}
           onChange={(e) => handleNumberChange(e.target.value)}
           onBlur={onBlur}
           placeholder={country.example}

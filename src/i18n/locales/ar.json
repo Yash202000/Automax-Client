@@ -596,6 +596,7 @@
     "reporterPhonePlaceholder": "+971 50 000 0000",
     "reporterAlternativePhone": "رقم المتصل البديل",
     "phoneInvalidForCountry": "أدخل رقمًا صحيحًا لـ {{country}}، مثال: +{{dialCode}} {{example}}",
+    "phoneUnsupportedCountryCode": "رمز الدولة هذا غير مدعوم. اختر دولة من القائمة",
     "alternatePhoneSameAsPhone": "يجب أن يكون الرقم البديل مختلفًا عن رقم هاتف المتصل",
     "alternatePhoneInvalidFormat": "يُسمح بعلامة \"+\" في بداية الرقم فقط",
     "alternatePhoneTooShort": "الرقم البديل قصير جدًا. أدخل 8 أرقام على الأقل",

@@ -15,7 +15,8 @@ export const PHONE_COUNTRIES: PhoneCountry[] = [
     iso2: "SA",
     name: "Saudi Arabia",
     dialCode: "966",
-    pattern: /^(5\d{8}|1\d{7})$/,
+    // Mobile 5X XXX XXXX, landline 1X XXX XXXX (area codes 11-17)
+    pattern: /^(5\d{8}|1[1-7]\d{7})$/,
     example: "50 123 4567",
   },
   {
@@ -163,7 +164,7 @@ const BY_DIAL_CODE_LENGTH = [...PHONE_COUNTRIES].sort(
 );
 
 export const getPhoneCountry = (iso2?: string): PhoneCountry =>
-  PHONE_COUNTRIES.find((c) => c.iso2 === iso2) ??
+  PHONE_COUNTRIES.find((c) => c.iso2 === iso2?.toUpperCase()) ??
   PHONE_COUNTRIES.find((c) => c.iso2 === DEFAULT_PHONE_COUNTRY)!;
 
 // Localized country name (e.g. "المملكة العربية السعودية" for "ar"),
@@ -189,6 +190,9 @@ export const toNationalDigits = (value: string): string =>
 export interface ParsedPhoneNumber {
   country: PhoneCountry;
   national: string;
+  // Set when the value has an explicit "+"/"00" prefix that isn't in
+  // PHONE_COUNTRIES; holds every digit after that prefix, untouched
+  unsupportedDigits?: string;
 }
 
 // Splits a stored/prefilled number into country + national part. Handles
@@ -215,7 +219,12 @@ export const parsePhoneNumber = (
         national: toNationalDigits(intlDigits.slice(country.dialCode.length)),
       };
     }
-    return { country: fallback, national: toNationalDigits(intlDigits) };
+    // Never fold an unknown country code into the fallback country
+    return {
+      country: fallback,
+      national: intlDigits,
+      unsupportedDigits: intlDigits,
+    };
   }
 
   // Bare digits that already carry the fallback country's code (common for
@@ -236,17 +245,30 @@ export const normalizePhoneNumber = (
   value: string | undefined,
   fallbackIso2?: string,
 ): string => {
-  const { country, national } = parsePhoneNumber(value, fallbackIso2);
+  const { country, national, unsupportedDigits } = parsePhoneNumber(
+    value,
+    fallbackIso2,
+  );
+  if (unsupportedDigits) return `+${unsupportedDigits}`;
   return formatPhoneNumber(country, national);
 };
 
-// Returns the country the number was validated against when it doesn't match
-// that country's format, or null when valid/empty
+export type PhoneNumberCountryIssue =
+  | { type: "unsupportedCode" }
+  | { type: "invalidForCountry"; country: PhoneCountry };
+
+// Why the number can't be accepted, or null when valid/empty
 export const getPhoneNumberCountryIssue = (
   value: string | undefined,
   fallbackIso2?: string,
-): PhoneCountry | null => {
-  const { country, national } = parsePhoneNumber(value, fallbackIso2);
+): PhoneNumberCountryIssue | null => {
+  const { country, national, unsupportedDigits } = parsePhoneNumber(
+    value,
+    fallbackIso2,
+  );
+  if (unsupportedDigits) return { type: "unsupportedCode" };
   if (!national) return null;
-  return country.pattern.test(national) ? null : country;
+  return country.pattern.test(national)
+    ? null
+    : { type: "invalidForCountry", country };
 };

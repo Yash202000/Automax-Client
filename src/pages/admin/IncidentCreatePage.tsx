@@ -78,7 +78,6 @@ import {
   AttachmentFileRow,
   RejectedFileRows,
 } from "@/components/attachments/AttachmentUpload";
-import { isSamePhoneNumber, getMobileNumberIssue } from "@/utils/validations";
 import {
   getPhoneCountryName,
   getPhoneNumberCountryIssue,
@@ -995,8 +994,15 @@ export function IncidentCreatePage() {
   };
 
   const getCountryPhoneError = (value?: string) => {
-    const country = getPhoneNumberCountryIssue(value);
-    if (!country) return "";
+    const issue = getPhoneNumberCountryIssue(value);
+    if (!issue) return "";
+    if (issue.type === "unsupportedCode") {
+      return t(
+        "incidents.phoneUnsupportedCountryCode",
+        "This country code is not supported. Select a country from the list",
+      );
+    }
+    const { country } = issue;
     return t("incidents.phoneInvalidForCountry", {
       defaultValue:
         "Enter a valid {{country}} number, e.g. +{{dialCode}} {{example}}",
@@ -1012,41 +1018,13 @@ export function IncidentCreatePage() {
     checkFormat = true,
   ) => {
     if (!alternate?.trim()) return "";
-    if (isEPM940) {
-      const countryError = checkFormat ? getCountryPhoneError(alternate) : "";
-      if (countryError) return countryError;
-      // Compare canonical forms so "0501234567" equals "+966501234567"
-      if (
-        phone?.trim() &&
-        normalizePhoneNumber(alternate) === normalizePhoneNumber(phone)
-      ) {
-        return t(
-          "incidents.alternatePhoneSameAsPhone",
-          "Alternative number must be different from the caller phone number",
-        );
-      }
-      return "";
-    }
-    const issue = checkFormat ? getMobileNumberIssue(alternate) : null;
-    if (issue === "invalidFormat") {
-      return t(
-        "incidents.alternatePhoneInvalidFormat",
-        '"+" is only allowed at the start of the number',
-      );
-    }
-    if (issue === "tooShort") {
-      return t(
-        "incidents.alternatePhoneTooShort",
-        "Alternative number is too short. Enter at least 8 digits",
-      );
-    }
-    if (issue === "tooLong") {
-      return t(
-        "incidents.alternatePhoneTooLong",
-        "Alternative number is too long. Enter at most 15 digits",
-      );
-    }
-    if (isSamePhoneNumber(alternate, phone)) {
+    const countryError = checkFormat ? getCountryPhoneError(alternate) : "";
+    if (countryError) return countryError;
+    // Compare canonical forms so "0501234567" equals "+966501234567"
+    if (
+      phone?.trim() &&
+      normalizePhoneNumber(alternate) === normalizePhoneNumber(phone)
+    ) {
       return t(
         "incidents.alternatePhoneSameAsPhone",
         "Alternative number must be different from the caller phone number",
@@ -1374,9 +1352,10 @@ export function IncidentCreatePage() {
           defaultValue: "Caller name is required",
         });
       }
-      const phoneError = getCountryPhoneError(formData.reporter_phone);
-      if (phoneError) newErrors.reporter_phone = phoneError;
     }
+
+    const phoneError = getCountryPhoneError(formData.reporter_phone);
+    if (phoneError) newErrors.reporter_phone = phoneError;
 
     // Always require classification, location, source on web client
     if (!formData.classification_id || !formData.classification_id.trim()) {
@@ -1520,12 +1499,10 @@ export function IncidentCreatePage() {
 
     // Prefilled caller IDs may still be local ("0501234567"); send the
     // country-coded form the agent saw in the phone fields
-    if (isEPM940) {
-      submitData.reporter_phone = normalizePhoneNumber(formData.reporter_phone);
-      submitData.alternate_mobile = normalizePhoneNumber(
-        formData.alternate_mobile,
-      );
-    }
+    submitData.reporter_phone = normalizePhoneNumber(formData.reporter_phone);
+    submitData.alternate_mobile = normalizePhoneNumber(
+      formData.alternate_mobile,
+    );
 
     // Ensure empty strings are not sent for optional UUID fields
     if (submitData.assignee_id === "") {
@@ -1833,23 +1810,23 @@ export function IncidentCreatePage() {
                   (workflowRequiredFields.includes("reporter_phone") ||
                     workflowOptionalFields.includes("reporter_phone") ||
                     callOriginated) && (
-                    <Input
+                    <PhoneNumberInput
                       label={t(
                         "incidents.reporterPhone",
                         "Caller Phone Number",
                       )}
-                      type="tel"
                       value={formData.reporter_phone || ""}
-                      onChange={(e) =>
-                        handleChange(
-                          "reporter_phone",
-                          e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                        )
+                      onChange={(value) =>
+                        handleChange("reporter_phone", value)
                       }
-                      placeholder={t(
-                        "incidents.reporterPhonePlaceholder",
-                        "+971 50 000 0000",
-                      )}
+                      onBlur={() =>
+                        setErrors((prev) => ({
+                          ...prev,
+                          reporter_phone: getCountryPhoneError(
+                            formData.reporter_phone,
+                          ),
+                        }))
+                      }
                       required={workflowRequiredFields.includes(
                         "reporter_phone",
                       )}
