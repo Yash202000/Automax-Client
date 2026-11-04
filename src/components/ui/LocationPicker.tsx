@@ -84,6 +84,50 @@ interface LocationPickerProps {
   label?: string;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  // Show editable Latitude/Longitude inputs under the controls.
+  showCoordinateInputs?: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onCoordinateErrorChange?: (_error: string | undefined) => void;
+}
+
+const COORDINATE_PATTERN = /^-?\d+(\.\d+)?$/;
+
+function getCoordinateError(
+  lat: string,
+  lng: string,
+  // eslint-disable-next-line no-unused-vars
+  t: (_key: string, _fallback: string) => string,
+): string | undefined {
+  const latValue = lat.trim();
+  const lngValue = lng.trim();
+  if (!latValue && !lngValue) return undefined;
+  if (!latValue || !lngValue) {
+    return t(
+      "locationPicker.enterBothCoordinates",
+      "Enter both latitude and longitude",
+    );
+  }
+  if (!COORDINATE_PATTERN.test(latValue)) {
+    return t("locationPicker.latitudeInvalid", "Latitude must be a number");
+  }
+  if (!COORDINATE_PATTERN.test(lngValue)) {
+    return t("locationPicker.longitudeInvalid", "Longitude must be a number");
+  }
+  const latNum = parseFloat(latValue);
+  if (latNum < -90 || latNum > 90) {
+    return t(
+      "locationPicker.latitudeOutOfRange",
+      "Latitude must be between -90 and 90",
+    );
+  }
+  const lngNum = parseFloat(lngValue);
+  if (lngNum < -180 || lngNum > 180) {
+    return t(
+      "locationPicker.longitudeOutOfRange",
+      "Longitude must be between -180 and 180",
+    );
+  }
+  return undefined;
 }
 
 interface NominatimResponse {
@@ -223,6 +267,8 @@ export function LocationPicker({
   label,
   isExpanded = false,
   onToggleExpand,
+  showCoordinateInputs = false,
+  onCoordinateErrorChange,
 }: LocationPickerProps) {
   const { t } = useTranslation();
   const { provider } = useMapProvider();
@@ -239,6 +285,15 @@ export function LocationPicker({
       : null,
   );
   const [GISData, setGISData] = useState<any>(null);
+  const [latInput, setLatInput] = useState<string>(
+    value?.latitude !== undefined ? String(value.latitude) : "",
+  );
+  const [lngInput, setLngInput] = useState<string>(
+    value?.longitude !== undefined ? String(value.longitude) : "",
+  );
+  const [coordTouched, setCoordTouched] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const coordTimeout = useRef<any>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -434,6 +489,55 @@ export function LocationPicker({
     setMapCenter(null);
   }, [onChange]);
 
+  const coordError = showCoordinateInputs
+    ? getCoordinateError(latInput, lngInput, t)
+    : undefined;
+
+  useEffect(() => {
+    onCoordinateErrorChange?.(coordError);
+  }, [coordError, onCoordinateErrorChange]);
+
+  useEffect(() => {
+    if (!showCoordinateInputs) return;
+    if (value?.latitude === undefined || value?.longitude === undefined) {
+      setLatInput("");
+      setLngInput("");
+      return;
+    }
+    setLatInput((prev) =>
+      parseFloat(prev) === value.latitude ? prev : String(value.latitude),
+    );
+    setLngInput((prev) =>
+      parseFloat(prev) === value.longitude ? prev : String(value.longitude),
+    );
+  }, [showCoordinateInputs, value?.latitude, value?.longitude]);
+
+  useEffect(() => () => window.clearTimeout(coordTimeout.current), []);
+
+  const handleCoordinateInput = (nextLat: string, nextLng: string) => {
+    setLatInput(nextLat);
+    setLngInput(nextLng);
+    window.clearTimeout(coordTimeout.current);
+
+    if (!nextLat.trim() && !nextLng.trim()) {
+      if (value) handleClear();
+      return;
+    }
+    if (getCoordinateError(nextLat, nextLng, t)) return;
+
+    const lat = parseFloat(nextLat);
+    const lng = parseFloat(nextLng);
+    if (value?.latitude === lat && value?.longitude === lng) return;
+
+    coordTimeout.current = setTimeout(() => {
+      handleMapClick({ lat, lng });
+    }, 600);
+  };
+
+  const showCoordError = Boolean(coordError && (coordTouched || error));
+  const boxError =
+    error && !(showCoordError && error === coordError) ? error : geoError;
+
   const reverseAndSetLatLong = async () => {
     if (value?.latitude && value.longitude) {
       setIsLoading(true);
@@ -508,6 +612,58 @@ export function LocationPicker({
           </Button>
         )}
       </div>
+
+      {showCoordinateInputs && (
+        <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                htmlFor="location-picker-latitude"
+                className="block text-xs font-medium text-foreground mb-1"
+              >
+                {t("locationPicker.latitude", "Latitude")}
+              </label>
+              <input
+                id="location-picker-latitude"
+                type="text"
+                inputMode="decimal"
+                value={latInput}
+                onChange={(e) =>
+                  handleCoordinateInput(e.target.value, lngInput)
+                }
+                onBlur={() => setCoordTouched(true)}
+                placeholder="25.204849"
+                aria-invalid={showCoordError}
+                className={`block w-full px-3 py-2 bg-background border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-foreground ${showCoordError ? "border-red-500" : "border-border"}`}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="location-picker-longitude"
+                className="block text-xs font-medium text-foreground mb-1"
+              >
+                {t("locationPicker.longitude", "Longitude")}
+              </label>
+              <input
+                id="location-picker-longitude"
+                type="text"
+                inputMode="decimal"
+                value={lngInput}
+                onChange={(e) =>
+                  handleCoordinateInput(latInput, e.target.value)
+                }
+                onBlur={() => setCoordTouched(true)}
+                placeholder="55.270782"
+                aria-invalid={showCoordError}
+                className={`block w-full px-3 py-2 bg-background border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-foreground ${showCoordError ? "border-red-500" : "border-border"}`}
+              />
+            </div>
+          </div>
+          {showCoordError && (
+            <p className="text-xs text-red-600">{coordError}</p>
+          )}
+        </div>
+      )}
 
       {/* Map */}
       <div
@@ -747,10 +903,10 @@ export function LocationPicker({
       )}
 
       {/* Errors */}
-      {(error || geoError) && (
+      {boxError && (
         <div className="flex items-center gap-2 p-2 px-3 bg-red-50 border border-red-100 rounded-lg text-[11px] text-red-600 animate-in fade-in slide-in-from-top-1">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{error || geoError}</span>
+          <span>{boxError}</span>
         </div>
       )}
     </div>

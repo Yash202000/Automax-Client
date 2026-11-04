@@ -2970,7 +2970,14 @@
     "district": "المنطقة",
     "municipality": "البلدية",
     "street": "الشارع",
-    "planNo": "رقم المخطط"
+    "planNo": "رقم المخطط",
+    "latitude": "خط العرض",
+    "longitude": "خط الطول",
+    "enterBothCoordinates": "أدخل خط العرض وخط الطول معًا",
+    "latitudeInvalid": "يجب أن يكون خط العرض رقمًا",
+    "longitudeInvalid": "يجب أن يكون خط الطول رقمًا",
+    "latitudeOutOfRange": "يجب أن يكون خط العرض بين -90 و 90",
+    "longitudeOutOfRange": "يجب أن يكون خط الطول بين -180 و 180"
   },
   "revisionHistory": {
     "loading": "جاري تحميل سجل المراجعات...",
