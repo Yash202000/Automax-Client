@@ -4468,7 +4468,19 @@
       "internal": "داخلي",
       "benchmark": "المقارنة",
       "variance": "الفرق",
-      "notes": "ملاحظات"
+      "notes": "ملاحظات",
+      "municipality1": "البلدية 1 (%)",
+      "municipality2": "البلدية 2 (%)",
+      "municipality3": "البلدية 3 (%)",
+      "percentRangeError": "يجب أن تكون قيمة بين 0 و 100",
+      "errors": {
+        "required": "هذا الحقل مطلوب",
+        "yearRange": "يجب أن تكون السنة بين 2020 و 2040"
+      },
+      "comparisonTitle": "مقارنة المرجعية",
+      "us": "نحن",
+      "ourResult": "نتيجتنا",
+      "gap": "الفرق"
     },
     "segmentation": {
       "title": "تجزئة مؤشرات الأداء",
