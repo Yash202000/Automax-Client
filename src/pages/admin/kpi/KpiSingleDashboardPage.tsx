@@ -161,7 +161,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
     onSuccess: () => {
       toast.success(t("common.success", "Saved"));
       queryClient.invalidateQueries({
-        queryKey: ["kpi-single-dashboard", type, id],
+        queryKey: ["kpi", "single-dashboard", type, id],
       });
     },
     onError: () => {
