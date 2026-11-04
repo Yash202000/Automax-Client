@@ -4471,7 +4471,19 @@
       "internal": "Internal",
       "benchmark": "Benchmark",
       "variance": "Variance",
-      "notes": "Notes"
+      "notes": "Notes",
+      "municipality1": "Municipality 1 (%)",
+      "municipality2": "Municipality 2 (%)",
+      "municipality3": "Municipality 3 (%)",
+      "percentRangeError": "Must be a number between 0 and 100",
+      "errors": {
+        "required": "This field is required",
+        "yearRange": "Year must be between 2020 and 2040"
+      },
+      "comparisonTitle": "Benchmark Comparison",
+      "us": "Us",
+      "ourResult": "our result",
+      "gap": "gap"
     },
     "segmentation": {
       "title": "KPI Segmentation",

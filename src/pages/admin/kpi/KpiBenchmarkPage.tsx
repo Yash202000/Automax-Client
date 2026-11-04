@@ -20,6 +20,25 @@ import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
 import type { KpiBenchmark, KpiBenchmarkRequest } from "../../../types/kpi";
 
+const MUNICIPALITY_KEYS = [
+  "municipality1",
+  "municipality2",
+  "municipality3",
+] as const;
+type MunicipalityKey = (typeof MUNICIPALITY_KEYS)[number];
+const EMPTY_MUNICIPALITIES: Record<MunicipalityKey, string> = {
+  municipality1: "",
+  municipality2: "",
+  municipality3: "",
+};
+
+// Optional field: empty is valid, otherwise must be a number in [0, 100].
+const isValidPercent = (value: string): boolean => {
+  if (value.trim() === "") return true;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 && n <= 100;
+};
+
 export const KpiBenchmarkPage: React.FC = () => {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
@@ -60,9 +79,62 @@ export const KpiBenchmarkPage: React.FC = () => {
     notes: "",
   });
 
-  const handleCreate = async () => {
-    await createBenchmark.mutateAsync(formData);
+  const [selected, setSelected] = useState<KpiBenchmark | null>(null);
+  const [municipalities, setMunicipalities] =
+    useState<Record<MunicipalityKey, string>>(EMPTY_MUNICIPALITIES);
+
+  const municipalityErrors = MUNICIPALITY_KEYS.filter(
+    (k) => !isValidPercent(municipalities[k]),
+  );
+
+  const [submitted, setSubmitted] = useState(false);
+
+  // Mirrors backend validation: kpi_code required (max 50), kpi_type required,
+  // year required (2020-2040), benchmark_entity required (max 255).
+  const formErrors = {
+    kpi_code:
+      !formData.kpi_code || formData.kpi_code.length > 50
+        ? t("kpi.benchmarks.errors.required")
+        : "",
+    kpi_type: !formData.kpi_type ? t("kpi.benchmarks.errors.required") : "",
+    year:
+      !formData.year || formData.year < 2020 || formData.year > 2040
+        ? t("kpi.benchmarks.errors.yearRange")
+        : "",
+    benchmark_entity:
+      !formData.benchmark_entity.trim() ||
+      formData.benchmark_entity.length > 255
+        ? t("kpi.benchmarks.errors.required")
+        : "",
+  };
+  const hasFormErrors = Object.values(formErrors).some(Boolean);
+  const showError = (k: keyof typeof formErrors) =>
+    submitted && formErrors[k] ? (
+      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+        {formErrors[k]}
+      </p>
+    ) : null;
+  const errBorder = (k: keyof typeof formErrors) =>
+    submitted && formErrors[k]
+      ? "border-red-500"
+      : "border-slate-300 dark:border-slate-600";
+
+  const closeForm = () => {
     setShowForm(false);
+    setSubmitted(false);
+    setMunicipalities(EMPTY_MUNICIPALITIES);
+  };
+
+  const handleCreate = async () => {
+    setSubmitted(true);
+    if (hasFormErrors || municipalityErrors.length > 0) return;
+    const payload: KpiBenchmarkRequest = { ...formData };
+    MUNICIPALITY_KEYS.forEach((k) => {
+      const v = municipalities[k].trim();
+      if (v !== "") payload[k] = Number(v);
+    });
+    await createBenchmark.mutateAsync(payload);
+    closeForm();
     setFormData({
       kpi_code: "",
       kpi_type: "strategic",
@@ -185,6 +257,14 @@ export const KpiBenchmarkPage: React.FC = () => {
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     {t("kpi.benchmarks.benchmark")}
                   </th>
+                  {MUNICIPALITY_KEYS.map((k) => (
+                    <th
+                      key={k}
+                      className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase"
+                    >
+                      {t(`kpi.benchmarks.${k}`)}
+                    </th>
+                  ))}
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     {t("kpi.benchmarks.variance")}
                   </th>
@@ -197,7 +277,8 @@ export const KpiBenchmarkPage: React.FC = () => {
                 {items.map((b: KpiBenchmark) => (
                   <tr
                     key={b.id}
-                    className="border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    onClick={() => setSelected(b)}
+                    className="border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
                   >
                     <td className="px-6 py-4 text-sm font-mono text-slate-900 dark:text-white">
                       {b.kpi_code}
@@ -224,6 +305,14 @@ export const KpiBenchmarkPage: React.FC = () => {
                     <td className="px-6 py-4 text-sm tabular-nums text-right text-slate-700 dark:text-slate-300">
                       {b.benchmark_achievement}
                     </td>
+                    {MUNICIPALITY_KEYS.map((k) => (
+                      <td
+                        key={k}
+                        className="px-6 py-4 text-sm tabular-nums text-right text-slate-700 dark:text-slate-300"
+                      >
+                        {b[k] != null ? `${b[k]}%` : "-"}
+                      </td>
+                    ))}
                     <td className="px-6 py-4 text-right">
                       <span
                         className={`inline-flex items-center gap-1 text-sm tabular-nums font-medium ${b.variance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
@@ -238,7 +327,10 @@ export const KpiBenchmarkPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => handleDelete(b.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(b.id);
+                        }}
                         className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         title={t("common.delete")}
                       >
@@ -253,7 +345,7 @@ export const KpiBenchmarkPage: React.FC = () => {
         )}
       </div>
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} size="lg">
+      <Modal isOpen={showForm} onClose={closeForm} size="lg">
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             {t("kpi.benchmarks.addBenchmark")}
@@ -262,6 +354,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.targets.form.kpiCode")}
+                <span className="text-red-500 ms-0.5">*</span>
               </label>
               <select
                 value={formData.kpi_code}
@@ -275,7 +368,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                     kpi_type: (selected?.type as any) ?? formData.kpi_type,
                   });
                 }}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className={`w-full px-3 py-2 text-sm rounded-lg border ${errBorder("kpi_code")} bg-white dark:bg-slate-800 text-slate-900 dark:text-white`}
               >
                 <option value="">-- {t("kpi.targets.form.kpiCode")} --</option>
                 {cardOptions.map((c) => (
@@ -284,17 +377,19 @@ export const KpiBenchmarkPage: React.FC = () => {
                   </option>
                 ))}
               </select>
+              {showError("kpi_code")}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.targets.form.kpiType")}
+                <span className="text-red-500 ms-0.5">*</span>
               </label>
               <select
                 value={formData.kpi_type}
                 onChange={(e) =>
                   setFormData({ ...formData, kpi_type: e.target.value as any })
                 }
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className={`w-full px-3 py-2 text-sm rounded-lg border ${errBorder("kpi_type")} bg-white dark:bg-slate-800 text-slate-900 dark:text-white`}
               >
                 <option value="strategic">
                   {t("kpi.dictionary.strategic")}
@@ -304,10 +399,12 @@ export const KpiBenchmarkPage: React.FC = () => {
                 </option>
                 <option value="award">{t("kpi.dictionary.award")}</option>
               </select>
+              {showError("kpi_type")}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.targets.table.year")}
+                <span className="text-red-500 ms-0.5">*</span>
               </label>
               <input
                 type="number"
@@ -315,8 +412,11 @@ export const KpiBenchmarkPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, year: Number(e.target.value) })
                 }
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                min={2020}
+                max={2040}
+                className={`w-full px-3 py-2 text-sm rounded-lg border ${errBorder("year")} bg-white dark:bg-slate-800 text-slate-900 dark:text-white`}
               />
+              {showError("year")}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -334,15 +434,18 @@ export const KpiBenchmarkPage: React.FC = () => {
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.benchmarks.entity")}
+                <span className="text-red-500 ms-0.5">*</span>
               </label>
               <input
                 value={formData.benchmark_entity}
                 onChange={(e) =>
                   setFormData({ ...formData, benchmark_entity: e.target.value })
                 }
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className={`w-full px-3 py-2 text-sm rounded-lg border ${errBorder("benchmark_entity")} bg-white dark:bg-slate-800 text-slate-900 dark:text-white`}
+                maxLength={255}
                 placeholder={t("kpi.benchmarks.entityPlaceholder")}
               />
+              {showError("benchmark_entity")}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -376,6 +479,36 @@ export const KpiBenchmarkPage: React.FC = () => {
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
               />
             </div>
+            {MUNICIPALITY_KEYS.map((k) => {
+              const invalid = !isValidPercent(municipalities[k]);
+              return (
+                <div key={k}>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t(`kpi.benchmarks.${k}`)}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={municipalities[k]}
+                    onChange={(e) =>
+                      setMunicipalities({
+                        ...municipalities,
+                        [k]: e.target.value,
+                      })
+                    }
+                    aria-invalid={invalid}
+                    className={`w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-white ${invalid ? "border-red-500" : "border-slate-300 dark:border-slate-600"}`}
+                  />
+                  {invalid && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {t("kpi.benchmarks.percentRangeError")}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.benchmarks.notes")}
@@ -391,14 +524,109 @@ export const KpiBenchmarkPage: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setShowForm(false)}>
+            <Button variant="outline" onClick={closeForm}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleCreate} disabled={createBenchmark.isPending}>
+            <Button
+              onClick={handleCreate}
+              disabled={
+                createBenchmark.isPending || municipalityErrors.length > 0
+              }
+            >
               {createBenchmark.isPending ? "..." : t("common.save")}
             </Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={selected !== null}
+        onClose={() => setSelected(null)}
+        size="lg"
+      >
+        {selected && (
+          <div className="p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {t("kpi.benchmarks.comparisonTitle")}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {selected.kpi_code} · {selected.year}
+                {selected.quarter ? ` Q${selected.quarter}` : ""}
+              </p>
+            </div>
+            <div className="flex items-end justify-around gap-4 h-64 border-b border-slate-300 dark:border-slate-600 pt-6">
+              {[
+                {
+                  key: "us",
+                  label: t("kpi.benchmarks.us"),
+                  value: selected.benchmark_achievement as
+                    | number
+                    | null
+                    | undefined,
+                  isUs: true,
+                },
+                ...MUNICIPALITY_KEYS.map((k) => ({
+                  key: k,
+                  label: t(`kpi.benchmarks.${k}`).replace(/\s*\(%\)/, ""),
+                  value: selected[k],
+                  isUs: false,
+                })),
+              ].map((bar) => (
+                <div
+                  key={bar.key}
+                  className="flex-1 h-full flex flex-col justify-end items-center"
+                >
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">
+                    {bar.value != null ? `${bar.value}%` : "-"}
+                  </span>
+                  <div
+                    className={`w-full max-w-[90px] rounded-t-md transition-all ${bar.isUs ? "bg-blue-600" : "bg-slate-400 dark:bg-slate-500"}`}
+                    style={{
+                      height: `${Math.min(Math.max(bar.value ?? 0, 0), 100) * 0.8}%`,
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-around gap-4 text-center">
+              {[
+                {
+                  key: "us",
+                  label: t("kpi.benchmarks.us"),
+                  sub: t("kpi.benchmarks.ourResult"),
+                },
+                ...MUNICIPALITY_KEYS.map((k) => {
+                  const v = selected[k];
+                  const ours = selected.benchmark_achievement;
+                  const gap = v != null ? v - ours : null;
+                  return {
+                    key: k,
+                    label: t(`kpi.benchmarks.${k}`).replace(/\s*\(%\)/, ""),
+                    sub:
+                      gap != null
+                        ? `${t("kpi.benchmarks.gap")} ${gap > 0 ? "+" : ""}${Number(gap.toFixed(1))}`
+                        : "-",
+                  };
+                }),
+              ].map((c) => (
+                <div key={c.key} className="flex-1">
+                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                    {c.label}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {c.sub}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" onClick={() => setSelected(null)}>
+                {t("common.close")}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
