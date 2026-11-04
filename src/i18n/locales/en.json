@@ -2973,7 +2973,14 @@
     "district": "District",
     "municipality": "Municipality",
     "street": "Street",
-    "planNo": "Plan No"
+    "planNo": "Plan No",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "enterBothCoordinates": "Enter both latitude and longitude",
+    "latitudeInvalid": "Latitude must be a number",
+    "longitudeInvalid": "Longitude must be a number",
+    "latitudeOutOfRange": "Latitude must be between -90 and 90",
+    "longitudeOutOfRange": "Longitude must be between -180 and 180"
   },
   "revisionHistory": {
     "loading": "Loading revision history...",
