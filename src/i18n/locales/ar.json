@@ -4101,7 +4101,14 @@
       "allQuarters": "جميع الأرباع",
       "allObjectives": "جميع الأهداف",
       "allCriteria": "جميع المعايير",
-      "allSubCriteria": "جميع المعايير الفرعية"
+      "allSubCriteria": "جميع المعايير الفرعية",
+      "narrative": "السرد",
+      "curveDescription": "وصف المنحنى",
+      "curveDescriptionPlaceholder": "صف ما يظهره المنحنى…",
+      "shortcomingsDescription": "تعليل القصور وتعزيز الإنتاج",
+      "shortcomingsPlaceholder": "اشرح أوجه القصور وعوامل الإنتاج…",
+      "proposedImprovement": "الإجراء التحسيني المقترح",
+      "improvementPlaceholder": "صف الإجراء التحسيني المقترح…"
     },
     "masterData": {
       "title": "البيانات الأساسية",

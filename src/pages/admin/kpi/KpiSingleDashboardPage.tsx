@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   AlertCircle,
@@ -14,8 +16,11 @@ import {
   HelpCircle,
   BarChart3,
   FileText,
-  ShieldAlert,
+  Save,
 } from "lucide-react";
+import { kpiComposedApi } from "../../../api/kpi";
+import { usePermissions } from "../../../hooks/usePermissions";
+import type { KPIType } from "../../../types/kpi";
 import {
   ComposedChart,
   Bar,
@@ -117,6 +122,53 @@ export const KpiSingleDashboardPage: React.FC = () => {
     );
   }, [allEntriesForMetric, drillDownPeriod, seriesYear]);
 
+  // Narrative fields — hooks must be before early returns
+  const { hasPermission } = usePermissions();
+  const canEditNarrative = hasPermission("perf:submit");
+  const queryClient = useQueryClient();
+
+  const [curveDescription, setCurveDescription] = useState(
+    dashboard?.curve_description ?? "",
+  );
+  const [shortcomingsDescription, setShortcomingsDescription] = useState(
+    dashboard?.shortcomings_description ?? "",
+  );
+  const [proposedImprovement, setProposedImprovement] = useState(
+    dashboard?.proposed_improvement ?? "",
+  );
+
+  useEffect(() => {
+    if (dashboard) {
+      setCurveDescription(dashboard.curve_description ?? "");
+      setShortcomingsDescription(dashboard.shortcomings_description ?? "");
+      setProposedImprovement(dashboard.proposed_improvement ?? "");
+    }
+  }, [dashboard]);
+
+  const narrativeDirty =
+    !!dashboard &&
+    (curveDescription !== (dashboard.curve_description ?? "") ||
+      shortcomingsDescription !== (dashboard.shortcomings_description ?? "") ||
+      proposedImprovement !== (dashboard.proposed_improvement ?? ""));
+
+  const saveNarrative = useMutation({
+    mutationFn: () =>
+      kpiComposedApi.updateNarrative(type as KPIType, id!, {
+        curve_description: curveDescription,
+        shortcomings_description: shortcomingsDescription,
+        proposed_improvement: proposedImprovement,
+      }),
+    onSuccess: () => {
+      toast.success(t("common.success", "Saved"));
+      queryClient.invalidateQueries({
+        queryKey: ["kpi", "single-dashboard", type, id],
+      });
+    },
+    onError: () => {
+      toast.error(t("common.failed", "Failed to save"));
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -144,14 +196,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
     );
   }
 
-  const {
-    card,
-    annual_rollup,
-    trend_description,
-    justification,
-    corrective_action,
-    benchmarks,
-  } = dashboard;
+  const { card, annual_rollup, benchmarks } = dashboard;
   const bands = card.bands;
 
   const chartData = (annual_rollup ?? []).map((row: KpiAnnualRollupRow) => ({
@@ -712,42 +757,114 @@ export const KpiSingleDashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Trend / Justification / Corrective Action narrative */}
+      {/* Narrative — Curve / Shortcomings / Proposed Improvement */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700/60">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <FileText className="w-5 h-5 text-slate-400" />
             {t("kpi.dashboard.narrative", "Narrative")}
           </h2>
+          {canEditNarrative && narrativeDirty && (
+            <button
+              type="button"
+              disabled={saveNarrative.isPending}
+              onClick={() => saveNarrative.mutate()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-60 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {saveNarrative.isPending
+                ? t("common.loading", "Saving…")
+                : t("common.save", "Save")}
+            </button>
+          )}
         </div>
         <div className="px-6 py-5 space-y-5">
+          {/* Curve Description */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              {t("kpi.performance.detail.trend", "Trend Description")}
+              {t("kpi.dashboard.curveDescription", "Curve Description")}
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {trend_description || "-"}
-            </p>
+            {canEditNarrative ? (
+              <textarea
+                dir="auto"
+                rows={3}
+                disabled={saveNarrative.isPending}
+                value={curveDescription}
+                onChange={(e) => setCurveDescription(e.target.value)}
+                placeholder={t(
+                  "kpi.dashboard.curveDescriptionPlaceholder",
+                  "Describe what the curve shows…",
+                )}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <p
+                dir="auto"
+                className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"
+              >
+                {curveDescription || "-"}
+              </p>
+            )}
           </div>
+          {/* Shortcomings & Production */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              {t("kpi.performance.detail.justification", "Justification")}
-            </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {justification || "-"}
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <ShieldAlert className="w-3.5 h-3.5" />
               {t(
-                "kpi.performance.detail.correctiveAction",
-                "Corrective Action Proposal",
+                "kpi.dashboard.shortcomingsDescription",
+                "Explaining Shortcomings and Boosting Production",
               )}
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {corrective_action || "-"}
-            </p>
+            {canEditNarrative ? (
+              <textarea
+                dir="auto"
+                rows={3}
+                disabled={saveNarrative.isPending}
+                value={shortcomingsDescription}
+                onChange={(e) => setShortcomingsDescription(e.target.value)}
+                placeholder={t(
+                  "kpi.dashboard.shortcomingsPlaceholder",
+                  "Explain shortcomings and production factors…",
+                )}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <p
+                dir="auto"
+                className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"
+              >
+                {shortcomingsDescription || "-"}
+              </p>
+            )}
+          </div>
+          {/* Proposed Improvement */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              {t(
+                "kpi.dashboard.proposedImprovement",
+                "The Proposed Improvement Measure",
+              )}
+            </label>
+            {canEditNarrative ? (
+              <textarea
+                dir="auto"
+                rows={3}
+                disabled={saveNarrative.isPending}
+                value={proposedImprovement}
+                onChange={(e) => setProposedImprovement(e.target.value)}
+                placeholder={t(
+                  "kpi.dashboard.improvementPlaceholder",
+                  "Describe the proposed improvement measure…",
+                )}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <p
+                dir="auto"
+                className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"
+              >
+                {proposedImprovement || "-"}
+              </p>
+            )}
           </div>
         </div>
       </div>

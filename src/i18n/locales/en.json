@@ -4104,7 +4104,14 @@
       "allQuarters": "All Quarters",
       "allObjectives": "All Objectives",
       "allCriteria": "All Criteria",
-      "allSubCriteria": "All Sub-Criteria"
+      "allSubCriteria": "All Sub-Criteria",
+      "narrative": "Narrative",
+      "curveDescription": "Curve Description",
+      "curveDescriptionPlaceholder": "Describe what the curve shows…",
+      "shortcomingsDescription": "Explaining Shortcomings and Boosting Production",
+      "shortcomingsPlaceholder": "Explain shortcomings and production factors…",
+      "proposedImprovement": "The Proposed Improvement Measure",
+      "improvementPlaceholder": "Describe the proposed improvement measure…"
     },
     "masterData": {
       "title": "Master Data",
