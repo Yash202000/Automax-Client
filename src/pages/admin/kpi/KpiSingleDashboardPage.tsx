@@ -788,6 +788,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
               <textarea
                 dir="auto"
                 rows={3}
+                disabled={saveNarrative.isPending}
                 value={curveDescription}
                 onChange={(e) => setCurveDescription(e.target.value)}
                 placeholder={t(
@@ -817,6 +818,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
               <textarea
                 dir="auto"
                 rows={3}
+                disabled={saveNarrative.isPending}
                 value={shortcomingsDescription}
                 onChange={(e) => setShortcomingsDescription(e.target.value)}
                 placeholder={t(
@@ -846,6 +848,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
               <textarea
                 dir="auto"
                 rows={3}
+                disabled={saveNarrative.isPending}
                 value={proposedImprovement}
                 onChange={(e) => setProposedImprovement(e.target.value)}
                 placeholder={t(
