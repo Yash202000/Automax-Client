@@ -4425,6 +4425,8 @@
     "awardKpiMeasureCreated": "تم إنشاء مؤشر/قياس الجائزة",
     "awardKpiMeasureCreateFailed": "فشل إنشاء مؤشر/قياس الجائزة",
     "awardKpiMeasureUpdated": "تم تحديث مؤشر/قياس الجائزة",
+    "versionMissing": "رقم الإصدار غير موجود في الطلب. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+    "updatedByAnotherUser": "قام شخص آخر بتحديث هذا السجل. تم تحميل أحدث البيانات، يرجى المراجعة والمحاولة مرة أخرى.",
     "awardKpiMeasureUpdateFailed": "فشل تحديث مؤشر/قياس الجائزة",
     "awardKpiMeasureDeleted": "تم حذف مؤشر/قياس الجائزة",
     "awardKpiMeasureDeleteFailed": "فشل حذف مؤشر/قياس الجائزة",

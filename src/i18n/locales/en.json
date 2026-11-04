@@ -4428,6 +4428,8 @@
     "awardKpiMeasureCreated": "Award KPI/measure created",
     "awardKpiMeasureCreateFailed": "Failed to create award KPI/measure",
     "awardKpiMeasureUpdated": "Award KPI/measure updated",
+    "versionMissing": "The version is missing from the request. Please refresh the page and try again.",
+    "updatedByAnotherUser": "Someone else has updated this record. The latest data has been loaded, please review and try again.",
     "awardKpiMeasureUpdateFailed": "Failed to update award KPI/measure",
     "awardKpiMeasureDeleted": "Award KPI/measure deleted",
     "awardKpiMeasureDeleteFailed": "Failed to delete award KPI/measure",
