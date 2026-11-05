@@ -1449,6 +1449,19 @@ export const useCreateKpiBenchmark = () => {
   });
 };
 
+export const useUpdateKpiBenchmark = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.updateBenchmark(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
+      toast.success("Benchmark updated");
+    },
+    onError: () => toast.error("Failed to update benchmark"),
+  });
+};
+
 export const useDeleteKpiBenchmark = () => {
   const qc = useQueryClient();
   return useMutation({

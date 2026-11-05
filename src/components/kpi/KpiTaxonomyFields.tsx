@@ -102,7 +102,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
       </div>
 
       <Select
-        label={`Objective *`}
+        label={`${t("kpi.dictionary.fieldObjective")} *`}
         value={processId}
         onChange={(v) => {
           const process = processes.find((p: any) => p.id === v.target.value);
@@ -127,7 +127,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
-          label="Criteria"
+          label={t("kpi.dictionary.fieldCriteria")}
           value={selectedCriterionId}
           onChange={(v) => {
             setSelectedCriterionId(v.target.value);
@@ -140,7 +140,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
           placeholder={t("common.selectAnOption")}
         />
         <Select
-          label="Sub-Criteria"
+          label={t("kpi.dictionary.fieldSubCriteria")}
           value={awardSubCriterionId}
           onChange={(v) => onChange({ award_sub_criterion_id: v.target.value })}
           options={visibleSubCriteria.map((s: any) => ({

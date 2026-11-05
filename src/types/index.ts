@@ -1993,6 +1993,9 @@ export interface Settings {
   default_language: string;
   sip_domain?: string;
   sip_socket_url?: string;
+  municipality1_name: string;
+  municipality2_name: string;
+  municipality3_name: string;
   show_evaluate_button: boolean;
   auth_setting: {
     totp_enabled: boolean;
@@ -2027,6 +2030,9 @@ export interface SettingsUpdateRequest {
   default_language?: string;
   sip_domain?: string;
   sip_socket_url?: string;
+  municipality1_name?: string;
+  municipality2_name?: string;
+  municipality3_name?: string;
   show_evaluate_button?: boolean;
   auth_setting?: {
     totp_enabled?: boolean;
