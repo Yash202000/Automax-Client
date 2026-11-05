@@ -161,6 +161,21 @@ export const KpiBenchmarkPage: React.FC = () => {
     const kpiCode = formData.kpi_code;
     const year = formData.year;
 
+    // When editing, if KPI/year match the original benchmark, preserve the
+    // stored achievement instead of overwriting it with a fetch that may
+    // return no data (e.g. rollup not yet available for the period).
+    if (
+      editingBenchmark &&
+      kpiCode === editingBenchmark.kpi_code &&
+      year === editingBenchmark.year
+    ) {
+      setAutoFetching(false);
+      setNoActualData(false);
+      setFetchFailed(false);
+      setKpiUnresolved(false);
+      return;
+    }
+
     if (!kpiCode || !year) {
       setAutoFetching(false);
       setNoActualData(false);
@@ -221,7 +236,7 @@ export const KpiBenchmarkPage: React.FC = () => {
       cancelled = true;
       setAutoFetching(false);
     };
-  }, [formData.kpi_code, formData.year, showForm, allCards]);
+  }, [formData.kpi_code, formData.year, showForm, allCards, editingBenchmark]);
 
   const openCreateForm = () => {
     setEditingBenchmark(null);
