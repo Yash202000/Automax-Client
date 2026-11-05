@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Folder,
@@ -38,6 +39,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
   currentFolderId,
   currentFolderPath,
 }) => {
+  const { t } = useTranslation();
   const [rootFolder, setRootFolder] = useState<KpiMasterDataEntityType | "">(
     "",
   );
@@ -87,7 +89,9 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
       setNewFolderName("");
       setShowNewFolder(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to create folder");
+      toast.error(
+        err?.response?.data?.error || t("kpi.folderPicker.failedToCreate"),
+      );
     }
   };
 
@@ -96,7 +100,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg mx-4">
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Select Evidence Folder
+            {t("kpi.folderPicker.title")}
           </h3>
           <button
             onClick={handleClose}
@@ -111,7 +115,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
             <div className="flex items-center justify-between gap-2 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 p-3">
               <div className="text-sm text-teal-700 dark:text-teal-300 min-w-0">
                 <span className="block text-xs uppercase tracking-wide text-teal-500 dark:text-teal-400">
-                  Currently configured
+                  {t("kpi.folderPicker.currentlyConfigured")}
                 </span>
                 <span className="font-medium break-words">
                   {(currentFolderPath ?? []).join(" / ") || currentFolderId}
@@ -121,36 +125,37 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                 onClick={() => onSelect("", [])}
                 className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline shrink-0"
               >
-                <XCircle size={14} /> Remove
+                <XCircle size={14} /> {t("kpi.folderPicker.remove")}
               </button>
             </div>
           )}
 
           <Select
-            label="Root Folder"
+            label={t("kpi.folderPicker.rootFolder")}
             value={rootFolder}
             onChange={(e) => {
               setRootFolder(e.target.value as KpiMasterDataEntityType);
               setCrumbs([]);
             }}
             options={KPI_ROOT_FOLDER_OPTIONS}
-            placeholder="Choose a root folder"
+            placeholder={t("kpi.folderPicker.chooseRootFolder")}
           />
 
           {!rootFolder && (
             <p className="text-sm text-slate-400">
-              Pick a root folder above to browse its Documenta folders.
+              {t("kpi.folderPicker.pickRootHint")}
             </p>
           )}
 
           {rootFolder && anchor.isLoading && (
-            <p className="text-sm text-slate-400">Resolving folder…</p>
+            <p className="text-sm text-slate-400">
+              {t("kpi.folderPicker.resolving")}
+            </p>
           )}
 
           {rootFolder && anchor.data && !anchor.data.resolvable && (
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              {anchor.data.reason ||
-                "This root doesn't resolve to a folder yet."}
+              {anchor.data.reason || t("kpi.folderPicker.notResolvable")}
             </p>
           )}
 
@@ -163,7 +168,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                 >
                   {anchor.data.anchor_path[
                     anchor.data.anchor_path.length - 1
-                  ] ?? "Root"}
+                  ] ?? t("kpi.folderPicker.root")}
                 </button>
                 {crumbs.map((crumb, i) => (
                   <React.Fragment key={crumb.id}>
@@ -180,11 +185,13 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
 
               <div className="border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700/60">
                 {folders.isLoading && (
-                  <p className="p-3 text-sm text-slate-400">Loading folders…</p>
+                  <p className="p-3 text-sm text-slate-400">
+                    {t("kpi.folderPicker.loadingFolders")}
+                  </p>
                 )}
                 {!folders.isLoading && (folders.data ?? []).length === 0 && (
                   <p className="p-3 text-sm text-slate-400">
-                    No sub-folders here yet.
+                    {t("kpi.folderPicker.noSubFolders")}
                   </p>
                 )}
                 {(folders.data ?? []).map((folder) => (
@@ -210,7 +217,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                       }
                       className="text-xs px-2 py-1 rounded-md bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/50 flex items-center gap-1"
                     >
-                      <Check size={12} /> Select
+                      <Check size={12} /> {t("kpi.folderPicker.select")}
                     </button>
                   </div>
                 ))}
@@ -222,7 +229,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                     type="text"
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
-                    placeholder="New folder name"
+                    placeholder={t("kpi.folderPicker.newFolderName")}
                     className="flex-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-sm text-slate-900 dark:text-white"
                     autoFocus
                   />
@@ -231,7 +238,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                     disabled={createFolder.isPending || !newFolderName.trim()}
                     className="text-sm px-3 py-1.5 rounded-md bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
                   >
-                    Create
+                    {t("kpi.folderPicker.create")}
                   </button>
                   <button
                     onClick={() => {
@@ -240,7 +247,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                     }}
                     className="text-sm px-2 py-1.5 text-slate-500"
                   >
-                    Cancel
+                    {t("kpi.folderPicker.cancel")}
                   </button>
                 </div>
               ) : (
@@ -248,7 +255,7 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                   onClick={() => setShowNewFolder(true)}
                   className="flex items-center gap-1.5 text-sm text-teal-600 dark:text-teal-400 hover:underline"
                 >
-                  <FolderPlus size={16} /> New Folder
+                  <FolderPlus size={16} /> {t("kpi.folderPicker.newFolder")}
                 </button>
               )}
 
@@ -256,7 +263,9 @@ export const DocumentaFolderPicker: React.FC<DocumentaFolderPickerProps> = ({
                 onClick={() => onSelect(currentParentId as string, currentPath)}
                 className="w-full text-sm px-3 py-2 rounded-md border border-teal-600 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20"
               >
-                Use current folder ({currentPath.join(" / ") || "root"})
+                {t("kpi.folderPicker.useCurrentFolder", {
+                  path: currentPath.join(" / ") || t("kpi.folderPicker.root"),
+                })}
               </button>
             </>
           )}

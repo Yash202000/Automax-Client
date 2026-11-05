@@ -4543,6 +4543,26 @@
       "kpisFound": "تم العثور على {{count}} مؤشر(ات)",
       "print": "طباعة"
     },
+    "folderPicker": {
+      "title": "اختر مجلد الأدلة",
+      "currentlyConfigured": "مُهيأ حالياً",
+      "remove": "إزالة",
+      "rootFolder": "المجلد الجذري",
+      "chooseRootFolder": "اختر مجلداً جذرياً",
+      "pickRootHint": "اختر مجلداً جذرياً أعلاه لاستعراض مجلدات الوثائق.",
+      "resolving": "جارٍ تحديد المجلد…",
+      "notResolvable": "هذا الجذر لا يرتبط بمجلد بعد.",
+      "root": "الجذر",
+      "loadingFolders": "جارٍ تحميل المجلدات…",
+      "noSubFolders": "لا توجد مجلدات فرعية هنا بعد.",
+      "select": "اختيار",
+      "newFolderName": "اسم المجلد الجديد",
+      "create": "إنشاء",
+      "cancel": "إلغاء",
+      "newFolder": "مجلد جديد",
+      "useCurrentFolder": "استخدام المجلد الحالي ({{path}})",
+      "failedToCreate": "فشل إنشاء المجلد"
+    },
     "dictionaryImport": {
       "button": "استيراد جماعي",
       "downloadTemplate": "تنزيل القالب",
