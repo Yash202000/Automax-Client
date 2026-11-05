@@ -968,6 +968,20 @@ const postKpiImport = async (
 };
 
 export const kpiDictionaryImportApi = {
+  downloadTemplate: async (language: "en" | "ar"): Promise<void> => {
+    const res = await apiClient.get("/kpi/dictionary-import/template", {
+      params: { lang: language },
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kpi_dictionary_template_${language}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
   validate: (file: File, options: KpiImportOptions) =>
     postKpiImport("validate", file, options),
   commit: (file: File, options: KpiImportOptions) =>
