@@ -4524,6 +4524,8 @@
     },
     "dictionaryImport": {
       "button": "Bulk Import",
+      "downloadTemplate": "Download Template",
+      "templateDownloadFailed": "Failed to download the import template.",
       "title": "KPI Dictionary Bulk Import",
       "subtitle": "Upload the KPI Dictionary workbook to load master data, KPI definitions, annual targets and historical quarterly performance.",
       "backToDictionary": "Back to Dictionary",
