@@ -111,6 +111,7 @@ export const KpiBenchmarkPage: React.FC = () => {
   // Auto-fetch internal achievement state
   const [autoFetching, setAutoFetching] = useState(false);
   const [noActualData, setNoActualData] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
 
   // --- Detail/comparison modal ---
   const [selected, setSelected] = useState<KpiBenchmark | null>(null);
@@ -152,17 +153,24 @@ export const KpiBenchmarkPage: React.FC = () => {
 
   // Auto-fetch internal achievement when KPI code + year change
   useEffect(() => {
-    if (!showForm) return;
+    if (!showForm) {
+      setAutoFetching(false);
+      return;
+    }
     const kpiCode = formData.kpi_code;
     const year = formData.year;
 
     if (!kpiCode || !year) {
+      setAutoFetching(false);
       setNoActualData(false);
+      setFetchFailed(false);
       return;
     }
     const card = (allCards ?? []).find((c) => c.code === kpiCode);
     if (!card) {
+      setAutoFetching(false);
       setNoActualData(true);
+      setFetchFailed(false);
       return;
     }
 
@@ -170,6 +178,7 @@ export const KpiBenchmarkPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
     setAutoFetching(true);
     setNoActualData(false);
+    setFetchFailed(false);
 
     const currentFetchId = ++fetchIdRef.current;
     let cancelled = false;
@@ -194,8 +203,9 @@ export const KpiBenchmarkPage: React.FC = () => {
       })
       .catch(() => {
         if (cancelled || fetchIdRef.current !== currentFetchId) return;
-        setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
-        setNoActualData(true);
+        // Don't overwrite achievement on failure — leave as 0 (from reset above)
+        // but mark as failed so user knows the value is unreliable
+        setFetchFailed(true);
       })
       .finally(() => {
         if (cancelled || fetchIdRef.current !== currentFetchId) return;
@@ -204,6 +214,7 @@ export const KpiBenchmarkPage: React.FC = () => {
 
     return () => {
       cancelled = true;
+      setAutoFetching(false);
     };
   }, [formData.kpi_code, formData.year, showForm, allCards]);
 
@@ -245,6 +256,7 @@ export const KpiBenchmarkPage: React.FC = () => {
     setSubmitted(false);
     setMunicipalities(EMPTY_MUNICIPALITIES);
     setNoActualData(false);
+    setFetchFailed(false);
   };
 
   const handleSubmit = async () => {
@@ -604,6 +616,15 @@ export const KpiBenchmarkPage: React.FC = () => {
                   )}
                 </p>
               )}
+              {fetchFailed && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {t(
+                    "kpi.benchmarks.fetchFailed",
+                    "Failed to fetch achievement data. Please try again.",
+                  )}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -672,7 +693,10 @@ export const KpiBenchmarkPage: React.FC = () => {
             <Button
               onClick={handleSubmit}
               disabled={
-                isSaving || autoFetching || municipalityErrors.length > 0
+                isSaving ||
+                autoFetching ||
+                fetchFailed ||
+                municipalityErrors.length > 0
               }
             >
               {isSaving ? "..." : t("common.save")}
