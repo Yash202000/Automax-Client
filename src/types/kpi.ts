@@ -753,11 +753,15 @@ export interface AwardKpiMeasure {
   code: string;
   name_en: string;
   name_ar: string;
+  /** Optimistic-locking version; must be echoed back on update. */
+  version?: number;
 }
 
 export interface AwardKpiMeasureRequest {
   name_en: string;
   name_ar?: string;
+  /** Required by the backend on update (optimistic locking). */
+  version?: number;
 }
 
 export interface DomainRequest {
