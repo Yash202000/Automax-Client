@@ -39,6 +39,7 @@ import {
   useKpiEntries,
   useKpiCardDefinitions,
 } from "../../../hooks/useKpi";
+import { useSettings } from "../../../contexts/SettingsContext";
 import {
   getBandColor,
   BAND_BAR_CLASS,
@@ -66,6 +67,7 @@ function formatValue(v: number | null): string {
 
 export const KpiSingleDashboardPage: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const { type, id } = useParams<{ type: string; id: string }>();
   const { data: kpiOptions } = useKpiCardDefinitions();
@@ -895,6 +897,18 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     {t("kpi.benchmarks.benchmark", "Benchmark Achievement")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {settings?.municipality1_name ||
+                      t("kpi.benchmarks.municipality1")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {settings?.municipality2_name ||
+                      t("kpi.benchmarks.municipality2")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {settings?.municipality3_name ||
+                      t("kpi.benchmarks.municipality3")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     {t("kpi.benchmarks.variance", "Variance")}
                   </th>
                 </tr>
@@ -917,6 +931,15 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
                       {b.benchmark_achievement}
+                    </td>
+                    <td className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      {b.municipality1 != null ? `${b.municipality1}%` : "-"}
+                    </td>
+                    <td className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      {b.municipality2 != null ? `${b.municipality2}%` : "-"}
+                    </td>
+                    <td className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      {b.municipality3 != null ? `${b.municipality3}%` : "-"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span

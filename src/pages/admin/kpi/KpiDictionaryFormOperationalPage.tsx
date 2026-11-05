@@ -309,21 +309,22 @@ export const KpiDictionaryFormOperationalPage: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Evidence Folder
+              {t("kpi.dictionary.fieldEvidenceFolder")}
             </label>
             <div className="flex items-center gap-2">
               <div className="flex-1 flex items-center gap-2 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
                 <FolderOpen size={16} className="text-amber-500 shrink-0" />
                 {form.documenta_folder_id
-                  ? documentaFolderPath.join(" / ") || "Configured"
-                  : "Not configured — evidence will use a default folder on first upload"}
+                  ? documentaFolderPath.join(" / ") ||
+                    t("kpi.dictionary.evidenceConfigured")
+                  : t("kpi.dictionary.evidenceNotConfigured")}
               </div>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => setShowFolderPicker(true)}
               >
-                Choose Folder
+                {t("kpi.dictionary.chooseFolder")}
               </Button>
             </div>
           </div>

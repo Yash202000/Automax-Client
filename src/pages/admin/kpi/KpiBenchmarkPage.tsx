@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
@@ -9,13 +9,18 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight,
+  Pencil,
+  Info,
 } from "lucide-react";
 import {
   useKpiBenchmarks,
   useCreateKpiBenchmark,
   useDeleteKpiBenchmark,
+  useUpdateKpiBenchmark,
   useKpiCardDefinitions,
 } from "../../../hooks/useKpi";
+import { kpiComposedApi } from "../../../api/kpi";
+import { useSettings } from "../../../contexts/SettingsContext";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
 import type { KpiBenchmark, KpiBenchmarkRequest } from "../../../types/kpi";
@@ -39,11 +44,34 @@ const isValidPercent = (value: string): boolean => {
   return Number.isFinite(n) && n >= 0 && n <= 100;
 };
 
+const DEFAULT_FORM: KpiBenchmarkRequest = {
+  kpi_code: "",
+  kpi_type: "strategic",
+  year: new Date().getFullYear(),
+  quarter: 0,
+  zone: "",
+  benchmark_entity: "",
+  internal_achievement: 0,
+  benchmark_achievement: 0,
+  notes: "",
+};
+
 export const KpiBenchmarkPage: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
   const [search, setSearch] = useState("");
   const [zoneFilter, setZoneFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
+
+  // Municipality labels from admin-configurable settings, falling back to i18n
+  const municipalityLabels: Record<MunicipalityKey, string> = {
+    municipality1:
+      settings?.municipality1_name || t("kpi.benchmarks.municipality1"),
+    municipality2:
+      settings?.municipality2_name || t("kpi.benchmarks.municipality2"),
+    municipality3:
+      settings?.municipality3_name || t("kpi.benchmarks.municipality3"),
+  };
 
   const params = useMemo(
     () => ({
@@ -57,40 +85,42 @@ export const KpiBenchmarkPage: React.FC = () => {
   const { data: benchmarks, isLoading, error } = useKpiBenchmarks(params);
   const { data: allCards } = useKpiCardDefinitions();
   const cardOptions = (allCards ?? []).map((c) => ({
+    id: c.id,
     code: c.code,
     label: `${c.code} — ${c.name_en}`,
     type: c.type,
   }));
   const createBenchmark = useCreateKpiBenchmark();
+  const updateBenchmark = useUpdateKpiBenchmark();
   const deleteBenchmark = useDeleteKpiBenchmark();
 
   const items = benchmarks ?? [];
 
+  // --- Form state (shared between create and edit) ---
   const [showForm, setShowForm] = useState(false);
+  const [editingBenchmark, setEditingBenchmark] = useState<KpiBenchmark | null>(
+    null,
+  );
   const [formData, setFormData] = useState<KpiBenchmarkRequest>({
-    kpi_code: "",
-    kpi_type: "strategic",
-    year: new Date().getFullYear(),
-    quarter: 0,
-    zone: "",
-    benchmark_entity: "",
-    internal_achievement: 0,
-    benchmark_achievement: 0,
-    notes: "",
+    ...DEFAULT_FORM,
   });
-
-  const [selected, setSelected] = useState<KpiBenchmark | null>(null);
   const [municipalities, setMunicipalities] =
     useState<Record<MunicipalityKey, string>>(EMPTY_MUNICIPALITIES);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Auto-fetch internal achievement state
+  const [autoFetching, setAutoFetching] = useState(false);
+  const [noActualData, setNoActualData] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [kpiUnresolved, setKpiUnresolved] = useState(false);
+
+  // --- Detail/comparison modal ---
+  const [selected, setSelected] = useState<KpiBenchmark | null>(null);
 
   const municipalityErrors = MUNICIPALITY_KEYS.filter(
     (k) => !isValidPercent(municipalities[k]),
   );
 
-  const [submitted, setSubmitted] = useState(false);
-
-  // Mirrors backend validation: kpi_code required (max 50), kpi_type required,
-  // year required (2020-2040), benchmark_entity required (max 255).
   const formErrors = {
     kpi_code:
       !formData.kpi_code || formData.kpi_code.length > 50
@@ -119,13 +149,142 @@ export const KpiBenchmarkPage: React.FC = () => {
       ? "border-red-500"
       : "border-slate-300 dark:border-slate-600";
 
-  const closeForm = () => {
-    setShowForm(false);
-    setSubmitted(false);
+  // Track the latest fetch request to avoid stale responses overwriting current data
+  const fetchIdRef = useRef(0);
+
+  // Auto-fetch internal achievement when KPI code + year change
+  useEffect(() => {
+    if (!showForm) {
+      setAutoFetching(false);
+      return;
+    }
+    const kpiCode = formData.kpi_code;
+    const year = formData.year;
+
+    // When editing, if KPI/year match the original benchmark, preserve the
+    // stored achievement instead of overwriting it with a fetch that may
+    // return no data (e.g. rollup not yet available for the period).
+    if (
+      editingBenchmark &&
+      kpiCode === editingBenchmark.kpi_code &&
+      year === editingBenchmark.year
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        internal_achievement: editingBenchmark.internal_achievement,
+      }));
+      setAutoFetching(false);
+      setNoActualData(false);
+      setFetchFailed(false);
+      setKpiUnresolved(false);
+      return;
+    }
+
+    if (!kpiCode || !year) {
+      setAutoFetching(false);
+      setNoActualData(false);
+      setFetchFailed(false);
+      setKpiUnresolved(false);
+      return;
+    }
+    const card = (allCards ?? []).find((c) => c.code === kpiCode);
+    if (!card) {
+      setAutoFetching(false);
+      setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
+      setNoActualData(true);
+      setFetchFailed(false);
+      setKpiUnresolved(true);
+      return;
+    }
+
+    // Reset achievement while fetching to prevent stale data submission
+    setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
+    setAutoFetching(true);
+    setNoActualData(false);
+    setFetchFailed(false);
+    setKpiUnresolved(false);
+
+    const currentFetchId = ++fetchIdRef.current;
+    let cancelled = false;
+
+    kpiComposedApi
+      .getAnnualRollup(card.type as any, card.id)
+      .then((res) => {
+        if (cancelled || fetchIdRef.current !== currentFetchId) return;
+        const rows = res.data ?? [];
+        const match = rows.find((r) => r.year === year);
+        if (match && match.achievement_pct != null) {
+          const pct = match.achievement_pct;
+          setFormData((prev) => ({
+            ...prev,
+            internal_achievement: Number(pct.toFixed(2)),
+          }));
+          setNoActualData(false);
+        } else {
+          setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
+          setNoActualData(true);
+        }
+      })
+      .catch(() => {
+        if (cancelled || fetchIdRef.current !== currentFetchId) return;
+        // Don't overwrite achievement on failure — leave as 0 (from reset above)
+        // but mark as failed so user knows the value is unreliable
+        setFetchFailed(true);
+      })
+      .finally(() => {
+        if (cancelled || fetchIdRef.current !== currentFetchId) return;
+        setAutoFetching(false);
+      });
+
+    return () => {
+      cancelled = true;
+      setAutoFetching(false);
+    };
+  }, [formData.kpi_code, formData.year, showForm, allCards, editingBenchmark]);
+
+  const openCreateForm = () => {
+    setEditingBenchmark(null);
+    setFormData({ ...DEFAULT_FORM });
     setMunicipalities(EMPTY_MUNICIPALITIES);
+    setSubmitted(false);
+    setNoActualData(false);
+    setShowForm(true);
   };
 
-  const handleCreate = async () => {
+  const openEditForm = (b: KpiBenchmark) => {
+    setEditingBenchmark(b);
+    setFormData({
+      kpi_code: b.kpi_code,
+      kpi_type: b.kpi_type,
+      year: b.year,
+      quarter: b.quarter,
+      zone: b.zone || "",
+      benchmark_entity: b.benchmark_entity,
+      internal_achievement: b.internal_achievement,
+      benchmark_achievement: b.benchmark_achievement,
+      notes: b.notes || "",
+    });
+    setMunicipalities({
+      municipality1: b.municipality1 != null ? String(b.municipality1) : "",
+      municipality2: b.municipality2 != null ? String(b.municipality2) : "",
+      municipality3: b.municipality3 != null ? String(b.municipality3) : "",
+    });
+    setSubmitted(false);
+    setNoActualData(false);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingBenchmark(null);
+    setSubmitted(false);
+    setMunicipalities(EMPTY_MUNICIPALITIES);
+    setNoActualData(false);
+    setFetchFailed(false);
+    setKpiUnresolved(false);
+  };
+
+  const handleSubmit = async () => {
     setSubmitted(true);
     if (hasFormErrors || municipalityErrors.length > 0) return;
     const payload: KpiBenchmarkRequest = { ...formData };
@@ -133,19 +292,16 @@ export const KpiBenchmarkPage: React.FC = () => {
       const v = municipalities[k].trim();
       if (v !== "") payload[k] = Number(v);
     });
-    await createBenchmark.mutateAsync(payload);
+    if (editingBenchmark) {
+      await updateBenchmark.mutateAsync({
+        id: editingBenchmark.id,
+        data: payload,
+      });
+    } else {
+      await createBenchmark.mutateAsync(payload);
+    }
     closeForm();
-    setFormData({
-      kpi_code: "",
-      kpi_type: "strategic",
-      year: new Date().getFullYear(),
-      quarter: 0,
-      zone: "",
-      benchmark_entity: "",
-      internal_achievement: 0,
-      benchmark_achievement: 0,
-      notes: "",
-    });
+    setFormData({ ...DEFAULT_FORM });
   };
 
   const handleDelete = async (id: string) => {
@@ -155,6 +311,7 @@ export const KpiBenchmarkPage: React.FC = () => {
   };
 
   const zones = Array.from(new Set(items.map((b) => b.zone).filter(Boolean)));
+  const isSaving = createBenchmark.isPending || updateBenchmark.isPending;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -172,7 +329,7 @@ export const KpiBenchmarkPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={openCreateForm}>
           <Plus className="w-4 h-4" />
           {t("kpi.benchmarks.addBenchmark")}
         </Button>
@@ -262,7 +419,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                       key={k}
                       className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase"
                     >
-                      {t(`kpi.benchmarks.${k}`)}
+                      {municipalityLabels[k]}
                     </th>
                   ))}
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
@@ -326,16 +483,28 @@ export const KpiBenchmarkPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(b.id);
-                        }}
-                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        title={t("common.delete")}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditForm(b);
+                          }}
+                          className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          title={t("common.edit")}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(b.id);
+                          }}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          title={t("common.delete")}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -345,10 +514,13 @@ export const KpiBenchmarkPage: React.FC = () => {
         )}
       </div>
 
+      {/* Create / Edit Modal */}
       <Modal isOpen={showForm} onClose={closeForm} size="lg">
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {t("kpi.benchmarks.addBenchmark")}
+            {editingBenchmark
+              ? t("kpi.benchmarks.editBenchmark")
+              : t("kpi.benchmarks.addBenchmark")}
           </h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -359,13 +531,13 @@ export const KpiBenchmarkPage: React.FC = () => {
               <select
                 value={formData.kpi_code}
                 onChange={(e) => {
-                  const selected = cardOptions.find(
+                  const sel = cardOptions.find(
                     (c) => c.code === e.target.value,
                   );
                   setFormData({
                     ...formData,
                     kpi_code: e.target.value,
-                    kpi_type: (selected?.type as any) ?? formData.kpi_type,
+                    kpi_type: (sel?.type as any) ?? formData.kpi_type,
                   });
                 }}
                 className={`w-full px-3 py-2 text-sm rounded-lg border ${errBorder("kpi_code")} bg-white dark:bg-slate-800 text-slate-900 dark:text-white`}
@@ -450,18 +622,34 @@ export const KpiBenchmarkPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.benchmarks.internal")}
+                {autoFetching && (
+                  <Loader2 className="inline w-3 h-3 ms-1 animate-spin" />
+                )}
               </label>
               <input
                 type="number"
                 value={formData.internal_achievement || 0}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    internal_achievement: Number(e.target.value),
-                  })
-                }
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                readOnly
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white cursor-not-allowed"
               />
+              {noActualData && (
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  {t(
+                    "kpi.benchmarks.noActualData",
+                    "No actual data available for the selected KPI and year",
+                  )}
+                </p>
+              )}
+              {fetchFailed && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {t(
+                    "kpi.benchmarks.fetchFailed",
+                    "Failed to fetch achievement data. Please try again.",
+                  )}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -484,7 +672,7 @@ export const KpiBenchmarkPage: React.FC = () => {
               return (
                 <div key={k}>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {t(`kpi.benchmarks.${k}`)}
+                    {municipalityLabels[k]} (%)
                   </label>
                   <input
                     type="number"
@@ -528,17 +716,22 @@ export const KpiBenchmarkPage: React.FC = () => {
               {t("common.cancel")}
             </Button>
             <Button
-              onClick={handleCreate}
+              onClick={handleSubmit}
               disabled={
-                createBenchmark.isPending || municipalityErrors.length > 0
+                isSaving ||
+                autoFetching ||
+                fetchFailed ||
+                kpiUnresolved ||
+                municipalityErrors.length > 0
               }
             >
-              {createBenchmark.isPending ? "..." : t("common.save")}
+              {isSaving ? "..." : t("common.save")}
             </Button>
           </div>
         </div>
       </Modal>
 
+      {/* Comparison / Detail Modal */}
       <Modal
         isOpen={selected !== null}
         onClose={() => setSelected(null)}
@@ -568,7 +761,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                 },
                 ...MUNICIPALITY_KEYS.map((k) => ({
                   key: k,
-                  label: t(`kpi.benchmarks.${k}`).replace(/\s*\(%\)/, ""),
+                  label: municipalityLabels[k],
                   value: selected[k],
                   isUs: false,
                 })),
@@ -602,7 +795,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                   const gap = v != null ? v - ours : null;
                   return {
                     key: k,
-                    label: t(`kpi.benchmarks.${k}`).replace(/\s*\(%\)/, ""),
+                    label: municipalityLabels[k],
                     sub:
                       gap != null
                         ? `${t("kpi.benchmarks.gap")} ${gap > 0 ? "+" : ""}${Number(gap.toFixed(1))}`

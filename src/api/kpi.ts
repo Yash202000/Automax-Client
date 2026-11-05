@@ -819,6 +819,13 @@ export const kpiPerformanceApi = {
     const res = await apiClient.post("/kpi/benchmarks", data);
     return res.data;
   },
+  updateBenchmark: async (
+    id: string,
+    data: KpiBenchmarkRequest,
+  ): Promise<ApiResponse<KpiBenchmark>> => {
+    const res = await apiClient.put(`/kpi/benchmarks/${id}`, data);
+    return res.data;
+  },
   deleteBenchmark: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/benchmarks/${id}`);
     return res.data;
