@@ -169,6 +169,10 @@ export const KpiBenchmarkPage: React.FC = () => {
       kpiCode === editingBenchmark.kpi_code &&
       year === editingBenchmark.year
     ) {
+      setFormData((prev) => ({
+        ...prev,
+        internal_achievement: editingBenchmark.internal_achievement,
+      }));
       setAutoFetching(false);
       setNoActualData(false);
       setFetchFailed(false);
