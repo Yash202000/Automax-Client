@@ -897,13 +897,16 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     {t("kpi.benchmarks.benchmark", "Benchmark Achievement")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    {settings?.municipality1_name || "Municipality 1"}
+                    {settings?.municipality1_name ||
+                      t("kpi.benchmarks.municipality1")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    {settings?.municipality2_name || "Municipality 2"}
+                    {settings?.municipality2_name ||
+                      t("kpi.benchmarks.municipality2")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
-                    {settings?.municipality3_name || "Municipality 3"}
+                    {settings?.municipality3_name ||
+                      t("kpi.benchmarks.municipality3")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     {t("kpi.benchmarks.variance", "Variance")}

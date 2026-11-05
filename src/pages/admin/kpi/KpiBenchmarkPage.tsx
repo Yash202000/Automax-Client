@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
@@ -63,11 +63,14 @@ export const KpiBenchmarkPage: React.FC = () => {
   const [zoneFilter, setZoneFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
 
-  // Municipality labels from admin-configurable settings
+  // Municipality labels from admin-configurable settings, falling back to i18n
   const municipalityLabels: Record<MunicipalityKey, string> = {
-    municipality1: settings?.municipality1_name || "Municipality 1",
-    municipality2: settings?.municipality2_name || "Municipality 2",
-    municipality3: settings?.municipality3_name || "Municipality 3",
+    municipality1:
+      settings?.municipality1_name || t("kpi.benchmarks.municipality1"),
+    municipality2:
+      settings?.municipality2_name || t("kpi.benchmarks.municipality2"),
+    municipality3:
+      settings?.municipality3_name || t("kpi.benchmarks.municipality3"),
   };
 
   const params = useMemo(
@@ -144,25 +147,37 @@ export const KpiBenchmarkPage: React.FC = () => {
       ? "border-red-500"
       : "border-slate-300 dark:border-slate-600";
 
+  // Track the latest fetch request to avoid stale responses overwriting current data
+  const fetchIdRef = useRef(0);
+
   // Auto-fetch internal achievement when KPI code + year change
-  const fetchInternalAchievement = useCallback(
-    async (kpiCode: string, year: number) => {
-      if (!kpiCode || !year) {
-        setNoActualData(false);
-        return;
-      }
-      const card = (allCards ?? []).find((c) => c.code === kpiCode);
-      if (!card) {
-        setNoActualData(true);
-        return;
-      }
-      setAutoFetching(true);
+  useEffect(() => {
+    if (!showForm) return;
+    const kpiCode = formData.kpi_code;
+    const year = formData.year;
+
+    if (!kpiCode || !year) {
       setNoActualData(false);
-      try {
-        const res = await kpiComposedApi.getAnnualRollup(
-          card.type as any,
-          card.id,
-        );
+      return;
+    }
+    const card = (allCards ?? []).find((c) => c.code === kpiCode);
+    if (!card) {
+      setNoActualData(true);
+      return;
+    }
+
+    // Reset achievement while fetching to prevent stale data submission
+    setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
+    setAutoFetching(true);
+    setNoActualData(false);
+
+    const currentFetchId = ++fetchIdRef.current;
+    let cancelled = false;
+
+    kpiComposedApi
+      .getAnnualRollup(card.type as any, card.id)
+      .then((res) => {
+        if (cancelled || fetchIdRef.current !== currentFetchId) return;
         const rows = res.data ?? [];
         const match = rows.find((r) => r.year === year);
         if (match && match.achievement_pct != null) {
@@ -176,21 +191,21 @@ export const KpiBenchmarkPage: React.FC = () => {
           setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
           setNoActualData(true);
         }
-      } catch {
+      })
+      .catch(() => {
+        if (cancelled || fetchIdRef.current !== currentFetchId) return;
         setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
         setNoActualData(true);
-      } finally {
+      })
+      .finally(() => {
+        if (cancelled || fetchIdRef.current !== currentFetchId) return;
         setAutoFetching(false);
-      }
-    },
-    [allCards],
-  );
+      });
 
-  // Trigger auto-fetch when kpi_code or year changes in form
-  useEffect(() => {
-    if (!showForm) return;
-    fetchInternalAchievement(formData.kpi_code, formData.year);
-  }, [formData.kpi_code, formData.year, showForm, fetchInternalAchievement]);
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.kpi_code, formData.year, showForm, allCards]);
 
   const openCreateForm = () => {
     setEditingBenchmark(null);
@@ -656,7 +671,9 @@ export const KpiBenchmarkPage: React.FC = () => {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSaving || municipalityErrors.length > 0}
+              disabled={
+                isSaving || autoFetching || municipalityErrors.length > 0
+              }
             >
               {isSaving ? "..." : t("common.save")}
             </Button>
