@@ -22,7 +22,6 @@ import {
   Phone,
   Smartphone,
   TriangleAlert,
-  User,
   X,
   ZoomIn,
 } from "lucide-react";
