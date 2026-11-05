@@ -228,6 +228,7 @@ export function DetailsTab({
   slaDays,
   onPreviewAttachment,
   mergedIncidents,
+  hideNearbyIncidents,
 }: {
   incident: Incident;
   attachments: IncidentAttachment[];
@@ -236,6 +237,8 @@ export function DetailsTab({
   slaDays: number | null;
   onPreviewAttachment: (attachmentId: string) => void;
   mergedIncidents: Incident[];
+  /** Hide the "Nearby incidents" card under the description. */
+  hideNearbyIncidents?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -403,6 +406,7 @@ export function DetailsTab({
   // Nearby = separate card under the description; hide it entirely when the
   // feature is not configured or the incident has no coordinates/classification.
   const showNearbyCard =
+    !hideNearbyIncidents &&
     recurrenceEnabled &&
     incident.latitude != null &&
     incident.longitude != null &&

@@ -20,6 +20,7 @@ import {
   AdminProtectedRoute,
   PermissionRoute,
   IncidentLayout,
+  DispatcherLayout,
   RequestLayout,
   WorkflowLayout,
   ComplaintsLayout,
@@ -163,6 +164,11 @@ function IncidentDetailsRoute() {
   }
   return <IncidentDetailPage />;
 }
+const DispatcherListPage = lazy(() =>
+  import("./pages/dispatcher/ListPage").then((m) => ({
+    default: m.DispatcherListPage,
+  })),
+);
 const IncidentFeedbackPage = lazy(() =>
   import("./pages/IncidentFeedbackPage").then((m) => ({
     default: m.CitizenIncidentFeedbackPage,
@@ -781,6 +787,24 @@ function App() {
                         <Route
                           path="/workflows/:id"
                           element={<WorkflowDesignerPage />}
+                        />
+                      </Route>
+                    </Route>
+                  </Route>
+
+                  {/* Dispatcher routes - separate layout */}
+                  <Route element={<AdminProtectedRoute />}>
+                    <Route element={<DispatcherLayout />}>
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.DISPATCHER_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/dispatcher/:id?"
+                          element={<DispatcherListPage />}
                         />
                       </Route>
                     </Route>

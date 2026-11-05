@@ -13,3 +13,4 @@ export { QueryLayout } from "./QueryLayout";
 export { CallCentreLayout } from "./CallCentreLayout";
 export { ReportsLayout } from "./ReportsLayout";
 export { GoalLayout } from "./GoalLayout";
+export { DispatcherLayout } from "./DispatcherLayout";

@@ -48,6 +48,7 @@ import {
   gisLocationApi,
   incidentMergeApi,
 } from "../../../api/admin";
+import { ScrollableNav } from "./ScrollableNav";
 import { IncidentTransitionDialog } from "../../../components/incidents/IncidentTransitionDialog";
 import {
   BulkUnmergeModal,
@@ -97,6 +98,10 @@ import { NasaqTab } from "./workspace/NasaqTab";
 import { useIncidentWebSocket } from "@/lib/services/incidentWebSocket";
 
 interface Props {
+  /** Hide the "Copy incident URL" action (e.g. inside the dispatcher). */
+  hideCopyUrl?: boolean;
+  /** Hide the "Nearby incidents" button in the details tab. */
+  hideNearbyIncidents?: boolean;
   incident: Incident | null;
 }
 
@@ -190,7 +195,11 @@ function transitionIcon(transition: WorkflowTransition) {
   return <ChevronRight className={cls} />;
 }
 
-export function IncidentDetailsWorkspace({ incident }: Props) {
+export function IncidentDetailsWorkspace({
+  incident,
+  hideCopyUrl,
+  hideNearbyIncidents,
+}: Props) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
@@ -826,16 +835,18 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 : t("incidents.downloadReport")}
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={copyUrl}
-            className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm disabled:opacity-60"
-            title={t("incidents.copyIncidentUrl")}
-            aria-label={t("incidents.copyIncidentUrl")}
-          >
-            <Copy className="h-3.5 w-3.5 me-1.5" />
-            {t("incidents.copyIncidentUrl")}
-          </button>
+          {!hideCopyUrl ? (
+            <button
+              type="button"
+              onClick={copyUrl}
+              className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm disabled:opacity-60"
+              title={t("incidents.copyIncidentUrl")}
+              aria-label={t("incidents.copyIncidentUrl")}
+            >
+              <Copy className="h-3.5 w-3.5 me-1.5" />
+              {t("incidents.copyIncidentUrl")}
+            </button>
+          ) : null}
         </div>
 
         {/* header banner */}
@@ -1242,7 +1253,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
               canConvertToRequest &&
               !isLocationDefault)) ? (
             <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 px-0.5 flex-1 min-w-0 justify-end">
+              <div className="flex flex-wrap items-center gap-1.5 py-0.5 px-0.5 flex-1 min-w-0 justify-end">
                 {transitions.map((a) => {
                   const isApprove =
                     a.transition.name?.toLowerCase() === "approve";
@@ -1288,7 +1299,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             </div>
           ) : null}
           <div className="border-b border-[hsl(var(--border))]">
-            <nav className="flex gap-1.5 overflow-x-auto text-xs font-medium pb-px">
+            <ScrollableNav className="flex gap-1.5 text-xs font-medium pb-px">
               {visibleTabs.map((tabKey) => {
                 const badge = badgeFor(tabKey);
                 const active = tab === tabKey;
@@ -1327,7 +1338,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   </button>
                 );
               })}
-            </nav>
+            </ScrollableNav>
           </div>
         </div>
 
@@ -1340,6 +1351,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             slaDays={slaDays}
             onPreviewAttachment={openLightbox}
             mergedIncidents={mergedIncidents}
+            hideNearbyIncidents={hideNearbyIncidents}
           />
         ) : tab === "activity" ? (
           <ActivityTab transitionHistory={transitionHistory} />

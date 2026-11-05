@@ -1356,6 +1356,60 @@ export interface NearbyIncident {
 }
 
 // Incident API
+/**
+ * Maps an IncidentFilter onto the backend's json tags for the
+ * /incidents/search family of endpoints (list, markers, summary).
+ */
+export interface IncidentMapMarkerData {
+  id: string;
+  latitude: number;
+  longitude: number;
+  current_state_id: string;
+  state_color: string;
+}
+
+function buildIncidentSearchBody(
+  filter: IncidentFilter,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (filter.page) body.page = filter.page;
+  if (filter.limit) body.limit = filter.limit;
+  if (filter.search) body.search = filter.search;
+  if (filter.workflow_id) body.workflow_id = [filter.workflow_id];
+  if (filter.my_record) body.my_record = filter.my_record;
+  if (filter.current_state_ids?.length)
+    body.current_state_id = filter.current_state_ids;
+  else if (filter.current_state_id)
+    body.current_state_id = [filter.current_state_id];
+  if (filter.classification_ids?.length)
+    body.classification_id = filter.classification_ids;
+  if (filter.priority) body.priority = filter.priority;
+  if (filter.reporter_phone) body.reporter_phone = filter.reporter_phone;
+  if (filter.assignee_ids?.length) body.assignee_id = filter.assignee_ids;
+  else if (filter.assignee_id) body.assignee_id = [filter.assignee_id];
+  if (filter.reporter_id) body.reporter_id = [filter.reporter_id];
+  if (filter.department_ids?.length) body.department_id = filter.department_ids;
+  if (filter.location_ids?.length) body.location_id = filter.location_ids;
+  if (filter.source) body.source = filter.source;
+  if (filter.channel) body.channel = filter.channel; //for complaints page
+  if (filter.sla_breached !== undefined)
+    body.sla_breached = filter.sla_breached;
+  if (filter.converted_to_request !== undefined)
+    body.converted_to_request = filter.converted_to_request;
+  if (filter.record_type) body.record_type = filter.record_type;
+  if (filter.exclude_closed) body.exclude_closed = true;
+  if (filter.start_date) body.start_date_str = filter.start_date;
+  if (filter.end_date) body.end_date_str = filter.end_date;
+  if (filter.transition_id) body.transition_id = filter.transition_id;
+  if (filter.reporter_phone_search)
+    body.reporter_phone_search = filter.reporter_phone_search;
+  if (filter.momra_ref) body.momra_ref = filter.momra_ref;
+  if (filter.current_state_code)
+    body.current_state_code = [filter.current_state_code];
+  if (filter.radius) body.radius = filter.radius;
+  return body;
+}
+
 export const incidentApi = {
   create: async (
     data: IncidentCreateRequest,
@@ -1373,46 +1427,29 @@ export const incidentApi = {
     // Use POST /incidents/search to send filters in the request body,
     // avoiding URL length limits when many filter values are selected.
     // Field names are mapped to match the backend's json tags.
-    const body: Record<string, unknown> = {};
-    if (filter.page) body.page = filter.page;
-    if (filter.limit) body.limit = filter.limit;
-    if (filter.search) body.search = filter.search;
-    if (filter.workflow_id) body.workflow_id = [filter.workflow_id];
-    if (filter.my_record) body.my_record = filter.my_record;
-    if (filter.current_state_ids?.length)
-      body.current_state_id = filter.current_state_ids;
-    else if (filter.current_state_id)
-      body.current_state_id = [filter.current_state_id];
-    if (filter.classification_ids?.length)
-      body.classification_id = filter.classification_ids;
-    if (filter.priority) body.priority = filter.priority;
-    if (filter.reporter_phone) body.reporter_phone = filter.reporter_phone;
-    if (filter.assignee_ids?.length) body.assignee_id = filter.assignee_ids;
-    else if (filter.assignee_id) body.assignee_id = [filter.assignee_id];
-    if (filter.reporter_id) body.reporter_id = [filter.reporter_id];
-    if (filter.department_ids?.length)
-      body.department_id = filter.department_ids;
-    if (filter.location_ids?.length) body.location_id = filter.location_ids;
-    if (filter.source) body.source = filter.source;
-    if (filter.channel) body.channel = filter.channel; //for complaints page
-    if (filter.sla_breached !== undefined)
-      body.sla_breached = filter.sla_breached;
-    if (filter.converted_to_request !== undefined)
-      body.converted_to_request = filter.converted_to_request;
-    if (filter.record_type) body.record_type = filter.record_type;
-    if (filter.exclude_closed) body.exclude_closed = true;
-    if (filter.start_date) body.start_date_str = filter.start_date;
-    if (filter.end_date) body.end_date_str = filter.end_date;
-    if (filter.transition_id) body.transition_id = filter.transition_id;
-    if (filter.reporter_phone_search)
-      body.reporter_phone_search = filter.reporter_phone_search;
-    if (filter.momra_ref) body.momra_ref = filter.momra_ref;
-    if (filter.current_state_code)
-      body.current_state_code = [filter.current_state_code];
-    if (filter.radius) body.radius = filter.radius;
+    const body = buildIncidentSearchBody(filter);
     const response = await apiClient.post<PaginatedResponse<Incident>>(
       "/incidents/search",
       body,
+    );
+    return response.data;
+  },
+
+  // Lightweight id + coordinates + state colour for every incident matching
+  // the filter (backend-capped), for plotting on a map.
+  searchMarkers: async (
+    filter: IncidentFilter = {},
+  ): Promise<{
+    success: boolean;
+    data: IncidentMapMarkerData[];
+    total_matching: number;
+    returned_count: number;
+    capped: boolean;
+  }> => {
+    const { page: _page, limit: _limit, ...rest } = filter;
+    const response = await apiClient.post(
+      "/incidents/search/markers",
+      buildIncidentSearchBody(rest),
     );
     return response.data;
   },

@@ -3,13 +3,72 @@ import { incidentApi } from "../api/admin";
 import { usePermissions } from "./usePermissions";
 import { PERMISSIONS } from "../constants/permissions";
 import { useAuthStore } from "../stores/authStore";
-import type { FeedFilters } from "../types";
+import type { FeedFilters, IncidentFilter } from "../types";
 
 interface UseIncidentsListParams {
   page: number;
   limit: number;
   search?: string;
   filters?: FeedFilters;
+}
+
+/** Feed filters → incidentApi params; shared by the list and the map. */
+export function buildFeedParams({
+  search,
+  filters,
+  canViewAll,
+  userId,
+}: {
+  search?: string;
+  filters?: FeedFilters;
+  canViewAll: boolean;
+  userId?: string;
+}): IncidentFilter {
+  return {
+    record_type: "incident",
+    search,
+    ...(canViewAll ? {} : { my_record: userId }),
+    ...(filters?.stateIds?.length
+      ? { current_state_ids: filters.stateIds }
+      : {}),
+    ...(filters?.transitionId ? { transition_id: filters.transitionId } : {}),
+    ...(filters?.assigneeIds?.length
+      ? filters.assigneeIds.length === 1
+        ? { assignee_id: filters.assigneeIds[0] }
+        : { assignee_ids: filters.assigneeIds }
+      : {}),
+    ...(filters?.departmentIds?.length
+      ? { department_ids: filters.departmentIds }
+      : {}),
+    ...(filters?.classificationIds?.length
+      ? { classification_ids: filters.classificationIds }
+      : {}),
+    ...(filters?.locationIds?.length
+      ? { location_ids: filters.locationIds }
+      : {}),
+    ...(filters?.priority !== undefined ? { priority: filters.priority } : {}),
+    ...(filters?.startDate ? { start_date: filters.startDate } : {}),
+    ...(filters?.endDate ? { end_date: filters.endDate } : {}),
+    // "Within SLA" means not yet breached; "breached" means past deadline.
+    ...(filters?.sla === "breached"
+      ? { sla_breached: true }
+      : filters?.sla === "within"
+        ? { sla_breached: false }
+        : {}),
+    ...(filters?.reporterPhone
+      ? { reporter_phone_search: filters.reporterPhone }
+      : {}),
+    ...(filters?.reporterId ? { reporter_id: filters.reporterId } : {}),
+    ...(filters?.workflowId ? { workflow_id: filters.workflowId } : {}),
+    ...(filters?.source ? { source: filters.source } : {}),
+    ...(filters?.momraRef ? { momra_ref: filters.momraRef } : {}),
+    ...(filters?.convertedToRequest !== undefined
+      ? { converted_to_request: filters.convertedToRequest }
+      : {}),
+    ...(canViewAll || filters?.assigneeIds?.length || filters?.reporterId
+      ? {}
+      : { my_record: userId }),
+  };
 }
 
 /**
@@ -72,53 +131,12 @@ export function useIncidentsList({
       incidentApi.list({
         page,
         limit,
-        record_type: "incident",
-        search: effectiveSearch,
-        ...(canViewAll ? {} : { my_record: user?.id }),
-        ...(filters?.stateIds?.length
-          ? { current_state_ids: filters.stateIds }
-          : {}),
-        ...(filters?.transitionId
-          ? { transition_id: filters.transitionId }
-          : {}),
-        ...(filters?.assigneeIds?.length
-          ? filters.assigneeIds.length === 1
-            ? { assignee_id: filters.assigneeIds[0] }
-            : { assignee_ids: filters.assigneeIds }
-          : {}),
-        ...(filters?.departmentIds?.length
-          ? { department_ids: filters.departmentIds }
-          : {}),
-        ...(filters?.classificationIds?.length
-          ? { classification_ids: filters.classificationIds }
-          : {}),
-        ...(filters?.locationIds?.length
-          ? { location_ids: filters.locationIds }
-          : {}),
-        ...(filters?.priority !== undefined
-          ? { priority: filters.priority }
-          : {}),
-        ...(filters?.startDate ? { start_date: filters.startDate } : {}),
-        ...(filters?.endDate ? { end_date: filters.endDate } : {}),
-        // "Within SLA" means not yet breached; "breached" means past deadline.
-        ...(filters?.sla === "breached"
-          ? { sla_breached: true }
-          : filters?.sla === "within"
-            ? { sla_breached: false }
-            : {}),
-        ...(filters?.reporterPhone
-          ? { reporter_phone_search: filters.reporterPhone }
-          : {}),
-        ...(filters?.reporterId ? { reporter_id: filters.reporterId } : {}),
-        ...(filters?.workflowId ? { workflow_id: filters.workflowId } : {}),
-        ...(filters?.source ? { source: filters.source } : {}),
-        ...(filters?.momraRef ? { momra_ref: filters.momraRef } : {}),
-        ...(filters?.convertedToRequest !== undefined
-          ? { converted_to_request: filters.convertedToRequest }
-          : {}),
-        ...(canViewAll || filters?.assigneeIds?.length || filters?.reporterId
-          ? {}
-          : { my_record: user?.id }),
+        ...buildFeedParams({
+          search: effectiveSearch,
+          filters,
+          canViewAll,
+          userId: user?.id,
+        }),
       }),
     placeholderData: keepPreviousData,
   });
@@ -130,6 +148,54 @@ export function useIncidentsList({
     totalItems: query.data?.total_items ?? 0,
     isShortSearch,
     canViewAll,
+  };
+}
+
+/**
+ * Every incident matching the feed filters/search as light map markers
+ * (POST /incidents/search/markers — id, coordinates, state colour; the
+ * backend caps the count). Same filters as the list, no paging.
+ */
+export function useIncidentMarkers({
+  search,
+  filters,
+}: {
+  search?: string;
+  filters?: FeedFilters;
+}) {
+  const { hasPermission, isSuperAdmin } = usePermissions();
+  const user = useAuthStore((s) => s.user);
+  const canViewAll =
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
+
+  const isShortSearch =
+    !!search && search.trim().length > 0 && search.trim().length < 3;
+  const effectiveSearch = isShortSearch
+    ? undefined
+    : search?.trim() || undefined;
+
+  const params = buildFeedParams({
+    search: effectiveSearch,
+    filters,
+    canViewAll,
+    userId: user?.id,
+  });
+
+  const query = useQuery({
+    queryKey: ["incidents", "v2-markers", params],
+    queryFn: () => incidentApi.searchMarkers(params),
+    placeholderData: keepPreviousData,
+    enabled: !isShortSearch,
+  });
+
+  return {
+    ...query,
+    markers: query.data?.data ?? [],
+    totalMatching: query.data?.total_matching ?? 0,
+    capped: query.data?.capped ?? false,
+    isShortSearch,
   };
 }
 
