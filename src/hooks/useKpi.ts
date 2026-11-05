@@ -1438,39 +1438,42 @@ export const useKpiBenchmarks = (params?: {
   });
 
 export const useCreateKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => kpiPerformanceApi.createBenchmark(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark created");
+      toast.success(t("kpi.benchmarks.created"));
     },
-    onError: () => toast.error("Failed to create benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.createFailed")),
   });
 };
 
 export const useUpdateKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       kpiPerformanceApi.updateBenchmark(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark updated");
+      toast.success(t("kpi.benchmarks.updated"));
     },
-    onError: () => toast.error("Failed to update benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.updateFailed")),
   });
 };
 
 export const useDeleteKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => kpiPerformanceApi.deleteBenchmark(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark deleted");
+      toast.success(t("kpi.benchmarks.deleted"));
     },
-    onError: () => toast.error("Failed to delete benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.deleteFailed")),
   });
 };
 

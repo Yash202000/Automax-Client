@@ -112,6 +112,7 @@ export const KpiBenchmarkPage: React.FC = () => {
   const [autoFetching, setAutoFetching] = useState(false);
   const [noActualData, setNoActualData] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [kpiUnresolved, setKpiUnresolved] = useState(false);
 
   // --- Detail/comparison modal ---
   const [selected, setSelected] = useState<KpiBenchmark | null>(null);
@@ -164,13 +165,16 @@ export const KpiBenchmarkPage: React.FC = () => {
       setAutoFetching(false);
       setNoActualData(false);
       setFetchFailed(false);
+      setKpiUnresolved(false);
       return;
     }
     const card = (allCards ?? []).find((c) => c.code === kpiCode);
     if (!card) {
       setAutoFetching(false);
+      setFormData((prev) => ({ ...prev, internal_achievement: 0 }));
       setNoActualData(true);
       setFetchFailed(false);
+      setKpiUnresolved(true);
       return;
     }
 
@@ -179,6 +183,7 @@ export const KpiBenchmarkPage: React.FC = () => {
     setAutoFetching(true);
     setNoActualData(false);
     setFetchFailed(false);
+    setKpiUnresolved(false);
 
     const currentFetchId = ++fetchIdRef.current;
     let cancelled = false;
@@ -257,6 +262,7 @@ export const KpiBenchmarkPage: React.FC = () => {
     setMunicipalities(EMPTY_MUNICIPALITIES);
     setNoActualData(false);
     setFetchFailed(false);
+    setKpiUnresolved(false);
   };
 
   const handleSubmit = async () => {
@@ -696,6 +702,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                 isSaving ||
                 autoFetching ||
                 fetchFailed ||
+                kpiUnresolved ||
                 municipalityErrors.length > 0
               }
             >
