@@ -4546,6 +4546,26 @@
       "kpisFound": "{{count}} KPI(s) found",
       "print": "Print"
     },
+    "folderPicker": {
+      "title": "Select Evidence Folder",
+      "currentlyConfigured": "Currently configured",
+      "remove": "Remove",
+      "rootFolder": "Root Folder",
+      "chooseRootFolder": "Choose a root folder",
+      "pickRootHint": "Pick a root folder above to browse its Documenta folders.",
+      "resolving": "Resolving folder…",
+      "notResolvable": "This root doesn't resolve to a folder yet.",
+      "root": "Root",
+      "loadingFolders": "Loading folders…",
+      "noSubFolders": "No sub-folders here yet.",
+      "select": "Select",
+      "newFolderName": "New folder name",
+      "create": "Create",
+      "cancel": "Cancel",
+      "newFolder": "New Folder",
+      "useCurrentFolder": "Use current folder ({{path}})",
+      "failedToCreate": "Failed to create folder"
+    },
     "dictionaryImport": {
       "button": "Bulk Import",
       "downloadTemplate": "Download Template",
