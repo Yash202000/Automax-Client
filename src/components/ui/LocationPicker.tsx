@@ -481,11 +481,14 @@ export function LocationPicker({
   const handleMapClick = useCallback(
     async (latlng: { lat: number; lng: number }) => {
       setIsLoading(true);
-      const addressData = await reverseGeocode(
-        latlng.lat,
-        latlng.lng,
-        isGoogle,
-      );
+      // Always commit the coordinates, even if the address lookup fails, so
+      // the parent never keeps stale values.
+      let addressData: Partial<LocationData> = {};
+      try {
+        addressData = await reverseGeocode(latlng.lat, latlng.lng, isGoogle);
+      } catch {
+        addressData = {};
+      }
 
       const locationData: LocationData = {
         latitude: latlng.lat,
@@ -510,7 +513,27 @@ export function LocationPicker({
     : {};
   // Combined message for the parent form (blocks submit); the inputs below
   // each show only their own error.
-  const coordError = coordErrors.lat ?? coordErrors.lng;
+  // Valid manual coordinates are committed to the form after a short debounce
+  // plus an address lookup. Until then the form still holds the previous
+  // location, so report that as a blocking error rather than letting a save
+  // go through with stale coordinates.
+  const hasInput = latInput.trim() !== "" && lngInput.trim() !== "";
+  const pendingCommit =
+    showCoordinateInputs &&
+    hasInput &&
+    !coordErrors.lat &&
+    !coordErrors.lng &&
+    (value?.latitude !== parseFloat(latInput) ||
+      value?.longitude !== parseFloat(lngInput));
+  const coordError =
+    coordErrors.lat ??
+    coordErrors.lng ??
+    (pendingCommit
+      ? t(
+          "locationPicker.locationUpdating",
+          "Location is still updating, please wait",
+        )
+      : undefined);
 
   useEffect(() => {
     onCoordinateErrorChange?.(coordError);
