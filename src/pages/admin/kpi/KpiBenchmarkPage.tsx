@@ -21,7 +21,13 @@ import {
 } from "../../../hooks/useKpi";
 import { kpiComposedApi } from "../../../api/kpi";
 import { Button } from "../../../components/ui/Button";
-import { Modal } from "../../../components/ui/Modal";
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "../../../components/ui/Modal";
 import type { KpiBenchmark, KpiBenchmarkRequest } from "../../../types/kpi";
 
 const MUNICIPALITY_KEYS = [
@@ -532,14 +538,21 @@ export const KpiBenchmarkPage: React.FC = () => {
       </div>
 
       {/* Create / Edit Modal */}
-      <Modal isOpen={showForm} onClose={closeForm} size="lg">
-        <div className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+      <Modal
+        isOpen={showForm}
+        onClose={closeForm}
+        size="2xl"
+        className="overflow-hidden"
+      >
+        <ModalHeader className="pe-14">
+          <ModalTitle>
             {editingBenchmark
               ? t("kpi.benchmarks.editBenchmark")
               : t("kpi.benchmarks.addBenchmark")}
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
+          </ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.targets.form.kpiCode")}
@@ -620,7 +633,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                 placeholder={t("kpi.segmentation.zonePlaceholder")}
               />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.benchmarks.entity")}
                 <span className="text-red-500 ms-0.5">*</span>
@@ -684,56 +697,71 @@ export const KpiBenchmarkPage: React.FC = () => {
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
               />
             </div>
-            {MUNICIPALITY_KEYS.map((k) => {
-              const invalid = !isValidPercent(municipalities[k]);
-              const defaultLabel = defaultMunicipalityName(k, t);
-              return (
-                <div key={k} className="col-span-2 grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      {defaultLabel} — {t("kpi.benchmarks.nameLabel", "Name")}
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={100}
-                      value={labels[k]}
-                      onChange={(e) =>
-                        setLabels({ ...labels, [k]: e.target.value })
-                      }
-                      placeholder={defaultLabel}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      {defaultLabel} —{" "}
-                      {t("kpi.benchmarks.valueLabel", "Achievement (%)")}
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={municipalities[k]}
-                      onChange={(e) =>
-                        setMunicipalities({
-                          ...municipalities,
-                          [k]: e.target.value,
-                        })
-                      }
-                      aria-invalid={invalid}
-                      className={`w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-white ${invalid ? "border-red-500" : "border-slate-300 dark:border-slate-600"}`}
-                    />
-                    {invalid && (
-                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                        {t("kpi.benchmarks.percentRangeError")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            <div className="col-span-2">
+            <fieldset className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+              <legend className="px-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t(
+                  "kpi.benchmarks.municipalityComparison",
+                  "Municipality comparison",
+                )}
+              </legend>
+              {/* One aligned grid: [slot #] [name] [achievement %] */}
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_8rem] items-start gap-x-3 gap-y-2">
+                <span aria-hidden="true" />
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {t("kpi.benchmarks.nameLabel", "Name")}
+                </span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {t("kpi.benchmarks.valueLabel", "Achievement (%)")}
+                </span>
+                {MUNICIPALITY_KEYS.map((k, idx) => {
+                  const invalid = !isValidPercent(municipalities[k]);
+                  const defaultLabel = defaultMunicipalityName(k, t);
+                  return (
+                    <React.Fragment key={k}>
+                      <span className="mt-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        maxLength={100}
+                        value={labels[k]}
+                        onChange={(e) =>
+                          setLabels({ ...labels, [k]: e.target.value })
+                        }
+                        placeholder={defaultLabel}
+                        aria-label={`${defaultLabel} — ${t("kpi.benchmarks.nameLabel", "Name")}`}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400"
+                      />
+                      <div>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={municipalities[k]}
+                          onChange={(e) =>
+                            setMunicipalities({
+                              ...municipalities,
+                              [k]: e.target.value,
+                            })
+                          }
+                          placeholder="0–100"
+                          aria-label={`${defaultLabel} — ${t("kpi.benchmarks.valueLabel", "Achievement (%)")}`}
+                          aria-invalid={invalid}
+                          className={`w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 ${invalid ? "border-red-500" : "border-slate-300 dark:border-slate-600"}`}
+                        />
+                        {invalid && (
+                          <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                            {t("kpi.benchmarks.percentRangeError")}
+                          </p>
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t("kpi.benchmarks.notes")}
               </label>
@@ -747,24 +775,24 @@ export const KpiBenchmarkPage: React.FC = () => {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={closeForm}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                isSaving ||
-                autoFetching ||
-                fetchFailed ||
-                kpiUnresolved ||
-                municipalityErrors.length > 0
-              }
-            >
-              {isSaving ? "..." : t("common.save")}
-            </Button>
-          </div>
-        </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={closeForm}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              isSaving ||
+              autoFetching ||
+              fetchFailed ||
+              kpiUnresolved ||
+              municipalityErrors.length > 0
+            }
+          >
+            {isSaving ? "..." : t("common.save")}
+          </Button>
+        </ModalFooter>
       </Modal>
 
       {/* Comparison / Detail Modal */}

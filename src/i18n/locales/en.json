@@ -4514,7 +4514,10 @@
       "comparisonTitle": "Benchmark Comparison",
       "us": "Us",
       "ourResult": "our result",
-      "gap": "gap"
+      "gap": "gap",
+      "municipalityComparison": "Municipality comparison",
+      "nameLabel": "Name",
+      "valueLabel": "Achievement (%)"
     },
     "segmentation": {
       "title": "KPI Segmentation",

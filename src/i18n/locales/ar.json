@@ -4511,7 +4511,10 @@
       "comparisonTitle": "مقارنة المرجعية",
       "us": "نحن",
       "ourResult": "نتيجتنا",
-      "gap": "الفرق"
+      "gap": "الفرق",
+      "municipalityComparison": "مقارنة البلديات",
+      "nameLabel": "الاسم",
+      "valueLabel": "الإنجاز (%)"
     },
     "segmentation": {
       "title": "تجزئة مؤشرات الأداء",
