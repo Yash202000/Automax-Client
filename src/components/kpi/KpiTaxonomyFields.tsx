@@ -182,7 +182,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
       />
 
       <Select
-        label={t("kpi.masterData.awardCriterion")}
+        label={t("kpi.masterData.domains")}
         value={domainId}
         onChange={(v) => onChange({ domain_id: v.target.value })}
         options={domains.map((d: any) => ({
