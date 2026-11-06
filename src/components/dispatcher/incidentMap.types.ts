@@ -18,7 +18,19 @@ export interface IncidentsMapProps {
   /** An incident dragged from the list was dropped on a station/unit pin. */
   // eslint-disable-next-line no-unused-vars
   onDropIncident?: (incidentId: string, target: IncidentMapMarker) => void;
+  /** Searched location: the map flies there and shows a temporary pin. */
+  focusPoint?: FocusPoint | null;
 }
+
+export interface FocusPoint {
+  latitude: number;
+  longitude: number;
+  label: string;
+  /** Changes on every search so re-picking the same place flies again. */
+  nonce: number;
+}
+
+export const FOCUS_PIN_COLOR = "#7c3aed";
 
 /** dataTransfer type carrying the id of an incident dragged from the list. */
 export const INCIDENT_DRAG_TYPE = "application/x-incident-id";
@@ -115,4 +127,52 @@ export function pinSize(
     return { w: n, h: n };
   }
   return selected ? { w: 36, h: 45 } : { w: 28, h: 35 };
+}
+
+/**
+ * Drop animation on a station/unit pin: the pin bounces and a ring ripples
+ * out. `onDone` runs when it finishes (the assignment is applied then, since
+ * it rebuilds the markers and would cut the animation short).
+ */
+export function playDropAnimation(
+  el: HTMLElement | null | undefined,
+  color: string,
+  onDone: () => void,
+): void {
+  if (!el || typeof el.animate !== "function") {
+    onDone();
+    return;
+  }
+  const inner = el.firstElementChild as HTMLElement | null;
+  if (inner) inner.style.transform = "";
+  inner?.animate(
+    [
+      { transform: "scale(1.5)" },
+      { transform: "scale(0.85)", offset: 0.45 },
+      { transform: "scale(1.15)", offset: 0.7 },
+      { transform: "scale(1)" },
+    ],
+    { duration: 520, easing: "ease-out" },
+  );
+  if (getComputedStyle(el).position === "static")
+    el.style.position = "relative";
+  const ring = document.createElement("div");
+  ring.style.cssText = `position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:3px solid ${color};pointer-events:none`;
+  el.appendChild(ring);
+  const anim = ring.animate(
+    [
+      { transform: "scale(0.6)", opacity: 0.9 },
+      { transform: "scale(2.6)", opacity: 0 },
+    ],
+    { duration: 600, easing: "ease-out" },
+  );
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    ring.remove();
+    onDone();
+  };
+  anim.onfinish = finish;
+  setTimeout(finish, 800);
 }

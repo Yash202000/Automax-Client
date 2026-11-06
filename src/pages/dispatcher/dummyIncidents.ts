@@ -28,6 +28,8 @@ export interface DummyIncident {
   slaBreached: boolean;
   reporter: { name: string; phone: string };
   assignee: string;
+  /** Ids of fire stations associated with this incident. */
+  fireStationIds: string[];
   comments: { author: string; text: string; at: string }[];
   activity: { text: string; at: string }[];
 }
@@ -93,6 +95,7 @@ export const DUMMY_INCIDENTS: DummyIncident[] = Array.from(
         name: ["Ahmed Al-Saud", "Sara Khan", "Omar Hassan"][i % 3],
         phone: `+966 50 ${String(1000000 + i * 137).slice(0, 3)} ${String(1000 + i).slice(-4)}`,
       },
+      fireStationIds: i % 4 === 0 ? ["fs-001"] : [],
       assignee: i % 3 === 0 ? "Khalid Al-Otaibi" : "Unassigned",
       comments: [
         {

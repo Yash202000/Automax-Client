@@ -4,6 +4,7 @@ import {
   Boxes,
   Clock,
   FileText,
+  Flame,
   MapPin,
   Smartphone,
   Star,
@@ -13,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { Modal, ModalBody, ModalFooter } from "../../components/ui/Modal";
+import { DUMMY_FIRE_STATIONS } from "../../api/dispatcher";
+import { AssociateFireStationsModal } from "./AssociateFireStationsModal";
 import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
 
 const tile =
@@ -42,12 +45,19 @@ const fmt = (iso: string) => new Date(iso).toLocaleString();
 export function IncidentDetailModal({
   incident,
   onClose,
+  onAssociate,
 }: {
   incident: DummyIncident;
   onClose: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onAssociate: (stationIds: string[]) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabKey>("details");
+  const [associateOpen, setAssociateOpen] = useState(false);
+  const associated = DUMMY_FIRE_STATIONS.filter((s) =>
+    incident.fireStationIds.includes(s.id),
+  );
   const color = STATUS_COLORS[incident.status];
   const stateName = {
     waiting: t("dispatcher.waitingForDispatch", "Waiting for dispatch"),
@@ -212,6 +222,34 @@ export function IncidentDetailModal({
                 {incident.description}
               </p>
             </div>
+            <div className={cn(card, "lg:col-span-2")}>
+              <h3 className={cardTitle}>
+                <Flame className="h-2.5 w-2.5 text-red-600" />
+                {t(
+                  "dispatcher.associatedFireStations",
+                  "Associated fire stations",
+                )}
+              </h3>
+              {associated.length === 0 ? (
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  {t(
+                    "dispatcher.noFireStations",
+                    "No fire stations associated",
+                  )}
+                </p>
+              ) : (
+                <ul className="flex flex-wrap gap-2">
+                  {associated.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded-md border border-[hsl(var(--border))] px-2 py-1 text-xs font-medium"
+                    >
+                      {i18n.language === "ar" && s.name_ar ? s.name_ar : s.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className={card}>
               <h3 className={cardTitle}>
                 <User className="h-2.5 w-2.5 text-primary" />
@@ -273,6 +311,16 @@ export function IncidentDetailModal({
           {t("common.close", "Close")}
         </Button>
       </ModalFooter>
+      {associateOpen ? (
+        <AssociateFireStationsModal
+          associatedIds={incident.fireStationIds}
+          onClose={() => setAssociateOpen(false)}
+          onConfirm={(ids) => {
+            setAssociateOpen(false);
+            onAssociate(ids);
+          }}
+        />
+      ) : null}
     </Modal>
   );
 }

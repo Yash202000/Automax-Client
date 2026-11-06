@@ -260,6 +260,29 @@ export function DispatcherListPage() {
         <IncidentDetailModal
           incident={allIncidents.find((x) => x.id === detailId)!}
           onClose={() => setDetailId(null)}
+          onAssociate={(ids) => {
+            const inc = allIncidents.find((x) => x.id === detailId);
+            if (!inc) return;
+            setAllIncidents((prev) =>
+              prev.map((x) =>
+                x.id === detailId
+                  ? {
+                      ...x,
+                      fireStationIds: Array.from(
+                        new Set([...x.fireStationIds, ...ids]),
+                      ),
+                    }
+                  : x,
+              ),
+            );
+            toast.success(
+              t(
+                "dispatcher.fireStationsAssociated",
+                "{{count}} fire station(s) associated with {{incident}}",
+                { count: ids.length, incident: inc.number },
+              ),
+            );
+          }}
         />
       ) : null}
       {fireStationModalOpen ? (

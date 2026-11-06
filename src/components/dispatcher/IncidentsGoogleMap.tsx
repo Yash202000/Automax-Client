@@ -4,7 +4,10 @@ import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import {
   DEFAULT_PIN_COLOR,
+  FOCUS_PIN_COLOR,
+  type FocusPoint,
   bindDropTarget,
+  playDropAnimation,
   pinHtml,
   type IncidentMapMarker,
   type IncidentsMapProps,
@@ -46,6 +49,13 @@ function ClusteredMarkers({
       }
     >
   >(new Map());
+  // Animate the target pin, then apply the assignment.
+  const fireDrop = (incidentId: string, target: IncidentMapMarker) =>
+    playDropAnimation(
+      elementsRef.current.get(target.id)?.marker.content as HTMLElement,
+      target.color || DEFAULT_PIN_COLOR,
+      () => onDropRef.current?.(incidentId, target),
+    );
   const selectedRef = useRef<string | null>(selectedId);
   const prevSelectedRef = useRef<string | null>(null);
   selectedRef.current = selectedId;
@@ -69,12 +79,37 @@ function ClusteredMarkers({
         ),
       });
       marker.addListener("click", () => onSelect(m.id));
+      if (m.kind !== "station" && m.kind !== "unit") {
+        // Drag an incident pin onto a fire station / unit to assign it.
+        marker.gmpDraggable = true;
+        marker.addListener("dragend", (e: google.maps.MapMouseEvent) => {
+          const to = e.latLng;
+          const zoom = map.getZoom() ?? 10;
+          const pxPerDegLng = (256 * 2 ** zoom) / 360;
+          let hit: IncidentMapMarker | null = null;
+          let best = 28; // px
+          if (to) {
+            for (const d of Array.from(elements.values()).map((x) => x.data)) {
+              if (d.kind !== "station" && d.kind !== "unit") continue;
+              const dx = (d.longitude - to.lng()) * pxPerDegLng;
+              const dy =
+                ((d.latitude - to.lat()) * pxPerDegLng) /
+                Math.cos((to.lat() * Math.PI) / 180);
+              const dist = Math.hypot(dx, dy);
+              if (dist < best) {
+                best = dist;
+                hit = d;
+              }
+            }
+          }
+          marker.position = { lat: m.latitude, lng: m.longitude };
+          if (hit) fireDrop(m.id, hit);
+        });
+      }
       elements.set(m.id, { marker, data: m });
       // Fire stations and units are never clustered.
       if (m.kind === "station" || m.kind === "unit") {
-        bindDropTarget(marker.content as HTMLElement, (id) =>
-          onDropRef.current?.(id, m),
-        );
+        bindDropTarget(marker.content as HTMLElement, (id) => fireDrop(id, m));
         marker.map = map;
         plain.push(marker);
       } else clustered.push(marker);
@@ -139,6 +174,30 @@ function ClusteredMarkers({
   return null;
 }
 
+/** Pans to a searched location and shows a temporary pin there. */
+function FocusPin({ point }: { point?: FocusPoint | null }) {
+  const map = useMap();
+  const markerLib = useMapsLibrary("marker");
+  useEffect(() => {
+    if (!map || !markerLib || !point) return;
+    const el = document.createElement("div");
+    el.style.cssText = "display:flex;flex-direction:column;align-items:center";
+    el.innerHTML = `<div style="background:#fff;color:#111;font:600 12px sans-serif;padding:2px 8px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.4);margin-bottom:2px;white-space:nowrap">${point.label.replace(/</g, "&lt;")}</div>${pinHtml(undefined, FOCUS_PIN_COLOR, true)}`;
+    const marker = new markerLib.AdvancedMarkerElement({
+      map,
+      position: { lat: point.latitude, lng: point.longitude },
+      content: el,
+      zIndex: 2000,
+    });
+    map.panTo({ lat: point.latitude, lng: point.longitude });
+    map.setZoom(15);
+    return () => {
+      marker.map = null;
+    };
+  }, [map, markerLib, point]);
+  return null;
+}
+
 /** Native Google Maps version of the incidents map, clustered. */
 export default function IncidentsGoogleMap(props: IncidentsMapProps) {
   return (
@@ -148,6 +207,7 @@ export default function IncidentsGoogleMap(props: IncidentsMapProps) {
       controls
     >
       <ClusteredMarkers {...props} />
+      <FocusPin point={props.focusPoint} />
     </GoogleBaseMap>
   );
 }

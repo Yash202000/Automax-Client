@@ -9,7 +9,9 @@ import { attachOsmBaseLayer } from "../../utils/mapProvider";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
 import {
   DEFAULT_PIN_COLOR,
+  FOCUS_PIN_COLOR,
   bindDropTarget,
+  playDropAnimation,
   pinHtml,
   pinSize,
   type IncidentMapMarker,
@@ -38,15 +40,26 @@ export default function IncidentsLeafletMap({
   selectedId,
   onSelect,
   onDropIncident,
+  focusPoint,
 }: IncidentsMapProps) {
+  const focusMarkerRef = useRef<L.Marker | null>(null);
   const onDropRef = useRef(onDropIncident);
   onDropRef.current = onDropIncident;
+
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   // Fire stations and units are never clustered.
   const plainRef = useRef<L.LayerGroup | null>(null);
   const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+  // Animate the target pin, then apply the assignment.
+  const fireDrop = useRef((incidentId: string, target: IncidentMapMarker) => {
+    playDropAnimation(
+      markerRefs.current.get(target.id)?.getElement(),
+      target.color || DEFAULT_PIN_COLOR,
+      () => onDropRef.current?.(incidentId, target),
+    );
+  });
   const dataRefs = useRef<Map<string, IncidentMapMarker>>(new Map());
   const selectedRef = useRef<string | null>(selectedId);
   const prevSelectedRef = useRef<string | null>(null);
@@ -72,8 +85,12 @@ export default function IncidentsLeafletMap({
     const refs = markerRefs.current;
     const data = dataRefs.current;
     const timer = setTimeout(() => map.invalidateSize(), 100);
+    // Re-measure when the container resizes (e.g. maximize / restore).
+    const resize = new ResizeObserver(() => map.invalidateSize());
+    resize.observe(mapEl.current);
     return () => {
       clearTimeout(timer);
+      resize.disconnect();
       refs.clear();
       data.clear();
       map.remove();
@@ -102,15 +119,37 @@ export default function IncidentsLeafletMap({
           m.id === selectedRef.current,
         ),
         title: m.label,
+        // Incident pins can be dragged onto a fire station / unit to assign.
+        draggable: m.kind !== "station" && m.kind !== "unit",
       })
         .bindTooltip(m.label)
         .on("click", () => onSelect(m.id));
+      marker.on("dragend", () => {
+        const map = mapRef.current;
+        if (!map) return;
+        const p = map.latLngToContainerPoint(marker.getLatLng());
+        let hit: IncidentMapMarker | null = null;
+        let best = 28; // px
+        for (const [id, d] of Array.from(dataRefs.current.entries())) {
+          if (d.kind !== "station" && d.kind !== "unit") continue;
+          const mk = markerRefs.current.get(id);
+          if (!mk) continue;
+          const dist = p.distanceTo(map.latLngToContainerPoint(mk.getLatLng()));
+          if (dist < best) {
+            best = dist;
+            hit = d;
+          }
+        }
+        // Pins never move: snap back whether or not it landed on a target.
+        marker.setLatLng([m.latitude, m.longitude]);
+        if (hit) fireDrop.current(m.id, hit);
+      });
       markerRefs.current.set(m.id, marker);
       dataRefs.current.set(m.id, m);
       if (m.kind === "station" || m.kind === "unit") {
         marker.on("add", () => {
           const el = marker.getElement();
-          if (el) bindDropTarget(el, (id) => onDropRef.current?.(id, m));
+          if (el) bindDropTarget(el, (id) => fireDrop.current(id, m));
         });
         plain.addLayer(marker);
       } else clustered.push(marker);
@@ -157,6 +196,37 @@ export default function IncidentsLeafletMap({
       map.panTo(marker.getLatLng(), { animate: true });
     }
   }, [selectedId, markers]);
+
+  // Fly to a searched location and mark it with a temporary pin.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    focusMarkerRef.current?.remove();
+    focusMarkerRef.current = null;
+    if (!focusPoint) return;
+    const { w, h } = pinSize(undefined, true);
+    focusMarkerRef.current = L.marker(
+      [focusPoint.latitude, focusPoint.longitude],
+      {
+        icon: L.divIcon({
+          className: "",
+          iconSize: [w, h],
+          iconAnchor: [w / 2, h],
+          html: pinHtml(undefined, FOCUS_PIN_COLOR, true),
+        }),
+        zIndexOffset: 2000,
+      },
+    )
+      .bindTooltip(focusPoint.label, {
+        permanent: true,
+        direction: "top",
+        offset: [0, -h],
+      })
+      .addTo(map);
+    map.flyTo([focusPoint.latitude, focusPoint.longitude], 15, {
+      duration: 1,
+    });
+  }, [focusPoint]);
 
   return (
     <div className="relative h-full w-full">
