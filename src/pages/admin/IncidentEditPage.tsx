@@ -195,6 +195,11 @@ export function IncidentEditPage() {
     (role) => role.id,
   );
 
+  // AMAX-4381: once the incident reaches a state with "Lock Assignee" enabled
+  // (e.g. EPM SML "Assigned to FE") the assigned user is read-only here.
+  const isAssigneeLocked =
+    !!incident?.current_state?.lock_assignee && !!incident?.assignee;
+
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: () => {
@@ -775,6 +780,8 @@ export function IncidentEditPage() {
 
     // Ensure empty strings are not sent for optional UUID fields
     if (submitData.assignee_id === "") submitData.assignee_id = undefined;
+    // Never send an assignee change while the current state locks it
+    if (isAssigneeLocked) delete submitData.assignee_id;
     if (submitData.department_id === "") submitData.department_id = undefined;
     if (submitData.location_id === "") submitData.location_id = undefined;
     if (submitData.classification_id === "")
@@ -1317,6 +1324,7 @@ export function IncidentEditPage() {
                 <AppSelect
                   value={formData.assignee_id || incident?.assignee?.id || ""}
                   onValueChange={(value) => handleChange("assignee_id", value)}
+                  disabled={isAssigneeLocked}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder={t("incidents.unassigned")}>
@@ -1355,6 +1363,14 @@ export function IncidentEditPage() {
                     />
                   </SelectContent>
                 </AppSelect>
+                {isAssigneeLocked && (
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {t(
+                      "incidents.assigneeLocked",
+                      "The assignee cannot be changed in the current state.",
+                    )}
+                  </p>
+                )}
                 <Select
                   label={t("incidents.department")}
                   value={formData.department_id || ""}
