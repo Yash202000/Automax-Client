@@ -20,7 +20,6 @@ import {
   useKpiCardDefinitions,
 } from "../../../hooks/useKpi";
 import { kpiComposedApi } from "../../../api/kpi";
-import { useSettings } from "../../../contexts/SettingsContext";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
 import type { KpiBenchmark, KpiBenchmarkRequest } from "../../../types/kpi";
@@ -36,6 +35,18 @@ const EMPTY_MUNICIPALITIES: Record<MunicipalityKey, string> = {
   municipality2: "",
   municipality3: "",
 };
+
+const EMPTY_LABELS: Record<MunicipalityKey, string> = {
+  municipality1: "",
+  municipality2: "",
+  municipality3: "",
+};
+
+// Default display name for a municipality slot when no custom label is stored.
+const defaultMunicipalityName = (
+  key: MunicipalityKey,
+  t: (k: string) => string,
+) => t(`kpi.benchmarks.${key}`);
 
 // Optional field: empty is valid, otherwise must be a number in [0, 100].
 const isValidPercent = (value: string): boolean => {
@@ -58,20 +69,9 @@ const DEFAULT_FORM: KpiBenchmarkRequest = {
 
 export const KpiBenchmarkPage: React.FC = () => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
   const [search, setSearch] = useState("");
   const [zoneFilter, setZoneFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
-
-  // Municipality labels from admin-configurable settings, falling back to i18n
-  const municipalityLabels: Record<MunicipalityKey, string> = {
-    municipality1:
-      settings?.municipality1_name || t("kpi.benchmarks.municipality1"),
-    municipality2:
-      settings?.municipality2_name || t("kpi.benchmarks.municipality2"),
-    municipality3:
-      settings?.municipality3_name || t("kpi.benchmarks.municipality3"),
-  };
 
   const params = useMemo(
     () => ({
@@ -106,6 +106,8 @@ export const KpiBenchmarkPage: React.FC = () => {
   });
   const [municipalities, setMunicipalities] =
     useState<Record<MunicipalityKey, string>>(EMPTY_MUNICIPALITIES);
+  const [labels, setLabels] =
+    useState<Record<MunicipalityKey, string>>(EMPTY_LABELS);
   const [submitted, setSubmitted] = useState(false);
 
   // Auto-fetch internal achievement state
@@ -246,6 +248,7 @@ export const KpiBenchmarkPage: React.FC = () => {
     setEditingBenchmark(null);
     setFormData({ ...DEFAULT_FORM });
     setMunicipalities(EMPTY_MUNICIPALITIES);
+    setLabels(EMPTY_LABELS);
     setSubmitted(false);
     setNoActualData(false);
     setShowForm(true);
@@ -269,6 +272,11 @@ export const KpiBenchmarkPage: React.FC = () => {
       municipality2: b.municipality2 != null ? String(b.municipality2) : "",
       municipality3: b.municipality3 != null ? String(b.municipality3) : "",
     });
+    setLabels({
+      municipality1: b.municipality1_label || "",
+      municipality2: b.municipality2_label || "",
+      municipality3: b.municipality3_label || "",
+    });
     setSubmitted(false);
     setNoActualData(false);
     setShowForm(true);
@@ -279,6 +287,7 @@ export const KpiBenchmarkPage: React.FC = () => {
     setEditingBenchmark(null);
     setSubmitted(false);
     setMunicipalities(EMPTY_MUNICIPALITIES);
+    setLabels(EMPTY_LABELS);
     setNoActualData(false);
     setFetchFailed(false);
     setKpiUnresolved(false);
@@ -292,6 +301,9 @@ export const KpiBenchmarkPage: React.FC = () => {
       const v = municipalities[k].trim();
       if (v !== "") payload[k] = Number(v);
     });
+    payload.municipality1_label = labels.municipality1.trim();
+    payload.municipality2_label = labels.municipality2.trim();
+    payload.municipality3_label = labels.municipality3.trim();
     if (editingBenchmark) {
       await updateBenchmark.mutateAsync({
         id: editingBenchmark.id,
@@ -419,7 +431,7 @@ export const KpiBenchmarkPage: React.FC = () => {
                       key={k}
                       className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase"
                     >
-                      {municipalityLabels[k]}
+                      {t(`kpi.benchmarks.${k}`)}
                     </th>
                   ))}
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
@@ -462,14 +474,19 @@ export const KpiBenchmarkPage: React.FC = () => {
                     <td className="px-6 py-4 text-sm tabular-nums text-right text-slate-700 dark:text-slate-300">
                       {b.benchmark_achievement}
                     </td>
-                    {MUNICIPALITY_KEYS.map((k) => (
-                      <td
-                        key={k}
-                        className="px-6 py-4 text-sm tabular-nums text-right text-slate-700 dark:text-slate-300"
-                      >
-                        {b[k] != null ? `${b[k]}%` : "-"}
-                      </td>
-                    ))}
+                    {MUNICIPALITY_KEYS.map((k) => {
+                      const labelKey = `${k}_label` as keyof KpiBenchmark;
+                      const storedLabel = b[labelKey] as string | undefined;
+                      return (
+                        <td
+                          key={k}
+                          className="px-6 py-4 text-sm tabular-nums text-right text-slate-700 dark:text-slate-300"
+                          title={storedLabel || defaultMunicipalityName(k, t)}
+                        >
+                          {b[k] != null ? `${b[k]}%` : "-"}
+                        </td>
+                      );
+                    })}
                     <td className="px-6 py-4 text-right">
                       <span
                         className={`inline-flex items-center gap-1 text-sm tabular-nums font-medium ${b.variance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
@@ -669,31 +686,50 @@ export const KpiBenchmarkPage: React.FC = () => {
             </div>
             {MUNICIPALITY_KEYS.map((k) => {
               const invalid = !isValidPercent(municipalities[k]);
+              const defaultLabel = defaultMunicipalityName(k, t);
               return (
-                <div key={k}>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {municipalityLabels[k]} (%)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={municipalities[k]}
-                    onChange={(e) =>
-                      setMunicipalities({
-                        ...municipalities,
-                        [k]: e.target.value,
-                      })
-                    }
-                    aria-invalid={invalid}
-                    className={`w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-white ${invalid ? "border-red-500" : "border-slate-300 dark:border-slate-600"}`}
-                  />
-                  {invalid && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                      {t("kpi.benchmarks.percentRangeError")}
-                    </p>
-                  )}
+                <div key={k} className="col-span-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {defaultLabel} — {t("kpi.benchmarks.nameLabel", "Name")}
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={100}
+                      value={labels[k]}
+                      onChange={(e) =>
+                        setLabels({ ...labels, [k]: e.target.value })
+                      }
+                      placeholder={defaultLabel}
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {defaultLabel} —{" "}
+                      {t("kpi.benchmarks.valueLabel", "Achievement (%)")}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={municipalities[k]}
+                      onChange={(e) =>
+                        setMunicipalities({
+                          ...municipalities,
+                          [k]: e.target.value,
+                        })
+                      }
+                      aria-invalid={invalid}
+                      className={`w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-white ${invalid ? "border-red-500" : "border-slate-300 dark:border-slate-600"}`}
+                    />
+                    {invalid && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                        {t("kpi.benchmarks.percentRangeError")}
+                      </p>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -759,12 +795,17 @@ export const KpiBenchmarkPage: React.FC = () => {
                     | undefined,
                   isUs: true,
                 },
-                ...MUNICIPALITY_KEYS.map((k) => ({
-                  key: k,
-                  label: municipalityLabels[k],
-                  value: selected[k],
-                  isUs: false,
-                })),
+                ...MUNICIPALITY_KEYS.map((k) => {
+                  const labelKey = `${k}_label` as keyof KpiBenchmark;
+                  return {
+                    key: k,
+                    label:
+                      (selected[labelKey] as string) ||
+                      defaultMunicipalityName(k, t),
+                    value: selected[k],
+                    isUs: false,
+                  };
+                }),
               ].map((bar) => (
                 <div
                   key={bar.key}
@@ -790,12 +831,15 @@ export const KpiBenchmarkPage: React.FC = () => {
                   sub: t("kpi.benchmarks.ourResult"),
                 },
                 ...MUNICIPALITY_KEYS.map((k) => {
+                  const labelKey = `${k}_label` as keyof KpiBenchmark;
                   const v = selected[k];
                   const ours = selected.benchmark_achievement;
                   const gap = v != null ? v - ours : null;
                   return {
                     key: k,
-                    label: municipalityLabels[k],
+                    label:
+                      (selected[labelKey] as string) ||
+                      defaultMunicipalityName(k, t),
                     sub:
                       gap != null
                         ? `${t("kpi.benchmarks.gap")} ${gap > 0 ? "+" : ""}${Number(gap.toFixed(1))}`

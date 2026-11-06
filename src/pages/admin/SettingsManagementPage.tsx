@@ -23,7 +23,6 @@ import {
   ToggleLeft,
   ShieldCheck,
   Loader2,
-  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { AttachmentConfigCard } from "@/components/settings/AttachmentConfigCard";
@@ -58,9 +57,6 @@ const toSettingsForm = (data?: Settings) => ({
   date_format: data?.date_format || "",
   time_format: data?.time_format || "",
   default_language: data?.default_language || "",
-  municipality1_name: data?.municipality1_name || "",
-  municipality2_name: data?.municipality2_name || "",
-  municipality3_name: data?.municipality3_name || "",
   show_evaluate_button: data?.show_evaluate_button ?? false,
   auth_setting: {
     totp_enabled: data?.auth_setting?.totp_enabled ?? false,
@@ -767,54 +763,6 @@ export const SettingsManagementPage: React.FC = () => {
             </label>
           </div>
         </div>
-        {/* Benchmark Municipality Names */}
-        <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
-          <div className="flex items-center gap-3 mb-6">
-            <BarChart3 className="w-5 h-5 text-teal-600" />
-            <div>
-              <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-                {t(
-                  "settings.municipalityNames",
-                  "Benchmark Municipality Names",
-                )}
-              </h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                {t(
-                  "settings.municipalityNamesDesc",
-                  "Configure custom labels for the three municipality comparison slots in KPI Benchmarks",
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {([1, 2, 3] as const).map((n) => {
-              const field = `municipality${n}_name` as keyof typeof formData;
-              return (
-                <div key={n}>
-                  <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
-                    {t(
-                      `settings.municipality${n}Label`,
-                      `Municipality ${n} Label`,
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    name={field}
-                    value={formData[field] as string}
-                    onChange={handleChange}
-                    maxLength={100}
-                    placeholder={t(
-                      "settings.municipalityPlaceholder",
-                      "e.g. Riyadh Municipality",
-                    )}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Feature Toggles Section */}
         <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))]">
           <div className="flex items-center gap-3 mb-6">
